@@ -4,6 +4,7 @@ import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -15,7 +16,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-/** The shared reference table is deliberately limited to unordered item-owned sets. */
+/** The shared reference table keeps catalog tags as sets and the production tag as an optional singleton. */
 final class CatalogItemReferenceFacts {
     static final String PRODUCTION_TAG = "PRODUCTION_TAG";
     static final String CATALOG_TAG = "CATALOG_TAG";
@@ -29,11 +30,11 @@ final class CatalogItemReferenceFacts {
         this.mapper = mapper;
     }
 
-    Map<UUID, Map<String, ArrayNode>> readByItemRefs(Collection<UUID> itemRefs) {
+    Map<UUID, Map<String, JsonNode>> readByItemRefs(Collection<UUID> itemRefs) {
         if (itemRefs == null || itemRefs.isEmpty()) return Map.of();
         List<UUID> refs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
         String placeholders = String.join(",", Collections.nCopies(refs.size(), "?"));
-        Map<UUID, Map<String, ArrayNode>> result = new LinkedHashMap<>();
+        Map<UUID, Map<String, JsonNode>> result = new LinkedHashMap<>();
         refs.forEach(ref -> result.put(ref, emptyKinds()));
         jdbc.query(
                 "SELECT item_ref,kind,ref FROM catalog.catalog_item_reference WHERE item_ref IN (" + placeholders
@@ -42,22 +43,39 @@ final class CatalogItemReferenceFacts {
                     for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
                 },
                 rows -> {
-                    while (rows.next())
-                        result.get(rows.getObject(1, UUID.class))
-                                .get(rows.getString(2))
-                                .add(rows.getObject(3, UUID.class).toString());
+                    while (rows.next()) {
+                        UUID itemRef = rows.getObject(1, UUID.class);
+                        String kind = rows.getString(2);
+                        UUID reference = rows.getObject(3, UUID.class);
+                        JsonNode current = result.get(itemRef).get(kind);
+                        if (PRODUCTION_TAG.equals(kind)) {
+                            if (current != null && !current.isNull())
+                                throw problem("productionTagRef cannot contain more than one ref");
+                            result.get(itemRef)
+                                    .put(kind, mapper.getNodeFactory().textNode(reference.toString()));
+                        } else ((ArrayNode) current).add(reference.toString());
+                    }
                     return null;
                 });
         return Map.copyOf(result);
     }
 
-    void replace(UUID itemRef, JsonNode productionTagRefs, JsonNode tagRefs) {
-        jdbc.update("DELETE FROM catalog.catalog_item_reference WHERE item_ref=?", itemRef);
+    void replace(UUID itemRef, JsonNode productionTagRef, JsonNode tagRefs) {
         List<Object[]> rows = new ArrayList<>();
-        addRows(rows, itemRef, PRODUCTION_TAG, normalize(productionTagRefs, "productionTagRefs"));
+        UUID productionTag = normalizeSingle(productionTagRef, "productionTagRef");
+        if (productionTag != null) rows.add(new Object[] {itemRef, PRODUCTION_TAG, productionTag});
         addRows(rows, itemRef, CATALOG_TAG, normalize(tagRefs, "tagRefs"));
-        if (!rows.isEmpty())
-            jdbc.batchUpdate("INSERT INTO catalog.catalog_item_reference(item_ref,kind,ref) VALUES(?,?,?)", rows);
+        if (rows.isEmpty()) {
+            jdbc.update("DELETE FROM catalog.catalog_item_reference WHERE item_ref=?", itemRef);
+            return;
+        }
+        // PostgreSQL evaluates data-modifying CTE branches against one snapshot.  A delete and an insert into this
+        // same unique-key table therefore cannot be collapsed into a CTE: the insert still conflicts with the row
+        // deleted by its sibling branch.  Keep replacement as its two required statements inside the caller's
+        // transaction; correctness and rollback atomicity belong to that transaction, not to a false one-statement
+        // optimization.
+        jdbc.update("DELETE FROM catalog.catalog_item_reference WHERE item_ref=?", itemRef);
+        jdbc.batchUpdate("INSERT INTO catalog.catalog_item_reference(item_ref,kind,ref) VALUES(?,?,?)", rows);
     }
 
     /** Inserts facts for freshly-created copy targets in one owner-local JDBC batch. */
@@ -66,11 +84,7 @@ final class CatalogItemReferenceFacts {
         if (valuesByItem != null)
             for (Map.Entry<UUID, CopyValues> entry : valuesByItem.entrySet()) {
                 CopyValues values = entry.getValue();
-                addRows(
-                        rows,
-                        entry.getKey(),
-                        PRODUCTION_TAG,
-                        normalize(values.productionTagRefs(), "productionTagRefs"));
+                addRows(rows, entry.getKey(), PRODUCTION_TAG, singleton(values.productionTagRef(), "productionTagRef"));
                 addRows(rows, entry.getKey(), CATALOG_TAG, normalize(values.tagRefs(), "tagRefs"));
             }
         if (!rows.isEmpty())
@@ -113,10 +127,26 @@ final class CatalogItemReferenceFacts {
         for (UUID ref : refs) rows.add(new Object[] {itemRef, kind, ref});
     }
 
-    private Map<String, ArrayNode> emptyKinds() {
-        Map<String, ArrayNode> kinds = new LinkedHashMap<>();
-        KINDS.forEach(kind -> kinds.put(kind, mapper.createArrayNode()));
+    private Map<String, JsonNode> emptyKinds() {
+        Map<String, JsonNode> kinds = new LinkedHashMap<>();
+        kinds.put(PRODUCTION_TAG, NullNode.getInstance());
+        kinds.put(CATALOG_TAG, mapper.createArrayNode());
         return kinds;
+    }
+
+    private static UUID normalizeSingle(JsonNode value, String field) {
+        if (value == null || value.isMissingNode() || value.isNull()) return null;
+        if (!value.isTextual()) throw problem(field + " must be a UUID ref");
+        try {
+            return UUID.fromString(value.asText());
+        } catch (IllegalArgumentException failure) {
+            throw problem(field + " must be a UUID ref", failure);
+        }
+    }
+
+    private static List<UUID> singleton(JsonNode value, String field) {
+        UUID ref = normalizeSingle(value, field);
+        return ref == null ? List.of() : List.of(ref);
     }
 
     private static List<UUID> normalize(JsonNode values, String field) {
@@ -141,5 +171,5 @@ final class CatalogItemReferenceFacts {
         return new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, message, cause);
     }
 
-    record CopyValues(JsonNode productionTagRefs, JsonNode tagRefs) {}
+    record CopyValues(JsonNode productionTagRef, JsonNode tagRefs) {}
 }

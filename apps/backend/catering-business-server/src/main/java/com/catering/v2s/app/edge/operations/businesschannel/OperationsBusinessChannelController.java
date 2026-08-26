@@ -58,7 +58,6 @@ public final class OperationsBusinessChannelController {
     private static final String REQ_CREATE_CHANNEL = "REQ_CREATE_OPERATIONS_BUSINESS_CHANNEL";
     private static final String REQ_UPDATE_CHANNEL = "REQ_UPDATE_OPERATIONS_BUSINESS_CHANNEL";
     private static final String REQ_TRANSITION_CHANNEL = "REQ_TRANSITION_OPERATIONS_BUSINESS_CHANNEL_STATUS";
-    private static final String REQ_BINDING_UPDATE = "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_UPDATE";
     private static final String REQ_BINDING_DELETE = "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_DELETE";
 
     private final OperationsSessionResolver sessions;
@@ -358,34 +357,6 @@ public final class OperationsBusinessChannelController {
                         ExternalCollaborationWireMapper.optionalText(body.bindingDisplayName(), "bindingDisplayName"),
                         ExternalCollaborationWireMapper.optionalText(body.externalOwnerId(), "externalOwnerId")),
                 key));
-    }
-
-    @PatchMapping("/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding")
-    OwnerBindingView updateBinding(
-            EdgeRequestContext request,
-            @PathVariable String groupWorkspaceKey,
-            @PathVariable UUID channelRef,
-            @RequestHeader("Idempotency-Key") String idempotencyKey,
-            @RequestBody OwnerBindingUpdateRequest body) {
-        WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
-        if (body == null || body.expectedVersion() == null)
-            throw new InvalidEdgeRequestException("expectedVersion is required");
-        BusinessChannelReadback.Channel channel = readChannel(session, channelRef);
-        UUID bindingRef = requireBindingRef(channel);
-        String nodeType = ownerNodeType(channel.ownerNodeType());
-        return ExternalCollaborationWireMapper.binding(coordinator.updateOperationsBinding(
-                new CollaborationCommandApi.UpdateOperationsBindingCommand(
-                        session.workspaceUuid(),
-                        session.groupWorkspaceKey(),
-                        bindingRef,
-                        ExternalCollaborationWireMapper.optionalText(body.bindingDisplayName(), "bindingDisplayName"),
-                        ExternalCollaborationWireMapper.optionalText(body.externalOwnerId(), "externalOwnerId"),
-                        body.expectedVersion(),
-                        session.contextVersion(),
-                        idempotencyKey(idempotencyKey),
-                        sessions.actor(session),
-                        grant(session, REQ_BINDING_UPDATE, nodeType, ownerNodeId(channel.ownerNodeRef()))),
-                channelRef));
     }
 
     @DeleteMapping("/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding")

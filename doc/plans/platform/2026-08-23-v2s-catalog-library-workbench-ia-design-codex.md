@@ -56,13 +56,16 @@ CATALOG_PROBLEM_CODE_DENOMINATOR=46
 type CatalogWorkspaceTask =
   | { kind: 'NONE' }
   | { kind: 'VIEW'; itemCode: string; focus?: CatalogViewFocus; triggerTestId: string }
-  | { kind: 'EDIT'; itemCode: string; baselineVersion: number; resume?: CatalogEditResume }
-  | { kind: 'CONFIG'; library: CatalogLibraryKind; returnTo?: CatalogEditResume }
+  | { kind: 'EDIT'; itemCode: string; baselineVersion?: number }
+  | { kind: 'CONFIG'; library: CatalogLibraryKind }
   | { kind: 'COPY'; flow: 'BRAND_TO_STORE' | 'LOCAL_SETTINGS'; targetItemCode?: string }
   | { kind: 'CREATE_ITEM'; prefill?: CatalogCreatePrefill }
   | { kind: 'CATEGORY_ATOM'; action: CatalogCategoryAction; categoryRef?: string }
   | { kind: 'BATCH'; action: CatalogBatchAction; selectedItemCodes: string[] };
 ```
+
+编辑内元数据维护不进入 `CatalogWorkspaceTask`；它由 Editor 自己的有限 `CatalogEditorChildTask` 控制：
+`NONE | { kind: 'CONFIG'; library; triggerTestId }`。它不含商品草稿、return token 或持久化字段。
 
 规则：
 
@@ -74,8 +77,8 @@ type CatalogWorkspaceTask =
    父草稿，取消丢弃子任务 working copy，不发 whole-save。
 4. `VIEW` 内可有一个 `CatalogViewChildTask`：图片预览、生命周期确认、临时商品治理。第三层只能是 confirm。
 5. `CONFIG` 内只有 `CatalogConfigAtom` 小 Modal 或 confirm；复杂定义详情必须在右栏同栏切换，禁止再开 Drawer。
-6. 每个任务记录打开控件 `triggerTestId`；正常关闭、取消、已知失败后的关闭均把焦点归还该控件。接力任务
-   （创建成功进入编辑、编辑绕行配置）将焦点交给新 surface 的标题或恢复字段，而不是归还旧入口。
+6. 每个任务记录打开控件 `triggerTestId`；正常关闭、取消、已知失败后的关闭均把焦点归还该控件。创建成功进入编辑
+   时焦点交给新 surface 标题；编辑内打开“维护商品元数据”时父编辑保持打开，子任务关闭后焦点必须归还原维护控件。
 
 ### 2.3 整单草稿状态
 
@@ -119,17 +122,18 @@ currentLibrary
 libraryQueryIdentity
 librarySearchDraft / appliedLibrarySearch
 selectedParentDefinitionRef
-selectedDefinitionRef
-definitionMode = LIST | CREATE | EDIT
-definitionDraft
-fieldErrors / problem
-candidateState（只在复杂定义当前字段需要时存在）
-returnToEdit（只读接力令牌，不持有商品草稿）
+selectedDefinitionRef / definitionMode = LIST | CREATE | EDIT
 ```
 
+复杂定义的当前表单草稿、字段错误和候选搜索不跨库也不跨 surface；它们唯一住在当前复杂定义 presenter 的
+`Form`/局部 state 中，并由该 presenter 的保存、关闭、dirty guard 直接控制。`useCatalogConfigLibrary` 不镜像这些
+局部表单值。这样既保持“六库的当前库、查询与主从选择、复杂定义编辑目标和模式只有一个业务住址”，又不把
+当前编辑器的可恢复表单复制成第二份草稿。切换库、scope/brand 变化或关闭配置 Drawer 时，hook 同步清空查询、父级选择与复杂定义编辑目标；
+复杂 presenter 的 effect 仅做 owner 数据变更后的防御性校正，不能成为切库级联的唯一控制者。
+
 左侧切库、scope/brand 变化或关闭配置抽屉时，必须经当前 definition draft 的 dirty guard。配置抽屉不读取、
-不写入商品整单草稿；保存配置只失效对应库、对应候选和真实受影响的商品读模型。返回编辑时由工作台的
-`returnToEdit` 接力，`useCatalogItemDraft` 自己恢复原草稿。
+不写入商品整单草稿；保存配置只失效对应库、对应候选和真实受影响的商品读模型。从编辑发起时，配置是 parent Editor
+的一层子任务，关闭即回原触发控件；不得建立 `returnToEdit` 或持久化/恢复过渡草稿。
 
 ### 2.5 控件控制权与规则来源
 
@@ -137,7 +141,7 @@ returnToEdit（只读接力令牌，不持有商品草稿）
 
 | 控制对象 | contract 声明 | generated RTK / App 控制 | foundation 控制 | owner 最终复核 | 禁止前端重建 |
 | --- | --- | --- | --- | --- | --- |
-| 区段/字段是否适用 | shape manifest 的 section/field admission、可改性与原因 | 只按声明裁剪 View/Editor；锁定事实用文本 | 无 | whole-save 拒绝不适用/锁定字段篡改 | 按商品类型 switch 复制 admission |
+| 区段/字段是否适用 | shape manifest 的 section/field admission、可改性与原因 | 只按声明裁剪 View/Editor；锁定事实用文本 | 无 | whole-save 拒绝不适用/锁定字段篡改 | 按商品形态 switch 复制 admission |
 | 必填、格式、闭集、数量边界 | request schema、descriptor、problem field path | 表单即时提示与错误定位；值住 create/draft | 表单生命周期，不拥有规则 | 同规则再次校验 | 把推荐值伪装必填；独立正则/上限 |
 | 动作入口 | `actionAvailability(action, available, reason)` | 决定显示的动作和业务原因 | overlay/confirm 生命周期 | command 内重读权限、状态、引用和版本 | 从 status/capability 字面量拼动作矩阵 |
 | 分类/关联候选 | identity、path、displayOrder、selectable、disabledReason、cursor/total | query `currentData` + TreeSelect/候选 hook 瞬态；选择值住表单/draft | 防抖/cursor/加载更多 | create/save/move 再验资格 | 从 navigation/detail 本地算叶子、后代、可选性 |
@@ -183,6 +187,7 @@ returnToEdit（只读接力令牌，不持有商品草稿）
 | 编辑商品分类 | Basic draft `categoryRef` | latest detail + `usage=ITEM_ASSIGNMENT` hierarchy read | 选择新分类只标 Basic dirty；不自动改标签、单位、价格或库存；候选失败保当前已绑定路径 | 既有停用绑定可见；新候选资格由 contract | whole-save 再验 scope、分类和版本 |
 | 批量移动分类 | batch draft 单值 `targetCategoryRef` | `usage=ITEM_ASSIGNMENT` hierarchy read | 切换 batch action 清目标；改变目标更新影响摘要；不清已选父商品 | 单值，不允许平铺或多选 | 每个 item 独立复核版本与分类 |
 | 分类挪父 | category atom `parentCategoryRef` | `usage=CATEGORY_REPARENT`、`currentCategoryRef` 的 hierarchy read + 当前分类影响摘要 | 切换目标只改草稿；当前 categoryRef 变化形成新 query identity 并重取；失败保树与已填值 | 当前节点与全部后代不可选并显示原因 | move command 拒自环、后代环、越范围、版本漂移 |
+| 新建分类父级 | category atom `parentCategoryRef` | `usage=CATEGORY_CREATE` 的 hierarchy read；当前树节点只作为初始值 | 改父级只改 category atom；搜索、scope/brand 或 parent 改变均重置 cursor；失败保名称、编码与树 | 已处第三级的分类保留可见但不可选，显示“商品分类最多只能建立三级”；允许清空成为根分类 | create command 在 advisory hierarchy guard 下复核三级上限 |
 
 分类层级协议当前缺少完整路径、统一 `selectable` 与场景化 `disabledReason`，是 contract GAP；实施不得从平铺
 `navigation.tree` 猜叶子资格，也不得先用普通 `Select` 止血。
@@ -193,9 +198,9 @@ returnToEdit（只读接力令牌，不持有商品草稿）
 
 | 控件/事实族 | state 住址与控制者 | 上游改变时的级联 | 不允许的隐式行为 | 最终复核 |
 | --- | --- | --- | --- | --- |
-| 新建名称/编码/商品类型 | create Modal form + `useSubmissionLifecycle` | scope/brand 变化关闭并清空；商品类型改变不清名称、编码、分类 | 不提前建立半个商品；不在前端猜编码唯一 | create owner 原子复核 |
+| 新建名称/编码/商品形态 | create Modal form + `useSubmissionLifecycle` | scope/brand 变化关闭并清空；商品形态改变不清名称、编码、分类 | 不提前建立半个商品；不在前端猜编码唯一 | create owner 原子复核 |
 | 新建分类 | create form | 见 §3.2 | 不平铺 | create owner |
-| 编辑区段导航 | draft `activeSection` + UI scroll controller | 错误定位可切区段并聚焦首错；配置绕行保存 section/field | 不用 Tab 隐藏错误；不因滚动改 dirty | 无写入 |
+| 编辑区段导航 | draft `activeSection` + UI scroll controller | 错误定位可切区段并聚焦首错；编辑内维护元数据不改变 section/field | 不用 Tab 隐藏错误；不因滚动改 dirty | 无写入 |
 | 商品名称、短名、分类、标签 | Basic draft | 切分类只改分类；停用标签从新候选消失但既有绑定可见；移除绑定只改草稿 | 不从分类自动填标签；不把停用解释为删除 | whole-save catalog owner |
 | 销售单位/基础计量单位 | Basic 或 SKU draft，有限候选 | 选择“继承商品”清 SKU override；选择“单独设置”以当前有效值初始化显式草稿并标 dirty；单位变化使依赖该单位的未保存数量字段重新校验 | 不改变历史快照；不把 measureMode 当单位；不四舍五入 | unit lifecycle + whole-save + inventory owner |
 | 商品价格/规格价格 | Basic/SKU draft | 价格粒度来自 shape manifest；商品价与 SKU 价各自独立 | 不从一个粒度静默覆盖另一个；不猜税/渠道价 | catalog owner |
@@ -205,7 +210,7 @@ returnToEdit（只读接力令牌，不持有商品草稿）
 | SKU 单位覆盖 | SKU row slice | “继承商品”清 override；商品默认值变化立即更新 effective preview，但不生成 override | 不把 effective 值误存成 owner override | whole-save catalog owner |
 | 点单选项组/值 | order-option slice；组/值均稳定 ref/editorId | 切换选项组前若有规则先 confirm；确认后清旧组值规则、物料和制作影响；多选顺序按业务 displayOrder | 不用 index 回写；不把 option value 变 SKU | catalog + inventory/production owner |
 | 商品属性定义/值 | attribute slice | 切换定义清旧定义的值；TEXT/SINGLE/MULTI 控件由定义返回；候选停用不清既有值 | 不按字段名猜控件；不把原始 ref 显示给用户 | catalog owner |
-| 制作信息 | preparation slice + 商品级 `productionTagRef|null` | 规格选择“继承”清名称/时长/说明 override；“单独设置”从当前有效商品制作内容初始化完整草稿但不复制标签；选项影响只做非负时长增量与追加说明 | 生产标签只在商品级单选；不按 UUID 决定说明顺序；不在 View 读 draft 冒充有效制作信息 | fulfillment-production/catalog owner |
+| 制作信息 | preparation slice + 商品级 `productionTagRef|null` | 规格选择“继承”清名称/时长/说明 override；“单独设置”从当前有效商品制作内容初始化完整草稿但不复制标签；选项影响只做非负时长增量与追加说明 | 生产标签只在商品级单选；定义仅有名称、编码、状态，不出现“类型”；不按 UUID 决定说明顺序；不在 View 读 draft 冒充有效制作信息 | fulfillment-production/catalog owner |
 | 库存扣减方式 | inventory-rules slice | `NONE↔DIRECT↔BOM` 若会丢弃当前未保存配置，先 confirm；确认后只清与新方式不兼容的 draft；BOM 模式必须有行 | 不用 disabled 表单做详情；不静默保留隐藏 BOM | catalog/inventory owner |
 | BOM/库存目标 | inventory 子任务；行稳定 editorId/ref | 改组件清该行旧 quantity 与单位快照并重新取目标消费单位；改盘点单位只改变录入换算，不改余额消费单位 | 不保留 stale unit；不以自由字符串保存单位 | inventory owner + whole-save |
 | 套餐组件 | composite slice + 搜索候选子任务 | 改组件目标清旧 SKU 选择；取消子任务不改父草稿 | 不用 group/component index 作为身份 | catalog owner |
@@ -218,12 +223,12 @@ returnToEdit（只读接力令牌，不持有商品草稿）
 | 控件/事件 | state 与控制者 | 级联关系 | 精确失效/读回 | 禁止 |
 | --- | --- | --- | --- | --- |
 | 配置左侧六库导航 | `currentLibrary`，`useCatalogConfigLibrary` | 当前 definition dirty 时先确认；确认切库后清该库 search/cursor/selection/editor problem，再取新库 | 只取当前库；左栏不因右栏 loading 消失 | 顶部 Tabs；切库后保留旧库详情 |
-| 简单库搜索/状态 | library local/applied filter | 提交搜索回首页；不影响其它库 | 当前库 list `currentData` | 全部库同时请求 |
+| 简单库搜索/状态 | 当前 library presenter 的 `keywordInput`（本地）与 `appliedKeyword/status`（已应用 query） | 提交搜索或改变状态均回首页；query/status 进入当前库 cursor identity；切库/scope/品牌清空该库筛选，不影响其它库 | 当前库 owner-filtered list `currentData`；商品标签/生产标签分页、单位也由 owner 过滤 | 全部库同时请求；仅过滤已加载行 |
 | 简单库新建/改名/启停/删除 | 小 Modal draft + submission lifecycle | 打开先清旧 problem；失败保输入；成功关闭并清 draft | 对应库 list、对应候选与确实展示该名称的 read model | 配置之上开 Drawer；把停用说成删除 |
 | 规格维度选择 | `selectedParentDefinitionRef` | 选择父维度后才取右侧值；切父清子 cursor/error/未提交子选择，不重取父列表 | 当前父级的值列表 | 无父时发子查询；父/子混成平铺列表 |
 | 属性填写方式 | complex definition draft | TEXT→SINGLE/MULTI 初始化空选项；SINGLE↔MULTI 保留兼容选项；转 TEXT 且已有选项须 confirm 后清空 | 保存后定义 list/detail、商品候选 | 隐藏选项但仍提交旧值 |
 | 点单选项选择方式/可选项 | complex definition draft | 切选择方式保留可选项；删除/重排按稳定 value ref/editorId；改可选项目标清其旧物料规则 | 定义 list/detail、商品候选、相关 inventory candidate read | index 身份；再开候选 Drawer |
-| 编辑→配置 | workspace task reducer + draft controller | 先持久化 draft/section/focus，再关闭 EDIT，再打开 CONFIG；禁止叠开 | 配置完成后保存 `returnToEdit`，工作台显示继续编辑；恢复时重取候选 | 配置错误清商品草稿；同时打开两个 Drawer |
+| 编辑内维护商品元数据 | editor child-task state + `useCatalogConfigLibrary` | 打开子任务时 EDIT 保持打开；子任务只保存字典事实；关闭时焦点回原维护控件 | 成功只失效关联候选；不改整单 draft、section、错误或滚动位置 | 关闭 EDIT、写/读 `returnToEdit` 或过渡 session、让配置写入商品草稿 |
 | 批量动作选择 | batch Modal reducer | 改动作清 action-specific target/summary/result，不清父商品选择 | 无请求直到摘要/提交需要 | 沿用上一次动作目标 |
 | 批量提交 | submission lifecycle + server receipt | 提交时冻结 itemCode+version 快照并锁选择；结果按项显示；失败项可重试，成功项从当前选中移除 | 只重取当前父列表、导航受影响聚合和成功项详情；刷新失败单独显示 | 把逐项尽力伪装原子回滚；SKU 参与批量 |
 | 复制流程/来源/目标/范围 | copy Drawer reducer | 改 flow 清来源/目标/范围/preflight/token/result；改来源、目标或范围即使 preflight stale，执行禁用直至重新检查 | 影响检查不写；执行用 token；成功精确重取目标 list/detail/navigation | 用旧 token；一步表单；一条 message 覆盖逐项结果 |
@@ -290,7 +295,7 @@ HTTP 状态沿 owning operation 的 typed problem contract；UI 不按 HTTP 猜�
 | `CATALOG_DEFINITION_LIMIT_EXCEEDED` | 定义数量达到上限 | 配置/catalog | 当前库顶部提示上限，新建入口不可继续，既有列表保留 |
 | `CATALOG_IDENTIFIER_DUPLICATE` | 同范围识别码重复 | 条码与标识/catalog | 定位重复行和值，提示已被其它商品使用 |
 | `CATALOG_IDENTIFIER_OWNER_MISMATCH` | 识别码目标不属于当前商品/规格 | 条码与标识/catalog | 定位集合行，提示重新选择当前商品或规格；不显示 owner/ref |
-| `CATALOG_IDENTIFIER_TYPE_NOT_ALLOWED` | 当前商品类型不允许该识别方式 | 条码与标识/catalog | 定位类型字段，说明当前商品可用的识别方式 |
+| `CATALOG_IDENTIFIER_TYPE_NOT_ALLOWED` | 当前商品形态不允许该识别方式 | 条码与标识/catalog | 定位形态字段，说明当前商品可用的识别方式 |
 | `CATALOG_IDENTIFIER_VALUE_INVALID` | 识别码格式不合法 | 条码与标识/catalog | 字段下显示格式要求并聚焦原值 |
 | `CATALOG_OPTION_PREPARATION_CHANGE_NOT_ALLOWED` | 选项制作影响超出已裁边界 | 点单选项/catalog | 定位选项值，提示“这里只能增加制作时长或追加制作说明” |
 | `CATALOG_PREPARATION_DURATION_INVALID` | 制作时长不是非负整数 | 制作信息/catalog | 定位时长字段，提示“请填写 0 或更大的整数秒数” |
@@ -299,7 +304,6 @@ HTTP 状态沿 owning operation 的 typed problem contract；UI 不按 HTTP 猜�
 | `CATALOG_PREPARATION_UNKNOWN_FIELD` | 请求含退役或未知制作字段 | 制作信息/catalog | 任务级提示“制作信息已更新，请重新打开后再试”，不显示字段 key |
 | `CATALOG_UNIT_IN_USE` | 单位已有引用，受保护属性不可改/不可删 | 计量单位/catalog | 行内说明“正在使用，只能改名称或停用” |
 | `CATALOG_UNIT_LIMIT_EXCEEDED` | 单位库达到 99 个上限 | 计量单位/catalog | 列表顶部逐字提示上限，不提交 |
-| `CATEGORY_DEPTH_EXCEEDED` | 分类层级超过允许深度 | 分类原子任务/catalog | TreeSelect 字段下提示需选择更高层上级 |
 | `CONSUMPTION_UNIT_INCOMPATIBLE` | 消费单位维度/快照不兼容 | 库存与 BOM/inventory | 定位库存节点或 BOM 行，要求重选目标/单位 |
 | `COPY_CLOSURE_TOO_LARGE` | 复制闭包超过本次上限 | 复制/catalog | 影响检查结果提示缩小复制范围，执行保持禁用 |
 | `COPY_SELECTED_ITEMS_TOO_LARGE` | 选择商品数超过上限 | 品牌复制/catalog | 来源步骤提示减少选择，保留当前勾选 |
@@ -311,13 +315,14 @@ HTTP 状态沿 owning operation 的 typed problem contract；UI 不按 HTTP 猜�
 | `INVENTORY_BOM_EMPTY` | 已选择按用料扣减但没有用料行 | 库存与 BOM/inventory | 定位 BOM 分组，提示至少添加一项用料 |
 | `INVENTORY_BOM_SELF_REFERENCE` | 商品把自身作为用料 | BOM/inventory | 定位组件行，提示不能选择当前商品或规格 |
 | `INVENTORY_DEDUCTION_MODE_CHANGE_BLOCKED` | 余额/流水/引用/历史定义阻止切换 | 库存方式/inventory | 方式分组说明阻止原因与下一步，保留旧方式 |
-| `INVENTORY_DEDUCTION_MODE_NOT_ALLOWED` | 当前商品类型/粒度不允许该方式 | 库存方式/inventory | 方式分组显示允许方式，不保留非法隐藏配置 |
+| `INVENTORY_DEDUCTION_MODE_NOT_ALLOWED` | 当前商品形态/粒度不允许该方式 | 库存方式/inventory | 方式分组显示允许方式，不保留非法隐藏配置 |
 | `INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL` | 选项物料没有可消费库存对象 | 点单选项/inventory | 定位物料行，提示先配置该原料库存 |
 | `MOVE_BOUNDARY` | 分类不能越当前业务范围移动 | 分类挪父/catalog | TreeSelect 字段提示只能选择当前商品库内分类 |
 | `NEGATIVE_STOCK_NOT_ALLOWED` | 操作会产生不允许的负库存 | 库存相关/inventory | 定位数量/目标，显示当前不足，不改余额 |
 | `NOT_FOUND` | 当前对象已不存在或不在本范围 | View/Edit/配置/owner | 关闭失效编辑入口并提示刷新当前结果；有草稿时先保留草稿供放弃，不伪造对象 |
 | `OWNER_REFERENCE_LEAK` | 请求引用了其它 owner/范围事实 | 任一关联选择/coordinator | 任务顶部提示“所选内容已失效，请重新选择”，不显示内部边界 |
 | `PRODUCTION_TAG_NOT_BINDABLE` | 生产标签已停用或不可新绑定 | 制作信息/production | 定位生产标签控件，既有绑定可见，新绑定要求重选 |
+| `CATEGORY_DEPTH_EXCEEDED` | 商品分类最多只能建立三级 | 分类/parentCategoryRef | 定位分类 TreeSelect；保留用户已填名称、编码和当前树，提示改选上级分类或创建根分类 |
 | `REFERENCE_BLOCKS_DELETE` | 既有引用阻止删除 | 配置删除/catalog | 危险确认显示“正在使用，不能删除；可以停用” |
 | `REFERENCE_BLOCKS_VOID` | 既有引用阻止作废 | 生命周期/catalog | 影响区显示引用阻止原因，不改变状态 |
 | `REFERENCE_MAPPING_UNRESOLVED` | 复制/治理的引用无法映射 | 复制或治理/catalog | 影响检查逐项列“需要重新选择的内容”，执行禁用 |
@@ -436,7 +441,7 @@ surface 结果/问题区。任何路径都必须明确“哪一项、为什么�
 
 - `businessTask`：用最少身份原子建立商品草稿，成功后继续完善。
 - `actorAndScenario`：资料维护者从冻结顶部“新建商品”进入。
-- `entryAndSurface`：中型 Modal；字段为名称、编码、商品类型、商品分类；成功后接力超宽 Edit Drawer。
+- `entryAndSurface`：中型 Modal；字段为名称、编码、商品形态、商品分类；成功后接力超宽 Edit Drawer。
 - `controlType`：Input、有限 shape Select、单选 searchable TreeSelect；取消在左、创建在右。
 - `validationAndError`：字段问题就地；重复编码定位编码；分类/权限/未知结果按 §6；失败不打开编辑。
 - `accessibilityAndTestId`：初始焦点名称；TreeSelect 层级可读；关闭回“新建商品”；成功焦点进入编辑标题。
@@ -456,7 +461,7 @@ surface 结果/问题区。任何路径都必须明确“哪一项、为什么�
 **可见维度**
 
 - `businessTask`：修改适用的九类事实并一次整单保存，错误可定位、草稿可恢复。
-- `actorAndScenario`：维护者从 View 点击编辑，或创建成功/配置绕行后继续编辑。
+- `actorAndScenario`：维护者从 View 点击编辑，或创建成功后继续编辑；编辑中可在不离开当前商品的前提下维护缺失元数据。
 - `entryAndSurface`：第一层全高超宽 Drawer；左区段导航、右唯一滚动内容区、常驻保存栏；子任务最多一层。
 - `controlType`：按 §3.3 每类 Editor；生产标签为可清空单选；规格制作子面只编辑名称/时长/说明；点单选项
   制作变化只编辑非负时长与追加说明；锁定事实是文本摘要；保存/取消常驻；恢复提示为专注小 Modal。
@@ -471,7 +476,7 @@ surface 结果/问题区。任何路径都必须明确“哪一项、为什么�
 - `stateAndPermission`：[acceptance] 篡改 denied/locked/shape-inapplicable 字段均被 owner 拒绝且 version 不变；
   [focused] UI 只从 contract 取 section/action admission。
 - `navigationAndRefresh`：[focused] dirty 时 detail refetch 不覆盖 draft；成功才清 session；X/Esc/mask/cancel 四径同一结果；
-  配置绕行恢复原 section/value/error。[L2另行授权] 刷新后真实恢复与焦点。
+  编辑内元数据子任务关闭后保留原 section/value/error。[L2另行授权] 刷新后真实恢复与焦点。
 - `collectionShapeAndScale`：单 Aggregate + 九类 Bounded/Page 子集合；候选只用 finite/cursor；各上界取 contract/owner，
   不拿 seed 当前行数当上界。
 - `dataSourceAndCascade`：[focused] §3.3 每条上游改变的清理均有行为测试；子任务 apply 只写 parent draft；稳定身份
@@ -489,7 +494,7 @@ surface 结果/问题区。任何路径都必须明确“哪一项、为什么�
 - `actorAndScenario`：维护者从冻结“商品元数据”入口进入，或编辑缺候选时绕行。
 - `entryAndSurface`：第一层全高配置 Drawer；左六库导航；右简单列表、父子两列、复杂定义同栏三形态。
 - `controlType`：列表搜索/筛选、行名入口、小 Modal、主从列表、同栏 definition editor；配置内零 Drawer。
-- `validationAndError`：字段/行/当前库定位；引用阻止删除给停用下一步；失败保配置 draft和待恢复编辑入口。
+- `validationAndError`：字段/行/当前库定位；引用阻止删除给停用下一步；失败保配置 draft，父编辑草稿不变。
 - `accessibilityAndTestId`：左库导航和右区标题关联；切库 dirty confirm；列表首列业务名称可操作；焦点回触发项。
 - `emptyLoadingErrorStates`：左导航始终在；右栏按当前库独立 loading/empty/error；父未选显示下一步；候选失败只影响字段。
 - `containerBehaviorUnderLoad`：Drawer 全高，左栏固定、右栏滚动；主从列各自滚动并按选中父对齐；复杂定义列表/编辑同栏；
@@ -498,8 +503,8 @@ surface 结果/问题区。任何路径都必须明确“哪一项、为什么�
 **不可见维度**
 
 - `stateAndPermission`：[acceptance] 六库 read/write 越 scope 均拒绝；引用、上限、版本守卫由 owner 复核。
-- `navigationAndRefresh`：[focused] 保存只失效当前库、对应候选与受影响 read model；其它五库 query 不被调用；关闭后
-  `returnToEdit` 仍在。[L2另行授权] “继续编辑”恢复草稿。
+- `navigationAndRefresh`：[focused] 保存只失效当前库、对应候选与受影响 read model；其它五库 query 不被调用；编辑内关闭
+  子任务后焦点回原维护控件，父编辑草稿不变。[L2另行授权] 同一观察在真实浏览器成立。
 - `collectionShapeAndScale`：简单库 Bounded/Page 依 owner（单位 hard max 99）；父子库父/子分别 Page；复杂定义 Page+
   Bounded child options；不得前端抽干后伪分页。
 - `dataSourceAndCascade`：[focused] 切库/父维度/填写方式/选项目标按 §3.4 清理；配置不读写商品 draft；existing inactive
@@ -607,3 +612,6 @@ CROSS_CHECK_WITH_DESIGN=PASS
 DEXTER_WIREFRAME_REVIEW=ACCEPTED_FOR_IA_DETAIL_COMPLETION@2026-08-23
 IA_STATUS=PROPOSED_FOR_DESIGN_REVIEW;不构成 implementation authorization
 ```
+
+> 2026-08-26 观察问题整改附录：展开入口、生命周期体验 seed 与引用/作废表达按
+> `2026-08-26-v2s-catalog-workbench-observed-remediation-design-addendum-codex.md` 覆盖。

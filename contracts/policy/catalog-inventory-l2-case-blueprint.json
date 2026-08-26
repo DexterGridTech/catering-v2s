@@ -20,72 +20,301 @@
       "scenarioId": "CI-L2-001",
       "businessRequirement": "按 owner 返回的范围逐页进入商品与库存工作台，并从真实结果域打开详情。",
       "cases": [
-        {"caseId": "CI-L2-001-01", "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001", "journey": "门店商品工作台", "controlKeys": ["STORE_SCOPE", "CATALOG_STORE_ROUTE", "CATALOG_RESULT_TABLE"], "steps": ["登录运营后台", "确认门店范围", "进入门店商品管理", "确认结果表与当前范围"], "businessOracle": ["页面显示门店商品结果域", "结果不是只有根节点可见"]},
-        {"caseId": "CI-L2-001-02", "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001", "journey": "总公司品牌商品工作台", "controlKeys": ["HEAD_COMPANY_SCOPE", "CATALOG_BRAND_ROUTE", "BRAND_SWITCH", "CATALOG_RESULT_TABLE"], "steps": ["确认总公司范围", "进入品牌商品管理", "选择 owner 返回的启用品牌", "确认结果表"], "businessOracle": ["品牌切换器只在品牌 surface 出现", "结果域跟随选定品牌"]},
-        {"caseId": "CI-L2-001-03", "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001", "journey": "门店库存工作台", "controlKeys": ["STORE_SCOPE", "INVENTORY_ROUTE", "INVENTORY_STOCK_VIEW", "INVENTORY_RESULT_TABLE"], "steps": ["确认门店范围", "进入库存状态", "读取库存状态分段控件", "确认库存对象表"], "businessOracle": ["库存对象固定在门店范围", "库存列表不是商品可售状态的替代"]},
-        {"caseId": "CI-L2-001-04", "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001", "journey": "商品树与结果域", "controlKeys": ["CATALOG_TREE", "CATALOG_TREE_SEARCH", "CATALOG_RESULT_TABLE"], "steps": ["打开商品工作台", "读取商品视图与分类树", "展开树节点", "确认结果域标题与表格同步"], "businessOracle": ["树节点是结果域选择而不是写入入口", "结果表展示当前结果域"]},
-        {"caseId": "CI-L2-001-05", "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001", "journey": "从结果表进入商品详情", "controlKeys": ["CATALOG_ITEM_ROW", "CATALOG_ITEM_DRAWER", "CATALOG_ITEM_TABS"], "steps": ["按 owner fixture 的商品编码定位结果行", "点击商品编码", "读取商品详情抽屉", "读取可见页签"], "businessOracle": ["详情对象与结果行是同一个商品编码", "详情页签由 owner 返回而不是测试写死全集"]},
-        {"caseId": "CI-L2-001-06", "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001", "journey": "从库存结果进入库存对象详情", "controlKeys": ["INVENTORY_TARGET_ROW", "INVENTORY_TARGET_DRAWER", "INVENTORY_CURRENT_ZONE"], "steps": ["按 owner fixture 的库存对象引用定位结果行", "点击库存对象", "读取库存详情抽屉", "读取当前状态区"], "businessOracle": ["库存对象详情属于当前门店", "余额与消耗单位一起展示"]}
+        {
+          "caseId": "CI-L2-001-01",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+          "journey": "门店商品工作台",
+          "controlKeys": ["STORE_SCOPE", "CATALOG_STORE_ROUTE", "CATALOG_RESULT_TABLE"],
+          "steps": ["登录运营后台", "确认门店范围", "进入门店商品管理", "确认结果表与当前范围"],
+          "businessOracle": ["页面显示门店商品结果域", "结果不是只有根节点可见"]
+        },
+        {
+          "caseId": "CI-L2-001-02",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+          "journey": "总公司品牌商品工作台",
+          "controlKeys": ["HEAD_COMPANY_SCOPE", "CATALOG_BRAND_ROUTE", "BRAND_SWITCH", "CATALOG_RESULT_TABLE"],
+          "steps": ["确认总公司范围", "进入品牌商品管理", "选择 owner 返回的启用品牌", "确认结果表"],
+          "businessOracle": ["品牌切换器只在品牌 surface 出现", "结果域跟随选定品牌"]
+        },
+        {
+          "caseId": "CI-L2-001-03",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+          "journey": "门店库存工作台",
+          "controlKeys": ["STORE_SCOPE", "INVENTORY_ROUTE", "INVENTORY_STOCK_VIEW", "INVENTORY_RESULT_TABLE"],
+          "steps": ["确认门店范围", "进入库存状态", "读取库存状态分段控件", "确认库存对象表"],
+          "businessOracle": ["库存对象固定在门店范围", "库存列表不是商品可售状态的替代"]
+        },
+        {
+          "caseId": "CI-L2-001-04",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+          "journey": "商品树与结果域",
+          "controlKeys": ["CATALOG_TREE", "CATALOG_TREE_SEARCH", "CATALOG_RESULT_TABLE"],
+          "steps": ["打开商品工作台", "读取商品视图与分类树", "展开树节点", "确认结果域标题与表格同步"],
+          "businessOracle": ["树节点是结果域选择而不是写入入口", "结果表展示当前结果域"]
+        },
+        {
+          "caseId": "CI-L2-001-05",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+          "journey": "从结果表进入商品详情",
+          "controlKeys": ["CATALOG_ITEM_ROW", "CATALOG_ITEM_DRAWER", "CATALOG_ITEM_TABS"],
+          "steps": ["按 owner fixture 的商品编码定位结果行", "点击商品编码", "读取商品详情抽屉", "读取可见页签"],
+          "businessOracle": ["详情对象与结果行是同一个商品编码", "详情页签由 owner 返回而不是测试写死全集"]
+        },
+        {
+          "caseId": "CI-L2-001-06",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
+          "journey": "从库存结果进入库存对象详情",
+          "controlKeys": ["INVENTORY_TARGET_ROW", "INVENTORY_TARGET_DRAWER", "INVENTORY_CURRENT_ZONE"],
+          "steps": ["按 owner fixture 的库存对象引用定位结果行", "点击库存对象", "读取库存详情抽屉", "读取当前状态区"],
+          "businessOracle": ["库存对象详情属于当前门店", "余额与消耗单位一起展示"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-002",
       "businessRequirement": "先选商品树节点，再在当前结果域逐字符搜索，并拒绝旧 generation 的结果。",
       "cases": [
-        {"caseId": "CI-L2-002-01", "fixtureRef": "FIXTURE-WORKBENCH-QUERY", "journey": "树节点后域内搜索", "controlKeys": ["CATALOG_TREE", "CATALOG_LOCAL_SEARCH", "CATALOG_RESULT_TABLE"], "steps": ["选择 owner fixture 的树节点", "在当前结果域逐字符输入关键词", "提交搜索", "等待当前 generation 结果"], "businessOracle": ["请求带当前数据节点、结果域和 keyword", "旧响应不覆盖当前结果"]}
+        {
+          "caseId": "CI-L2-002-01",
+          "fixtureRef": "FIXTURE-WORKBENCH-QUERY",
+          "journey": "树节点后域内搜索",
+          "controlKeys": ["CATALOG_TREE", "CATALOG_LOCAL_SEARCH", "CATALOG_RESULT_TABLE"],
+          "steps": [
+            "选择 owner fixture 的树节点",
+            "在当前结果域逐字符输入关键词",
+            "提交搜索",
+            "等待当前 generation 结果"
+          ],
+          "businessOracle": ["请求带当前数据节点、结果域和 keyword", "旧响应不覆盖当前结果"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-003",
       "businessRequirement": "切换智能视图与品牌时，结果域、品牌候选和表格内容保持一致。",
       "cases": [
-        {"caseId": "CI-L2-003-01", "fixtureRef": "FIXTURE-SMART-VIEWS", "journey": "智能视图与品牌切换", "controlKeys": ["CATALOG_VIEW_SWITCH", "CATALOG_BRAND_SWITCH", "CATALOG_RESULT_TABLE"], "steps": ["打开品牌商品工作台", "切换 owner 返回的品牌", "切换智能视图", "读取结果域说明和表格"], "businessOracle": ["品牌切换不会扩充数据节点", "智能视图不把库存状态伪装成可售状态"]}
+        {
+          "caseId": "CI-L2-003-01",
+          "fixtureRef": "FIXTURE-SMART-VIEWS",
+          "journey": "智能视图与品牌切换",
+          "controlKeys": ["CATALOG_VIEW_SWITCH", "CATALOG_BRAND_SWITCH", "CATALOG_RESULT_TABLE"],
+          "steps": ["打开品牌商品工作台", "切换 owner 返回的品牌", "切换智能视图", "读取结果域说明和表格"],
+          "businessOracle": ["品牌切换不会扩充数据节点", "智能视图不把库存状态伪装成可售状态"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-004",
       "businessRequirement": "商品列表展示商品名、编码、SKU 和引用摘要的复合身份，而不是只显示一个字段。",
       "cases": [
-        {"caseId": "CI-L2-004-01", "fixtureRef": "FIXTURE-SURFACE-STATES", "journey": "列表复合身份", "controlKeys": ["CATALOG_RESULT_TABLE", "CATALOG_ITEM_ROW", "CATALOG_ITEM_DRAWER"], "steps": ["打开 owner fixture 的结果域", "读取商品名与编码", "读取 SKU/引用摘要", "打开详情核对编码"], "businessOracle": ["商品身份至少包含 name/code", "SKU 商品的 SKU 身份不被吞掉"]}
+        {
+          "caseId": "CI-L2-004-01",
+          "fixtureRef": "FIXTURE-SURFACE-STATES",
+          "journey": "列表复合身份",
+          "controlKeys": ["CATALOG_RESULT_TABLE", "CATALOG_ITEM_ROW", "CATALOG_ITEM_DRAWER"],
+          "steps": ["打开 owner fixture 的结果域", "读取商品名与编码", "读取 SKU/引用摘要", "打开详情核对编码"],
+          "businessOracle": ["商品身份至少包含 name/code", "SKU 商品的 SKU 身份不被吞掉"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-005",
       "businessRequirement": "品牌复制入口由组织 owner 返回的来源事实控制；缺少来源时不发明来源。",
       "cases": [
-        {"caseId": "CI-L2-005-01", "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY", "journey": "缺少总公司来源", "controlKeys": ["STORE_SCOPE", "CATALOG_COPY_OPEN", "CATALOG_SCOPE_PROBLEM"], "steps": ["进入门店商品管理", "读取 owner 返回的来源缺失状态", "检查品牌复制入口", "检查具体原因"], "businessOracle": ["来源缺失时复制入口完全不渲染", "页面不伪装成普通空结果"]},
-        {"caseId": "CI-L2-005-02", "fixtureRef": "FIXTURE-BRAND-COPY", "journey": "来源存在时显示复制入口", "controlKeys": ["CATALOG_COPY_OPEN", "CATALOG_RESULT_TABLE"], "steps": ["进入有品牌来源的门店商品管理", "确认复制入口可见", "打开复制 surface", "核对 source/target owner 事实"], "businessOracle": ["来源由 owner 唯一确定", "不提供任意来源选择器"]},
-        {"caseId": "CI-L2-005-03", "fixtureRef": "FIXTURE-BRAND-COPY", "journey": "复制入口不跨越数据节点", "controlKeys": ["CATALOG_COPY_OPEN", "CATALOG_COPY_DRAWER"], "steps": ["打开品牌复制", "读取来源、目标和选择步骤", "确认目标仍是当前门店", "不切换为项目级范围"], "businessOracle": ["复制只在门店商品 surface 开放", "品牌是候选来源而不是数据节点"]},
-        {"caseId": "CI-L2-005-04", "fixtureRef": "FIXTURE-LOCAL-COPY", "journey": "已有商品复制入口", "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_LOCAL_COPY_OPEN", "CATALOG_COPY_DRAWER"], "steps": ["打开 owner fixture 商品详情", "打开从已有商品复制配置", "读取 source item 与 target item", "确认复制控件可操作"], "businessOracle": ["本地复制在商品详情内启动", "源商品与目标商品范围一致"]}
+        {
+          "caseId": "CI-L2-005-01",
+          "fixtureRef": "FIXTURE-MISSING-HEAD-COMPANY",
+          "journey": "缺少总公司来源",
+          "controlKeys": ["STORE_SCOPE", "CATALOG_COPY_OPEN", "CATALOG_SCOPE_PROBLEM"],
+          "steps": ["进入门店商品管理", "读取 owner 返回的来源缺失状态", "检查品牌复制入口", "检查具体原因"],
+          "businessOracle": ["来源缺失时复制入口完全不渲染", "页面不伪装成普通空结果"]
+        },
+        {
+          "caseId": "CI-L2-005-02",
+          "fixtureRef": "FIXTURE-BRAND-COPY",
+          "journey": "来源存在时显示复制入口",
+          "controlKeys": ["CATALOG_COPY_OPEN", "CATALOG_RESULT_TABLE"],
+          "steps": [
+            "进入有品牌来源的门店商品管理",
+            "确认复制入口可见",
+            "打开复制 surface",
+            "核对 source/target owner 事实"
+          ],
+          "businessOracle": ["来源由 owner 唯一确定", "不提供任意来源选择器"]
+        },
+        {
+          "caseId": "CI-L2-005-03",
+          "fixtureRef": "FIXTURE-BRAND-COPY",
+          "journey": "复制入口不跨越数据节点",
+          "controlKeys": ["CATALOG_COPY_OPEN", "CATALOG_COPY_DRAWER"],
+          "steps": ["打开品牌复制", "读取来源、目标和选择步骤", "确认目标仍是当前门店", "不切换为项目级范围"],
+          "businessOracle": ["复制只在门店商品 surface 开放", "品牌是候选来源而不是数据节点"]
+        },
+        {
+          "caseId": "CI-L2-005-04",
+          "fixtureRef": "FIXTURE-LOCAL-COPY",
+          "journey": "已有商品复制入口",
+          "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_LOCAL_COPY_OPEN", "CATALOG_COPY_DRAWER"],
+          "steps": [
+            "打开 owner fixture 商品详情",
+            "打开从已有商品复制配置",
+            "读取 source item 与 target item",
+            "确认复制控件可操作"
+          ],
+          "businessOracle": ["本地复制在商品详情内启动", "源商品与目标商品范围一致"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-006",
       "businessRequirement": "商品详情在同一 Drawer 内完成查看、编辑、失败保留和焦点恢复；事实来自本轮 owner HTTP fixture。",
       "cases": [
-        {"caseId": "CI-L2-006-01", "fixtureRef": "FIXTURE-L2-OWNER-READBACK", "journey": "详情编辑与 dirty 关闭", "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_ITEM_EDIT", "CATALOG_ITEM_TABS", "CATALOG_DIRTY_CONTINUE", "CATALOG_DIRTY_DISCARD"], "steps": ["打开 owner HTTP 创建的商品", "进入编辑", "在真实输入控件输入修改", "尝试关闭并在 dirty 确认中继续/放弃"], "businessOracle": ["未保存修改不会静默丢失", "关闭后焦点回到原始商品行"]},
-        {"caseId": "CI-L2-006-02", "fixtureRef": "FIXTURE-L2-OWNER-READBACK", "journey": "详情失败保留与重试", "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_ITEM_PROBLEM", "CATALOG_ITEM_PROBLEM_RETRY", "CATALOG_ITEM_TABS"], "steps": ["打开本轮 owner fixture 商品", "触发受控详情失败或断开后恢复", "读取持久错误 surface", "点击重试并核对当前商品仍在详情中"], "businessOracle": ["错误不是空白 Drawer", "重试不清空用户当前上下文"]}
+        {
+          "caseId": "CI-L2-006-01",
+          "fixtureRef": "FIXTURE-L2-OWNER-READBACK",
+          "journey": "详情编辑与 dirty 关闭",
+          "controlKeys": [
+            "CATALOG_ITEM_DRAWER",
+            "CATALOG_ITEM_EDIT",
+            "CATALOG_ITEM_TABS",
+            "CATALOG_DIRTY_CONTINUE",
+            "CATALOG_DIRTY_DISCARD"
+          ],
+          "steps": [
+            "打开 owner HTTP 创建的商品",
+            "进入编辑",
+            "在真实输入控件输入修改",
+            "尝试关闭并在 dirty 确认中继续/放弃"
+          ],
+          "businessOracle": ["未保存修改不会静默丢失", "关闭后焦点回到原始商品行"]
+        },
+        {
+          "caseId": "CI-L2-006-02",
+          "fixtureRef": "FIXTURE-L2-OWNER-READBACK",
+          "journey": "详情失败保留与重试",
+          "controlKeys": [
+            "CATALOG_ITEM_DRAWER",
+            "CATALOG_ITEM_PROBLEM",
+            "CATALOG_ITEM_PROBLEM_RETRY",
+            "CATALOG_ITEM_TABS"
+          ],
+          "steps": [
+            "打开本轮 owner fixture 商品",
+            "触发受控详情失败或断开后恢复",
+            "读取持久错误 surface",
+            "点击重试并核对当前商品仍在详情中"
+          ],
+          "businessOracle": ["错误不是空白 Drawer", "重试不清空用户当前上下文"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-007",
       "businessRequirement": "七种商品形态按 owner manifest 决定页签、SKU 结构和不可用能力；权益壳可见但不可创建。",
       "cases": [
-        {"caseId": "CI-L2-007-01", "fixtureRef": "FIXTURE-SHAPE-MATRIX", "journey": "普通销售商品页签", "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_ITEM_TABS", "CATALOG_BASIC_TAB", "CATALOG_ORDER_OPTIONS_TAB"], "steps": ["打开普通销售商品", "逐一点击 owner 返回的可见页签", "读取基本资料和点单选项", "确认库存/BOM能力与形态一致"], "businessOracle": ["商品与销售入口边界不混淆", "页签来源于 owner manifest"]},
-        {"caseId": "CI-L2-007-02", "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU", "journey": "仅归档 SKU 的商品", "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_SKU_TAB", "CATALOG_SKU_MATRIX"], "steps": ["打开只剩归档 SKU 的商品", "进入 SKU 规格页签", "读取 HAS_SKU 派生事实", "确认归档 SKU 不提供可写矩阵"], "businessOracle": ["HAS_SKU 不把归档 SKU 当作有效 SKU", "归档事实可读且不可误编辑"]},
-        {"caseId": "CI-L2-007-03", "fixtureRef": "FIXTURE-DISABLED-SKU", "journey": "停用 SKU 的商品", "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_SKU_TAB", "CATALOG_SKU_MATRIX"], "steps": ["打开含停用 SKU 的商品", "进入 SKU 规格页签", "读取 SKU 状态", "确认商品级 SKU 事实仍存在"], "businessOracle": ["停用 SKU 仍计入 HAS_SKU", "状态标签不被当作商品停用"]},
-        {"caseId": "CI-L2-007-04", "fixtureRef": "FIXTURE-SHAPE-ADMISSION", "journey": "服务与权益形态准入", "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_INVENTORY_BOM_TAB", "CATALOG_CREATE_SHAPE"], "steps": ["打开服务与权益壳商品", "读取库存/BOM页签的可见/禁用原因", "打开新建商品形态选择", "确认权益壳只读保留"], "businessOracle": ["服务不是库存物料", "权益壳可见但本期不可创建"]},
-        {"caseId": "CI-L2-007-05", "fixtureRef": "FIXTURE-PRODUCIBLE-RETAINED", "journey": "生产能力事实", "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_PRODUCTION_PROMPTS_TAB", "CATALOG_PRODUCTION_TAGS"], "steps": ["打开带生产能力事实的商品", "进入生产提示页签", "读取处理标签入口", "确认不绑定工作站或队列"], "businessOracle": ["PRODUCIBLE 是能力事实", "商品域不越权管理生产执行队列"]},
-        {"caseId": "CI-L2-007-06", "fixtureRef": "FIXTURE-SKU-STRUCTURE-CONFLICT", "journey": "SKU 结构阻断", "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_SKU_TAB", "CATALOG_ITEM_PROBLEM"], "steps": ["打开 SKU 结构冲突 fixture", "进入 SKU 规格页签", "读取 owner 返回的结构问题", "确认输入/详情没有伪装成成功"] ,"businessOracle": ["结构冲突由 owner 判定", "前端保留具体问题而不是普通空态"]},
-        {"caseId": "CI-L2-007-07", "fixtureRef": "FIXTURE-SHAPE-MATRIX", "journey": "商品创建形态控件", "controlKeys": ["CATALOG_CREATE_OPEN", "CATALOG_CREATE_SHAPE", "CATALOG_CREATE_SUBMIT"], "steps": ["打开新建商品", "读取七形态选项", "确认权益壳禁用并显示原因", "确认编码、名称、形态控件分别可验证"], "businessOracle": ["创建形态由 owner manifest 驱动", "不把称重当作独立商品类型"]}
+        {
+          "caseId": "CI-L2-007-01",
+          "fixtureRef": "FIXTURE-SHAPE-MATRIX",
+          "journey": "普通销售商品页签",
+          "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_ITEM_TABS", "CATALOG_BASIC_TAB", "CATALOG_ORDER_OPTIONS_TAB"],
+          "steps": [
+            "打开普通销售商品",
+            "逐一点击 owner 返回的可见页签",
+            "读取基本资料和点单选项",
+            "确认库存/BOM能力与形态一致"
+          ],
+          "businessOracle": ["商品与销售入口边界不混淆", "页签来源于 owner manifest"]
+        },
+        {
+          "caseId": "CI-L2-007-02",
+          "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU",
+          "journey": "仅归档 SKU 的商品",
+          "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_SKU_TAB", "CATALOG_SKU_MATRIX"],
+          "steps": [
+            "打开只剩归档 SKU 的商品",
+            "进入 SKU 规格页签",
+            "读取 HAS_SKU 派生事实",
+            "确认归档 SKU 不提供可写矩阵"
+          ],
+          "businessOracle": ["HAS_SKU 不把归档 SKU 当作有效 SKU", "归档事实可读且不可误编辑"]
+        },
+        {
+          "caseId": "CI-L2-007-03",
+          "fixtureRef": "FIXTURE-DISABLED-SKU",
+          "journey": "停用 SKU 的商品",
+          "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_SKU_TAB", "CATALOG_SKU_MATRIX"],
+          "steps": ["打开含停用 SKU 的商品", "进入 SKU 规格页签", "读取 SKU 状态", "确认商品级 SKU 事实仍存在"],
+          "businessOracle": ["停用 SKU 仍计入 HAS_SKU", "状态标签不被当作商品停用"]
+        },
+        {
+          "caseId": "CI-L2-007-04",
+          "fixtureRef": "FIXTURE-SHAPE-ADMISSION",
+          "journey": "服务与权益形态准入",
+          "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_INVENTORY_BOM_TAB", "CATALOG_CREATE_SHAPE"],
+          "steps": [
+            "打开服务与权益壳商品",
+            "读取库存/BOM页签的可见/禁用原因",
+            "打开新建商品形态选择",
+            "确认权益壳只读保留"
+          ],
+          "businessOracle": ["服务不是库存物料", "权益壳可见但本期不可创建"]
+        },
+        {
+          "caseId": "CI-L2-007-05",
+          "fixtureRef": "FIXTURE-PRODUCIBLE-RETAINED",
+          "journey": "生产标签事实",
+          "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_PRODUCTION_PROMPTS_TAB", "CATALOG_PRODUCTION_TAGS"],
+          "steps": ["打开已设置生产标签的商品", "进入制作信息页签", "读取单一生产标签选择", "确认不绑定工作站或队列"],
+          "businessOracle": ["商品最多维护一个生产标签", "商品域不越权管理生产执行队列"]
+        },
+        {
+          "caseId": "CI-L2-007-06",
+          "fixtureRef": "FIXTURE-SKU-STRUCTURE-CONFLICT",
+          "journey": "SKU 结构阻断",
+          "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_SKU_TAB", "CATALOG_ITEM_PROBLEM"],
+          "steps": [
+            "打开 SKU 结构冲突 fixture",
+            "进入 SKU 规格页签",
+            "读取 owner 返回的结构问题",
+            "确认输入/详情没有伪装成成功"
+          ],
+          "businessOracle": ["结构冲突由 owner 判定", "前端保留具体问题而不是普通空态"]
+        },
+        {
+          "caseId": "CI-L2-007-07",
+          "fixtureRef": "FIXTURE-SHAPE-MATRIX",
+          "journey": "商品创建形态控件",
+          "controlKeys": ["CATALOG_CREATE_OPEN", "CATALOG_CREATE_SHAPE", "CATALOG_CREATE_SUBMIT"],
+          "steps": ["打开新建商品", "读取七形态选项", "确认权益壳禁用并显示原因", "确认编码、名称、形态控件分别可验证"],
+          "businessOracle": ["创建形态由 owner manifest 驱动", "不把称重当作独立商品形态"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-008",
       "businessRequirement": "商品字典与生产处理标签是不同 owner surface，入口和回填不混用。",
       "cases": [
-        {"caseId": "CI-L2-008-01", "fixtureRef": "FIXTURE-SCENARIO-CI-L2-008", "journey": "商品字典入口", "controlKeys": ["CATALOG_DICTIONARY", "CATALOG_DICTIONARY_DRAWER"], "steps": ["点击商品字典", "读取字典 kind 与当前数据节点", "打开字典控件", "关闭后确认工作台仍在原结果域"], "businessOracle": ["商品字典不包含分类载体", "字典写入只刷新当前候选"]},
-        {"caseId": "CI-L2-008-02", "fixtureRef": "FIXTURE-SCENARIO-CI-L2-008", "journey": "生产标签独立入口", "controlKeys": ["CATALOG_PRODUCTION_TAGS", "CATALOG_DICTIONARY_DRAWER"], "steps": ["点击生产标签", "读取独立标题与 owner surface", "检查与商品字典的切换边界", "关闭后确认结果域未被重置"], "businessOracle": ["生产标签归 fulfillment-production owner", "不把生产标签当作商品标签字典"]}
+        {
+          "caseId": "CI-L2-008-01",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-008",
+          "journey": "商品字典入口",
+          "controlKeys": ["CATALOG_DICTIONARY", "CATALOG_DICTIONARY_DRAWER"],
+          "steps": ["点击商品字典", "读取字典 kind 与当前数据节点", "打开字典控件", "关闭后确认工作台仍在原结果域"],
+          "businessOracle": ["商品字典不包含分类载体", "字典写入只刷新当前候选"]
+        },
+        {
+          "caseId": "CI-L2-008-02",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-008",
+          "journey": "生产标签独立入口",
+          "controlKeys": ["CATALOG_PRODUCTION_TAGS", "CATALOG_DICTIONARY_DRAWER"],
+          "steps": [
+            "点击生产标签",
+            "读取独立标题与 owner surface",
+            "检查与商品字典的切换边界",
+            "关闭后确认结果域未被重置"
+          ],
+          "businessOracle": ["生产标签归 fulfillment-production owner", "不把生产标签当作商品标签字典"]
+        }
       ]
     },
     {
@@ -99,71 +328,651 @@
       "scenarioId": "CI-L2-010",
       "businessRequirement": "商品复制、生命周期和资源引用的步骤必须隔离；预检结果不是直接执行结果。",
       "cases": [
-        {"caseId": "CI-L2-010-01", "fixtureRef": "FIXTURE-LOCAL-COPY", "journey": "本地复制向导", "controlKeys": ["CATALOG_LOCAL_COPY_OPEN", "CATALOG_COPY_SOURCE", "CATALOG_COPY_SELECTION", "CATALOG_COPY_PREFLIGHT"], "steps": ["从商品详情打开本地复制", "按 source→selection→preflight 顺序操作", "读取 BOM 映射与预览", "不跳过预检直接执行"], "businessOracle": ["复制步骤按业务顺序推进", "source 与 target 不能混淆"]},
-        {"caseId": "CI-L2-010-02", "fixtureRef": "FIXTURE-BRAND-COPY", "journey": "品牌复制与生命周期边界", "controlKeys": ["CATALOG_COPY_OPEN", "CATALOG_COPY_DRAWER", "CATALOG_ITEM_STATUS_ACTION"], "steps": ["打开品牌复制 surface", "读取闭包与引用预览", "关闭复制后读取商品生命周期动作", "确认作废/归档不物理删除引用事实"], "businessOracle": ["品牌复制不重用本地复制的来源推导", "被引用对象只允许受控停用/归档"]}
+        {
+          "caseId": "CI-L2-010-01",
+          "fixtureRef": "FIXTURE-LOCAL-COPY",
+          "journey": "本地复制向导",
+          "controlKeys": [
+            "CATALOG_LOCAL_COPY_OPEN",
+            "CATALOG_COPY_SOURCE",
+            "CATALOG_COPY_SELECTION",
+            "CATALOG_COPY_PREFLIGHT"
+          ],
+          "steps": [
+            "从商品详情打开本地复制",
+            "按 source→selection→preflight 顺序操作",
+            "读取 BOM 映射与预览",
+            "不跳过预检直接执行"
+          ],
+          "businessOracle": ["复制步骤按业务顺序推进", "source 与 target 不能混淆"]
+        },
+        {
+          "caseId": "CI-L2-010-02",
+          "fixtureRef": "FIXTURE-BRAND-COPY",
+          "journey": "品牌复制与生命周期边界",
+          "controlKeys": ["CATALOG_COPY_OPEN", "CATALOG_COPY_DRAWER", "CATALOG_ITEM_STATUS_ACTION"],
+          "steps": [
+            "打开品牌复制 surface",
+            "读取闭包与引用预览",
+            "关闭复制后读取商品生命周期动作",
+            "确认作废/归档不物理删除引用事实"
+          ],
+          "businessOracle": ["品牌复制不重用本地复制的来源推导", "被引用对象只允许受控停用/归档"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-011",
       "businessRequirement": "媒体控件按处理状态、主图顺序和引用保护呈现真实操作结果。",
       "cases": [
-        {"caseId": "CI-L2-011-01", "fixtureRef": "FIXTURE-ASSET-PROCESSING", "journey": "媒体失败重试", "controlKeys": ["CATALOG_MEDIA_EDITOR", "CATALOG_MEDIA_UPLOAD", "CATALOG_MEDIA_RETRY", "CATALOG_MEDIA_STATUS"], "steps": ["打开媒体编辑器", "读取 processing/failed 状态", "点击失败资产重试", "确认状态和错误 surface 更新"], "businessOracle": ["失败状态不是可用资产", "重试保留原媒体上下文"]},
-        {"caseId": "CI-L2-011-02", "fixtureRef": "FIXTURE-ASSET-PROCESSING", "journey": "主图与引用保护", "controlKeys": ["CATALOG_MEDIA_LIST", "CATALOG_MEDIA_MOVE", "CATALOG_MEDIA_PRIMARY", "CATALOG_MEDIA_REMOVE"], "steps": ["读取多媒体列表", "执行排序或设为主图", "尝试移除被引用资产", "确认 owner 保护结果"], "businessOracle": ["主图由顺序事实确定", "被引用媒体不能被静默删除"]}
+        {
+          "caseId": "CI-L2-011-01",
+          "fixtureRef": "FIXTURE-ASSET-PROCESSING",
+          "journey": "媒体失败重试",
+          "controlKeys": [
+            "CATALOG_MEDIA_EDITOR",
+            "CATALOG_MEDIA_UPLOAD",
+            "CATALOG_MEDIA_RETRY",
+            "CATALOG_MEDIA_STATUS"
+          ],
+          "steps": ["打开媒体编辑器", "读取 processing/failed 状态", "点击失败资产重试", "确认状态和错误 surface 更新"],
+          "businessOracle": ["失败状态不是可用资产", "重试保留原媒体上下文"]
+        },
+        {
+          "caseId": "CI-L2-011-02",
+          "fixtureRef": "FIXTURE-ASSET-PROCESSING",
+          "journey": "主图与引用保护",
+          "controlKeys": ["CATALOG_MEDIA_LIST", "CATALOG_MEDIA_MOVE", "CATALOG_MEDIA_PRIMARY", "CATALOG_MEDIA_REMOVE"],
+          "steps": ["读取多媒体列表", "执行排序或设为主图", "尝试移除被引用资产", "确认 owner 保护结果"],
+          "businessOracle": ["主图由顺序事实确定", "被引用媒体不能被静默删除"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-012",
       "businessRequirement": "库存列表的状态分段、需处理视图和三周期变化只表达库存事实，不改写菜单可售。",
       "cases": [
-        {"caseId": "CI-L2-012-01", "fixtureRef": "FIXTURE-SMART-VIEWS", "journey": "库存状态视图", "controlKeys": ["INVENTORY_STOCK_VIEW", "INVENTORY_RESULT_TABLE", "INVENTORY_FILTER_SUBMIT", "INVENTORY_FILTER_RESET"], "steps": ["进入库存状态", "逐一切换全部/需处理/低库存/无库存/负库存/未知", "读取数量与结果表", "提交并重置筛选"], "businessOracle": ["状态分段来自 owner counts", "筛选重置不遗留旧 cursor"]},
-        {"caseId": "CI-L2-012-02", "fixtureRef": "FIXTURE-COUNT-INCREASE-ADJUST", "journey": "库存列表三周期变化", "controlKeys": ["INVENTORY_RESULT_TABLE", "INVENTORY_TARGET_ROW", "INVENTORY_TARGET_DRAWER", "INVENTORY_CHANGES_ZONE"], "steps": ["打开库存对象", "读取今日/7天/30天变化列", "进入详情变化区", "核对对象、单位和变化事实"], "businessOracle": ["三周期是变化事实而不是库存余额别名", "库存状态不推导可售状态"]}
+        {
+          "caseId": "CI-L2-012-01",
+          "fixtureRef": "FIXTURE-SMART-VIEWS",
+          "journey": "库存状态视图",
+          "controlKeys": [
+            "INVENTORY_STOCK_VIEW",
+            "INVENTORY_RESULT_TABLE",
+            "INVENTORY_FILTER_SUBMIT",
+            "INVENTORY_FILTER_RESET"
+          ],
+          "steps": [
+            "进入库存状态",
+            "逐一切换全部/需处理/低库存/无库存/负库存/未知",
+            "读取数量与结果表",
+            "提交并重置筛选"
+          ],
+          "businessOracle": ["状态分段来自 owner counts", "筛选重置不遗留旧 cursor"]
+        },
+        {
+          "caseId": "CI-L2-012-02",
+          "fixtureRef": "FIXTURE-COUNT-INCREASE-ADJUST",
+          "journey": "库存列表三周期变化",
+          "controlKeys": [
+            "INVENTORY_RESULT_TABLE",
+            "INVENTORY_TARGET_ROW",
+            "INVENTORY_TARGET_DRAWER",
+            "INVENTORY_CHANGES_ZONE"
+          ],
+          "steps": ["打开库存对象", "读取今日/7天/30天变化列", "进入详情变化区", "核对对象、单位和变化事实"],
+          "businessOracle": ["三周期是变化事实而不是库存余额别名", "库存状态不推导可售状态"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-013",
       "businessRequirement": "库存详情六个读区按需加载；无高级诊断权限时整区与请求都不存在。",
       "cases": [
-        {"caseId": "CI-L2-013-01", "fixtureRef": "FIXTURE-ADVANCED-DIAGNOSTICS", "journey": "六区按需加载", "controlKeys": ["INVENTORY_TARGET_DRAWER", "INVENTORY_CURRENT_ZONE", "INVENTORY_CHANGES_ZONE", "INVENTORY_HISTORY_ZONE", "INVENTORY_REFERENCES_ZONE", "INVENTORY_LEDGER_ZONE"], "steps": ["打开库存对象详情", "逐一展开当前、变化、历史、引用、流水五区", "确认每区在展开时加载", "读取各区结果或空态"], "businessOracle": ["详情不是一次性请求所有区", "流水是事实、余额是读模型"]},
-        {"caseId": "CI-L2-013-02", "fixtureRef": "FIXTURE-ADVANCED-DIAGNOSTICS", "journey": "诊断权限整区 absence", "controlKeys": ["INVENTORY_TARGET_DRAWER", "INVENTORY_DIAGNOSTICS_ZONE"], "steps": ["打开无诊断权限的库存对象", "检查高级诊断区不存在", "记录网络请求不存在", "确认其他五区仍可用"], "businessOracle": ["无权限不渲染诊断区", "无权限不发诊断 HTTP 请求"]}
+        {
+          "caseId": "CI-L2-013-01",
+          "fixtureRef": "FIXTURE-ADVANCED-DIAGNOSTICS",
+          "journey": "六区按需加载",
+          "controlKeys": [
+            "INVENTORY_TARGET_DRAWER",
+            "INVENTORY_CURRENT_ZONE",
+            "INVENTORY_CHANGES_ZONE",
+            "INVENTORY_HISTORY_ZONE",
+            "INVENTORY_REFERENCES_ZONE",
+            "INVENTORY_LEDGER_ZONE"
+          ],
+          "steps": [
+            "打开库存对象详情",
+            "逐一展开当前、变化、历史、引用、流水五区",
+            "确认每区在展开时加载",
+            "读取各区结果或空态"
+          ],
+          "businessOracle": ["详情不是一次性请求所有区", "流水是事实、余额是读模型"]
+        },
+        {
+          "caseId": "CI-L2-013-02",
+          "fixtureRef": "FIXTURE-ADVANCED-DIAGNOSTICS",
+          "journey": "诊断权限整区 absence",
+          "controlKeys": ["INVENTORY_TARGET_DRAWER", "INVENTORY_DIAGNOSTICS_ZONE"],
+          "steps": ["打开无诊断权限的库存对象", "检查高级诊断区不存在", "记录网络请求不存在", "确认其他五区仍可用"],
+          "businessOracle": ["无权限不渲染诊断区", "无权限不发诊断 HTTP 请求"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-014",
       "businessRequirement": "库存盘点、增加、调整和快捷配置在真实控件中展示单位、预览、验证、结果和流水边界。",
       "cases": [
-        {"caseId": "CI-L2-014-01", "fixtureRef": "FIXTURE-COUNT-INCREASE-ADJUST", "journey": "四类库存动作控件", "controlKeys": ["INVENTORY_ACTION_COUNT", "INVENTORY_ACTION_INCREASE", "INVENTORY_ACTION_ADJUST", "INVENTORY_ACTION_CONFIGURE", "INVENTORY_ACTION_MODAL"], "steps": ["从详情依次打开盘点、增加、调整、快捷配置", "读取数量/单位/原因/备注控件", "输入合法值观察 before→after 预览", "提交后读取结果面"], "businessOracle": ["四类动作使用不同意图", "成功结果包含 before/change/after/ledger/version"]},
-        {"caseId": "CI-L2-014-02", "fixtureRef": "FIXTURE-CONFIG-ONLY", "journey": "负库存与单位配置", "controlKeys": ["INVENTORY_ACTION_ADJUST", "INVENTORY_NEGATIVE_PREVIEW", "INVENTORY_ACTION_SUBMIT", "INVENTORY_ACTION_CONFIGURE", "INVENTORY_CONFIG_CONVERSION"], "steps": ["打开人工调整", "输入会形成负库存的数量", "读取阻断/预警和保留输入", "打开快捷配置并验证正换算"], "businessOracle": ["禁止负库存时不能提交", "盘点单位换算为正数且不改余额事实"]}
+        {
+          "caseId": "CI-L2-014-01",
+          "fixtureRef": "FIXTURE-COUNT-INCREASE-ADJUST",
+          "journey": "四类库存动作控件",
+          "controlKeys": [
+            "INVENTORY_ACTION_COUNT",
+            "INVENTORY_ACTION_INCREASE",
+            "INVENTORY_ACTION_ADJUST",
+            "INVENTORY_ACTION_CONFIGURE",
+            "INVENTORY_ACTION_MODAL"
+          ],
+          "steps": [
+            "从详情依次打开盘点、增加、调整、快捷配置",
+            "读取数量/单位/原因/备注控件",
+            "输入合法值观察 before→after 预览",
+            "提交后读取结果面"
+          ],
+          "businessOracle": ["四类动作使用不同意图", "成功结果包含 before/change/after/ledger/version"]
+        },
+        {
+          "caseId": "CI-L2-014-02",
+          "fixtureRef": "FIXTURE-CONFIG-ONLY",
+          "journey": "负库存与单位配置",
+          "controlKeys": [
+            "INVENTORY_ACTION_ADJUST",
+            "INVENTORY_NEGATIVE_PREVIEW",
+            "INVENTORY_ACTION_SUBMIT",
+            "INVENTORY_ACTION_CONFIGURE",
+            "INVENTORY_CONFIG_CONVERSION"
+          ],
+          "steps": ["打开人工调整", "输入会形成负库存的数量", "读取阻断/预警和保留输入", "打开快捷配置并验证正换算"],
+          "businessOracle": ["禁止负库存时不能提交", "盘点单位换算为正数且不改余额事实"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-015",
       "businessRequirement": "复制预检使用固定 source/target 版本和结构化原因；漂移后回到预检，不执行半套写入。",
       "cases": [
-        {"caseId": "CI-L2-015-01", "fixtureRef": "FIXTURE-STALE-SOURCE", "journey": "来源版本漂移", "controlKeys": ["CATALOG_COPY_PREFLIGHT", "CATALOG_COPY_EXECUTE", "CATALOG_COPY_PROBLEM"], "steps": ["打开复制向导", "完成 source/selection/preflight", "在执行前让来源版本漂移", "读取 stale 问题并回到预检"], "businessOracle": ["stale 不产生写入", "错误保留具体来源版本问题"]},
-        {"caseId": "CI-L2-015-02", "fixtureRef": "FIXTURE-UNIT-GRAM-EACH", "journey": "单位/兼容矩阵阻断", "controlKeys": ["CATALOG_COPY_PREFLIGHT", "CATALOG_COMPATIBILITY_FACTS", "CATALOG_COPY_PROBLEM"], "steps": ["选择存在单位冲突的复制配置", "读取兼容事实与原因", "确认执行按钮被阻断或执行返回 typed problem", "确认输入选择仍保留"], "businessOracle": ["GRAM/EACH 不通过猜测映射", "兼容事实由 owner 返回"]}
+        {
+          "caseId": "CI-L2-015-01",
+          "fixtureRef": "FIXTURE-STALE-SOURCE",
+          "journey": "来源版本漂移",
+          "controlKeys": ["CATALOG_COPY_PREFLIGHT", "CATALOG_COPY_EXECUTE", "CATALOG_COPY_PROBLEM"],
+          "steps": [
+            "打开复制向导",
+            "完成 source/selection/preflight",
+            "在执行前让来源版本漂移",
+            "读取 stale 问题并回到预检"
+          ],
+          "businessOracle": ["stale 不产生写入", "错误保留具体来源版本问题"]
+        },
+        {
+          "caseId": "CI-L2-015-02",
+          "fixtureRef": "FIXTURE-UNIT-GRAM-EACH",
+          "journey": "单位/兼容矩阵阻断",
+          "controlKeys": ["CATALOG_COPY_PREFLIGHT", "CATALOG_COMPATIBILITY_FACTS", "CATALOG_COPY_PROBLEM"],
+          "steps": [
+            "选择存在单位冲突的复制配置",
+            "读取兼容事实与原因",
+            "确认执行按钮被阻断或执行返回 typed problem",
+            "确认输入选择仍保留"
+          ],
+          "businessOracle": ["GRAM/EACH 不通过猜测映射", "兼容事实由 owner 返回"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-016",
       "businessRequirement": "查询 generation、分页和错误恢复保持当前筛选上下文，不把过期响应渲染到当前结果。",
       "cases": [
-        {"caseId": "CI-L2-016-01", "fixtureRef": "FIXTURE-WORKBENCH-QUERY", "journey": "商品列表分页 generation", "controlKeys": ["CATALOG_LOCAL_SEARCH", "CATALOG_RESULT_TABLE", "CATALOG_PAGINATION"], "steps": ["逐字符提交商品查询", "进入下一页", "返回上一页", "读取当前结果域和筛选条件"], "businessOracle": ["cursor 栈按页推进/回退", "页面不显示旧 generation 行"]},
-        {"caseId": "CI-L2-016-02", "fixtureRef": "FIXTURE-SURFACE-STATES", "journey": "错误恢复保持筛选", "controlKeys": ["CATALOG_LOCAL_SEARCH", "CATALOG_WORKBENCH_PROBLEM", "CATALOG_WORKBENCH_RETRY", "CATALOG_RESULT_TABLE"], "steps": ["提交带关键词的结果查询", "触发受控错误", "读取错误 banner", "重试并核对关键词仍保留"], "businessOracle": ["错误不伪装成空结果", "重试不清空结果域筛选"]}
+        {
+          "caseId": "CI-L2-016-01",
+          "fixtureRef": "FIXTURE-WORKBENCH-QUERY",
+          "journey": "商品列表分页 generation",
+          "controlKeys": ["CATALOG_LOCAL_SEARCH", "CATALOG_RESULT_TABLE", "CATALOG_PAGINATION"],
+          "steps": ["逐字符提交商品查询", "进入下一页", "返回上一页", "读取当前结果域和筛选条件"],
+          "businessOracle": ["cursor 栈按页推进/回退", "页面不显示旧 generation 行"]
+        },
+        {
+          "caseId": "CI-L2-016-02",
+          "fixtureRef": "FIXTURE-SURFACE-STATES",
+          "journey": "错误恢复保持筛选",
+          "controlKeys": [
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_WORKBENCH_PROBLEM",
+            "CATALOG_WORKBENCH_RETRY",
+            "CATALOG_RESULT_TABLE"
+          ],
+          "steps": ["提交带关键词的结果查询", "触发受控错误", "读取错误 banner", "重试并核对关键词仍保留"],
+          "businessOracle": ["错误不伪装成空结果", "重试不清空结果域筛选"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-017",
       "businessRequirement": "Drawer、Modal 和错误 surface 使用 foundation 的 overlay lock 与焦点恢复；失败可重试且上下文不丢。",
       "cases": [
-        {"caseId": "CI-L2-017-01", "fixtureRef": "FIXTURE-SURFACE-STATES", "journey": "商品 Drawer 焦点恢复", "controlKeys": ["CATALOG_ITEM_ROW", "CATALOG_ITEM_DRAWER", "CATALOG_ITEM_PROBLEM", "CATALOG_ITEM_PROBLEM_RETRY"], "steps": ["从结果行打开商品详情", "关闭 Drawer", "确认焦点回到原行", "重新打开并读取错误/重试控件"], "businessOracle": ["关闭后的键盘上下文可继续", "错误 surface 不滑出空壳"]},
-        {"caseId": "CI-L2-017-02", "fixtureRef": "FIXTURE-SURFACE-STATES", "journey": "库存动作 Modal lock", "controlKeys": ["INVENTORY_TARGET_DRAWER", "INVENTORY_ACTION_ADJUST", "INVENTORY_ACTION_MODAL", "INVENTORY_ACTION_SUBMIT", "INVENTORY_ACTION_RESULT"], "steps": ["打开库存调整", "输入数量和受控原因", "提交期间尝试关闭/点击遮罩", "完成后读取结果并恢复详情焦点"], "businessOracle": ["提交期间 overlay 不被误关闭", "结果面完成后才允许返回详情"]}
+        {
+          "caseId": "CI-L2-017-01",
+          "fixtureRef": "FIXTURE-SURFACE-STATES",
+          "journey": "商品 Drawer 焦点恢复",
+          "controlKeys": [
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_DRAWER",
+            "CATALOG_ITEM_PROBLEM",
+            "CATALOG_ITEM_PROBLEM_RETRY"
+          ],
+          "steps": ["从结果行打开商品详情", "关闭 Drawer", "确认焦点回到原行", "重新打开并读取错误/重试控件"],
+          "businessOracle": ["关闭后的键盘上下文可继续", "错误 surface 不滑出空壳"]
+        },
+        {
+          "caseId": "CI-L2-017-02",
+          "fixtureRef": "FIXTURE-SURFACE-STATES",
+          "journey": "库存动作 Modal lock",
+          "controlKeys": [
+            "INVENTORY_TARGET_DRAWER",
+            "INVENTORY_ACTION_ADJUST",
+            "INVENTORY_ACTION_MODAL",
+            "INVENTORY_ACTION_SUBMIT",
+            "INVENTORY_ACTION_RESULT"
+          ],
+          "steps": ["打开库存调整", "输入数量和受控原因", "提交期间尝试关闭/点击遮罩", "完成后读取结果并恢复详情焦点"],
+          "businessOracle": ["提交期间 overlay 不被误关闭", "结果面完成后才允许返回详情"]
+        }
       ]
     },
     {
       "scenarioId": "CI-L2-018",
       "businessRequirement": "越权或缺少范围时 fail closed：不渲染跨范围对象，也不把权限错误写成普通空列表。",
       "cases": [
-        {"caseId": "CI-L2-018-01", "fixtureRef": "FIXTURE-SCENARIO-CI-L2-018", "journey": "范围越权 absence", "controlKeys": ["CATALOG_SCOPE_FORBIDDEN", "INVENTORY_SCOPE_FORBIDDEN", "CATALOG_RESULT_TABLE", "INVENTORY_RESULT_TABLE"], "steps": ["进入 owner 明确禁止的数据范围", "读取范围错误 banner", "确认商品/库存对象表不渲染", "点击重试或切换回合法范围"], "businessOracle": ["越权不展示其他范围对象", "SCOPE_FORBIDDEN 与普通空结果可区分"]}
+        {
+          "caseId": "CI-L2-018-01",
+          "fixtureRef": "FIXTURE-SCENARIO-CI-L2-018",
+          "journey": "范围越权 absence",
+          "controlKeys": [
+            "CATALOG_SCOPE_FORBIDDEN",
+            "INVENTORY_SCOPE_FORBIDDEN",
+            "CATALOG_RESULT_TABLE",
+            "INVENTORY_RESULT_TABLE"
+          ],
+          "steps": [
+            "进入 owner 明确禁止的数据范围",
+            "读取范围错误 banner",
+            "确认商品/库存对象表不渲染",
+            "点击重试或切换回合法范围"
+          ],
+          "businessOracle": ["越权不展示其他范围对象", "SCOPE_FORBIDDEN 与普通空结果可区分"]
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-019",
+      "executionSuite": "CATALOG_LIBRARY_WORKBENCH",
+      "businessRequirement": "商品查找以左侧树形结果域（分类或生产标签）和当前结果域为准，并在失败后恢复原筛选。",
+      "cases": [
+        {
+          "caseId": "catalog-find-success",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-FIND",
+          "journey": "查找成功",
+          "controlKeys": ["CATALOG_TREE", "CATALOG_TREE_SEARCH", "CATALOG_LOCAL_SEARCH", "CATALOG_RESULT_TABLE"],
+          "steps": ["选择生产标签树节点", "在当前结果域搜索商品编码", "读取包含商品形态与生产信息的结果行"],
+          "businessOracle": ["请求只带当前生产标签结果域", "结果行显示商品名、编码、分类、标签和十列业务事实"]
+        },
+        {
+          "caseId": "catalog-find-failure",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-FIND",
+          "journey": "查找失败",
+          "controlKeys": ["CATALOG_TREE", "CATALOG_LOCAL_SEARCH", "CATALOG_RESULT_TABLE", "CATALOG_WORKBENCH_PROBLEM"],
+          "steps": ["保留生产标签和关键词", "触发受控查询失败", "读取失败提示", "确认结果不被伪装成空列表"],
+          "businessOracle": ["失败提示使用业务语言", "生产标签和关键词仍保留"]
+        },
+        {
+          "caseId": "catalog-find-recovery",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-FIND",
+          "journey": "查找恢复",
+          "controlKeys": ["CATALOG_TREE", "CATALOG_LOCAL_SEARCH", "CATALOG_WORKBENCH_RETRY", "CATALOG_RESULT_TABLE"],
+          "steps": ["点击重试", "读取恢复后的生产标签结果域", "展开一个有规格的父商品", "读取每个 SKU 独立子行"],
+          "businessOracle": ["重试不清空当前生产标签结果域", "父商品与 SKU 子行共享十列表头且父选择不包含子 SKU"]
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-020",
+      "executionSuite": "CATALOG_LIBRARY_WORKBENCH",
+      "businessRequirement": "商品查看是纯业务详情，不把禁用表单当作详情；商品形态和空价格按业务语义呈现。",
+      "cases": [
+        {
+          "caseId": "catalog-view-success",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-VIEW",
+          "journey": "查看成功",
+          "controlKeys": ["CATALOG_ITEM_ROW", "CATALOG_ITEM_VIEW_DRAWER", "CATALOG_ITEM_TABS"],
+          "steps": ["从列表打开商品", "读取首屏摘要", "查看规格、制作信息和库存与 BOM", "核对商品形态与价格单位"],
+          "businessOracle": ["详情没有禁用输入控件", "合法未设置价格显示为未设置而非缺陷"]
+        },
+        {
+          "caseId": "catalog-view-failure",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-VIEW",
+          "journey": "查看失败",
+          "controlKeys": ["CATALOG_ITEM_VIEW_DRAWER", "CATALOG_ITEM_PROBLEM", "CATALOG_ITEM_PROBLEM_RETRY"],
+          "steps": ["触发详情读取失败", "读取持久错误面", "确认没有展示半套事实"],
+          "businessOracle": ["错误面不暴露内部字段或技术编码", "失败不伪造商品详情"]
+        },
+        {
+          "caseId": "catalog-view-recovery",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-VIEW",
+          "journey": "查看恢复",
+          "controlKeys": ["CATALOG_ITEM_VIEW_DRAWER", "CATALOG_ITEM_PROBLEM_RETRY", "CATALOG_ITEM_TABS"],
+          "steps": ["点击重试", "读取完整业务详情", "关闭详情抽屉", "确认焦点回到原商品行"],
+          "businessOracle": ["重试恢复原商品上下文", "关闭后焦点位置可继续操作"]
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-021",
+      "executionSuite": "CATALOG_LIBRARY_WORKBENCH",
+      "businessRequirement": "新建商品只收集最小身份事实，分类使用树形选择，创建失败后可修正并继续。",
+      "cases": [
+        {
+          "caseId": "catalog-create-success",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-CREATE",
+          "journey": "新建成功",
+          "controlKeys": [
+            "CATALOG_CREATE_OPEN",
+            "CATALOG_CREATE_SHAPE",
+            "CATALOG_CREATE_SUBMIT",
+            "CATALOG_ITEM_EDIT_DRAWER"
+          ],
+          "steps": [
+            "打开新建商品",
+            "填写编码和名称",
+            "在分类树中选择父子分类",
+            "选择商品形态并创建",
+            "读取新建商品编辑面"
+          ],
+          "businessOracle": ["分类选择保留层级路径", "创建成功后进入编辑而不是伪装成已完成详情"]
+        },
+        {
+          "caseId": "catalog-create-failure",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-CREATE",
+          "journey": "新建失败",
+          "controlKeys": ["CATALOG_CREATE_OPEN", "CATALOG_CREATE_SHAPE", "CATALOG_CREATE_SUBMIT"],
+          "steps": ["提交冲突的编码", "读取失败提示", "确认输入内容仍在表单中"],
+          "businessOracle": ["失败提示定位到业务字段", "失败后事实未创建"]
+        },
+        {
+          "caseId": "catalog-create-recovery",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-CREATE",
+          "journey": "新建恢复",
+          "controlKeys": [
+            "CATALOG_CREATE_OPEN",
+            "CATALOG_CREATE_CATEGORY",
+            "CATALOG_CREATE_SUBMIT",
+            "CATALOG_ITEM_EDIT_DRAWER"
+          ],
+          "steps": ["修正编码", "保留分类树选择", "重新提交", "读取商品编辑区段"],
+          "businessOracle": ["恢复不丢失分类选择", "成功 readback 后商品编码与形态一致"]
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-022",
+      "executionSuite": "CATALOG_LIBRARY_WORKBENCH",
+      "businessRequirement": "商品编辑是整单草稿，单一生产标签可设置/清除，意外关闭或刷新可恢复草稿与区段。",
+      "cases": [
+        {
+          "caseId": "catalog-edit-success",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-EDIT",
+          "journey": "编辑成功",
+          "controlKeys": [
+            "CATALOG_ITEM_VIEW_DRAWER",
+            "CATALOG_ITEM_EDIT_DRAWER",
+            "CATALOG_ITEM_EDIT",
+            "CATALOG_ITEM_TABS",
+            "CATALOG_ITEM_PRODUCTION_TAGS",
+            "CATALOG_ITEM_SAVE"
+          ],
+          "steps": ["进入编辑", "设置一个生产标签", "修改制作信息与商品属性", "整单保存", "读取保存后的商品事实"],
+          "businessOracle": ["商品最多一个生产标签", "保存 readback 只返回单一 productionTagRef"]
+        },
+        {
+          "caseId": "catalog-edit-failure",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-EDIT",
+          "journey": "编辑失败",
+          "controlKeys": [
+            "CATALOG_ITEM_VIEW_DRAWER",
+            "CATALOG_ITEM_EDIT_DRAWER",
+            "CATALOG_ITEM_EDIT",
+            "CATALOG_ITEM_SAVE",
+            "CATALOG_ITEM_PROBLEM"
+          ],
+          "steps": ["提交版本已变化的草稿", "读取具体失败提示", "确认商品版本与生产标签未改变"],
+          "businessOracle": ["版本冲突不自动覆盖", "失败后保留当前草稿供继续编辑"]
+        },
+        {
+          "caseId": "catalog-edit-recovery",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-EDIT",
+          "journey": "草稿恢复",
+          "controlKeys": [
+            "CATALOG_ITEM_VIEW_DRAWER",
+            "CATALOG_ITEM_EDIT_DRAWER",
+            "CATALOG_ITEM_EDIT",
+            "CATALOG_DIRTY_CONTINUE",
+            "CATALOG_DIRTY_DISCARD"
+          ],
+          "steps": [
+            "修改商品并刷新页面",
+            "重新打开同一商品",
+            "选择继续编辑",
+            "核对原区段和字段值",
+            "另一次选择放弃上次内容"
+          ],
+          "businessOracle": ["恢复按商品编码+版本匹配", "放弃后回到服务器事实且不残留上次草稿"]
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-023",
+      "executionSuite": "CATALOG_LIBRARY_WORKBENCH",
+      "businessRequirement": "商品配置抽屉按字典复杂度提供六库导航、树形父子级联与返回编辑。",
+      "cases": [
+        {
+          "caseId": "catalog-config-success",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-CONFIG",
+          "journey": "配置成功",
+          "controlKeys": [
+            "CATALOG_ITEM_VIEW_DRAWER",
+            "CATALOG_ITEM_EDIT_DRAWER",
+            "CATALOG_ITEM_PRODUCTION_TAG_MANAGE",
+            "CATALOG_DICTIONARY_DRAWER",
+            "CATALOG_CONFIG_PRODUCTION_TAGS",
+            "CATALOG_CONFIG_SEARCH",
+            "CATALOG_CONFIG_STATUS",
+            "CATALOG_DICTIONARY_CODE",
+            "CATALOG_DICTIONARY_CREATE"
+          ],
+          "steps": [
+            "打开商品编辑",
+            "从制作信息进入商品元数据",
+            "切换计量单位、规格维度和生产标签",
+            "按名称或编码搜索并按状态筛选生产标签",
+            "新建一个可用条目",
+            "返回商品编辑"
+          ],
+          "businessOracle": [
+            "六库在同一配置抽屉内切换",
+            "搜索和状态筛选返回完整的当前库结果",
+            "配置完成后候选立即可用且草稿不丢"
+          ]
+        },
+        {
+          "caseId": "catalog-config-failure",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-CONFIG",
+          "journey": "配置失败",
+          "controlKeys": [
+            "CATALOG_ITEM_VIEW_DRAWER",
+            "CATALOG_ITEM_EDIT_DRAWER",
+            "CATALOG_ITEM_PRODUCTION_TAG_MANAGE",
+            "CATALOG_DICTIONARY_DRAWER",
+            "CATALOG_CONFIG_PRODUCTION_TAGS",
+            "CATALOG_DICTIONARY_CODE",
+            "CATALOG_DICTIONARY_CREATE"
+          ],
+          "steps": [
+            "打开商品编辑并进入商品元数据",
+            "提交重复编码或非法精度",
+            "读取字段级错误",
+            "确认商品草稿与返回入口仍在"
+          ],
+          "businessOracle": ["配置失败不清空商品编辑草稿", "错误只定位到当前配置任务"]
+        },
+        {
+          "caseId": "catalog-config-recovery",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-CONFIG",
+          "journey": "配置恢复",
+          "controlKeys": [
+            "CATALOG_ITEM_VIEW_DRAWER",
+            "CATALOG_ITEM_EDIT_DRAWER",
+            "CATALOG_ITEM_PRODUCTION_TAG_MANAGE",
+            "CATALOG_DICTIONARY_DRAWER",
+            "CATALOG_CONFIG_PRODUCTION_TAGS",
+            "CATALOG_DICTIONARY_CODE",
+            "CATALOG_DICTIONARY_CREATE"
+          ],
+          "steps": [
+            "打开商品编辑并进入商品元数据",
+            "修正配置条目",
+            "保存并关闭配置",
+            "直接继续编辑原区段",
+            "读取原区段、触发控件焦点和新候选"
+          ],
+          "businessOracle": ["关闭维护面板后父编辑保持打开且草稿不丢", "焦点回到原维护控件，停用条目不进入新候选但既有绑定仍可见"]
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-024",
+      "executionSuite": "CATALOG_LIBRARY_WORKBENCH",
+      "businessRequirement": "批量操作使用提交前摘要、提交中进度和逐项结果三态，部分失败不伪装成整批失败。",
+      "cases": [
+        {
+          "caseId": "catalog-batch-success",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-BATCH",
+          "journey": "批量全成功",
+          "controlKeys": ["CATALOG_RESULT_TABLE", "CATALOG_BATCH_OPEN", "CATALOG_BATCH_MODAL", "CATALOG_BATCH_OUTCOME"],
+          "steps": ["选择多个父商品", "查看提交前影响摘要", "提交批量操作", "读取成功数量和逐项结果"],
+          "businessOracle": ["SKU 子行不可被批量选中", "结果按父商品逐项 readback"]
+        },
+        {
+          "caseId": "catalog-batch-failure",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-BATCH",
+          "journey": "批量部分失败",
+          "controlKeys": ["CATALOG_BATCH_MODAL", "CATALOG_BATCH_PROGRESS", "CATALOG_BATCH_OUTCOME"],
+          "steps": [
+            "用真实 owner 命令改变一个已选商品的版本",
+            "提交仍持有旧版本的批量操作",
+            "读取成功项与失败项",
+            "读取失败原因",
+            "确认成功项已从待选集合移除"
+          ],
+          "businessOracle": ["逐项尽力而非整批原子", "未知失败不降级为普通业务失败"]
+        },
+        {
+          "caseId": "catalog-batch-recovery",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-BATCH",
+          "journey": "批量结果恢复",
+          "controlKeys": ["CATALOG_BATCH_OUTCOME", "CATALOG_BATCH_REFRESH_ERROR", "CATALOG_RESULT_TABLE"],
+          "steps": ["让列表刷新失败", "读取业务结果仍保留", "重试刷新", "核对结果域与逐项回执"],
+          "businessOracle": ["刷新失败与业务执行结果分开", "重试不重复执行批量命令"]
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-025",
+      "executionSuite": "CATALOG_LIBRARY_WORKBENCH",
+      "businessRequirement": "复制向导分步完成来源、选择、预检和执行，版本漂移回到预检且不产生半套写入。",
+      "cases": [
+        {
+          "caseId": "catalog-copy-success",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-COPY",
+          "journey": "复制成功",
+          "controlKeys": ["CATALOG_COPY_OPEN", "CATALOG_COPY_DRAWER", "CATALOG_COPY_PREFLIGHT", "CATALOG_COPY_EXECUTE"],
+          "steps": ["选择来源商品", "选择要复制的事实族", "完成预检", "执行复制", "读取目标商品完整事实"],
+          "businessOracle": ["复制步骤顺序固定", "预检 token 与所有输入绑定"]
+        },
+        {
+          "caseId": "catalog-copy-failure",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-COPY",
+          "journey": "复制失败",
+          "controlKeys": ["CATALOG_COPY_DRAWER", "CATALOG_COPY_PREFLIGHT", "CATALOG_COPY_PREFLIGHT_PROBLEM"],
+          "steps": [
+            "完成检查影响",
+            "用真实 owner 命令变更目标版本",
+            "使用过期检查结果执行",
+            "读取版本漂移原因",
+            "确认目标商品未写入半套配置"
+          ],
+          "businessOracle": ["失败原因可理解", "版本漂移后写入数为零"]
+        },
+        {
+          "caseId": "catalog-copy-recovery",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-COPY",
+          "journey": "复制恢复",
+          "controlKeys": [
+            "CATALOG_COPY_DRAWER",
+            "CATALOG_COPY_PREFLIGHT",
+            "CATALOG_COPY_PREFLIGHT_PROBLEM",
+            "CATALOG_COPY_EXECUTE",
+            "CATALOG_COPY_RESULT"
+          ],
+          "steps": [
+            "完成检查影响",
+            "用真实 owner 命令变更目标版本并观察旧检查失效",
+            "重新检查",
+            "执行复制",
+            "读取逐项结果与引用关系"
+          ],
+          "businessOracle": ["恢复不会复用旧检查结果", "成功后来源与目标范围、引用关系可读"]
+        }
+      ]
+    },
+    {
+      "scenarioId": "CI-L2-026",
+      "executionSuite": "CATALOG_LIBRARY_WORKBENCH",
+      "businessRequirement": "生命周期治理按 owner 影响事实控制动作，引用阻断时给出业务原因且不修改事实。",
+      "cases": [
+        {
+          "caseId": "catalog-governance-success",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-GOVERNANCE",
+          "journey": "治理成功",
+          "controlKeys": ["CATALOG_ITEM_VIEW_DRAWER", "CATALOG_ITEM_STATUS_ACTION", "CATALOG_LIFECYCLE_CONFIRM"],
+          "steps": ["打开商品生命周期动作", "读取影响摘要", "确认停用或归档", "读取最新状态"],
+          "businessOracle": ["动作来自 owner actionAvailability", "成功后状态和版本 readback 一致"]
+        },
+        {
+          "caseId": "catalog-governance-failure",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-GOVERNANCE",
+          "journey": "治理被阻断",
+          "controlKeys": ["CATALOG_ITEM_VIEW_DRAWER", "CATALOG_ITEM_STATUS_ACTION", "CATALOG_ITEM_VOID_BLOCK_REASONS"],
+          "steps": ["打开被 BOM 或套餐引用的商品动作", "读取引用影响", "确认作废没有入口且不发生状态更新"],
+          "businessOracle": ["阻断原因显示被谁使用", "失败后版本、状态和引用不变"]
+        },
+        {
+          "caseId": "catalog-governance-recovery",
+          "fixtureRef": "FIXTURE-CATALOG-LIBRARY-GOVERNANCE",
+          "journey": "治理恢复",
+          "controlKeys": ["CATALOG_ITEM_VIEW_DRAWER", "CATALOG_ITEM_STATUS_ACTION", "CATALOG_LIFECYCLE_CONFIRM"],
+          "steps": ["fixture 解除阻断事实后重新打开动作", "确认影响摘要更新", "提交治理动作", "读取状态和列表徽标"],
+          "businessOracle": ["候选状态来自最新 owner readback", "状态变化不隐式删除历史引用"]
+        }
       ]
     }
   ]

@@ -394,7 +394,11 @@ quickManage 模式；创建携带当前总公司+品牌或门店 owner，成功�
 ```
 
 `IA-CAT-CATEGORY-002`：分类支持改名、同级排序/层级移动、停用/重新启用；停用不删除历史商品引用。
-分类最多两级：二级节点不显示“新建子分类”，移动预检若使任一后代超过二级则阻断并返回 typed
+> **SUPERSEDED-IN-PART (2026-08-25):** 本段“最多两级”已由 Dexter 裁定的“最多三级”取代；当前
+> 正本为 `2026-08-23-v2s-catalog-library-ui-experience-formal-requirements-codex.md` §12.4，owner、
+> contract、seed 和全部分类选择控件统一执行三级上限。
+
+分类最多三级：第三层节点不显示“新建子分类”，移动预检若使任一后代超过三级则阻断并返回 typed
 failure。分类编码创建时即时校验格式与 owner-scope 唯一性，创建后不可修改；录错仅在零引用时允许
 整条作废重建。搜索分类只过滤树展示；所有写入带 expectedVersion，冲突保留输入并提示刷新后重试。
 

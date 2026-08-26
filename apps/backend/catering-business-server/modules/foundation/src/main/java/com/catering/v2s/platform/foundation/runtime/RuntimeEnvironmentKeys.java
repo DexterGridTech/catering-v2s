@@ -18,6 +18,9 @@ public final class RuntimeEnvironmentKeys {
     public static final String V2S_DB_STATEMENT_DICTIONARY = "V2S_DB_STATEMENT_DICTIONARY";
     public static final String V2S_DEV_NAMESPACE = "V2S_DEV_NAMESPACE";
     public static final String V2S_DEV_PROFILE = "V2S_DEV_PROFILE";
+    public static final String V2S_L2_EVENTS = "V2S_L2_EVENTS";
+    public static final String V2S_L2_RUN_ID = "V2S_L2_RUN_ID";
+    public static final String V2S_L2_SECRET = "V2S_L2_SECRET";
     public static final String V2S_OPERATIONS_SESSION = "V2S_OPERATIONS_SESSION";
     public static final String V2S_PLATFORM_SESSION = "V2S_PLATFORM_SESSION";
     public static final String V2S_RUNTIME_DIR = "V2S_RUNTIME_DIR";
@@ -35,6 +38,9 @@ public final class RuntimeEnvironmentKeys {
             V2S_DB_STATEMENT_DICTIONARY,
             V2S_DEV_NAMESPACE,
             V2S_DEV_PROFILE,
+            V2S_L2_EVENTS,
+            V2S_L2_RUN_ID,
+            V2S_L2_SECRET,
             V2S_OPERATIONS_SESSION,
             V2S_PLATFORM_SESSION,
             V2S_RUNTIME_DIR,

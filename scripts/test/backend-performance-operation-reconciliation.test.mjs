@@ -5,7 +5,10 @@ import {
   loadPerformanceOperationRegistry,
   reconcilePerformanceOperationEvents,
 } from './backend-performance-operation-reconciliation.mjs';
-import {classifyCurrentTreeOperation} from './backend-performance-cp05-reclassification.mjs';
+import {
+  backendAcceptanceRunIdForCp05,
+  classifyCurrentTreeOperation,
+} from './backend-performance-cp05-reclassification.mjs';
 
 const registry = [
   {operationId: 'getThing', method: 'GET', path: '/api/things/{thingRef}', owner: 'thing', consumerFaces: ['operations-admin']},
@@ -70,6 +73,17 @@ test('registry loader aligns catalog logical paths with the mounted edge route',
     }),
   });
   assert.equal(loaded[0].routeTemplate, '/api/operations/catalog-inventory/items/{itemCode}');
+});
+
+test('CP-05 binds HTTP evidence to the backend-acceptance identity, never the outer managed-run identity', () => {
+  assert.equal(backendAcceptanceRunIdForCp05({
+    runId: 'r5-tc-managed-run',
+    backendAcceptance: {runId: 'backend-acceptance-r5-tc-managed-run'},
+  }, 'fixture-run'), 'backend-acceptance-r5-tc-managed-run');
+  assert.throws(
+    () => backendAcceptanceRunIdForCp05({runId: 'r5-tc-managed-run'}, 'fixture-run'),
+    /CP05_BACKEND_ACCEPTANCE_RUN_ID_INVALID:fixture-run/,
+  );
 });
 
 test('current-tree classification uses maximum observed values and keeps precedence explicit', () => {

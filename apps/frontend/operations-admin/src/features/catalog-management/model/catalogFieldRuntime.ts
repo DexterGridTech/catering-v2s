@@ -8,6 +8,7 @@ import {
   CATALOG_INVENTORY_OPERATION_IDS,
   type CatalogInventoryOperationId,
   type CatalogDictionaryView,
+  type CatalogCategoryCandidatePage,
   type CatalogShapeManifestView,
   type InventoryTargetPage,
   type ProductionTagPage,
@@ -18,6 +19,7 @@ import {wireUuid} from '../../../app/api/wireUuid';
 
 export const CATALOG_OPTION_OPERATION_IDS = [
   CATALOG_INVENTORY_OPERATION_IDS.getOperationsCatalogNavigation,
+  CATALOG_INVENTORY_OPERATION_IDS.getOperationsCatalogCategoryCandidates,
   CATALOG_INVENTORY_OPERATION_IDS.getOperationsCatalogDictionary,
   CATALOG_INVENTORY_OPERATION_IDS.getOperationsInventoryTargets,
   CATALOG_INVENTORY_OPERATION_IDS.getOperationsCatalogItem,
@@ -178,6 +180,44 @@ async function executeCatalogEndpoint(source: EndpointSource, context: CatalogFi
         {},
         {query: {dataNodeRef: context.scope.dataNodeRef, viewKey: String(query.viewKey ?? 'ALL')}, headers},
       );
+    case CATALOG_INVENTORY_OPERATION_IDS.getOperationsCatalogCategoryCandidates: {
+      const readPage = (parentCategoryRef?: string, cursor?: string) =>
+        catalogInventoryClient.getOperationsCatalogCategoryCandidates(
+          {},
+          {
+            query: {
+              dataNodeRef: context.scope.dataNodeRef,
+              usage: String(query.usage ?? 'ITEM_ASSIGNMENT') as
+                'ITEM_ASSIGNMENT' | 'CATEGORY_CREATE' | 'CATEGORY_REPARENT',
+              ...(query.currentCategoryRef ? {currentCategoryRef: wireUuid(String(query.currentCategoryRef))} : {}),
+              ...(query.keyword && !parentCategoryRef ? {keyword: String(query.keyword)} : {}),
+              ...(parentCategoryRef ? {parentCategoryRef: wireUuid(parentCategoryRef)} : {}),
+              ...(cursor ? {cursor} : {}),
+              pageSize: CURSOR_OPTION_PAGE_SIZE,
+            },
+            headers,
+          },
+        );
+      const rootResponse = await readPage();
+      if (query.keyword) return rootResponse;
+      const items: CatalogCategoryCandidatePage['data']['items'] = [...rootResponse.data.items];
+      const pending = rootResponse.data.items.filter(entry => entry.hasChildren).map(entry => entry.categoryRef);
+      while (pending.length) {
+        const parentCategoryRef = pending.shift();
+        if (!parentCategoryRef) continue;
+        let cursor: string | undefined;
+        do {
+          const response = await readPage(parentCategoryRef, cursor);
+          items.push(...response.data.items);
+          pending.push(...response.data.items.filter(entry => entry.hasChildren).map(entry => entry.categoryRef));
+          cursor = response.data.nextCursor ?? undefined;
+        } while (cursor);
+      }
+      return {
+        ...rootResponse,
+        data: {...rootResponse.data, items, total: items.length, cursor: null, nextCursor: null},
+      };
+    }
     case CATALOG_INVENTORY_OPERATION_IDS.getOperationsCatalogDictionary: {
       const readPage = (cursor?: string, pageSize = CURSOR_OPTION_PAGE_SIZE) =>
         catalogInventoryClient.getOperationsCatalogDictionary(

@@ -1,22 +1,16 @@
 import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
-import {Alert, Button, Card, Drawer, Form, Input, Modal, Select, Space, Table, Typography} from 'antd';
+import {Alert, Button, Card, Form, Input, Modal, Select, Space, Table, Typography} from 'antd';
 import {
   adminListState,
-  adminWideDrawerSurfaceProps,
   createContentIdempotencyKey,
   NameCodeText,
   testId,
   useCursorCandidates,
   useDrawerFormLifecycle,
-  useOverlayLock,
   useRefreshVersion,
 } from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {
-  operationsContentTabRefreshSignal,
-  operationsProblemOf,
-  operationsRtk,
-} from '../../../app/api/OperationsTransport';
+import {operationsContentTabRefreshSignal, operationsRtk} from '../../../app/api/OperationsTransport';
 import {
   CATALOG_INVENTORY_OPERATION_IDS,
   type CatalogAttributeDefinitionList,
@@ -29,6 +23,10 @@ import {
   serializeOrderOptionDefinitionValues,
   type OrderOptionDefinitionFormValue,
 } from '../model/catalogDefinitionForm';
+import {catalogUiProblemFeedback} from '../model/catalogUiProblemFeedback';
+import {catalogTestIds} from '../catalogTestIds';
+import type {CatalogDefinitionEditorState} from '../model/useCatalogConfigLibrary';
+import {catalogFieldWidth} from './catalogFieldWidths';
 
 type LibraryKind = 'ATTRIBUTES' | 'ORDER_OPTIONS';
 type AttributeDefinition = CatalogAttributeDefinitionList['data']['definitions'][number];
@@ -46,11 +44,24 @@ type Props = {
   scopeRef?: string;
   headers?: {'X-Workspace-Brand-Ref': string};
   canWrite: boolean;
+  definitionEditor?: CatalogDefinitionEditorState;
+  onOpenDefinitionEditor: (editor: CatalogDefinitionEditorState) => void;
+  onCloseDefinitionEditor: () => void;
+  onEditorDirtyChange?: (message?: string) => void;
 };
 
-export function CatalogDefinitionLibraries({open, kind, scopeRef, headers, canWrite}: Props) {
-  const [attributeDrawer, setAttributeDrawer] = useState<AttributeDefinition | 'CREATE'>();
-  const [orderOptionDrawer, setOrderOptionDrawer] = useState<OrderOptionDefinition | 'CREATE'>();
+export function CatalogDefinitionLibraries({
+  open,
+  kind,
+  scopeRef,
+  headers,
+  canWrite,
+  definitionEditor,
+  onOpenDefinitionEditor,
+  onCloseDefinitionEditor,
+  onEditorDirtyChange,
+}: Props) {
+  const [editorDirtyMessage, setEditorDirtyMessage] = useState<string>();
   const attributeRequest = useMemo(
     () =>
       catalogInventoryRtkRequest.listOperationsCatalogAttributeDefinitions(
@@ -75,6 +86,23 @@ export function CatalogDefinitionLibraries({open, kind, scopeRef, headers, canWr
   });
   const refetchAttributeDefinitions = attributeQuery.refetch;
   const refetchOrderOptionDefinitions = orderOptionQuery.refetch;
+  useEffect(() => {
+    if (!definitionEditor || definitionEditor.mode !== 'EDIT' || definitionEditor.library !== kind) return;
+    const definitions =
+      kind === 'ATTRIBUTES'
+        ? attributeQuery.currentData?.data.definitions
+        : orderOptionQuery.currentData?.data.definitions;
+    if (!definitions) return;
+    if (!definitions.some(definition => definition.definitionRef === definitionEditor.definitionRef)) {
+      onCloseDefinitionEditor();
+    }
+  }, [
+    attributeQuery.currentData?.data.definitions,
+    definitionEditor,
+    kind,
+    onCloseDefinitionEditor,
+    orderOptionQuery.currentData?.data.definitions,
+  ]);
   const contentTabRefreshVersion = useRefreshVersion(operationsContentTabRefreshSignal);
   const lastContentTabRefreshVersion = useRef(contentTabRefreshVersion);
   useEffect(() => {
@@ -85,10 +113,24 @@ export function CatalogDefinitionLibraries({open, kind, scopeRef, headers, canWr
   }, [contentTabRefreshVersion, kind, open, refetchAttributeDefinitions, refetchOrderOptionDefinitions, scopeRef]);
   useEffect(() => {
     if (!open) {
-      setAttributeDrawer(undefined);
-      setOrderOptionDrawer(undefined);
+      setEditorDirtyMessage(undefined);
     }
-  }, [open]);
+  }, [onCloseDefinitionEditor, open]);
+  useEffect(() => {
+    setEditorDirtyMessage(undefined);
+  }, [kind]);
+  useEffect(() => {
+    onEditorDirtyChange?.(editorDirtyMessage);
+  }, [editorDirtyMessage, onEditorDirtyChange]);
+  useEffect(() => () => onEditorDirtyChange?.(undefined), [onEditorDirtyChange]);
+  const closeAttributeEditor = () => {
+    onCloseDefinitionEditor();
+    setEditorDirtyMessage(undefined);
+  };
+  const closeOrderOptionEditor = () => {
+    onCloseDefinitionEditor();
+    setEditorDirtyMessage(undefined);
+  };
   if (!scopeRef) {
     return (
       <Alert type="info" showIcon title="请选择管理范围" description="选择管理范围后，可维护商品属性和点单选项。" />
@@ -96,140 +138,179 @@ export function CatalogDefinitionLibraries({open, kind, scopeRef, headers, canWr
   }
   if (kind === 'ATTRIBUTES') {
     const definitions = attributeQuery.currentData?.data.definitions ?? [];
-    return (
-      <>
-        <Card
-          size="small"
-          title="商品属性库"
-          extra={
-            <Space>
-              {canWrite && (
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => setAttributeDrawer('CREATE')}>
-                  新建商品属性
-                </Button>
-              )}
-            </Space>
-          }
-          {...testId('catalog-attribute-definition-library')}
-        >
-          <Typography.Paragraph type="secondary">
-            先在属性库维护属性定义；商品只选择属性并填写适合自己的值。
-          </Typography.Paragraph>
-          <Table<AttributeDefinition>
-            rowKey="definitionRef"
-            size="small"
-            pagination={false}
-            dataSource={definitions}
-            columns={[
-              {
-                title: '属性名称',
-                render: (_, row) => (
-                  <Button type="link" onClick={() => setAttributeDrawer(row)}>
-                    <NameCodeText name={row.name} code={row.code} />
-                  </Button>
-                ),
-              },
-              {title: '填写方式', dataIndex: 'valueType', width: 160, render: value => attributeValueTypeLabel(value)},
-              {
-                title: '可选值',
-                width: 260,
-                render: (_, row) =>
-                  row.valueType === 'TEXT'
-                    ? '由商品填写'
-                    : row.options.map(option => option.name).join('、') || '尚未设置',
-              },
-            ]}
-            {...adminListState({
-              loading: attributeQuery.isFetching,
-              failed: Boolean(attributeQuery.error),
-              emptyText: '还没有商品属性，可先新建一个。',
-              testIdPrefix: 'catalog-attribute-definition-list',
-            })}
-          />
-        </Card>
-        <CatalogAttributeDefinitionDrawer
-          definition={attributeDrawer}
+    const attributeEditor =
+      definitionEditor?.library === 'ATTRIBUTES'
+        ? definitionEditor.mode === 'CREATE'
+          ? 'CREATE'
+          : definitions.find(definition => definition.definitionRef === definitionEditor.definitionRef)
+        : undefined;
+    if (attributeEditor) {
+      return (
+        <CatalogAttributeDefinitionPane
+          definition={attributeEditor}
           scopeRef={scopeRef}
           headers={headers}
           canWrite={canWrite}
-          onClose={() => setAttributeDrawer(undefined)}
+          onClose={closeAttributeEditor}
+          onDirtyChange={setEditorDirtyMessage}
         />
-      </>
-    );
-  }
-  const definitions = orderOptionQuery.currentData?.data.definitions ?? [];
-  return (
-    <>
+      );
+    }
+    return (
       <Card
         size="small"
-        title="点单选项库"
+        title="商品属性库"
         extra={
-          <Space>
-            {canWrite && (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setOrderOptionDrawer('CREATE')}>
-                新建点单选项
-              </Button>
-            )}
-          </Space>
+          canWrite && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => onOpenDefinitionEditor({library: 'ATTRIBUTES', mode: 'CREATE'})}
+            >
+              新建商品属性
+            </Button>
+          )
         }
-        {...testId('catalog-order-option-definition-library')}
+        {...testId(catalogTestIds.static.attributeDefinitionLibrary)}
       >
         <Typography.Paragraph type="secondary">
-          在这里定义选项组、可选项及其原料关联；商品只选择需要的点单选项并维护商品自己的规则。
+          先在属性库维护属性定义；商品只选择属性并填写适合自己的值。
         </Typography.Paragraph>
-        <Table<OrderOptionDefinition>
+        <Table<AttributeDefinition>
           rowKey="definitionRef"
           size="small"
           pagination={false}
           dataSource={definitions}
           columns={[
             {
-              title: '选项组',
-              render: (_, row) => (
-                <Button type="link" onClick={() => setOrderOptionDrawer(row)}>
-                  {row.name}
-                </Button>
-              ),
-            },
-            {title: '选项组编码', dataIndex: 'code', width: 180},
-            {title: '选择方式', dataIndex: 'selectionMode', width: 160, render: value => selectionModeLabel(value)},
-            {
-              title: '可选项',
-              width: 300,
+              title: '属性名称',
               render: (_, row) =>
-                row.values.length ? (
-                  <Space wrap size={4}>
-                    {row.values.map(value => (
-                      <NameCodeText key={value.valueRef} name={value.name} code={value.code} />
-                    ))}
-                  </Space>
+                canWrite ? (
+                  <Button
+                    type="link"
+                    onClick={() =>
+                      onOpenDefinitionEditor({library: 'ATTRIBUTES', mode: 'EDIT', definitionRef: row.definitionRef})
+                    }
+                  >
+                    <NameCodeText name={row.name} code={row.code} />
+                  </Button>
                 ) : (
-                  '尚未设置'
+                  <NameCodeText name={row.name} code={row.code} />
                 ),
+            },
+            {title: '填写方式', dataIndex: 'valueType', width: 160, render: value => attributeValueTypeLabel(value)},
+            {
+              title: '可选值',
+              width: 260,
+              render: (_, row) =>
+                row.valueType === 'TEXT'
+                  ? '由商品填写'
+                  : row.options.map(option => option.name).join('、') || '尚未设置',
             },
           ]}
           {...adminListState({
-            loading: orderOptionQuery.isFetching,
-            failed: Boolean(orderOptionQuery.error),
-            emptyText: '还没有点单选项，可先新建一个。',
-            testIdPrefix: 'catalog-order-option-definition-list',
+            loading: attributeQuery.isFetching,
+            failed: Boolean(attributeQuery.error),
+            emptyText: '还没有商品属性，可先新建一个。',
+            testIdPrefix: catalogTestIds.static.attributeDefinitionList,
           })}
         />
       </Card>
-      <CatalogOrderOptionDefinitionDrawer
-        definition={orderOptionDrawer}
+    );
+  }
+  const definitions = orderOptionQuery.currentData?.data.definitions ?? [];
+  const orderOptionEditor =
+    definitionEditor?.library === 'ORDER_OPTIONS'
+      ? definitionEditor.mode === 'CREATE'
+        ? 'CREATE'
+        : definitions.find(definition => definition.definitionRef === definitionEditor.definitionRef)
+      : undefined;
+  if (orderOptionEditor) {
+    return (
+      <CatalogOrderOptionDefinitionPane
+        definition={orderOptionEditor}
         scopeRef={scopeRef}
         headers={headers}
         canWrite={canWrite}
-        onClose={() => setOrderOptionDrawer(undefined)}
+        onClose={closeOrderOptionEditor}
+        onDirtyChange={setEditorDirtyMessage}
       />
-    </>
+    );
+  }
+  return (
+    <Card
+      size="small"
+      title="点单选项库"
+      extra={
+        canWrite && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => onOpenDefinitionEditor({library: 'ORDER_OPTIONS', mode: 'CREATE'})}
+          >
+            新建点单选项
+          </Button>
+        )
+      }
+      {...testId(catalogTestIds.static.orderOptionDefinitionLibrary)}
+    >
+      <Typography.Paragraph type="secondary">
+        在这里定义选项组、可选项及其原料关联；商品只选择需要的点单选项并维护商品自己的规则。
+      </Typography.Paragraph>
+      <Table<OrderOptionDefinition>
+        rowKey="definitionRef"
+        size="small"
+        pagination={false}
+        dataSource={definitions}
+        columns={[
+          {
+            title: '选项组',
+            render: (_, row) =>
+              canWrite ? (
+                <Button
+                  type="link"
+                  onClick={() =>
+                    onOpenDefinitionEditor({library: 'ORDER_OPTIONS', mode: 'EDIT', definitionRef: row.definitionRef})
+                  }
+                >
+                  {row.name}
+                </Button>
+              ) : (
+                row.name
+              ),
+          },
+          {title: '选项组编码', dataIndex: 'code', width: 180},
+          {title: '选择方式', dataIndex: 'selectionMode', width: 160, render: value => selectionModeLabel(value)},
+          {
+            title: '可选项',
+            width: 300,
+            render: (_, row) =>
+              row.values.length ? (
+                <Space wrap size={4}>
+                  {row.values.map(value => (
+                    <NameCodeText key={value.valueRef} name={value.name} code={value.code} />
+                  ))}
+                </Space>
+              ) : (
+                '尚未设置'
+              ),
+          },
+        ]}
+        {...adminListState({
+          loading: orderOptionQuery.isFetching,
+          failed: Boolean(orderOptionQuery.error),
+          emptyText: '还没有点单选项，可先新建一个。',
+          testIdPrefix: catalogTestIds.static.orderOptionDefinitionList,
+        })}
+      />
+    </Card>
   );
 }
 
-type AttributeDrawerProps = Omit<Props, 'kind' | 'open'> & {
-  definition?: AttributeDefinition | 'CREATE';
+type AttributePaneProps = Omit<Props, 'kind' | 'open' | 'onOpenDefinitionEditor' | 'onCloseDefinitionEditor'> & {
+  definition: AttributeDefinition | 'CREATE';
   onClose: () => void;
+  onDirtyChange: (message?: string) => void;
 };
 type AttributeForm = {
   code: string;
@@ -238,7 +319,14 @@ type AttributeForm = {
   options: Array<{optionRef?: string; name: string}>;
 };
 
-function CatalogAttributeDefinitionDrawer({definition, scopeRef, headers, canWrite, onClose}: AttributeDrawerProps) {
+function CatalogAttributeDefinitionPane({
+  definition,
+  scopeRef,
+  headers,
+  canWrite,
+  onClose,
+  onDirtyChange,
+}: AttributePaneProps) {
   const [form] = Form.useForm<AttributeForm>();
   const [problem, setProblem] = useState<string>();
   const create = operationsRtk.useCreateOperationsCatalogAttributeDefinitionMutation()[0];
@@ -252,7 +340,11 @@ function CatalogAttributeDefinitionDrawer({definition, scopeRef, headers, canWri
     dirtyMessage: '商品属性定义尚未保存。',
     diagnosticOperationId: 'catalog-attribute-definition-editor',
   });
-  useOverlayLock(Boolean(definition));
+  const editorDirty = lifecycle.dirty;
+  useEffect(() => {
+    onDirtyChange(editorDirty ? '商品属性定义尚未保存。' : undefined);
+  }, [editorDirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange(undefined), [onDirtyChange]);
   useEffect(() => {
     if (!definition) return;
     form.setFieldsValue(
@@ -311,7 +403,7 @@ function CatalogAttributeDefinitionDrawer({definition, scopeRef, headers, canWri
       onClose();
     } catch (error) {
       if (error && typeof error === 'object' && 'errorFields' in error) return;
-      setProblem(operationsProblemOf(error).detail || '保存失败，请检查后重试。');
+      setProblem(catalogUiProblemFeedback(error, '保存失败，请检查后重试。').message);
       lifecycle.setSubmitting(false);
     }
   };
@@ -344,27 +436,25 @@ function CatalogAttributeDefinitionDrawer({definition, scopeRef, headers, canWri
   };
   const valueType = Form.useWatch('valueType', form) ?? 'TEXT';
   return (
-    <Drawer
-      open={Boolean(definition)}
+    <Card
+      size="small"
       title={definition === 'CREATE' ? '新建商品属性' : '编辑商品属性'}
-      onClose={lifecycle.requestClose}
-      afterOpenChange={lifecycle.afterOpenChange}
-      destroyOnHidden={false}
-      maskClosable={!lifecycle.submitting}
-      {...adminWideDrawerSurfaceProps}
       extra={
         <Space>
+          <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>
+            返回商品属性库
+          </Button>
           {definition !== 'CREATE' && canWrite && (
             <Button danger icon={<DeleteOutlined />} onClick={deleteDefinition}>
               删除
             </Button>
           )}
-          <Button type="primary" disabled={!canWrite} loading={lifecycle.submitting} onClick={() => void submit()}>
+          <Button type="primary" loading={lifecycle.submitting} onClick={() => void submit()}>
             保存
           </Button>
         </Space>
       }
-      {...testId('catalog-attribute-definition-drawer')}
+      {...testId(catalogTestIds.static.attributeDefinitionDrawer)}
     >
       {problem && (
         <Alert type="error" showIcon title="商品属性未保存" description={problem} style={{marginBottom: 16}} />
@@ -376,18 +466,19 @@ function CatalogAttributeDefinitionDrawer({definition, scopeRef, headers, canWri
             name="name"
             rules={[{required: true, whitespace: true, message: '请填写属性名称'}]}
           >
-            <Input disabled={!canWrite} maxLength={80} />
+            <Input maxLength={80} />
           </Form.Item>
           <Form.Item
             label="属性编码"
             name="code"
             rules={[{required: true, whitespace: true, message: '请填写属性编码'}]}
           >
-            <Input disabled={!canWrite} maxLength={80} />
+            <Input maxLength={80} />
           </Form.Item>
           <Form.Item label="填写方式" name="valueType" rules={[{required: true}]} extra="创建后不可修改。">
             <Select
-              disabled={!canWrite || definition !== 'CREATE'}
+              style={catalogFieldWidth('compact')}
+              disabled={definition !== 'CREATE'}
               options={[
                 {value: 'TEXT', label: '纯文本'},
                 {value: 'SINGLE_SELECT', label: '单选'},
@@ -418,7 +509,7 @@ function CatalogAttributeDefinitionDrawer({definition, scopeRef, headers, canWri
                         rules={[{required: true, whitespace: true, message: '请填写可选值'}]}
                         style={{marginBottom: 0, flex: 1}}
                       >
-                        <Input disabled={!canWrite} placeholder="例如：三个月" />
+                        <Input placeholder="例如：三个月" />
                       </Form.Item>
                       {canWrite && (
                         <>
@@ -449,13 +540,14 @@ function CatalogAttributeDefinitionDrawer({definition, scopeRef, headers, canWri
           )}
         </Space>
       </Form>
-    </Drawer>
+    </Card>
   );
 }
 
-type OrderOptionDrawerProps = Omit<Props, 'kind' | 'open'> & {
-  definition?: OrderOptionDefinition | 'CREATE';
+type OrderOptionPaneProps = Omit<Props, 'kind' | 'open' | 'onOpenDefinitionEditor' | 'onCloseDefinitionEditor'> & {
+  definition: OrderOptionDefinition | 'CREATE';
   onClose: () => void;
+  onDirtyChange: (message?: string) => void;
 };
 type OrderOptionForm = {
   code: string;
@@ -464,13 +556,14 @@ type OrderOptionForm = {
   values: OrderOptionDefinitionFormValue[];
 };
 
-function CatalogOrderOptionDefinitionDrawer({
+function CatalogOrderOptionDefinitionPane({
   definition,
   scopeRef,
   headers,
   canWrite,
   onClose,
-}: OrderOptionDrawerProps) {
+  onDirtyChange,
+}: OrderOptionPaneProps) {
   const [form] = Form.useForm<OrderOptionForm>();
   const [problem, setProblem] = useState<string>();
   const [materialKeyword, setMaterialKeyword] = useState('');
@@ -538,7 +631,11 @@ function CatalogOrderOptionDefinitionDrawer({
     dirtyMessage: '点单选项定义尚未保存。',
     diagnosticOperationId: 'catalog-order-option-definition-editor',
   });
-  useOverlayLock(Boolean(definition));
+  const editorDirty = lifecycle.dirty;
+  useEffect(() => {
+    onDirtyChange(editorDirty ? '点单选项定义尚未保存。' : undefined);
+  }, [editorDirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange(undefined), [onDirtyChange]);
   useEffect(() => {
     if (!definition) return;
     form.setFieldsValue(
@@ -599,7 +696,7 @@ function CatalogOrderOptionDefinitionDrawer({
       onClose();
     } catch (error) {
       if (error && typeof error === 'object' && 'errorFields' in error) return;
-      setProblem(operationsProblemOf(error).detail || '保存失败，请检查后重试。');
+      setProblem(catalogUiProblemFeedback(error, '保存失败，请检查后重试。').message);
       lifecycle.setSubmitting(false);
     }
   };
@@ -631,27 +728,25 @@ function CatalogOrderOptionDefinitionDrawer({
     });
   };
   return (
-    <Drawer
-      open={Boolean(definition)}
+    <Card
+      size="small"
       title={definition === 'CREATE' ? '新建点单选项' : '编辑点单选项'}
-      onClose={lifecycle.requestClose}
-      afterOpenChange={lifecycle.afterOpenChange}
-      destroyOnHidden={false}
-      maskClosable={!lifecycle.submitting}
-      {...adminWideDrawerSurfaceProps}
       extra={
         <Space>
+          <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>
+            返回点单选项库
+          </Button>
           {definition !== 'CREATE' && canWrite && (
             <Button danger icon={<DeleteOutlined />} onClick={deleteDefinition}>
               删除
             </Button>
           )}
-          <Button type="primary" disabled={!canWrite} loading={lifecycle.submitting} onClick={() => void submit()}>
+          <Button type="primary" loading={lifecycle.submitting} onClick={() => void submit()}>
             保存
           </Button>
         </Space>
       }
-      {...testId('catalog-order-option-definition-drawer')}
+      {...testId(catalogTestIds.static.orderOptionDefinitionDrawer)}
     >
       {problem && (
         <Alert type="error" showIcon title="点单选项未保存" description={problem} style={{marginBottom: 16}} />
@@ -662,7 +757,7 @@ function CatalogOrderOptionDefinitionDrawer({
           name="name"
           rules={[{required: true, whitespace: true, message: '请填写选项组名称'}]}
         >
-          <Input disabled={!canWrite} maxLength={80} />
+          <Input maxLength={80} />
         </Form.Item>
         <Form.Item
           label="选项组编码"
@@ -670,11 +765,11 @@ function CatalogOrderOptionDefinitionDrawer({
           rules={[{required: true, whitespace: true, message: '请填写选项组编码'}]}
           extra={definition === 'CREATE' ? '创建后不可修改。' : '创建后不可修改。'}
         >
-          <Input disabled={!canWrite || definition !== 'CREATE'} maxLength={80} />
+          <Input disabled={definition !== 'CREATE'} maxLength={80} />
         </Form.Item>
         <Form.Item label="选择方式" name="selectionMode" rules={[{required: true}]}>
           <Select
-            disabled={!canWrite}
+            style={catalogFieldWidth('compact')}
             options={[
               {value: 'SINGLE', label: '单选'},
               {value: 'MULTIPLE', label: '多选'},
@@ -733,7 +828,7 @@ function CatalogOrderOptionDefinitionDrawer({
                       style={{marginBottom: 0, flex: '1 1 180px'}}
                     >
                       <Input
-                        disabled={!canWrite || Boolean(form.getFieldValue(['values', field.name, 'valueRef']))}
+                        disabled={Boolean(form.getFieldValue(['values', field.name, 'valueRef']))}
                         placeholder="例如：truffle"
                         maxLength={80}
                       />
@@ -744,7 +839,7 @@ function CatalogOrderOptionDefinitionDrawer({
                       rules={[{required: true, whitespace: true, message: '请填写可选项名称'}]}
                       style={{marginBottom: 0, flex: '1 1 240px'}}
                     >
-                      <Input disabled={!canWrite} placeholder="例如：黑松露酱" />
+                      <Input placeholder="例如：黑松露酱" />
                     </Form.Item>
                   </div>
                   <Form.List name={[field.name, 'materials']}>
@@ -776,9 +871,9 @@ function CatalogOrderOptionDefinitionDrawer({
                               style={{marginBottom: 0, flex: 1}}
                             >
                               <Select
+                                style={catalogFieldWidth('full')}
                                 allowClear
                                 showSearch
-                                disabled={!canWrite}
                                 loading={inventoryQuery.isFetching}
                                 filterOption={false}
                                 placeholder="搜索并选择已有库存记录的原料商品"
@@ -793,11 +888,10 @@ function CatalogOrderOptionDefinitionDrawer({
                                   value: candidate.itemRef,
                                   label: (
                                     <Space size={4}>
-                                      <NameCodeText name={candidate.name} code={candidate.productCode} />
-                                      <NameCodeText
-                                        name={candidate.consumptionUnitSnapshot.name}
-                                        code={candidate.consumptionUnitSnapshot.code}
-                                      />
+                                      <span>{candidate.name}</span>
+                                      <Typography.Text type="secondary">
+                                        {candidate.consumptionUnitSnapshot.name}
+                                      </Typography.Text>
                                     </Space>
                                   ),
                                 }))}
@@ -824,7 +918,7 @@ function CatalogOrderOptionDefinitionDrawer({
           )}
         </Form.List>
       </Form>
-    </Drawer>
+    </Card>
   );
 }
 

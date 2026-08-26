@@ -122,10 +122,8 @@ class ProductionTagOwnerScopeGrantTest {
     @Test
     void productionReceiptRequestBindsTheBrandBeforeReplayLookup() {
         ProductionTagOwnerService service = new ProductionTagOwnerService(mock(JdbcTemplate.class), mapper, () -> 1L);
-        ObjectNode request = mapper.createObjectNode()
-                .put("code", "TAG-RECEIPT")
-                .put("tagKind", "PRODUCTION")
-                .put("name", "receipt tag");
+        ObjectNode request =
+                mapper.createObjectNode().put("code", "TAG-RECEIPT").put("name", "receipt tag");
 
         ObjectNode brandA = receiptRequest(service, request, "BRAND-A");
         ObjectNode brandB = receiptRequest(service, request, "BRAND-B");

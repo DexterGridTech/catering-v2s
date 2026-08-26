@@ -6,8 +6,20 @@ const preview = readFileSync(
   new URL('../../features/catalog-management/ui/CatalogAssetPreview.tsx', import.meta.url),
   'utf8',
 );
-const itemDrawer = readFileSync(
-  new URL('../../features/catalog-management/ui/CatalogItemDrawer.tsx', import.meta.url),
+const basicEditor = readFileSync(
+  new URL('../../features/catalog-management/ui/CatalogItemBasicEditor.tsx', import.meta.url),
+  'utf8',
+);
+const skuMatrix = readFileSync(
+  new URL('../../features/catalog-management/ui/CatalogItemSkuMatrixTable.tsx', import.meta.url),
+  'utf8',
+);
+const editorSession = readFileSync(
+  new URL('../../features/catalog-management/model/useCatalogItemEditorSession.ts', import.meta.url),
+  'utf8',
+);
+const mediaActions = readFileSync(
+  new URL('../../features/catalog-management/ui/useCatalogItemEditorMediaActions.ts', import.meta.url),
   'utf8',
 );
 
@@ -19,16 +31,15 @@ test('catalog previews staged files locally and only asks the public asset endpo
   assert.match(preview, /skip: Boolean\(localFile \|\| !assetRef \|\| !request\)/);
   assert.doesNotMatch(preview, /wireUuid\(assetRef \?\? ''\)/);
   assert.match(preview, /const sourceUrl = localPreviewUrl \?\? publicUrl/);
-  assert.match(itemDrawer, /localFile=\{asset\.staged \? asset\.file : undefined\}/);
-  assert.match(itemDrawer, /asset\.staged\s*\n\s*\? '待保存'/);
-  const productStage = itemDrawer.slice(
-    itemDrawer.indexOf('const stageMedia'),
-    itemDrawer.indexOf('const stageSkuMedia'),
-  );
-  assert.match(productStage, /bindGrant: readback\.bindGrant,[\s\S]*?\n\s*file,[\s\S]*?\n\s*fileName: file\.name/);
+  assert.match(basicEditor, /localFile=\{asset\.staged \? asset\.file : undefined\}/);
+  assert.match(basicEditor, /: asset\.staged\s+\? '待保存'/);
+  assert.match(editorSession, /const stageStagedAsset = useCallback/);
+  assert.match(editorSession, /if \(!readback\?\.assetRef \|\| !readback\.bindGrant\)/);
+  assert.match(mediaActions, /stageStagedAsset\(\{file, correlationId: itemCode\}\)/);
+  assert.match(mediaActions, /bindGrant: readback\.bindGrant,[\s\S]*fileName: file\.name/s);
 });
 
 test('catalog SKU drafts also render the selected local file before the save boundary', () => {
-  assert.match(itemDrawer, /localFile=\{asset\.file\}/);
-  assert.match(itemDrawer, /待上传图片/);
+  assert.match(skuMatrix, /localFile=\{stagedAsset\.file\}/);
+  assert.match(skuMatrix, /待上传图片/);
 });

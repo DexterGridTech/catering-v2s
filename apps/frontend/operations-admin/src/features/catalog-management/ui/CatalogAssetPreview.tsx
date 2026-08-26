@@ -35,7 +35,7 @@ export function CatalogAssetPreview({assetRef, localFile, alt, width, height, pr
   const assetQuery = operationsRtk.useGetPublicAssetContentQuery(request!, {
     skip: Boolean(localFile || !assetRef || !request),
   });
-  const publicUrl = assetQuery.data?.publicUrl;
+  const publicUrl = assetQuery.currentData?.publicUrl;
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => {
     setImageFailed(false);

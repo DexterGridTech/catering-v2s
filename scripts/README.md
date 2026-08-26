@@ -60,8 +60,10 @@ All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-b
 测试必须先读该规范，再按业务域写入对应的 `*AcceptanceScenarios.java`。
 
 2026-08-14 起，唯一公共入口是
-`scripts/test/backend-acceptance --operation all`（也可用同一参数聚焦单个 operation）。它在真实远端
-Testcontainers 中启动应用，经真实 HTTP 自动发现并串行运行当前 60 条手写 fixture/request/business
+`scripts/test/backend-acceptance --operation all`（也可用同一参数聚焦单个 operation）。性能校准只可使用
+`scripts/test/backend-acceptance --operation all --calibration`：它校验 239 个 operation 的 exact-set、正常样本与连接门，
+但不把未校准的固定 DB 上限当作已验收预算。普通 `all` 则无条件执行完整预算门；两种模式都在真实远端
+Testcontainers 中启动应用，经真实 HTTP 自动发现并串行运行当前 80 条手写 fixture/request/business
 assertion，逐条分开打印 `CONTRACT`、`BUSINESS` 和场景内信息性 `DB_OPERATIONS`；结果还明确标记
 `businessMode=REAL`，桩断言不得通过。当前场景覆盖 IAM、ORG、商业合同、asset、catalog、audit、extension、
 collaboration 与 business-channel 的权限、隔离、状态迁移、字段脱敏、读回和跨域业务规则；本批的绑定查询
@@ -83,7 +85,7 @@ collaboration 与 business-channel 的权限、隔离、状态迁移、字段脱
 旧 scenario-level PERFORMANCE verdict、accepted-baseline、known-uncovered、provider exact-set、
 lane/并行/心跳/work-stealing、scenario calibration 与 correctnessCases 继续退役。下一条业务
 scenario 只复制真实 fixture、HTTP request 与业务断言。Dexter 2026-08-22 恢复的 generated
-238-operation budget 由独立 run-level verifier 消费同一 HTTP completion events；不写进
+239-operation budget 由独立 run-level verifier 消费同一 HTTP completion events；不写进
 `@AcceptanceScenario`、不参与其 `CONTRACT`/`BUSINESS`，不复活旧 provider/性能 lane。
 
 Docker-backed Gradle `:test` tasks are never accepted from `FROM-CACHE`, `UP-TO-DATE`,
@@ -122,6 +124,22 @@ Markdown，不会重新执行 seed。
 - **后续 UAT**：仅在 Dexter 单独授权后，应用与浏览器执行面均部署并运行在远端；本机 runtime、DEV 数据库或静态检查不能替代 UAT。
 
 远端 Testcontainers 保持其 JVM/Docker 同平面的技术验证边界，不能被解释为上述浏览器 L2 或 UAT。
+
+### 受管浏览器 L2 的唯一调用顺序
+
+L2 框架、单一真相、fixture、进度、join、cleanup 与失败纪律以
+`doc/platform/browser-l2-execution-standard.md` 为唯一正本。仅在获得浏览器 L2 动态授权后，按
+`readiness → same-run P1 activation → generated-chain check → managed run` 运行；catalog 当前入口为：
+
+```bash
+node scripts/test/browser-l2-runtime.mjs readiness
+CATALOG_INVENTORY_L2_READINESS_MANIFEST=<readiness-manifest.json> node scripts/generate/catalog-inventory-p1.mjs --write --check
+node scripts/test/browser-l2-runtime.mjs run
+```
+
+第二步与第三步之间必须继续执行该专题批准的完整生成链，不能手工编辑 active execution、fixture、
+locator bindings 或 generated output。每个 case 必须输出开始、完成、完成数和剩余数；动态证据只在
+discovered/selected/results exact、join 完整、business PASS 且本机/远端 cleanup 全 PASS 时成立。
 
 ### Testcontainers 运行前后的 DEV 联动
 

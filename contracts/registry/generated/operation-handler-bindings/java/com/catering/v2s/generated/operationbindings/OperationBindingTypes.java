@@ -62,6 +62,8 @@ public final class OperationBindingTypes {
     public record CatalogAttributeDefinitionListQuery() {}
     public record CatalogAttributeDefinitionReadback() {}
     public record CatalogAttributeDefinitionUpdateRequest() {}
+    public record CatalogCategoryCandidatePage() {}
+    public record CatalogCategoryCandidateQuery() {}
     public record CatalogCategoryCreateRequest() {}
     public record CatalogCategoryDeleteReadback() {}
     public record CatalogCategoryDeleteRequest() {}
@@ -86,6 +88,8 @@ public final class OperationBindingTypes {
     public record CatalogItemPageQuery() {}
     public record CatalogItemSaveReadback() {}
     public record CatalogItemSaveRequest() {}
+    public record CatalogItemSkuPage() {}
+    public record CatalogItemSkusQuery() {}
     public record CatalogItemTransitionRequest() {}
     public record CatalogNavigationQuery() {}
     public record CatalogNavigationView() {}

@@ -25,7 +25,6 @@ public final class CollaborationOperationBindings {
     OperationBindingTypes.Wire.ProviderProfileView getPlatformProviderProfileDetail(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.NoBody request);
     OperationBindingTypes.Wire.ExternalSystemView transitionPlatformExternalSystemStatus(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.ExternalSystemStatusRequest request);
     OperationBindingTypes.Wire.ProviderProfileView transitionPlatformProviderProfileStatus(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.ExternalSystemStatusRequest request);
-    OperationBindingTypes.Wire.OwnerBindingView updateOperationsOwnerBinding(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.OwnerBindingUpdateRequest request);
     OperationBindingTypes.Wire.OwnerBindingView updatePlatformOwnerBinding(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.OwnerBindingUpdateRequest request);
   }
 
@@ -50,7 +49,6 @@ public final class CollaborationOperationBindings {
   public static final OperationBindingTypes.OperationDescriptor GET_PLATFORM_PROVIDER_PROFILE_DETAIL_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getPlatformProviderProfileDetail", "collaboration", "edge-face");
   public static final OperationBindingTypes.OperationDescriptor TRANSITION_PLATFORM_EXTERNAL_SYSTEM_STATUS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("transitionPlatformExternalSystemStatus", "collaboration", "edge-face");
   public static final OperationBindingTypes.OperationDescriptor TRANSITION_PLATFORM_PROVIDER_PROFILE_STATUS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("transitionPlatformProviderProfileStatus", "collaboration", "edge-face");
-  public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_OWNER_BINDING_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsOwnerBinding", "collaboration", "edge-face");
   public static final OperationBindingTypes.OperationDescriptor UPDATE_PLATFORM_OWNER_BINDING_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updatePlatformOwnerBinding", "collaboration", "edge-face");
 
   private static void requireReadDescriptor(OperationBindingTypes.OperationDescriptor descriptor) {
@@ -109,10 +107,6 @@ public final class CollaborationOperationBindings {
 
   public OperationBindingTypes.Wire.ProviderProfileView transitionPlatformProviderProfileStatus(OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.ExternalSystemStatusRequest request) {
     return adapters.transitionPlatformProviderProfileStatus(TRANSITION_PLATFORM_PROVIDER_PROFILE_STATUS_DESCRIPTOR, context, request);
-  }
-
-  public OperationBindingTypes.Wire.OwnerBindingView updateOperationsOwnerBinding(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.OwnerBindingUpdateRequest request) {
-    return adapters.updateOperationsOwnerBinding(UPDATE_OPERATIONS_OWNER_BINDING_DESCRIPTOR, context, request);
   }
 
   public OperationBindingTypes.Wire.OwnerBindingView updatePlatformOwnerBinding(OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.OwnerBindingUpdateRequest request) {

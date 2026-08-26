@@ -8,13 +8,13 @@
     "authorizationManifest": "contracts/registry/iam-org-governance-manifest.json"
   },
   "closure": {
-    "operations": 181,
+    "operations": 180,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 108,
+      "operations-admin": 107,
       "public": 12
     },
-    "componentBaseline": 193,
+    "componentBaseline": 195,
     "componentFiles": 19,
     "unreachable": [
       {
@@ -2033,18 +2033,6 @@
       "face": "operations-admin",
       "owner": "collaboration",
       "method": "POST",
-      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
-      "capability": "business-channel",
-      "pathFile": "paths/operations-admin/business-channel.paths.json",
-      "requestComponentFile": "components/collaboration/collaboration.schemas.json",
-      "responseComponentFile": "components/collaboration/collaboration.schemas.json",
-      "errorSetRef": "OWNER_COMMAND"
-    },
-    {
-      "operationId": "updateOperationsOwnerBinding",
-      "face": "operations-admin",
-      "owner": "collaboration",
-      "method": "PATCH",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
       "capability": "business-channel",
       "pathFile": "paths/operations-admin/business-channel.paths.json",

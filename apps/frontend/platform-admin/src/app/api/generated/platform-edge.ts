@@ -433,71 +433,71 @@ export const PLATFORM_ADMIN_OPERATIONS = [
 export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
   "cancelWorkspaceInvitation": {
     "kind": "FIXED",
-    "max": 14,
+    "max": 24,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 14,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 24,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "changeCurrentPlatformPassword": {
     "kind": "FIXED",
-    "max": 0,
+    "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 0,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 6,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "completePlatformPasswordRecovery": {
     "kind": "FIXED",
-    "max": 4,
+    "max": 8,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 8,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "createPlatformAdmin": {
     "kind": "FIXED",
-    "max": 4,
+    "max": 16,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 16,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "createPlatformGroupWorkspace": {
     "kind": "FIXED",
-    "max": 4,
+    "max": 16,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 16,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -505,55 +505,55 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 22,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 22,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "createWorkspaceInvitation": {
     "kind": "FIXED",
-    "max": 8,
+    "max": 25,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 25,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "createWorkspaceRole": {
     "kind": "FIXED",
-    "max": 14,
+    "max": 18,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 14,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 18,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "deletePlatformOwnerBinding": {
     "kind": "FIXED",
-    "max": 24,
+    "max": 23,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 24,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 23,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -561,13 +561,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 4,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -575,13 +575,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -589,13 +589,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -603,13 +603,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 5,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 5,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -617,27 +617,27 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "getPlatformContractOverviewDetail": {
     "kind": "FIXED",
-    "max": 6,
+    "max": 7,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 7,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -645,13 +645,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -659,13 +659,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 7,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -673,13 +673,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 4,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -687,13 +687,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 7,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -701,13 +701,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -715,13 +715,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 7,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -729,13 +729,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -743,27 +743,27 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "getPlatformOrganizationOverviewDetail": {
     "kind": "FIXED",
-    "max": 6,
+    "max": 7,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 7,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -771,13 +771,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -785,13 +785,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 7,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -799,13 +799,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 7,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -813,27 +813,27 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "getWorkspaceAccount": {
     "kind": "FIXED",
-    "max": 6,
+    "max": 7,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 7,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -841,27 +841,27 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 7,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "getWorkspaceInvitation": {
     "kind": "FIXED",
-    "max": 6,
+    "max": 7,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 7,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -869,13 +869,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -883,13 +883,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 7,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -897,13 +897,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -911,13 +911,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -925,13 +925,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 15,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 15,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -939,13 +939,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -953,13 +953,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 4,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -967,41 +967,41 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 11,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 11,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "reissueWorkspaceInvitation": {
     "kind": "FIXED",
-    "max": 14,
+    "max": 29,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 14,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 29,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "releasePlatformStagedAsset": {
     "kind": "FIXED",
-    "max": 8,
+    "max": 9,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 9,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -1009,55 +1009,55 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 18,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 18,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "requestWorkspaceCredentialReset": {
     "kind": "FIXED",
-    "max": 15,
+    "max": 20,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 15,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 20,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "resetPlatformAdminCredential": {
     "kind": "FIXED",
-    "max": 4,
+    "max": 17,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 17,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "revokePlatformWorkspaceAssignment": {
     "kind": "FIXED",
-    "max": 15,
+    "max": 18,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 15,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 18,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -1065,27 +1065,27 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 14,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 14,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "sendPlatformPasswordRecoveryOtp": {
     "kind": "FIXED",
-    "max": 4,
+    "max": 14,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 14,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -1093,13 +1093,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 13,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -1107,55 +1107,55 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 17,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 17,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "transitionPlatformAdminStatus": {
     "kind": "FIXED",
-    "max": 4,
+    "max": 19,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 19,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "transitionPlatformExternalSystemStatus": {
     "kind": "FIXED",
-    "max": 8,
+    "max": 21,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 21,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "transitionPlatformGroupWorkspaceStatus": {
     "kind": "FIXED",
-    "max": 4,
+    "max": 19,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 19,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -1163,55 +1163,55 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 20,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 20,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "transitionWorkspaceAccountStatus": {
     "kind": "FIXED",
-    "max": 15,
+    "max": 28,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 15,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 28,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "transitionWorkspaceRoleStatus": {
     "kind": "FIXED",
-    "max": 15,
+    "max": 19,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 15,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 19,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "updatePlatformAdminProfile": {
     "kind": "FIXED",
-    "max": 4,
+    "max": 15,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 15,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -1219,13 +1219,13 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 18,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 18,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -1233,27 +1233,27 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 24,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 24,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "updateWorkspaceRole": {
     "kind": "FIXED",
-    "max": 15,
+    "max": 19,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 15,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 19,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -1261,27 +1261,27 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 13,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "verifyPlatformPasswordRecoveryOtp": {
     "kind": "FIXED",
-    "max": 4,
+    "max": 13,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 13,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   }

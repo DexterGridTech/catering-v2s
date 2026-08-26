@@ -51,25 +51,7 @@
           "type": "array",
           "description": "design-bound field",
           "items": {
-            "type": "string",
-            "enum": [
-              "text",
-              "textarea",
-              "select",
-              "multiSelect",
-              "treeSelect",
-              "number",
-              "money",
-              "upload",
-              "editableTable",
-              "detailTable",
-              "readonlySummary",
-              "readonlyPreview",
-              "skuVariantMatrix",
-              "inventoryBomWorkbench",
-              "orderOptionsWorkbench",
-              "compositeContentWorkbench"
-            ]
+            "type": "string"
           }
         },
         "fields": {
@@ -121,16 +103,7 @@
                 "type": "array",
                 "description": "design-bound field",
                 "items": {
-                  "type": "string",
-                  "enum": [
-                    "STANDARD_SALE_COUNTED",
-                    "SKU_VARIANT_SALE_COUNTED",
-                    "STANDARD_SALE_WEIGHED",
-                    "MATERIAL",
-                    "COMPOSITE",
-                    "SERVICE",
-                    "BENEFIT_SHELL"
-                  ]
+                  "type": "string"
                 }
               },
               "helpText": {
@@ -140,13 +113,6 @@
               "description": {
                 "type": "string",
                 "description": "design-bound field"
-              },
-              "frontendBehavior": {
-                "type": "object",
-                "description": "design-bound field",
-                "additionalProperties": true,
-                "properties": {},
-                "required": []
               },
               "optionSourceRef": {
                 "type": "object",

@@ -363,7 +363,19 @@
       "face": "operations-admin",
       "ownerModule": "inventory",
       "shard": "paths/operations-admin/catalog-workbench.paths.json"
+    },
+    {
+      "operationId": "getOperationsCatalogCategoryCandidates",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-workbench.paths.json"
+    },
+    {
+      "operationId": "getOperationsCatalogItemSkus",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-item-management.paths.json"
     }
   ],
-  "placementDigest": "6e31d8e1551e26e28eb12b398273656fc416c4bbc64cc1b73f8c0964238eab5b"
+  "placementDigest": "2448cddb42975a94904c3a6bdee7bf03b20d7718eb3f07551dcc3907283899af"
 }

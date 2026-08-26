@@ -231,21 +231,29 @@ export function WorkspaceUserPage({
     pageSize: 50,
     keyOf: role => role.id,
   });
+  const {
+    acceptPage: acceptRoleCandidatePage,
+    debouncedQueryText: roleCandidateQueryText,
+    items: roleCandidateItems,
+    onPopupScroll: onRoleCandidatePopupScroll,
+    page: roleCandidatePage,
+    pageSize: roleCandidatePageSize,
+  } = roleCandidates;
   const roleCandidateResult = useWorkspaceInvitationCandidates({
     targetType,
     queryContext,
     subjectType: 'ROLE',
     candidateUsage: 'LIST_FILTER',
-    queryText: roleCandidates.debouncedQueryText,
-    page: roleCandidates.page,
-    pageSize: roleCandidates.pageSize,
+    queryText: roleCandidateQueryText,
+    page: roleCandidatePage,
+    pageSize: roleCandidatePageSize,
     enabled: !scopeRequired,
   });
   useEffect(() => {
     if (!roleCandidateResult.currentData) return;
-    roleCandidates.acceptPage(roleCandidateResult.currentData.roles, roleCandidateResult.currentData.metadata);
-  }, [roleCandidateResult.currentData, roleCandidates.acceptPage, roleCandidates.page]);
-  const roleOptions = roleCandidates.items.map(role => ({value: role.id, label: role.name}));
+    acceptRoleCandidatePage(roleCandidateResult.currentData.roles, roleCandidateResult.currentData.metadata);
+  }, [acceptRoleCandidatePage, roleCandidatePage, roleCandidateResult.currentData]);
+  const roleOptions = roleCandidateItems.map(role => ({value: role.id, label: role.name}));
   // The shared app-level scope bar is the one and only missing-scope prompt.
   // Keep this page alert for genuine query or command failures only.
   const problem = queryError ? issue(operationsProblemOf(queryError)) : commandProblem;
@@ -345,8 +353,8 @@ export function WorkspaceUserPage({
           showSearch: true,
           filterOption: false,
           onSearch: setRoleCandidateQuery,
-          onPopupScroll: (event: Parameters<typeof roleCandidates.onPopupScroll>[0]) =>
-            roleCandidates.onPopupScroll(event, roleCandidateResult.isFetching),
+          onPopupScroll: (event: Parameters<typeof onRoleCandidatePopupScroll>[0]) =>
+            onRoleCandidatePopupScroll(event, roleCandidateResult.isFetching),
           options: roleOptions,
           loading: roleCandidateResult.isFetching,
           allowClear: true,
@@ -390,7 +398,7 @@ export function WorkspaceUserPage({
         render: (_, user) => time(latestUpdatedAt(user)),
       },
     ],
-    [openDetail, roleCandidateResult.isFetching, roleOptions],
+    [onRoleCandidatePopupScroll, openDetail, roleCandidateResult.isFetching, roleOptions],
   );
 
   function closeDetail() {

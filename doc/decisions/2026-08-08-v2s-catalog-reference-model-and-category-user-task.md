@@ -5,11 +5,20 @@ STATUS=DEXTER_ACCEPTED
 DECISION_OWNER=Dexter
 DATE=2026-08-08
 SCOPE=operations-admin catalog category management and catalog/inventory/production typed references
+SUPERSEDED_IN_PART=2026-08-25 category-depth decision
+CURRENT_CATEGORY_DEPTH=3
+CURRENT_SOURCE=doc/plans/platform/2026-08-23-v2s-catalog-library-ui-experience-formal-requirements-codex.md#124-2026-08-25-category-depth-and-list-density-amendment
 ```
+
+> **Amendment (2026-08-25, Dexter accepted):** this document's historical two-level category-tree
+> limit is superseded. Catalog categories now allow root, second and third levels; creating or
+> reparenting any fourth level is rejected by the catalog owner, contract and UI consistently.
+> The retained deletion/opaque-reference decisions below are unchanged.
 
 ## Business task and outcome
 
-An operations catalog editor must be able to maintain a two-level category tree without seeing
+An operations catalog editor must be able to maintain a category tree (historically two levels;
+now three levels under the above amendment) without seeing
 implementation lifecycle mechanics: rename a category, change its parent, move it up or down
 among siblings, and delete an entire subtree when no category in that subtree is used by a
 product.  A deleted category code may be used again in the same owner scope.  The user must not
@@ -106,3 +115,4 @@ consumed paths.  `R08` now names `productSkuRef`, `R10` names `inventoryBom[*]`,
 The fixed matrix is the exact acceptance denominator for implementation.  Any new opaque
 relationship path, including a path discovered during migration or copy closure work, is a
 blocking matrix expansion rather than an allowed heuristic fallback.
+# SUPERSEDED-BY: 商品分类层级上限已由 `doc/plans/platform/2026-08-23-v2s-catalog-library-ui-experience-formal-requirements-codex.md` §12.4 统一为最多三级；本历史决策中的“两层”表述不得作为实施依据。

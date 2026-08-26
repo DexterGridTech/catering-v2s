@@ -6,8 +6,12 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 case "${1:-}" in
   --operation)
-    [[ "$#" -eq 2 && -n "${2:-}" ]] || { printf '%s\n' 'BACKEND_ACCEPTANCE_OPERATION_REQUIRED' >&2; exit 2; }
+    [[ ( "$#" -eq 2 || "$#" -eq 3 ) && -n "${2:-}" ]] || { printf '%s\n' 'BACKEND_ACCEPTANCE_OPERATION_REQUIRED' >&2; exit 2; }
     export V2S_BACKEND_ACCEPTANCE_OPERATION="$2"
+    if [[ "$#" -eq 3 ]]; then
+      [[ "$2" == "all" && "${3:-}" == "--calibration" ]] || { printf '%s\n' 'BACKEND_ACCEPTANCE_CALIBRATION_ARGUMENT_INVALID' >&2; exit 2; }
+      export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=CALIBRATION
+    fi
     V2S_BACKEND_ACCEPTANCE_EXECUTION=true exec node "$REPO_ROOT/scripts/test/r5-remote-testcontainers.mjs" \
       :apps:backend:catering-business-server:test --tests com.catering.v2s.app.acceptance.BackendAcceptanceTest
     ;;

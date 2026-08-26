@@ -218,6 +218,7 @@ function renderDescriptorControl({
           disabled={disabled}
           value={typeof value === 'string' ? value : ''}
           onChange={event => change(event.target.value)}
+          style={{width: '100%'}}
         />
       );
     case 'textarea':
@@ -226,6 +227,7 @@ function renderDescriptorControl({
           disabled={disabled}
           value={typeof value === 'string' ? value : ''}
           onChange={event => change(event.target.value)}
+          style={{width: '100%'}}
         />
       );
     case 'select':
@@ -236,6 +238,7 @@ function renderDescriptorControl({
           value={typeof value === 'string' ? value : undefined}
           options={[...optionList]}
           onChange={next => change(next)}
+          style={{width: '100%'}}
         />
       );
     case 'multiSelect':
@@ -247,6 +250,7 @@ function renderDescriptorControl({
           value={Array.isArray(value) ? value : []}
           options={[...optionList]}
           onChange={next => change(next)}
+          style={{width: '100%'}}
         />
       );
     case 'treeSelect':
@@ -258,6 +262,7 @@ function renderDescriptorControl({
           value={Array.isArray(value) ? value : (value as string | undefined)}
           onChange={next => change(next)}
           treeCheckable
+          style={{width: '100%'}}
         />
       );
     case 'number':

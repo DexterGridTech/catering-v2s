@@ -42,7 +42,16 @@ describe('catalog descriptor field runtime', () => {
   });
 
   it('keeps the endpoint binding denominator explicit and fingerprints context, sections and scope', () => {
-    expect(CATALOG_OPTION_OPERATION_IDS).toHaveLength(7);
+    expect(CATALOG_OPTION_OPERATION_IDS).toEqual([
+      'getOperationsCatalogNavigation',
+      'getOperationsCatalogCategoryCandidates',
+      'getOperationsCatalogDictionary',
+      'getOperationsInventoryTargets',
+      'getOperationsCatalogItem',
+      'getOperationsProductionTags',
+      'listOperationsCatalogAttributeDefinitions',
+      'listOperationsCatalogOrderOptionDefinitions',
+    ]);
     const first = catalogFieldFingerprint(source, context('TASTE'));
     expect(catalogFieldFingerprint(source, context('SIZE'))).not.toBe(first);
     expect(catalogFieldFingerprint(source, context('TASTE', 2))).not.toBe(first);
@@ -137,13 +146,13 @@ describe('catalog descriptor field runtime', () => {
     ]);
   });
 
-  it('maps the navigation parent field into descriptor tree data without losing flat values', async () => {
+  it('maps category candidates into descriptor tree data without losing flat values', async () => {
     const navigationSource = {
       kind: 'endpoint' as const,
-      operationId: 'getOperationsCatalogNavigation' as const,
+      operationId: 'getOperationsCatalogCategoryCandidates' as const,
       path: {},
-      query: {viewKey: 'ALL'},
-      itemsPath: 'data.tree',
+      query: {usage: 'ITEM_ASSIGNMENT'},
+      itemsPath: 'data.items',
       valueField: 'categoryRef',
       labelField: 'name',
       parentField: 'parentCategoryRef',
@@ -151,9 +160,29 @@ describe('catalog descriptor field runtime', () => {
     };
     const resolver = createCatalogOptionResolver(async () => ({
       data: {
-        tree: [
-          {categoryRef: 'root', name: '饮品', parentCategoryRef: null},
-          {categoryRef: 'child', name: '咖啡', parentCategoryRef: 'root'},
+        items: [
+          {
+            categoryRef: 'root',
+            code: 'DRINK',
+            name: '饮品',
+            parentCategoryRef: null,
+            displayOrder: 0,
+            hasChildren: true,
+            path: [],
+            selectable: true,
+            disabledReason: null,
+          },
+          {
+            categoryRef: 'child',
+            code: 'COFFEE',
+            name: '咖啡',
+            parentCategoryRef: 'root',
+            displayOrder: 0,
+            hasChildren: false,
+            path: [{categoryRef: 'root', code: 'DRINK', name: '饮品'}],
+            selectable: true,
+            disabledReason: null,
+          },
         ],
       },
     }));

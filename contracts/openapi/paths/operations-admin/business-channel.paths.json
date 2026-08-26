@@ -369,120 +369,6 @@
           }
         }
       },
-      "patch": {
-        "operationId": "updateOperationsOwnerBinding",
-        "tags": [
-          "collaboration"
-        ],
-        "x-consumer-faces": [
-          "operations-admin"
-        ],
-        "x-owner-module": "collaboration",
-        "x-scenario-ids": [
-          "R5-EXTERNAL-COLLABORATION"
-        ],
-        "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
-        "x-idempotency-policy": "REQUIRED_16_128",
-        "x-error-codes": [
-          "AUTHORIZATION_REQUIRED",
-          "BINDING_EDIT_NOT_ALLOWED",
-          "EXTERNAL_OWNER_ID_MISMATCH",
-          "PLATFORM_COMMON_ACCESS_DENIED",
-          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
-          "PLATFORM_COMMON_CONTEXT_STALE",
-          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
-          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
-          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
-          "PLATFORM_COMMON_VALIDATION_FAILED",
-          "PLATFORM_COMMON_VERSION_CONFLICT",
-          "VERSION_CONFLICT"
-        ],
-        "security": [
-          {
-            "operationsSessionCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "groupWorkspaceKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            }
-          },
-          {
-            "name": "channelRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128,
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 128
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Owner readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "../../components/collaboration/collaboration.schemas.json#/components/schemas/OwnerBindingView"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "401": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "403": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "404": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "409": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "429": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "500": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        },
-        "x-expected-version-policy": "REQUIRED",
-        "x-required-capability": "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_UPDATE",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "../../components/collaboration/collaboration.schemas.json#/components/schemas/OwnerBindingUpdateRequest"
-              }
-            }
-          }
-        }
-      },
       "delete": {
         "operationId": "deleteOperationsOwnerBinding",
         "tags": [
@@ -714,6 +600,7 @@
           "BUSINESS_SCOPE_EXCEEDED",
           "DINE_IN_FORM_MISMATCH",
           "DINE_IN_MUST_BE_INTERNAL",
+          "DUPLICATE_CODE",
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
           "PLATFORM_COMMON_CONTEXT_STALE",
@@ -1377,6 +1264,7 @@
           "BINDING_NOT_EFFECTIVE",
           "DINE_IN_FORM_MISMATCH",
           "DINE_IN_MUST_BE_INTERNAL",
+          "DUPLICATE_CODE",
           "ORDER_KIND_MISMATCH",
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",

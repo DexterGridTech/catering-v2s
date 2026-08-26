@@ -36,7 +36,9 @@ public class CatalogInventoryCoordinator {
             "getOperationsCatalogWorkbenchContext",
             "getOperationsCatalogNavigation",
             "getOperationsCatalogItems",
+            "getOperationsCatalogCategoryCandidates",
             "getOperationsCatalogItem",
+            "getOperationsCatalogItemSkus",
             "getOperationsCatalogDictionary",
             "getOperationsLocalCatalogCopyCandidates",
             "getOperationsBrandCatalogCopyCandidates",
@@ -119,6 +121,23 @@ public class CatalogInventoryCoordinator {
         return result;
     }
 
+    public JsonNode readCatalogCategoryCandidates(
+            String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
+        return catalogReads.categoryCandidates(dataNodeRef, brandRef, request, requestId);
+    }
+
+    public JsonNode readCatalogItemSkus(
+            String dataNodeRef,
+            String brandRef,
+            String itemCode,
+            ObjectNode request,
+            String requestId,
+            String dataNodeType) {
+        JsonNode result = catalogReads.itemSkus(dataNodeRef, brandRef, itemCode, request, requestId);
+        enrichCatalogSkuItems(result, dataNodeRef, brandRef, requestId, dataNodeType);
+        return result;
+    }
+
     public JsonNode readCatalogItem(
             String dataNodeRef, String brandRef, String itemCode, ObjectNode request, String requestId) {
         JsonNode result = catalogReads.item(dataNodeRef, brandRef, itemCode, requestId);
@@ -154,8 +173,13 @@ public class CatalogInventoryCoordinator {
     /** Unit-library filtering is a catalog owner read; the coordinator does not derive its membership. */
     @Transactional(readOnly = true)
     public CatalogOwnerApi.UnitDefinitionListReadback listUnitDefinitions(
-            String dataNodeRef, String brandRef, boolean includeInactive, CatalogOwnerApi.UnitDimension dimension) {
-        return catalog.listUnitDefinitions(dataNodeRef, brandRef, includeInactive, dimension);
+            String dataNodeRef,
+            String brandRef,
+            boolean includeInactive,
+            CatalogOwnerApi.UnitDimension dimension,
+            String query,
+            String status) {
+        return catalog.listUnitDefinitions(dataNodeRef, brandRef, includeInactive, dimension, query, status);
     }
 
     /** Bounded library reads stay in the catalog owner; the edge must not reconstruct either definition aggregate. */
@@ -757,7 +781,9 @@ public class CatalogInventoryCoordinator {
     private String canonicalReferencePlan(CopyReferencePlan plan) {
         ObjectNode value = mapper.createObjectNode();
         value.set("closureItemRefs", plan.closureItemRefs().deepCopy());
-        value.set("productionTagRefs", plan.productionTagRefs().deepCopy());
+        value.set(
+                "productionTagDefinitionRefs",
+                plan.productionTagDefinitionRefs().deepCopy());
         value.set("referenceMappings", plan.referenceMappings().deepCopy());
         return canonicalLocalCopyJson(value);
     }
@@ -956,7 +982,7 @@ public class CatalogInventoryCoordinator {
             }
         }
         if (refs.isEmpty()) return Map.of();
-        return catalog.listUnitDefinitions(dataNodeRef, brandRef, true, null).units().stream()
+        return catalog.listUnitDefinitions(dataNodeRef, brandRef, true, null, null, null).units().stream()
                 .filter(unit -> refs.contains(unit.unitRef()))
                 .collect(java.util.stream.Collectors.toMap(
                         CatalogOwnerApi.UnitDefinitionReadback::unitRef,
@@ -1220,7 +1246,7 @@ public class CatalogInventoryCoordinator {
     CopyReferencePlan copyReferencePlan(JsonNode ownerResponse) {
         ArrayNode normalizedMappings = normalizedReferenceMappings(ownerResponse, true);
         ArrayNode itemRefs = mapper.createArrayNode();
-        ArrayNode productionTagRefs = mapper.createArrayNode();
+        ArrayNode productionTagDefinitionRefs = mapper.createArrayNode();
         java.util.LinkedHashSet<String> itemSeen = new java.util.LinkedHashSet<>();
         java.util.LinkedHashSet<String> tagSeen = new java.util.LinkedHashSet<>();
         for (JsonNode mapping : normalizedMappings) {
@@ -1229,14 +1255,14 @@ public class CatalogInventoryCoordinator {
                 itemRefs.add(mapping.path("sourceRef").asText());
             if ("PRODUCTION_TAG".equals(mapping.path("objectType").asText())
                     && tagSeen.add(mapping.path("sourceRef").asText()))
-                productionTagRefs.add(mapping.path("sourceRef").asText());
+                productionTagDefinitionRefs.add(mapping.path("sourceRef").asText());
         }
         JsonNode closureEdges = preflightData(ownerResponse).path("closureEdges");
         if (closureEdges.isArray())
             for (JsonNode edge : closureEdges) {
                 if (!"PRODUCTION_TAG".equals(edge.path("referenceKind").asText())) continue;
                 String tagRef = requiredOpaqueCopyRef(edge, "toRef");
-                if (tagSeen.add(tagRef)) productionTagRefs.add(tagRef);
+                if (tagSeen.add(tagRef)) productionTagDefinitionRefs.add(tagRef);
             }
         if (itemRefs.isEmpty()) {
             throw new CatalogOwnerApi.Problem(
@@ -1245,7 +1271,7 @@ public class CatalogInventoryCoordinator {
                     /* format-wrap */
                     ("复制预检未提供商品 closureItemRefs"));
         }
-        return new CopyReferencePlan(itemRefs, productionTagRefs, normalizedMappings);
+        return new CopyReferencePlan(itemRefs, productionTagDefinitionRefs, normalizedMappings);
     }
 
     private ArrayNode normalizedReferenceMappings(JsonNode ownerResponse, boolean required) {
@@ -1305,7 +1331,9 @@ public class CatalogInventoryCoordinator {
         request.remove("closureItemCodes");
         request.remove("productionTagCodes");
         request.set("closureItemRefs", plan.closureItemRefs().deepCopy());
-        request.set("productionTagRefs", plan.productionTagRefs().deepCopy());
+        request.set(
+                "productionTagDefinitionRefs",
+                plan.productionTagDefinitionRefs().deepCopy());
         request.set("referenceMappings", plan.referenceMappings().deepCopy());
     }
 
@@ -1639,7 +1667,8 @@ public class CatalogInventoryCoordinator {
             JsonNode productionJudgement,
             InventoryOwnerApi.CopyExecutionPreparation inventoryPreparation) {}
 
-    record CopyReferencePlan(ArrayNode closureItemRefs, ArrayNode productionTagRefs, ArrayNode referenceMappings) {
+    record CopyReferencePlan(
+            ArrayNode closureItemRefs, ArrayNode productionTagDefinitionRefs, ArrayNode referenceMappings) {
         static CopyReferencePlan empty(ObjectMapper mapper) {
             return new CopyReferencePlan(mapper.createArrayNode(), mapper.createArrayNode(), mapper.createArrayNode());
         }
@@ -1647,7 +1676,7 @@ public class CatalogInventoryCoordinator {
         CopyReferencePlan merge(CopyReferencePlan other) {
             if (other == null || other.referenceMappings().isEmpty()) return this;
             ArrayNode mergedItems = closureItemRefs.deepCopy();
-            ArrayNode mergedTags = productionTagRefs.deepCopy();
+            ArrayNode mergedTags = productionTagDefinitionRefs.deepCopy();
             ArrayNode mergedMappings = referenceMappings.deepCopy();
             java.util.Set<String> itemRefs = new java.util.LinkedHashSet<>();
             mergedItems.forEach(value -> itemRefs.add(value.asText()));
@@ -1656,7 +1685,7 @@ public class CatalogInventoryCoordinator {
             });
             java.util.Set<String> tagRefs = new java.util.LinkedHashSet<>();
             mergedTags.forEach(value -> tagRefs.add(value.asText()));
-            other.productionTagRefs().forEach(value -> {
+            other.productionTagDefinitionRefs().forEach(value -> {
                 if (tagRefs.add(value.asText())) mergedTags.add(value.asText());
             });
             java.util.Map<String, String> targetsBySource = new java.util.LinkedHashMap<>();
@@ -1724,9 +1753,11 @@ public class CatalogInventoryCoordinator {
         String shape = item.path("shapeKey").asText("");
         String itemRef = item.path("itemRef").asText("");
         String itemCode = item.path("code").asText("");
-        String itemName = item.path("name").asText(itemCode);
+        String itemName = item.path("name").asText("");
         if (itemRef.isBlank() || itemCode.isBlank())
             throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品库存 owner 投影缺少商品引用");
+        if (itemName.isBlank() || itemName.equals(itemCode))
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品库存 owner 投影缺少商品名称");
         if (!Set.of("COMPOSITE", "SERVICE", "BENEFIT_SHELL").contains(shape))
             appendCompleteInventoryRule(
                     nodes, persistedRules.path("nodes"), shape, "ITEM", itemRef, null, null, itemCode, itemName);
@@ -1863,13 +1894,17 @@ public class CatalogInventoryCoordinator {
             JsonNode direct = node.path("directConfiguration");
             if (direct.isObject() && direct.hasNonNull("targetRef")) {
                 ObjectNode fact = facts.addObject()
-                        .put("targetRef", direct.path("targetRef").asText());
+                        .put("targetRef", direct.path("targetRef").asText())
+                        .put("factKind", "INVENTORY_TARGET")
+                        .put("reasonLabel", "已配置库存对象");
                 if (owner.hasNonNull("productSkuRef"))
                     fact.put("productSkuRef", owner.path("productSkuRef").asText());
             }
             if (node.path("bom").path("lines").isArray())
                 node.path("bom").path("lines").forEach(line -> facts.addObject()
                         .put("targetRef", line.path("targetRef").asText())
+                        .put("factKind", "INVENTORY_BOM")
+                        .put("reasonLabel", "已配置用料")
                         .put("productSkuRef", owner.path("productSkuRef").asText("")));
         });
         return facts;
@@ -1928,8 +1963,20 @@ public class CatalogInventoryCoordinator {
             ArrayNode facts = availability.path("dependentFacts").isArray()
                     ? (ArrayNode) availability.path("dependentFacts")
                     : availability.putArray("dependentFacts");
+            ArrayNode reasons = availability.path("blockingReasons").isArray()
+                    ? (ArrayNode) availability.path("blockingReasons")
+                    : availability.putArray("blockingReasons");
+            java.util.Map<String, java.util.Set<String>> targetRefsByReason = new java.util.LinkedHashMap<>();
             for (JsonNode row : rows) {
                 String targetRef = row.path("targetRef").asText();
+                String factKind = row.path("factKind").asText("");
+                String reasonLabel = row.path("reasonLabel").asText("");
+                if (factKind.isBlank())
+                    throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存作废限制事实缺少类型");
+                if (!reasonLabel.isBlank())
+                    targetRefsByReason
+                            .computeIfAbsent(reasonLabel, ignored -> new java.util.LinkedHashSet<>())
+                            .add(targetRef);
                 boolean known = false;
                 for (JsonNode reference : references)
                     if (targetRef.equals(reference.path("referenceRef").asText())) {
@@ -1938,8 +1985,9 @@ public class CatalogInventoryCoordinator {
                     }
                 if (known) continue;
                 references.addObject().put("referenceKind", "INVENTORY_TARGET").put("referenceRef", targetRef);
-                facts.addObject().put("factKind", "INVENTORY_TARGET").put("factRef", targetRef);
+                facts.addObject().put("factKind", factKind).put("factRef", targetRef);
             }
+            appendInventoryVoidBlockingReasons(reasons, targetRefsByReason);
             availability.put("canVoid", false);
         });
     }
@@ -1961,10 +2009,20 @@ public class CatalogInventoryCoordinator {
         ArrayNode facts = availability.path("dependentFacts").isArray()
                 ? (ArrayNode) availability.path("dependentFacts")
                 : availability.putArray("dependentFacts");
+        ArrayNode reasons = availability.path("blockingReasons").isArray()
+                ? (ArrayNode) availability.path("blockingReasons")
+                : availability.putArray("blockingReasons");
+        java.util.Map<String, java.util.Set<String>> targetRefsByReason = new java.util.LinkedHashMap<>();
         if (!inventoryNodes.isArray()) return;
         inventoryNodes.forEach(node -> {
             String targetRef = node.path("targetRef").asText("");
             if (targetRef.isBlank()) return;
+            String factKind = node.path("factKind").asText("");
+            String reasonLabel = node.path("reasonLabel").asText("");
+            if (factKind.isBlank())
+                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存作废限制事实缺少类型");
+            if (!reasonLabel.isBlank())
+                targetRefsByReason.computeIfAbsent(reasonLabel, ignored -> new java.util.LinkedHashSet<>()).add(targetRef);
             boolean known = false;
             for (JsonNode reference : references) {
                 if (targetRef.equals(reference.path("referenceRef").asText(""))) {
@@ -1974,9 +2032,30 @@ public class CatalogInventoryCoordinator {
             }
             if (known) return;
             references.addObject().put("referenceKind", "INVENTORY_TARGET").put("referenceRef", targetRef);
-            facts.addObject().put("factKind", "INVENTORY_BOM").put("factRef", targetRef);
+            facts.addObject().put("factKind", factKind).put("factRef", targetRef);
         });
+        appendInventoryVoidBlockingReasons(reasons, targetRefsByReason);
         if (references.size() > 0) availability.put("canVoid", false);
+    }
+
+    /**
+     * Direct stock targets and BOM consumption are different user-visible blocking facts.  Both item and SKU
+     * detail projections consume this single helper so inventory cannot disable a void action without preserving
+     * the business reason that the inventory definition supplied.
+     */
+    private static void appendInventoryVoidBlockingReasons(
+            ArrayNode reasons, java.util.Map<String, java.util.Set<String>> targetRefsByReason) {
+        targetRefsByReason.forEach((label, targetRefs) -> {
+            boolean present = false;
+            for (JsonNode reason : reasons) {
+                if (label.equals(reason.path("label").asText())) {
+                    present = true;
+                    break;
+                }
+            }
+            if (!present)
+                reasons.addObject().put("label", label).put("count", targetRefs.size()).putArray("relatedItemNames");
+        });
     }
 
     private String requiredOpaqueTaskRef(JsonNode source, String key, String subject) {
@@ -2123,13 +2202,11 @@ public class CatalogInventoryCoordinator {
         JsonNode inventoryPage =
                 inventory.readCatalogInventorySummary(dataNodeRef, brandRef, lookup, requestId, dataNodeType);
         JsonNode inventoryItems = inventoryPage.path("data").path("items");
-        java.util.Map<String, Integer> targetCounts = new java.util.HashMap<>();
-        java.util.Map<String, Integer> bomCounts = new java.util.HashMap<>();
+        java.util.Map<String, JsonNode> summariesByItemRef = new java.util.HashMap<>();
         if (inventoryItems.isArray()) {
             inventoryItems.forEach(item -> {
                 String itemRef = item.path("itemRef").asText();
-                targetCounts.put(itemRef, item.path("targetCount").asInt(0));
-                bomCounts.put(itemRef, item.path("bomCount").asInt(0));
+                if (!itemRef.isBlank()) summariesByItemRef.put(itemRef, item);
             });
         }
         JsonNode items = envelope.path("data").path("items");
@@ -2137,11 +2214,57 @@ public class CatalogInventoryCoordinator {
             items.forEach(item -> {
                 if (item instanceof ObjectNode row) {
                     String itemRef = row.path("itemRef").asText();
-                    row.put("stockTargetCount", targetCounts.getOrDefault(itemRef, 0));
-                    row.put("bomCount", bomCounts.getOrDefault(itemRef, 0));
+                    if (row.path("skuTotalCount").asInt(0) > 0) {
+                        putInventoryDeductionSummary(row, "SKU", null);
+                    } else {
+                        putInventoryDeductionSummary(row, "ITEM", summariesByItemRef.get(itemRef));
+                    }
                 }
             });
         }
+    }
+
+    private void enrichCatalogSkuItems(
+            JsonNode result, String dataNodeRef, String brandRef, String requestId, String dataNodeType) {
+        if (!(result instanceof ObjectNode envelope) || !envelope.path("data").isObject()) return;
+        ArrayNode skuRefs = mapper.createArrayNode();
+        envelope.path("data").path("items").forEach(item -> {
+            if (item.hasNonNull("productSkuRef"))
+                skuRefs.add(item.path("productSkuRef").asText());
+        });
+        if (skuRefs.isEmpty()) return;
+        ObjectNode lookup = mapper.createObjectNode().set("productSkuRefs", skuRefs);
+        JsonNode inventoryPage =
+                inventory.readCatalogInventorySummary(dataNodeRef, brandRef, lookup, requestId, dataNodeType);
+        java.util.Map<String, JsonNode> summariesBySkuRef = new java.util.HashMap<>();
+        inventoryPage.path("data").path("items").forEach(item -> {
+            String skuRef = item.path("productSkuRef").asText();
+            if (!skuRef.isBlank()) summariesBySkuRef.put(skuRef, item);
+        });
+        envelope.path("data").path("items").forEach(item -> {
+            if (item instanceof ObjectNode row) {
+                putInventoryDeductionSummary(
+                        row,
+                        "SKU",
+                        summariesBySkuRef.get(row.path("productSkuRef").asText()));
+            }
+        });
+    }
+
+    private void putInventoryDeductionSummary(ObjectNode row, String grain, JsonNode source) {
+        ObjectNode summary = row.putObject("inventoryDeductionSummary").put("grain", grain);
+        if (source == null) {
+            summary.putNull("mode").putNull("consumptionUnitSnapshot").putNull("bomLineCount");
+            return;
+        }
+        if (source.path("mode").isMissingNode() || source.path("mode").isNull()) summary.putNull("mode");
+        else summary.put("mode", source.path("mode").asText());
+        JsonNode snapshot = source.path("consumptionUnitSnapshot");
+        if (snapshot.isObject()) summary.set("consumptionUnitSnapshot", snapshot.deepCopy());
+        else summary.putNull("consumptionUnitSnapshot");
+        JsonNode bomLineCount = source.path("bomLineCount");
+        if (bomLineCount.isIntegralNumber()) summary.put("bomLineCount", bomLineCount.asInt());
+        else summary.putNull("bomLineCount");
     }
 
     /**

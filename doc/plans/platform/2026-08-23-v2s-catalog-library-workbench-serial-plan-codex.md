@@ -54,10 +54,10 @@ IA 对应级联、详设 CP、六维 memory 命中、owning source 与可复用�
 
 1. 在唯一 operation design source 与 P1 中新增：
    `getOperationsCatalogCategoryCandidates`、`getOperationsCatalogItemSkus`。
-2. 定义 category lazy hierarchy cursor：`usage=ITEM_ASSIGNMENT|CATEGORY_REPARENT`、currentCategoryRef、
+2. 定义 category lazy hierarchy cursor：`usage=ITEM_ASSIGNMENT|CATEGORY_CREATE|CATEGORY_REPARENT`、currentCategoryRef、
    parentCategoryRef、keyword、cursor、pageSize；row 含业务 path、selectable、disabledReason。
    新建/编辑/批量移动商品固定使用 `ITEM_ASSIGNMENT` 且 currentCategoryRef 为空；分类挪父固定使用
-   `CATEGORY_REPARENT` 且 currentCategoryRef 必填。usage 不进入用户可见文案。严格照详设 §5.1 的
+   `CATEGORY_CREATE` 时 currentCategoryRef 必须为空且第三级候选不可选；`CATEGORY_REPARENT` 时 currentCategoryRef 必填，移动后不得超过三级；从品牌复制复用目标同编码分类而导致任何待复制子树超过三级时，拒绝整次 execute，绝不压平、改挂或部分写入。usage 不进入用户可见文案。严格照详设 §5.1 的
    root/null、keyword、1..100、cursor/nextCursor、path segment、稳定排序与 disabledReason 对偶规则生成，不自行换字段。
 3. 定义 parent-scoped SKU cursor page；parent item page 增 `hasSkuChildren`、规格数/维度/价格、owner 排序的
    `categoryPathLabels` 和结构化 `inventoryDeductionSummary`；SKU row 增稳定身份、属性组合、价格、状态、默认标识、
@@ -71,7 +71,8 @@ IA 对应级联、详设 CP、六维 memory 命中、owning source 与可复用�
    或把 public asset 错并入 operations scope，任一必须红。
 6. 同批收敛既有契约：商品 save/detail/page 的 `productionTagRefs` 改为 nullable `productionTagRef`；navigation 新增
    `productionTags[]`；item page query 新增专用 `productionTagRef`；制作 profile/SKU override 删除标签字段，option effect
-   删除 `addProductionTagRefs`。schema/self-test 的 singular/zero-legacy red mutation 必须真红。
+   删除 `addProductionTagRefs`；生产标签定义的无业务语义 `tagKind` 也从 contract、owner、持久化、copy、seed 与 UI 退役。
+   schema/self-test 的 singular/zero-legacy red mutation 必须真红。
 
 **FORBID**：写接口、叶子规则、generated 手改、无限/待定预算、全详情 fallback。
 
@@ -112,7 +113,7 @@ IA 对应级联、详设 CP、六维 memory 命中、owning source 与可复用�
 5. P3 frontend generate/self-test；
 6. registry/OpenAPI/generated Java/TS/RTK/locator exact-set。
 
-目标在 CP-00 基线未漂移时为 59 catalog、240 platform。任何 missing/extra/budget/tag/binding 首败先修生成源，
+目标在 CP-00 基线未漂移时为 59 catalog、239 platform。任何 missing/extra/budget/tag/binding 首败先修生成源，
 不得手改产物。
 
 ## 5. CP-04 · 前端状态骨架
@@ -120,12 +121,12 @@ IA 对应级联、详设 CP、六维 memory 命中、owning source 与可复用�
 **RECALL**：IA §2 全文、详设 CP-04、frontend standard §3-B/D/E/F/G/K、foundation capability lookup。
 
 1. 新建 workspace task reducer；迁移 View/Edit/Config/Copy/Create/Category/Batch 八 variant；删除平行 open state。
-2. 新建 `useCatalogItemDraft`：typed nine slices、dirty/error、hydrate-once、stale version、sessionStorage、恢复/放弃、
+2. 新建 `useCatalogItemDraft`：typed nine slices、dirty/error、hydrate-once、stale version、仅用于异常关闭/刷新后的 sessionStorage 恢复/放弃、
    active section/anchor；敏感/临时资产排除。
-3. 新建 `useCatalogConfigLibrary`：六库、查询 identity、search、parent/definition selection、editor draft、return token。
+3. 新建 `useCatalogConfigLibrary`：六库、查询 identity、search、parent/definition selection、definition editor draft；不建立 return token。编辑内元数据维护由 Editor child task 持有瞬态 placement，且不读写过渡草稿。
 4. 新建 `catalogTestIds.ts`，组件只能引用常量；动态行使用业务码/editorId。
 5. 复用 foundation Drawer/submission/overlay/cursor 能力；不得改 foundation 承载 catalog 业务 state。
-6. focused proof 覆盖 task transition 全表、dirty refetch、版本 stale、稳定身份重排、三关闭路径、配置绕行。
+6. focused proof 覆盖 task transition 全表、dirty refetch、版本 stale、稳定身份重排、三关闭路径、编辑内元数据子任务。
 
 ## 6. CP-05 · 工作台、树形表与分类 TreeSelect
 
@@ -140,8 +141,10 @@ IA 对应级联、详设 CP、六维 memory 命中、owning source 与可复用�
 7. 十列精确按商品→商品形态→价格和单位→规格或选项→商品属性→制作信息→库存与 BOM→更新时间→状态→来源，
    全部默认可见且不提供隐藏入口。智能视图、标签、全部商品等跨分类结果直接消费 `categoryPathLabels`，不得从
    navigation 可见节点拼路径。
-8. 按 formal §4.2 的单元格顺序、主次字体和最小宽度实现；每格最多四行，超出由第四行“另有 N 项”/ellipsis 与
-   Tooltip 给完整有序内容。`scroll.x` 按十列求和，选择/展开/商品列固定。横向滚动是正常交互；禁止删列、窄屏改卡片、
+8. 按 formal §4.2 的单元格顺序、主次字体和最小宽度实现；每格最多四行，超出由第四行“还有 N 项”/ellipsis 与
+   Tooltip 给完整有序内容；**规格或选项列除外，前四行必须都是实际规格或点单选项，超出只由 Tooltip 给完整有序内容。**
+   `scroll.x` 按十列求和，选择/展开/商品列固定。横向滚动是正常交互；禁止删列、窄屏改卡片、
+   商品列 240px，父图 72px、规格图 60px；有规格父行的显式展开控件、无规格不显示入口，且规格懒加载的 loading/error/retry/load-more 绑定同一父行。
    复制 V4 第二条 range 滚动控件或用复合斜杠列止血。focused proof 与 L2 blueprint 同步断言每种单元格、横滚和恢复。
 9. 商品/规格价格为空时统一中性显示“未设置”；删除列表、View、Editor 中“缺价/缺少价格/缺价数”的风险表达，
    且不改变任何商品 actionAvailability。focused/L2 用合法无价商品证明可查看、可编辑其它事实；不得把菜单必须有价
@@ -172,7 +175,7 @@ IA 对应级联、详设 CP、六维 memory 命中、owning source 与可复用�
 4. 所有集合行以 owner ref/code 或 editorId 定位；删除 index 回写、上传归属、错误路径与 testId。
 5. 子任务使用 working copy；Apply 写 parent draft 并 dirty，Cancel 零写。
 6. whole-save 前按 field/row/group/section 定位；成功才清 session；known reject/unknown/version conflict 分流。
-7. 编辑去配置严格执行 persist→close EDIT→open CONFIG→continue EDIT；恢复 section/value/error/focus。
+7. 编辑内维护元数据严格执行 open child task→维护对应库→关闭 child task→焦点回原触发控件；EDIT 不关闭，草稿不持久化/恢复，相关候选失效但 draft 的值、错误、区段与滚动位置不变。
 8. 制作信息区的生产标签为商品级可清除单选；SKU 制作覆盖只含显示名称/时长/说明；选项影响只含非负时长增量与
    有序说明。提交体、draft type、testId 和错误定位均不得恢复标签数组、SKU 标签或选项标签。
 
@@ -186,7 +189,7 @@ IA 对应级联、详设 CP、六维 memory 命中、owning source 与可复用�
 4. 复杂库：属性/点单选项列表与详情编辑同栏切换，删除嵌套 Drawer。
 5. 逐项落实填写方式、选择方式、父级、物料候选的级联；停用与历史绑定边界不变。
 6. mutation 成功按 IA §4 精确 invalidation；删除单一 `dictionaryRevision` 粗信号。
-7. 配置失败不得清商品草稿/return token；关闭配置后呈现继续编辑入口。
+7. 配置失败不得清商品草稿；从编辑打开时关闭 child task 后直接回到仍打开的编辑面，工作台不得呈现继续编辑入口。
 
 ## 10. CP-09 · Batch、Copy、治理结果
 
@@ -221,8 +224,9 @@ IA 对应级联、详设 CP、六维 memory 命中、owning source 与可复用�
    affected registry 精确选中 `OPERATIONS-CATALOG-LIBRARY`，禁止 fallback 证明本批。
 9. 按详设 §11d 生成 action-request join 和 expected-event matrix；每个 action 声明网络 REQUIRED/FORBIDDEN/
    BACKGROUND_ALLOWED 与 operation exact-set。无新日志立即 fail closed。
-10. 按详设 §11c.5 为每个 action 声明 operation `maxRequestCount`；从 generated performance budget 与 42.7ms
-    同口径基线生成 24-case/整场 `l2-timing-budget-report.json` 和 timeout，禁止逐 case 魔法值。缺预算、非法倍数、
+10. 按详设 §11c.5 为每个 action 声明 operation `maxRequestCount`；每个 fresh browser case 先计入登录、会话与商品工作台
+    首次读取的公共 HTTP envelope，再从 generated performance budget 与 42.7ms 同口径基线生成 24-case/整场
+    `l2-timing-budget-report.json` 和 timeout，禁止逐 case 魔法值。缺预算、非法倍数、公共 envelope 漏算、
     registry 漂移、报告与 runner timeout 不一致必须各自真红。
 11. 每个写 case 有失败后 owner facts/version 不变 oracle；元素存在/页面打开不算 oracle。red fixture 删除一个
    testId binding、Journey case、fixture unchanged、category path、SKU cursor、error placement、requestId join、DB row、
@@ -257,7 +261,8 @@ IA 对应级联、详设 CP、六维 memory 命中、owning source 与可复用�
 2. 若 backend-acceptance 获授权：运行前发现 manifest-owned DEV 则按联动规则 stop；business/cleanup 双 PASS 后且原先
    存在 DEV 才 start 最新代码；失败不自动重启；不 reset/seed。
 3. Testcontainers manifest 必须 discovered=selected=results=80、failure=0；两新 operation 在 run events 中出现，budget/connection 通过。
-4. browser L2 只有新授权且 readiness manifest 全 PASS 才走 `scripts/test/browser-l2`；运行前 fixture setup/readback、
+4. browser L2 只有新授权且 readiness manifest 的 `businessStatus=PASS`、`setupCleanupStatus=PASS`、
+   `cleanupStatus=PENDING_HELD` 且 `lifecycle=HELD_FOR_BROWSER_L2_RUN` 才走 `scripts/test/browser-l2`；运行前 fixture setup/readback、
    §11c.5 timing budget report 与 §11c.6 secret/session allowlist、0600 mode、run/namespace binding PASS，执行中
    24/24、concrete testId 差集空、
    action-request-completion-DB join 完整，结束时 business、local secret/session cleanup、local process cleanup、remote DB
@@ -272,7 +277,7 @@ IA 对应级联、详设 CP、六维 memory 命中、owning source 与可复用�
 **RECALL**：independent review governance、cs-review、Claude handoff standard、详设 CP-13。
 
 1. 新建 `REVIEW_TARGET=IMPLEMENTATION` fresh 独立审查；设计 GO 不代替实施合理性复核。
-2. reviewer 重开 20 anchors、59/240/80 exact-set、三状态住址、IA 级联、46 problem/失败 copy class、控制权矩阵、
+2. reviewer 重开 20 anchors、59/239/80 exact-set、三状态住址、IA 级联、46 problem/失败 copy class、控制权矩阵、
    用户技术词扫描、testId/L2 26/65+active24 双分母、8 TEST fixture、runner/join/cleanup 与 seed strict readback。
 3. 作者逐条做 CONFIRMED/PARTIALLY/REJECTED/UNVERIFIED/DEXTER_DECISION intake；最多两轮。
 4. 最终交 Dexter/Claude：first failure、last known good、broken boundary、business、cleanup、生成链、80/80 manifest、
@@ -288,3 +293,6 @@ IMPLEMENTATION_AUTHORITY=false
 COMPLETION_REQUIRES=all CP business proof + cleanup proof + fresh implementation review
 DYNAMIC_ACTIONS=separately authorized only
 ```
+
+> 2026-08-26 观察问题整改附录：展开入口、生命周期体验 seed 与引用/作废表达按
+> `2026-08-26-v2s-catalog-workbench-observed-remediation-design-addendum-codex.md` 覆盖。

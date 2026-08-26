@@ -11,8 +11,8 @@
       "schemaVersion": 1,
       "revision": "CATALOG_INVENTORY_P1_20260806",
       "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
-      "contractDigest": "6108f8e23d59ba334c8c98f4674cd6cab9d5e4ac9c52e6057734e331295861eb",
-      "contentSha256": "48b0d7235f349bcb50115b3c83bbd1115e8c9de90aab2f48afbcbe727d7ef609"
+      "contractDigest": "368b97a7d34b99b7c840644e93f8a41082e02e30fdb7c9ac7ca984b20760ffd8",
+      "contentSha256": "f1be675551de7c1ed349fef58b7d1d249d928fef0879246996daa4117e2f0b39"
     },
     "edge-face": {
       "schemaVersion": 2,
@@ -22,7 +22,7 @@
         "doc/evidence/platform/r5-u01-edge-placement-resolution.json"
       ],
       "contractDigest": null,
-      "contentSha256": "cba1313905f6f3b200709f2d19d54c88ca02ae0461184b079c697d0510de1de1"
+      "contentSha256": "e03bad5f77260b6bb202a92ed7a47236b0e58170595c7dc1db8c6062c87bc4ee"
     }
   },
   "runtimeIntegration": {
@@ -30,14 +30,14 @@
     "legacyDispatcher": "NO_LEGACY_DISPATCH",
     "reason": "BP-U06 completed the 51-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth."
   },
-  "operationCount": 238,
-  "readCount": 100,
-  "commandCount": 138,
+  "operationCount": 239,
+  "readCount": 102,
+  "commandCount": 137,
   "contextCounts": {
     "PLATFORM_COMMAND_CONTEXT": 34,
     "PUBLIC_PROTOCOL_CONTEXT": 9,
-    "READ_CONTEXT": 100,
-    "WORKSPACE_EXECUTION_CONTEXT": 88,
+    "READ_CONTEXT": 102,
+    "WORKSPACE_EXECUTION_CONTEXT": 87,
     "WORKSPACE_PROTOCOL_CONTEXT": 7
   },
   "operations": [
@@ -3594,22 +3594,6 @@
       "commandBoundary": "OWNER_COMMAND"
     },
     {
-      "operationId": "updateOperationsOwnerBinding",
-      "owner": "collaboration",
-      "routeRegistry": "edge-face",
-      "mode": "COMMAND",
-      "adapter": "com.catering.v2s.collaboration.application.operations.UpdateOperationsOwnerBindingOperation",
-      "wireRequest": "OwnerBindingUpdateRequest",
-      "wireResponse": "OwnerBindingView",
-      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
-      "transactionMode": "REQUIRED",
-      "copyRole": "NONE",
-      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
-      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
-      "face": "operations-admin",
-      "commandBoundary": "OWNER_COMMAND"
-    },
-    {
       "operationId": "updatePlatformOwnerBinding",
       "owner": "collaboration",
       "routeRegistry": "edge-face",
@@ -3848,11 +3832,43 @@
       "transactionMode": "OUTSIDE_TRANSACTION",
       "copyRole": "NONE",
       "commandBoundary": "NOT_APPLICABLE"
+    },
+    {
+      "operationId": "getOperationsCatalogCategoryCandidates",
+      "owner": "catalog",
+      "routeRegistry": "catalog-inventory",
+      "path": "/operations/catalog-inventory/category-candidates",
+      "normalizedPath": "/operations/catalog-inventory/category-candidates",
+      "face": "operations-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.catalog.application.GetOperationsCatalogCategoryCandidatesOperation",
+      "wireRequest": "CatalogCategoryCandidateQuery",
+      "wireResponse": "CatalogCategoryCandidatePage",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE"
+    },
+    {
+      "operationId": "getOperationsCatalogItemSkus",
+      "owner": "catalog",
+      "routeRegistry": "catalog-inventory",
+      "path": "/operations/catalog-inventory/items/{itemCode}/skus",
+      "normalizedPath": "/operations/catalog-inventory/items/{itemCode}/skus",
+      "face": "operations-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.catalog.application.GetOperationsCatalogItemSkusOperation",
+      "wireRequest": "CatalogItemSkusQuery",
+      "wireResponse": "CatalogItemSkuPage",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE"
     }
   ],
   "commandBoundaryCounts": {
-    "NOT_APPLICABLE": 100,
-    "OWNER_COMMAND": 113,
+    "NOT_APPLICABLE": 102,
+    "OWNER_COMMAND": 112,
     "PROTOCOL": 25
   }
 }

@@ -87,6 +87,57 @@ export const assertPerformanceOperationExactSet = reconciliation => {
 };
 
 /**
+ * Calibration needs the route/owner identity and a successful normal sample,
+ * but it must not read an active ceiling.  Keeping this tuple separate from
+ * the budget-aware helper prevents pre-activation calibration from validating
+ * itself against stale generated metadata.
+ */
+export const normalMeasurementEventsForIdentity = (expected, events, {missingCode}) => {
+  const normal = [];
+  for (const event of events) {
+    const row = expected.get(event.operationId);
+    if (!row) throw new Error(`PERFORMANCE_OPERATION_BUDGET_EXTRA_OPERATION:${event.operationId}`);
+    if (event.outcome !== 'SUCCEEDED') continue;
+    const measurementScenarioId = event.measurementScenarioId;
+    if (measurementScenarioId === 'performance.coverage-only') continue;
+    if (measurementScenarioId !== 'performance.normal-path') {
+      throw new Error(`PERFORMANCE_OPERATION_NORMAL_SAMPLE_UNKNOWN:${event.operationId}:${measurementScenarioId ?? 'MISSING'}`);
+    }
+    const normalIdentity = {
+      method: String(event.method).toUpperCase(),
+      routeTemplate: event.routeTemplate,
+      owner: event.owner,
+      consumerFace: event.consumerFace,
+    };
+    const expectedIdentity = {
+      method: row.method,
+      routeTemplate: row.routeTemplate,
+      owner: row.owner,
+      consumerFace: row.consumerFace,
+    };
+    if (JSON.stringify(normalIdentity) !== JSON.stringify(expectedIdentity)) {
+      throw new Error(`PERFORMANCE_OPERATION_NORMAL_IDENTITY_DRIFT:${event.operationId}`);
+    }
+    normal.push(event);
+  }
+  const measuredOperationIds = new Set(normal.map(event => event.operationId));
+  const missing = [...expected.keys()].filter(operationId => !measuredOperationIds.has(operationId));
+  if (missing.length) throw new Error(`${missingCode}:${missing.join(',')}`);
+  return normal;
+};
+
+export const normalMeasurementEvents = (expected, events, {missingCode}) => {
+  const normal = normalMeasurementEventsForIdentity(expected, events, {missingCode});
+  for (const event of normal) {
+    const budget = expected.get(event.operationId)?.databaseOperationBudget;
+    if (!budget?.measurementScenarioIds?.includes(event.measurementScenarioId)) {
+      throw new Error(`PERFORMANCE_OPERATION_BUDGET_UNKNOWN_NORMAL_SAMPLE:${event.operationId}:${event.measurementScenarioId ?? 'MISSING'}`);
+    }
+  }
+  return normal;
+};
+
+/**
  * Consumes the generated budget declaration at run level.  Scenario DB counts
  * are deliberately not used here: the HTTP completion event is the only
  * request-scoped measurement that can be joined to the generated operation
@@ -109,10 +160,12 @@ export const assertPerformanceOperationBudgets = (registry, events) => {
     }
     expected.set(row.operationId, row);
   }
-  if (expected.size !== 238) throw new Error(`PERFORMANCE_OPERATION_BUDGET_OPERATION_COUNT_INVALID:${expected.size}`);
+  if (expected.size !== 239) throw new Error(`PERFORMANCE_OPERATION_BUDGET_OPERATION_COUNT_INVALID:${expected.size}`);
 
   const observed = new Map();
-  for (const event of events) {
+  for (const event of normalMeasurementEvents(expected, events, {
+    missingCode: 'PERFORMANCE_OPERATION_BUDGET_MISSING_NORMAL_SAMPLE',
+  })) {
     const row = expected.get(event.operationId);
     if (!row) throw new Error(`PERFORMANCE_OPERATION_BUDGET_EXTRA_OPERATION:${event.operationId}`);
     const budget = row.databaseOperationBudget;
@@ -146,8 +199,6 @@ export const assertPerformanceOperationBudgets = (registry, events) => {
     }
     observed.set(event.operationId, current);
   }
-  const missing = [...expected.keys()].filter(operationId => !observed.has(operationId));
-  if (missing.length) throw new Error(`PERFORMANCE_OPERATION_BUDGET_MISSING_EVENTS:${missing.join(',')}`);
   return Object.freeze({
     declared: expected.size,
     observed: observed.size,
@@ -169,9 +220,11 @@ export const assertPerformanceConnectionBudgets = (registry, events) => {
     throw new Error('PERFORMANCE_CONNECTION_RECONCILIATION_INPUT_INVALID');
   }
   const expected = new Map(registry.map(row => [row.operationId, row]));
-  if (expected.size !== 238) throw new Error(`PERFORMANCE_CONNECTION_OPERATION_COUNT_INVALID:${expected.size}`);
+  if (expected.size !== 239) throw new Error(`PERFORMANCE_CONNECTION_OPERATION_COUNT_INVALID:${expected.size}`);
   const observed = new Map();
-  for (const event of events) {
+  for (const event of normalMeasurementEvents(expected, events, {
+    missingCode: 'PERFORMANCE_CONNECTION_MISSING_NORMAL_SAMPLE',
+  })) {
     const row = expected.get(event.operationId);
     if (!row) throw new Error(`PERFORMANCE_CONNECTION_EXTRA_OPERATION:${event.operationId}`);
     const actual = event.operationConnectionBorrowCount;
@@ -190,8 +243,6 @@ export const assertPerformanceConnectionBudgets = (registry, events) => {
     current.maxOperationConnectionBorrowCount = Math.max(current.maxOperationConnectionBorrowCount, actual);
     observed.set(event.operationId, current);
   }
-  const missing = [...expected.keys()].filter(operationId => !observed.has(operationId));
-  if (missing.length) throw new Error(`PERFORMANCE_CONNECTION_MISSING_EVENTS:${missing.join(',')}`);
   return Object.freeze({
     declared: expected.size,
     observed: observed.size,
@@ -199,5 +250,106 @@ export const assertPerformanceConnectionBudgets = (registry, events) => {
     maxOperationConnectionBorrowCount: Object.freeze(Object.fromEntries(
       [...observed.entries()].map(([operationId, value]) => [operationId, value.maxOperationConnectionBorrowCount]),
     )),
+  });
+};
+
+export const assertPerformanceConnectionBudgetsForIdentity = (registry, events) => {
+  if (!Array.isArray(registry) || !Array.isArray(events)) {
+    throw new Error('PERFORMANCE_CONNECTION_RECONCILIATION_INPUT_INVALID');
+  }
+  const expected = new Map(registry.map(row => [row.operationId, row]));
+  if (expected.size !== 239) throw new Error(`PERFORMANCE_CONNECTION_OPERATION_COUNT_INVALID:${expected.size}`);
+  const observed = new Map();
+  for (const event of normalMeasurementEventsForIdentity(expected, events, {
+    missingCode: 'PERFORMANCE_CONNECTION_MISSING_NORMAL_SAMPLE',
+  })) {
+    const row = expected.get(event.operationId);
+    const actual = event.operationConnectionBorrowCount;
+    if (!Number.isInteger(actual) || actual < 0) throw new Error(`PERFORMANCE_CONNECTION_COUNT_INVALID:${event.operationId}`);
+    const transactionCount = event.transactionBeginCount;
+    const maxAllowed = row.method === 'GET' ? 1 : transactionCount;
+    if (actual > maxAllowed) {
+      throw new Error(
+        `PERFORMANCE_CONNECTION_BUDGET_EXCEEDED:${event.operationId}:method=${row.method}:actual=${actual}:max=${maxAllowed}`,
+      );
+    }
+    const current = observed.get(event.operationId) ?? {events: 0, maxOperationConnectionBorrowCount: 0};
+    current.events += 1;
+    current.maxOperationConnectionBorrowCount = Math.max(current.maxOperationConnectionBorrowCount, actual);
+    observed.set(event.operationId, current);
+  }
+  return Object.freeze({
+    declared: expected.size,
+    observed: observed.size,
+    exceeded: 0,
+    maxOperationConnectionBorrowCount: Object.freeze(Object.fromEntries(
+      [...observed.entries()].map(([operationId, value]) => [operationId, value.maxOperationConnectionBorrowCount]),
+    )),
+  });
+};
+
+/**
+ * Emits a run-derived normal-sample matrix after both budget and connection
+ * gates have accepted the evidence.  It deliberately derives rows from the
+ * current generated registry plus real completion events: a hand-maintained
+ * third operation registry would drift from the route generators.
+ */
+export const buildNormalSampleMatrix = (registry, events) => {
+  if (!Array.isArray(registry) || !Array.isArray(events)) {
+    throw new Error('PERFORMANCE_NORMAL_SAMPLE_MATRIX_INPUT_INVALID');
+  }
+  const expected = new Map(registry.map(row => [row.operationId, row]));
+  if (expected.size !== 239) throw new Error(`PERFORMANCE_NORMAL_SAMPLE_MATRIX_OPERATION_COUNT_INVALID:${expected.size}`);
+  const rowsByOperation = new Map();
+  for (const event of normalMeasurementEvents(expected, events, {
+    missingCode: 'PERFORMANCE_NORMAL_SAMPLE_MATRIX_MISSING_NORMAL_SAMPLE',
+  })) {
+    const current = rowsByOperation.get(event.operationId) ?? {
+      operationId: event.operationId,
+      method: event.method,
+      routeTemplate: event.routeTemplate,
+      owner: event.owner,
+      consumerFace: event.consumerFace,
+      normalSampleCount: 0,
+      maxDatabaseOperationCount: 0,
+    };
+    current.normalSampleCount += 1;
+    current.maxDatabaseOperationCount = Math.max(current.maxDatabaseOperationCount, event.databaseOperationCount);
+    rowsByOperation.set(event.operationId, current);
+  }
+  return Object.freeze({
+    expected: expected.size,
+    observed: rowsByOperation.size,
+    rows: Object.freeze([...rowsByOperation.values()].sort((left, right) => left.operationId.localeCompare(right.operationId))),
+  });
+};
+
+export const buildNormalSampleMatrixForIdentity = (registry, events) => {
+  if (!Array.isArray(registry) || !Array.isArray(events)) {
+    throw new Error('PERFORMANCE_NORMAL_SAMPLE_MATRIX_INPUT_INVALID');
+  }
+  const expected = new Map(registry.map(row => [row.operationId, row]));
+  if (expected.size !== 239) throw new Error(`PERFORMANCE_NORMAL_SAMPLE_MATRIX_OPERATION_COUNT_INVALID:${expected.size}`);
+  const rowsByOperation = new Map();
+  for (const event of normalMeasurementEventsForIdentity(expected, events, {
+    missingCode: 'PERFORMANCE_NORMAL_SAMPLE_MATRIX_MISSING_NORMAL_SAMPLE',
+  })) {
+    const current = rowsByOperation.get(event.operationId) ?? {
+      operationId: event.operationId,
+      method: event.method,
+      routeTemplate: event.routeTemplate,
+      owner: event.owner,
+      consumerFace: event.consumerFace,
+      normalSampleCount: 0,
+      maxDatabaseOperationCount: 0,
+    };
+    current.normalSampleCount += 1;
+    current.maxDatabaseOperationCount = Math.max(current.maxDatabaseOperationCount, event.databaseOperationCount);
+    rowsByOperation.set(event.operationId, current);
+  }
+  return Object.freeze({
+    expected: expected.size,
+    observed: rowsByOperation.size,
+    rows: Object.freeze([...rowsByOperation.values()].sort((left, right) => left.operationId.localeCompare(right.operationId))),
   });
 };

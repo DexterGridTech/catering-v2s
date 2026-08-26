@@ -226,7 +226,8 @@ class BackendAcceptanceTest {
     static final RouteIdentity OPERATIONS_PRODUCTION_TAG_CREATE =
             new RouteIdentity("createOperationsProductionTag", "/api/operations/catalog-inventory/production-tags");
     static final RouteIdentity OPERATIONS_PRODUCTION_TAG_STATUS = new RouteIdentity(
-            "transitionOperationsProductionTagStatus", "/api/operations/catalog-inventory/production-tags/{tagCode}/status");
+            "transitionOperationsProductionTagStatus",
+            "/api/operations/catalog-inventory/production-tags/{tagCode}/status");
     static final RouteIdentity OPERATIONS_CATALOG_DICTIONARY_CREATE = new RouteIdentity(
             "createOperationsCatalogDictionaryEntry",
             "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries");
@@ -403,14 +404,25 @@ class BackendAcceptanceTest {
     @EnabledIfEnvironmentVariable(named = "V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF", matches = "true")
     void p2ReadConnectionScopeProof() throws Exception {
         requireRemoteExecution();
-        P2ReadConnectionScopeScenarios.run(this, new ScenarioContext(null));
+        P2ReadConnectionScopeScenarios.run(
+                this,
+                new ScenarioContext(null, "performance.normal-path"),
+                new ScenarioContext(null, "performance.coverage-only"));
     }
 
+    /**
+     * The managed whole-suite runner enables this calibration fixture itself so the generated operation exact-set is
+     * measured on every complete acceptance run. It remains outside {@link AcceptanceScenario}; the business
+     * denominator stays the explicit catalog and this fixture is consumed only by the run-level verifier.
+     */
     @Test
     @EnabledIfEnvironmentVariable(named = "V2S_BACKEND_PERFORMANCE_OPERATION_COVERAGE", matches = "true")
     void backendPerformanceOperationCoverage() throws Exception {
         requireRemoteExecution();
-        BackendPerformanceOperationCoverage.run(this, new ScenarioContext(null));
+        BackendPerformanceOperationCoverage.run(
+                this,
+                new ScenarioContext(null, "performance.normal-path"),
+                new ScenarioContext(null, "performance.coverage-only"));
     }
 
     private void executeScenario(ScenarioDefinition definition) throws Throwable {
@@ -1091,6 +1103,27 @@ class BackendAcceptanceTest {
         invitations.cancel(fixture.workspaceUuid(), fixture.groupWorkspaceKey(), fixture.invitationId(), 1);
     }
 
+    /**
+     * External-order ingestion is intentionally outside this HTTP acceptance surface. This fixture creates only the
+     * already-owned temporary source fact so promotion can be exercised through its real operations HTTP command.
+     */
+    TemporaryCatalogItemFixture temporaryCatalogItemFixture(Fixture fixture, String code, String name) {
+        UUID itemRef = UUID.randomUUID();
+        long now = Instant.now().toEpochMilli();
+        jdbc.update(
+                "INSERT INTO catalog.catalog_item (item_ref,data_node_ref,brand_ref,code,name,shape_key,status,"
+                        + "sections,version,created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,"
+                        + "'STANDARD_SALE_COUNTED','DRAFT','{\"source\":\"TEMPORARY\"}'::jsonb,1,?,?)",
+                itemRef,
+                fixture.storeId().toString(),
+                fixture.brandId().toString(),
+                code,
+                name,
+                now,
+                now);
+        return new TemporaryCatalogItemFixture(itemRef, code, 1);
+    }
+
     Map<String, Object> queryForMap(String sql, Object... args) {
         return jdbc.queryForMap(sql, args);
     }
@@ -1161,16 +1194,27 @@ class BackendAcceptanceTest {
 
     record WorkspaceFixture(UUID workspaceUuid, String groupWorkspaceKey, long workspaceId) {}
 
+    record TemporaryCatalogItemFixture(UUID itemRef, String itemCode, long version) {}
+
     record Session(String cookie, JsonNode entry, long contextVersion) {}
 
     final class ScenarioContext {
         private final AcceptanceScenario scenario;
+        private final String measurementScenarioId;
         private final String correlationId = "acceptance-" + UUID.randomUUID();
         private final HttpClient client = HttpClient.newBuilder().build();
         private boolean contractPass = true;
 
         ScenarioContext(AcceptanceScenario scenario) {
+            this(scenario, "performance.normal-path");
+        }
+
+        ScenarioContext(AcceptanceScenario scenario, String measurementScenarioId) {
             this.scenario = scenario;
+            if (!Set.of("performance.normal-path", "performance.coverage-only").contains(measurementScenarioId)) {
+                throw new IllegalArgumentException("BACKEND_ACCEPTANCE_MEASUREMENT_SCENARIO_INVALID");
+            }
+            this.measurementScenarioId = measurementScenarioId;
         }
 
         Response get(RouteIdentity route, String path, String cookie, Set<Integer> expected) throws Exception {
@@ -1358,6 +1402,7 @@ class BackendAcceptanceTest {
                             requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_SECRET))
                     .header("X-Backend-Acceptance-Operation-Id", route.operationId())
                     .header("X-Backend-Acceptance-Route-Template", route.routeTemplate())
+                    .header("X-Backend-Acceptance-Measurement-Scenario-Id", measurementScenarioId)
                     .header("X-Request-Id", UUID.randomUUID().toString())
                     .method(method, publisher);
             if (cookie != null) builder.header("Cookie", cookie);

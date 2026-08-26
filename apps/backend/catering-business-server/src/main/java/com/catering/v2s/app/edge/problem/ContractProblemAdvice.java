@@ -1,5 +1,6 @@
 package com.catering.v2s.app.edge.problem;
 
+import com.catering.v2s.app.edge.diagnostic.HttpRequestMetricsInterceptor;
 import com.catering.v2s.app.edge.diagnostic.PublicSecurityDiagnosticRequestState;
 import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
@@ -206,6 +207,24 @@ public final class ContractProblemAdvice {
     @ExceptionHandler(CommandExecutionContextResolver.CatalogScopeForbiddenException.class)
     ResponseEntity<Problem> catalogScopeForbidden(
             CommandExecutionContextResolver.CatalogScopeForbiddenException exception, HttpServletRequest request) {
+        // Keep the public problem code stable while preserving the finite, payload-free denial branch in the
+        // run-scoped completion event. This is the diagnostic join key for a denied catalog command.
+        RequestCompletionDiagnosticState.freezeFailure(
+                request, "CATALOG_SCOPE_REJECTED:" + exception.denialReason().name());
+        HttpRequestMetricsInterceptor.freezeFailure(
+                request, "CATALOG_SCOPE_REJECTED:" + exception.denialReason().name());
+        RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(request);
+        log.atWarn()
+                .addKeyValue("event", "CATALOG_SCOPE_REJECTED")
+                .addKeyValue("phase", "SCOPE")
+                .addKeyValue("outcome", "FAILED")
+                .addKeyValue("reason", exception.denialReason().name())
+                .addKeyValue("correlationId", completion == null ? "unavailable" : completion.correlationId())
+                .addKeyValue("requestId", completion == null ? "unavailable" : completion.requestId())
+                .addKeyValue("operationId", completion == null ? "unavailable" : completion.operationId())
+                .log(
+                        "catalog-scope-rejected event=CATALOG_SCOPE_REJECTED phase=SCOPE outcome=FAILED reason={}",
+                        exception.denialReason().name());
         return problem(
                 HttpStatus.FORBIDDEN,
                 "SCOPE_FORBIDDEN",

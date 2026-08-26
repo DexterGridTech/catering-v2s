@@ -315,7 +315,20 @@ public class WorkspaceAuthenticationService {
     @Transactional
     public WorkspaceSessionEntryReadback selectContext(
             String rawToken, UUID assignmentId, long expectedContextVersion) {
+        return selectContext(rawToken, (String) null, assignmentId, expectedContextVersion);
+    }
+
+    /**
+     * Changes the selected assignment while validating the route workspace key from the same fresh owner fact. The edge
+     * must not first compose a full session merely to check this key: that composition loads organization visibility
+     * and would duplicate the command's own invocation-local visibility read.
+     */
+    @Transactional
+    public WorkspaceSessionEntryReadback selectContext(
+            String rawToken, String expectedGroupWorkspaceKey, UUID assignmentId, long expectedContextVersion) {
         SessionRow current = requireNormal(rawToken);
+        if (expectedGroupWorkspaceKey != null && !expectedGroupWorkspaceKey.equals(current.key()))
+            throw new SessionInvalidException();
         if (current.contextVersion() != expectedContextVersion) throw new SessionConflictException();
         Assignment assignment = requireAssignment(current, assignmentId);
         if (!enterable(current.workspaceUuid(), current.key(), assignment.nodeType(), assignment.nodeId()))

@@ -19,11 +19,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Locale;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -34,8 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ProductionTagOwnerService implements ProductionTagOwnerApi {
     private static final String REVISION = "CATALOG_INVENTORY_P1_20260806";
-    private static final List<String> TAG_KINDS =
-            List.of("PRODUCTION", "PACKAGE", "LABEL", "HANDOFF", "REVIEW", "OTHER");
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
     private final TimeProvider time;
@@ -65,11 +63,21 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
             throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, "usage is invalid");
         String normalizedQuery = optional(request, "query");
         normalizedQuery = normalizedQuery == null ? "" : normalizedQuery.trim().toLowerCase(Locale.ROOT);
+        String status = optional(request, "status");
+        if (status != null && !Set.of("ENABLED", "DISABLED", "VOIDED").contains(status))
+            throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, "production tag status is invalid");
         final String selectedUsage = usage;
         final String selectedQuery = normalizedQuery;
+        final String selectedStatus = status;
         int pageSize = parsePageSize(request, "pageSize", 20);
         String queryIdentity = cursorIdentity(
-                "production-tags", dataNodeRef, brandRef, selectedUsage, selectedQuery, Integer.toString(pageSize));
+                "production-tags",
+                dataNodeRef,
+                brandRef,
+                selectedUsage,
+                selectedQuery,
+                selectedStatus,
+                Integer.toString(pageSize));
         OpaqueCollectionCursor.Position cursor;
         try {
             cursor = OpaqueCollectionCursor.decode(optional(request, "cursor"), queryIdentity);
@@ -79,16 +87,17 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         ObjectNode data = mapper.createObjectNode();
         ArrayNode entries = data.putArray("entries");
         String cursorPredicate = cursor == null ? "" : " WHERE code > ? OR (code = ? AND tag_ref > ?)";
-        String sql = "WITH matching AS (SELECT tag_ref,code,tag_kind,name,status,version,updated_at_epoch_millis FROM "
+        String sql = "WITH matching AS (SELECT tag_ref,code,name,status,version,updated_at_epoch_millis FROM "
                 + "fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=? "
                 + "AND (? = 'MANAGEMENT' OR status='ENABLED') "
-                + "AND (? = '' OR (code || chr(1) || name) ILIKE '%' || ? || '%')), "
+                + "AND (? = '' OR (code || chr(1) || name) ILIKE '%' || ? || '%') "
+                + "AND (?::text IS NULL OR status=?)), "
                 + "aggregate AS (SELECT COUNT(*) AS total FROM matching), paged AS "
-                + "(SELECT tag_ref,code,tag_kind,name,status,version,updated_at_epoch_millis "
+                + "(SELECT tag_ref,code,name,status,version,updated_at_epoch_millis "
                 + "FROM matching"
                 + cursorPredicate
-                + " ORDER BY code NULLS LAST, tag_ref LIMIT ?) SELECT p.tag_ref,p.code,p.tag_kind,p.name,"
-                + "p.status,p.version,p.updated_at_epoch_millis,a.total FROM aggregate a LEFT JOIN paged p ON "
+                + " ORDER BY code NULLS LAST, tag_ref LIMIT ?) SELECT p.tag_ref,p.code,p.name,p.status,"
+                + "p.version,p.updated_at_epoch_millis,a.total FROM aggregate a LEFT JOIN paged p ON "
                 + "TRUE ORDER BY p.code NULLS LAST,p.tag_ref";
         List<ProductionTagPageRow> pageRows = jdbc.query(
                 sql,
@@ -98,7 +107,9 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                     s.setString(3, selectedUsage);
                     s.setString(4, selectedQuery);
                     s.setString(5, selectedQuery);
-                    int index = 6;
+                    s.setString(6, selectedStatus);
+                    s.setString(7, selectedStatus);
+                    int index = 8;
                     if (cursor != null) {
                         s.setString(index++, cursor.sortKey());
                         s.setString(index++, cursor.sortKey());
@@ -111,10 +122,9 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                         result.getString(2),
                         result.getString(3),
                         result.getString(4),
-                        result.getString(5),
+                        result.getLong(5),
                         result.getLong(6),
-                        result.getLong(7),
-                        result.getLong(8)));
+                        result.getLong(7)));
         List<ProductionTagPageRow> presentRows =
                 pageRows.stream().filter(row -> row.tagRef() != null).toList();
         boolean hasNext = presentRows.size() > pageSize;
@@ -123,7 +133,6 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
             ObjectNode row = entries.addObject()
                     .put("tagRef", pageRow.tagRef().toString())
                     .put("code", pageRow.code())
-                    .put("tagKind", pageRow.tagKind())
                     .put("name", pageRow.name())
                     .put("status", pageRow.status())
                     .put("ownerType", "DATA_NODE")
@@ -141,6 +150,24 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
             data.put("cursor", OpaqueCollectionCursor.encode(queryIdentity, last.code(), last.tagRef()));
         } else data.putNull("cursor");
         return envelope(requestId, data);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductionTagOwnerApi.ProductionTagNavigationReadback> readNavigationTags(
+            String dataNodeRef, String brandRef, String requestId) {
+        requireScope(dataNodeRef, brandRef);
+        return jdbc.query(
+                "SELECT tag_ref,code,name,status FROM fulfillment_production.production_tag_definition "
+                        + "WHERE data_node_ref=? AND brand_ref=? AND status <> 'VOIDED' "
+                        + "ORDER BY code, tag_ref",
+                (result, row) -> new ProductionTagOwnerApi.ProductionTagNavigationReadback(
+                        result.getObject("tag_ref", UUID.class),
+                        result.getString("code"),
+                        result.getString("name"),
+                        result.getString("status")),
+                dataNodeRef,
+                brandRef);
     }
 
     private static int parsePageSize(ObjectNode request, String key, int fallback) {
@@ -251,16 +278,8 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         String dataNodeRef = scope.dataNodeId().toString();
         requireScope(dataNodeRef, scope.brandRef());
         JsonNode receiptRequest = typedReceiptRequest(command, dataNodeRef, scope.brandRef());
-
-        recheckCreateTagBeforeReceipt(dataNodeRef, scope.brandRef(), command);
-
-        ProductionTagCommandReadback replay =
-                replayTyped(dataNodeRef, key, "createOperationsProductionTag", receiptRequest);
-        if (replay != null) return replay;
         try (var ownerCommand = OwnerOperationDiagnostics.beginCommand()) {
-            ProductionTagCommandReadback result = createTypedTag(dataNodeRef, scope.brandRef(), command);
-            saveTypedReceipt(dataNodeRef, key, "createOperationsProductionTag", receiptRequest, result);
-            return result;
+            return createTypedTag(dataNodeRef, scope.brandRef(), command, key, receiptRequest);
         }
     }
 
@@ -276,16 +295,8 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         requireScope(dataNodeRef, scope.brandRef());
         JsonNode receiptRequest = typedReceiptRequest(command, dataNodeRef, scope.brandRef());
         validateUpdateTagBeforeReceipt(command);
-
-        recheckExistingTagBeforeReceipt(dataNodeRef, scope.brandRef(), command.tagCode(), command.expectedVersion());
-
-        ProductionTagCommandReadback replay =
-                replayTyped(dataNodeRef, key, "updateOperationsProductionTag", receiptRequest);
-        if (replay != null) return replay;
         try (var ownerCommand = OwnerOperationDiagnostics.beginCommand()) {
-            ProductionTagCommandReadback result = updateTypedTag(dataNodeRef, scope.brandRef(), command);
-            saveTypedReceipt(dataNodeRef, key, "updateOperationsProductionTag", receiptRequest, result);
-            return result;
+            return updateTypedTag(dataNodeRef, scope.brandRef(), command, key, receiptRequest);
         }
     }
 
@@ -301,16 +312,8 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         requireScope(dataNodeRef, scope.brandRef());
         JsonNode receiptRequest = typedReceiptRequest(command, dataNodeRef, scope.brandRef());
         validateTransitionTagBeforeReceipt(command);
-
-        recheckExistingTagBeforeReceipt(dataNodeRef, scope.brandRef(), command.tagCode(), command.expectedVersion());
-
-        ProductionTagCommandReadback replay =
-                replayTyped(dataNodeRef, key, "transitionOperationsProductionTagStatus", receiptRequest);
-        if (replay != null) return replay;
         try (var ownerCommand = OwnerOperationDiagnostics.beginCommand()) {
-            ProductionTagCommandReadback result = transitionTypedTag(dataNodeRef, scope.brandRef(), command);
-            saveTypedReceipt(dataNodeRef, key, "transitionOperationsProductionTagStatus", receiptRequest, result);
-            return result;
+            return transitionTypedTag(dataNodeRef, scope.brandRef(), command, key, receiptRequest);
         }
     }
 
@@ -323,33 +326,8 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         return current.ref();
     }
 
-    private void recheckCreateTagBeforeReceipt(String scope, String brand, CreateTagCommand command) {
-        requiredText(command.code(), "code");
-        requireTagKind(command.tagKind());
-        requiredText(command.name(), "name");
-        TagRow existing = find(scope, brand, command.code());
-        if (existing != null
-                && (existing.version() != 1L
-                        || !"ENABLED".equals(existing.status())
-                        || !existing.tagKind().equals(command.tagKind())
-                        || !existing.name().equals(command.name()))) {
-            throw new ProductionTagOwnerApi.Problem("VERSION_CONFLICT", 409, "生产标签事实已变化");
-        }
-    }
-
-    private void recheckExistingTagBeforeReceipt(String scope, String brand, String tagCode, long expectedVersion) {
-        if (tagCode == null || tagCode.isBlank())
-            throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, "tagCode is required");
-        TagRow current = find(scope, brand, tagCode);
-        if (current == null || "VOIDED".equals(current.status()))
-            throw new ProductionTagOwnerApi.Problem("NOT_FOUND", 404, "生产标签不存在或已作废");
-        if (current.version() != expectedVersion && current.version() != expectedVersion + 1L)
-            throw new ProductionTagOwnerApi.Problem("VERSION_CONFLICT", 409, "生产标签版本已变化");
-    }
-
     private void validateUpdateTagBeforeReceipt(UpdateTagCommand command) {
         requiredText(command.tagCode(), "tagCode");
-        requireTagKind(command.tagKind());
         requiredText(command.name(), "name");
     }
 
@@ -368,111 +346,190 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         return request;
     }
 
-    private ProductionTagCommandReadback replayTyped(String scope, String key, String operation, JsonNode request) {
-        JsonNode replay = replay(scope, key, operation, request);
-        if (replay == null) return null;
-        try {
-            return mapper.treeToValue(replay, ProductionTagCommandReadback.class);
-        } catch (Exception failure) {
-            {
-                throw new ProductionTagOwnerApi.Problem(
-                        ("IDEMPOTENCY_MISMATCH"), (409), ("幂等回执与当前 owner readback 不兼容"), (failure));
-            }
-        }
-    }
-
-    private void saveTypedReceipt(
-            String scope, String key, String operation, JsonNode request, ProductionTagCommandReadback readback) {
-        saveReceipt(scope, key, operation, request, mapper.valueToTree(readback));
-    }
-
-    /** Direct named domain path for the M1 typed API; legacy writeCore remains isolated below. */
-    private ProductionTagCommandReadback createTypedTag(String scope, String brand, CreateTagCommand command) {
+    /**
+     * Direct named domain path for the M1 typed API. A receipt claim, its matching response, and the newly-created tag
+     * are one SQL statement so the command transaction projects its own readback without a replay/read/write round-trip
+     * chain. The legacy JSON writeCore deliberately remains isolated below.
+     */
+    private ProductionTagCommandReadback createTypedTag(
+            String scope, String brand, CreateTagCommand command, String key, JsonNode request) {
         String code = requiredText(command.code(), "code");
-        String tagKind = requireTagKind(command.tagKind());
         String name = requiredText(command.name(), "name");
         UUID tagRef = UUID.randomUUID();
+        String operation = "createOperationsProductionTag";
+        String requestHash = hash(request);
+        String sql = "WITH receipt_lock AS MATERIALIZED (SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), "
+                + "hashtext(CAST(? AS text)))), prior_receipt AS MATERIALIZED (SELECT operation_id,request_hash,"
+                + "response::text AS response FROM fulfillment_production.command_receipt CROSS JOIN receipt_lock "
+                + "WHERE data_node_ref=? AND idempotency_key=?), inserted_tag AS (INSERT INTO "
+                + "fulfillment_production.production_tag_definition(tag_ref,data_node_ref,brand_ref,code,name,"
+                + "created_at_epoch_millis,updated_at_epoch_millis) SELECT ?,?,?,?,?,?,? WHERE NOT EXISTS "
+                + "(SELECT 1 FROM prior_receipt) RETURNING tag_ref,code,name,status,version), written_receipt AS "
+                + "(INSERT INTO fulfillment_production.command_receipt(receipt_ref,data_node_ref,idempotency_key,"
+                + "operation_id,request_hash,response,created_at_epoch_millis) SELECT ?,?,?,?,?,jsonb_build_object("
+                + "'tagRef',tag_ref,'code',code,'name',name,'status',status,'version',version),? FROM inserted_tag "
+                + "RETURNING response::text AS response) SELECT prior_receipt.operation_id,prior_receipt.request_hash,"
+                + "prior_receipt.response AS replay_response,written_receipt.response AS written_response "
+                + "FROM receipt_lock "
+                + "LEFT JOIN prior_receipt ON TRUE LEFT JOIN written_receipt ON TRUE";
         try {
-            jdbc.update(
-                    "INSERT INTO "
-                            + "fulfillment_production.production_tag_definition(tag_ref,data_node_ref,brand_ref,code,ta"
-                            + "g_ki"
-                            + "nd,name,created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?)",
+            TypedMutationRow row = jdbc.queryForObject(
+                    sql,
+                    (result, ignored) -> new TypedMutationRow(
+                            null,
+                            null,
+                            0L,
+                            result.getString("operation_id"),
+                            result.getString("request_hash"),
+                            result.getString("replay_response"),
+                            result.getString("written_response")),
+                    "production-receipt:" + scope,
+                    key,
+                    scope,
+                    key,
                     tagRef,
                     scope,
                     brand,
                     code,
-                    tagKind,
                     name,
                     time.currentEpochMillis(),
+                    time.currentEpochMillis(),
+                    UUID.randomUUID(),
+                    scope,
+                    key,
+                    operation,
+                    requestHash,
                     time.currentEpochMillis());
+            return typedReceiptReadback(row, operation, requestHash);
         } catch (DuplicateKeyException failure) {
             throw new ProductionTagOwnerApi.Problem("DUPLICATE_CODE", 409, "生产标签编码已存在", failure);
         }
-        return new ProductionTagCommandReadback(tagRef, code, tagKind, name, "ENABLED", 1L);
     }
 
-    private ProductionTagCommandReadback updateTypedTag(String scope, String brand, UpdateTagCommand command) {
+    private ProductionTagCommandReadback updateTypedTag(
+            String scope, String brand, UpdateTagCommand command, String key, JsonNode request) {
         String code = requiredText(command.tagCode(), "tagCode");
-        String tagKind = requireTagKind(command.tagKind());
         String name = requiredText(command.name(), "name");
-        TagRow current = find(scope, brand, code);
-        if (current == null) throw new ProductionTagOwnerApi.Problem("NOT_FOUND", 404, "生产标签不存在");
-        if (!current.tagKind().equals(tagKind))
-            throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, "生产标签类型创建后不可修改");
-        if (jdbc.update(
-                        "UPDATE fulfillment_production.production_tag_definition SET "
-                                + "name=?,version=version+1,updated_at_epoch_millis=? WHERE data_node_ref=? AND "
-                                + "brand_ref=? AND code=? AND version=? AND status <> 'VOIDED'",
-                        name,
-                        time.currentEpochMillis(),
-                        scope,
-                        brand,
-                        code,
-                        command.expectedVersion())
-                != 1) {
-            throw new ProductionTagOwnerApi.Problem("VERSION_CONFLICT", 409, "生产标签版本已变化");
-        }
-        return new ProductionTagCommandReadback(
-                current.ref(), code, tagKind, name, current.status(), command.expectedVersion() + 1);
+        return mutateTypedExistingTag(
+                scope,
+                brand,
+                code,
+                command.expectedVersion(),
+                key,
+                "updateOperationsProductionTag",
+                request,
+                "name",
+                name);
     }
 
     private ProductionTagCommandReadback transitionTypedTag(
-            String scope, String brand, TransitionTagStatusCommand command) {
+            String scope, String brand, TransitionTagStatusCommand command, String key, JsonNode request) {
         String code = requiredText(command.tagCode(), "tagCode");
         String targetStatus = requiredText(command.targetStatus(), "targetStatus");
         if (!List.of("ENABLED", "DISABLED", "VOIDED").contains(targetStatus))
             throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, "生产标签状态不合法");
-        TagRow current = find(scope, brand, code);
-        if (current == null) throw new ProductionTagOwnerApi.Problem("NOT_FOUND", 404, "生产标签不存在");
-        if (jdbc.update(
-                        "UPDATE fulfillment_production.production_tag_definition SET "
-                                + "status=?,version=version+1,updated_at_epoch_millis=? WHERE data_node_ref=? AND "
-                                + "brand_ref=? AND code=? AND version=? AND status <> 'VOIDED'",
-                        targetStatus,
-                        time.currentEpochMillis(),
-                        scope,
-                        brand,
-                        code,
-                        command.expectedVersion())
-                != 1) {
+        return mutateTypedExistingTag(
+                scope,
+                brand,
+                code,
+                command.expectedVersion(),
+                key,
+                "transitionOperationsProductionTagStatus",
+                request,
+                "status",
+                targetStatus);
+    }
+
+    /** Locks the existing fact and idempotency key before deciding replay, CAS, and persisted readback. */
+    private ProductionTagCommandReadback mutateTypedExistingTag(
+            String scope,
+            String brand,
+            String code,
+            long expectedVersion,
+            String key,
+            String operation,
+            JsonNode request,
+            String changedColumn,
+            String changedValue) {
+        String requestHash = hash(request);
+        String sql = "WITH receipt_lock AS MATERIALIZED (SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), "
+                + "hashtext(CAST(? AS text)))), current_tag AS MATERIALIZED (SELECT tag_ref,code,name,status,version "
+                + "FROM fulfillment_production.production_tag_definition CROSS JOIN receipt_lock WHERE data_node_ref=? "
+                + "AND brand_ref=? AND code=? FOR UPDATE), prior_receipt AS MATERIALIZED "
+                + "(SELECT operation_id,request_hash,"
+                + "response::text AS response FROM fulfillment_production.command_receipt "
+                + "CROSS JOIN receipt_lock WHERE "
+                + "data_node_ref=? AND idempotency_key=?), updated_tag AS (UPDATE "
+                + "fulfillment_production.production_tag_definition tag SET "
+                + changedColumn
+                + "=?,version=tag.version+1,updated_at_epoch_millis=? FROM current_tag current "
+                + "WHERE tag.tag_ref=current.tag_ref "
+                + "AND current.status <> 'VOIDED' AND current.version=? AND NOT EXISTS (SELECT 1 FROM prior_receipt) "
+                + "RETURNING tag.tag_ref,tag.code,tag.name,tag.status,tag.version), written_receipt AS (INSERT INTO "
+                + "fulfillment_production.command_receipt(receipt_ref,data_node_ref,idempotency_key,"
+                + "operation_id,request_hash,response,created_at_epoch_millis) SELECT ?,?,?,?,?,"
+                + "jsonb_build_object('tagRef',tag_ref,'code',code,'name',name,'status',status,'version',version),? "
+                + "FROM updated_tag RETURNING response::text AS response) SELECT current_tag.tag_ref,"
+                + "current_tag.status,"
+                + "current_tag.version,prior_receipt.operation_id,prior_receipt.request_hash,"
+                + "prior_receipt.response AS replay_response,written_receipt.response AS written_response "
+                + "FROM receipt_lock "
+                + "LEFT JOIN current_tag ON TRUE LEFT JOIN prior_receipt ON TRUE LEFT JOIN written_receipt ON TRUE";
+        TypedMutationRow row = jdbc.queryForObject(
+                sql,
+                (result, ignored) -> new TypedMutationRow(
+                        result.getObject("tag_ref", UUID.class),
+                        result.getString("status"),
+                        result.getLong("version"),
+                        result.getString("operation_id"),
+                        result.getString("request_hash"),
+                        result.getString("replay_response"),
+                        result.getString("written_response")),
+                "production-receipt:" + scope,
+                key,
+                scope,
+                brand,
+                code,
+                scope,
+                key,
+                changedValue,
+                time.currentEpochMillis(),
+                expectedVersion,
+                UUID.randomUUID(),
+                scope,
+                key,
+                operation,
+                requestHash,
+                time.currentEpochMillis());
+        if (row.currentTagRef() == null || "VOIDED".equals(row.currentStatus()))
+            throw new ProductionTagOwnerApi.Problem("NOT_FOUND", 404, "生产标签不存在或已作废");
+        if (row.currentVersion() != expectedVersion && row.currentVersion() != expectedVersion + 1L)
             throw new ProductionTagOwnerApi.Problem("VERSION_CONFLICT", 409, "生产标签版本已变化");
+        if (row.writtenResponse() == null && row.replayResponse() == null)
+            throw new ProductionTagOwnerApi.Problem("VERSION_CONFLICT", 409, "生产标签版本已变化");
+        return typedReceiptReadback(row, operation, requestHash);
+    }
+
+    private ProductionTagCommandReadback typedReceiptReadback(
+            TypedMutationRow row, String operation, String requestHash) {
+        if (row.replayResponse() != null
+                && (!operation.equals(row.receiptOperation()) || !requestHash.equals(row.receiptHash()))) {
+            throw new ProductionTagOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他请求");
         }
-        return new ProductionTagCommandReadback(
-                current.ref(), code, current.tagKind(), current.name(), targetStatus, command.expectedVersion() + 1);
+        String response = row.replayResponse() == null ? row.writtenResponse() : row.replayResponse();
+        if (response == null) throw new IllegalStateException("production tag receipt response is missing");
+        try {
+            return mapper.readValue(response, ProductionTagCommandReadback.class);
+        } catch (Exception failure) {
+            String message = "幂等回执与当前 owner readback 不兼容";
+            throw new ProductionTagOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, message, failure);
+        }
     }
 
     private static String requiredText(String value, String field) {
         if (value == null || value.isBlank())
             throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, field + " is required");
         return value;
-    }
-
-    private static String requireTagKind(String value) {
-        String tagKind = requiredText(value, "tagKind");
-        if (!TAG_KINDS.contains(tagKind))
-            throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, "tagKind is not supported");
-        return tagKind;
     }
 
     private JsonNode writeCore(
@@ -682,7 +739,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                             ("生产标签复制预检已失效，请重新预检"));
                 }
             }
-            JsonNode codes = request.path("productionTagRefs");
+            JsonNode codes = request.path("productionTagDefinitionRefs");
             if (!codes.isArray()) {
                 ObjectNode result = mapper.createObjectNode()
                         .put("owner", "fulfillment-production")
@@ -730,10 +787,9 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                                         : null)));
             int[] inserted = jdbc.batchUpdate(
                     "INSERT INTO "
-                            + "fulfillment_production.production_tag_definition(tag_ref,data_node_ref,brand_ref,code,ta"
-                            + "g_ki"
-                            + "nd,name,status,version,created_at_epoch_millis,updated_at_epoch_millis) "
-                            + "VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING",
+                            + "fulfillment_production.production_tag_definition(tag_ref,data_node_ref,"
+                            + "brand_ref,code,name,status,version,created_at_epoch_millis,updated_at_epoch_millis) "
+                            + "VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING",
                     new BatchPreparedStatementSetter() {
                         @Override
                         public void setValues(java.sql.PreparedStatement statement, int index)
@@ -744,12 +800,11 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                             statement.setString(2, targetDataNodeRef);
                             statement.setString(3, brandRef);
                             statement.setString(4, source.code());
-                            statement.setString(5, source.tagKind());
-                            statement.setString(6, source.name());
-                            statement.setString(7, source.status());
-                            statement.setLong(8, 1L);
+                            statement.setString(5, source.name());
+                            statement.setString(6, source.status());
+                            statement.setLong(7, 1L);
+                            statement.setLong(8, time.currentEpochMillis());
                             statement.setLong(9, time.currentEpochMillis());
-                            statement.setLong(10, time.currentEpochMillis());
                         }
 
                         @Override
@@ -839,7 +894,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         requireScope(sourceDataNodeRef, brandRef);
         requireScope(targetDataNodeRef, brandRef);
         authorization.run();
-        JsonNode codes = request.path("productionTagRefs");
+        JsonNode codes = request.path("productionTagDefinitionRefs");
         if (!codes.isArray()) {
             throw new ProductionTagOwnerApi.Problem(
                     ("REFERENCE_MAPPING_UNRESOLVED"),
@@ -890,7 +945,6 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                         .put("compatibilityId", "PRODUCTION_TAG:" + sourceRef)
                         .put("sourceRef", sourceRef)
                         .put("code", source.code())
-                        .put("tagKind", source.tagKind())
                         .put("result", "BLOCKED")
                         .put("reason", "来源标签已作废")
                         .put("reasonCode", "REFERENCE_MAPPING_UNRESOLVED")
@@ -906,11 +960,9 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
             String result = target == null ? "CREATE" : "REUSE";
             String reason = target == null ? "目标标签不存在，将创建" : "编码与名称一致，可复用";
             String reasonCode = target == null ? "TARGET_ABSENT" : "REUSE_CONFIRMATION_REQUIRED";
-            if (target != null
-                    && (!source.tagKind().equals(target.tagKind())
-                            || !source.name().equals(target.name()))) {
+            if (target != null && !source.name().equals(target.name())) {
                 result = "BLOCKED";
-                reason = "同编码标签类型或语义不一致";
+                reason = "同编码标签名称不一致";
                 problem = "STRUCTURE_INCOMPATIBLE";
                 reasonCode = "STRUCTURE_INCOMPATIBLE";
                 if (firstBlocking.isBlank()) firstBlocking = problem;
@@ -934,7 +986,6 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                     .put("compatibilityId", "PRODUCTION_TAG:" + sourceRef)
                     .put("sourceRef", sourceRef)
                     .put("code", source.code())
-                    .put("tagKind", source.tagKind())
                     .put("result", result)
                     .put("reason", reason)
                     .put("reasonCode", reasonCode)
@@ -946,7 +997,6 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                     .put("objectType", "PRODUCTION_TAG")
                     .put("sourceRef", sourceRef)
                     .put("code", source.code())
-                    .put("tagKind", source.tagKind())
                     .put("sourceVersion", source.version())
                     .put("targetVersion", target == null ? 0 : target.version());
             referenceMappings.add(referenceMapping(
@@ -954,7 +1004,6 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                     new TagRow(
                             targetRef,
                             source.code(),
-                            source.tagKind(),
                             source.name(),
                             source.status(),
                             target == null ? 0 : target.version())));
@@ -978,38 +1027,31 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
     }
 
     private ObjectNode create(String scope, String brand, String requestId, ObjectNode req) {
-        String code = required(req, "code"), tagKind = requiredTagKind(req, "tagKind"), name = required(req, "name");
+        String code = required(req, "code"), name = required(req, "name");
         try {
             jdbc.update(
                     "INSERT INTO "
-                            + "fulfillment_production.production_tag_definition(tag_ref,data_node_ref,brand_ref,code,ta"
-                            + "g_ki"
-                            + "nd,name,created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?)",
+                            + "fulfillment_production.production_tag_definition(tag_ref,data_node_ref,"
+                            + "brand_ref,code,name,created_at_epoch_millis,updated_at_epoch_millis) "
+                            + "VALUES(?,?,?,?,?,?,?)",
                     UUID.randomUUID(),
                     scope,
                     brand,
                     code,
-                    tagKind,
                     name,
                     time.currentEpochMillis(),
                     time.currentEpochMillis());
         } catch (DuplicateKeyException ex) {
             throw new ProductionTagOwnerApi.Problem("DUPLICATE_CODE", 409, "生产标签编码已存在", ex);
         }
-        return command(requestId, tagResult(code, tagKind, name, "ENABLED", 1), 1);
+        return command(requestId, tagResult(code, name, "ENABLED", 1), 1);
     }
 
     /** Revalidates the live owner fact before a receipt can be returned. */
     private void recheckWriteFactsBeforeReceipt(String operationId, String scope, String brand, ObjectNode request) {
         if ("createOperationsProductionTag".equals(operationId)) {
-            TagRow existing = find(scope, brand, required(request, "code"));
-            if (existing != null
-                    && (existing.version() != 1L
-                            || !"ENABLED".equals(existing.status())
-                            || !existing.tagKind().equals(requiredTagKind(request, "tagKind"))
-                            || !existing.name().equals(required(request, "name")))) {
-                throw new ProductionTagOwnerApi.Problem("VERSION_CONFLICT", 409, "生产标签事实已变化");
-            }
+            required(request, "code");
+            required(request, "name");
             return;
         }
         TagRow current = find(scope, brand, required(request, "tagCode"));
@@ -1021,7 +1063,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
     }
 
     private void recheckCopySourceFactsBeforeReceipt(String sourceScope, String brand, ObjectNode request) {
-        JsonNode refs = request.path("productionTagRefs");
+        JsonNode refs = request.path("productionTagDefinitionRefs");
         if (!refs.isArray()) {
             throw new ProductionTagOwnerApi.Problem(
                     ("REFERENCE_MAPPING_UNRESOLVED"),
@@ -1044,12 +1086,10 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
     }
 
     private ObjectNode update(String scope, String brand, String requestId, ObjectNode req) {
-        String code = required(req, "tagCode"), tagKind = requiredTagKind(req, "tagKind"), name = required(req, "name");
+        String code = required(req, "tagCode"), name = required(req, "name");
         long expected = requiredLong(req, "expectedVersion");
         TagRow current = find(scope, brand, code);
         if (current == null) throw new ProductionTagOwnerApi.Problem("NOT_FOUND", 404, "生产标签不存在");
-        if (!current.tagKind().equals(tagKind))
-            throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, "生产标签类型创建后不可修改");
         if (jdbc.update(
                         "UPDATE fulfillment_production.production_tag_definition SET "
                                 + "name=?,version=version+1,updated_at_epoch_millis=? WHERE data_node_ref=? AND "
@@ -1061,8 +1101,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                         code,
                         expected)
                 != 1) throw new ProductionTagOwnerApi.Problem("VERSION_CONFLICT", 409, "生产标签版本已变化");
-        return command(
-                requestId, tagResult(code, tagKind, name, status(scope, brand, code), expected + 1), expected + 1);
+        return command(requestId, tagResult(code, name, status(scope, brand, code), expected + 1), expected + 1);
     }
 
     private ObjectNode transition(String scope, String brand, String requestId, ObjectNode req) {
@@ -1083,26 +1122,18 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                         code,
                         expected)
                 != 1) throw new ProductionTagOwnerApi.Problem("VERSION_CONFLICT", 409, "生产标签版本已变化");
-        return command(
-                requestId,
-                tagResult(code, current.tagKind(), name(scope, brand, code), target, expected + 1),
-                expected + 1);
+        return command(requestId, tagResult(code, name(scope, brand, code), target, expected + 1), expected + 1);
     }
 
     private TagRow find(String scope, String brand, String code) {
         return jdbc.query(
-                "SELECT tag_ref,code,tag_kind,name,status,version FROM "
+                "SELECT tag_ref,code,name,status,version FROM "
                         + "fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=? AND "
                         + "code=?",
                 r -> {
                     if (!r.next()) return null;
                     return new TagRow(
-                            r.getObject(1, UUID.class),
-                            r.getString(2),
-                            r.getString(3),
-                            r.getString(4),
-                            r.getString(5),
-                            r.getLong(6));
+                            r.getObject(1, UUID.class), r.getString(2), r.getString(3), r.getString(4), r.getLong(5));
                 },
                 scope,
                 brand,
@@ -1112,7 +1143,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
     private TagRow findByRef(String scope, String brand, String ref) {
         try {
             return jdbc.query(
-                    "SELECT tag_ref,code,tag_kind,name,status,version FROM "
+                    "SELECT tag_ref,code,name,status,version FROM "
                             + "fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=? "
                             + "AND "
                             + "tag_ref=?",
@@ -1123,8 +1154,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                                 r.getString(2),
                                 r.getString(3),
                                 r.getString(4),
-                                r.getString(5),
-                                r.getLong(6));
+                                r.getLong(5));
                     },
                     scope,
                     brand,
@@ -1145,7 +1175,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         args.add(brand);
         args.addAll(values);
         return jdbc.query(
-                "SELECT tag_ref,code,tag_kind,name,status,version FROM "
+                "SELECT tag_ref,code,name,status,version FROM "
                         + "fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=? AND "
                         + column + " IN (" + placeholders + ")",
                 (row, number) -> new TagRow(
@@ -1153,8 +1183,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                         row.getString(2),
                         row.getString(3),
                         row.getString(4),
-                        row.getString(5),
-                        row.getLong(6)),
+                        row.getLong(5)),
                 args.toArray());
     }
 
@@ -1166,7 +1195,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         args.add(brand);
         args.addAll(values);
         return jdbc.query(
-                "SELECT tag_ref,code,tag_kind,name,status,version FROM "
+                "SELECT tag_ref,code,name,status,version FROM "
                         + "fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=? AND "
                         + "code "
                         + "IN ("
@@ -1176,8 +1205,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                         row.getString(2),
                         row.getString(3),
                         row.getString(4),
-                        row.getString(5),
-                        row.getLong(6)),
+                        row.getLong(5)),
                 args.toArray());
     }
 
@@ -1281,11 +1309,8 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
             }
     }
 
-    private ObjectNode tagResult(String code, String tagKind, String name, String status, long version) {
-        ObjectNode result = mapper.createObjectNode()
-                .put("code", code)
-                .put("tagKind", tagKind)
-                .put("name", name);
+    private ObjectNode tagResult(String code, String name, String status, long version) {
+        ObjectNode result = mapper.createObjectNode().put("code", code).put("name", name);
         result.putObject("ownerScope").put("factType", "PRODUCTION_TAG").put("revision", REVISION);
         result.put("status", status).put("version", version);
         return result;
@@ -1420,13 +1445,6 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         return value;
     }
 
-    static String requiredTagKind(ObjectNode req, String key) {
-        String value = required(req, key);
-        if (!TAG_KINDS.contains(value))
-            throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, "tagKind is not supported");
-        return value;
-    }
-
     private static long requiredLong(ObjectNode req, String key) {
         JsonNode value = req == null ? null : req.get(key);
         if (value == null || !value.isIntegralNumber())
@@ -1530,17 +1548,19 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
 
     private record Receipt(String operation, String hash, JsonNode response) {}
 
+    private record TypedMutationRow(
+            UUID currentTagRef,
+            String currentStatus,
+            long currentVersion,
+            String receiptOperation,
+            String receiptHash,
+            String replayResponse,
+            String writtenResponse) {}
+
     private record PlannedTag(TagRow source, UUID targetRef) {}
 
-    private record TagRow(UUID ref, String code, String tagKind, String name, String status, long version) {}
+    private record TagRow(UUID ref, String code, String name, String status, long version) {}
 
     private record ProductionTagPageRow(
-            UUID tagRef,
-            String code,
-            String tagKind,
-            String name,
-            String status,
-            long version,
-            long updatedAt,
-            long total) {}
+            UUID tagRef, String code, String name, String status, long version, long updatedAt, long total) {}
 }

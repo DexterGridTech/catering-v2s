@@ -142,10 +142,8 @@ class ProductionTagCopyConflictIntegrationTest {
 
     @Test
     void sameIdempotencyKeyCannotReplayOneBrandReadbackIntoAnotherBrand() {
-        ObjectNode request = MAPPER.createObjectNode()
-                .put("code", "BRAND-RECEIPT")
-                .put("tagKind", "PRODUCTION")
-                .put("name", "Brand receipt");
+        ObjectNode request =
+                MAPPER.createObjectNode().put("code", "BRAND-RECEIPT").put("name", "Brand receipt");
         service.write(
                 "createOperationsProductionTag",
                 TARGET_SCOPE.toString(),
@@ -182,6 +180,41 @@ class ProductionTagCopyConflictIntegrationTest {
                         TARGET_SCOPE.toString(),
                         "BRAND-B",
                         "BRAND-RECEIPT"));
+    }
+
+    @Test
+    void duplicateProductionTagCodeIsNotMisreportedAsVersionDrift() {
+        ObjectNode first =
+                MAPPER.createObjectNode().put("code", "DUPLICATE-CODE").put("name", "First name");
+        service.write(
+                "createOperationsProductionTag",
+                TARGET_SCOPE.toString(),
+                "BRAND",
+                first,
+                "duplicate-first",
+                "duplicate-first-receipt",
+                WORKSPACE,
+                "production-copy-conflict",
+                "STORE",
+                grant());
+
+        ObjectNode duplicate =
+                MAPPER.createObjectNode().put("code", "DUPLICATE-CODE").put("name", "Changed name");
+        ProductionTagOwnerApi.Problem failure = assertThrows(
+                ProductionTagOwnerApi.Problem.class,
+                () -> service.write(
+                        "createOperationsProductionTag",
+                        TARGET_SCOPE.toString(),
+                        "BRAND",
+                        duplicate,
+                        "duplicate-second",
+                        "duplicate-second-receipt",
+                        WORKSPACE,
+                        "production-copy-conflict",
+                        "STORE",
+                        grant()));
+
+        assertEquals("DUPLICATE_CODE", failure.code());
     }
 
     private static void insertTag(UUID ref, UUID scope, String code) {

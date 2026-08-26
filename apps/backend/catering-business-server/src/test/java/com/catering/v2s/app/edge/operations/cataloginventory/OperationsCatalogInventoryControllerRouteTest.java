@@ -91,8 +91,7 @@ class OperationsCatalogInventoryControllerRouteTest {
                     "orderOptionDefinitions",
                     "/order-option-definitions",
                     "listOrderOptionDefinitions"),
-            new ReadRoute(
-                    "listOperationsCatalogUnits", "catalogUnits", "/units", "listUnitDefinitions"));
+            new ReadRoute("listOperationsCatalogUnits", "catalogUnits", "/units", "listUnitDefinitions"));
 
     @Test
     void twentyReadRoutesHaveOneExplicitControllerAndCoordinatorBinding() throws Exception {

@@ -14,6 +14,12 @@ public interface ProductionTagOwnerApi {
 
     JsonNode readTags(String dataNodeRef, String brandRef, ObjectNode request, String requestId);
 
+    /**
+     * Read the complete non-voided definition set for catalog navigation. This is an owner read, not a new HTTP
+     * operation; catalog owns reference counts and production owns definition facts.
+     */
+    List<ProductionTagNavigationReadback> readNavigationTags(String dataNodeRef, String brandRef, String requestId);
+
     List<ProductionTagReferenceReadback> readTagReferencesByRefs(
             String dataNodeRef, String brandRef, List<UUID> tagRefs, String requestId);
 
@@ -49,16 +55,17 @@ public interface ProductionTagOwnerApi {
 
     UUID resolveProductionTagRef(WorkspaceExecutionContext<CatalogAuthorizationScope> context, String tagCode);
 
-    record CreateTagCommand(String code, String tagKind, String name) {}
+    record CreateTagCommand(String code, String name) {}
 
-    record UpdateTagCommand(String tagCode, long expectedVersion, String tagKind, String name) {}
+    record UpdateTagCommand(String tagCode, long expectedVersion, String name) {}
 
     record TransitionTagStatusCommand(String tagCode, long expectedVersion, String targetStatus) {}
 
     record ProductionTagReferenceReadback(UUID tagRef, String code, String name, String status, long version) {}
+
+    record ProductionTagNavigationReadback(UUID tagRef, String code, String name, String status) {}
     /** Owner-native command readback; edge contract serialization is deliberately separate. */
-    record ProductionTagCommandReadback(
-            UUID tagRef, String code, String tagKind, String name, String status, long version) {}
+    record ProductionTagCommandReadback(UUID tagRef, String code, String name, String status, long version) {}
 
     /**
      * Brand-copy composition carries only opaque owner-produced plan text between owners. The production owner alone

@@ -39,7 +39,6 @@ public class CollaborationOwnerService
     private static final String INVALID = "INVALID";
     private static final String REQUIRES_ADAPTER_UNBIND = "REQUIRES_ADAPTER_UNBIND";
     private static final String REQ_BINDING_CREATE = "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_CREATE";
-    private static final String REQ_BINDING_UPDATE = "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_UPDATE";
     private static final String REQ_BINDING_DELETE = "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_DELETE";
     private static final int DEFAULT_PAGE_SIZE = 50;
     private static final int MAX_PAGE_SIZE = 100;
@@ -516,51 +515,11 @@ public class CollaborationOwnerService
 
     @Override
     @Transactional
-    public CollaborationReadback.OwnerBinding updateOperationsBinding(UpdateOperationsBindingCommand command) {
-        requireScope(command.workspaceUuid(), command.groupWorkspaceKey());
-        BindingRow existing =
-                readBindingRow(command.workspaceUuid(), command.groupWorkspaceKey(), command.bindingRef());
-        CollaborationCatalogSource.ProviderProfileDefinition provider = requireProviderProfile(existing.providerCode());
-        String ownerId = CollaborationBindingPolicy.validateUpdate(provider, command.externalOwnerId());
-        requireOperationsGrant(
-                command.ownerScopeGrant(),
-                command.contextVersion(),
-                command.workspaceUuid(),
-                command.groupWorkspaceKey(),
-                existing.nodeType(),
-                existing.nodeRef(),
-                REQ_BINDING_UPDATE);
-        return receipts.execute(
-                command.workspaceUuid(),
-                command.groupWorkspaceKey(),
-                command.idempotencyKey(),
-                "updateOperationsOwnerBinding",
-                canonical(
-                        "operations-update-binding",
-                        command.workspaceUuid(),
-                        command.groupWorkspaceKey(),
-                        command.bindingRef(),
-                        command.bindingDisplayName(),
-                        ownerId,
-                        command.expectedVersion(),
-                        command.contextVersion()),
-                CollaborationReadback.OwnerBinding.class,
-                () -> updateBinding(
-                        existing,
-                        provider,
-                        command.bindingDisplayName(),
-                        ownerId,
-                        command.expectedVersion(),
-                        command.actor()));
-    }
-
-    @Override
-    @Transactional
     public CollaborationReadback.OwnerBinding requestOrDeletePlatformBinding(DeletePlatformBindingCommand command) {
         requireScope(command.workspaceUuid(), command.groupWorkspaceKey());
         platformAuthorization.requireEnabledPlatformAdministrator(command.actor());
         BindingRow existing =
-                readBindingRow(command.workspaceUuid(), command.groupWorkspaceKey(), command.bindingRef());
+                readBindingRowForUpdate(command.workspaceUuid(), command.groupWorkspaceKey(), command.bindingRef());
         CollaborationCatalogSource.ProviderProfileDefinition provider = requireProviderProfile(existing.providerCode());
         return receipts.execute(
                 command.workspaceUuid(),
@@ -582,7 +541,7 @@ public class CollaborationOwnerService
     public CollaborationReadback.OwnerBinding requestOrDeleteOperationsBinding(DeleteOperationsBindingCommand command) {
         requireScope(command.workspaceUuid(), command.groupWorkspaceKey());
         BindingRow existing =
-                readBindingRow(command.workspaceUuid(), command.groupWorkspaceKey(), command.bindingRef());
+                readBindingRowForUpdate(command.workspaceUuid(), command.groupWorkspaceKey(), command.bindingRef());
         CollaborationCatalogSource.ProviderProfileDefinition provider = requireProviderProfile(existing.providerCode());
         requireOperationsGrant(
                 command.ownerScopeGrant(),
@@ -808,11 +767,9 @@ public class CollaborationOwnerService
             CollaborationCatalogSource.ProviderProfileDefinition provider,
             long expectedVersion,
             AuditActor actor) {
-        BindingRow current =
-                readBindingRowForUpdate(initial.workspaceUuid(), initial.groupWorkspaceKey(), initial.bindingRef());
-        if (DELETED.equals(current.status())) return ownerBinding(current);
-        if (current.version() != expectedVersion) throw problem("VERSION_CONFLICT", 409, "binding version has changed");
-        if (REQUIRES_ADAPTER_UNBIND.equals(provider.unbindKind()) && current.externalRevokedAt() == null) {
+        if (DELETED.equals(initial.status())) return ownerBinding(initial);
+        if (initial.version() != expectedVersion) throw problem("VERSION_CONFLICT", 409, "binding version has changed");
+        if (REQUIRES_ADAPTER_UNBIND.equals(provider.unbindKind()) && initial.externalRevokedAt() == null) {
             throw problem("ADAPTER_UNBIND_REQUIRED", 409, "adapter revocation is required before deletion");
         }
         long now = time.currentEpochMillis();
@@ -827,24 +784,24 @@ public class CollaborationOwnerService
                     statement.setLong(2, now);
                     statement.setLong(3, now);
                     statement.setLong(4, now);
-                    statement.setObject(5, current.bindingRef());
-                    statement.setObject(6, current.workspaceUuid());
-                    statement.setString(7, current.groupWorkspaceKey());
+                    statement.setObject(5, initial.bindingRef());
+                    statement.setObject(6, initial.workspaceUuid());
+                    statement.setString(7, initial.groupWorkspaceKey());
                     statement.setLong(8, expectedVersion);
                     statement.setString(9, DELETED);
                 },
                 result -> result.next() ? mapBinding(result) : null);
         if (deleted == null) throw problem("VERSION_CONFLICT", 409, "binding version has changed");
         audit(
-                current.workspaceUuid(),
-                current.groupWorkspaceKey(),
-                current.bindingRef().toString(),
+                initial.workspaceUuid(),
+                initial.groupWorkspaceKey(),
+                initial.bindingRef().toString(),
                 "OWNER_BINDING",
                 "BINDING_DELETED",
                 actor,
                 BINDING_DELETED,
                 List.of(
-                        new AuditChange("status", current.status(), DELETED),
+                        new AuditChange("status", initial.status(), DELETED),
                         new AuditChange("deletedAt", null, Long.toString(now))));
         return ownerBinding(deleted);
     }

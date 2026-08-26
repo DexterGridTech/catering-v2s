@@ -17,10 +17,10 @@ const OUTPUT_ROOT = "contracts/registry/generated/operation-handler-bindings";
 const JAVA_OUTPUT_ROOT = `${OUTPUT_ROOT}/java`;
 const JAVA_PACKAGE_ROOT = "com.catering.v2s.generated.operationbindings";
 const EXPECTED_COUNTS = Object.freeze({
-  operations: 238,
-  reads: 100,
-  commands: 138,
-  operationsAdminCommands: 95,
+  operations: 239,
+  reads: 102,
+  commands: 137,
+  operationsAdminCommands: 94,
   platformAdminCommands: 34,
   publicCommands: 9,
 });
@@ -126,7 +126,6 @@ const OPERATIONS_ADAPTER_OPERATION_IDS = new Set([
   "revokeOperationsWorkspaceRegionUserAssignment",
   "revokeOperationsWorkspaceStoreUserAssignment",
   "createOperationsOwnerBinding",
-  "updateOperationsOwnerBinding",
   "deleteOperationsOwnerBinding",
   "createOperationsBusinessChannelTemplate",
   "updateOperationsBusinessChannelTemplate",
@@ -304,7 +303,7 @@ function routeOperations(root) {
   const ids = operations.map(({ operationId }) => operationId);
   if (new Set(ids).size !== ids.length) fail("BP_U02_ROUTE_OPERATION_DUPLICATE", ids.find((id, index) => ids.indexOf(id) !== index));
   const registryCounts = Object.fromEntries(Object.keys(ROUTE_REGISTRIES).map((registry) => [registry, operations.filter((operation) => operation.routeRegistry === registry).length]));
-  if (registryCounts["catalog-inventory"] !== 57 || registryCounts["edge-face"] !== 181) {
+  if (registryCounts["catalog-inventory"] !== 59 || registryCounts["edge-face"] !== 180) {
     fail("BP_U02_ROUTE_REGISTRY_COUNT_DRIFT", JSON.stringify(registryCounts));
   }
   return operations;
@@ -661,6 +660,8 @@ const CATALOG_UNIT_WIRE_TYPES = Object.freeze({
   disableOperationsCatalogUnit: ["CatalogUnitDisableRequest", "CatalogUnitReadback"],
   deleteOperationsCatalogUnit: ["CatalogUnitDeleteRequest", "CatalogUnitDeleteReadback"],
   getOperationsInventoryConsumptionTargetCandidates: ["InventoryConsumptionTargetCandidateQuery", "InventoryConsumptionTargetCandidatePage"],
+  getOperationsCatalogCategoryCandidates: ["CatalogCategoryCandidateQuery", "CatalogCategoryCandidatePage"],
+  getOperationsCatalogItemSkus: ["CatalogItemSkusQuery", "CatalogItemSkuPage"],
 });
 function expandGeneratedCatalogUnitRows(binding, root) {
   const routes = routeOperations(root);

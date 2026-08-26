@@ -1,4 +1,5 @@
 import type {
+  BrandCatalogCopyPreflight,
   CatalogDictionaryView,
   CatalogInventoryEnvelope,
   CatalogItemBatchStatusTransitionRequest,
@@ -21,7 +22,14 @@ export type CatalogItemSummary = {
   materialRole?: string;
   primaryImageAssetRef?: Uuid;
   categoryRef: Uuid | null;
-  productionTagRefs: Uuid[];
+  categoryPathLabels: string[];
+  hasSkuChildren: boolean;
+  specificationOrOptionSummary: string[];
+  attributeSummary: string[];
+  preparationSummary: string[];
+  productionTagRef: Uuid | null;
+  /** Owner-ordered business names for the parent item's product-tag line. */
+  tagSummary: string[];
   tagRefs: Uuid[];
   shapeKey: string;
   status: string;
@@ -36,9 +44,9 @@ export type CatalogItemSummary = {
   standardPriceDelta?: number;
   standardExtraPrice?: number;
   priceGranularity: string;
-  missingPriceCount: number;
-  stockTargetCount: number;
-  bomCount: number;
+  salesUnit: CatalogUnitAssignment | null;
+  baseMeasureUnit: CatalogUnitAssignment | null;
+  inventoryDeductionSummary: CatalogInventoryDeductionSummary;
   version: number;
   updatedAt: number;
 };
@@ -84,6 +92,8 @@ export type CatalogNavigation = {
   shapeCounts: Array<{shapeKey: string; count: number}>;
   /** Enabled catalog tags are a bounded navigation branch, with their matching item counts. */
   tags: Array<{tagRef: Uuid; code: string; name: string; count: number}>;
+  /** Production tags are a separate item-level navigation branch; counts are distinct parent products. */
+  productionTags: Array<{tagRef: Uuid; code: string; name: string; status: string; owner: string; count: number}>;
   /** Optional until the navigation owner exposes the unclassified aggregate. */
   uncategorizedCount?: number;
   generation: number;
@@ -96,6 +106,15 @@ export function catalogTagTreeSelection(tag: CatalogNavigation['tags'][number]):
   label: string;
 } {
   return {kind: 'TAG', ref: tag.tagRef, label: tag.name};
+}
+
+/** Production tags are a separate navigation branch and filter by their owner-backed reference. */
+export function catalogProductionTagTreeSelection(tag: CatalogNavigation['productionTags'][number]): {
+  kind: 'PRODUCTION_TAG';
+  ref: Uuid;
+  label: string;
+} {
+  return {kind: 'PRODUCTION_TAG', ref: tag.tagRef, label: tag.name};
 }
 
 /** Catalog category codes are unique within the loaded navigation scope. */
@@ -122,6 +141,8 @@ export type CatalogVoidAvailability = {
   canVoid: boolean;
   blockingReferences: Array<{referenceKind: string; referenceRef: Uuid}>;
   dependentFacts: Array<{factKind: string; factRef: Uuid}>;
+  /** Owner-backed business facts that explain every disabled void action. */
+  blockingReasons: Array<{label: string; count: number; relatedItemNames: string[]}>;
 };
 
 /** A missing or malformed shape manifest must never enable a local-copy scope. */
@@ -176,30 +197,55 @@ export type CatalogExternalIdentity = {
   snapshot?: {name?: string; specification?: string; price?: number | null};
 };
 
+export type CatalogDetailItem = {
+  itemRef: Uuid;
+  code: string;
+  name: string;
+  shortName?: string;
+  materialRole?: string;
+  categoryRef: Uuid | null;
+  /** The detail owner supplies the full path; the UI must never reconstruct it from the visible navigation tree. */
+  categoryPathLabels: string[];
+  productionTagRef: Uuid | null;
+  tagRefs: Uuid[];
+  shapeKey: string;
+  itemKind: string;
+  measureMode: string;
+  usageCapabilities: string[];
+  images: string[];
+  primaryImageAssetRef?: Uuid;
+  salesUnitRef: Uuid | null;
+  baseMeasureUnitRef: Uuid | null;
+  salesUnit: CatalogUnitAssignment | null;
+  baseMeasureUnit: CatalogUnitAssignment | null;
+  attributeAssignments: CatalogAttributeAssignment[];
+  orderOptionConfigs: CatalogOrderOptionConfig[];
+  identifiers: CatalogIdentifier[];
+  skuVariantDimensions: CatalogSkuVariantDimension[];
+  skus: CatalogSkuRow[];
+  skuSummary: {enabledCount: number; nonArchivedCount: number; totalCount: number; dimensions: string[]};
+  standardSalePrice?: number;
+  priceGranularity: string;
+  compositeGroups: CatalogCompositeGroup[];
+  preparationProfile: CatalogPreparationProfile | null;
+  lifecycle: {status: string; version: number; source: string};
+  source: string;
+  externalIdentity: CatalogExternalIdentity;
+  version: number;
+  updatedAt: number;
+};
+
 export type CatalogDetail = {
-  item: CatalogItemSummary & {
-    itemKind: string;
-    measureMode: string;
-    usageCapabilities: string[];
-    images: string[];
-    categoryRef: Uuid | null;
-    salesUnitRef: Uuid | null;
-    baseMeasureUnitRef: Uuid | null;
-    salesUnit: CatalogUnitAssignment | null;
-    baseMeasureUnit: CatalogUnitAssignment | null;
-    attributeAssignments: CatalogAttributeAssignment[];
-    orderOptionConfigs: CatalogOrderOptionConfig[];
-    identifiers: CatalogIdentifier[];
-    skuVariantDimensions: CatalogSkuVariantDimension[];
-    skus: CatalogSkuRow[];
-    skuSummary: {enabledCount: number; nonArchivedCount: number; totalCount: number; dimensions: string[]};
-    compositeGroups: CatalogCompositeGroup[];
-    preparationProfile: CatalogPreparationProfile | null;
-    lifecycle: {status: string; version: number; source: string};
-    externalIdentity: CatalogExternalIdentity;
-  };
+  item: CatalogDetailItem;
   tabs: Array<{tabKey: string; visible: boolean; disabled: boolean; reason?: string}>;
-  references: Array<{referenceKind: string; referenceRef: Uuid; code: string; direction: string}>;
+  references: Array<{
+    referenceKind: string;
+    referenceRef: Uuid;
+    code: string;
+    name: string;
+    relationLabel: string;
+    direction: string;
+  }>;
   inventoryRules: CatalogInventoryRules;
   productionTags: Array<{code: string; tagRef: Uuid; name: string; status: string; owner: string}>;
   compositeGroups: CatalogCompositeGroup[];
@@ -258,7 +304,6 @@ export type CatalogIdentifier = {
   displayOrder: number;
 };
 export type CatalogPreparationProfile = {
-  productionTagRefs: Uuid[];
   productionDisplayName: string | null;
   estimatedPreparationSeconds: number | null;
   preparationNotes: string | null;
@@ -267,15 +312,16 @@ export type CatalogPreparationEffect = {
   definitionValueRef: Uuid;
   optionGroupDisplayOrder: number;
   optionValueDisplayOrder: number;
-  addProductionTagRefs: Uuid[];
   instruction: string | null;
   preparationSecondsDelta: number | null;
 };
 export type CatalogCompositeComponent = {
   itemCode: string;
+  itemName: string;
   itemRef: Uuid;
   productSkuRef: Uuid | null;
   skuCode: string | null;
+  skuName: string | null;
   quantity: string;
   unit: string;
   default: boolean;
@@ -303,6 +349,39 @@ export type CatalogUnitSnapshot = {
 export type CatalogUnitAssignment = CatalogUnitSnapshot & {
   status: 'ENABLED' | 'DISABLED';
   inheritanceSource: 'ITEM_DEFAULT' | 'SKU_OVERRIDE';
+};
+export type CatalogInventoryDeductionSummary = {
+  grain: 'ITEM' | 'SKU';
+  mode: CatalogInventoryRuleMode | null;
+  consumptionUnitSnapshot: CatalogUnitSnapshot | null;
+  bomLineCount: number | null;
+};
+export type CatalogSkuListRow = {
+  productSkuRef: Uuid;
+  skuCode: string;
+  skuName: string;
+  attributeValueRefs: Array<{
+    attributeRef: Uuid;
+    attributeCode: string;
+    attributeName: string;
+    attributeValueRef: Uuid;
+    valueCode: string;
+    valueLabel: string;
+    displayOrder: number;
+    status: string;
+  }>;
+  standardSalePrice: number | null;
+  salesUnit: CatalogUnitAssignment | null;
+  baseMeasureUnit: CatalogUnitAssignment | null;
+  isDefault: boolean;
+  status: string;
+  primaryImageAssetRef: Uuid | null;
+  inventoryDeductionSummary: CatalogInventoryDeductionSummary;
+  /** Empty means this SKU has no SKU-specific attribute override; the product attributes still apply. */
+  attributeSummary: string[];
+  /** Effective production information after applying the SKU override/inheritance rule. */
+  preparationSummary: string[];
+  updatedAt: number;
 };
 export type CatalogInventoryRuleMode = 'NONE' | 'DIRECT' | 'BOM';
 export type CatalogInventoryRuleOwner = {
@@ -336,6 +415,8 @@ export type CatalogInventoryRuleNode = {
   bom: {
     version: number | null;
     lines: Array<{
+      /** Local editor identity only; never serialized to the inventory owner. */
+      editorId?: string;
       targetRef: Uuid;
       itemRef: Uuid;
       productSkuRef: Uuid | null;
@@ -382,6 +463,7 @@ export type CatalogSkuRow = {
   isDefault: boolean;
   status: string;
   version: number;
+  updatedAt: number;
   mediaRefs: Uuid[];
   salesUnitOverrideRef: Uuid | null;
   baseMeasureUnitOverrideRef: Uuid | null;
@@ -401,36 +483,81 @@ export function shouldHydrateCatalogItemDraft({
   dirty: boolean;
   forceHydrate: boolean;
 }): boolean {
-  return forceHydrate || initializedItemCode !== detailItemCode || !dirty;
+  // Hydration establishes a draft once for a newly opened item.  A clean
+  // draft is not an invitation to replace it again on every render: that
+  // would make a section with controlled inputs continuously recreate its
+  // state.  A deliberately refreshed server fact is represented explicitly
+  // by forceHydrate (after a save or a shell-driven content refresh).
+  return forceHydrate || initializedItemCode !== detailItemCode;
 }
 
 export type CatalogSkuVoidReadback = Pick<
   CatalogItemSaveReadback['result']['skuTransitions'][number],
-  'version' | 'canVoid' | 'blockingReferences' | 'dependentFacts'
+  'version' | 'canVoid' | 'blockingReferences' | 'dependentFacts' | 'blockingReasons'
 >;
+
+export type CatalogSkuVoidTransitionReadback = CatalogSkuVoidReadback & {
+  skuRef: Uuid;
+  targetStatus: 'VOIDED';
+};
+
+/**
+ * A successful write response is not authority unless it returns the exact SKU
+ * transition that was requested.  Missing, duplicate or partial transitions
+ * must leave the local draft unchanged so the next detail read remains the
+ * only way to establish lifecycle fact.
+ */
+export function requireCatalogSkuVoidTransitionReadback(
+  candidateReadbacks: unknown,
+  requestedSkuRef: Uuid,
+): CatalogSkuVoidTransitionReadback {
+  if (!Array.isArray(candidateReadbacks)) throw new Error('INVALID_CATALOG_SKU_VOID_TRANSITION_READBACK');
+  const matches = candidateReadbacks
+    .map(asRecord)
+    .filter((candidate): candidate is Record<string, JsonValue> => candidate?.skuRef === requestedSkuRef);
+  if (matches.length !== 1) throw new Error('INVALID_CATALOG_SKU_VOID_TRANSITION_READBACK');
+  const match = matches[0];
+  if (match.targetStatus !== 'VOIDED') throw new Error('INVALID_CATALOG_SKU_VOID_TRANSITION_READBACK');
+  const version = integer(match.version);
+  if (version < 0) throw new Error('INVALID_CATALOG_SKU_VOID_TRANSITION_READBACK');
+  let availability: CatalogVoidAvailability;
+  try {
+    availability = decodeCatalogVoidAvailability({
+      canVoid: match.canVoid,
+      blockingReferences: match.blockingReferences,
+      dependentFacts: match.dependentFacts,
+      blockingReasons: match.blockingReasons,
+    });
+  } catch {
+    throw new Error('INVALID_CATALOG_SKU_VOID_TRANSITION_READBACK');
+  }
+  if (availability.canVoid) throw new Error('INVALID_CATALOG_SKU_VOID_TRANSITION_READBACK');
+  return {
+    skuRef: requestedSkuRef,
+    targetStatus: 'VOIDED',
+    version,
+    ...availability,
+  };
+}
 
 /** Merge only the owner-confirmed SKU transition into a local draft. */
 export function mergeCatalogSkuVoidReadback(
   rows: CatalogSkuRow[],
   skuRef: Uuid,
-  readback?: CatalogSkuVoidReadback,
+  readback: CatalogSkuVoidReadback,
 ): CatalogSkuRow[] {
   return rows.map(row => {
     if (row.productSkuRef !== skuRef) return row;
-    const voidAvailability = readback
-      ? {
-          canVoid: readback.canVoid,
-          blockingReferences: readback.blockingReferences.map(entry => ({...entry})),
-          dependentFacts: readback.dependentFacts.map(entry => ({...entry})),
-        }
-      : row.voidAvailability
-        ? {...row.voidAvailability, canVoid: false}
-        : undefined;
     return {
       ...row,
       status: 'VOIDED',
-      ...(readback ? {version: readback.version} : {}),
-      ...(voidAvailability ? {voidAvailability} : {}),
+      version: readback.version,
+      voidAvailability: {
+        canVoid: readback.canVoid,
+        blockingReferences: readback.blockingReferences.map(entry => ({...entry})),
+        dependentFacts: readback.dependentFacts.map(entry => ({...entry})),
+        blockingReasons: readback.blockingReasons.map(entry => ({...entry, relatedItemNames: [...entry.relatedItemNames]})),
+      },
     };
   });
 }
@@ -470,7 +597,6 @@ export function buildCatalogSkuVoidRequest(
             expectedBomVersion: value.bomVersion ?? 0,
             preparationEffect: value.preparationEffect
               ? {
-                  addProductionTagRefs: value.preparationEffect.addProductionTagRefs,
                   instruction: value.preparationEffect.instruction,
                   preparationSecondsDelta: value.preparationEffect.preparationSecondsDelta,
                 }
@@ -482,6 +608,7 @@ export function buildCatalogSkuVoidRequest(
           identifierType: identifier.identifierType,
           identifierValue: identifier.identifierValue,
         })),
+        productionTagRef: item.productionTagRef,
         preparationProfile: item.preparationProfile,
         tagRefs: item.tagRefs,
       },
@@ -490,21 +617,17 @@ export function buildCatalogSkuVoidRequest(
     },
   };
 }
-export type CatalogSkuIssueCode =
-  'MISSING_CODE' | 'MISSING_NAME' | 'MISSING_SKU_PRICE' | 'DUPLICATE_CODE' | 'DUPLICATE_COMBINATION';
+export type CatalogSkuIssueCode = 'MISSING_CODE' | 'MISSING_NAME' | 'DUPLICATE_CODE' | 'DUPLICATE_COMBINATION';
 
 export function catalogSkuIssueCodes(
   sku: CatalogSkuRow,
-  priceGranularity: string,
+  _priceGranularity: string,
   duplicateCombination: boolean,
   duplicateCode = false,
 ): CatalogSkuIssueCode[] {
   return [
     !sku.skuCode.trim() ? 'MISSING_CODE' : undefined,
     !sku.skuName.trim() ? 'MISSING_NAME' : undefined,
-    priceGranularity === 'SKU' && sku.status === 'ENABLED' && sku.standardSalePrice === null
-      ? 'MISSING_SKU_PRICE'
-      : undefined,
     duplicateCode && Boolean(sku.skuCode.trim()) ? 'DUPLICATE_CODE' : undefined,
     duplicateCombination ? 'DUPLICATE_COMBINATION' : undefined,
   ].filter((issue): issue is CatalogSkuIssueCode => Boolean(issue));
@@ -513,28 +636,11 @@ export function catalogSkuIssueCodes(
 export type CatalogSkuSaveRow = NonNullable<
   NonNullable<CatalogItemSaveRequest['sections']['catalogDraft']['skus']>[number]
 >;
-export type CatalogProductionTagCandidate = {
-  tagRef: string;
-  code: string;
-  name: string;
-  tagKind?: 'PRODUCTION' | 'PACKAGE' | 'LABEL' | 'HANDOFF' | 'REVIEW' | 'OTHER';
-  owner: 'fulfillment-production';
-  status?: string;
-};
-
-export function productionTagCandidateFromReadback(
+/** A successful transport response is usable only with the stable production-tag identity and displayed facts. */
+export function productionTagReadbackIsComplete(
   readback: {tagRef?: string; code?: string; name?: string; status?: string} | undefined,
-  fallback: {code: string; name: string; tagKind?: CatalogProductionTagCandidate['tagKind']},
-): CatalogProductionTagCandidate | undefined {
-  if (!readback?.tagRef) return undefined;
-  return {
-    tagRef: readback.tagRef,
-    code: readback.code ?? fallback.code,
-    name: readback.name ?? fallback.name,
-    tagKind: fallback.tagKind,
-    owner: 'fulfillment-production',
-    status: readback.status,
-  };
+): boolean {
+  return Boolean(readback?.tagRef && readback.code && readback.name && readback.status);
 }
 
 type CatalogBatchCatalogDraft = Partial<
@@ -662,7 +768,11 @@ export function decodeCatalogBatchResults(
     ) {
       invalid();
     }
-    return {itemRef: itemRef as Uuid, itemCode, outcome, problemCode, reason, version};
+    // A batch receipt is user-facing.  Its typed code remains available to the
+    // client for control flow, while the text must not expose an optimistic
+    // concurrency implementation detail such as "版本".
+    const businessReason = problemCode === 'VERSION_CONFLICT' ? '商品资料已有更新，请重新读取后再操作。' : reason;
+    return {itemRef: itemRef as Uuid, itemCode, outcome, problemCode, reason: businessReason, version};
   });
 }
 
@@ -769,7 +879,9 @@ export function buildSkuMatrix(
     result.push({
       productSkuRef: emptyUuid,
       skuCode: nextGeneratedCode(),
-      skuName: attributeValueRefs.map(value => value.valueLabel || value.valueCode).join(' / '),
+      // Attribute codes are storage identifiers, never fallback customer-facing names.
+      // A missing candidate name remains visibly unresolved for the editor to repair.
+      skuName: attributeValueRefs.map(value => value.valueLabel || '未命名属性值').join(' / '),
       displayOrder: result.length,
       variantCombinationDigest: '',
       attributeValueRefs,
@@ -781,12 +893,16 @@ export function buildSkuMatrix(
       isDefault: false,
       status: 'ENABLED',
       version: 0,
+      // A client-created SKU has no server timestamp until whole-save returns
+      // its authoritative row.  Keep the typed read-model fact explicit so
+      // all draft rows have the same closed shape as readback rows.
+      updatedAt: 0,
       mediaRefs: [],
       salesUnitOverrideRef: null,
       baseMeasureUnitOverrideRef: null,
       salesUnit: null,
       baseMeasureUnit: null,
-      voidAvailability: {canVoid: false, blockingReferences: [], dependentFacts: []},
+      voidAvailability: {canVoid: false, blockingReferences: [], dependentFacts: [], blockingReasons: []},
     });
   }
 
@@ -807,6 +923,7 @@ export function serializeSkuRowsForSave(rows: CatalogSkuRow[]): CatalogSkuSaveRo
     const {
       variantCombinationDigest: ignoredDigest,
       version: ignoredVersion,
+      updatedAt: ignoredUpdatedAt,
       effectivePreparation: ignoredEffectivePreparation,
       preparationSource: ignoredPreparationSource,
       salesUnit: ignoredSalesUnit,
@@ -817,6 +934,7 @@ export function serializeSkuRowsForSave(rows: CatalogSkuRow[]): CatalogSkuSaveRo
     } = row;
     void ignoredDigest;
     void ignoredVersion;
+    void ignoredUpdatedAt;
     void ignoredEffectivePreparation;
     void ignoredPreparationSource;
     void ignoredSalesUnit;
@@ -846,33 +964,75 @@ export type CatalogCopyReferenceMapping = {
   targetOptionValueCode?: string;
 };
 
-const catalogCopyObjectTypeLabels: Record<string, string> = {
-  CATALOG_ITEM: '商品',
-  CATALOG_CATEGORY: '商品分类',
-  CATALOG_TAG: '商品标签',
-  SKU: 'SKU',
-  SKU_ATTRIBUTE: '销售属性',
-  SKU_ATTRIBUTE_VALUE: '销售属性值',
-  ORDER_OPTION_GROUP: '点单分组',
-  ORDER_OPTION_VALUE: '点单选项',
-  CATALOG_ORDER_OPTION_DEFINITION: '点单选项',
-  CATALOG_ORDER_OPTION_DEFINITION_VALUE: '点单选项值',
-  INVENTORY_TARGET: '库存对象',
-  BOM: '配方',
-  PACKAGE_COMPONENT: '套餐组件',
-  PRODUCTION_PROMPT: '制作信息',
-};
+/**
+ * The copy protocols deliberately retain stable machine values.  Every one
+ * that can reach a drawer is projected here before rendering so a protocol
+ * enum can never become customer-facing copy by accident.
+ */
+const CATALOG_COPY_USER_VISIBLE_COPY = {
+  objectTypes: {
+    CATALOG_ITEM: '商品',
+    CATALOG_CATEGORY: '商品分类',
+    CATALOG_TAG: '商品标签',
+    SKU: '规格',
+    SKU_ATTRIBUTE: '规格维度',
+    SKU_ATTRIBUTE_VALUE: '规格值',
+    ORDER_OPTION_GROUP: '点单分组',
+    ORDER_OPTION_VALUE: '点单选项',
+    CATALOG_ORDER_OPTION_DEFINITION: '点单选项',
+    CATALOG_ORDER_OPTION_DEFINITION_VALUE: '点单选项值',
+    INVENTORY_TARGET: '库存对象',
+    STOCK_TARGET: '库存对象',
+    BOM: '配方',
+    SKU_BOM: '规格库存与 BOM',
+    OPTION_VALUE_BOM: '选项用料',
+    ITEM_BOM: '商品库存与 BOM',
+    PACKAGE_COMPONENT: '套餐组件',
+    PRODUCTION_PROMPT: '制作信息',
+    PRODUCTION_TAG: '生产标签',
+  } as Record<string, string>,
+  actions: {
+    create: '新建',
+    reuse: '复用',
+    skip: '跳过',
+    blocked: '不可复制',
+    checked: '已检查',
+  },
+  confirmations: {
+    create: '确认新建',
+    reuse: '确认复用',
+    other: '确认此处理',
+  },
+  reasonCodes: {
+    TARGET_ABSENT: '目标商品尚不存在，将新建。',
+    STRUCTURE_COMPATIBLE: '商品结构兼容，可以复用。',
+    STRUCTURE_INCOMPATIBLE: '商品形态或结构不兼容。',
+    SKU_STRUCTURE_INCOMPATIBLE: '规格结构不一致。',
+    CONSUMPTION_UNIT_INCOMPATIBLE: '计量单位不兼容。',
+    REFERENCE_MAPPING_UNRESOLVED: '关联内容无法在当前商品库对应。',
+    REUSE_CONFIRMATION_REQUIRED: '编码和结构兼容，可复用。',
+    OWNER_FACT_UNAVAILABLE: '关联资料暂时不可用，请稍后重新检查。',
+    CATALOG_COPY_DEFINITION_CONFLICT: '同编码定义的配置不一致。',
+  } as Record<string, string>,
+  unknownReason: '当前内容需要进一步确认，请核对后重新检查。',
+  unknownObjectType: '关联内容',
+} as const;
 
 export function catalogCopyObjectTypeLabel(value: string) {
-  return catalogCopyObjectTypeLabels[value] ?? '关联内容';
+  return CATALOG_COPY_USER_VISIBLE_COPY.objectTypes[value] ?? CATALOG_COPY_USER_VISIBLE_COPY.unknownObjectType;
 }
 
 export function catalogCopyActionLabel(value: string) {
-  if (value === 'CREATE') return '新建';
-  if (value.includes('REUSE')) return '复用';
-  if (value === 'SKIP') return '跳过';
-  if (value === 'BLOCKED') return '不可复制';
-  return '已检查';
+  if (value === 'CREATE') return CATALOG_COPY_USER_VISIBLE_COPY.actions.create;
+  if (value.includes('REUSE')) return CATALOG_COPY_USER_VISIBLE_COPY.actions.reuse;
+  if (value === 'SKIP') return CATALOG_COPY_USER_VISIBLE_COPY.actions.skip;
+  if (value === 'BLOCKED') return CATALOG_COPY_USER_VISIBLE_COPY.actions.blocked;
+  return CATALOG_COPY_USER_VISIBLE_COPY.actions.checked;
+}
+
+/** `reasonCode` is the contract-controlled explanation identity; raw reason text is never rendered. */
+export function catalogCopyReasonLabel(value: string) {
+  return CATALOG_COPY_USER_VISIBLE_COPY.reasonCodes[value] ?? CATALOG_COPY_USER_VISIBLE_COPY.unknownReason;
 }
 
 export function catalogCopyScopeLabel(value: string) {
@@ -922,7 +1082,7 @@ export type CopyPreflight = {
     compatibilityId: string;
     result: string;
     reason: string;
-    businessCode?: string;
+    reasonCode: string;
   }>;
   objectVersions: Array<Record<string, JsonValue>>;
 };
@@ -945,9 +1105,9 @@ export function copyConfirmationKey(row: ConfirmableCompatibility): string {
 }
 
 export function copyConfirmationLabel(result: string): string {
-  if (result === 'CREATE') return '确认新建';
-  if (result.includes('REUSE')) return '确认复用';
-  return '确认此处理';
+  if (result === 'CREATE') return CATALOG_COPY_USER_VISIBLE_COPY.confirmations.create;
+  if (result.includes('REUSE')) return CATALOG_COPY_USER_VISIBLE_COPY.confirmations.reuse;
+  return CATALOG_COPY_USER_VISIBLE_COPY.confirmations.other;
 }
 
 export type BrandCopyCompatibilityBuckets = {
@@ -1028,8 +1188,14 @@ export function decodeWorkbenchContext(envelope: CatalogDataEnvelope | undefined
   };
 }
 
-export function decodeNavigation(envelope: CatalogDataEnvelope | undefined): CatalogNavigation {
-  const value = envelopeData(envelope) ?? {};
+/**
+ * A missing envelope means the RTK request has not produced a response for
+ * the current scope yet. It is deliberately distinct from an envelope whose
+ * required facts are missing: the latter remains a contract violation.
+ */
+export function decodeNavigation(envelope: CatalogDataEnvelope | undefined): CatalogNavigation | undefined {
+  const value = envelopeData(envelope);
+  if (!value) return undefined;
   return {
     allCount: integer(value.allCount),
     tree: recordArray(value.tree).map(row => {
@@ -1059,6 +1225,14 @@ export function decodeNavigation(envelope: CatalogDataEnvelope | undefined): Cat
       name: text(row.name),
       count: integer(row.count),
     })),
+    productionTags: requiredRecordArray(value.productionTags, 'productionTags', 'CatalogNavigation.data').map(row => ({
+      tagRef: readUuid(row.tagRef),
+      code: text(row.code),
+      name: text(row.name),
+      status: text(row.status),
+      owner: text(row.owner),
+      count: integer(row.count),
+    })),
     uncategorizedCount: optionalInteger(value.uncategorizedCount),
     generation: integer(value.generation),
   };
@@ -1075,6 +1249,45 @@ export function decodeItems(envelope: CatalogDataEnvelope | undefined) {
   };
 }
 
+export function decodeSkuListPage(envelope: CatalogDataEnvelope | undefined): {
+  items: CatalogSkuListRow[];
+  total: number;
+  cursor: string | null;
+  nextCursor: string | null;
+} {
+  const value = envelopeData(envelope) ?? {};
+  return {
+    items: recordArray(value.items).map(row => ({
+      productSkuRef: readUuid(row.productSkuRef),
+      skuCode: text(row.skuCode),
+      skuName: text(row.skuName),
+      attributeValueRefs: recordArray(row.attributeValueRefs).map(attribute => ({
+        attributeRef: readUuid(attribute.attributeRef),
+        attributeCode: text(attribute.attributeCode),
+        attributeName: text(attribute.attributeName),
+        attributeValueRef: readUuid(attribute.attributeValueRef),
+        valueCode: text(attribute.valueCode),
+        valueLabel: text(attribute.valueLabel),
+        displayOrder: integer(attribute.displayOrder),
+        status: text(attribute.status),
+      })),
+      standardSalePrice: row.standardSalePrice === null ? null : (optionalNumber(row.standardSalePrice) ?? null),
+      salesUnit: decodeUnitAssignment(row.salesUnit),
+      baseMeasureUnit: decodeUnitAssignment(row.baseMeasureUnit),
+      isDefault: truth(row.isDefault),
+      status: text(row.status),
+      primaryImageAssetRef: readOptionalUuid(row.primaryImageAssetRef) ?? null,
+      inventoryDeductionSummary: decodeInventoryDeductionSummary(row.inventoryDeductionSummary),
+      attributeSummary: textArray(row.attributeSummary),
+      preparationSummary: textArray(row.preparationSummary),
+      updatedAt: integer(row.updatedAt),
+    })),
+    total: integer(value.total),
+    cursor: value.cursor === null ? null : (optionalText(value.cursor) ?? null),
+    nextCursor: value.nextCursor === null ? null : (optionalText(value.nextCursor) ?? null),
+  };
+}
+
 export function buildCatalogItemsQuery(values: {
   dataNodeRef: Uuid;
   keyword?: string;
@@ -1082,6 +1295,7 @@ export function buildCatalogItemsQuery(values: {
   shapeKey?: string;
   categoryRef?: Uuid;
   tagRef?: Uuid;
+  productionTagRef?: Uuid;
   uncategorized?: boolean;
   includeSubCategories?: boolean;
   status?: string;
@@ -1109,11 +1323,11 @@ export function catalogPriceLabel(
     const maxLabel = (max / 100).toFixed(2);
     return min === max ? `¥${minLabel}` : `¥${minLabel}~${maxLabel}`;
   }
-  return row.standardSalePrice === undefined ? '—' : `¥${(row.standardSalePrice / 100).toFixed(2)}`;
+  return row.standardSalePrice === undefined ? '未设置' : `¥${(row.standardSalePrice / 100).toFixed(2)}`;
 }
 
 export type CatalogTreeSelectionForFilter = {
-  kind: 'SMART' | 'SHAPE' | 'CATEGORY' | 'TAG' | 'UNCATEGORIZED';
+  kind: 'SMART' | 'SHAPE' | 'CATEGORY' | 'TAG' | 'PRODUCTION_TAG' | 'UNCATEGORIZED';
   ref: string;
 };
 
@@ -1169,32 +1383,24 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
     Object.keys(decodedGovernanceExternalIdentity).length > 0
       ? decodedGovernanceExternalIdentity
       : itemExternalIdentity;
-  const voidAvailability = asRecord(action.voidAvailability);
-  const voidFacts = voidAvailability
-    ? {
-        canVoid: truth(voidAvailability.canVoid),
-        blockingReferences: recordArray(voidAvailability.blockingReferences).map(entry => ({
-          referenceKind: text(entry.referenceKind),
-          referenceRef: readUuid(entry.referenceRef),
-        })),
-        dependentFacts: recordArray(voidAvailability.dependentFacts).map(entry => ({
-          factKind: text(entry.factKind),
-          factRef: readUuid(entry.factRef),
-        })),
-      }
-    : undefined;
+  const voidFacts = action.voidAvailability === undefined ? undefined : decodeCatalogVoidAvailability(action.voidAvailability);
   return {
     item: {
-      ...decodeItemSummary(item),
-      skuEnabledCount: skuSummary.enabledCount,
-      skuNonArchivedCount: skuSummary.nonArchivedCount,
-      skuTotalCount: skuSummary.totalCount,
+      itemRef: readUuid(item.itemRef),
+      code: text(item.code),
+      name: text(item.name),
+      shortName: optionalText(item.shortName),
+      materialRole: optionalText(item.materialRole),
+      categoryRef: readOptionalUuid(item.categoryRef) ?? null,
+      categoryPathLabels: requiredBusinessTextArray(item.categoryPathLabels, 'detail.item.categoryPathLabels'),
+      productionTagRef: readOptionalUuid(item.productionTagRef) ?? null,
+      tagRefs: readUuidArray(item.tagRefs),
+      shapeKey: text(item.shapeKey),
       itemKind: text(item.itemKind),
       measureMode: text(item.measureMode),
       usageCapabilities: textArray(item.usageCapabilities),
       images: textArray(item.images),
       primaryImageAssetRef: readOptionalUuid(item.primaryImageAssetRef),
-      categoryRef: readOptionalUuid(item.categoryRef) ?? null,
       salesUnitRef: readOptionalUuid(item.salesUnitRef) ?? null,
       baseMeasureUnitRef: readOptionalUuid(item.baseMeasureUnitRef) ?? null,
       salesUnit: decodeUnitAssignment(item.salesUnit),
@@ -1229,6 +1435,8 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
       skuVariantDimensions: itemSkuDimensions,
       skus: itemSkus,
       skuSummary,
+      standardSalePrice: optionalNumber(item.standardSalePrice),
+      priceGranularity: text(item.priceGranularity),
       compositeGroups: itemCompositeGroups.length ? itemCompositeGroups : rootCompositeGroups,
       preparationProfile: decodePreparationProfile(item.preparationProfile),
       lifecycle: {
@@ -1236,7 +1444,10 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
         version: integer(lifecycle.version) || integer(item.version),
         source: text(lifecycle.source) || text(item.source),
       },
+      source: text(item.source),
       externalIdentity: itemExternalIdentity,
+      version: integer(item.version),
+      updatedAt: integer(item.updatedAt),
     },
     tabs: recordArray(root.tabs).map(row => ({
       tabKey: text(row.tabKey),
@@ -1248,10 +1459,12 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
       referenceKind: text(row.referenceKind),
       referenceRef: readUuid(row.referenceRef),
       code: text(row.code),
+      name: text(row.name),
+      relationLabel: text(row.relationLabel),
       direction: text(row.direction),
     })),
     inventoryRules,
-    productionTags: recordArray(root.productionTags).map(row => ({
+    productionTags: requiredRecordArray(root.productionTags, 'productionTags', 'CatalogItemDetail').map(row => ({
       code: text(row.code),
       tagRef: readUuid(row.tagRef),
       name: text(row.name),
@@ -1278,6 +1491,27 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
       generation: text(asRecord(root.queryIdentity)?.generation),
     },
   };
+}
+
+/**
+ * Resolves a detail read for the surface that requested it without ever
+ * borrowing a previous item's facts. RTK's `currentData` is authoritative
+ * when it is available; during the short identity hand-off where that value
+ * has not been selected yet, `data` may already contain the fulfilled result.
+ * The fallback is therefore safe only when its business item code is exactly
+ * the currently opened item.
+ */
+export function selectCatalogDetailForItem(
+  itemCode: string | undefined,
+  currentData: CatalogDataEnvelope | undefined,
+  data: CatalogDataEnvelope | undefined,
+): CatalogDetail | undefined {
+  if (!itemCode) return undefined;
+  for (const envelope of [currentData, data]) {
+    const detail = decodeDetail(envelope);
+    if (detail?.item.code === itemCode) return detail;
+  }
+  return undefined;
 }
 
 export function decodeCandidates(envelope: CatalogInventoryEnvelope | undefined): CopyCandidate[] {
@@ -1330,8 +1564,18 @@ export function decodeBrandCopyReadback(envelope: CatalogInventoryEnvelope | und
   };
 }
 
-export function decodePreflight(envelope: CatalogInventoryEnvelope | undefined): CopyPreflight | undefined {
-  const root = envelopeData(envelope) ?? asRecord(envelope?.result);
+type BrandCopyPreflightResponse = CatalogInventoryEnvelope | BrandCatalogCopyPreflight;
+
+/**
+ * Brand-copy preflight is a root-level readback in the OpenAPI/Java edge shape.
+ * Keep the legacy envelope branch for the generated client boundary, but only
+ * recognize the direct branch by this operation's required digest field; do
+ * not turn the generic catalog envelope decoder into a root-payload fallback.
+ */
+export function decodePreflight(envelope: BrandCopyPreflightResponse | undefined): CopyPreflight | undefined {
+  const rootRecord = asRecord(envelope);
+  const directPayload = typeof rootRecord?.preflightDigest === 'string' ? rootRecord : undefined;
+  const root = directPayload ?? envelopeData(envelope as CatalogDataEnvelope) ?? asRecord(rootRecord?.result);
   const value = asRecord(root?.data) ?? root;
   if (!value?.preflightDigest) return undefined;
   const compatibilityResults = decodeCompatibilityResults(value.compatibilityResults);
@@ -1371,15 +1615,18 @@ function decodeCompatibilityResults(value: JsonValue | undefined): CopyPreflight
     const compatibilityId = typeof row?.compatibilityId === 'string' ? row.compatibilityId : '';
     const result = typeof row?.result === 'string' ? row.result : '';
     const reason = typeof row?.reason === 'string' ? row.reason : '';
-    if (!row || !objectType.trim() || !compatibilityId.trim() || !result.trim() || seen.has(compatibilityId))
+    const reasonCode = typeof row?.reasonCode === 'string' ? row.reasonCode : '';
+    if (
+      !row ||
+      !objectType.trim() ||
+      !compatibilityId.trim() ||
+      !result.trim() ||
+      !reasonCode.trim() ||
+      seen.has(compatibilityId)
+    )
       return undefined;
     seen.add(compatibilityId);
-    const tuple = asRecord(row.canonicalTuple);
-    const parts = tuple ? textArray(tuple.parts as JsonValue | undefined) : [];
-    // The owner canonical tuple's first business part is the conflict identity label.  It is display-only;
-    // replay and reference mapping remain opaque-ref based.
-    const businessCode = parts[0]?.trim() || undefined;
-    decoded.push({objectType, compatibilityId, result, reason, businessCode});
+    decoded.push({objectType, compatibilityId, result, reason, reasonCode});
   }
   return decoded;
 }
@@ -1407,7 +1654,13 @@ function decodeItemSummary(row: Record<string, JsonValue>): CatalogItemSummary {
     shortName: optionalText(row.shortName),
     materialRole: optionalText(row.materialRole),
     categoryRef: readOptionalUuid(row.categoryRef) ?? null,
-    productionTagRefs: readUuidArray(row.productionTagRefs),
+    categoryPathLabels: textArray(row.categoryPathLabels),
+    hasSkuChildren: truth(row.hasSkuChildren),
+    specificationOrOptionSummary: textArray(row.specificationOrOptionSummary),
+    attributeSummary: textArray(row.attributeSummary),
+    preparationSummary: textArray(row.preparationSummary),
+    productionTagRef: readOptionalUuid(row.productionTagRef) ?? null,
+    tagSummary: requiredBusinessTextArray(row.tagSummary, 'itemPage.item.tagSummary'),
     tagRefs: readUuidArray(row.tagRefs),
     shapeKey: text(row.shapeKey),
     status: text(row.status),
@@ -1422,9 +1675,9 @@ function decodeItemSummary(row: Record<string, JsonValue>): CatalogItemSummary {
     standardPriceDelta: optionalNumber(row.standardPriceDelta),
     standardExtraPrice: optionalNumber(row.standardExtraPrice),
     priceGranularity: text(row.priceGranularity),
-    missingPriceCount: integer(row.missingPriceCount),
-    stockTargetCount: integer(row.stockTargetCount),
-    bomCount: integer(row.bomCount),
+    salesUnit: decodeUnitAssignment(row.salesUnit),
+    baseMeasureUnit: decodeUnitAssignment(row.baseMeasureUnit),
+    inventoryDeductionSummary: decodeInventoryDeductionSummary(row.inventoryDeductionSummary),
     version: integer(row.version),
     updatedAt: integer(row.updatedAt),
   };
@@ -1433,11 +1686,34 @@ function decodeItemSummary(row: Record<string, JsonValue>): CatalogItemSummary {
   return summary;
 }
 
+/**
+ * Owner-projected list facts are contract-required. A missing projection is
+ * not an empty business value and must fail before the UI can render a lie.
+ */
+function requiredBusinessTextArray(value: JsonValue | undefined, boundary: string): string[] {
+  if (value === undefined) throw new Error(`CATALOG_REQUIRED_FIELD_MISSING:${boundary}`);
+  if (!Array.isArray(value)) throw new Error(`CATALOG_OWNER_SUMMARY_INVALID:${boundary}`);
+  return value.map((entry, index) => {
+    if (typeof entry !== 'string' || !entry.trim()) {
+      throw new Error(`CATALOG_OWNER_SUMMARY_INVALID:${boundary}[${index}]`);
+    }
+    return entry;
+  });
+}
+
 export function asRecord(value: unknown): Record<string, JsonValue> | undefined {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, JsonValue>) : undefined;
 }
 export function recordArray(value: JsonValue | undefined): Array<Record<string, JsonValue>> {
   return Array.isArray(value) ? value.flatMap(entry => (asRecord(entry) ? [asRecord(entry)!] : [])) : [];
+}
+function requiredRecordArray(
+  value: JsonValue | undefined,
+  field: string,
+  boundary: string,
+): Array<Record<string, JsonValue>> {
+  if (!Array.isArray(value)) throw new Error(`CATALOG_REQUIRED_FIELD_MISSING:${boundary}.${field}`);
+  return recordArray(value);
 }
 export function text(value: JsonValue | undefined): string {
   return typeof value === 'string' ? value : value === undefined || value === null ? '' : String(value);
@@ -1458,6 +1734,16 @@ function readUuidArray(value: JsonValue | undefined): Uuid[] {
 function optionalText(value: JsonValue | undefined): string | undefined {
   const result = text(value).trim();
   return result || undefined;
+}
+function decodeInventoryDeductionSummary(value: JsonValue | undefined): CatalogInventoryDeductionSummary {
+  const row = asRecord(value) ?? {};
+  const mode = text(row.mode);
+  return {
+    grain: text(row.grain) === 'SKU' ? 'SKU' : 'ITEM',
+    mode: mode === 'DIRECT' || mode === 'BOM' || mode === 'NONE' ? mode : null,
+    consumptionUnitSnapshot: decodeUnitSnapshot(row.consumptionUnitSnapshot),
+    bomLineCount: row.bomLineCount === null ? null : (optionalInteger(row.bomLineCount) ?? null),
+  };
 }
 function integer(value: JsonValue | undefined): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0;
@@ -1525,11 +1811,11 @@ function decodePreparationProfile(value: JsonValue | undefined): CatalogPreparat
   const row = asRecord(value);
   if (!row) return null;
   return {
-    productionTagRefs: readUuidArray(row.productionTagRefs),
-    productionDisplayName: row.productionDisplayName === null ? null : optionalText(row.productionDisplayName) ?? null,
+    productionDisplayName:
+      row.productionDisplayName === null ? null : (optionalText(row.productionDisplayName) ?? null),
     estimatedPreparationSeconds:
-      row.estimatedPreparationSeconds === null ? null : optionalInteger(row.estimatedPreparationSeconds) ?? null,
-    preparationNotes: row.preparationNotes === null ? null : optionalText(row.preparationNotes) ?? null,
+      row.estimatedPreparationSeconds === null ? null : (optionalInteger(row.estimatedPreparationSeconds) ?? null),
+    preparationNotes: row.preparationNotes === null ? null : (optionalText(row.preparationNotes) ?? null),
   };
 }
 function decodePreparationOverride(value: JsonValue | undefined): CatalogSkuRow['preparationOverride'] {
@@ -1547,12 +1833,53 @@ function decodePreparationEffect(value: JsonValue | undefined): CatalogPreparati
     definitionValueRef: readUuid(row.definitionValueRef),
     optionGroupDisplayOrder: integer(row.optionGroupDisplayOrder),
     optionValueDisplayOrder: integer(row.optionValueDisplayOrder),
-    addProductionTagRefs: readUuidArray(row.addProductionTagRefs),
-    instruction: row.instruction === null ? null : optionalText(row.instruction) ?? null,
+    instruction: row.instruction === null ? null : (optionalText(row.instruction) ?? null),
     preparationSecondsDelta:
-      row.preparationSecondsDelta === null ? null : optionalInteger(row.preparationSecondsDelta) ?? null,
+      row.preparationSecondsDelta === null ? null : (optionalInteger(row.preparationSecondsDelta) ?? null),
   };
 }
+/**
+ * `canVoid=false` is not presentation state: it is an owner conclusion that must carry its complete fact closure.
+ * Reject partial readback rather than changing an absent value into a disabled button with a made-up reason.
+ */
+export function decodeCatalogVoidAvailability(value: JsonValue | undefined): CatalogVoidAvailability {
+  const availability = asRecord(value);
+  if (
+    !availability ||
+    typeof availability.canVoid !== 'boolean' ||
+    !Array.isArray(availability.blockingReferences) ||
+    !Array.isArray(availability.dependentFacts) ||
+    !Array.isArray(availability.blockingReasons)
+  )
+    throw new Error('INVALID_CATALOG_VOID_AVAILABILITY');
+  const blockingReasons = recordArray(availability.blockingReasons).map(entry => ({
+    label: text(entry.label),
+    count: integer(entry.count),
+    relatedItemNames: recordArray(entry.relatedItemNames).map(text).filter(Boolean),
+  }));
+  if (
+    blockingReasons.some(reason => !reason.label.trim() || reason.count <= 0) ||
+    (availability.canVoid === false && blockingReasons.length === 0)
+  )
+    throw new Error('INVALID_CATALOG_VOID_AVAILABILITY');
+  return {
+    canVoid: availability.canVoid,
+    blockingReferences: recordArray(availability.blockingReferences).map(entry => ({
+      referenceKind: text(entry.referenceKind),
+      referenceRef: readUuid(entry.referenceRef),
+    })),
+    dependentFacts: recordArray(availability.dependentFacts).map(entry => ({
+      factKind: text(entry.factKind),
+      factRef: readUuid(entry.factRef),
+    })),
+    blockingReasons,
+  };
+}
+
+export function decodeCatalogSkuVoidAvailability(value: JsonValue | undefined): CatalogVoidAvailability {
+  return decodeCatalogVoidAvailability(value);
+}
+
 function decodeSkuRows(value: JsonValue | undefined): CatalogSkuRow[] {
   return recordArray(value).map(row => ({
     productSkuRef: readUuid(row.productSkuRef),
@@ -1578,25 +1905,13 @@ function decodeSkuRows(value: JsonValue | undefined): CatalogSkuRow[] {
     isDefault: truth(row.isDefault),
     status: text(row.status),
     version: integer(row.version),
+    updatedAt: integer(row.updatedAt),
     mediaRefs: readUuidArray(row.mediaRefs),
     salesUnitOverrideRef: readOptionalUuid(row.salesUnitOverrideRef) ?? null,
     baseMeasureUnitOverrideRef: readOptionalUuid(row.baseMeasureUnitOverrideRef) ?? null,
     salesUnit: decodeUnitAssignment(row.salesUnit),
     baseMeasureUnit: decodeUnitAssignment(row.baseMeasureUnit),
-    voidAvailability: (() => {
-      const availability = asRecord(row.voidAvailability);
-      return {
-        canVoid: truth(availability?.canVoid),
-        blockingReferences: recordArray(availability?.blockingReferences).map(entry => ({
-          referenceKind: text(entry.referenceKind),
-          referenceRef: readUuid(entry.referenceRef),
-        })),
-        dependentFacts: recordArray(availability?.dependentFacts).map(entry => ({
-          factKind: text(entry.factKind),
-          factRef: readUuid(entry.factRef),
-        })),
-      };
-    })(),
+    voidAvailability: decodeCatalogSkuVoidAvailability(row.voidAvailability),
   }));
 }
 function decodeUnitSnapshot(value: JsonValue | undefined): CatalogUnitSnapshot | null {
@@ -1635,9 +1950,11 @@ function decodeCompositeGroups(value: JsonValue | undefined): CatalogCompositeGr
     displayOrder: integer(row.displayOrder),
     components: recordArray(row.components).map(entry => ({
       itemCode: text(entry.itemCode),
+      itemName: text(entry.itemName),
       itemRef: readUuid(entry.itemRef),
       productSkuRef: readOptionalUuid(entry.productSkuRef) ?? null,
       skuCode: optionalText(entry.skuCode) ?? null,
+      skuName: optionalText(entry.skuName) ?? null,
       quantity: text(entry.quantity),
       unit: text(entry.unit),
       default: truth(entry.default),

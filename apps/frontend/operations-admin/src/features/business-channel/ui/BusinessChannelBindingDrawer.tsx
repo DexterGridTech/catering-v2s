@@ -1,4 +1,4 @@
-import {Alert, Button, Drawer, Form, Input, Space, Tag} from 'antd';
+import {Alert, Button, Descriptions, Drawer, Form, Input, Space, Tag} from 'antd';
 import {
   adminDrawerSurfaceProps,
   useDrawerFormLifecycle,
@@ -40,9 +40,7 @@ export function BusinessChannelBindingDrawer({
       if (!value) onClose();
     },
     idempotencyKey: true,
-    diagnosticOperationId: binding
-      ? OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsOwnerBinding
-      : OPERATIONS_ADMIN_OPERATION_IDS.createOperationsOwnerBinding,
+    diagnosticOperationId: OPERATIONS_ADMIN_OPERATION_IDS.createOperationsOwnerBinding,
   });
   const submission = useSubmissionLifecycle();
   useEffect(() => {
@@ -69,43 +67,27 @@ export function BusinessChannelBindingDrawer({
       .catch(error => setProblem(operationsProblemOf(error).detail));
   }, [channel.bindingRef, channel.channelRef, form, lifecycle, open, queryContext.groupWorkspaceKey]);
 
-  const save = async (values: {bindingDisplayName?: string; externalOwnerId?: string}) => {
-    if (!providerCode && !binding) {
+  const create = async (values: {bindingDisplayName?: string; externalOwnerId?: string}) => {
+    if (!providerCode) {
       setProblem('当前模板没有可用于绑定的外部接入档案。');
       return;
     }
     lifecycle.setSubmitting(true);
     setProblem(undefined);
     try {
-      if (binding) {
-        await operationsClient.updateOperationsOwnerBinding(
-          {groupWorkspaceKey: queryContext.groupWorkspaceKey, channelRef: channel.channelRef},
-          {
-            body: {
-              bindingDisplayName: values.bindingDisplayName?.trim() || null,
-              externalOwnerId:
-                authenticationKind === 'INTERNAL_MAPPING' ? values.externalOwnerId?.trim() || null : null,
-              expectedVersion: binding.version,
-            },
-            headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()},
+      await operationsClient.createOperationsOwnerBinding(
+        {groupWorkspaceKey: queryContext.groupWorkspaceKey, channelRef: channel.channelRef},
+        {
+          body: {
+            providerCode,
+            nodeType: channel.ownerNodeType,
+            nodeRef: channel.ownerNodeRef,
+            bindingDisplayName: values.bindingDisplayName?.trim() || null,
+            externalOwnerId: authenticationKind === 'INTERNAL_MAPPING' ? values.externalOwnerId?.trim() || null : null,
           },
-        );
-      } else {
-        await operationsClient.createOperationsOwnerBinding(
-          {groupWorkspaceKey: queryContext.groupWorkspaceKey, channelRef: channel.channelRef},
-          {
-            body: {
-              providerCode: providerCode as string,
-              nodeType: channel.ownerNodeType,
-              nodeRef: channel.ownerNodeRef,
-              bindingDisplayName: values.bindingDisplayName?.trim() || null,
-              externalOwnerId:
-                authenticationKind === 'INTERNAL_MAPPING' ? values.externalOwnerId?.trim() || null : null,
-            },
-            headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()},
-          },
-        );
-      }
+          headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()},
+        },
+      );
       submission.reset();
       lifecycle.closeAfterSuccess();
       onSaved();
@@ -144,7 +126,7 @@ export function BusinessChannelBindingDrawer({
   return (
     <Drawer
       open={open}
-      title={binding ? '维护渠道绑定' : '建立渠道绑定'}
+      title={binding ? '渠道绑定' : '建立渠道绑定'}
       maskClosable={!lifecycle.submitting}
       onClose={lifecycle.requestClose}
       {...adminDrawerSurfaceProps}
@@ -162,42 +144,61 @@ export function BusinessChannelBindingDrawer({
           当前状态：<Tag>{binding.statusDisplayName}</Tag>
         </p>
       )}
-      {authenticationKind === 'EXTERNAL_GRANT' && (
-        <Alert type="info" showIcon title="外部主体编号由授权回填，当前不在此处手工录入。" style={{marginBottom: 16}} />
+      {binding && authenticationKind === 'EXTERNAL_GRANT' && (
+        <Alert
+          type="info"
+          showIcon
+          title="外部授权信息由外部平台回填，当前绑定不能在这里修改。"
+          style={{marginBottom: 16}}
+        />
       )}
       {authenticationKind === 'NO_MAPPING' && (
         <Alert type="info" showIcon title="此接入档案无需外部主体映射。" style={{marginBottom: 16}} />
       )}
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={values => void save(values)}
-        onValuesChange={() => lifecycle.markBusinessIntentChanged()}
-      >
-        <Form.Item label="绑定名称" name="bindingDisplayName">
-          <Input />
-        </Form.Item>
-        {authenticationKind === 'INTERNAL_MAPPING' && (
-          <Form.Item
-            label="外部主体编号"
-            name="externalOwnerId"
-            rules={[{required: true, message: '请输入外部主体编号'}]}
-          >
-            <Input {...testId('owner-binding-external-owner-id')} />
-          </Form.Item>
-        )}
-        <Space>
-          <Button onClick={lifecycle.requestClose}>取消</Button>
-          {binding && (
+      {binding ? (
+        <>
+          <Descriptions
+            column={1}
+            size="small"
+            items={[
+              {key: 'name', label: '绑定名称', children: binding.bindingDisplayName || '—'},
+              {key: 'owner', label: '外部主体编号', children: binding.externalOwnerId || '待外部授权回填'},
+            ]}
+          />
+          <Space style={{marginTop: 16}}>
+            <Button onClick={lifecycle.requestClose}>关闭</Button>
             <Button danger onClick={() => void remove()} loading={lifecycle.submitting}>
               删除绑定
             </Button>
+          </Space>
+        </>
+      ) : (
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={values => void create(values)}
+          onValuesChange={() => lifecycle.markBusinessIntentChanged()}
+        >
+          <Form.Item label="绑定名称" name="bindingDisplayName">
+            <Input />
+          </Form.Item>
+          {authenticationKind === 'INTERNAL_MAPPING' && (
+            <Form.Item
+              label="外部主体编号"
+              name="externalOwnerId"
+              rules={[{required: true, message: '请输入外部主体编号'}]}
+            >
+              <Input {...testId('owner-binding-external-owner-id')} />
+            </Form.Item>
           )}
-          <Button type="primary" htmlType="submit" loading={lifecycle.submitting} disabled={!providerCode && !binding}>
-            保存
-          </Button>
-        </Space>
-      </Form>
+          <Space>
+            <Button onClick={lifecycle.requestClose}>取消</Button>
+            <Button type="primary" htmlType="submit" loading={lifecycle.submitting} disabled={!providerCode}>
+              建立绑定
+            </Button>
+          </Space>
+        </Form>
+      )}
     </Drawer>
   );
 }

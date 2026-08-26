@@ -47,8 +47,8 @@ final class CatalogJsonDocumentSizePolicy {
                         requireNodeWithin(
                                 values.get(valueIndex),
                                 "preparationEffect",
-                                "sections.catalogDraft.orderOptionConfigs[" + configIndex + "].values["
-                                        + valueIndex + "].preparationEffect");
+                                "sections.catalogDraft.orderOptionConfigs[" + configIndex + "].values[" + valueIndex
+                                        + "].preparationEffect");
             }
         }
     }

@@ -3,7 +3,7 @@
   "kind": "generated-operation-authorization-catalog",
   "generatedFrom": "contracts/registry/iam-org-governance-manifest.json",
   "closure": {
-    "mutatingOperations": 138
+    "mutatingOperations": 137
   },
   "requirements": [
     {
@@ -1535,28 +1535,6 @@
         "ownerModule": "collaboration"
       },
       "requirementId": "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_DELETE",
-      "capabilityKey": null,
-      "resourceTypeCapabilities": {
-        "PROJECT": "BC-BUSINESS-CHANNEL-PROJECT-EDIT",
-        "STORE": "BC-BUSINESS-CHANNEL-STORE-EDIT"
-      },
-      "unsupportedResourceTypeDecision": "DENY",
-      "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
-      "ownerModule": "collaboration",
-      "ownerRecheckId": "OWNER_RECHECK_COLLABORATION",
-      "typedProblemMappingId": "PROBLEM_COLLABORATION_TYPED_OWNER_EXCEPTION",
-      "redFixtureId": "RED_OPERATIONS_CHANNEL_GRANT"
-    },
-    {
-      "operationIdentity": {
-        "operationId": "updateOperationsOwnerBinding",
-        "method": "PATCH",
-        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
-        "consumerFace": "operations-admin",
-        "ownerModule": "collaboration"
-      },
-      "requirementId": "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_UPDATE",
       "capabilityKey": null,
       "resourceTypeCapabilities": {
         "PROJECT": "BC-BUSINESS-CHANNEL-PROJECT-EDIT",

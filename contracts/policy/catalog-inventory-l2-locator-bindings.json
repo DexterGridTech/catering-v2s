@@ -8,100 +8,129 @@
     "implementation": "apps/frontend/operations-admin/src/features/catalog-management/ui and apps/frontend/operations-admin/src/features/inventory-management/ui"
   },
   "bindingMode": "CASE_PARAMETER_CONTROL_KEYS",
-  "caseCount": 41,
+  "caseCount": 65,
   "locatorKind": "PLAYWRIGHT_TEST_ID_OR_ROLE_WITHIN_TEST_ID",
   "controls": {
     "STORE_SCOPE": {
       "testId": "operations-data-scope-trigger",
       "interaction": "scope",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"]
     },
     "HEAD_COMPANY_SCOPE": {
       "testId": "operations-data-scope-trigger",
       "interaction": "scope",
       "scopeFieldTestId": "operations-data-scope-head-company",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"]
     },
     "CATALOG_STORE_ROUTE": {
-      "testId": "catalog-inventory-store-page",
+      "testId": "catalog-store-workbench",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/CatalogWorkbenchController.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_BRAND_ROUTE": {
-      "testId": "catalog-inventory-brand-page",
+      "testId": "catalog-brand-workbench",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/CatalogWorkbenchController.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "INVENTORY_ROUTE": {
       "testId": "inventory-store-status-page",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"]
     },
     "CATALOG_TREE": {
-      "testId": "catalog-inventory-tree",
+      "testId": "catalog-navigation-tree",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchNavigationTree.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_TREE_SEARCH": {
-      "testId": "catalog-inventory-tree-search",
+      "testId": "catalog-navigation-tree-search",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchNavigationTree.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_LOCAL_SEARCH": {
-      "testId": "catalog-inventory-local-search",
+      "testId": "catalog-result-keyword",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchItemList.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_VIEW_SWITCH": {
-      "testId": "catalog-inventory-view-switch",
+      "testId": "catalog-workbench-view-switch",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchToolbar.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_BRAND_SWITCH": {
-      "testId": "catalog-inventory-brand-switch",
+      "testId": "catalog-workbench-brand-switch",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchToolbar.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "BRAND_SWITCH": {
-      "testId": "catalog-inventory-brand-switch",
+      "testId": "catalog-workbench-brand-switch",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchToolbar.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_RESULT_TABLE": {
-      "testId": "catalog-inventory-item-table",
+      "testId": "catalog-item-table",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemListTable.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_ITEM_ROW": {
-      "testIdTemplate": "catalog-inventory-open-item-${itemCode}",
+      "testIdFactory": "CATALOG_ITEM_ROW",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemListTable.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_ITEM_SELECTION": {
+      "testIdFactory": "CATALOG_ITEM_SELECTION",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemListTable.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_ITEM_DRAWER": {
-      "testId": "catalog-inventory-item-drawer",
+      "alternatives": ["catalog-item-view-drawer", "catalog-item-edit-drawer"],
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemEditorWorkspace.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_ITEM_VIEW_DRAWER": {
+      "testId": "catalog-item-view-drawer",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_ITEM_EDIT_DRAWER": {
+      "testId": "catalog-item-edit-drawer",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemEditorWorkspace.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_ITEM_TABS": {
       "testId": "catalog-item-tabs",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemEditorWorkspace.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_BASIC_TAB": {
@@ -110,16 +139,20 @@
       "name": "基础",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/model/catalogTabLabels.ts",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemEditorWorkspace.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_SKU_TAB": {
       "parentTestId": "catalog-item-tabs",
       "role": "tab",
-      "name": "SKU规格与价格",
+      "name": "规格与价格",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/model/catalogTabLabels.ts",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemEditorWorkspace.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_ORDER_OPTIONS_TAB": {
@@ -128,126 +161,196 @@
       "name": "点单选项",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/model/catalogTabLabels.ts",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemEditorWorkspace.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_PRODUCTION_PROMPTS_TAB": {
       "parentTestId": "catalog-item-tabs",
       "role": "tab",
-      "name": "生产提示",
+      "name": "制作信息",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/model/catalogTabLabels.ts",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemEditorWorkspace.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_INVENTORY_BOM_TAB": {
       "parentTestId": "catalog-item-tabs",
       "role": "tab",
-      "name": "库存与BOM",
+      "name": "库存扣减与用料",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/model/catalogTabLabels.ts",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemEditorWorkspace.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_ITEM_EDIT": {
       "testId": "catalog-item-edit",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_ITEM_SAVE": {
       "testId": "catalog-item-save",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemEditorWorkspace.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_ITEM_PROBLEM": {
       "testId": "catalog-item-problem",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemEditorWorkspace.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_ITEM_PROBLEM_RETRY": {
       "testId": "catalog-item-problem-retry",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemEditorWorkspace.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_DIRTY_DISCARD": {
       "testId": "catalog-item-dirty-discard",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/useCatalogItemEditorWorkspaceState.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_DIRTY_CONTINUE": {
       "testId": "catalog-item-dirty-continue",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/useCatalogItemEditorWorkspaceState.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_EDIT_RESUME": {
+      "testId": "catalog-item-dirty-restore",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/CatalogWorkbenchController.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_SKU_MATRIX": {
-      "alternatives": [
-        "catalog-item-sku-matrix-editor",
-        "catalog-item-sku-matrix-readonly"
-      ],
+      "alternatives": ["catalog-item-sku-matrix-editor", "catalog-item-sku-matrix-readonly"],
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemSkuSpecificationsEditor.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemReadOnlyPresenters.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_CREATE_OPEN": {
-      "testId": "catalog-inventory-create",
+      "testId": "catalog-item-create-open",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchToolbar.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_CREATE_SHAPE": {
-      "testId": "catalog-create-shape",
+      "testId": "catalog-item-create-shape",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemCreateDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemCreateDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_CREATE_SUBMIT": {
-      "testId": "catalog-create-submit",
+      "testId": "catalog-item-create-submit",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemCreateDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemCreateDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_DICTIONARY": {
-      "testId": "catalog-inventory-dictionary",
+      "testId": "catalog-config-open",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchToolbar.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_DICTIONARY_DRAWER": {
-      "alternatives": [
-        "catalog-dictionary-drawer",
-        "catalog-production-tag-quick-manage-drawer"
-      ],
+      "alternatives": ["catalog-dictionary-drawer"],
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx"]
+    },
+    "CATALOG_DICTIONARY_CODE": {
+      "testId": "catalog-dictionary-code",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryAtomModals.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_DICTIONARY_CREATE": {
+      "testId": "catalog-dictionary-create",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryAtomModals.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_DICTIONARY_PROBLEM": {
+      "testId": "catalog-dictionary-problem",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryAtomModals.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_CONFIG_SEARCH": {
+      "testId": "catalog-config-search",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawerState.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_CONFIG_STATUS": {
+      "testId": "catalog-config-status",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawerState.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_PRODUCTION_TAGS": {
-      "alternatives": [
-        "catalog-inventory-production-tags",
-        "catalog-production-tag-owner-open"
-      ],
+      "alternatives": ["catalog-config-production-tags", "catalog-item-production-tags"],
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemProductionEditor.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx"
+      ]
+    },
+    "CATALOG_CONFIG_PRODUCTION_TAGS": {
+      "testId": "catalog-config-production-tags",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_ITEM_PRODUCTION_TAGS": {
+      "testId": "catalog-item-production-tags",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemProductionEditor.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_ITEM_PRODUCTION_TAG_MANAGE": {
+      "testId": "catalog-item-production-tag-manage",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemProductionEditor.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_COPY_OPEN": {
-      "testId": "catalog-inventory-copy-open",
+      "testId": "catalog-brand-copy-open",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchToolbar.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_COPY_DRAWER": {
-      "alternatives": [
-        "catalog-brand-copy-drawer",
-        "catalog-local-copy-drawer"
-      ],
+      "alternatives": ["catalog-brand-copy-drawer", "catalog-local-copy-drawer"],
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx"
@@ -256,231 +359,209 @@
     "CATALOG_LOCAL_COPY_OPEN": {
       "testId": "catalog-item-copy-local-open",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_COPY_SOURCE": {
-      "alternatives": [
-        "catalog-local-copy-source-keyword",
-        "catalog-brand-copy-source-keyword"
-      ],
+      "alternatives": ["catalog-local-copy-source-keyword", "catalog-brand-copy-source-keyword"],
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx"
       ]
     },
     "CATALOG_COPY_SELECTION": {
-      "alternatives": [
-        "catalog-local-copy-source-item-next",
-        "catalog-brand-copy-selection-next"
-      ],
+      "alternatives": ["catalog-local-copy-source-item-next", "catalog-brand-copy-selection-next"],
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx"
       ]
     },
     "CATALOG_COPY_PREFLIGHT": {
-      "alternatives": [
-        "catalog-local-copy-preflight",
-        "catalog-copy-preflight"
-      ],
+      "alternatives": ["catalog-local-copy-preflight", "catalog-copy-preflight"],
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx"
       ]
     },
     "CATALOG_COPY_EXECUTE": {
-      "alternatives": [
-        "catalog-local-copy-execute",
-        "catalog-copy-execute"
-      ],
+      "alternatives": ["catalog-local-copy-execute", "catalog-copy-execute"],
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx"
       ]
     },
     "CATALOG_COPY_PROBLEM": {
-      "alternatives": [
-        "catalog-copy-problem",
-        "catalog-local-copy-problem"
-      ],
+      "alternatives": ["catalog-copy-problem", "catalog-local-copy-problem"],
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx"
       ]
     },
     "CATALOG_COPY_PREFLIGHT_PROBLEM": {
-      "alternatives": [
-        "catalog-copy-preflight-stale",
-        "catalog-local-copy-stale"
-      ],
+      "alternatives": ["catalog-copy-preflight-stale", "catalog-local-copy-stale"],
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx"
       ]
     },
     "CATALOG_COMPATIBILITY_FACTS": {
-      "alternatives": [
-        "catalog-inventory-copy-preflight",
-        "catalog-local-copy-compatibility-results"
-      ],
+      "alternatives": ["catalog-inventory-copy-preflight", "catalog-local-copy-compatibility-results"],
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx"
       ]
     },
     "CATALOG_ITEM_STATUS_ACTION": {
-      "testId": "catalog-item-void-and-rebuild",
+      "testId": "catalog-item-view-more",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_ITEM_VOID_BLOCK_REASONS": {
+      "testId": "catalog-item-void-block-reasons",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemGovernanceView.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_SCOPE_PROBLEM": {
-      "alternatives": [
-        "catalog-inventory-no-authorized-brand",
-        "catalog-inventory-workbench-scope-forbidden"
-      ],
+      "alternatives": ["catalog-inventory-no-authorized-brand", "catalog-inventory-workbench-scope-forbidden"],
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/CatalogWorkbenchController.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_SCOPE_FORBIDDEN": {
       "testId": "catalog-inventory-workbench-scope-forbidden",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/CatalogWorkbenchController.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_WORKBENCH_PROBLEM": {
       "testId": "catalog-inventory-workbench-problem",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/CatalogWorkbenchController.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_WORKBENCH_RETRY": {
-      "parentTestId": "catalog-inventory-workbench-problem",
-      "role": "button",
-      "name": "重试",
+      "testId": "catalog-workbench-retry",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/CatalogWorkbenchController.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_PAGINATION": {
-      "parentTestId": "catalog-inventory-item-table",
+      "parentTestId": "catalog-item-table",
       "role": "button",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchItemList.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_MEDIA_EDITOR": {
       "testId": "catalog-item-media-editor",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemBasicEditor.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_MEDIA_UPLOAD": {
       "testId": "catalog-item-media-upload",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemBasicEditor.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_MEDIA_LIST": {
       "testId": "catalog-item-media-list",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemBasicEditor.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_MEDIA_STATUS": {
-      "testIdTemplate": "catalog-item-media-status-${mediaIndex}",
+      "testIdFactory": "CATALOG_MEDIA",
+      "mediaAction": "status",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemBasicEditor.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_MEDIA_RETRY": {
-      "testIdTemplate": "catalog-item-media-retry-${mediaIndex}",
+      "testIdFactory": "CATALOG_MEDIA",
+      "mediaAction": "retry",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemBasicEditor.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_MEDIA_MOVE": {
-      "alternatives": [
-        "catalog-item-media-move-up-${mediaIndex}",
-        "catalog-item-media-move-down-${mediaIndex}"
-      ],
+      "testIdFactory": "CATALOG_MEDIA",
+      "mediaAction": "move-up",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemBasicEditor.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_MEDIA_PRIMARY": {
-      "testIdTemplate": "catalog-item-media-set-primary-${mediaIndex}",
+      "testIdFactory": "CATALOG_MEDIA",
+      "mediaAction": "set-primary",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemBasicEditor.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_MEDIA_REMOVE": {
-      "testIdTemplate": "catalog-item-media-remove-${mediaIndex}",
+      "testIdFactory": "CATALOG_MEDIA",
+      "mediaAction": "remove",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemBasicEditor.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "INVENTORY_STOCK_VIEW": {
       "testId": "inventory-stock-view",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"]
     },
     "INVENTORY_RESULT_TABLE": {
       "testId": "inventory-target-table",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"]
     },
     "INVENTORY_TARGET_ROW": {
       "testIdTemplate": "inventory-target-open-${targetRef}",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"]
     },
     "INVENTORY_TARGET_DRAWER": {
       "testId": "inventory-target-drawer",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"]
     },
     "INVENTORY_CURRENT_ZONE": {
       "testId": "inventory-zone-current",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"]
     },
     "INVENTORY_CHANGES_ZONE": {
       "testId": "inventory-zone-changes",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"]
     },
     "INVENTORY_HISTORY_ZONE": {
       "testId": "inventory-zone-business-history",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"]
     },
     "INVENTORY_REFERENCES_ZONE": {
       "testId": "inventory-zone-consumption-references",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"]
     },
     "INVENTORY_LEDGER_ZONE": {
       "testId": "inventory-zone-ledger",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"]
     },
     "INVENTORY_DIAGNOSTICS_ZONE": {
       "testId": "inventory-zone-diagnostics",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"]
     },
     "INVENTORY_ACTION_COUNT": {
       "testId": "inventory-action-count",
@@ -512,104 +593,133 @@
     },
     "INVENTORY_ACTION_MODAL": {
       "testId": "inventory-action-modal",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"]
     },
     "INVENTORY_ACTION_RESULT": {
       "testId": "inventory-action-result",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"]
     },
     "INVENTORY_ACTION_SUBMIT": {
       "testId": "inventory-action-submit",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"]
     },
     "INVENTORY_ACTION_QUANTITY": {
       "testId": "inventory-action-quantity",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"]
     },
     "INVENTORY_ACTION_UNIT": {
       "testId": "inventory-action-unit",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"]
     },
     "INVENTORY_ACTION_REASON": {
       "testId": "inventory-action-reason",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"]
     },
     "INVENTORY_ACTION_NOTE": {
       "testId": "inventory-action-note",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"]
     },
     "INVENTORY_NEGATIVE_PREVIEW": {
       "testId": "inventory-action-negative-preview",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"]
     },
     "INVENTORY_CONFIG_ALLOW_NEGATIVE": {
       "testId": "inventory-config-allow-negative",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"]
     },
     "INVENTORY_CONFIG_THRESHOLD": {
       "testId": "inventory-config-threshold",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"]
     },
     "INVENTORY_CONFIG_COUNTING_UNIT": {
       "testId": "inventory-config-counting-unit",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"]
     },
     "INVENTORY_CONFIG_CONVERSION": {
       "testId": "inventory-config-conversion-factor",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"]
     },
     "INVENTORY_FILTER_SUBMIT": {
       "testId": "inventory-filter-submit",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"]
     },
     "INVENTORY_FILTER_RESET": {
       "testId": "inventory-filter-reset",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"]
     },
     "INVENTORY_FILTER_CATEGORY": {
       "testId": "inventory-filter-category",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"]
     },
     "INVENTORY_FILTER_KEYWORD": {
       "testId": "inventory-filter-keyword",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"
-      ]
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"]
     },
     "INVENTORY_SCOPE_FORBIDDEN": {
       "testId": "inventory-scope-forbidden",
+      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"]
+    },
+    "CATALOG_CREATE_CATEGORY": {
+      "testId": "catalog-item-create-category",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemCreateDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_BATCH_OPEN": {
+      "testId": "catalog-batch-action",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchItemList.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_BATCH_MODAL": {
+      "testId": "catalog-batch-task-modal",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogBatchActionModal.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_BATCH_OUTCOME": {
+      "testId": "catalog-batch-outcome-summary",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogBatchOutcome.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_BATCH_PROGRESS": {
+      "testId": "catalog-batch-submitting",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogBatchActionModal.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_BATCH_PROBLEM": {
+      "testId": "catalog-batch-problem",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogBatchActionModal.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_BATCH_REFRESH_ERROR": {
+      "testId": "catalog-batch-refresh-error",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogBatchOutcome.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_LIFECYCLE_CONFIRM": {
+      "testId": "catalog-lifecycle-confirm-yes",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_COPY_RESULT": {
+      "alternatives": ["catalog-copy-result", "catalog-local-copy-result"],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx"
       ]
     }
   },

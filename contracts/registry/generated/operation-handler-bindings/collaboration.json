@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "kind": "generated-owner-operation-bindings",
   "owner": "collaboration",
-  "operationCount": 17,
+  "operationCount": 16,
   "readCount": 9,
-  "commandCount": 8,
+  "commandCount": 7,
   "dispatchStrategy": "CLOSED_SWITCH",
   "commandBindingBoundary": "KIND_SPECIFIC_TYPED_METHODS",
   "dynamicDispatch": false,
@@ -250,22 +250,6 @@
       "dispatchMethod": "transitionPlatformProviderProfileStatus"
     },
     {
-      "operationId": "updateOperationsOwnerBinding",
-      "method": "PATCH",
-      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
-      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
-      "face": "operations-admin",
-      "mode": "COMMAND",
-      "adapter": "com.catering.v2s.collaboration.application.operations.UpdateOperationsOwnerBindingOperation",
-      "wireRequest": "OwnerBindingUpdateRequest",
-      "wireResponse": "OwnerBindingView",
-      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
-      "transactionMode": "REQUIRED",
-      "copyRole": "NONE",
-      "commandBoundary": "OWNER_COMMAND",
-      "dispatchMethod": "updateOperationsOwnerBinding"
-    },
-    {
       "operationId": "updatePlatformOwnerBinding",
       "method": "PATCH",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
@@ -292,8 +276,7 @@
     ],
     "WORKSPACE_EXECUTION_CONTEXT": [
       "createOperationsOwnerBinding",
-      "deleteOperationsOwnerBinding",
-      "updateOperationsOwnerBinding"
+      "deleteOperationsOwnerBinding"
     ]
   }
 }

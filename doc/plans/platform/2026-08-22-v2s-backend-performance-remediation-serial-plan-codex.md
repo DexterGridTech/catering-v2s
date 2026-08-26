@@ -10,12 +10,20 @@
 
 每个 CP 写入前执行同一套双读：需求对应条目、IA/交互（若 UI-bearing）、六维 memory 命中、详设 CP、owning source 与可复用能力；focused proof 后用同一组原文回读。首败保留 first failure、last known good、broken boundary；动态运行每 30 秒、非动态工具/agent 每 60 秒按 AGENTS 六行格式报告。禁止 Git、本机 Java fallback、手改 generated 文件、timeout 止血、预算调高止血、静态 proof 冒充 runtime/L2/UAT。
 
+### 0.1 · 2026-08-26 current-tree 性能计量补充
+
+**Dexter current-program-result 覆盖裁定**：本次 CP-05 不再等待三次 CALIBRATION。以最近一份完整受管 ACCEPTANCE 的 archive HTTP completion 最大值生成唯一 report；report 必须标记 `CURRENT_MANAGED_ACCEPTANCE_RESULT`、`runCount=1`、`CURRENT_MANAGED_ACCEPTANCE_RUN_MAX;AVERAGE_NOT_USED` 和 `DEXTER-2026-08-26-CURRENT_PROGRAM_RESULT_BUDGET`，仍要求 239 exact-set、normal sample、test execution PASS、archive 双 hash 与 cleanup PASS。若该 run 的唯一 FAIL 是旧预算超限，报告要保留该首败；不得把它写成生成后动态全绿证据。
+
+`238=181 edge+57 catalog`、`108` route gap 与对应 P0--P5 分类只代表 2026-08-21 的历史输入快照；实施时不得把它们当成当前分母。当前两条 canonical generator 的去重 union 是 `239=180 edge+59 catalog`；这是退役无合法成功路径的 `updateOperationsOwnerBinding` 后的 current tree，必须由 CP-00 重新计算；任何非 `239` 的值都是红夹具。80 条 `@AcceptanceScenario` 是业务场景上限，不是 239 个 operation 的性能测量分母。
+
+每个受管 HTTP completion 必须携带受 backend-acceptance credential 保护的 `measurementScenarioId`：`performance.normal-path` 或 `performance.coverage-only`。budget metadata 只允许前者，interceptor、parser 与生成期 validator 均拒绝第三值。exact-set 消费全部 completion，预算/连接门只消费生成 metadata 明示允许的 `performance.normal-path` 成功 completion；覆盖探针的 4xx 仅证明 route reachability，绝不能成为正常预算样本。完整 exact-set run 必须由 runner 同时强制启用现有 P2 normal recipes 与 coverage fixture；任一 239 operation 缺正常成功样本即 fail closed。fixed budget 上调默认拒绝；仅限同一 CP-05 report 中具有精确 decisionRef、实测 max、事实保全与共享机制复用证据、被拒绝更小优化及成本比较的受控例外，其他上调（含裸 decisionRef）一律红。
+
 ## 1 · CP-00 · 当前树与分母重建
 
 **RECALL**：requirements §2/§4/§9、intake、foundation charter §3/§4/§5、两条 generator owning source。
 
 1. 从 `edge-codegen.mjs` 和 `catalog-inventory-p1.mjs` 的 canonical operation metadata 重新导出 operationId/method/path/face/owner/request schema。
-2. 断言两 registry unique union；预期设计基线 181+57=238、GET=100、write=138。
+2. 断言两 registry unique union；历史基线是 181+57=238，当前树必须以 CP-00 重新取得的值为准（当前为 180+59=239），GET/write 也随当前 exact-set 复算。
 3. 递归扫描 request schema 数组；输出完整 exact-set 和“数组元素独立写”判定。设计基线为 24/1，唯一成员 batch status。
 4. 对 §9b 每个锚点执行目标文件内 exact count=1。
 
@@ -45,16 +53,16 @@
 
 **RECALL**：requirements L2-01/02/05、详设 CP-02、backend coding standard generated rules。
 
-1. 在 181 operation canonical source 增加预算结构和 schema validator。
-2. 在 `catalog-inventory-p1.mjs` 的 57 operation metadata 增加同一结构；复用一份共享 validator，不能复制两套语义。
+1. 在 CP-00 新鲜导出的 edge 180-operation exact subset projection 增加预算结构和 schema validator；不得再把历史 `181` 作为可执行分母。
+2. 在 `catalog-inventory-p1.mjs` 的 current catalog 59-operation metadata 及其 L2 timing envelope 通过同一 CP-05 reader 获取预算；复用一份共享 validator，不能复制两套语义或重读 edge static catalog。
 3. 支持 `FIXED` 与 `LINEAR_REQUEST_CARDINALITY` 穷尽 union；batch 唯一 linear=`15+5×$.items`。
 4. 生成 route registry/OpenAPI metadata/Java/TS 必需投影；预算不是 UI 字段，不进业务 response。
-5. generator self-test：missing/null、固定/线性混填、未知 cardinality path、重复、调高无 decisionRef、238 missing/extra。
+5. generator self-test：missing/null、固定/线性混填、未知 cardinality path、重复、current exact-set missing/extra；普通 fixed 上调有无 decisionRef 均红，只有同一 CP-05 report 中具备全部双准入证据、精确 history 与 operation identity 的受控例外可绿。
 6. 保持 `normalPathDbOperations` 原语义；无 fallback/alias/双写。
 
-**PROOF**：本 CP 的 schema/validator 设计与 CP-05 的 238 个实值属于一个原子交付，校准前不写 canonical operation source、不生成 budget registry、不接通 verifier。先完成 CP-03/04 的非门控 completion event 与 CP-05 测量；取得 238 实值后一次性写满两条 canonical source，随后按 owning README 运行两 generator `--check`、self-test、operation handler bindings/下游 codegen 并原子激活 verifier。不存在 `CALIBRATION_PENDING`、null、哨兵值或 runtime fallback。
+**PROOF**：本 CP 的 schema/validator 设计与 CP-05 的 current exact-set normal 实值属于一个原子交付，校准前不写 canonical operation source、不生成 budget registry、不接通 verifier。先完成 CP-03/04 的非门控 completion event 与 CP-05 测量；取得 current exact-set 实值后一次性写满两条 canonical source，随后按 owning README 运行两 generator `--check`、self-test、operation handler bindings/下游 codegen 并原子激活 verifier。不存在 `CALIBRATION_PENDING`、null、哨兵值或 runtime fallback。
 
-**实施证据口径**：`scripts/generate/backend-performance-budget.mjs` 只负责共享 schema/validator 的 self-test，不拥有第三份 canonical budget registry；因此 `--self-test` 是该脚本的 PASS 门，`--check` 在没有 canonical 输入时保持 `NOT_READY`，不是本批的成功判据。238 个预算的实际闭合必须以两个 owning generator 的 `--check`、生成链 self-test、以及 managed run manifest 的 `budgetEvidence`（declared=observed=238、exceeded=0）共同证明。
+**实施证据口径**：`scripts/generate/backend-performance-budget.mjs` 只负责共享 schema/validator 的 self-test，不拥有第三份 canonical budget registry；因此 `--self-test` 是该脚本的 PASS 门，`--check` 在没有 canonical 输入时保持 `NOT_READY`，不是本批的成功判据。current exact-set 全量预算的实际闭合必须以两个 owning generator 的 `--check`、生成链 self-test、以及 managed run manifest 的 `budgetEvidence`（declared=observed=current exact-set、exceeded=0）共同证明。
 
 ## 4 · CP-03/04 · 每请求门与层分类
 
@@ -65,7 +73,7 @@
 3. 增加 `transactionBeginCount`，只在连接切入手工事务时计 1；不要复用 raw TRANSACTION=BEGIN+COMMIT。
 4. completion event 加 budget evaluation inputs/results；不记录 request payload/cardinality 明细，只记录规范化 N。
 5. verifier 从 run-scoped `http-request-events.jsonl` 读取；以 request tuple 去重，join registry。
-6. 门：DB≤fixed/linear；GET borrow≤1；write borrow≤transactionBeginCount；UNCLASSIFIED SQL ratio≤5%；budget exact-set 238；measurement event exact-set 238。
+6. 门：DB≤fixed/linear；GET borrow≤1；write borrow≤transactionBeginCount；UNCLASSIFIED SQL ratio≤5%；budget exact-set=current exact-set；measurement event exact-set=current exact-set。exact-set消费所有 events；budget/connection 仅消费 metadata 声明的 normal-path 成功 events。
 7. 红夹具与负控制都真跑：owner 新 SQL自动归类；edge unknown SQL保持 UNCLASSIFIED；duration 变慢但 count 不超不红；业务 4xx 不自动等于性能红。
 
 **PROOF**：foundation focused test、interceptor focused test、runner parser static tests。不要用 `BackendAcceptanceDatabaseMetricsSink` 的 last snapshot 做全量判定。
@@ -74,15 +82,15 @@
 
 **RECALL**：requirements P0/P1–P5、当前 seed/acceptance scenario、managed runtime skill（只有获得运行授权后才读并执行）。
 
-1. 从 registry 生成 `operationId -> measurementScenarioIds` expected set。
-2. 先复用现有 acceptance 与 seed workload；计算覆盖差集。
-3. 对差集添加最小真实 HTTP fixture recipe；每个 recipe 有身份、fixture、request、真实业务 readback/side effect，不以状态码为 oracle。
-4. 同侧环境运行三次规范 workload，join 238 events；任何 missing/extra/duplicate/无法触发即停。
+1. 从既有 route registry 生成 identity-only `operationId -> method/path/owner/face` expected set，并以两值 measurement-ID 闭集识别 normal sample；CALIBRATION 不读取 active `databaseOperationBudget`，仅 `performance.normal-path` 可作为预算/连接样本。
+2. 先复用现有 acceptance 与 P2 workload；计算 239 current exact-set 的 normal sample 差集，不能用 seed 或 4xx 覆盖冒充。
+3. 对差集在既有 route-gap fixture 内添加最小真实 HTTP fixture recipe；每个 recipe 有身份、fixture、request、真实业务 readback/side effect，不以状态码为 oracle，并生成 `operationId -> normal provider -> coverage provider` 矩阵。
+4. 同侧环境运行三次规范 workload，join current exact-set 的 normal completion；任何 missing/extra/duplicate/无法触发即停。
 5. 按当前测量重算 P0–P5；历史 94/4/57/36/9/38 只用于差异说明。
-6. 对已整改形态写初始 budget：三次最大值且不高于类阈值；高于阈值先整改。记录 history `from:null`、reason、measurement manifest ref。
-7. 取得 238 实值后回到 CP-02：一次性写满 canonical source、生成并激活 run-level verifier；P0 必须为零。任何 budget 生成物在此前都不存在。
+6. 对已整改形态写初始 budget：三次最大值且不高于类阈值；高于阈值先整改。唯一受控例外必须在同一 report 记录精确 decisionRef、from/to/history、三次实测 max、业务事实未削弱证据、通用机制已复用且无可消除重复的证据、被拒绝优化与成本比较；记录 history 与 manifest/archive/workload refs。
+7. 取得 current exact-set 实值后回到 CP-02：一次性写满 canonical source、生成并激活 run-level verifier；P0 必须为零。任何 budget 生成物在此前都不存在。
 
-**FORBID**：无法触发就登记豁免；用平均值而非最大值；加随意 headroom；为过门调高预算。
+**FORBID**：无法触发就登记豁免；用平均值而非最大值；加随意 headroom；为过门调高预算。未同时满足双准入和 report-bound 校验的预算上调均属止血。
 
 ## 6 · CP-06 · 批量商品状态
 
@@ -114,7 +122,7 @@
 3. 不把 scope 放进写路径，不改变 owner API，不跨 schema 写 JOIN。
 4. 每条用改前 JSON 黄金样本逐字段比；授权/不存在/分页 cursor 负例不变。
 
-**PROOF**：current P2 exact-set borrow=1，DB count 相对历史下降≥30%；任一 JSON 漂移即红。
+**PROOF**：current report 所得 P2 exact-set borrow=1，DB count 的 before/after 只以同 workload 说明；任一 JSON 漂移即红。历史 P2 成员与比例不得决定当前修改清单。
 
 ## 9 · CP-10/11/12 · P3/P4/P5
 
@@ -129,7 +137,7 @@
 
 1. static generator/check/self-test/compile/frontend focused tests；退出码判绿。
 2. managed Testcontainers/acceptance 当前全量；discovered=selected=results，业务与 cleanup 都 PASS。
-3. 238 operation calibration/门；declared=measured=passed=238，P0=0，UNCLASSIFIED SQL≤5%。
+3. current exact-set operation calibration/门；declared=measured=passed=current exact-set，P0=0，UNCLASSIFIED SQL≤5%。
 4. L1 改造前留存的同 workload baseline 与 AFTER 同 workload 对比；`saveOperationsCatalogItem` avg 下降≥90%，并报告 avg/p95、DB count、DB duration/operation。
 5. 获得 reset/start/seed 明确授权后才执行；start 不 seed，失败修复后 fresh reset→start→seed；business/cleanup 分离。
 6. browser L2/UAT 未授权则明确未验证，不用组件测试冒充。
@@ -138,6 +146,6 @@ Testcontainers 启动前按 AGENTS 的联动规则读取 DEV manifest：原有 D
 
 ## 11 · 实施完成回读
 
-逐条回读 requirement L1/L2/P0–P5/B-01–06、IA 每个不可见观察、详设 17 行横切表、24/1 数组闭集、seed 两栏。最终报告必须给：first failure、last known good、broken boundary、business、cleanup、238 manifest、当前 P0–P5 数字、预算调高差集（必须空或逐条 Dexter decisionRef）、UI 未验证清单。
+逐条回读 requirement L1/L2/P0–P5/B-01–06、IA 每个不可见观察、详设 17 行横切表、24/1 数组闭集、seed 两栏。最终报告必须给：first failure、last known good、broken boundary、business、cleanup、current exact-set manifest、当前 P0–P5 数字、本批 fixed budget 调高差集（默认必须为空；若非空，逐项附 CP-05 report-bound 双准入材料、decisionRef、history 与 red mutation）、UI 未验证清单。
 
 `SERIAL_PLAN_STATUS=INDEPENDENT_DESIGN_REVIEW_GO`；不构成 implementation authorization。

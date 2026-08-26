@@ -6,5 +6,9 @@
   "enabledCaseIds": [],
   "sourceOfTruth": "contracts/policy/catalog-inventory-l2-case-blueprint.json",
   "noSeedRuntimeInput": true,
-  "enablementRule": "Only enable a case after the corresponding frontend remediation is complete and the business-owned owner-HTTP fixture facts and control bindings are ready."
+  "activationCandidate": {
+    "path": "contracts/policy/catalog-inventory-l2-activation-candidate.json",
+    "digest": "cb0cd0f0cc8128c21b9393d02b8aaa7e837f8759be3321611ac146dbcf9c65a5"
+  },
+  "enablementRule": "P1 enables only the candidate exact set after a matching PASS held readiness manifest; generated output is never hand-edited."
 }

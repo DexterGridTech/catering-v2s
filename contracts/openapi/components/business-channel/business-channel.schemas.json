@@ -355,13 +355,13 @@
           "ownerNodeTypeDisplayName",
           "ownerNodeRef",
           "channelName",
-          "bindingStatus",
-          "bindingStatusDisplayName",
           "status",
           "statusDisplayName",
           "stopReasons",
           "stopReasonDisplayNames",
-          "version"
+          "version",
+          "bindingStatus",
+          "bindingStatusDisplayName"
         ],
         "properties": {
           "channelRef": {
@@ -401,18 +401,6 @@
             ],
             "format": "uuid"
           },
-          "bindingStatus": {
-            "type": "string",
-            "enum": [
-              "NOT_REQUIRED",
-              "UNBOUND",
-              "BOUND"
-            ]
-          },
-          "bindingStatusDisplayName": {
-            "type": "string",
-            "minLength": 1
-          },
           "status": {
             "type": "string",
             "enum": [
@@ -446,6 +434,18 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "bindingStatus": {
+            "type": "string",
+            "enum": [
+              "NOT_REQUIRED",
+              "UNBOUND",
+              "BOUND"
+            ]
+          },
+          "bindingStatusDisplayName": {
+            "type": "string",
+            "minLength": 1
           }
         }
       },

@@ -149,19 +149,19 @@
     ]
   },
   "closure": {
-    "sourceOperationCount": 149,
+    "sourceOperationCount": 148,
     "plannedAdditionalOperationCount": 32,
-    "expectedResolvedOperationCount": 181,
+    "expectedResolvedOperationCount": 180,
     "expectedUnresolvedOperationCount": 0,
     "expectedAmbiguousOperationCount": 0,
-    "sourceComponentCount": 192,
-    "expectedResolvedComponentCount": 191,
+    "sourceComponentCount": 194,
+    "expectedResolvedComponentCount": 193,
     "expectedExplicitNotCarriedComponentCount": 1,
     "expectedUnresolvedComponentCount": 0,
     "expectedAmbiguousComponentCount": 0,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 108,
+      "operations-admin": 107,
       "public": 12
     }
   }

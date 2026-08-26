@@ -46,7 +46,7 @@ function catalogInventoryDefinitionCommands(operationId) {
 const DIRECT_INVENTORY_CONFIGURATION_OPERATION_ID = "updateOperationsInventoryTargetConfiguration";
 const CATALOG_SHAPE_MANIFEST_OPERATION_ID = "getOperationsCatalogShapeManifest";
 const CATALOG_DUAL_SCOPE_READ_DATA_NODE_TYPES = ["HEAD_COMPANY", "STORE"];
-const CATALOG_DUAL_SCOPE_READ_COUNT = 11;
+const CATALOG_DUAL_SCOPE_READ_COUNT = 13;
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const AUTHENTICATED_MODE = "AUTHENTICATED_WORKSPACE";
 const PLATFORM_SUPER_ADMIN_MODE = "AUTHENTICATED_PLATFORM_SUPER_ADMIN";
@@ -146,10 +146,6 @@ const RESOURCE_TYPE_CAPABILITY_OPERATIONS = new Map([
   ],
   [
     "createOperationsOwnerBinding|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding|operations-admin",
-    {PROJECT: "BC-BUSINESS-CHANNEL-PROJECT-EDIT", STORE: "BC-BUSINESS-CHANNEL-STORE-EDIT"},
-  ],
-  [
-    "updateOperationsOwnerBinding|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding|operations-admin",
     {PROJECT: "BC-BUSINESS-CHANNEL-PROJECT-EDIT", STORE: "BC-BUSINESS-CHANNEL-STORE-EDIT"},
   ],
   [
@@ -477,7 +473,6 @@ function operationIdentity(row) {
 function capabilityRequirementId(operationId) {
   const explicit = {
     createOperationsOwnerBinding: "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_CREATE",
-    updateOperationsOwnerBinding: "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_UPDATE",
     deleteOperationsOwnerBinding: "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_DELETE",
   }[operationId];
   return explicit || (operationId === "updateOperationsOrganizationNode"
@@ -507,7 +502,7 @@ function exactStringList(left, right) {
 function catalogInventoryContractOperations(root) {
   if (!fs.existsSync(path.join(root, CATALOG_INVENTORY_EDGE_CONTRACT_PATH))) return new Map();
   const contract = json(root, CATALOG_INVENTORY_EDGE_CONTRACT_PATH, "CATALOG_INVENTORY_CONTRACT_INVALID");
-  if (contract.kind !== "catalog-inventory-edge-contract" || !Array.isArray(contract.operations) || contract.operations.length !== 57) {
+  if (contract.kind !== "catalog-inventory-edge-contract" || !Array.isArray(contract.operations) || contract.operations.length !== 59) {
     fail("CATALOG_INVENTORY_CONTRACT_OPERATION_COUNT_INVALID");
   }
   const rows = new Map();
@@ -563,7 +558,7 @@ function catalogInventoryContractOperations(root) {
     }
     rows.set(identity, operation);
   }
-  if (mutations !== 37 || reads !== 20) fail(`CATALOG_INVENTORY_CONTRACT_WRITE_READ_DENOMINATOR_DRIFT:${mutations}/${reads}`);
+  if (mutations !== 37 || reads !== 22) fail(`CATALOG_INVENTORY_CONTRACT_WRITE_READ_DENOMINATOR_DRIFT:${mutations}/${reads}`);
   return rows;
 }
 

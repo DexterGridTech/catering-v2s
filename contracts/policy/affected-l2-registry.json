@@ -2,7 +2,6 @@
   "schemaVersion": 4,
   "kind": "affected-l2-registry",
   "status": "R5_DESIGN_NORMATIVE_PENDING_IMPLEMENTATION",
-  "fallback": "ALL_R5_L2",
   "surfaces": [
     {
       "id": "backend-owner",
@@ -34,6 +33,17 @@
         "libraries/frontend/admin-ui-foundation/src/foundation.test.ts",
         "apps/frontend/platform-admin/src/tests/architecture/",
         "apps/frontend/operations-admin/src/tests/architecture/"
+      ]
+    },
+    {
+      "id": "OPERATIONS-CATALOG-LIBRARY",
+      "paths": [
+        "apps/frontend/operations-admin/src/features/catalog-management/",
+        "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+        "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.rtk.ts"
+      ],
+      "tests": [
+        "apps/frontend/operations-admin/src/tests/l2/catalog-inventory.spec.ts"
       ]
     },
     {
@@ -238,7 +248,7 @@
   "closure": {
     "r5FrontendSurfaceCount": 22,
     "surfaceIdsSource": "contracts/policy/frontend-asset-carryover-manifest.json#surfaces[*].id",
-    "rule": "all 22 surface ids occur exactly once; shared path changes may select multiple precise rows; fallback is only for genuinely unclassified changes"
+    "rule": "all 22 carry-over surface ids occur exactly once; OPERATIONS-CATALOG-LIBRARY is an explicit additional surface for this workbench; shared path changes may select multiple precise rows; no fallback may select this workbench"
   },
   "phaseBusinessL2Obligations": [
     {

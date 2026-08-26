@@ -16,29 +16,66 @@ const countMap = (value, code) => {
   return value;
 };
 
-const tupleFor = event => [event.runId, event.requestId, event.correlationId, event.operationId, event.routeTemplate].join('\u0000');
+const tupleFor = event =>
+  [event.runId, event.requestId, event.correlationId, event.operationId, event.routeTemplate].join('\u0000');
 const BATCH_OPERATION_ID = 'batchTransitionOperationsCatalogItemStatus';
+export const BACKEND_ACCEPTANCE_MEASUREMENT_SCENARIO_IDS = Object.freeze([
+  'performance.normal-path',
+  'performance.coverage-only',
+]);
 
-export function validateHttpRequestEvent(event) {
+export function validateHttpRequestEvent(event, {requireMeasurementScenarioId = false} = {}) {
   if (!event || typeof event !== 'object' || Array.isArray(event)) throw new Error('HTTP_REQUEST_EVENT_INVALID');
-  for (const field of ['runId', 'requestId', 'correlationId', 'operationId', 'routeTemplate', 'method', 'owner', 'consumerFace']) {
+  for (const field of [
+    'runId',
+    'requestId',
+    'correlationId',
+    'operationId',
+    'routeTemplate',
+    'method',
+    'owner',
+    'consumerFace',
+  ]) {
     requiredString(event[field], `HTTP_REQUEST_EVENT_${field.toUpperCase()}_INVALID`);
   }
-  if (event.measurementSchemaVersion !== 2 || event.measurementBasis !== 'JDBC_EXECUTION_PLUS_CONNECTION_TRANSACTION_BATCH') {
+  if (
+    event.measurementSchemaVersion !== 2 ||
+    event.measurementBasis !== 'JDBC_EXECUTION_PLUS_CONNECTION_TRANSACTION_BATCH'
+  ) {
     throw new Error('HTTP_REQUEST_EVENT_MEASUREMENT_METADATA_INVALID');
+  }
+  if (requireMeasurementScenarioId) {
+    if (!BACKEND_ACCEPTANCE_MEASUREMENT_SCENARIO_IDS.includes(event.measurementScenarioId)) {
+      throw new Error('HTTP_REQUEST_EVENT_MEASUREMENT_SCENARIO_ID_INVALID');
+    }
   }
   if (Object.hasOwn(event, 'requestCardinality')) {
     nonNegativeInteger(event.requestCardinality, 'HTTP_REQUEST_EVENT_REQUEST_CARDINALITY_INVALID');
   }
-  if (event.operationId === BATCH_OPERATION_ID
-    && (!Object.hasOwn(event, 'requestCardinality')
-      || !Number.isInteger(event.requestCardinality)
-      || event.requestCardinality < 1
-      || event.requestCardinality > 100)) {
+  if (
+    event.operationId === BATCH_OPERATION_ID &&
+    (!Object.hasOwn(event, 'requestCardinality') ||
+      !Number.isInteger(event.requestCardinality) ||
+      event.requestCardinality < 1 ||
+      event.requestCardinality > 100)
+  ) {
     throw new Error('HTTP_REQUEST_EVENT_BATCH_REQUEST_CARDINALITY_INVALID');
   }
-  if (!Number.isInteger(event.status) || event.status < 100 || event.status > 599) throw new Error('HTTP_REQUEST_EVENT_STATUS_INVALID');
-  for (const field of ['durationMillis', 'databaseOperationCount', 'logicalStatementCount', 'databaseDurationMillis', 'transactionBeginCount', 'sqlOperationCount', 'unclassifiedSqlOperationCount', 'connectionBorrowCount', 'operationConnectionBorrowCount', 'connectionAcquireMillis', 'batchStatementTotal']) {
+  if (!Number.isInteger(event.status) || event.status < 100 || event.status > 599)
+    throw new Error('HTTP_REQUEST_EVENT_STATUS_INVALID');
+  for (const field of [
+    'durationMillis',
+    'databaseOperationCount',
+    'logicalStatementCount',
+    'databaseDurationMillis',
+    'transactionBeginCount',
+    'sqlOperationCount',
+    'unclassifiedSqlOperationCount',
+    'connectionBorrowCount',
+    'operationConnectionBorrowCount',
+    'connectionAcquireMillis',
+    'batchStatementTotal',
+  ]) {
     nonNegativeInteger(event[field], `HTTP_REQUEST_EVENT_${field.toUpperCase()}_INVALID`);
   }
   if (event.logicalSectionCounts !== undefined) {
@@ -47,7 +84,11 @@ export function validateHttpRequestEvent(event) {
       throw new Error('HTTP_REQUEST_EVENT_OPERATION_CONNECTION_COUNT_MISMATCH');
     }
   }
-  if (!Number.isFinite(event.unclassifiedSqlRatio) || event.unclassifiedSqlRatio < 0 || event.unclassifiedSqlRatio > 1) {
+  if (
+    !Number.isFinite(event.unclassifiedSqlRatio) ||
+    event.unclassifiedSqlRatio < 0 ||
+    event.unclassifiedSqlRatio > 1
+  ) {
     throw new Error('HTTP_REQUEST_EVENT_UNCLASSIFIED_RATIO_INVALID');
   }
   if (!['SUCCEEDED', 'FAILED'].includes(event.outcome)) throw new Error('HTTP_REQUEST_EVENT_OUTCOME_INVALID');
@@ -60,23 +101,36 @@ export function validateHttpRequestEvent(event) {
     .reduce((sum, [, value]) => sum + value, 0);
   if (physicalCount !== event.databaseOperationCount) throw new Error('HTTP_REQUEST_EVENT_KIND_TOTAL_MISMATCH');
   if (connectionCount !== event.connectionBorrowCount) throw new Error('HTTP_REQUEST_EVENT_CONNECTION_COUNT_MISMATCH');
-  if (event.transactionBeginCount > transactionCount) throw new Error('HTTP_REQUEST_EVENT_TRANSACTION_BEGIN_COUNT_MISMATCH');
+  if (event.transactionBeginCount > transactionCount)
+    throw new Error('HTTP_REQUEST_EVENT_TRANSACTION_BEGIN_COUNT_MISMATCH');
   if (sqlCount !== event.sqlOperationCount || event.unclassifiedSqlOperationCount > sqlCount) {
     throw new Error('HTTP_REQUEST_EVENT_SQL_COUNT_MISMATCH');
   }
   const expectedRatio = sqlCount === 0 ? 0 : event.unclassifiedSqlOperationCount / sqlCount;
-  if (Math.abs(expectedRatio - event.unclassifiedSqlRatio) > 1e-9) throw new Error('HTTP_REQUEST_EVENT_UNCLASSIFIED_RATIO_MISMATCH');
+  if (Math.abs(expectedRatio - event.unclassifiedSqlRatio) > 1e-9)
+    throw new Error('HTTP_REQUEST_EVENT_UNCLASSIFIED_RATIO_MISMATCH');
   return event;
 }
 
-export function parseHttpRequestEvents(contents, expectedRunId = null) {
-  const rows = String(contents ?? '').split(/\r?\n/).filter(Boolean).map((line, index) => {
-    try { return JSON.parse(line); } catch { throw new Error(`HTTP_REQUEST_EVENTS_INVALID_JSON:${index + 1}`); }
-  });
+export function parseHttpRequestEvents(
+  contents,
+  expectedRunId = null,
+  {requireMeasurementScenarioId = expectedRunId !== null} = {},
+) {
+  const rows = String(contents ?? '')
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line, index) => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        throw new Error(`HTTP_REQUEST_EVENTS_INVALID_JSON:${index + 1}`);
+      }
+    });
   if (rows.length === 0) throw new Error('HTTP_REQUEST_EVENTS_EMPTY');
   const seen = new Set();
   for (const row of rows) {
-    validateHttpRequestEvent(row);
+    validateHttpRequestEvent(row, {requireMeasurementScenarioId});
     if (expectedRunId !== null && row.runId !== expectedRunId) throw new Error('HTTP_REQUEST_EVENTS_RUN_MISMATCH');
     const tuple = tupleFor(row);
     if (seen.has(tuple)) throw new Error('HTTP_REQUEST_EVENTS_DUPLICATE_TUPLE');
@@ -86,6 +140,21 @@ export function parseHttpRequestEvents(contents, expectedRunId = null) {
     rows: Object.freeze(rows),
     summary: summarizeHttpRequestEvents(rows),
   });
+}
+
+/**
+ * Full managed backend-acceptance runs may retain failed HTTP completion
+ * events for diagnostics, but no such event may carry a tracker observation
+ * error into the performance evidence.  Otherwise a forged diagnostic tuple
+ * could be recorded and then skipped by normal-sample consumers.
+ */
+export function assertNoObservationErrors(events) {
+  if (!Array.isArray(events)) throw new Error('HTTP_REQUEST_EVENTS_OBSERVATION_ERROR_INPUT_INVALID');
+  const failedObservation = events.find(event => Object.hasOwn(event, 'observationError'));
+  if (failedObservation) {
+    throw new Error(`HTTP_REQUEST_EVENTS_OBSERVATION_ERROR:${failedObservation.operationId}`);
+  }
+  return events;
 }
 
 export function summarizeHttpRequestEvents(rows) {

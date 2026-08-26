@@ -12,14 +12,35 @@ type Options = {
   brandRef?: string;
   resetKey: string;
   excludedTargetRef?: string | null;
+  /**
+   * A BOM cannot consume the stock target that belongs to the very owner
+   * being configured. This is an identity guard only; eligibility remains
+   * exclusively inventory-owner controlled.
+   */
+  excludedOwner?: {itemRef: string; productSkuRef?: string | null} | null;
 };
+
+export function isCurrentOwnerConsumptionTarget(
+  candidate: InventoryConsumptionTargetCandidate,
+  owner: Options['excludedOwner'],
+) {
+  return Boolean(
+    owner && candidate.itemRef === owner.itemRef && (candidate.productSkuRef ?? null) === (owner.productSkuRef ?? null),
+  );
+}
 
 /**
  * Candidate transport stays cursor-backed and owner-provided.  The hook only
  * owns query text, continuation and presentation-level self filtering; it
  * never reconstructs eligibility from the catalog list.
  */
-export function useInventoryConsumptionTargetCandidates({scopeRef, brandRef, resetKey, excludedTargetRef}: Options) {
+export function useInventoryConsumptionTargetCandidates({
+  scopeRef,
+  brandRef,
+  resetKey,
+  excludedTargetRef,
+  excludedOwner,
+}: Options) {
   const [keyword, setKeyword] = useState('');
   const candidateState = useCursorCandidates<InventoryConsumptionTargetCandidate>({
     queryText: keyword,
@@ -59,8 +80,11 @@ export function useInventoryConsumptionTargetCandidates({scopeRef, brandRef, res
   }, [acceptPage, candidateState.pageSize, page]);
 
   const items = useMemo(
-    () => candidateState.items.filter(candidate => candidate.targetRef !== excludedTargetRef),
-    [candidateState.items, excludedTargetRef],
+    () =>
+      candidateState.items.filter(
+        candidate => candidate.targetRef !== excludedTargetRef && !isCurrentOwnerConsumptionTarget(candidate, excludedOwner),
+      ),
+    [candidateState.items, excludedOwner, excludedTargetRef],
   );
 
   return {

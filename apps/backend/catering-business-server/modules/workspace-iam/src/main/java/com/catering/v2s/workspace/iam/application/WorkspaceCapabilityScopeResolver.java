@@ -1,5 +1,6 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.api.WorkspaceAssignmentScopeLookup;
@@ -81,6 +82,78 @@ public class WorkspaceCapabilityScopeResolver {
             return ScopeResolution.deny();
         }
         return resolve(session, requirementId, target);
+    }
+
+    /**
+     * Resolves one catalog command's capability path and organization-owned brand in two owner reads, rather than
+     * loading the target path and its brand independently. The returned brand is persisted-owner judgment, never the
+     * client selection.
+     */
+    public CatalogScopeResolution resolveGeneratedCatalogOperation(
+            WorkspaceSessionReadback session,
+            String requirementId,
+            String capabilityKey,
+            ServerResolvedResource target,
+            CatalogScopeLookup.CatalogBrandSelection selection) {
+        if (target == null
+                || !java.util.Objects.equals(
+                        WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(requirementId, target.resourceType())
+                                .orElse(null),
+                        capabilityKey)) {
+            return CatalogScopeResolution.deny(CatalogScopeDenialReason.CONTRACT_CAPABILITY_MISMATCH);
+        }
+        try (var scopeSection = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.SCOPE)) {
+            if (session == null
+                    || session.currentAssignmentId() == null
+                    || target.resourceType() == null
+                    || target.resourceId() == null) {
+                return CatalogScopeResolution.deny(CatalogScopeDenialReason.SESSION_OR_TARGET_UNAVAILABLE);
+            }
+            WorkspaceAssignmentScopeLookup.AssignmentScope assignment;
+            try {
+                assignment = loadWorkspaceCommandAuthorizationFacts(session, capabilityKey)
+                        .assignmentScope();
+            } catch (RuntimeException denied) {
+                return CatalogScopeResolution.deny(CatalogScopeDenialReason.ASSIGNMENT_FACTS_UNAVAILABLE);
+            }
+            OrganizationTaskPathLookup.CatalogCommandScopeFacts facts;
+            try {
+                facts = taskPaths.resolveCatalogCommandScopeFacts(
+                        session.workspaceUuid(),
+                        session.groupWorkspaceKey(),
+                        target.resourceType(),
+                        target.resourceId(),
+                        selection);
+            } catch (RuntimeException denied) {
+                return CatalogScopeResolution.deny(CatalogScopeDenialReason.ORGANIZATION_FACTS_UNAVAILABLE);
+            }
+            OrganizationTaskPathLookup.TaskPath taskPath = facts.taskPath();
+            if (assignment == null
+                    || assignment.serviceNodeType() == null
+                    || assignment.serviceNodeId() == null
+                    || !taskPath.targetType().equals(target.resourceType())
+                    || !taskPath.targetId().equals(target.resourceId())
+                    || !(OrganizationTaskPathLookup.scopeAllows(
+                                    assignment.serviceNodeType(), assignment.serviceNodeId(), taskPath)
+                            || allowsHeadCompanyToCreateHeadCompany(capabilityKey, assignment, taskPath))) {
+                return CatalogScopeResolution.deny(CatalogScopeDenialReason.ASSIGNMENT_OUTSIDE_TARGET_PATH);
+            }
+            return CatalogScopeResolution.allow(
+                    ScopeResolution.allow(
+                            capabilityKey,
+                            new FirstOwnerQueryPredicate(
+                                    session.workspaceUuid(),
+                                    session.groupWorkspaceKey(),
+                                    target.resourceType(),
+                                    target.resourceId(),
+                                    assignment.serviceNodeType(),
+                                    assignment.serviceNodeId(),
+                                    taskPath.ancestorIds(),
+                                    session.contextVersion())),
+                    facts.brandJudgment());
+        } finally {
+            DatabaseOperationTracker.markPhase(DatabaseOperationTracker.Phase.SCOPE_RESOLVED);
+        }
     }
 
     /**
@@ -416,6 +489,33 @@ public class WorkspaceCapabilityScopeResolver {
 
         static ScopeResolution deny() {
             return new ScopeResolution(Decision.DENY, null, null);
+        }
+    }
+
+    /**
+     * Safe, finite denial reason for request-boundary diagnostics. It deliberately excludes target, assignment, brand
+     * and session values so authorization failures remain correlatable without exposing owner facts.
+     */
+    public enum CatalogScopeDenialReason {
+        CONTRACT_CAPABILITY_MISMATCH,
+        SESSION_OR_TARGET_UNAVAILABLE,
+        ASSIGNMENT_FACTS_UNAVAILABLE,
+        ORGANIZATION_FACTS_UNAVAILABLE,
+        ASSIGNMENT_OUTSIDE_TARGET_PATH,
+        EDGE_SESSION_OR_TARGET_REJECTED
+    }
+
+    public record CatalogScopeResolution(
+            ScopeResolution scopeResolution,
+            CatalogScopeLookup.CatalogBrandJudgment brandJudgment,
+            CatalogScopeDenialReason denialReason) {
+        static CatalogScopeResolution allow(
+                ScopeResolution scopeResolution, CatalogScopeLookup.CatalogBrandJudgment brandJudgment) {
+            return new CatalogScopeResolution(scopeResolution, brandJudgment, null);
+        }
+
+        static CatalogScopeResolution deny(CatalogScopeDenialReason denialReason) {
+            return new CatalogScopeResolution(ScopeResolution.deny(), null, denialReason);
         }
     }
 }

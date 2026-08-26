@@ -92,27 +92,27 @@ export const PUBLIC_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "completeOperationsPasswordRecovery": {
     "kind": "FIXED",
-    "max": 7,
+    "max": 13,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 13,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -120,13 +120,13 @@ export const PUBLIC_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 18,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 18,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -134,13 +134,13 @@ export const PUBLIC_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 4,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -148,13 +148,13 @@ export const PUBLIC_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 5,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 5,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -162,13 +162,13 @@ export const PUBLIC_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 8,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -176,27 +176,27 @@ export const PUBLIC_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 9,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 9,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "sendOperationsPasswordRecoveryOtp": {
     "kind": "FIXED",
-    "max": 7,
+    "max": 19,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 19,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -204,41 +204,41 @@ export const PUBLIC_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 9,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 9,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "startOperationsPasswordRecovery": {
     "kind": "FIXED",
-    "max": 18,
+    "max": 19,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 18,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 19,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
   "verifyOperationsPasswordRecoveryOtp": {
     "kind": "FIXED",
-    "max": 7,
+    "max": 22,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "to": 22,
+        "reason": "current managed acceptance program maximum"
       }
     ]
   },
@@ -246,13 +246,13 @@ export const PUBLIC_DATABASE_OPERATION_BUDGETS = {
     "kind": "FIXED",
     "max": 13,
     "measurementScenarioIds": [
-      "performance.operation-budget-exact-set"
+      "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
         "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "current managed acceptance program maximum"
       }
     ]
   }

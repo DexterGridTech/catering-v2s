@@ -21,8 +21,6 @@ public interface CollaborationCommandApi {
 
     CollaborationReadback.OwnerBinding updatePlatformBinding(UpdatePlatformBindingCommand command);
 
-    CollaborationReadback.OwnerBinding updateOperationsBinding(UpdateOperationsBindingCommand command);
-
     CollaborationReadback.OwnerBinding requestOrDeletePlatformBinding(DeletePlatformBindingCommand command);
 
     CollaborationReadback.OwnerBinding requestOrDeleteOperationsBinding(DeleteOperationsBindingCommand command);
@@ -41,10 +39,6 @@ public interface CollaborationCommandApi {
 
     default CollaborationReadback.OwnerBinding updateBinding(UpdatePlatformBindingCommand command) {
         return updatePlatformBinding(command);
-    }
-
-    default CollaborationReadback.OwnerBinding updateBinding(UpdateOperationsBindingCommand command) {
-        return updateOperationsBinding(command);
     }
 
     default CollaborationReadback.OwnerBinding requestOrDeleteBinding(DeletePlatformBindingCommand command) {
@@ -127,23 +121,6 @@ public interface CollaborationCommandApi {
             AuditActor actor) {
         public UpdatePlatformBindingCommand {
             actor = Objects.requireNonNull(actor, "actor");
-        }
-    }
-
-    record UpdateOperationsBindingCommand(
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            UUID bindingRef,
-            String bindingDisplayName,
-            String externalOwnerId,
-            long expectedVersion,
-            long contextVersion,
-            String idempotencyKey,
-            AuditActor actor,
-            OperationsOwnerScopeGrant ownerScopeGrant) {
-        public UpdateOperationsBindingCommand {
-            actor = Objects.requireNonNull(actor, "actor");
-            ownerScopeGrant = Objects.requireNonNull(ownerScopeGrant, "ownerScopeGrant");
         }
     }
 

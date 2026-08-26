@@ -59,13 +59,13 @@ final class BusinessChannelWireMapper {
                 text(value.channelCode()),
                 value.channelName(),
                 value.bindingRef(),
-                value.bindingStatus(),
-                bindingStatusDisplayName(value.bindingStatus()),
                 value.status(),
                 statusDisplayName(value.status()),
                 value.stopReasons(),
                 stopReasonDisplayNames(value.stopReasons()),
-                value.version());
+                value.version(),
+                value.bindingStatus(),
+                bindingStatusDisplayName(value.bindingStatus()));
     }
 
     static BusinessChannelPage channelPage(BusinessChannelReadback.ChannelPage value) {

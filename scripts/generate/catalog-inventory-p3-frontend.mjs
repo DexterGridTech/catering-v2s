@@ -263,7 +263,11 @@ function tsType(schema) {
   if (schema.type === 'string' && schema.format === 'binary') return 'Blob';
   if (Array.isArray(schema.oneOf)) return schema.oneOf.map(tsType).join(' | ');
   if (Array.isArray(schema.anyOf)) return schema.anyOf.map(tsType).join(' | ');
-  if (Array.isArray(schema.allOf)) return schema.allOf.map(tsType).join(' & ');
+  // `if`/`then` constraints enrich a concrete object schema at runtime but do
+  // not define a second TypeScript object shape.  Prefer the schema's own
+  // structural type when present; only compose allOf-only schemas.
+  if (Array.isArray(schema.allOf) && !schema.type && !schema.properties && !schema.items)
+    return schema.allOf.map(tsType).join(' & ');
   if (Array.isArray(schema.enum)) return schema.enum.map(value => JSON.stringify(value)).join(' | ');
   if (schema.type === 'array') return `Array<${tsType(schema.items)}>`;
   if (schema.type === 'object' || schema.properties) {
@@ -383,6 +387,17 @@ function expectPolicyFailure(mutatedPolicy, expectedCode) {
 }
 
 function selfTest() {
+  const conditionalObjectType = tsType({
+    type: 'object',
+    additionalProperties: false,
+    required: ['canVoid', 'blockingReasons'],
+    properties: {canVoid: {type: 'boolean'}, blockingReasons: {type: 'array', items: {type: 'string'}}},
+    allOf: [{if: {properties: {canVoid: {const: false}}}, then: {properties: {blockingReasons: {minItems: 1}}}}],
+  });
+  if (!conditionalObjectType.includes('canVoid: boolean') || !conditionalObjectType.includes('blockingReasons: Array<string>'))
+    throw new Error('P3_CONDITIONAL_OBJECT_TYPE_COLLAPSED');
+  console.log('RED_CONDITIONAL_OBJECT_TYPE_COLLAPSE=PASS');
+
   const missingProvider = structuredClone(tagPolicy);
   missingProvider.operations.find(operation => operation.operationId === 'getOperationsCatalogItems').provides = [];
   expectPolicyFailure(missingProvider, 'CATALOG_INVENTORY_RTK_PROVIDER_MISSING:getOperationsCatalogItems');

@@ -49,6 +49,8 @@ public final class CatalogOperationBindings {
     OperationBindingTypes.Wire.CatalogUnitReadback updateOperationsCatalogUnit(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogUnitUpdateRequest request);
     OperationBindingTypes.Wire.CatalogUnitReadback disableOperationsCatalogUnit(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogUnitDisableRequest request);
     OperationBindingTypes.Wire.CatalogUnitDeleteReadback deleteOperationsCatalogUnit(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogUnitDeleteRequest request);
+    OperationBindingTypes.Wire.CatalogCategoryCandidatePage getOperationsCatalogCategoryCandidates(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.CatalogCategoryCandidateQuery request);
+    OperationBindingTypes.Wire.CatalogItemSkuPage getOperationsCatalogItemSkus(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.CatalogItemSkusQuery request);
   }
 
   private final OwnerLocalAdapters adapters;
@@ -96,6 +98,8 @@ public final class CatalogOperationBindings {
   public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_CATALOG_UNIT_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsCatalogUnit", "catalog", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor DISABLE_OPERATIONS_CATALOG_UNIT_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("disableOperationsCatalogUnit", "catalog", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor DELETE_OPERATIONS_CATALOG_UNIT_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("deleteOperationsCatalogUnit", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor GET_OPERATIONS_CATALOG_CATEGORY_CANDIDATES_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getOperationsCatalogCategoryCandidates", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor GET_OPERATIONS_CATALOG_ITEM_SKUS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getOperationsCatalogItemSkus", "catalog", "catalog-inventory");
 
   private static void requireReadDescriptor(OperationBindingTypes.OperationDescriptor descriptor) {
     if (descriptor == null) throw new IllegalArgumentException("descriptor is required");
@@ -111,6 +115,8 @@ public final class CatalogOperationBindings {
       case "listOperationsCatalogAttributeDefinitions" -> { if (descriptor != LIST_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITIONS_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "listOperationsCatalogOrderOptionDefinitions" -> { if (descriptor != LIST_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITIONS_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "listOperationsCatalogUnits" -> { if (descriptor != LIST_OPERATIONS_CATALOG_UNITS_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "getOperationsCatalogCategoryCandidates" -> { if (descriptor != GET_OPERATIONS_CATALOG_CATEGORY_CANDIDATES_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "getOperationsCatalogItemSkus" -> { if (descriptor != GET_OPERATIONS_CATALOG_ITEM_SKUS_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       default -> throw new IllegalArgumentException("unsupported descriptor");
     }
   }
@@ -130,6 +136,8 @@ public final class CatalogOperationBindings {
       case "listOperationsCatalogAttributeDefinitions" -> adapters.listOperationsCatalogAttributeDefinitions(LIST_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITIONS_DESCRIPTOR, context, (OperationBindingTypes.Wire.CatalogAttributeDefinitionListQuery) request);
       case "listOperationsCatalogOrderOptionDefinitions" -> adapters.listOperationsCatalogOrderOptionDefinitions(LIST_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITIONS_DESCRIPTOR, context, (OperationBindingTypes.Wire.CatalogOrderOptionDefinitionListQuery) request);
       case "listOperationsCatalogUnits" -> adapters.listOperationsCatalogUnits(LIST_OPERATIONS_CATALOG_UNITS_DESCRIPTOR, context, (OperationBindingTypes.Wire.CatalogUnitListQuery) request);
+      case "getOperationsCatalogCategoryCandidates" -> adapters.getOperationsCatalogCategoryCandidates(GET_OPERATIONS_CATALOG_CATEGORY_CANDIDATES_DESCRIPTOR, context, (OperationBindingTypes.Wire.CatalogCategoryCandidateQuery) request);
+      case "getOperationsCatalogItemSkus" -> adapters.getOperationsCatalogItemSkus(GET_OPERATIONS_CATALOG_ITEM_SKUS_DESCRIPTOR, context, (OperationBindingTypes.Wire.CatalogItemSkusQuery) request);
       default -> throw new IllegalArgumentException("Unsupported read operation: " + descriptor.operationId());
     };
   }

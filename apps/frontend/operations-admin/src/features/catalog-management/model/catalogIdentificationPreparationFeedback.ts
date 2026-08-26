@@ -13,10 +13,10 @@ export const CATALOG_IDENTIFIER_PREPARATION_PROBLEM_CODES = [
   'CATALOG_PREPARATION_UNKNOWN_FIELD',
 ] as const;
 
-export type CatalogIdentifierPreparationProblemCode =
-  (typeof CATALOG_IDENTIFIER_PREPARATION_PROBLEM_CODES)[number];
+export type CatalogIdentifierPreparationProblemCode = (typeof CATALOG_IDENTIFIER_PREPARATION_PROBLEM_CODES)[number];
 
-export type CatalogFeedbackTarget = 'identifier' | 'skuIdentifier' | 'preparation' | 'skuPreparation' | 'optionPreparation';
+export type CatalogFeedbackTarget =
+  'identifier' | 'skuIdentifier' | 'preparation' | 'skuPreparation' | 'optionPreparation';
 
 export type CatalogIdentificationPreparationFeedback = {
   target: CatalogFeedbackTarget;
@@ -32,7 +32,7 @@ export const CATALOG_IDENTIFICATION_PREPARATION_FEEDBACK = {
   CATALOG_IDENTIFIER_TYPE_NOT_ALLOWED: {
     target: 'identifier',
     field: 'type',
-    message: '当前商品类型不支持这种识别方式',
+    message: '当前商品形态不支持这种识别方式',
   },
   CATALOG_IDENTIFIER_VALUE_INVALID: {
     target: 'identifier',
@@ -51,7 +51,7 @@ export const CATALOG_IDENTIFICATION_PREPARATION_FEEDBACK = {
   },
   CATALOG_PREPARATION_NOT_ALLOWED: {
     target: 'preparation',
-    message: '当前商品类型不能填写制作信息',
+    message: '当前商品形态不能填写制作信息',
   },
   CATALOG_PREPARATION_TARGET_MISMATCH: {
     target: 'preparation',
@@ -60,7 +60,7 @@ export const CATALOG_IDENTIFICATION_PREPARATION_FEEDBACK = {
   PRODUCTION_TAG_NOT_BINDABLE: {
     target: 'preparation',
     field: 'tags',
-    message: '所选制作处理标签已不可使用，请重新选择',
+    message: '所选生产标签已不可使用，请重新选择',
   },
   CATALOG_PREPARATION_DURATION_INVALID: {
     target: 'preparation',
@@ -69,16 +69,13 @@ export const CATALOG_IDENTIFICATION_PREPARATION_FEEDBACK = {
   },
   CATALOG_OPTION_PREPARATION_CHANGE_NOT_ALLOWED: {
     target: 'optionPreparation',
-    message: '点单选项的制作变化只能增加制作处理标签、制作时长或追加说明',
+    message: '点单选项的制作变化只能增加制作时长或追加说明',
   },
   CATALOG_PREPARATION_UNKNOWN_FIELD: {
     target: 'preparation',
     message: '制作信息包含无法识别的内容，请重新打开后填写',
   },
-} as const satisfies Record<
-  CatalogIdentifierPreparationProblemCode,
-  CatalogIdentificationPreparationFeedback
->;
+} as const satisfies Record<CatalogIdentifierPreparationProblemCode, CatalogIdentificationPreparationFeedback>;
 
 export const CATALOG_IDENTIFIER_TYPE_LABELS: Readonly<Record<CatalogIdentifierType, string>> = {
   BARCODE: '条码',
@@ -90,7 +87,5 @@ export function catalogIdentifierProblemFeedback(
   code: string | undefined,
 ): CatalogIdentificationPreparationFeedback | undefined {
   if (!code || !Object.hasOwn(CATALOG_IDENTIFICATION_PREPARATION_FEEDBACK, code)) return undefined;
-  return CATALOG_IDENTIFICATION_PREPARATION_FEEDBACK[
-    code as CatalogIdentifierPreparationProblemCode
-  ];
+  return CATALOG_IDENTIFICATION_PREPARATION_FEEDBACK[code as CatalogIdentifierPreparationProblemCode];
 }

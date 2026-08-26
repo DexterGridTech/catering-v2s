@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
 import type {
+  BrandCatalogCopyPreflight,
   CatalogDictionaryView,
   CatalogInventoryEnvelope,
   CatalogShapeManifestView,
@@ -17,6 +18,7 @@ import {
   buildCatalogSkuVoidRequest,
   buildSkuMatrix,
   catalogCategoryCodeExists,
+  catalogCopyReasonLabel,
   catalogFilterConflictReason,
   catalogFormValidationIssue,
   catalogPriceLabel,
@@ -25,6 +27,7 @@ import {
   copyConfirmationLabel,
   copyConfirmationRows,
   decodeBrandCopyReadback,
+  decodeCatalogVoidAvailability,
   decodeCatalogBatchResults,
   decodeCatalogDictionaryLabels,
   decodeCatalogMediaLimits,
@@ -32,10 +35,12 @@ import {
   decodeItems,
   decodeNavigation,
   decodePreflight,
+  decodeCatalogSkuVoidAvailability,
   isCatalogBatchRowSelectable,
   mergeCatalogSkuVoidReadback,
   partitionBrandCopyCompatibilityResults,
-  productionTagCandidateFromReadback,
+  productionTagReadbackIsComplete,
+  requireCatalogSkuVoidTransitionReadback,
   serializeSkuRowsForSave,
   shapeHasVisibleTab,
   shortNameMatchesKeyword,
@@ -45,6 +50,7 @@ import {
   type CopyPreflight,
 } from '../model/catalogModel';
 import {CatalogBatchOutcome} from './CatalogBatchOutcome';
+import {temporaryPromotionBlockedReasonLabel, temporaryPromotionFieldLabel} from './CatalogTemporaryPromotionTask';
 
 const testUuid = (value: string) => value as unknown as Uuid;
 const skuUnitDefaults = {
@@ -56,6 +62,7 @@ const skuUnitDefaults = {
   preparationOverride: {mode: 'INHERIT_ITEM' as const, profile: null},
   effectivePreparation: null,
   preparationSource: 'ITEM_DEFAULT' as const,
+  updatedAt: 0,
 };
 
 const batchRow = (index: number, outcome: CatalogBatchResult['outcome']): CatalogBatchResult => ({
@@ -63,7 +70,7 @@ const batchRow = (index: number, outcome: CatalogBatchResult['outcome']): Catalo
   itemCode: `ITEM-${index}`,
   outcome,
   problemCode: outcome === 'FAILED' ? 'VERSION_CONFLICT' : null,
-  reason: outcome === 'FAILED' ? '商品版本已变化' : null,
+  reason: outcome === 'FAILED' ? '商品资料已有更新，请重新读取后再操作。' : null,
   version: outcome === 'SUCCEEDED' ? index + 1 : null,
 });
 
@@ -82,7 +89,7 @@ describe('catalog management runtime model contracts', () => {
         'sku-specifications-pricing',
       ].sort(),
     );
-    expect(catalogTabLabel('governance')).toBe('引用关系');
+    expect(catalogTabLabel('governance')).toBe('关联与依赖（只读）');
     expect(Object.values(CATALOG_TAB_LABELS)).not.toContain('治理与引用');
   });
 
@@ -143,7 +150,7 @@ describe('catalog management runtime model contracts', () => {
     expect(catalogFormValidationIssue({errorFields: []})).toBeUndefined();
   });
 
-  it('does not hydrate a dirty draft from a same-item detail refresh', () => {
+  it('hydrates a same-item draft only when an explicit server refresh requires it', () => {
     expect(
       shouldHydrateCatalogItemDraft({
         initializedItemCode: 'LATTE-001',
@@ -159,7 +166,7 @@ describe('catalog management runtime model contracts', () => {
         dirty: false,
         forceHydrate: false,
       }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       shouldHydrateCatalogItemDraft({
         initializedItemCode: 'LATTE-001',
@@ -214,15 +221,90 @@ describe('catalog management runtime model contracts', () => {
       canVoid: false,
       blockingReferences: [],
       dependentFacts: [],
+      blockingReasons: [{label: '当前状态不支持作废', count: 1, relatedItemNames: []}],
     });
     expect(merged[0]).toMatchObject({
       productSkuRef: 'sku-1',
       standardSalePrice: 1280,
       status: 'VOIDED',
       version: 6,
-      voidAvailability: {canVoid: false},
+      voidAvailability: {
+        canVoid: false,
+        blockingReferences: [],
+        dependentFacts: [],
+        blockingReasons: [{label: '当前状态不支持作废', count: 1, relatedItemNames: []}],
+      },
     });
     expect(merged[1]).toEqual(rows[1]);
+  });
+
+  it('rejects an incomplete item or SKU void readback instead of inventing a false void prohibition', () => {
+    expect(() => decodeCatalogSkuVoidAvailability(undefined)).toThrow('INVALID_CATALOG_VOID_AVAILABILITY');
+    expect(() =>
+      decodeCatalogSkuVoidAvailability({
+        canVoid: false,
+        blockingReferences: [],
+        dependentFacts: [],
+      }),
+    ).toThrow('INVALID_CATALOG_VOID_AVAILABILITY');
+    expect(() => decodeCatalogVoidAvailability({canVoid: false, blockingReferences: [], dependentFacts: []})).toThrow(
+      'INVALID_CATALOG_VOID_AVAILABILITY',
+    );
+    expect(
+      decodeCatalogSkuVoidAvailability({
+        canVoid: false,
+        blockingReferences: [],
+        dependentFacts: [],
+        blockingReasons: [{label: '已配置库存对象', count: 1, relatedItemNames: []}],
+      }),
+    ).toMatchObject({canVoid: false, blockingReasons: [{label: '已配置库存对象', count: 1}]});
+  });
+
+  it('accepts only the exact complete owner SKU void transition and never changes a draft for an unknown result', () => {
+    const rows = [
+      {
+        productSkuRef: testUuid('sku-void-1'),
+        skuCode: 'SKU-VOID-1',
+        skuName: '待作废规格',
+        displayOrder: 0,
+        variantCombinationDigest: 'void-digest',
+        attributeValueRefs: [],
+        standardSalePrice: 1280,
+        isDefault: true,
+        status: 'ENABLED',
+        version: 3,
+        ...skuUnitDefaults,
+        mediaRefs: [],
+        voidAvailability: {canVoid: true, blockingReferences: [], dependentFacts: [], blockingReasons: []},
+      },
+    ];
+    const requestedSkuRef = rows[0].productSkuRef;
+    const complete = requireCatalogSkuVoidTransitionReadback(
+      [
+        {
+          skuRef: requestedSkuRef,
+          targetStatus: 'VOIDED',
+          version: 4,
+          canVoid: false,
+          blockingReferences: [],
+          dependentFacts: [],
+          blockingReasons: [{label: '当前状态不支持作废', count: 1, relatedItemNames: []}],
+        },
+      ],
+      requestedSkuRef,
+    );
+    expect(mergeCatalogSkuVoidReadback(rows, requestedSkuRef, complete)[0]).toMatchObject({status: 'VOIDED', version: 4});
+    for (const invalid of [
+      [],
+      [{...complete, skuRef: testUuid('sku-void-other')}],
+      [{...complete, blockingReasons: []}],
+      [{...complete, targetStatus: 'ENABLED'}],
+    ]) {
+      expect(() => requireCatalogSkuVoidTransitionReadback(invalid, requestedSkuRef)).toThrow(
+        'INVALID_CATALOG_SKU_VOID_TRANSITION_READBACK',
+      );
+      expect(rows[0]).toMatchObject({status: 'ENABLED', version: 3});
+    }
   });
 
   it('fails closed when a write request has no selected data-node scope', () => {
@@ -369,6 +451,8 @@ describe('catalog management runtime model contracts', () => {
           status: 'ENABLED',
           shapeKey: 'MATERIAL',
           materialRole: 'RAW_MATERIAL',
+          tagSummary: [],
+          categoryPathLabels: [],
           lifecycle: {status: 'DISABLED', version: 4, source: 'TEMPORARY'},
           externalIdentity: {
             sourceOrderRef: 'EXT-ORDER-001',
@@ -378,6 +462,7 @@ describe('catalog management runtime model contracts', () => {
           },
         },
         governance: {externalIdentity: null},
+        productionTags: [],
       },
     } as CatalogInventoryEnvelope);
     expect(decoded?.item.externalIdentity).toMatchObject({
@@ -404,7 +489,8 @@ describe('catalog management runtime model contracts', () => {
             code: 'LATTE-001',
             name: '拿铁',
             categoryRef: null,
-            productionTagRefs: [],
+            productionTagRef: null,
+            tagSummary: [],
             tagRefs: ['00000000-0000-4000-8000-000000000002'],
             standardSalePrice: null,
             standardSalePriceMin: 2800,
@@ -416,6 +502,56 @@ describe('catalog management runtime model contracts', () => {
     } as CatalogInventoryEnvelope);
     expect(decoded.items[0].tagRefs).toEqual(['00000000-0000-4000-8000-000000000002']);
     expect(catalogPriceLabel(decoded.items[0])).toBe('¥28.00~34.00');
+  });
+
+  it('keeps the same resolved names for composite components at both detail contract locations', () => {
+    const component = {
+      itemRef: '00000000-0000-4000-8000-000000000101',
+      itemCode: 'MAIN-STEAK',
+      itemName: '西冷牛排',
+      productSkuRef: '00000000-0000-4000-8000-000000000102',
+      skuCode: 'STEAK-MEDIUM',
+      skuName: '七分熟',
+      quantity: '1',
+      unit: '份',
+      default: true,
+      extraPrice: null,
+      status: 'ENABLED',
+      displayOrder: 0,
+    };
+    const groups = [
+      {
+        groupCode: 'MAIN',
+        groupName: '主菜',
+        selectionRule: 'FIXED',
+        minSelections: 0,
+        maxSelections: 0,
+        displayOrder: 0,
+        components: [component],
+      },
+    ];
+    const decoded = decodeDetail({
+      data: {
+        item: {
+          itemRef: '00000000-0000-4000-8000-000000000100',
+          code: 'COMBO-001',
+          name: '双人套餐',
+          source: 'CATALOG',
+          status: 'DRAFT',
+          shapeKey: 'COMPOSITE',
+          categoryPathLabels: [],
+          compositeGroups: groups,
+          lifecycle: {status: 'DRAFT', version: 1, source: 'CATALOG'},
+        },
+        compositeGroups: groups,
+        productionTags: [],
+      },
+    } as CatalogInventoryEnvelope);
+    expect(decoded?.item.compositeGroups).toEqual(decoded?.compositeGroups);
+    expect(decoded?.item.compositeGroups[0]?.components[0]).toMatchObject({
+      itemName: '西冷牛排',
+      skuName: '七分熟',
+    });
   });
 
   it('keeps inventory rule configuration and reference fields on detail readback', () => {
@@ -430,6 +566,8 @@ describe('catalog management runtime model contracts', () => {
           tagRefs: ['tag-ref'],
           salesUnitRef: 'unit-ref',
           baseMeasureUnitRef: 'base-unit-ref',
+          tagSummary: [],
+          categoryPathLabels: [],
         },
         inventoryRules: {
           nodes: [
@@ -469,6 +607,7 @@ describe('catalog management runtime model contracts', () => {
           ],
         },
         governance: {externalIdentity: null},
+        productionTags: [],
       },
     } as CatalogInventoryEnvelope);
     expect(decoded?.item.tagRefs).toEqual(['tag-ref']);
@@ -644,7 +783,6 @@ describe('catalog management runtime model contracts', () => {
     expect(catalogSkuIssueCodes(row, 'SKU', true, true)).toEqual([
       'MISSING_CODE',
       'MISSING_NAME',
-      'MISSING_SKU_PRICE',
       'DUPLICATE_COMBINATION',
     ]);
     expect(
@@ -697,8 +835,20 @@ describe('catalog management runtime model contracts', () => {
       data: {
         preflightDigest: 'digest',
         compatibilityResults: [
-          {objectType: 'CATALOG_ITEM', compatibilityId: 'catalog:1', result: 'CREATE', reason: '目标侧新建'},
-          {objectType: 'CATALOG_ITEM', compatibilityId: 'catalog:1', result: 'REUSE', reason: '目标侧已有'},
+          {
+            objectType: 'CATALOG_ITEM',
+            compatibilityId: 'catalog:1',
+            result: 'CREATE',
+            reason: '目标侧新建',
+            reasonCode: 'TARGET_ABSENT',
+          },
+          {
+            objectType: 'CATALOG_ITEM',
+            compatibilityId: 'catalog:1',
+            result: 'REUSE',
+            reason: '目标侧已有',
+            reasonCode: 'REUSE_CONFIRMATION_REQUIRED',
+          },
         ],
       },
     } as CatalogInventoryEnvelope;
@@ -746,15 +896,9 @@ describe('catalog management runtime model contracts', () => {
     expect(requestRows[1]).not.toHaveProperty('productSkuRef');
   });
 
-  it('keeps production-tag readback identity as tagRef and fails closed without it', () => {
-    const candidate = productionTagCandidateFromReadback(
-      {tagRef: 'tag-ref', code: 'HOT', name: '热', status: 'ENABLED'},
-      {code: 'HOT', name: '热', tagKind: 'PRODUCTION'},
-    );
-    expect(candidate).toMatchObject({tagRef: 'tag-ref', code: 'HOT', name: '热', owner: 'fulfillment-production'});
-    expect(
-      productionTagCandidateFromReadback({code: 'HOT', name: '热'}, {code: 'HOT', name: '热', tagKind: 'PRODUCTION'}),
-    ).toBeUndefined();
+  it('accepts production-tag create readback only with its stable identity and displayed facts', () => {
+    expect(productionTagReadbackIsComplete({tagRef: 'tag-ref', code: 'HOT', name: '热', status: 'ENABLED'})).toBe(true);
+    expect(productionTagReadbackIsComplete({code: 'HOT', name: '热', status: 'ENABLED'})).toBe(false);
   });
 
   it('builds a category batch save from list facts with a relation-only draft', () => {
@@ -842,7 +986,7 @@ describe('catalog management runtime model contracts', () => {
         itemCode: 'B',
         outcome: 'FAILED',
         problemCode: 'VERSION_CONFLICT',
-        reason: '商品版本已变化',
+        reason: '商品资料已有更新，请重新读取后再操作。',
         version: null,
       },
     ]);
@@ -883,7 +1027,9 @@ describe('catalog management runtime model contracts', () => {
     expect(markup).toContain('成功 2 项，失败 0 项');
     expect(markup).toContain('data-testid="catalog-batch-outcome-summary"');
     expect(markup).toContain('data-testid="catalog-batch-outcome-close"');
-    expect(markup).not.toContain('catalog-batch-outcome-failures');
+    expect(markup).toContain('catalog-batch-outcome-failures');
+    expect(markup).toContain('逐项处理结果');
+    expect(markup).toContain('已处理');
   });
 
   it('renders partial failures with the approved heading and table columns', () => {
@@ -891,9 +1037,11 @@ describe('catalog management runtime model contracts', () => {
       <CatalogBatchOutcome results={[batchRow(1, 'SUCCEEDED'), batchRow(2, 'FAILED')]} onClose={() => undefined} />,
     );
     expect(markup).toContain('成功 1 项，失败 1 项');
-    expect(markup).toContain('以下 1 个商品未处理成功');
+    expect(markup).toContain('逐项处理结果');
     expect(markup).toContain('商品编码');
-    expect(markup).toContain('失败原因');
+    expect(markup).toContain('处理结果');
+    expect(markup).toContain('说明');
+    expect(markup).toContain('未处理');
     expect(markup).toContain('data-testid="catalog-batch-outcome-failures"');
   });
 
@@ -904,9 +1052,9 @@ describe('catalog management runtime model contracts', () => {
         onClose={() => undefined}
       />,
     );
-    expect(markup).toContain('max-height:50vh');
+    expect(markup).toContain('max-height:360px');
     expect(markup).toContain('overflow-y:auto');
-    expect(markup).toContain('以下 100 个商品未处理成功');
+    expect(markup).toContain('逐项处理结果');
   });
 
   it('does not fabricate a result layer for an empty or protocol-invalid receipt', () => {
@@ -1002,32 +1150,121 @@ describe('catalog management runtime model contracts', () => {
     expect(readback?.targetVersions).toEqual([{version: 2}]);
   });
 
+  it('decodes the direct brand-copy preflight edge readback', () => {
+    const preflight = decodePreflight({
+      sourceScope: {
+        ownerType: 'BRAND',
+        ownerRef: testUuid('source-owner'),
+        brandRef: testUuid('source-brand'),
+      },
+      targetScope: {
+        ownerType: 'STORE',
+        ownerRef: testUuid('target-owner'),
+        brandRef: testUuid('target-brand'),
+      },
+      selectedItems: [],
+      selectedCount: 0,
+      selectedLimit: 20,
+      closureItems: [],
+      closureEdges: [],
+      skipped: [],
+      closureCount: 0,
+      closureLimit: 500,
+      objectVersions: [],
+      referenceMappings: [],
+      mappingPreview: [],
+      referenceRewritePreview: [],
+      compatibilityResults: [],
+      preflightDigest: 'direct-brand-preflight',
+      blockingCount: 0,
+      confirmationRequiredCount: 0,
+    } as BrandCatalogCopyPreflight);
+    expect(preflight?.preflightDigest).toBe('direct-brand-preflight');
+    expect(preflight?.selectedCount).toBe(0);
+    expect(preflight?.compatibilityResults).toEqual([]);
+  });
+
   it('does not hide unclassified brand-copy compatibility facts', () => {
     const buckets = partitionBrandCopyCompatibilityResults([
-      {objectType: 'STOCK_TARGET', compatibilityId: 'stock:1', result: 'REUSE', reason: '库存对象可复用'},
-      {objectType: 'PRODUCTION_TAG', compatibilityId: 'production:1', result: 'SKIPPED', reason: '生产标签缺失'},
-      {objectType: 'CATALOG_ITEM', compatibilityId: 'catalog:1', result: 'BLOCKED', reason: '商品关系需人工确认'},
+      {
+        objectType: 'STOCK_TARGET',
+        compatibilityId: 'stock:1',
+        result: 'REUSE',
+        reason: '库存对象可复用',
+        reasonCode: 'REUSE_CONFIRMATION_REQUIRED',
+      },
+      {
+        objectType: 'PRODUCTION_TAG',
+        compatibilityId: 'production:1',
+        result: 'SKIPPED',
+        reason: '生产标签缺失',
+        reasonCode: 'OWNER_FACT_UNAVAILABLE',
+      },
+      {
+        objectType: 'CATALOG_ITEM',
+        compatibilityId: 'catalog:1',
+        result: 'BLOCKED',
+        reason: '商品关系需人工确认',
+        reasonCode: 'STRUCTURE_INCOMPATIBLE',
+      },
     ]);
     expect(buckets.inventory).toHaveLength(1);
     expect(buckets.production).toHaveLength(1);
     expect(buckets.other).toEqual([
-      {objectType: 'CATALOG_ITEM', compatibilityId: 'catalog:1', result: 'BLOCKED', reason: '商品关系需人工确认'},
+      {
+        objectType: 'CATALOG_ITEM',
+        compatibilityId: 'catalog:1',
+        result: 'BLOCKED',
+        reason: '商品关系需人工确认',
+        reasonCode: 'STRUCTURE_INCOMPATIBLE',
+      },
     ]);
   });
 
   it('requires one confirmation for every non-blocked copy result without collapsing duplicates', () => {
     const rows: CopyPreflight['compatibilityResults'] = [
-      {objectType: 'STOCK_TARGET', compatibilityId: 'stock:1', result: 'REUSE', reason: '库存对象可复用'},
-      {objectType: 'STOCK_TARGET', compatibilityId: 'stock:2', result: 'REUSE', reason: '库存对象可复用'},
-      {objectType: 'CATALOG_ITEM', compatibilityId: 'catalog:1', result: 'CREATE', reason: '目标侧新建'},
+      {
+        objectType: 'STOCK_TARGET',
+        compatibilityId: 'stock:1',
+        result: 'REUSE',
+        reason: '库存对象可复用',
+        reasonCode: 'REUSE_CONFIRMATION_REQUIRED',
+      },
+      {
+        objectType: 'STOCK_TARGET',
+        compatibilityId: 'stock:2',
+        result: 'REUSE',
+        reason: '库存对象可复用',
+        reasonCode: 'REUSE_CONFIRMATION_REQUIRED',
+      },
+      {
+        objectType: 'CATALOG_ITEM',
+        compatibilityId: 'catalog:1',
+        result: 'CREATE',
+        reason: '目标侧新建',
+        reasonCode: 'TARGET_ABSENT',
+      },
       {
         objectType: 'SKU_ATTRIBUTE_VALUE',
         compatibilityId: 'attribute:1',
         result: 'CONFIRMABLE_REUSE',
         reason: '需要确认复用',
+        reasonCode: 'REUSE_CONFIRMATION_REQUIRED',
       },
-      {objectType: 'PRODUCTION_TAG', compatibilityId: 'production:1', result: 'BLOCKED', reason: '生产标签冲突'},
-      {objectType: 'UNKNOWN', compatibilityId: 'unknown:1', result: 'FUTURE_RESULT', reason: '未登记结果'},
+      {
+        objectType: 'PRODUCTION_TAG',
+        compatibilityId: 'production:1',
+        result: 'BLOCKED',
+        reason: '生产标签冲突',
+        reasonCode: 'CATALOG_COPY_DEFINITION_CONFLICT',
+      },
+      {
+        objectType: 'UNKNOWN',
+        compatibilityId: 'unknown:1',
+        result: 'FUTURE_RESULT',
+        reason: '未登记结果',
+        reasonCode: 'FUTURE_REASON',
+      },
     ];
     const confirmations = copyConfirmationRows(rows);
     expect(confirmations).toHaveLength(5);
@@ -1043,8 +1280,23 @@ describe('catalog management runtime model contracts', () => {
     expect(copyConfirmationLabel('REUSE')).toBe('确认复用');
     expect(copyConfirmationLabel('CONFIRMABLE_REUSE')).toBe('确认复用');
     expect(copyConfirmationLabel('FUTURE_RESULT')).toBe('确认此处理');
+    expect(catalogCopyReasonLabel('SKU_STRUCTURE_INCOMPATIBLE')).toBe('规格结构不一致。');
+    expect(catalogCopyReasonLabel('FUTURE_REASON')).toBe('当前内容需要进一步确认，请核对后重新检查。');
     expect(copyConfirmationRows([rows[2], rows[0]]).map(({key}) => key)).toEqual(['catalog:1', 'stock:1']);
     expect(copyConfirmationRows([{...rows[0], compatibilityId: ''}])).toEqual([]);
+  });
+
+  it('projects temporary-promotion protocol fields and reasons into business copy', () => {
+    expect(temporaryPromotionFieldLabel('formalCode')).toBe('商品编码');
+    expect(temporaryPromotionFieldLabel('materialRole')).toBe('物料角色');
+    expect(temporaryPromotionFieldLabel('ownerVersion')).toBe('商品资料');
+    expect(temporaryPromotionBlockedReasonLabel('DUPLICATE_CODE')).toBe('商品编码已被使用，请修改后重新检查。');
+    expect(temporaryPromotionBlockedReasonLabel('MATERIAL_ROLE_REQUIRED')).toBe(
+      '选择原材料、半成品或包装物时，请填写物料角色。',
+    );
+    expect(temporaryPromotionBlockedReasonLabel('UNRECOGNIZED_PROTOCOL_REASON')).toBe(
+      '尚有资料或规则不满足转正条件，请调整后重新检查。',
+    );
   });
 
   it('decodes category navigation from the canonical envelope', () => {
@@ -1082,10 +1334,13 @@ describe('catalog management runtime model contracts', () => {
             count: 3,
           },
         ],
+        productionTags: [],
         generation: 7,
       },
     } as CatalogInventoryEnvelope;
     const navigation = decodeNavigation(envelope);
+    expect(navigation).toBeDefined();
+    if (!navigation) throw new Error('expected navigation response');
     const node = navigation.tree[0];
     expect(navigation.allCount).toBe(8);
     expect(node.parentCategoryRef).toBeNull();
@@ -1110,5 +1365,11 @@ describe('catalog management runtime model contracts', () => {
         count: 3,
       },
     ]);
+    expect(decodeNavigation(undefined)).toBeUndefined();
+    const incompleteNavigationEnvelope = structuredClone(envelope) as {data: Record<string, unknown>};
+    delete incompleteNavigationEnvelope.data.productionTags;
+    expect(() => decodeNavigation(incompleteNavigationEnvelope as CatalogInventoryEnvelope)).toThrow(
+      'CATALOG_REQUIRED_FIELD_MISSING:CatalogNavigation.data.productionTags',
+    );
   });
 });

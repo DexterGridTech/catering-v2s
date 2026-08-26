@@ -162,6 +162,19 @@ class CommandExecutionContextResolverTest {
             }
 
             @Override
+            public CatalogCommandScopeFacts resolveCatalogCommandScopeFacts(
+                    UUID workspace,
+                    String group,
+                    String targetType,
+                    UUID targetId,
+                    CatalogScopeLookup.CatalogBrandSelection selection) {
+                return new CatalogCommandScopeFacts(
+                        new TaskPath(targetType, targetId, List.of(STORE), "test store"),
+                        new CatalogScopeLookup.CatalogBrandJudgment(
+                                BRAND.toString(), "TEST_ORGANIZATION_JUDGMENT", "TEST_REVISION:1"));
+            }
+
+            @Override
             public boolean isScopeAllowed(
                     UUID workspace, String group, String scopeType, UUID scopeId, TaskPath target) {
                 return "STORE".equals(scopeType) && STORE.equals(scopeId) && STORE.equals(target.targetId());

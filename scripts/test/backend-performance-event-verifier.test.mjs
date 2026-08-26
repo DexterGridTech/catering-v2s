@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {assertUnclassifiedSqlRatio, parseHttpRequestEvents} from './backend-performance-event-verifier.mjs';
+import {
+  assertNoObservationErrors,
+  assertUnclassifiedSqlRatio,
+  parseHttpRequestEvents,
+} from './backend-performance-event-verifier.mjs';
 
 const event = overrides => ({
   runId: 'backend-acceptance-run-01',
@@ -14,6 +18,7 @@ const event = overrides => ({
   status: 200,
   measurementSchemaVersion: 2,
   measurementBasis: 'JDBC_EXECUTION_PLUS_CONNECTION_TRANSACTION_BATCH',
+  measurementScenarioId: 'performance.normal-path',
   durationMillis: 12,
   databaseOperationCount: 3,
   logicalStatementCount: 2,
@@ -41,22 +46,59 @@ test('parses independent request events and excludes connection bookkeeping from
 });
 
 test('rejects duplicate request tuples and inconsistent SQL counters', () => {
-  assert.throws(() => parseHttpRequestEvents(`${JSON.stringify(event())}\n${JSON.stringify(event())}\n`), /HTTP_REQUEST_EVENTS_DUPLICATE_TUPLE/);
-  assert.throws(() => parseHttpRequestEvents(JSON.stringify(event({sqlOperationCount: 1}))), /HTTP_REQUEST_EVENT_SQL_COUNT_MISMATCH/);
+  assert.throws(
+    () => parseHttpRequestEvents(`${JSON.stringify(event())}\n${JSON.stringify(event())}\n`),
+    /HTTP_REQUEST_EVENTS_DUPLICATE_TUPLE/,
+  );
+  assert.throws(
+    () => parseHttpRequestEvents(JSON.stringify(event({sqlOperationCount: 1}))),
+    /HTTP_REQUEST_EVENT_SQL_COUNT_MISMATCH/,
+  );
   assert.throws(
     () => parseHttpRequestEvents(JSON.stringify(event({runId: 'other-run'})), 'backend-acceptance-run-01'),
     /HTTP_REQUEST_EVENTS_RUN_MISMATCH/,
   );
 });
 
+test('managed backend-acceptance evidence requires an explicit measurement scenario id', () => {
+  assert.throws(
+    () =>
+      parseHttpRequestEvents(JSON.stringify(event({measurementScenarioId: undefined})), 'backend-acceptance-run-01'),
+    /HTTP_REQUEST_EVENT_MEASUREMENT_SCENARIO_ID_INVALID/,
+  );
+  assert.throws(
+    () =>
+      parseHttpRequestEvents(
+        JSON.stringify(event({measurementScenarioId: 'performance.unapproved'})),
+        'backend-acceptance-run-01',
+      ),
+    /HTTP_REQUEST_EVENT_MEASUREMENT_SCENARIO_ID_INVALID/,
+  );
+});
+
+test('full performance evidence fails closed for every retained observation error', () => {
+  assert.doesNotThrow(() => assertNoObservationErrors([event()]));
+  assert.throws(
+    () =>
+      assertNoObservationErrors([
+        event({outcome: 'FAILED', observationError: 'BACKEND_ACCEPTANCE_OPERATION_METADATA_MISMATCH'}),
+      ]),
+    /HTTP_REQUEST_EVENTS_OBSERVATION_ERROR:getOperationsCatalogItem/,
+  );
+});
+
 test('keeps unknown or unclassified SQL visible instead of diluting it with transactions', () => {
-  const measurement = parseHttpRequestEvents(JSON.stringify(event({
-    databaseOperationCount: 4,
-    kindCounts: {CONNECTION: 1, TRANSACTION: 1, QUERY: 2},
-    transactionBeginCount: 1,
-    unclassifiedSqlOperationCount: 1,
-    unclassifiedSqlRatio: 0.5,
-  })));
+  const measurement = parseHttpRequestEvents(
+    JSON.stringify(
+      event({
+        databaseOperationCount: 4,
+        kindCounts: {CONNECTION: 1, TRANSACTION: 1, QUERY: 2},
+        transactionBeginCount: 1,
+        unclassifiedSqlOperationCount: 1,
+        unclassifiedSqlRatio: 0.5,
+      }),
+    ),
+  );
   assert.equal(measurement.summary.unclassifiedSqlRatio, 0.5);
   assert.throws(() => assertUnclassifiedSqlRatio(measurement), /UNCLASSIFIED_SQL_RATIO_EXCEEDED/);
 });

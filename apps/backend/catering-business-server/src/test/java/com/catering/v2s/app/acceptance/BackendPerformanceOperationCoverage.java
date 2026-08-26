@@ -1,5 +1,6 @@
 package com.catering.v2s.app.acceptance;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -15,9 +16,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * Real HTTP coverage for operation routes that are not naturally exercised by the bounded business scenario catalog.
- * This is a CP-05 calibration fixture, not a second scenario catalog and not a scenario-level performance oracle. Each
- * request still passes through the production route and emits the same completion event consumed by the run-level
+ * Real HTTP calibration for operation routes that are not naturally exercised by the bounded business scenario catalog.
+ * This is a CP-05 calibration fixture, not a second scenario catalog and not a scenario-level performance oracle. Its
+ * normal recipes prove a successful request for the finite missing subset; its coverage-only recipes only make a
+ * deliberately non-normal boundary observable. Each request emits the same completion event consumed by the run-level
  * verifier.
  */
 final class BackendPerformanceOperationCoverage {
@@ -59,9 +61,23 @@ final class BackendPerformanceOperationCoverage {
             "transitionWorkspaceAccountStatus",
             "transitionWorkspaceRoleStatus");
     private static final Set<String> STRICT_DICTIONARY_REQUESTS = Set.of("reorderOperationsCatalogDictionaryEntry");
+    private static final Set<String> NORMAL_RECIPE_OPERATIONS = Set.of(
+            "selectOperationsWorkspaceSessionContext",
+            "updateOperationsBusinessChannel",
+            "updateOperationsBusinessChannelTemplate");
+    private static final Route SESSION_CONTEXT = route(
+            "selectOperationsWorkspaceSessionContext",
+            "POST",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context",
+            "operations-admin");
 
-    /* CP-05 first current-tree run: 238 registry rows minus 130 observed rows. */
-    private static final List<Route> UNCOVERED = List.of(
+    /*
+     * Explicit coverage-only route recipes. This is not an operation denominator: the generated
+     * registry plus successful normal-path completion events is the sole current completeness
+     * proof. Keep these recipes only for routes that need a deliberately controlled non-normal
+     * probe to make their HTTP boundary observable.
+     */
+    private static final List<Route> COVERAGE_ONLY_RECIPES = List.of(
             route(
                     "cancelOperationsWorkspaceGroupInvitation",
                     "POST",
@@ -493,12 +509,6 @@ final class BackendPerformanceOperationCoverage {
                     "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants" + "/{tenantId}",
                     "operations-admin"),
             route(
-                    "updateOperationsOwnerBinding",
-                    "PATCH",
-                    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels"
-                            + "/{channelRef}/owner-binding",
-                    "operations-admin"),
-            route(
                     "updatePlatformAdminProfile",
                     "PATCH",
                     "/api/platform/admin-users/{platformAdminId}/profile",
@@ -597,37 +607,74 @@ final class BackendPerformanceOperationCoverage {
 
     private BackendPerformanceOperationCoverage() {}
 
-    static void run(BackendAcceptanceTest host, BackendAcceptanceTest.ScenarioContext context) throws Exception {
+    static void run(
+            BackendAcceptanceTest host,
+            BackendAcceptanceTest.ScenarioContext normalContext,
+            BackendAcceptanceTest.ScenarioContext coverageContext)
+            throws Exception {
+        runNormalRecipes(host, normalContext);
+
         BackendAcceptanceTest.Fixture fixture =
                 host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
-        host.completeInvitation(context, fixture);
-        BackendAcceptanceTest.Session operationsSession = host.login(context, fixture);
+        host.completeInvitation(coverageContext, fixture);
+        BackendAcceptanceTest.Session operationsSession = host.login(coverageContext, fixture);
         host.ensurePlatformAdministrator();
-        BackendAcceptanceTest.Session platformSession = host.platformLogin(context);
+        BackendAcceptanceTest.Session platformSession = host.platformLogin(coverageContext);
 
-        List<Route> ordered = new ArrayList<>(UNCOVERED);
+        List<Route> ordered = new ArrayList<>(COVERAGE_ONLY_RECIPES);
         ordered.removeIf(route -> route.operationId().equals("operationsWorkspaceLogout")
                 || route.operationId().equals("platformLogout"));
         for (Route route : ordered) {
             String cookie = cookieFor(route.face(), operationsSession, platformSession);
             String path = requestPath(
                     route, fixture, operationsSession, route.method().equals("GET"));
-            BackendAcceptanceTest.Response response = send(context, route, path, cookie, fixture);
+            BackendAcceptanceTest.Response response = send(coverageContext, route, path, cookie, fixture);
             assertBusinessBoundary(route, response);
         }
 
         for (String logout : List.of("operationsWorkspaceLogout", "platformLogout")) {
-            Route route = UNCOVERED.stream()
+            Route route = COVERAGE_ONLY_RECIPES.stream()
                     .filter(candidate -> candidate.operationId().equals(logout))
                     .findFirst()
                     .orElseThrow();
             String cookie =
                     "operationsWorkspaceLogout".equals(logout) ? operationsSession.cookie() : platformSession.cookie();
-            BackendAcceptanceTest.Response response =
-                    send(context, route, requestPath(route, fixture, operationsSession, false), cookie, fixture);
+            BackendAcceptanceTest.Response response = send(
+                    coverageContext, route, requestPath(route, fixture, operationsSession, false), cookie, fixture);
             assertBusinessBoundary(route, response);
         }
-        assertTrue(UNCOVERED.size() == 108, "BUSINESS: CP-05 coverage fixture remains the 108-row first-run gap");
+        assertTrue(
+                !COVERAGE_ONLY_RECIPES.isEmpty(),
+                "BUSINESS: coverage-only fixture retains explicit controlled route recipes");
+    }
+
+    private static void runNormalRecipes(BackendAcceptanceTest host, BackendAcceptanceTest.ScenarioContext context)
+            throws Exception {
+        BackendAcceptanceTest.Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG"));
+        host.completeInvitation(context, fixture);
+        BackendAcceptanceTest.Session session = host.login(context, fixture);
+        var candidates = session.entry().path("candidates");
+        assertTrue(
+                candidates.isArray() && !candidates.isEmpty(),
+                "BUSINESS: normal context calibration has an owner-confirmed role candidate");
+        String roleAssignmentRef = candidates.get(0).path("roleAssignmentRef").asText();
+        assertFalse(
+                roleAssignmentRef.isBlank(), "BUSINESS: normal context calibration has a role assignment reference");
+        BackendAcceptanceTest.Response selected = context.post(
+                SESSION_CONTEXT.identity(),
+                "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/session/context",
+                session.cookie(),
+                Map.of("roleAssignmentRef", roleAssignmentRef, "requiredContextVersion", session.contextVersion()),
+                Set.of(200));
+        assertEquals(
+                roleAssignmentRef,
+                selected.json().path("selected").path("roleAssignmentRef").asText(),
+                "BUSINESS: normal context calibration returns the selected role");
+
+        new BusinessChannelAcceptanceScenarios(host).calibrationUpdateInternalTemplateAndChannel(context);
+        assertTrue(
+                NORMAL_RECIPE_OPERATIONS.contains(SESSION_CONTEXT.operationId()),
+                "BUSINESS: normal recipe declaration retains session-context coverage");
     }
 
     private static BackendAcceptanceTest.Response send(

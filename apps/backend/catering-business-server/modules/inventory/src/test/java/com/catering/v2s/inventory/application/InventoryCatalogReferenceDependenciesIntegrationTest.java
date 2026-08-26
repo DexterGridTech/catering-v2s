@@ -260,31 +260,13 @@ class InventoryCatalogReferenceDependenciesIntegrationTest {
 
     private static void insertTarget(UUID scope, String brand, UUID itemRef, UUID skuRef) {
         InventoryTestUnitFacts.insertDirectTarget(
-                jdbc,
-                UUID.randomUUID(),
-                scope,
-                brand,
-                itemRef,
-                skuRef,
-                "ITEM",
-                "SKU",
-                java.math.BigDecimal.ZERO,
-                1L);
+                jdbc, UUID.randomUUID(), scope, brand, itemRef, skuRef, "ITEM", "SKU", java.math.BigDecimal.ZERO, 1L);
     }
 
     private static void insertTarget(
             UUID targetRef, UUID scope, String brand, UUID itemRef, UUID skuRef, String itemCode, String skuCode) {
         InventoryTestUnitFacts.insertDirectTarget(
-                jdbc,
-                targetRef,
-                scope,
-                brand,
-                itemRef,
-                skuRef,
-                itemCode,
-                skuCode,
-                java.math.BigDecimal.ZERO,
-                1L);
+                jdbc, targetRef, scope, brand, itemRef, skuRef, itemCode, skuCode, java.math.BigDecimal.ZERO, 1L);
     }
 
     private static void insertCatalogItem(UUID itemRef, String code, String name) {

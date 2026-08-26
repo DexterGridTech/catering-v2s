@@ -94,26 +94,46 @@ public class WorkspaceAccountService {
     @Transactional
     public WorkspaceAccountReadback transitionStatus(
             UUID workspaceUuid, String key, UUID accountId, String status, long expectedVersion, AuditActor actor) {
-        WorkspaceAccountReadback existing = require(workspaceUuid, key, accountId);
-        if (!Set.of("ENABLED", "DISABLED").contains(status)
-                || jdbc.update(
-                                "UPDATE workspace_iam.workspace_account SET status=?, version=version+1, "
-                                        + "updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND "
-                                        + "group_workspace_key=? AND version=?",
-                                status,
-                                time.currentEpochMillis(),
-                                accountId,
-                                workspaceUuid,
-                                key,
-                                expectedVersion)
-                        != 1) throw new AccountConflictException();
+        if (!Set.of("ENABLED", "DISABLED").contains(status)) {
+            // Preserve the historical not-found-before-invalid-status ordering without making the normal command
+            // path read the account twice.
+            require(workspaceUuid, key, accountId);
+            throw new AccountConflictException();
+        }
+        StatusTransition transition = jdbc.query(
+                "WITH current AS (SELECT id, status FROM workspace_iam.workspace_account WHERE id=? AND "
+                        + "workspace_uuid=? AND group_workspace_key=? FOR UPDATE), updated AS (UPDATE "
+                        + "workspace_iam.workspace_account SET status=?, version=version+1, "
+                        + "updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND group_workspace_key=? "
+                        + "AND version=? RETURNING id, workspace_uuid, group_workspace_key, mobile_normalized, "
+                        + "login_name_normalized, display_name, status, version) SELECT updated.*, current.status "
+                        + "AS previous_status, current.id AS existing_id FROM (SELECT 1) sentinel LEFT JOIN current "
+                        + "ON true LEFT JOIN updated ON true",
+                statement -> {
+                    statement.setObject(1, accountId);
+                    statement.setObject(2, workspaceUuid);
+                    statement.setString(3, key);
+                    statement.setString(4, status);
+                    statement.setLong(5, time.currentEpochMillis());
+                    statement.setObject(6, accountId);
+                    statement.setObject(7, workspaceUuid);
+                    statement.setString(8, key);
+                    statement.setLong(9, expectedVersion);
+                },
+                result -> result.next()
+                        ? new StatusTransition(
+                                result.getObject("existing_id", UUID.class),
+                                result.getObject("id", UUID.class) == null ? null : readback(result),
+                                result.getString("previous_status"))
+                        : null);
+        if (transition == null || transition.existingId() == null) throw new AccountNotFoundException();
+        if (transition.updated() == null) throw new AccountConflictException();
         if ("DISABLED".equals(status))
             jdbc.update(
                     "UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=? WHERE "
                             + "account_id=? AND status='ACTIVE'",
                     time.currentEpochMillis(),
                     accountId);
-        WorkspaceAccountReadback updated = require(workspaceUuid, key, accountId);
         audit(
                 workspaceUuid,
                 key,
@@ -121,8 +141,11 @@ public class WorkspaceAccountService {
                 "WORKSPACE_ACCOUNT_STATUS_CHANGED",
                 actor,
                 ACCOUNT_STATUS_CHANGED,
-                List.of(new AuditChange("status", existing.status(), updated.status())));
-        return updated;
+                List.of(new AuditChange(
+                        "status",
+                        transition.previousStatus(),
+                        transition.updated().status())));
+        return transition.updated();
     }
 
     @Transactional
@@ -153,28 +176,19 @@ public class WorkspaceAccountService {
     public void revokeAssignment(
             UUID workspaceUuid, String key, UUID accountId, UUID assignmentId, long expectedVersion, AuditActor actor) {
         String assignment = jdbc.query(
-                "SELECT service_node_type FROM workspace_iam.role_assignment WHERE id=? AND account_id=? AND "
-                        + "workspace_uuid=? AND group_workspace_key=?",
+                "UPDATE workspace_iam.role_assignment SET status='REVOKED', version=version+1, "
+                        + "updated_at_epoch_millis=? WHERE id=? AND account_id=? AND workspace_uuid=? "
+                        + "AND group_workspace_key=? AND status='ACTIVE' AND version=? RETURNING service_node_type",
                 statement -> {
-                    statement.setObject(1, assignmentId);
-                    statement.setObject(2, accountId);
-                    statement.setObject(3, workspaceUuid);
-                    statement.setString(4, key);
+                    statement.setLong(1, time.currentEpochMillis());
+                    statement.setObject(2, assignmentId);
+                    statement.setObject(3, accountId);
+                    statement.setObject(4, workspaceUuid);
+                    statement.setString(5, key);
+                    statement.setLong(6, expectedVersion);
                 },
                 result -> result.next() ? result.getString(1) : null);
-        if (assignment == null
-                || jdbc.update(
-                                "UPDATE workspace_iam.role_assignment SET status='REVOKED', version=version+1, "
-                                        + "updated_at_epoch_millis=? WHERE id=? AND account_id=? AND workspace_uuid=? "
-                                        + "AND "
-                                        + "group_workspace_key=? AND status='ACTIVE' AND version=?",
-                                time.currentEpochMillis(),
-                                assignmentId,
-                                accountId,
-                                workspaceUuid,
-                                key,
-                                expectedVersion)
-                        != 1) throw new AccountConflictException();
+        if (assignment == null) throw new AccountConflictException();
         jdbc.update(
                 "UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=? WHERE "
                         + "account_id=? AND current_assignment_id=? AND status='ACTIVE'",
@@ -349,6 +363,8 @@ public class WorkspaceAccountService {
     public static final class WorkspaceDisabledException extends RuntimeException {}
 
     private record AssignmentTarget(UUID accountId, String serviceNodeType, UUID serviceNodeId) {}
+
+    private record StatusTransition(UUID existingId, WorkspaceAccountReadback updated, String previousStatus) {}
 
     public record AssignmentRevocation(UUID assignmentId, String status, long revision) {}
 }

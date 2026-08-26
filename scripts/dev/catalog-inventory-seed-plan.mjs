@@ -18,6 +18,28 @@ const editorManifest = readJson("contracts/catalog/catalog-item-editor-manifest.
 const registry = readJson("apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json");
 const v4Dir = path.resolve(root, profile.v4CatalogSourceDirectory);
 
+const sourceScopeKey = (item) => item?.headquarterTemplate === true ? "HEAD_COMPANY" : "STORE";
+const sourceDependencyEdgesFor = (sourceItems, isCreateAllowed) => {
+  const byFixtureKey = new Map(sourceItems.map((item) => [item.fixtureKey, item]));
+  const edges = [];
+  const addEdge = (source, targetFixtureKey, kind) => {
+    if (!targetFixtureKey) fail("SEED_SOURCE_RELATION_DANGLING", `${source.fixtureKey}:${kind}:MISSING_TARGET`);
+    const target = byFixtureKey.get(targetFixtureKey);
+    if (!target) fail("SEED_SOURCE_RELATION_DANGLING", `${source.fixtureKey}:${kind}:${targetFixtureKey}`);
+    if (!isCreateAllowed(target)) fail("SEED_SOURCE_RELATION_TARGET_NOT_ELIGIBLE", `${source.fixtureKey}:${kind}:${targetFixtureKey}`);
+    if (sourceScopeKey(source) !== sourceScopeKey(target))
+      fail("SEED_SOURCE_RELATION_CROSS_SCOPE", `${source.fixtureKey}:${kind}:${targetFixtureKey}`);
+    edges.push({fromFixtureKey: source.fixtureKey, toFixtureKey: targetFixtureKey, kind, scope: sourceScopeKey(source)});
+  };
+  for (const source of sourceItems.filter(isCreateAllowed)) {
+    for (const group of source.compositeStructure?.componentGroups ?? [])
+      for (const component of group.components ?? []) addEdge(source, component.componentFixtureKey, "COMPOSITE");
+    for (const rule of source.inventoryBomRules ?? [])
+      for (const line of rule.bomLines ?? []) addEdge(source, line.componentFixtureKey, "BOM");
+  }
+  return edges;
+};
+
 const assertPlan = (input) => {
   if (input.revision !== fixture.revision) fail("SEED_FIXTURE_REVISION_DRIFT");
   const expectedSeedDatasetCount = input.denominators?.seed;
@@ -109,6 +131,10 @@ const assertPlan = (input) => {
   if (eligibleSourceItems.length + excludedSourceItems.length !== sourceItems.length) fail("SEED_SHAPE_ADMISSION_UNKNOWN", `${sourceItems.length}`);
   for (const item of sourceItems) if (!shapeRules.has(item.shapeKey)) fail("SEED_SHAPE_NOT_IN_MANIFEST", `${item.catalogItemCode}:${item.shapeKey}`);
   if (excludedSourceItems.some((item) => !item.reason || !shapeRules.get(item.shapeKey)?.visibleButDisabled)) fail("SEED_DISABLED_SHAPE_REASON_MISSING");
+  const sourceDependencyEdges = sourceDependencyEdgesFor(
+    sourceItems,
+    (item) => shapeRules.get(item.shapeKey)?.createAllowed === true,
+  );
 
   const requiredOps = new Set([...profile.operations, fixture.seedExecutionPlan.catalogCreate.operationId, fixture.seedExecutionPlan.catalogSave.operationId, ...fixture.seedExecutionPlan.readback.map((x) => x.operationId)]);
   const availableOps = new Set(registry.operations.map((op) => op.operationId));
@@ -128,6 +154,7 @@ const assertPlan = (input) => {
     sourceItems,
     eligibleSourceItems,
     excludedSourceItems,
+    sourceDependencyEdges,
     eligibility: {sourceItemCount: sourceItems.length, eligibleItemCount: eligibleSourceItems.length, excludedItemCount: excludedSourceItems.length, eligibleByScope},
     seedDatasetCount: expectedSeedDatasetCount,
     seedDatasets,
@@ -139,22 +166,28 @@ const assertPlan = (input) => {
     parity: profile.parity,
     ownerScopes: profile.ownerScopes,
     noDirectDatabaseWrites: true,
-    planDigest: sha256(JSON.stringify({mediaPlan, sourceItems, eligibleSourceItems, excludedSourceItems, seedDatasets, dependencyEdges, relations, order})),
+    planDigest: sha256(JSON.stringify({mediaPlan, sourceItems, eligibleSourceItems, excludedSourceItems, sourceDependencyEdges, seedDatasets, dependencyEdges, relations, order})),
   };
 };
 
 const buildPlan = () => assertPlan(fixture);
 const runSelfTest = () => {
   const base = buildPlan();
+  const sourceGraphFixture = [
+    {fixtureKey: "store-owner", headquarterTemplate: false, shapeKey: "STANDARD_SALE_COUNTED", compositeStructure: {componentGroups: [{components: [{componentFixtureKey: "store-component"}]}]}},
+    {fixtureKey: "store-component", headquarterTemplate: false, shapeKey: "MATERIAL"},
+  ];
   const cases = [
     ["MISSING_RELATION_EDGE", () => assertPlan({...fixture, seedDatasets: fixture.seedDatasets.map((d) => ({...d, entities: {...d.entities, relations: d.fixtureId === "SEED-DINNER-SET" ? [{from: "DINNER-SET-001", to: "MISSING-001", refKind: "SKU", refCode: "LATTE-SKU-M"}] : d.entities.relations}}))})],
     ["RELATION_CYCLE", () => assertPlan({...fixture, seedDatasets: fixture.seedDatasets.map((d) => ({...d, entities: {...d.entities, relations: d.fixtureId === "SEED-DINNER-SET" ? [{from: "DINNER-SET-001", to: "LATTE-001"}, {from: "LATTE-001", to: "DINNER-SET-001"}] : d.entities.relations}}))})],
     ["MEDIA_DIGEST", () => { const original = mediaCatalog.assets.coffee.sha256; mediaCatalog.assets.coffee.sha256 = "0".repeat(64); try { assertPlan(fixture); } finally { mediaCatalog.assets.coffee.sha256 = original; } }],
     ["SAVE_OPERATION", () => { const old = fixture.seedExecutionPlan.catalogSave.operationId; fixture.seedExecutionPlan.catalogSave.operationId = "missingSave"; try { assertPlan(fixture); } finally { fixture.seedExecutionPlan.catalogSave.operationId = old; } }],
-    ["V4_COUNT", () => assertPlan({...fixture, revision: fixture.revision, seedDatasets: fixture.seedDatasets}) && (() => { const old = profile.parity.catalogItems; profile.parity.catalogItems = 72; try { assertPlan(fixture); } finally { profile.parity.catalogItems = old; } })()]
+    ["V4_COUNT", () => assertPlan({...fixture, revision: fixture.revision, seedDatasets: fixture.seedDatasets}) && (() => { const old = profile.parity.catalogItems; profile.parity.catalogItems = 72; try { assertPlan(fixture); } finally { profile.parity.catalogItems = old; } })()],
+    ["SOURCE_RELATION_DANGLING", () => sourceDependencyEdgesFor([{...sourceGraphFixture[0], compositeStructure: {componentGroups: [{components: [{componentFixtureKey: "missing"}]}]}}], () => true)],
+    ["SOURCE_RELATION_CROSS_SCOPE", () => sourceDependencyEdgesFor([{...sourceGraphFixture[0], headquarterTemplate: true}, sourceGraphFixture[1]], () => true)]
   ];
   for (const [name, test] of cases) { let rejected = false; try { test(); } catch { rejected = true; } if (!rejected) fail("SEED_PLAN_RED_MUTATION_NOT_REJECTED", name); process.stdout.write(`SEED_PLAN_RED_MUTATION=${name}\n`); }
-  process.stdout.write(`CATALOG_INVENTORY_SEED_PLAN_SELF_TEST=PASS\nSOURCE_ITEMS=${base.sourceItems.length}\nELIGIBLE_SOURCE_ITEMS=${base.eligibleSourceItems.length}\nEXCLUDED_SOURCE_ITEMS=${base.excludedSourceItems.length}\nMEDIA_FILES=${base.mediaPlan.length}\nRELATIONS=${base.relations.length}\n`);
+  process.stdout.write(`CATALOG_INVENTORY_SEED_PLAN_SELF_TEST=PASS\nSOURCE_ITEMS=${base.sourceItems.length}\nELIGIBLE_SOURCE_ITEMS=${base.eligibleSourceItems.length}\nEXCLUDED_SOURCE_ITEMS=${base.excludedSourceItems.length}\nSOURCE_DEPENDENCY_EDGES=${base.sourceDependencyEdges.length}\nMEDIA_FILES=${base.mediaPlan.length}\nRELATIONS=${base.relations.length}\n`);
 };
 
 if (process.argv.includes("--self-test")) runSelfTest();
@@ -163,5 +196,5 @@ else {
   const output = process.env.CATALOG_INVENTORY_SEED_PLAN_OUTPUT || path.join(root, "doc/evidence/platform/2026-08-07-v2s-catalog-inventory-seed-plan-codex.json");
   fs.mkdirSync(path.dirname(output), {recursive: true});
   fs.writeFileSync(output, `${JSON.stringify({schemaVersion: 1, kind: "catalog-inventory-seed-plan", status: "PASS", authority: "STATIC_PLAN_ONLY", ...plan}, null, 2)}\n`, {mode: 0o600});
-  process.stdout.write(`CATALOG_INVENTORY_SEED_PLAN=PASS\nSOURCE_ITEMS=${plan.sourceItems.length}\nELIGIBLE_SOURCE_ITEMS=${plan.eligibleSourceItems.length}\nEXCLUDED_SOURCE_ITEMS=${plan.excludedSourceItems.length}\nMEDIA_FILES=${plan.mediaPlan.length}\nRELATIONS=${plan.relations.length}\nPLAN_DIGEST=${plan.planDigest}\n`);
+  process.stdout.write(`CATALOG_INVENTORY_SEED_PLAN=PASS\nSOURCE_ITEMS=${plan.sourceItems.length}\nELIGIBLE_SOURCE_ITEMS=${plan.eligibleSourceItems.length}\nEXCLUDED_SOURCE_ITEMS=${plan.excludedSourceItems.length}\nSOURCE_DEPENDENCY_EDGES=${plan.sourceDependencyEdges.length}\nMEDIA_FILES=${plan.mediaPlan.length}\nRELATIONS=${plan.relations.length}\nPLAN_DIGEST=${plan.planDigest}\n`);
 }

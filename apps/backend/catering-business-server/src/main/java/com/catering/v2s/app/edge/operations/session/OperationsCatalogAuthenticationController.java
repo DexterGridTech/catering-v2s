@@ -104,10 +104,13 @@ public final class OperationsCatalogAuthenticationController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody WorkspaceSelectContextRequest body) {
         String token = sessionResolver.token(request);
-        sessionResolver.requireWorkspace(request, groupWorkspaceKey);
         key(idempotencyKey);
         return WorkspaceSessionWireMapper.wire(
-                sessions.selectContext(token, body.roleAssignmentRef(), requiredVersion(body.requiredContextVersion())),
+                sessions.selectContext(
+                        token,
+                        groupWorkspaceKey,
+                        body.roleAssignmentRef(),
+                        requiredVersion(body.requiredContextVersion())),
                 assets);
     }
 

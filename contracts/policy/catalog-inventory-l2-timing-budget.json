@@ -1,0 +1,2051 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-l2-timing-budget",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "dbOperationBaselineMs": 42.7,
+  "timeoutHeadroomFactor": 2,
+  "localNoNetworkActionP95Ms": 250,
+  "namespaceAndFixtureBudgetMs": 120000,
+  "cleanupBudgetMs": 120000,
+  "caseCount": 65,
+  "cases": [
+    {
+      "caseId": "CI-L2-001-01",
+      "scenarioId": "CI-L2-001",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-001-02",
+      "scenarioId": "CI-L2-001",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-001-03",
+      "scenarioId": "CI-L2-001",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-001-04",
+      "scenarioId": "CI-L2-001",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-001-05",
+      "scenarioId": "CI-L2-001",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-001-06",
+      "scenarioId": "CI-L2-001",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-002-01",
+      "scenarioId": "CI-L2-002",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-003-01",
+      "scenarioId": "CI-L2-003",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-004-01",
+      "scenarioId": "CI-L2-004",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-005-01",
+      "scenarioId": "CI-L2-005",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-005-02",
+      "scenarioId": "CI-L2-005",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-005-03",
+      "scenarioId": "CI-L2-005",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-005-04",
+      "scenarioId": "CI-L2-005",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-006-01",
+      "scenarioId": "CI-L2-006",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-006-02",
+      "scenarioId": "CI-L2-006",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-007-01",
+      "scenarioId": "CI-L2-007",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-007-02",
+      "scenarioId": "CI-L2-007",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-007-03",
+      "scenarioId": "CI-L2-007",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-007-04",
+      "scenarioId": "CI-L2-007",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-007-05",
+      "scenarioId": "CI-L2-007",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-007-06",
+      "scenarioId": "CI-L2-007",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-007-07",
+      "scenarioId": "CI-L2-007",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-008-01",
+      "scenarioId": "CI-L2-008",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-008-02",
+      "scenarioId": "CI-L2-008",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-010-01",
+      "scenarioId": "CI-L2-010",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-010-02",
+      "scenarioId": "CI-L2-010",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-011-01",
+      "scenarioId": "CI-L2-011",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-011-02",
+      "scenarioId": "CI-L2-011",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-012-01",
+      "scenarioId": "CI-L2-012",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-012-02",
+      "scenarioId": "CI-L2-012",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-013-01",
+      "scenarioId": "CI-L2-013",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-013-02",
+      "scenarioId": "CI-L2-013",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-014-01",
+      "scenarioId": "CI-L2-014",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-014-02",
+      "scenarioId": "CI-L2-014",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-015-01",
+      "scenarioId": "CI-L2-015",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-015-02",
+      "scenarioId": "CI-L2-015",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-016-01",
+      "scenarioId": "CI-L2-016",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-016-02",
+      "scenarioId": "CI-L2-016",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-017-01",
+      "scenarioId": "CI-L2-017",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-017-02",
+      "scenarioId": "CI-L2-017",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "CI-L2-018-01",
+      "scenarioId": "CI-L2-018",
+      "operationIds": [],
+      "maxRequestCount": [],
+      "caseDbOperationUpperBound": 0,
+      "caseExpectedDbMs": 0,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 2000
+    },
+    {
+      "caseId": "catalog-find-success",
+      "scenarioId": "CI-L2-019",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        }
+      ],
+      "caseDbOperationUpperBound": 243,
+      "caseExpectedDbMs": 10376.1,
+      "caseLocalActionMs": 750,
+      "caseTimeoutMs": 23000
+    },
+    {
+      "caseId": "catalog-find-failure",
+      "scenarioId": "CI-L2-019",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        }
+      ],
+      "caseDbOperationUpperBound": 243,
+      "caseExpectedDbMs": 10376.1,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 23000
+    },
+    {
+      "caseId": "catalog-find-recovery",
+      "scenarioId": "CI-L2-019",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsCatalogItem"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        }
+      ],
+      "caseDbOperationUpperBound": 293,
+      "caseExpectedDbMs": 12511.1,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 28000
+    },
+    {
+      "caseId": "catalog-view-success",
+      "scenarioId": "CI-L2-020",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsCatalogItem"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        }
+      ],
+      "caseDbOperationUpperBound": 293,
+      "caseExpectedDbMs": 12511.1,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 28000
+    },
+    {
+      "caseId": "catalog-view-failure",
+      "scenarioId": "CI-L2-020",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsCatalogItem"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        }
+      ],
+      "caseDbOperationUpperBound": 300,
+      "caseExpectedDbMs": 12810,
+      "caseLocalActionMs": 750,
+      "caseTimeoutMs": 28000
+    },
+    {
+      "caseId": "catalog-view-recovery",
+      "scenarioId": "CI-L2-020",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsCatalogItem"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        }
+      ],
+      "caseDbOperationUpperBound": 293,
+      "caseExpectedDbMs": 12511.1,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 28000
+    },
+    {
+      "caseId": "catalog-create-success",
+      "scenarioId": "CI-L2-021",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "createOperationsCatalogItem",
+        "getOperationsCatalogItem"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "createOperationsCatalogItem",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        }
+      ],
+      "caseDbOperationUpperBound": 319,
+      "caseExpectedDbMs": 13621.300000000001,
+      "caseLocalActionMs": 1250,
+      "caseTimeoutMs": 30000
+    },
+    {
+      "caseId": "catalog-create-failure",
+      "scenarioId": "CI-L2-021",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "createOperationsCatalogItem",
+        "getOperationsCatalogItem"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "createOperationsCatalogItem",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        }
+      ],
+      "caseDbOperationUpperBound": 319,
+      "caseExpectedDbMs": 13621.300000000001,
+      "caseLocalActionMs": 750,
+      "caseTimeoutMs": 29000
+    },
+    {
+      "caseId": "catalog-create-recovery",
+      "scenarioId": "CI-L2-021",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "createOperationsCatalogItem",
+        "getOperationsCatalogItem"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "createOperationsCatalogItem",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        }
+      ],
+      "caseDbOperationUpperBound": 319,
+      "caseExpectedDbMs": 13621.300000000001,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 30000
+    },
+    {
+      "caseId": "catalog-edit-success",
+      "scenarioId": "CI-L2-022",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsCatalogItem",
+        "listOperationsCatalogUnits",
+        "getOperationsProductionTags",
+        "saveOperationsCatalogItem"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "listOperationsCatalogUnits",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsProductionTags",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "saveOperationsCatalogItem",
+          "maxRequestCount": 1
+        }
+      ],
+      "caseDbOperationUpperBound": 351,
+      "caseExpectedDbMs": 14987.7,
+      "caseLocalActionMs": 1250,
+      "caseTimeoutMs": 33000
+    },
+    {
+      "caseId": "catalog-edit-failure",
+      "scenarioId": "CI-L2-022",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsCatalogItem",
+        "listOperationsCatalogUnits",
+        "saveOperationsCatalogItem"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "listOperationsCatalogUnits",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "saveOperationsCatalogItem",
+          "maxRequestCount": 2
+        }
+      ],
+      "caseDbOperationUpperBound": 384,
+      "caseExpectedDbMs": 16396.800000000003,
+      "caseLocalActionMs": 750,
+      "caseTimeoutMs": 35000
+    },
+    {
+      "caseId": "catalog-edit-recovery",
+      "scenarioId": "CI-L2-022",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsCatalogItem",
+        "listOperationsCatalogUnits"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "listOperationsCatalogUnits",
+          "maxRequestCount": 1
+        }
+      ],
+      "caseDbOperationUpperBound": 302,
+      "caseExpectedDbMs": 12895.400000000001,
+      "caseLocalActionMs": 1250,
+      "caseTimeoutMs": 29000
+    },
+    {
+      "caseId": "catalog-config-success",
+      "scenarioId": "CI-L2-023",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsCatalogItem",
+        "listOperationsCatalogUnits",
+        "getOperationsProductionTags",
+        "createOperationsProductionTag"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "listOperationsCatalogUnits",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsProductionTags",
+          "maxRequestCount": 6
+        },
+        {
+          "operationId": "createOperationsProductionTag",
+          "maxRequestCount": 1
+        }
+      ],
+      "caseDbOperationUpperBound": 374,
+      "caseExpectedDbMs": 15969.800000000001,
+      "caseLocalActionMs": 1500,
+      "caseTimeoutMs": 35000
+    },
+    {
+      "caseId": "catalog-config-failure",
+      "scenarioId": "CI-L2-023",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsCatalogItem",
+        "listOperationsCatalogUnits",
+        "getOperationsProductionTags",
+        "createOperationsProductionTag"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "listOperationsCatalogUnits",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsProductionTags",
+          "maxRequestCount": 5
+        },
+        {
+          "operationId": "createOperationsProductionTag",
+          "maxRequestCount": 1
+        }
+      ],
+      "caseDbOperationUpperBound": 357,
+      "caseExpectedDbMs": 15243.900000000001,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 33000
+    },
+    {
+      "caseId": "catalog-config-recovery",
+      "scenarioId": "CI-L2-023",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsCatalogItem",
+        "listOperationsCatalogUnits",
+        "getOperationsProductionTags",
+        "createOperationsProductionTag"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "listOperationsCatalogUnits",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsProductionTags",
+          "maxRequestCount": 6
+        },
+        {
+          "operationId": "createOperationsProductionTag",
+          "maxRequestCount": 2
+        }
+      ],
+      "caseDbOperationUpperBound": 380,
+      "caseExpectedDbMs": 16226.000000000002,
+      "caseLocalActionMs": 1250,
+      "caseTimeoutMs": 35000
+    },
+    {
+      "caseId": "catalog-batch-success",
+      "scenarioId": "CI-L2-024",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "batchTransitionOperationsCatalogItemStatus"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "batchTransitionOperationsCatalogItemStatus",
+          "maxRequestCount": 1,
+          "cardinality": 3
+        }
+      ],
+      "caseDbOperationUpperBound": 273,
+      "caseExpectedDbMs": 11657.1,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 26000
+    },
+    {
+      "caseId": "catalog-batch-failure",
+      "scenarioId": "CI-L2-024",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "batchTransitionOperationsCatalogItemStatus",
+        "saveOperationsCatalogItem"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "batchTransitionOperationsCatalogItemStatus",
+          "maxRequestCount": 1,
+          "cardinality": 3
+        },
+        {
+          "operationId": "saveOperationsCatalogItem",
+          "maxRequestCount": 1
+        }
+      ],
+      "caseDbOperationUpperBound": 314,
+      "caseExpectedDbMs": 13407.800000000001,
+      "caseLocalActionMs": 1250,
+      "caseTimeoutMs": 30000
+    },
+    {
+      "caseId": "catalog-batch-recovery",
+      "scenarioId": "CI-L2-024",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "batchTransitionOperationsCatalogItemStatus"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "batchTransitionOperationsCatalogItemStatus",
+          "maxRequestCount": 1,
+          "cardinality": 3
+        }
+      ],
+      "caseDbOperationUpperBound": 273,
+      "caseExpectedDbMs": 11657.1,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 26000
+    },
+    {
+      "caseId": "catalog-copy-success",
+      "scenarioId": "CI-L2-025",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsBrandCatalogCopyCandidates",
+        "preflightOperationsBrandCatalogCopy",
+        "executeOperationsBrandCatalogCopy"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsBrandCatalogCopyCandidates",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "preflightOperationsBrandCatalogCopy",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "executeOperationsBrandCatalogCopy",
+          "maxRequestCount": 1
+        }
+      ],
+      "caseDbOperationUpperBound": 393,
+      "caseExpectedDbMs": 16781.100000000002,
+      "caseLocalActionMs": 1250,
+      "caseTimeoutMs": 37000
+    },
+    {
+      "caseId": "catalog-copy-failure",
+      "scenarioId": "CI-L2-025",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsBrandCatalogCopyCandidates",
+        "preflightOperationsBrandCatalogCopy",
+        "executeOperationsBrandCatalogCopy",
+        "saveOperationsCatalogItem"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsBrandCatalogCopyCandidates",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "preflightOperationsBrandCatalogCopy",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "executeOperationsBrandCatalogCopy",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "saveOperationsCatalogItem",
+          "maxRequestCount": 1
+        }
+      ],
+      "caseDbOperationUpperBound": 434,
+      "caseExpectedDbMs": 18531.800000000003,
+      "caseLocalActionMs": 1250,
+      "caseTimeoutMs": 40000
+    },
+    {
+      "caseId": "catalog-copy-recovery",
+      "scenarioId": "CI-L2-025",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsBrandCatalogCopyCandidates",
+        "preflightOperationsBrandCatalogCopy",
+        "executeOperationsBrandCatalogCopy",
+        "saveOperationsCatalogItem"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsBrandCatalogCopyCandidates",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "preflightOperationsBrandCatalogCopy",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "executeOperationsBrandCatalogCopy",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "saveOperationsCatalogItem",
+          "maxRequestCount": 1
+        }
+      ],
+      "caseDbOperationUpperBound": 516,
+      "caseExpectedDbMs": 22033.2,
+      "caseLocalActionMs": 1250,
+      "caseTimeoutMs": 47000
+    },
+    {
+      "caseId": "catalog-governance-success",
+      "scenarioId": "CI-L2-026",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsCatalogItem",
+        "transitionOperationsCatalogItemStatus"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "transitionOperationsCatalogItemStatus",
+          "maxRequestCount": 1
+        }
+      ],
+      "caseDbOperationUpperBound": 307,
+      "caseExpectedDbMs": 13108.900000000001,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 29000
+    },
+    {
+      "caseId": "catalog-governance-failure",
+      "scenarioId": "CI-L2-026",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsCatalogItem"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        }
+      ],
+      "caseDbOperationUpperBound": 293,
+      "caseExpectedDbMs": 12511.1,
+      "caseLocalActionMs": 750,
+      "caseTimeoutMs": 27000
+    },
+    {
+      "caseId": "catalog-governance-recovery",
+      "scenarioId": "CI-L2-026",
+      "operationIds": [
+        "getOperationsWorkspaceLoginEntry",
+        "operationsWorkspacePasswordLogin",
+        "getOperationsWorkspaceSessionEntry",
+        "getOperationsCatalogShapeManifest",
+        "getOperationsCatalogDictionary",
+        "getOperationsCatalogCategoryCandidates",
+        "getOperationsCatalogWorkbenchContext",
+        "getOperationsCatalogNavigation",
+        "getOperationsCatalogItems",
+        "getOperationsCatalogItem",
+        "transitionOperationsCatalogItemStatus"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsWorkspaceLoginEntry",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "operationsWorkspacePasswordLogin",
+          "maxRequestCount": 1
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogShapeManifest",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogDictionary",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogCategoryCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsCatalogWorkbenchContext",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogNavigation",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsCatalogItems",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsCatalogItem",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "transitionOperationsCatalogItemStatus",
+          "maxRequestCount": 1
+        }
+      ],
+      "caseDbOperationUpperBound": 307,
+      "caseExpectedDbMs": 13108.900000000001,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 29000
+    }
+  ],
+  "fullRunExpectedMs": 642726,
+  "fullRunTimeoutMs": 1286000
+}

@@ -143,9 +143,13 @@
     },
     {
       "id": "operations-catalog-inventory-workbench",
-      "source": "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+      "source": "apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/CatalogWorkbenchController.tsx",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchToolbar.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchItemList.tsx"
+      ],
       "selectorOnly": true,
-      "externalFilterRequiredExpressions": ["catalog-inventory-view-switch", "catalog-inventory-local-search", "catalog-inventory-item-table"]
+      "externalFilterRequiredExpressions": ["catalogTestIds.control.viewSwitch", "catalogTestIds.control.resultKeyword", "catalogTestIds.surface.itemTable"]
     },
     {
       "id": "operations-inventory-status",

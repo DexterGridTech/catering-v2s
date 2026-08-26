@@ -23,6 +23,10 @@ final class P2ReadConnectionScopeScenarios {
 
     private static final BackendAcceptanceTest.RouteIdentity WORKBENCH_CONTEXT =
             route("getOperationsCatalogWorkbenchContext", "/operations/catalog-inventory/workbench/context");
+    private static final BackendAcceptanceTest.RouteIdentity CATEGORY_CANDIDATES =
+            route("getOperationsCatalogCategoryCandidates", "/operations/catalog-inventory/category-candidates");
+    private static final BackendAcceptanceTest.RouteIdentity ITEM_SKUS =
+            route("getOperationsCatalogItemSkus", "/operations/catalog-inventory/items/{itemCode}/skus");
     private static final BackendAcceptanceTest.RouteIdentity CATEGORY_CREATE =
             route("createOperationsCatalogCategory", "/operations/catalog-inventory/categories");
     private static final BackendAcceptanceTest.RouteIdentity CATEGORY_UPDATE =
@@ -42,6 +46,10 @@ final class P2ReadConnectionScopeScenarios {
     private static final BackendAcceptanceTest.RouteIdentity ITEM_EXECUTE = route(
             "executeOperationsTemporaryCatalogItemPromotion",
             "/operations/catalog-inventory/items/{itemCode}/temporary-promotion/execute");
+    private static final BackendAcceptanceTest.RouteIdentity BRAND_COPY_PREFLIGHT =
+            route("preflightOperationsBrandCatalogCopy", "/operations/catalog-inventory/copy/brand/preflight");
+    private static final BackendAcceptanceTest.RouteIdentity BRAND_COPY_EXECUTE =
+            route("executeOperationsBrandCatalogCopy", "/operations/catalog-inventory/copy/brand/execute");
     private static final BackendAcceptanceTest.RouteIdentity INVENTORY_INCREASE = route(
             "increaseOperationsInventoryTarget",
             "/operations/catalog-inventory/inventory-targets/{targetRef}/increase");
@@ -68,27 +76,56 @@ final class P2ReadConnectionScopeScenarios {
 
     private P2ReadConnectionScopeScenarios() {}
 
-    static void run(BackendAcceptanceTest host, BackendAcceptanceTest.ScenarioContext context) throws Exception {
-        catalogInventory(host, context);
-        iamAndPlatform(host, context);
+    static void run(
+            BackendAcceptanceTest host,
+            BackendAcceptanceTest.ScenarioContext normalContext,
+            BackendAcceptanceTest.ScenarioContext coverageContext)
+            throws Exception {
+        catalogInventory(host, normalContext, coverageContext);
+        iamAndPlatform(host, normalContext, coverageContext);
     }
 
-    private static void catalogInventory(BackendAcceptanceTest host, BackendAcceptanceTest.ScenarioContext context)
+    private static void catalogInventory(
+            BackendAcceptanceTest host,
+            BackendAcceptanceTest.ScenarioContext normalContext,
+            BackendAcceptanceTest.ScenarioContext coverageContext)
             throws Exception {
         BackendAcceptanceTest.Fixture fixture =
                 host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
-        host.completeInvitation(context, fixture);
-        BackendAcceptanceTest.Session session = host.login(context, fixture);
+        host.completeInvitation(coverageContext, fixture);
+        BackendAcceptanceTest.Session session = host.login(coverageContext, fixture);
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String dataNodeRef = fixture.storeId().toString();
         String root = "/api/operations/catalog-inventory";
 
-        BackendAcceptanceTest.Response workbench = context.get(
+        BackendAcceptanceTest.Response workbench = normalContext.get(
                 WORKBENCH_CONTEXT,
                 root + "/workbench/context?dataNodeRef=" + dataNodeRef,
                 session.cookie(),
                 Set.of(200));
         assertTrue(workbench.json().isObject(), "BUSINESS: workbench context returns an owner readback object");
+
+        BackendAcceptanceTest.Response categoryCandidates = normalContext.get(
+                CATEGORY_CANDIDATES,
+                root + "/category-candidates?dataNodeRef=" + dataNodeRef + "&usage=ITEM_ASSIGNMENT&pageSize=20",
+                session.cookie(),
+                Set.of(200));
+        assertTrue(
+                categoryCandidates.json().path("data").path("items").isArray(),
+                "BUSINESS: category candidate task read returns the owner hierarchy page");
+
+        String skuProbeCode = "CAL-SKU-SCOPE-" + suffix;
+        new CatalogAcceptanceScenarios(host)
+                .calibrationCreatePlainItem(
+                        coverageContext, fixture, session, skuProbeCode, "Calibration SKU scope probe " + suffix);
+        BackendAcceptanceTest.Response skuPage = normalContext.get(
+                ITEM_SKUS,
+                root + "/items/" + skuProbeCode + "/skus?dataNodeRef=" + dataNodeRef + "&pageSize=20",
+                session.cookie(),
+                Set.of(200));
+        assertTrue(
+                skuPage.json().path("data").path("items").isArray(),
+                "BUSINESS: SKU task read returns the owner child-page shape for a parent without specifications");
 
         Map<String, Object> categoryABody = new LinkedHashMap<>();
         categoryABody.put("dataNodeRef", dataNodeRef);
@@ -96,13 +133,13 @@ final class P2ReadConnectionScopeScenarios {
         categoryABody.put("name", "Calibration A");
         categoryABody.put("parentCategoryRef", null);
         BackendAcceptanceTest.Response categoryA =
-                context.post(CATEGORY_CREATE, root + "/categories", session.cookie(), categoryABody, Set.of(200));
+                normalContext.post(CATEGORY_CREATE, root + "/categories", session.cookie(), categoryABody, Set.of(200));
         JsonNode categoryAResult = categoryA.json().path("result");
         String categoryARef = categoryAResult.path("categoryRef").asText();
         long categoryAVersion = categoryAResult.path("version").asLong();
         assertFalse(categoryARef.isBlank(), "BUSINESS: calibration category has an opaque owner reference");
 
-        BackendAcceptanceTest.Response updatedCategory = context.patch(
+        BackendAcceptanceTest.Response updatedCategory = normalContext.patch(
                 CATEGORY_UPDATE,
                 root + "/categories/" + categoryARef,
                 session.cookie(),
@@ -124,10 +161,10 @@ final class P2ReadConnectionScopeScenarios {
         categoryBBody.put("name", "Calibration B");
         categoryBBody.put("parentCategoryRef", null);
         BackendAcceptanceTest.Response categoryB =
-                context.post(CATEGORY_CREATE, root + "/categories", session.cookie(), categoryBBody, Set.of(200));
+                normalContext.post(CATEGORY_CREATE, root + "/categories", session.cookie(), categoryBBody, Set.of(200));
         JsonNode categoryBResult = categoryB.json().path("result");
         String categoryBRef = categoryBResult.path("categoryRef").asText();
-        BackendAcceptanceTest.Response movedCategory = context.post(
+        BackendAcceptanceTest.Response movedCategory = normalContext.post(
                 CATEGORY_MOVE,
                 root + "/categories/" + categoryARef + "/move",
                 session.cookie(),
@@ -151,11 +188,11 @@ final class P2ReadConnectionScopeScenarios {
 
         JsonNode firstEntry = new CatalogAcceptanceScenarios(host)
                 .calibrationCreateDictionaryEntry(
-                        context, fixture, session, "TAG", "CAL-TAG-A-" + suffix, "Calibration tag A");
+                        coverageContext, fixture, session, "TAG", "CAL-TAG-A-" + suffix, "Calibration tag A");
         JsonNode secondEntry = new CatalogAcceptanceScenarios(host)
                 .calibrationCreateDictionaryEntry(
-                        context, fixture, session, "TAG", "CAL-TAG-B-" + suffix, "Calibration tag B");
-        BackendAcceptanceTest.Response reordered = context.post(
+                        coverageContext, fixture, session, "TAG", "CAL-TAG-B-" + suffix, "Calibration tag B");
+        BackendAcceptanceTest.Response reordered = normalContext.post(
                 DICTIONARY_REORDER,
                 root + "/dictionaries/TAG/entries/reorder",
                 session.cookie(),
@@ -170,7 +207,8 @@ final class P2ReadConnectionScopeScenarios {
                         dataNodeRef),
                 Map.of("Idempotency-Key", "calibration-dictionary-reorder-" + suffix),
                 Set.of(200));
-        JsonNode dictionary = context.get(
+        JsonNode dictionary = normalContext
+                .get(
                         DICTIONARY_READ,
                         root + "/dictionaries/TAG?dataNodeRef=" + dataNodeRef,
                         session.cookie(),
@@ -188,10 +226,16 @@ final class P2ReadConnectionScopeScenarios {
 
         JsonNode disposableUnit = new CatalogAcceptanceScenarios(host)
                 .calibrationCreateUnit(
-                        context, fixture, session, "CAL-DELETE-UNIT-" + suffix, "Calibration delete unit", "COUNT", 0);
+                        coverageContext,
+                        fixture,
+                        session,
+                        "CAL-DELETE-UNIT-" + suffix,
+                        "Calibration delete unit",
+                        "COUNT",
+                        0);
         JsonNode disposableUnitReadback = disposableUnit.path("result").path("unit");
         String disposableUnitRef = disposableUnitReadback.path("unitRef").asText();
-        BackendAcceptanceTest.Response deletedUnit = context.delete(
+        BackendAcceptanceTest.Response deletedUnit = normalContext.delete(
                 UNIT_DELETE,
                 root + "/units/" + disposableUnitRef,
                 session.cookie(),
@@ -209,15 +253,16 @@ final class P2ReadConnectionScopeScenarios {
                 "BUSINESS: an unreferenced unit is deleted by the catalog owner");
 
         JsonNode material = new CatalogAcceptanceScenarios(host)
-                .calibrationCreateInventoryMaterial(context, fixture, session, "calibration-inventory-" + suffix);
+                .calibrationCreateInventoryMaterial(
+                        coverageContext, fixture, session, "calibration-inventory-" + suffix);
         String targetRef = CatalogAcceptanceScenarios.calibrationInventoryTargetRef(material);
-        BackendAcceptanceTest.Response currentTarget = context.get(
+        BackendAcceptanceTest.Response currentTarget = normalContext.get(
                 route("getOperationsInventoryTarget", "/operations/catalog-inventory/inventory-targets/{targetRef}"),
                 root + "/inventory-targets/" + targetRef + "?dataNodeRef=" + dataNodeRef,
                 session.cookie(),
                 Set.of(200));
         long targetVersion = currentTarget.json().path("version").asLong();
-        BackendAcceptanceTest.Response increased = context.post(
+        BackendAcceptanceTest.Response increased = normalContext.post(
                 INVENTORY_INCREASE,
                 root + "/inventory-targets/" + targetRef + "/increase",
                 session.cookie(),
@@ -239,7 +284,7 @@ final class P2ReadConnectionScopeScenarios {
                 increased.json().path("result").path("change").asText(),
                 "BUSINESS: inventory increase reports the applied consumption-unit delta");
         long increasedVersion = increased.json().path("result").path("version").asLong();
-        BackendAcceptanceTest.Response adjusted = context.post(
+        BackendAcceptanceTest.Response adjusted = normalContext.post(
                 INVENTORY_ADJUST,
                 root + "/inventory-targets/" + targetRef + "/adjust",
                 session.cookie(),
@@ -259,7 +304,8 @@ final class P2ReadConnectionScopeScenarios {
                 "BUSINESS: inventory adjustment reports a signed owner delta");
         String period = "30D";
         assertTrue(
-                context.get(
+                normalContext
+                        .get(
                                 INVENTORY_CHANGES,
                                 root + "/inventory-targets/" + targetRef + "/changes?dataNodeRef=" + dataNodeRef
                                         + "&period=" + period,
@@ -270,7 +316,8 @@ final class P2ReadConnectionScopeScenarios {
                         .isInt(),
                 "BUSINESS: inventory change summary returns a typed period aggregate");
         assertTrue(
-                context.get(
+                normalContext
+                        .get(
                                 INVENTORY_HISTORY,
                                 root + "/inventory-targets/" + targetRef + "/business-history?dataNodeRef="
                                         + dataNodeRef + "&pageSize=20",
@@ -281,7 +328,8 @@ final class P2ReadConnectionScopeScenarios {
                         .isArray(),
                 "BUSINESS: inventory business history returns ledger-backed entries");
         assertTrue(
-                context.get(
+                normalContext
+                        .get(
                                 INVENTORY_DIAGNOSTICS,
                                 root + "/inventory-targets/" + targetRef + "/diagnostics?dataNodeRef=" + dataNodeRef,
                                 session.cookie(),
@@ -291,10 +339,10 @@ final class P2ReadConnectionScopeScenarios {
                         .isArray(),
                 "BUSINESS: inventory diagnostics returns a typed query observation list");
 
-        String itemCode = "CAL-NORMAL-PROMOTION-" + suffix;
-        JsonNode normalItem = new CatalogAcceptanceScenarios(host)
-                .calibrationCreatePlainItem(context, fixture, session, itemCode, "Calibration normal item");
-        long itemVersion = normalItem.path("version").asLong();
+        BackendAcceptanceTest.TemporaryCatalogItemFixture temporaryItem = host.temporaryCatalogItemFixture(
+                fixture, "CAL-TEMPORARY-PROMOTION-" + suffix, "Calibration temporary item");
+        String itemCode = temporaryItem.itemCode();
+        long itemVersion = temporaryItem.version();
         String formalCode = "calibration-formal-" + suffix;
         Map<String, Object> promotionRequest = new LinkedHashMap<>();
         promotionRequest.put("itemCode", itemCode);
@@ -305,7 +353,7 @@ final class P2ReadConnectionScopeScenarios {
         promotionRequest.put("materialRole", "NONE");
         promotionRequest.put("expectedSourceVersion", itemVersion);
         promotionRequest.put("dataNodeRef", dataNodeRef);
-        BackendAcceptanceTest.Response preflight = context.post(
+        BackendAcceptanceTest.Response preflight = normalContext.post(
                 ITEM_PREFLIGHT,
                 root + "/items/" + itemCode + "/temporary-promotion/preflight",
                 session.cookie(),
@@ -313,28 +361,34 @@ final class P2ReadConnectionScopeScenarios {
                 Map.of("Idempotency-Key", "calibration-promotion-preflight-" + suffix),
                 Set.of(200));
         assertFalse(
-                preflight.json().path("data").path("canPromote").asBoolean(true),
-                "BUSINESS: a normal item is explicitly ineligible for temporary promotion");
+                preflight.json().path("data").path("preflightDigest").asText().isBlank(),
+                "BUSINESS: temporary-promotion preflight returns an owner recheck digest");
+        assertTrue(
+                preflight.json().path("data").path("canPromote").asBoolean(),
+                "BUSINESS: an externally sourced temporary item is eligible for formal promotion");
         promotionRequest.put("expectedVersion", itemVersion);
         promotionRequest.put(
                 "preflightDigest",
                 preflight.json().path("data").path("preflightDigest").asText());
-        BackendAcceptanceTest.Response execute = context.post(
+        BackendAcceptanceTest.Response execute = normalContext.post(
                 ITEM_EXECUTE,
                 root + "/items/" + itemCode + "/temporary-promotion/execute",
                 session.cookie(),
                 promotionRequest,
                 Map.of("Idempotency-Key", "calibration-promotion-execute-" + suffix),
-                Set.of(422));
+                Set.of(200));
         assertEquals(
-                "VALIDATION_ERROR",
-                execute.problemCode(),
-                "BUSINESS: executing a non-temporary promotion is rejected by the typed owner problem");
+                "DRAFT",
+                execute.json().path("result").path("status").asText(),
+                "BUSINESS: temporary promotion returns the newly owned formal draft");
+
+        brandCopyNormalPath(host, normalContext, coverageContext);
 
         String tagCode = "CAL-TAG-" + suffix;
         CatalogAcceptanceScenarios catalog = new CatalogAcceptanceScenarios(host);
-        catalog.calibrationCreateProductionTag(context, fixture, session, tagCode, "Calibration tag");
-        JsonNode tagRows = context.get(
+        catalog.calibrationCreateProductionTag(coverageContext, fixture, session, tagCode, "Calibration tag");
+        JsonNode tagRows = normalContext
+                .get(
                         PRODUCTION_TAGS,
                         root + "/production-tags?dataNodeRef=" + dataNodeRef + "&pageSize=100",
                         session.cookie(),
@@ -346,7 +400,7 @@ final class P2ReadConnectionScopeScenarios {
         for (JsonNode row : tagRows) if (tagCode.equals(row.path("code").asText())) tagRow = row;
         assertNotNull(tagRow, "BUSINESS: calibration production tag is visible in the owner list");
         long tagVersion = tagRow.path("version").asLong();
-        BackendAcceptanceTest.Response updatedTag = context.patch(
+        BackendAcceptanceTest.Response updatedTag = normalContext.patch(
                 PRODUCTION_TAG_UPDATE,
                 root + "/production-tags/" + tagCode,
                 session.cookie(),
@@ -355,8 +409,6 @@ final class P2ReadConnectionScopeScenarios {
                         tagCode,
                         "expectedVersion",
                         tagVersion,
-                        "tagKind",
-                        "PRODUCTION",
                         "name",
                         "Calibration tag updated",
                         "dataNodeRef",
@@ -367,7 +419,7 @@ final class P2ReadConnectionScopeScenarios {
                 "Calibration tag updated",
                 updatedTag.json().path("result").path("name").asText(),
                 "BUSINESS: production tag update reads back the changed name");
-        BackendAcceptanceTest.Response disabledTag = context.post(
+        BackendAcceptanceTest.Response disabledTag = normalContext.post(
                 PRODUCTION_TAG_STATUS,
                 root + "/production-tags/" + tagCode + "/status",
                 session.cookie(),
@@ -388,20 +440,99 @@ final class P2ReadConnectionScopeScenarios {
                 "BUSINESS: production tag status transition is persisted");
     }
 
-    private static void iamAndPlatform(BackendAcceptanceTest host, BackendAcceptanceTest.ScenarioContext context)
+    private static void brandCopyNormalPath(
+            BackendAcceptanceTest host,
+            BackendAcceptanceTest.ScenarioContext normalContext,
+            BackendAcceptanceTest.ScenarioContext coverageContext)
             throws Exception {
-        workspaceAccess(host, context);
-        operationsOrganizationAndContracts(host, context);
-        platformAndRecovery(host, context);
+        BackendAcceptanceTest.BrandCopyFixtures fixtures = host.brandCopyFixtures(Set.of("EDIT_STORE_CATALOG"));
+        host.completeInvitation(coverageContext, fixtures.source());
+        host.completeInvitation(coverageContext, fixtures.target());
+        BackendAcceptanceTest.Session sourceSession = host.login(coverageContext, fixtures.source());
+        BackendAcceptanceTest.Session targetSession = host.login(coverageContext, fixtures.target());
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String sourceCode = "CAL-BRAND-COPY-" + suffix;
+        Map<String, String> sourceHeaders = new LinkedHashMap<>(headers("calibration-brand-copy-source-" + suffix));
+        sourceHeaders.put("X-Workspace-Brand-Ref", fixtures.source().brandId().toString());
+        new CatalogAcceptanceScenarios(host)
+                .calibrationCreatePlainItemAtNode(
+                        coverageContext,
+                        fixtures.source(),
+                        sourceSession,
+                        fixtures.source().headCompanyId().toString(),
+                        sourceCode,
+                        "Calibration copy source",
+                        sourceHeaders);
+        Map<String, Object> preflightBody = Map.of(
+                "dataNodeRef", fixtures.target().storeId().toString(),
+                "targetDataNodeRef", fixtures.target().storeId().toString(),
+                "selectedItemCodes", List.of(sourceCode));
+        BackendAcceptanceTest.Response preflight = normalContext.post(
+                BRAND_COPY_PREFLIGHT,
+                "/api/operations/catalog-inventory/copy/brand/preflight",
+                targetSession.cookie(),
+                preflightBody,
+                headers("calibration-brand-copy-preflight-" + suffix),
+                Set.of(200));
+        JsonNode selectedVersion = preflight.json().path("objectVersions").isArray()
+                ? preflight.json().path("objectVersions").get(0)
+                : preflight.json().path("data").path("objectVersions").get(0);
+        assertNotNull(selectedVersion, "BUSINESS: brand-copy preflight returns the selected item version");
+        List<Map<String, Object>> dispositions = new java.util.ArrayList<>();
+        JsonNode compatibility = preflight.json().path("compatibilityResults").isArray()
+                ? preflight.json().path("compatibilityResults")
+                : preflight.json().path("data").path("compatibilityResults");
+        compatibility.forEach(row -> {
+            if (!"BLOCKED".equals(row.path("result").asText()))
+                dispositions.add(
+                        Map.of("compatibilityId", row.path("compatibilityId").asText(), "disposition", "CONFIRM"));
+        });
+        BackendAcceptanceTest.Response executed = normalContext.post(
+                BRAND_COPY_EXECUTE,
+                "/api/operations/catalog-inventory/copy/brand/execute",
+                targetSession.cookie(),
+                Map.of(
+                        "dataNodeRef", fixtures.target().storeId().toString(),
+                        "targetDataNodeRef", fixtures.target().storeId().toString(),
+                        "selectedItemCodes", List.of(sourceCode),
+                        "preflightDigest",
+                                preflight.json().path("preflightDigest").asText(),
+                        "expectedSourceVersion",
+                                selectedVersion.path("sourceVersion").asLong(),
+                        "expectedTargetVersion",
+                                selectedVersion.path("targetVersion").asLong(),
+                        "compatibilityDispositions", dispositions),
+                headers("calibration-brand-copy-execute-" + suffix),
+                Set.of(200));
+        assertTrue(
+                executed.json().path("created").isArray()
+                        || executed.json().path("data").path("created").isArray(),
+                "BUSINESS: brand-copy execute returns the copied owner facts");
     }
 
-    private static void workspaceAccess(BackendAcceptanceTest host, BackendAcceptanceTest.ScenarioContext context)
+    private static void iamAndPlatform(
+            BackendAcceptanceTest host,
+            BackendAcceptanceTest.ScenarioContext normalContext,
+            BackendAcceptanceTest.ScenarioContext coverageContext)
             throws Exception {
+        workspaceAccess(host, normalContext, coverageContext);
+        operationsOrganizationAndContracts(host, normalContext, coverageContext);
+        platformAndRecovery(host, normalContext, coverageContext);
+    }
+
+    private static void workspaceAccess(
+            BackendAcceptanceTest host,
+            BackendAcceptanceTest.ScenarioContext normalContext,
+            BackendAcceptanceTest.ScenarioContext coverageContext)
+            throws Exception {
+        BackendAcceptanceTest.ScenarioContext context = normalContext;
         for (String targetType : List.of("GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE")) {
             String pageKey = "PG-IAM-" + targetType.replace('_', '-') + "-USERS";
-            BackendAcceptanceTest.Fixture fixture = host.fixture(targetType, Set.of(pageKey), Set.of());
-            host.completeInvitation(context, fixture);
-            BackendAcceptanceTest.Session session = host.login(context, fixture);
+            String capabilityPrefix = "BC-IAM-" + targetType.replace('_', '-') + "-";
+            BackendAcceptanceTest.Fixture fixture = host.fixture(
+                    targetType, Set.of(pageKey), Set.of(capabilityPrefix + "INVITE", capabilityPrefix + "ROLE-REVOKE"));
+            host.completeInvitation(coverageContext, fixture);
+            BackendAcceptanceTest.Session session = host.login(coverageContext, fixture);
             UUID targetRef = targetRef(fixture, targetType);
             String label = targetLabel(targetType);
             String slug = targetType.toLowerCase(java.util.Locale.ROOT).replace('_', '-');
@@ -417,7 +548,7 @@ final class P2ReadConnectionScopeScenarios {
                     prefix + "/user-management/" + slug + "/invitations?page=1&pageSize=20" + expectedContext
                             + scopeQuery,
                     session.cookie(),
-                    PROBE_STATUSES);
+                    Set.of(200));
             context.get(
                     route(
                             "getOperationsWorkspace" + label + "InvitationCandidates",
@@ -427,7 +558,7 @@ final class P2ReadConnectionScopeScenarios {
                             + "?subjectType=ORGANIZATION&candidateUsage=LIST_FILTER&page=1&pageSize=20"
                             + expectedContext + scopeQuery,
                     session.cookie(),
-                    PROBE_STATUSES);
+                    Set.of(200));
 
             BackendAcceptanceTest.Response userPage = context.get(
                     route(
@@ -435,7 +566,9 @@ final class P2ReadConnectionScopeScenarios {
                             "/operations/group-workspaces/{groupWorkspaceKey}/user-management/" + slug + "/user"),
                     prefix + "/user-management/" + slug + "/user?page=1&pageSize=20" + expectedContext + scopeQuery,
                     session.cookie(),
-                    PROBE_STATUSES);
+                    Set.of(200));
+            String revocableAssignmentId = null;
+            long revocableAssignmentVersion = -1;
             JsonNode user = userPage.status() == 200
                             && userPage.json().path("items").isArray()
                             && userPage.json().path("items").size() > 0
@@ -458,30 +591,8 @@ final class P2ReadConnectionScopeScenarios {
                         : null;
                 if (assignment != null && assignment.path("id").isTextual()) {
                     String assignmentId = assignment.path("id").asText();
-                    context.post(
-                            route(
-                                    "selectOperationsWorkspaceSessionContext",
-                                    "/operations/group-workspaces/{groupWorkspaceKey}/session/context"),
-                            prefix + "/session/context",
-                            session.cookie(),
-                            Map.of(
-                                    "roleAssignmentRef",
-                                    assignmentId,
-                                    "requiredContextVersion",
-                                    session.contextVersion()),
-                            headers("calibration-session-context-" + UUID.randomUUID()),
-                            PROBE_STATUSES);
-                    context.post(
-                            route(
-                                    "revokeOperationsWorkspace" + label + "UserAssignment",
-                                    "/operations/group-workspaces/{groupWorkspaceKey}/user-management/" + slug
-                                            + "/user/assignments/{assignmentId}/revoke"),
-                            prefix + "/user-management/" + slug + "/user/assignments/" + assignmentId + "/revoke",
-                            session.cookie(),
-                            Map.of(
-                                    "expectedVersion",
-                                    assignment.path("revision").asLong()),
-                            PROBE_STATUSES);
+                    revocableAssignmentId = assignmentId;
+                    revocableAssignmentVersion = assignment.path("revision").asLong();
                 }
             }
 
@@ -501,7 +612,7 @@ final class P2ReadConnectionScopeScenarios {
                     session.cookie(),
                     createBody,
                     headers(createIdempotency),
-                    PROBE_STATUSES);
+                    Set.of(201));
             String invitationId =
                     firstInvitation.json().path("id").asText(UUID.randomUUID().toString());
             long invitationVersion = firstInvitation.json().path("revision").asLong(1);
@@ -517,7 +628,7 @@ final class P2ReadConnectionScopeScenarios {
                     session.cookie(),
                     actionBody,
                     headers(actionIdempotency),
-                    PROBE_STATUSES);
+                    Set.of(200));
 
             String secondIdempotency = "calibration-operations-invitation-second-" + UUID.randomUUID();
             Map<String, Object> secondBody = new LinkedHashMap<>(createBody);
@@ -532,7 +643,7 @@ final class P2ReadConnectionScopeScenarios {
                     session.cookie(),
                     secondBody,
                     headers(secondIdempotency),
-                    PROBE_STATUSES);
+                    Set.of(201));
             String secondInvitationId =
                     secondInvitation.json().path("id").asText(UUID.randomUUID().toString());
             long secondVersion = secondInvitation.json().path("revision").asLong(1);
@@ -546,7 +657,19 @@ final class P2ReadConnectionScopeScenarios {
                     session.cookie(),
                     invitationAction(targetRef, session.contextVersion(), secondVersion, cancelIdempotency),
                     headers(cancelIdempotency),
-                    PROBE_STATUSES);
+                    Set.of(200));
+            if (revocableAssignmentId != null) {
+                context.post(
+                        route(
+                                "revokeOperationsWorkspace" + label + "UserAssignment",
+                                "/operations/group-workspaces/{groupWorkspaceKey}/user-management/" + slug
+                                        + "/user/assignments/{assignmentId}/revoke"),
+                        prefix + "/user-management/" + slug + "/user/assignments/" + revocableAssignmentId + "/revoke",
+                        session.cookie(),
+                        Map.of("expectedVersion", revocableAssignmentVersion),
+                        headers("calibration-operations-revoke-" + UUID.randomUUID()),
+                        Set.of(200));
+            }
             if (reissued.status() == 200) {
                 // The reissue response is intentionally consumed so the recipe remains a real owner readback.
                 assertTrue(
@@ -556,8 +679,8 @@ final class P2ReadConnectionScopeScenarios {
         }
 
         BackendAcceptanceTest.Fixture authFixture = host.fixture("STORE", Set.of("PG-IAM-STORE-USERS"), Set.of());
-        host.completeInvitation(context, authFixture);
-        BackendAcceptanceTest.Session authSession = host.login(context, authFixture);
+        host.completeInvitation(coverageContext, authFixture);
+        BackendAcceptanceTest.Session authSession = host.login(coverageContext, authFixture);
         String authRoot = "/api/operations/group-workspaces/" + authFixture.groupWorkspaceKey();
         BackendAcceptanceTest.Response otp = context.post(
                 route("sendOperationsWorkspaceOtp", "/operations/group-workspaces/{groupWorkspaceKey}/otp/send"),
@@ -581,15 +704,18 @@ final class P2ReadConnectionScopeScenarios {
                 authRoot + "/session/password",
                 authSession.cookie(),
                 Map.of(
-                        "currentPassword", "wrong-calibration-password",
-                        "newPassword", "Calibration-New-123!",
-                        "expectedSessionVersion", authSession.contextVersion()),
+                        "currentPassword",
+                        BackendAcceptanceTest.OPERATIONS_PASSWORD,
+                        "newPassword",
+                        "Calibration-New-123!",
+                        "expectedSessionVersion",
+                        authSession.contextVersion()),
                 headers("calibration-workspace-password-" + UUID.randomUUID()),
-                PROBE_STATUSES);
+                Set.of(200));
         operationsPasswordRecovery(host, context, authFixture);
         BackendAcceptanceTest.Fixture logoutFixture = host.fixture("STORE", Set.of("PG-IAM-STORE-USERS"), Set.of());
-        host.completeInvitation(context, logoutFixture);
-        BackendAcceptanceTest.Session logoutSession = host.login(context, logoutFixture);
+        host.completeInvitation(coverageContext, logoutFixture);
+        BackendAcceptanceTest.Session logoutSession = host.login(coverageContext, logoutFixture);
         context.post(
                 route("operationsWorkspaceLogout", "/operations/group-workspaces/{groupWorkspaceKey}/logout"),
                 "/api/operations/group-workspaces/" + logoutFixture.groupWorkspaceKey() + "/logout",
@@ -649,12 +775,16 @@ final class P2ReadConnectionScopeScenarios {
     }
 
     private static void operationsOrganizationAndContracts(
-            BackendAcceptanceTest host, BackendAcceptanceTest.ScenarioContext context) throws Exception {
+            BackendAcceptanceTest host,
+            BackendAcceptanceTest.ScenarioContext normalContext,
+            BackendAcceptanceTest.ScenarioContext coverageContext)
+            throws Exception {
+        BackendAcceptanceTest.ScenarioContext context = normalContext;
         Set<String> organizationCapabilities = Set.of("BC-ORG-BRAND-EDIT", "BC-ORG-TENANT-EDIT", "BC-ORG-GROUP-EDIT");
         BackendAcceptanceTest.Fixture organizationFixture = host.fixture(
                 "GROUP", Set.of("PG-ORG-BRAND", "PG-ORG-TENANT", "PG-ORG-STRUCTURE"), organizationCapabilities);
-        host.completeInvitation(context, organizationFixture);
-        BackendAcceptanceTest.Session organizationSession = host.login(context, organizationFixture);
+        host.completeInvitation(coverageContext, organizationFixture);
+        BackendAcceptanceTest.Session organizationSession = host.login(coverageContext, organizationFixture);
         String organizationRoot = "/api/operations/group-workspaces/" + organizationFixture.groupWorkspaceKey();
         String contextQuery = "?expectedContextVersion=" + organizationSession.contextVersion();
         context.get(
@@ -720,8 +850,8 @@ final class P2ReadConnectionScopeScenarios {
 
         BackendAcceptanceTest.Fixture headCompanyFixture =
                 host.fixture("HEAD_COMPANY", Set.of("PG-ORG-HEAD-COMPANY"), Set.of("BC-ORG-HEAD-COMPANY-EDIT"));
-        host.completeInvitation(context, headCompanyFixture);
-        BackendAcceptanceTest.Session headCompanySession = host.login(context, headCompanyFixture);
+        host.completeInvitation(coverageContext, headCompanyFixture);
+        BackendAcceptanceTest.Session headCompanySession = host.login(coverageContext, headCompanyFixture);
         context.patch(
                 route(
                         "updateOperationsOrganizationHeadCompany",
@@ -741,8 +871,8 @@ final class P2ReadConnectionScopeScenarios {
                 PROBE_STATUSES);
 
         BackendAcceptanceTest.Fixture contractFixture = host.fixture("PROJECT", Set.of("BC-CONTRACT-CREATE"));
-        host.completeInvitation(context, contractFixture);
-        BackendAcceptanceTest.Session contractSession = host.login(context, contractFixture);
+        host.completeInvitation(coverageContext, contractFixture);
+        BackendAcceptanceTest.Session contractSession = host.login(coverageContext, contractFixture);
         String contractRoot = "/api/operations/group-workspaces/" + contractFixture.groupWorkspaceKey();
         context.get(
                 route(
@@ -752,8 +882,8 @@ final class P2ReadConnectionScopeScenarios {
                 contractSession.cookie(),
                 Set.of(200));
         BackendAcceptanceTest.Fixture storeProfileFixture = host.fixture("STORE", Set.of());
-        host.completeInvitation(context, storeProfileFixture);
-        BackendAcceptanceTest.Session storeProfileSession = host.login(context, storeProfileFixture);
+        host.completeInvitation(coverageContext, storeProfileFixture);
+        BackendAcceptanceTest.Session storeProfileSession = host.login(coverageContext, storeProfileFixture);
         String storeProfileRoot = "/api/operations/group-workspaces/" + storeProfileFixture.groupWorkspaceKey();
         context.get(
                 route("getOperationsStoreProfile", "/operations/group-workspaces/{groupWorkspaceKey}/store/profile"),
@@ -792,7 +922,7 @@ final class P2ReadConnectionScopeScenarios {
                 Set.of(201));
 
         host.ensurePlatformAdministrator();
-        BackendAcceptanceTest.Session platform = host.platformLogin(context);
+        BackendAcceptanceTest.Session platform = host.platformLogin(coverageContext);
         String platformRoot = "/api/platform/group-workspaces/" + contractFixture.groupWorkspaceKey();
         BackendAcceptanceTest.Response contractPage = context.get(
                 route(
@@ -834,22 +964,25 @@ final class P2ReadConnectionScopeScenarios {
                 PROBE_STATUSES);
 
         BackendAcceptanceTest.Fixture channelFixture = host.fixture("STORE", Set.of("BC-BUSINESS-CHANNEL-STORE-EDIT"));
-        host.completeInvitation(context, channelFixture);
-        BackendAcceptanceTest.Session channelSession = host.login(context, channelFixture);
+        host.completeInvitation(coverageContext, channelFixture);
+        BackendAcceptanceTest.Session channelSession = host.login(coverageContext, channelFixture);
         context.get(
                 route("getOperationsExternalCapabilityDictionary", "/operations/external-capability-dictionary"),
                 "/api/operations/external-capability-dictionary",
                 channelSession.cookie(),
                 Set.of(200));
         new BusinessChannelAcceptanceScenarios(host)
-                .calibrationUpdateAndDeleteExternalBinding(
-                        context, channelFixture, channelSession, "MEITUAN_ISV_B", PROBE_STATUSES);
+                .calibrationDeleteLocallyUnboundExternalBinding(context, channelFixture, channelSession, "ELEME_OPEN");
     }
 
-    private static void platformAndRecovery(BackendAcceptanceTest host, BackendAcceptanceTest.ScenarioContext context)
+    private static void platformAndRecovery(
+            BackendAcceptanceTest host,
+            BackendAcceptanceTest.ScenarioContext normalContext,
+            BackendAcceptanceTest.ScenarioContext coverageContext)
             throws Exception {
+        BackendAcceptanceTest.ScenarioContext context = normalContext;
         host.ensurePlatformAdministrator();
-        BackendAcceptanceTest.Session platform = host.platformLogin(context);
+        BackendAcceptanceTest.Session platform = host.platformLogin(coverageContext);
         String suffix = UUID.randomUUID().toString().substring(0, 8);
 
         context.get(
@@ -857,17 +990,6 @@ final class P2ReadConnectionScopeScenarios {
                 "/api/platform/auth/session",
                 platform.cookie(),
                 Set.of(200));
-        context.post(
-                route("changeCurrentPlatformPassword", "/platform/auth/password"),
-                "/api/platform/auth/password",
-                platform.cookie(),
-                Map.of(
-                        "currentPassword", "wrong-calibration-password",
-                        "newPassword", "Calibration-Platform-123!",
-                        "expectedSessionVersion", platform.contextVersion()),
-                headers("calibration-platform-password-" + UUID.randomUUID()),
-                PROBE_STATUSES);
-
         BackendAcceptanceTest.Response adminPage = context.get(
                 BackendAcceptanceTest.PLATFORM_ADMIN_PAGE,
                 "/api/platform/admin-users?page=1&pageSize=20",
@@ -930,6 +1052,27 @@ final class P2ReadConnectionScopeScenarios {
                 headers(resetKey),
                 Set.of(200));
         adminVersion = resetAdmin.json().path("version").asLong(adminVersion + 1);
+
+        BackendAcceptanceTest.Response dedicatedAdminSession = context.post(
+                BackendAcceptanceTest.PLATFORM_PASSWORD_LOGIN,
+                "/api/platform/auth/password-login",
+                null,
+                Map.of("accountName", adminLogin, "password", "Calibration-Admin-456!"),
+                Set.of(200));
+        context.post(
+                route("changeCurrentPlatformPassword", "/platform/auth/password"),
+                "/api/platform/auth/password",
+                cookie(dedicatedAdminSession, "V2S_PLATFORM_SESSION"),
+                Map.of(
+                        "currentPassword", "Calibration-Admin-456!",
+                        "newPassword", "Calibration-Admin-789!",
+                        "expectedSessionVersion",
+                                dedicatedAdminSession
+                                        .json()
+                                        .path("sessionVersion")
+                                        .asLong()),
+                headers("calibration-platform-password-" + UUID.randomUUID()),
+                Set.of(200));
 
         BackendAcceptanceTest.Response loginOtp = context.post(
                 route("sendPlatformLoginOtp", "/platform/auth/login-otp/send"),
@@ -1047,21 +1190,23 @@ final class P2ReadConnectionScopeScenarios {
                 platform.cookie(),
                 Map.of("expectedVersion", invitationVersion),
                 headers("calibration-platform-invitation-reissue-" + UUID.randomUUID()),
-                PROBE_STATUSES);
+                Set.of(200));
+        String reissuedInvitationId = reissuedInvitation.json().path("id").asText();
+        long reissuedInvitationVersion =
+                reissuedInvitation.json().path("revision").asLong();
+        assertFalse(reissuedInvitationId.isBlank(), "BUSINESS: reissue returns the replacement invitation identity");
         context.post(
                 route(
                         "cancelWorkspaceInvitation",
                         "/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel"),
-                workspaceRoot + "/invitations/" + invitationId + "/cancel",
+                workspaceRoot + "/invitations/" + reissuedInvitationId + "/cancel",
                 platform.cookie(),
-                Map.of(
-                        "expectedVersion",
-                        reissuedInvitation.json().path("revision").asLong(invitationVersion + 1)),
+                Map.of("expectedVersion", reissuedInvitationVersion),
                 headers("calibration-platform-invitation-cancel-" + UUID.randomUUID()),
-                PROBE_STATUSES);
+                Set.of(200));
 
         BackendAcceptanceTest.Fixture accountFixture = host.fixture("GROUP", Set.of(), Set.of());
-        host.completeInvitation(context, accountFixture);
+        host.completeInvitation(coverageContext, accountFixture);
         String accountRoot = "/api/platform/group-workspaces/" + accountFixture.groupWorkspaceKey();
         BackendAcceptanceTest.Response accountPage = context.get(
                 route("getWorkspaceAccounts", "/platform/group-workspaces/{groupWorkspaceKey}/accounts"),
@@ -1083,7 +1228,7 @@ final class P2ReadConnectionScopeScenarios {
                     .json()
                     .path("revision")
                     .asLong(account.path("revision").asLong(1));
-            context.post(
+            BackendAcceptanceTest.Response credentialReset = context.post(
                     route(
                             "requestWorkspaceCredentialReset",
                             "/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/credential-reset"),
@@ -1091,7 +1236,8 @@ final class P2ReadConnectionScopeScenarios {
                     platform.cookie(),
                     Map.of("expectedVersion", accountVersion),
                     headers("calibration-platform-account-reset-" + UUID.randomUUID()),
-                    PROBE_STATUSES);
+                    Set.of(200));
+            accountVersion = credentialReset.json().path("revision").asLong(accountVersion + 1);
             context.post(
                     route(
                             "transitionWorkspaceAccountStatus",
@@ -1100,7 +1246,7 @@ final class P2ReadConnectionScopeScenarios {
                     platform.cookie(),
                     Map.of("targetStatus", "DISABLED", "expectedVersion", accountVersion),
                     headers("calibration-platform-account-status-" + UUID.randomUUID()),
-                    PROBE_STATUSES);
+                    Set.of(200));
             JsonNode assignments = accountDetail.json().path("assignments");
             if (assignments.isArray()
                     && assignments.size() > 0

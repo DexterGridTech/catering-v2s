@@ -631,16 +631,7 @@ class InventoryCopyReplayIntegrationTest {
     private static void insertTarget(
             UUID ref, UUID scope, UUID item, UUID sku, String itemCode, String skuCode, String brand) {
         InventoryTestUnitFacts.insertDirectTarget(
-                jdbc,
-                ref,
-                scope,
-                brand,
-                item,
-                sku,
-                itemCode,
-                skuCode,
-                java.math.BigDecimal.ZERO,
-                1L);
+                jdbc, ref, scope, brand, item, sku, itemCode, skuCode, java.math.BigDecimal.ZERO, 1L);
     }
 
     private static void insertBom(

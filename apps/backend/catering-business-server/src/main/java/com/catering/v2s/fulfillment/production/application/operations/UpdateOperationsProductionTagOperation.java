@@ -40,7 +40,6 @@ public class UpdateOperationsProductionTagOperation {
                 new ProductionTagOwnerApi.UpdateTagCommand(
                         invocation.tagCode(),
                         requiredLong(request.expectedVersion(), "expectedVersion"),
-                        request.tagKind(),
                         request.name()),
                 invocation.idempotencyKey());
         return new ProductionTagReadback(
@@ -49,7 +48,6 @@ public class UpdateOperationsProductionTagOperation {
                 new ProductionTagReadback.Result(
                         readback.tagRef(),
                         readback.code(),
-                        readback.tagKind(),
                         readback.name(),
                         new ProductionTagReadback.Result.OwnerScope("PRODUCTION_TAG", REVISION),
                         readback.status(),

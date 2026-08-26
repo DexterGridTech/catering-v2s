@@ -10,11 +10,11 @@ public record BusinessChannelView(
     tools.jackson.databind.JsonNode channelCode,
     String channelName,
     java.util.UUID bindingRef,
-    String bindingStatus,
-    String bindingStatusDisplayName,
     String status,
     String statusDisplayName,
     java.util.List<String> stopReasons,
     java.util.List<String> stopReasonDisplayNames,
-    Long version
+    Long version,
+    String bindingStatus,
+    String bindingStatusDisplayName
 ) {}

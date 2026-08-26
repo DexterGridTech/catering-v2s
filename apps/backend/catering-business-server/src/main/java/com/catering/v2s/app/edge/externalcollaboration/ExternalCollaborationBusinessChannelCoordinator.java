@@ -180,16 +180,6 @@ public class ExternalCollaborationBusinessChannelCoordinator {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public CollaborationReadback.OwnerBinding updateOperationsBinding(
-            CollaborationCommandApi.UpdateOperationsBindingCommand command, UUID channelRef) {
-        BusinessChannelReadback.Channel channel =
-                requireChannel(command.workspaceUuid(), command.groupWorkspaceKey(), channelRef);
-        requireBinding(channel, command.bindingRef());
-        requireEditable(channel);
-        return collaboration.updateOperationsBinding(command);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
     public CollaborationReadback.ExternalSystem transitionExternalSystemStatus(
             CollaborationCommandApi.TransitionExternalSystemStatusCommand command) {
         CollaborationReadback.Tree tree = catalog.readTree(command.workspaceUuid(), command.groupWorkspaceKey());

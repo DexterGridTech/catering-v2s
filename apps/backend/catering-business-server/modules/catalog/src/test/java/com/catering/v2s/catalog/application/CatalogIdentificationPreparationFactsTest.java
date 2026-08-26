@@ -8,7 +8,6 @@ import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -69,34 +68,38 @@ class CatalogIdentificationPreparationFactsTest {
     @Test
     void preparationFactsKeepProfileAndEffectStructuresClosedAndDurationsNonNegativeIntegers() {
         ObjectNode profile = mapper.createObjectNode();
-        profile.putArray("productionTagRefs").add(UUID.randomUUID().toString());
         profile.put("productionDisplayName", "热厨制作");
         profile.put("estimatedPreparationSeconds", 100000);
         profile.put("preparationNotes", "按默认流程制作");
         assertDoesNotThrow(() -> preparation.validateProfile(profile));
 
         ObjectNode effect = mapper.createObjectNode();
-        effect.putArray("addProductionTagRefs").add(UUID.randomUUID().toString());
         effect.put("instruction", "最后加冰");
         effect.put("preparationSecondsDelta", 3);
         assertDoesNotThrow(() -> preparation.validateEffect(effect));
 
         ObjectNode unknown = profile.deepCopy();
-        unknown.put("stationTags", "retired");
-        CatalogOwnerApi.Problem unknownFailure = assertThrows(
-                CatalogOwnerApi.Problem.class, () -> preparation.validateProfile(unknown));
+        unknown.putArray("productionTagRefs").add(UUID.randomUUID().toString());
+        CatalogOwnerApi.Problem unknownFailure =
+                assertThrows(CatalogOwnerApi.Problem.class, () -> preparation.validateProfile(unknown));
         assertEquals("CATALOG_PREPARATION_UNKNOWN_FIELD", unknownFailure.code());
+
+        ObjectNode effectWithTag = effect.deepCopy();
+        effectWithTag.putArray("addProductionTagRefs").add(UUID.randomUUID().toString());
+        CatalogOwnerApi.Problem effectTagFailure =
+                assertThrows(CatalogOwnerApi.Problem.class, () -> preparation.validateEffect(effectWithTag));
+        assertEquals("CATALOG_PREPARATION_UNKNOWN_FIELD", effectTagFailure.code());
 
         ObjectNode negative = effect.deepCopy();
         negative.put("preparationSecondsDelta", -1);
-        CatalogOwnerApi.Problem negativeFailure = assertThrows(
-                CatalogOwnerApi.Problem.class, () -> preparation.validateEffect(negative));
+        CatalogOwnerApi.Problem negativeFailure =
+                assertThrows(CatalogOwnerApi.Problem.class, () -> preparation.validateEffect(negative));
         assertEquals("CATALOG_PREPARATION_DURATION_INVALID", negativeFailure.code());
 
         ObjectNode fractional = profile.deepCopy();
         fractional.put("estimatedPreparationSeconds", 1.5);
-        CatalogOwnerApi.Problem fractionalFailure = assertThrows(
-                CatalogOwnerApi.Problem.class, () -> preparation.validateProfile(fractional));
+        CatalogOwnerApi.Problem fractionalFailure =
+                assertThrows(CatalogOwnerApi.Problem.class, () -> preparation.validateProfile(fractional));
         assertEquals("CATALOG_PREPARATION_DURATION_INVALID", fractionalFailure.code());
     }
 
@@ -108,8 +111,8 @@ class CatalogIdentificationPreparationFactsTest {
 
         ObjectNode missingProfile = mapper.createObjectNode().put("mode", "OVERRIDE");
         missingProfile.putNull("profile");
-        CatalogOwnerApi.Problem missingProfileFailure = assertThrows(
-                CatalogOwnerApi.Problem.class, () -> preparation.validateOverride(missingProfile));
+        CatalogOwnerApi.Problem missingProfileFailure =
+                assertThrows(CatalogOwnerApi.Problem.class, () -> preparation.validateOverride(missingProfile));
         assertEquals("CATALOG_PREPARATION_TARGET_MISMATCH", missingProfileFailure.code());
     }
 

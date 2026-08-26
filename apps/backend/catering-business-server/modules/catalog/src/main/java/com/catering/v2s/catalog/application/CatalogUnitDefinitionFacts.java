@@ -24,15 +24,35 @@ final class CatalogUnitDefinitionFacts {
     }
 
     List<CatalogOwnerApi.UnitDefinitionReadback> list(
-            String scope, String brand, boolean includeInactive, CatalogOwnerApi.UnitDimension dimension) {
-        List<UnitRow> rows = jdbc.query(
+            String scope,
+            String brand,
+            boolean includeInactive,
+            CatalogOwnerApi.UnitDimension dimension,
+            String query,
+            String status) {
+        String normalizedQuery = query == null ? "" : query.trim();
+        if (status != null && !"ENABLED".equals(status) && !"DISABLED".equals(status))
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "单位状态筛选不合法");
+        StringBuilder sql = new StringBuilder(
                 "SELECT unit_ref,code,name,dimension,precision,status,version FROM catalog.unit_definition "
-                        + "WHERE data_node_ref=? AND brand_ref=? "
-                        + (includeInactive ? "" : "AND status='ENABLED' ")
-                        + (dimension == null ? "" : "AND dimension=? ")
-                        + "ORDER BY name,code,unit_ref LIMIT 100",
-                (result, row) -> row(result),
-                dimension == null ? new Object[] {scope, brand} : new Object[] {scope, brand, dimension.name()});
+                        + "WHERE data_node_ref=? AND brand_ref=? ");
+        List<Object> arguments = new java.util.ArrayList<>(List.of(scope, brand));
+        if (status != null) {
+            sql.append("AND status=? ");
+            arguments.add(status);
+        } else if (!includeInactive) {
+            sql.append("AND status='ENABLED' ");
+        }
+        if (dimension != null) {
+            sql.append("AND dimension=? ");
+            arguments.add(dimension.name());
+        }
+        if (!normalizedQuery.isBlank()) {
+            sql.append("AND (code || chr(1) || name) ILIKE '%' || ? || '%' ");
+            arguments.add(normalizedQuery);
+        }
+        sql.append("ORDER BY name,code,unit_ref LIMIT 100");
+        List<UnitRow> rows = jdbc.query(sql.toString(), (result, row) -> row(result), arguments.toArray());
         if (rows.size() == 100)
             throw new CatalogOwnerApi.Problem(
                     "CATALOG_UNIT_LIMIT_EXCEEDED",
@@ -195,16 +215,26 @@ final class CatalogUnitDefinitionFacts {
                 ? List.of()
                 : refs.stream().filter(Objects::nonNull).distinct().sorted().toList();
         if (ordered.isEmpty()) return Map.of();
-        ordered.forEach(this::lock);
         String placeholders = String.join(",", java.util.Collections.nCopies(ordered.size(), "?"));
+        String lockValues = String.join(",", java.util.Collections.nCopies(ordered.size(), "(?,?)"));
         List<Object> args = new ArrayList<>();
+        for (UUID ref : ordered) {
+            args.add(0x554E4954 ^ (int) (ref.getMostSignificantBits() >>> 32));
+            args.add((int) ref.getLeastSignificantBits());
+        }
         args.add(scope);
         args.add(brand);
         args.addAll(ordered);
+        args.add(ordered.size());
         List<UnitRow> rows = jdbc.query(
-                "SELECT unit_ref,code,name,dimension,precision,status,version FROM catalog.unit_definition "
+                "WITH unit_locks AS MATERIALIZED (SELECT pg_advisory_xact_lock(lock_key_one,lock_key_two) "
+                        + "FROM (VALUES "
+                        + lockValues
+                        + ") AS requested_locks(lock_key_one,lock_key_two)) "
+                        + "SELECT unit_ref,code,name,dimension,precision,status,version FROM catalog.unit_definition "
                         + "WHERE data_node_ref=? AND brand_ref=? AND unit_ref IN ("
-                        + placeholders + ")",
+                        + placeholders
+                        + ") AND (SELECT count(*) FROM unit_locks)=? FOR UPDATE",
                 (result, row) -> row(result),
                 args.toArray());
         Map<UUID, UnitRow> byRef = new LinkedHashMap<>();

@@ -19,6 +19,10 @@ public interface CatalogOwnerApi {
 
     JsonNode readItems(String dataNodeRef, String brandRef, ObjectNode request, String requestId);
 
+    JsonNode readCategoryCandidates(String dataNodeRef, String brandRef, ObjectNode request, String requestId);
+
+    JsonNode readItemSkus(String dataNodeRef, String brandRef, String itemCode, ObjectNode request, String requestId);
+
     /**
      * The inventory page's bounded display projection. The five components are the complete display fact set;
      * {@link InventoryDisplayFact#absent(UUID)} keeps an input ref visible when catalog has no matching item.
@@ -423,7 +427,12 @@ public interface CatalogOwnerApi {
             String idempotencyKey);
 
     UnitDefinitionListReadback listUnitDefinitions(
-            String dataNodeRef, String brandRef, boolean includeInactive, UnitDimension dimension);
+            String dataNodeRef,
+            String brandRef,
+            boolean includeInactive,
+            UnitDimension dimension,
+            String query,
+            String status);
 
     UnitDefinitionReadback createUnitDefinition(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,

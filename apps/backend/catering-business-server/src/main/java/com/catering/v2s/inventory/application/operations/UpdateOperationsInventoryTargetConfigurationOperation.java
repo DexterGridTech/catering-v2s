@@ -58,6 +58,8 @@ public class UpdateOperationsInventoryTargetConfigurationOperation {
                             context.ownerScope().dataNodeId().toString(),
                             context.ownerScope().brandRef(),
                             true,
+                            null,
+                            null,
                             null)
                     .units()
                     .stream()

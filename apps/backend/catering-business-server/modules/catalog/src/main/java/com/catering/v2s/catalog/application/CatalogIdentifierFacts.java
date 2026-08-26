@@ -19,7 +19,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * Catalog-owned identifier relation facts.  The relation is the only persisted identity source; the JSON
+ * Catalog-owned identifier relation facts. The relation is the only persisted identity source; the JSON
  * request/readback shapes are projections around this class and never become a second write authority.
  */
 final class CatalogIdentifierFacts {
@@ -65,7 +65,9 @@ final class CatalogIdentifierFacts {
                         UUID itemRef = rows.getObject(2, UUID.class);
                         UUID skuRef = rows.getObject(3, UUID.class);
                         ObjectNode value = mapper.createObjectNode()
-                                .put("identifierRef", rows.getObject(1, UUID.class).toString())
+                                .put(
+                                        "identifierRef",
+                                        rows.getObject(1, UUID.class).toString())
                                 .put("ownerType", skuRef == null ? "CATALOG_ITEM" : "SKU")
                                 .put("ownerRef", (skuRef == null ? itemRef : skuRef).toString())
                                 .put("identifierType", rows.getString(4))
@@ -82,9 +84,8 @@ final class CatalogIdentifierFacts {
                     return null;
                 });
         Map<UUID, ItemReadback> result = new LinkedHashMap<>();
-        refs.forEach(itemRef -> result.put(
-                itemRef,
-                new ItemReadback(itemIdentifiers.get(itemRef), skuIdentifiers.get(itemRef))));
+        refs.forEach(itemRef ->
+                result.put(itemRef, new ItemReadback(itemIdentifiers.get(itemRef), skuIdentifiers.get(itemRef))));
         return Map.copyOf(result);
     }
 
@@ -110,7 +111,13 @@ final class CatalogIdentifierFacts {
         List<Object[]> values = new ArrayList<>();
         for (IdentifierRow row : rows)
             values.add(new Object[] {
-                deterministicRef(itemRef, row.ownerType(), row.ownerRef(), row.displayOrder(), row.identifierType(), row.normalizedValue()),
+                deterministicRef(
+                        itemRef,
+                        row.ownerType(),
+                        row.ownerRef(),
+                        row.displayOrder(),
+                        row.identifierType(),
+                        row.normalizedValue()),
                 dataNodeRef,
                 brandRef,
                 itemRef,
@@ -127,8 +134,14 @@ final class CatalogIdentifierFacts {
                             + "VALUES(?,?,?,?,?,?,?,?,?)",
                     values);
         } catch (DuplicateKeyException failure) {
+            // spotless:off
             throw new CatalogOwnerApi.Problem(
-                    "CATALOG_IDENTIFIER_DUPLICATE", 409, "商品编码或助记码已在当前经营范围内使用", failure);
+                "CATALOG_IDENTIFIER_DUPLICATE",
+                409,
+                "商品编码或助记码已在当前经营范围内使用",
+                failure
+            );
+            // spotless:on
         }
         return readback;
     }
@@ -147,7 +160,13 @@ final class CatalogIdentifierFacts {
         source.skuIdentifiers().forEach((sourceSkuRef, values) -> {
             UUID targetSkuRef = skuRefMapping.get(sourceSkuRef);
             if (targetSkuRef == null)
-                throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "复制规格识别信息未完成映射");
+                // spotless:off
+                throw new CatalogOwnerApi.Problem(
+                    "REFERENCE_MAPPING_UNRESOLVED",
+                    422,
+                    "复制规格识别信息未完成映射"
+                );
+                // spotless:on
             ArrayNode copied = mapper.createArrayNode();
             values.forEach(value -> copied.add(saveValue(value)));
             skuValues.put(targetSkuRef, copied);
@@ -181,7 +200,10 @@ final class CatalogIdentifierFacts {
                     .put("normalizedValue", row.normalizedValue())
                     .put("displayOrder", row.displayOrder());
             if ("CATALOG_ITEM".equals(row.ownerType())) itemValues.add(value);
-            else skuValues.computeIfAbsent(row.ownerRef(), ignored -> mapper.createArrayNode()).add(value);
+            else
+                skuValues
+                        .computeIfAbsent(row.ownerRef(), ignored -> mapper.createArrayNode())
+                        .add(value);
         }
         return new ItemReadback(itemValues, skuValues);
     }
@@ -191,25 +213,31 @@ final class CatalogIdentifierFacts {
         List<IdentifierRow> result = new ArrayList<>();
         int displayOrder = 0;
         for (JsonNode value : values) {
-            if (value == null || !value.isObject())
+            if (value == null || !value.isObject()) {
                 throw problem("CATALOG_IDENTIFIER_VALUE_INVALID", "识别信息必须是对象");
+            }
             for (String field : iterable(value.fieldNames()))
-                if (!SAVE_FIELDS.contains(field))
+                if (!SAVE_FIELDS.contains(field)) {
                     throw problem("CATALOG_IDENTIFIER_VALUE_INVALID", "识别信息包含不支持的字段");
+                }
             String type = value.path("identifierType").asText("");
             String raw = value.path("identifierValue").isTextual()
                     ? value.path("identifierValue").asText()
                     : "";
-            if (!TYPES.contains(type))
+            if (!TYPES.contains(type)) {
                 throw problem("CATALOG_IDENTIFIER_TYPE_NOT_ALLOWED", "识别信息类型不支持");
+            }
             String identifierValue = raw.trim();
             if (identifierValue.isEmpty()
                     || identifierValue.length() > 160
                     || identifierValue.chars().anyMatch(Character::isISOControl))
-                throw problem("CATALOG_IDENTIFIER_VALUE_INVALID", "识别信息不能为空，且长度不能超过160个字符");
-            String normalized = "MNEMONIC".equals(type)
-                    ? identifierValue.toLowerCase(Locale.ROOT)
-                    : identifierValue;
+                // spotless:off
+                throw problem(
+                    "CATALOG_IDENTIFIER_VALUE_INVALID",
+                    "识别信息不能为空，且长度不能超过160个字符"
+                );
+                // spotless:on
+            String normalized = "MNEMONIC".equals(type) ? identifierValue.toLowerCase(Locale.ROOT) : identifierValue;
             result.add(new IdentifierRow(ownerType, ownerRef, type, identifierValue, normalized, displayOrder++));
         }
         return List.copyOf(result);
@@ -224,15 +252,18 @@ final class CatalogIdentifierFacts {
                         + ")",
                 (rows, row) -> rows.getObject(1, UUID.class),
                 bindArgs(itemRef, refs));
-        if (owned.size() != refs.size())
+        if (owned.size() != refs.size()) {
             throw problem("CATALOG_IDENTIFIER_OWNER_MISMATCH", "规格识别信息不属于当前商品");
+        }
     }
 
     private static void ensureRequestUnique(Collection<IdentifierRow> rows) {
         Set<String> keys = new LinkedHashSet<>();
         for (IdentifierRow row : rows) {
             String key = row.identifierType() + "\u0000" + row.normalizedValue();
-            if (!keys.add(key)) throw problem("CATALOG_IDENTIFIER_DUPLICATE", "同一商品不能重复填写相同识别信息");
+            if (!keys.add(key)) {
+                throw problem("CATALOG_IDENTIFIER_DUPLICATE", "同一商品不能重复填写相同识别信息");
+            }
         }
     }
 

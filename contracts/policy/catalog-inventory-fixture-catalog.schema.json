@@ -181,6 +181,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "categoryDefinitions",
         "tagDefinitions",
         "productionTagDefinitions",
         "unitDefinitions",
@@ -191,6 +192,13 @@
         "sourceItemAssignments"
       ],
       "properties": {
+        "categoryDefinitions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/categoryDefinitionSeed"
+          }
+        },
         "tagDefinitions": {
           "type": "array",
           "minItems": 1,
@@ -314,7 +322,7 @@
     },
     "testDatasets": {
       "type": "array",
-      "minItems": 26,
+      "minItems": 47,
       "items": {
         "$ref": "#/$defs/dataset"
       }
@@ -673,6 +681,31 @@
         }
       }
     },
+    "categoryDefinitionSeed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "name",
+        "parentCode"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "category code"
+        },
+        "name": {
+          "type": "string",
+          "description": "category name"
+        },
+        "parentCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
     "attributeDefinitionSeed": {
       "type": "object",
       "additionalProperties": false,
@@ -835,7 +868,8 @@
         "preparationProfile",
         "skuIdentifiers",
         "skuPreparationOverrides",
-        "optionPreparationEffects"
+        "optionPreparationEffects",
+        "productionTagCode"
       ],
       "properties": {
         "itemCode": {
@@ -1029,6 +1063,12 @@
             }
           }
         },
+        "productionTagCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "identifiers": {
           "type": "array",
           "items": {
@@ -1176,9 +1216,73 @@
           "type": "string",
           "description": "shape"
         },
+        "scopeKind": {
+          "type": "string",
+          "enum": [
+            "STORE_BRAND",
+            "HEAD_COMPANY_BRAND"
+          ],
+          "description": "fixture object owning scope"
+        },
         "materialRole": {
           "type": "string",
           "description": "material role"
+        },
+        "parentCode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "parent category code"
+        },
+        "categoryCode": {
+          "type": "string",
+          "description": "category code"
+        },
+        "productionTagCode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "single production tag code"
+        },
+        "selectable": {
+          "type": "boolean",
+          "description": "candidate selectable"
+        },
+        "disabledReason": {
+          "type": "string",
+          "description": "candidate disabled reason"
+        },
+        "displayOrder": {
+          "type": "integer",
+          "description": "business display order"
+        },
+        "unitDimension": {
+          "type": "string",
+          "description": "unit dimension"
+        },
+        "precision": {
+          "type": "integer",
+          "description": "unit precision"
+        },
+        "standardSalePrice": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "nullable standard sale price"
+        },
+        "skuCodes": {
+          "type": "array",
+          "description": "SKU codes",
+          "items": {
+            "type": "string"
+          }
+        },
+        "referenceKind": {
+          "type": "string",
+          "description": "reference kind"
         },
         "attributes": {
           "type": "object",
@@ -1681,6 +1785,85 @@
             "ownerFailureRollback": {
               "type": "boolean",
               "description": "owner rollback"
+            },
+            "journeyStates": {
+              "type": "array",
+              "description": "journey state variants",
+              "items": {
+                "type": "string"
+              }
+            },
+            "fixtureCoverage": {
+              "type": "array",
+              "description": "business behaviors covered by this fixture",
+              "items": {
+                "type": "string"
+              }
+            },
+            "recoveryReadbackKind": {
+              "type": "string",
+              "enum": [
+                "EXPECTED",
+                "UNCHANGED"
+              ]
+            },
+            "requiredVisibleTabKeys": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "fixtureReferenceStateByJourneyState": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "SUCCESS",
+                "FAILURE",
+                "RECOVERY"
+              ],
+              "properties": {
+                "SUCCESS": {
+                  "type": "string",
+                  "enum": [
+                    "NOT_APPLICABLE",
+                    "NO_DECLARED_REFERENCE"
+                  ]
+                },
+                "FAILURE": {
+                  "type": "string",
+                  "enum": [
+                    "NOT_APPLICABLE",
+                    "DECLARED_REFERENCE_PRESENT"
+                  ]
+                },
+                "RECOVERY": {
+                  "type": "string",
+                  "enum": [
+                    "NOT_APPLICABLE",
+                    "DECLARED_REFERENCE_REMOVED"
+                  ]
+                }
+              }
+            },
+            "preState": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "owner facts before the UI action"
+            },
+            "actionInput": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "business action input"
+            },
+            "expectedReadback": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "successful business readback"
+            },
+            "unchangedReadback": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "facts that must remain unchanged after failure"
             }
           }
         },
@@ -1846,12 +2029,6 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "productionTagCodes": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
         "productionDisplayName": {
           "type": [
             "string",
@@ -1874,9 +2051,7 @@
           "maxLength": 1000
         }
       },
-      "required": [
-        "productionTagCodes"
-      ]
+      "required": []
     },
     "skuIdentifierSeed": {
       "type": "object",
@@ -1942,12 +2117,6 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "productionTagCodes": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
             "productionDisplayName": {
               "type": [
                 "string",
@@ -1970,9 +2139,7 @@
               "maxLength": 1000
             }
           },
-          "required": [
-            "productionTagCodes"
-          ]
+          "required": []
         }
       }
     },
@@ -1980,19 +2147,12 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "valueCode",
-        "addProductionTagCodes"
+        "valueCode"
       ],
       "properties": {
         "valueCode": {
           "type": "string",
           "description": "ordering option value code"
-        },
-        "addProductionTagCodes": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         },
         "preparationSecondsDelta": {
           "type": [
@@ -2015,6 +2175,7 @@
       "additionalProperties": false,
       "required": [
         "itemCode",
+        "productionTagCode",
         "identifiers",
         "preparationProfile",
         "skuIdentifiers",
@@ -2025,6 +2186,12 @@
         "itemCode": {
           "type": "string",
           "description": "catalog item code"
+        },
+        "productionTagCode": {
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "identifiers": {
           "type": "array",

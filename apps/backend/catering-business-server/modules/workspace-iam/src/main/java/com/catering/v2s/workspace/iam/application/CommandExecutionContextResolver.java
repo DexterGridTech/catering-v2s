@@ -116,14 +116,19 @@ public final class CommandExecutionContextResolver {
                 throw new WorkspaceCommandAuthorizationService.AuthorizationDeniedException();
             }
             String capability = token.capabilityFor(dataNodeType);
-            WorkspaceCapabilityScopeResolver.ScopeResolution resolution = capabilities.resolveGeneratedOperation(
-                    session,
-                    token.requirementId(),
-                    capability,
-                    new WorkspaceCapabilityScopeResolver.ServerResolvedResource(dataNodeType, dataNodeId));
+            WorkspaceCapabilityScopeResolver.CatalogScopeResolution catalogResolution =
+                    capabilities.resolveGeneratedCatalogOperation(
+                            session,
+                            token.requirementId(),
+                            capability,
+                            new WorkspaceCapabilityScopeResolver.ServerResolvedResource(dataNodeType, dataNodeId),
+                            selection);
+            WorkspaceCapabilityScopeResolver.ScopeResolution resolution = catalogResolution.scopeResolution();
+            if (resolution.decision() != WorkspaceCapabilityScopeResolver.Decision.ALLOW) {
+                throw new CatalogScopeForbiddenException(catalogResolution.denialReason());
+            }
             OperationsOwnerScopeGrant legacyGrant = resolution.ownerScopeGrant(token.requirementId());
-            CatalogScopeLookup.CatalogBrandJudgment judgment = catalogScopes.resolveCatalogBrand(
-                    session.workspaceUuid(), session.groupWorkspaceKey(), dataNodeType, dataNodeId, selection);
+            CatalogScopeLookup.CatalogBrandJudgment judgment = catalogResolution.brandJudgment();
             CatalogAuthorizationScope.CopyRole copyRole = CatalogAuthorizationScope.CopyRole.valueOf(token.copyRole());
             UUID copySourceDataNodeId =
                     token.copySourcePolicy() == WorkspaceCommandOperationToken.CopySourcePolicy.ORGANIZATION_JUDGMENT
@@ -233,8 +238,22 @@ public final class CommandExecutionContextResolver {
 
     /** A session was authenticated, but its catalog command scope is not admissible. */
     public static final class CatalogScopeForbiddenException extends RuntimeException {
+        private final WorkspaceCapabilityScopeResolver.CatalogScopeDenialReason denialReason;
+
         public CatalogScopeForbiddenException(Throwable cause) {
             super(cause);
+            this.denialReason =
+                    WorkspaceCapabilityScopeResolver.CatalogScopeDenialReason.EDGE_SESSION_OR_TARGET_REJECTED;
+        }
+
+        public CatalogScopeForbiddenException(WorkspaceCapabilityScopeResolver.CatalogScopeDenialReason denialReason) {
+            this.denialReason = denialReason == null
+                    ? WorkspaceCapabilityScopeResolver.CatalogScopeDenialReason.EDGE_SESSION_OR_TARGET_REJECTED
+                    : denialReason;
+        }
+
+        public WorkspaceCapabilityScopeResolver.CatalogScopeDenialReason denialReason() {
+            return denialReason;
         }
     }
 }

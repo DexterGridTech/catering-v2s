@@ -208,6 +208,19 @@
           "format": "uuid",
           "description": "optional parent SKU attribute opaque ref"
         },
+        "query": {
+          "type": "string",
+          "description": "server-side dictionary name or code search"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ENABLED",
+            "DISABLED",
+            "VOIDED"
+          ],
+          "description": "optional dictionary lifecycle status filter"
+        },
         "cursor": {
           "type": "string",
           "description": "cursor"
@@ -1459,11 +1472,23 @@
         },
         "includeInactive": {
           "type": "boolean",
-          "description": "include disabled units in maintenance list"
+          "description": "include disabled units in maintenance list when no lifecycle filter is selected"
         },
         "dimension": {
           "type": "string",
           "description": "optional unit dimension filter"
+        },
+        "query": {
+          "type": "string",
+          "description": "server-side unit name or code search"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ENABLED",
+            "DISABLED"
+          ],
+          "description": "optional unit lifecycle status filter"
         }
       }
     },

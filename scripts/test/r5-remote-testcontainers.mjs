@@ -2,6 +2,7 @@
 /** Runs one focused Testcontainers Gradle task on the approved remote host. */
 import {createHash, randomUUID} from 'node:crypto';
 import {spawn, spawnSync} from 'node:child_process';
+import {gunzipSync} from 'node:zlib';
 import {
   appendFileSync,
   existsSync,
@@ -18,11 +19,18 @@ import {
   resolveGradleHome as resolveSharedGradleHome,
   validateGradleHome as validateSharedGradleHome,
 } from '../lib/gradle-runtime.mjs';
-import {assertUnclassifiedSqlRatio, parseHttpRequestEvents} from './backend-performance-event-verifier.mjs';
+import {
+  assertNoObservationErrors,
+  assertUnclassifiedSqlRatio,
+  parseHttpRequestEvents,
+} from './backend-performance-event-verifier.mjs';
 import {
   assertPerformanceConnectionBudgets,
+  assertPerformanceConnectionBudgetsForIdentity,
   assertPerformanceOperationExactSet,
   assertPerformanceOperationBudgets,
+  buildNormalSampleMatrix,
+  buildNormalSampleMatrixForIdentity,
   loadPerformanceOperationRegistry,
   reconcilePerformanceOperationEvents,
 } from './backend-performance-operation-reconciliation.mjs';
@@ -38,6 +46,13 @@ const backendAcceptanceSelector = 'com.catering.v2s.app.acceptance.BackendAccept
 
 const now = () => new Date().toISOString();
 const sha256 = value => createHash('sha256').update(value).digest('hex');
+const stableValue = value => {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (value && typeof value === 'object') return Object.fromEntries(
+    Object.keys(value).sort().map(key => [key, stableValue(value[key])]),
+  );
+  return value;
+};
 const quote = value => `'${String(value).replaceAll("'", "'\\''")}'`;
 const compact = (value, limit = 240) =>
   String(value ?? 'FAILED')
@@ -52,7 +67,40 @@ const runnerEvent = (event, fields = {}) =>
       .join(' ')}\n`,
   );
 
-export const backendAcceptanceEnvironment = (runId, operation = 'all') =>
+const BACKEND_ACCEPTANCE_VERIFICATION_MODES = Object.freeze(['ACCEPTANCE', 'CALIBRATION']);
+const ARCHIVED_EVIDENCE_ARTIFACTS = Object.freeze([
+  'http-request-events.jsonl',
+  'backend-acceptance-result.jsonl',
+  'db-operation-events.jsonl',
+  'statement-dictionary.json',
+]);
+
+export const fullPerformanceWorkload = ({task, operation, verificationMode, registry}) => {
+  if (!Array.isArray(registry)) throw new Error('PERFORMANCE_WORKLOAD_REGISTRY_REQUIRED');
+  const descriptor = {
+    schemaVersion: 1,
+    task,
+    backendAcceptanceOperation: operation,
+    verificationMode,
+    normalRecipe: 'BackendPerformanceOperationCoverage.runNormalRecipes',
+    coverageRecipe: 'BackendPerformanceOperationCoverage.runCoverageRecipes',
+    p2ScopeRecipe: 'P2ReadConnectionScopeScenarios.run',
+    operationIdentity: registry.map(({operationId, method, routeTemplate, owner, consumerFace}) => ({
+      operationId,
+      method,
+      routeTemplate,
+      owner,
+      consumerFace,
+    })),
+  };
+  return Object.freeze({
+    schemaVersion: 1,
+    descriptor: stableValue(descriptor),
+    fingerprint: sha256(JSON.stringify(stableValue(descriptor))),
+  });
+};
+
+export const backendAcceptanceEnvironment = (runId, operation = 'all', verificationMode = 'ACCEPTANCE') =>
   runId === null
     ? []
     : [
@@ -67,14 +115,97 @@ export const backendAcceptanceEnvironment = (runId, operation = 'all') =>
         'export V2S_DB_OPERATIONS_HMAC_KEY="$(od -An -N32 -tx1 /dev/urandom | tr -d \' \\n\')"',
         'export V2S_DB_STATEMENT_DICTIONARY="$root/results/statement-dictionary.json"',
         `export V2S_BACKEND_ACCEPTANCE_OPERATION=${quote(operation)}`,
-        ...(process.env.V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF === 'true'
-          ? ['export V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF=true']
-          : []),
-        ...(process.env.V2S_BACKEND_PERFORMANCE_OPERATION_COVERAGE === 'true'
-          ? ['export V2S_BACKEND_PERFORMANCE_OPERATION_COVERAGE=true']
-          : []),
+        `export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=${quote(verificationMode)}`,
+        // The complete exact-set workload needs the existing P2 normal recipes.
+        // They cannot remain caller-selected diagnostics: coverage-only probes
+        // deliberately do not satisfy the normal performance denominator.
+        ...(operation === 'all' ? ['export V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF=true'] : []),
+        // A managed whole-suite run is the canonical 239-operation measurement workload.
+        // Its non-scenario coverage fixture must therefore be enabled by the runner itself,
+        // never by a caller-controlled diagnostic switch.
+        ...(operation === 'all' ? ['export V2S_BACKEND_PERFORMANCE_OPERATION_COVERAGE=true'] : []),
         'export CATERING_OTP_DEBUG_CODE_EXPOSURE=true',
       ];
+
+/**
+ * A complete backend-acceptance run is the only run whose event denominator is the full generated operation set.
+ * Its budgets are therefore an unconditional acceptance invariant, not an opt-in diagnostics switch.
+ */
+export const requiresFullPerformanceVerification = (backendAcceptanceRunId, backendAcceptanceOperation) =>
+  backendAcceptanceRunId !== null && backendAcceptanceOperation === 'all';
+
+export const requiresActiveBudgetVerification = (
+  backendAcceptanceRunId,
+  backendAcceptanceOperation,
+  verificationMode,
+) =>
+  requiresFullPerformanceVerification(backendAcceptanceRunId, backendAcceptanceOperation) &&
+  verificationMode === 'ACCEPTANCE';
+
+export const parseEvidenceArchiveIndex = source => {
+  const rows = String(source)
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map(line => line.split('\t'));
+  const seen = new Set();
+  return rows.map(([name, rawBytes, rawSha256, archiveBytes, archiveSha256]) => {
+    if (
+      !ARCHIVED_EVIDENCE_ARTIFACTS.includes(name) ||
+      !/^\d+$/.test(rawBytes) ||
+      !/^[a-f0-9]{64}$/.test(rawSha256) ||
+      !/^\d+$/.test(archiveBytes) ||
+      !/^[a-f0-9]{64}$/.test(archiveSha256) ||
+      seen.has(name)
+    ) {
+      throw new Error('EVIDENCE_ARCHIVE_INDEX_INVALID');
+    }
+    seen.add(name);
+    return Object.freeze({
+      name,
+      rawBytes: Number(rawBytes),
+      rawSha256,
+      archiveBytes: Number(archiveBytes),
+      archiveSha256,
+    });
+  });
+};
+
+export const readEvidenceArtifact = (directory, name, {requireArchive = false} = {}) => {
+  const plainPath = path.join(directory, name);
+  if (!requireArchive && existsSync(plainPath)) return readFileSync(plainPath, 'utf8');
+  const indexPath = path.join(directory, 'evidence-artifacts.tsv');
+  const archivePath = `${plainPath}.gz`;
+  if (!existsSync(indexPath) || !existsSync(archivePath)) throw new Error(`EVIDENCE_ARTIFACT_REQUIRED:${name}`);
+  const entry = parseEvidenceArchiveIndex(readFileSync(indexPath, 'utf8')).find(candidate => candidate.name === name);
+  if (!entry) throw new Error(`EVIDENCE_ARCHIVE_ENTRY_REQUIRED:${name}`);
+  const archive = readFileSync(archivePath);
+  if (archive.length !== entry.archiveBytes || sha256(archive) !== entry.archiveSha256)
+    throw new Error(`EVIDENCE_ARCHIVE_INTEGRITY_INVALID:${name}`);
+  const raw = gunzipSync(archive);
+  if (raw.length !== entry.rawBytes || sha256(raw) !== entry.rawSha256)
+    throw new Error(`EVIDENCE_ARTIFACT_INTEGRITY_INVALID:${name}`);
+  return raw.toString('utf8');
+};
+
+export const verifyFullBackendAcceptancePerformance = (registry, events) => {
+  assertNoObservationErrors(events);
+  const operationSet = reconcilePerformanceOperationEvents(registry, events);
+  assertPerformanceOperationExactSet(operationSet);
+  const budgetEvidence = assertPerformanceOperationBudgets(registry, events);
+  const connectionBudgetEvidence = assertPerformanceConnectionBudgets(registry, events);
+  const normalSampleMatrix = buildNormalSampleMatrix(registry, events);
+  return {operationSet, budgetEvidence, connectionBudgetEvidence, normalSampleMatrix};
+};
+
+export const verifyFullBackendAcceptanceCalibration = (registry, events) => {
+  assertNoObservationErrors(events);
+  const operationSet = reconcilePerformanceOperationEvents(registry, events);
+  assertPerformanceOperationExactSet(operationSet);
+  const connectionBudgetEvidence = assertPerformanceConnectionBudgetsForIdentity(registry, events);
+  const normalSampleMatrix = buildNormalSampleMatrixForIdentity(registry, events);
+  return {operationSet, connectionBudgetEvidence, normalSampleMatrix};
+};
 
 export const parseBackendAcceptanceResult = contents => {
   const rows = String(contents ?? '')
@@ -209,22 +340,84 @@ export const validateCleanupReceipt = cleanup => {
   return cleanup;
 };
 
+const requireClosedPerformanceCount = (evidence, field, expected = 239) => {
+  if (!evidence || evidence.declared !== expected || evidence.observed !== expected || evidence.exceeded !== 0) {
+    throw new Error(`RUN_MANIFEST_${field}_NOT_CLOSED`);
+  }
+};
+
+const requireClosedOperationSet = operationSet => {
+  if (
+    !operationSet ||
+    operationSet.expected !== 239 ||
+    operationSet.observed !== 239 ||
+    !Array.isArray(operationSet.missing) ||
+    !Array.isArray(operationSet.extra) ||
+    !Array.isArray(operationSet.drift) ||
+    operationSet.missing.length !== 0 ||
+    operationSet.extra.length !== 0 ||
+    operationSet.drift.length !== 0
+  ) {
+    throw new Error('RUN_MANIFEST_OPERATION_SET_NOT_CLOSED');
+  }
+};
+
+const requireClosedNormalSampleMatrix = normalSampleMatrix => {
+  if (
+    !normalSampleMatrix ||
+    normalSampleMatrix.expected !== 239 ||
+    normalSampleMatrix.observed !== 239 ||
+    typeof normalSampleMatrix.path !== 'string' ||
+    normalSampleMatrix.path.trim() === ''
+  ) {
+    throw new Error('RUN_MANIFEST_NORMAL_SAMPLE_MATRIX_NOT_CLOSED');
+  }
+};
+
+const validateFullBackendAcceptanceMeasurementEvidence = (measurementEvidence, verificationMode) => {
+  if (measurementEvidence?.status !== 'PASS' || measurementEvidence.verificationMode !== verificationMode) {
+    throw new Error('RUN_MANIFEST_FULL_MEASUREMENT_EVIDENCE_REQUIRED');
+  }
+  requireClosedOperationSet(measurementEvidence.operationSet);
+  requireClosedPerformanceCount(measurementEvidence.connectionBudgetEvidence, 'CONNECTION_BUDGET');
+  requireClosedNormalSampleMatrix(measurementEvidence.normalSampleMatrix);
+  if (verificationMode === 'ACCEPTANCE') {
+    requireClosedPerformanceCount(measurementEvidence.budgetEvidence, 'BUDGET');
+    if (Object.hasOwn(measurementEvidence, 'calibrationEvidence')) {
+      throw new Error('RUN_MANIFEST_ACCEPTANCE_CALIBRATION_EVIDENCE_FORBIDDEN');
+    }
+    return;
+  }
+  if (measurementEvidence?.calibrationEvidence?.status !== 'PASS') {
+    throw new Error('RUN_MANIFEST_CALIBRATION_EVIDENCE_REQUIRED');
+  }
+  if (Object.hasOwn(measurementEvidence, 'budgetEvidence')) {
+    throw new Error('RUN_MANIFEST_CALIBRATION_BUDGET_EVIDENCE_FORBIDDEN');
+  }
+};
+
 export const parseAndValidateRunManifest = manifest => {
   if (!manifest || manifest.schemaVersion !== 1 || manifest.kind !== 'r5-managed-testcontainers-run')
     throw new Error('RUN_MANIFEST_INVALID');
   for (const key of [
     'runId',
     'task',
+    'verificationMode',
     'startedAt',
     'remote',
     'sourceSync',
     'gradleDistribution',
     'logPath',
+    'backendAcceptance',
+    'workload',
     'testExecution',
     'cleanup',
     'status',
   ]) {
     if (!(key in manifest)) throw new Error(`RUN_MANIFEST_FIELD_MISSING:${key}`);
+  }
+  if (!BACKEND_ACCEPTANCE_VERIFICATION_MODES.includes(manifest.verificationMode)) {
+    throw new Error('RUN_MANIFEST_VERIFICATION_MODE_INVALID');
   }
   if (!/^r5-tc-[0-9]+-[0-9]+$/.test(manifest.runId) || !/^:[a-z0-9:-]+:test$/.test(manifest.task))
     throw new Error('RUN_MANIFEST_IDENTITY_INVALID');
@@ -232,11 +425,38 @@ export const parseAndValidateRunManifest = manifest => {
   validateGradleDistribution(manifest.gradleDistribution);
   if (!['PASS', 'FAIL', 'NOT_RUN'].includes(manifest.testExecution.status))
     throw new Error('RUN_MANIFEST_TEST_EXECUTION_INVALID');
+  const backendAcceptance = manifest.backendAcceptance;
+  if (
+    backendAcceptance !== null &&
+    (!backendAcceptance ||
+      typeof backendAcceptance.runId !== 'string' ||
+      backendAcceptance.runId.trim() === '' ||
+      typeof backendAcceptance.operation !== 'string' ||
+      backendAcceptance.operation.trim() === '')
+  ) {
+    throw new Error('RUN_MANIFEST_BACKEND_ACCEPTANCE_IDENTITY_INVALID');
+  }
   if (
     manifest.measurementEvidence !== undefined &&
     !['PASS', 'NOT_RUN'].includes(manifest.measurementEvidence.status)
   ) {
     throw new Error('RUN_MANIFEST_MEASUREMENT_EVIDENCE_INVALID');
+  }
+  if (backendAcceptance === null && manifest.measurementEvidence?.status === 'PASS') {
+    throw new Error('RUN_MANIFEST_MEASUREMENT_WITHOUT_BACKEND_ACCEPTANCE');
+  }
+  if (backendAcceptance?.operation === 'all') {
+    if (!manifest.workload || manifest.workload.schemaVersion !== 1
+      || typeof manifest.workload.fingerprint !== 'string'
+      || !/^[a-f0-9]{64}$/.test(manifest.workload.fingerprint)
+      || !manifest.workload.descriptor) {
+      throw new Error('RUN_MANIFEST_WORKLOAD_FINGERPRINT_REQUIRED');
+    }
+    validateFullBackendAcceptanceMeasurementEvidence(manifest.measurementEvidence, manifest.verificationMode);
+  } else if (manifest.workload !== null) {
+    throw new Error('RUN_MANIFEST_WORKLOAD_UNEXPECTED');
+  } else if (manifest.verificationMode === 'CALIBRATION') {
+    throw new Error('RUN_MANIFEST_CALIBRATION_REQUIRES_FULL_BACKEND_ACCEPTANCE');
   }
   validateCleanupReceipt(manifest.cleanup);
   if (!['PASS', 'FAIL'].includes(manifest.status)) throw new Error('RUN_MANIFEST_STATUS_INVALID');
@@ -296,7 +516,12 @@ export const inspectManagedDevState = ({
 };
 
 export const classifyManagedDevLifecycleCommand = (result, marker) => {
-  if (result?.status === 0 && String(result.stdout ?? '').split(/\r?\n/).some(line => line.startsWith(marker))) {
+  if (
+    result?.status === 0 &&
+    String(result.stdout ?? '')
+      .split(/\r?\n/)
+      .some(line => line.startsWith(marker))
+  ) {
     return Object.freeze({status: 'PASS'});
   }
   return Object.freeze({status: 'FAIL', reason: `${marker}_NOT_CONFIRMED`});
@@ -486,9 +711,14 @@ const runScript = ({
   invocation,
   backendAcceptanceRunId,
   backendAcceptanceOperation,
+  verificationMode,
 }) => {
   const selectorArguments = invocation.extraArguments.map(quote).join(' ');
-  const acceptanceEnvironment = backendAcceptanceEnvironment(backendAcceptanceRunId, backendAcceptanceOperation);
+  const acceptanceEnvironment = backendAcceptanceEnvironment(
+    backendAcceptanceRunId,
+    backendAcceptanceOperation,
+    verificationMode,
+  );
   return script(
     '#!/usr/bin/env bash',
     'set -uo pipefail',
@@ -523,6 +753,21 @@ const runScript = ({
     '  mkdir -p "$(dirname "$target")"',
     '  cp "$file" "$target"',
     'done',
+    'archive_index="$results/evidence-artifacts.tsv"',
+    ': > "$archive_index"',
+    'archive_evidence() {',
+    '  file="$1"',
+    '  test -f "$file" || return 0',
+    '  name="$(basename "$file")"',
+    '  raw_bytes="$(wc -c < "$file" | tr -d " ")"',
+    "  raw_sha256=\"$(sha256sum \"$file\" | awk '{print $1}')\"",
+    '  gzip -9 -- "$file"',
+    '  archive="$file.gz"',
+    '  archive_bytes="$(wc -c < "$archive" | tr -d " ")"',
+    "  archive_sha256=\"$(sha256sum \"$archive\" | awk '{print $1}')\"",
+    '  printf "%s\\t%s\\t%s\\t%s\\t%s\\n" "$name" "$raw_bytes" "$raw_sha256" "$archive_bytes" "$archive_sha256" >> "$archive_index"',
+    '}',
+    ...ARCHIVED_EVIDENCE_ARTIFACTS.map(name => `archive_evidence "$results/${name}"`),
     'docker ps -aq --filter label=org.testcontainers=true | sort > "$root/after-container-ids"',
     'docker volume ls -q --filter label=org.testcontainers=true | sort > "$root/after-volume-ids"',
     'container_cleanup=FAIL; cmp -s "$root/before-container-ids" "$root/after-container-ids" && container_cleanup=PASS',
@@ -562,8 +807,28 @@ const execute = async () => {
       ? `backend-acceptance-${runId}`
       : null;
   const backendAcceptanceOperation = process.env.V2S_BACKEND_ACCEPTANCE_OPERATION ?? 'all';
-  const exactSetRequired = process.env.V2S_BACKEND_PERFORMANCE_EXACT_SET === 'true';
+  const verificationMode = process.env.V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE ?? 'ACCEPTANCE';
+  if (!BACKEND_ACCEPTANCE_VERIFICATION_MODES.includes(verificationMode)) {
+    throw new Error('BACKEND_ACCEPTANCE_VERIFICATION_MODE_INVALID');
+  }
+  if (verificationMode === 'CALIBRATION' && (backendAcceptanceRunId === null || backendAcceptanceOperation !== 'all')) {
+    throw new Error('BACKEND_ACCEPTANCE_CALIBRATION_REQUIRES_FULL_RUN');
+  }
+  const exactSetRequired = requiresFullPerformanceVerification(backendAcceptanceRunId, backendAcceptanceOperation);
+  const activeBudgetRequired = requiresActiveBudgetVerification(
+    backendAcceptanceRunId,
+    backendAcceptanceOperation,
+    verificationMode,
+  );
   const performanceOperationRegistry = exactSetRequired ? loadPerformanceOperationRegistry({root}) : null;
+  const workload = exactSetRequired
+    ? fullPerformanceWorkload({
+      task: invocation.task,
+      operation: backendAcceptanceOperation,
+      verificationMode,
+      registry: performanceOperationRegistry,
+    })
+    : null;
   mkdirSync(directory, {recursive: true});
   const manifestPath = path.join(directory, 'run-manifest.json');
   const manifest = {
@@ -571,6 +836,7 @@ const execute = async () => {
     kind: 'r5-managed-testcontainers-run',
     runId,
     task: invocation.task,
+    verificationMode,
     startedAt: now(),
     remote: {
       hostAlias: remoteHost,
@@ -582,7 +848,11 @@ const execute = async () => {
     gradleDistribution: distribution,
     logPath: `${remoteResults}/gradle.log`,
     testExecution: {status: 'NOT_RUN'},
+    backendAcceptance:
+      backendAcceptanceRunId === null ? null : {runId: backendAcceptanceRunId, operation: backendAcceptanceOperation},
+    workload: workload === null ? null : workload,
     measurementEvidence: {status: 'NOT_RUN'},
+    evidenceArchive: {status: 'NOT_RUN'},
     cleanup: {
       status: 'FAIL',
       remoteProcess: 'FAIL',
@@ -652,11 +922,29 @@ const execute = async () => {
         invocation,
         backendAcceptanceRunId,
         backendAcceptanceOperation,
+        verificationMode,
       }),
     );
     if (remoteRun.status !== 0)
       throw new Error(`REMOTE_RUNNER_UNAVAILABLE:${compact(remoteRun.stderrTail || remoteRun.stdoutTail)}`);
     collectArtifacts(remoteResults, directory);
+    if (backendAcceptanceRunId !== null) {
+      const archiveRows = parseEvidenceArchiveIndex(
+        readFileSync(path.join(directory, 'evidence-artifacts.tsv'), 'utf8'),
+      );
+      for (const name of ARCHIVED_EVIDENCE_ARTIFACTS) readEvidenceArtifact(directory, name);
+      manifest.evidenceArchive = {
+        status: 'PASS',
+        indexPath: path.relative(root, path.join(directory, 'evidence-artifacts.tsv')),
+        artifacts: archiveRows.map(row => ({
+          name: row.name,
+          rawBytes: row.rawBytes,
+          rawSha256: row.rawSha256,
+          archiveBytes: row.archiveBytes,
+          archiveSha256: row.archiveSha256,
+        })),
+      };
+    }
     const gradleLog = readFileSync(path.join(directory, 'gradle.log'), 'utf8');
     const actualExecution = classifyGradleTestExecution(gradleLog, invocation.task);
     const remoteGradleStatus = marker(remoteRun.stdoutTail, 'REMOTE_GRADLE_STATUS');
@@ -670,48 +958,51 @@ const execute = async () => {
       testcontainersContainers: containers === 'PASS' ? 'PASS' : 'FAIL',
       testcontainersVolumes: volumes === 'PASS' ? 'PASS' : 'FAIL',
     };
-    if (backendAcceptanceRunId !== null && existsSync(path.join(directory, 'backend-acceptance-result.jsonl'))) {
+    if (backendAcceptanceRunId !== null)
       backendAcceptanceResult = parseBackendAcceptanceResult(
-        readFileSync(path.join(directory, 'backend-acceptance-result.jsonl'), 'utf8'),
+        readEvidenceArtifact(directory, 'backend-acceptance-result.jsonl'),
       );
-    }
-    if (backendAcceptanceRunId !== null && backendAcceptanceResult === undefined) {
-      throw new Error('BACKEND_ACCEPTANCE_RESULT_REQUIRED');
-    }
     if (actualExecution.status !== 'PASS') throw new Error(actualExecution.reason);
     if (remoteGradleStatus !== '0') throw new Error('REMOTE_GRADLE_EXIT_NONZERO');
     if (manifest.cleanup.status !== 'PASS') throw new Error('REMOTE_TESTCONTAINERS_RESOURCE_NOT_RECLAIMED');
     if (backendAcceptanceResult?.summary.stubOnly > 0) throw new Error('BACKEND_ACCEPTANCE_STUB_BUSINESS_NOT_ALLOWED');
     if (backendAcceptanceResult?.summary.directFailures > 0) throw new Error('BACKEND_ACCEPTANCE_SCENARIO_FAILURE');
     if (backendAcceptanceRunId !== null) {
-      const eventsPath = path.join(directory, 'http-request-events.jsonl');
-      if (!existsSync(eventsPath)) throw new Error('HTTP_REQUEST_EVENTS_REQUIRED');
-      measurementEvidence = parseHttpRequestEvents(readFileSync(eventsPath, 'utf8'), backendAcceptanceRunId);
+      measurementEvidence = parseHttpRequestEvents(
+        readEvidenceArtifact(directory, 'http-request-events.jsonl'),
+        backendAcceptanceRunId,
+      );
       assertUnclassifiedSqlRatio(measurementEvidence);
-      const operationSet = exactSetRequired
-        ? reconcilePerformanceOperationEvents(performanceOperationRegistry, measurementEvidence.rows)
-        : null;
-      const budgetEvidence = exactSetRequired
-        ? assertPerformanceOperationBudgets(performanceOperationRegistry, measurementEvidence.rows)
-        : null;
-      const connectionBudgetEvidence = exactSetRequired
-        ? assertPerformanceConnectionBudgets(performanceOperationRegistry, measurementEvidence.rows)
-        : null;
+      const performanceEvidence = activeBudgetRequired
+        ? verifyFullBackendAcceptancePerformance(performanceOperationRegistry, measurementEvidence.rows)
+        : exactSetRequired
+          ? verifyFullBackendAcceptanceCalibration(performanceOperationRegistry, measurementEvidence.rows)
+          : null;
+      const operationSet = performanceEvidence?.operationSet ?? null;
+      const budgetEvidence = performanceEvidence?.budgetEvidence ?? null;
+      const connectionBudgetEvidence = performanceEvidence?.connectionBudgetEvidence ?? null;
+      const normalSampleMatrix = performanceEvidence?.normalSampleMatrix ?? null;
+      const normalSampleMatrixPath = normalSampleMatrix ? path.join(directory, 'normal-sample-matrix.json') : null;
+      if (normalSampleMatrixPath)
+        writeFileSync(normalSampleMatrixPath, `${JSON.stringify(normalSampleMatrix, null, 2)}\n`);
       manifest.measurementEvidence = {
         status: 'PASS',
+        verificationMode,
         ...measurementEvidence.summary,
         ...(operationSet ? {operationSet} : {}),
         ...(budgetEvidence ? {budgetEvidence} : {}),
+        ...(verificationMode === 'CALIBRATION' ? {calibrationEvidence: {status: 'PASS'}} : {}),
         ...(connectionBudgetEvidence ? {connectionBudgetEvidence} : {}),
+        ...(normalSampleMatrix
+          ? {
+              normalSampleMatrix: {
+                expected: normalSampleMatrix.expected,
+                observed: normalSampleMatrix.observed,
+                path: path.relative(root, normalSampleMatrixPath),
+              },
+            }
+          : {}),
       };
-      if (operationSet) {
-        try {
-          assertPerformanceOperationExactSet(operationSet);
-        } catch (error) {
-          manifest.measurementEvidence.status = 'FAIL';
-          throw error;
-        }
-      }
     }
   } catch (error) {
     failure = error instanceof Error ? error : new Error(String(error));

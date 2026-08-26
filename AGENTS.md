@@ -34,6 +34,7 @@
 * 优先选择长期可维护的方案，而不是只能临时运行的解决方案。
 * 代码应该服务于业务目标，而不是为了展示技术复杂度
 * 如果简单方案已经满足需求，不要主动升级为复杂方案。
+* **业务准确性优先于 DB 效率与预算数字**：不得为降低 SQL/DB 操作数而删除、合并或弱化业务事实、owner 复核、事务、幂等回放、并发锁、typed problem、审计或权威 readback；当逐事件证明现有闭包正确、优化收益小于安全改造成本时，可由 Dexter 以精确 decisionRef 放宽单一 operation 的预算。该例外有且仅有双重准入：一是不削弱任何业务事实；二是证明通用能力和既有可复用能力已实际复用，不存在以重复实现、遗漏抽象或可消除 owner fan-out 换取的计数。记录必须写明这两项证明、事实、替代方案、成本与适用边界，并保留未经明确裁决的上调 red mutation；DB 门不得成为正确业务无法交付的阻断借口。
 
 ## 不可突破的红线
 
@@ -55,7 +56,7 @@
 - 凡需 Dexter 转交 Claude 的评审，Codex 最终回复必须直接渲染可复制中文 brief：背景、目标、仓根相对路径、独立核验重点、`GO`/`NO-GO` 与 `M/S/N` 格式、授权边界；不得只给链接或说“请 review”。详见 `CLAUDE.md`、`doc/platform/claude-review-handoff-template.md` 与 `project-memory/operations/claude-review-handoff-standard.md`。
 - R3–R6 及后续验证遵循 `doc/decisions/2026-07-24-v2s-verification-governance.md`：机器门只作一行可说清的机械判定并须有真实 red mutation；业务语义靠 fresh 独立对抗审查与 Claude review，产品取舍和 severity 归 Dexter；建门先过三问，交付超过半小时审阅量先切小，`scripts/verify` 必须保持分钟级。
 - **compliance-control 控制面已退役（Dexter，2026-08-13）**：不得再要求或恢复 evidence 台账、package entry/exit、六类 source 分母、Pre/Post compliance hook、incremental receipt、hash-chain、P0/W0/P1、manifest Part B/C/D 或 `scripts/check/implementation-design-granularity`。实施仍须以原始需求、适用详设和真实源码为准，并用实际编译、类型、测试或运行结果判断行为。
-- **实施节奏与逐点双读**：准备只做到当前待改点可执行、可复核所需的最小输入，不能以泛化准备替代实际修复。每一个实际变更点写入前，必须逐项重开对应 IA/原始业务条目、六维路由命中的全部项目记忆及 owning source、适用详设/设计约束和当前可复用源码；完成该点的 focused proof 后，必须用同一组原文逐项回读源码与证据，确认没有偏离用户任务、交互、owner 或约束。独立对抗 reviewer 也必须取得并逐点核查该前后双读留痕；缺项是 finding，不得以总览阅读、静态通过或后续 L2 代替。
+- **实施节奏、逐点双读与步骤级独立对账**：准备只做到当前待改点可执行、可复核所需的最小输入，不能以泛化准备替代实际修复。每一个实际变更点写入前，必须逐项重开对应 IA/原始业务条目、六维路由命中的全部项目记忆及 owning source、适用详设/设计约束和当前可复用源码；完成该点的 focused proof 后，必须用同一组原文逐项回读源码与证据，确认没有偏离用户任务、交互、owner 或约束。长任务按 CP 或其他已批准实施步骤推进时，**主 agent 只负责设计与代码/文档实施；当前步骤结束且开始下一步骤前，必须由 fresh 独立子 agent 对当前步骤完成代码—详设逐项对账与证伪式审查**。该步骤级审查逐条比较行为、形态、动作、关系、位置、用户可见文案、限制、状态/控制、失败/恢复、可访问性/焦点、数据来源/失效边界；任一不一致必须由主 agent 修复并接受新的独立复查，禁止把偏移累积到全链测试或最终 review 再发现。步骤级对账不产出整批 `GO`/`NO-GO`，不消耗正式 review 的两轮上限；整批 `REVIEW_TARGET=IMPLEMENTATION` 对抗 review 仍必须由 fresh 独立子 agent 执行。独立审查者必须取得并逐点核查该前后双读留痕；缺项是 finding，不得以总览阅读、静态通过或后续 L2 代替。
 - **已识别问题必须抽象并防再犯**：任何已确认的设计、实施、测试或验证问题都必须在关闭前抽象为通用失败模式、根因层、有限适用范围、反例边界与可复用最小解，并落到 project-memory、真实可运行的既有测试、明确 review checklist，或有具体反例的 `NOT_APPLICABLE_WITH_REASON`。用户点名的文件、字段、字符串或失败信号只能作为问题族入口；修改前必须完成同根扫描与反例查找，禁止单点修补。不得以 prompt intake、per-edit hook、receipt 或 package 枚举替代根因分析与亲验。
 - R1 与 R2 已关闭，`V2S_FOUNDATION_READY=true`。Dexter 已暂停 `R3-J02` 的 implementation-facing 设计；其既有 selection/design/manifest/review/handoff 统一为 `PENDING_RECOVERY`，保留但不得继续用作 handoff、implementation 或“operations 已可真实登录”的依据。第一批与 `DESIGN_GOVERNANCE_BATCH_1_5` 已获 Claude GO，并于 2026-07-25 由 Dexter 接受；Batch 2 inventory 亦已由 Dexter 接受。Dexter 已接受 R3-C01 carry-over-first 线框，并授权一次性形成整个 R3 的 implementation-facing 详设与实施计划：C-01 是唯一业务 Journey，设计同时覆盖 R3-TECH、契约、脚本、后端、数据库、双 app 边界、测试与证据，冻结后经自审、Claude review；不得把 C-01 拆成新的逐文件确认门。Dexter 已进一步授权 R3 implementation；U01 Gate 0 已 PASS，后续 U02-U07 按已接受详设继续。该状态不恢复 J02/C-02；`R3-C02` 在 R3 的运营用户真实登录仍被删除。旧 `R3-J01` 是历史 `NO_GO`，不得复用审查轮次或作为实现入口。Codex 已自主补齐 D.1 `code-layout` 机械 gate 并使 R3 standards coverage PASS。
 

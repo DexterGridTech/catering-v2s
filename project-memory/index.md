@@ -19,6 +19,7 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 - [decisions.r5-full-seed-report-api-db-accounting](../project-memory/decisions/r5-full-seed-report-api-db-accounting.md)
 - [operations.backend-acceptance](../project-memory/operations/backend-acceptance.md)
 - [operations.backend-coding-standard](../project-memory/operations/backend-coding-standard.md)
+- [operations.browser-l2-execution-standard](../project-memory/operations/browser-l2-execution-standard.md)
 - [operations.business-corpus-adoption-and-read-policy](../project-memory/operations/business-corpus-adoption-and-read-policy.md)
 - [operations.business-corpus-parked-domain-intake](../project-memory/operations/business-corpus-parked-domain-intake.md)
 - [operations.claude-review-handoff-standard](../project-memory/operations/claude-review-handoff-standard.md)

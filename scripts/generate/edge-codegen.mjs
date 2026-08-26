@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateCapabilityInvariants } from "../../tools/capability-invariants/cli.mjs";
 import { projectEdgeCatalog } from "./edge-operation-projections.mjs";
-import { validateBudgetChange, validateDatabaseOperationBudget } from "./backend-performance-budget.mjs";
+import { buildBudgetProjectionSubset, readCp05CalibrationReport } from "./backend-performance-budget.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const catalogPath = "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json";
@@ -16,7 +16,7 @@ const adminCatalogPath = "contracts/catalog/admin-catalog.json";
 const frontendManifestPath = "contracts/policy/frontend-asset-carryover-manifest.json";
 const reportPath = "doc/evidence/platform/r5-u01-edge-placement-resolution.json";
 const problemComponentPath = "contracts/openapi/components/common/problem.schemas.json";
-const canonicalOperationCount = 181;
+const canonicalOperationCount = 180;
 const targets = {
   errorsJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/EdgeProblemCode.java",
   r3CompatibilityJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CommercialGroupProblemCode.java",
@@ -40,14 +40,13 @@ const targets = {
 function fail(code, detail = "") { const error = new Error(`${code}${detail ? `:${detail}` : ""}`); error.code = code; throw error; }
 function read(relative, base = root) { return JSON.parse(fs.readFileSync(path.join(base, relative), "utf8")); }
 function normalized(value) { return JSON.stringify(value, null, 2) + "\n"; }
-function assertCanonicalBudgets(catalog) {
+function assertCanonicalOperationIdentity(catalog) {
   if (catalog.operations.length !== canonicalOperationCount) fail("R5_EDGE_BUDGET_OPERATION_COUNT", catalog.operations.length);
   const seen = new Set();
   for (const operation of catalog.operations) {
     if (seen.has(operation.operationId)) fail("R5_EDGE_BUDGET_OPERATION_DUPLICATE", operation.operationId);
     seen.add(operation.operationId);
-    try { validateDatabaseOperationBudget(operation.databaseOperationBudget, {operationId: operation.operationId}); }
-    catch (error) { fail("R5_EDGE_BUDGET_INVALID", `${operation.operationId}:${error.code || error.message}`); }
+    if (Object.hasOwn(operation, 'databaseOperationBudget')) fail('R5_EDGE_STATIC_BUDGET_RETIRED', operation.operationId);
   }
 }
 function activeCodes(errors) {
@@ -194,7 +193,10 @@ function load(base = root) {
   const errors = read(errorsPath, base);
   const expectedOperationCount = catalog.denominator?.operations;
   if (!Number.isInteger(expectedOperationCount) || catalog.operations.length !== expectedOperationCount || report.operations.length !== expectedOperationCount) fail("R5_EDGE_CODEGEN_OPERATION_COUNT");
-  assertCanonicalBudgets(catalog);
+  assertCanonicalOperationIdentity(catalog);
+  const calibration = readCp05CalibrationReport({root: base});
+  const budgetProjection = buildBudgetProjectionSubset({operations: catalog.operations, calibrationReport: calibration.report});
+  const budgetsByOperationId = new Map(budgetProjection.operations.map(operation => [operation.operationId, operation.databaseOperationBudget]));
   const byId = new Map(catalog.operations.map((operation) => [operation.operationId, operation]));
   for (const row of report.operations) {
     const operation = byId.get(row.operationId);
@@ -202,7 +204,10 @@ function load(base = root) {
   }
   const reportById = new Map(report.operations.map((operation) => [operation.operationId, operation]));
   const operations = catalog.operations
-    .map((operation) => openApiOperation(base, operation, reportById.get(operation.operationId)))
+    .map((operation) => ({
+      ...openApiOperation(base, operation, reportById.get(operation.operationId)),
+      databaseOperationBudget: budgetsByOperationId.get(operation.operationId),
+    }))
     .sort((left, right) => left.operationId.localeCompare(right.operationId));
   assertRootOpenApiRouteRegistryExactSet(base, operations);
   const faceCounts = Object.fromEntries(["platform-admin", "operations-admin", "public"].map((face) => [face, operations.filter((operation) => operation.face === face).length]));
@@ -211,7 +216,7 @@ function load(base = root) {
   if (codes.length !== errors.closure.totalActiveTargetCount) fail("R5_EDGE_CODEGEN_ERROR_COUNT");
   const activeCodeSet = new Set(codes);
   const codesByFace = Object.fromEntries(["platform-admin", "operations-admin", "public"].map((face) => [face, faceErrorCodes(catalog, face, activeCodeSet)]));
-  return { catalog, operations, faceCounts, codes, codesByFace, expectedOperationCount };
+  return { catalog, operations, faceCounts, codes, codesByFace, expectedOperationCount, calibrationReportDigest: budgetProjection.calibrationReportDigest };
 }
 function sameSet(left, right) {
   return left.length === right.length && [...left].sort().every((value, index) => value === [...right].sort()[index]);
@@ -834,12 +839,12 @@ function capabilityOutputs(base) {
   ];
 }
 function expected(base = root) {
-  const { operations, faceCounts, codes, codesByFace, expectedOperationCount } = load(base);
+  const { operations, faceCounts, codes, codesByFace, expectedOperationCount, calibrationReportDigest } = load(base);
   const components = generatedWireComponents(base);
   return new Map([
     [targets.errorsJava, javaErrors(codes)],
     [targets.r3CompatibilityJava, r3CompatibilityErrors()],
-    [targets.routeRegistry, normalized({ schemaVersion: 2, generatedFrom: [catalogPath, reportPath], closure: { operations: expectedOperationCount, faceCounts }, operations: operations.map(({ operationId, method, path: route, face, owner, databaseOperationBudget }) => ({ operationId, method, path: route, consumerFaces: [face], owner, databaseOperationBudget })) })],
+    [targets.routeRegistry, normalized({ schemaVersion: 2, generatedFrom: [catalogPath, reportPath], calibrationReportDigest, closure: { operations: expectedOperationCount, faceCounts }, operations: operations.map(({ operationId, method, path: route, face, owner, databaseOperationBudget }) => ({ operationId, method, path: route, consumerFaces: [face], owner, databaseOperationBudget })) })],
     [targets.platformTs, tsFaceWithBudget("platform-admin", operations, codesByFace["platform-admin"], components)],
     [targets.operationsTs, tsFaceWithBudget("operations-admin", operations, codesByFace["operations-admin"], components)],
     [targets.publicTs, tsFaceWithBudget("public", operations, codesByFace.public, components)],
@@ -934,18 +939,16 @@ function selfTest() {
   try {
     fs.cpSync(root, scratch, { recursive: true, filter: (source) => !source.includes("/build") && !source.includes("/dist") && !source.includes("/.git") });
     writeOutputs(scratch);
-    const budgetOperation = load(scratch).operations.find((operation) => operation.databaseOperationBudget.kind === "FIXED");
-    const raisedBudget = {
-      ...budgetOperation.databaseOperationBudget,
-      max: budgetOperation.databaseOperationBudget.max + 1,
-      history: [{from: budgetOperation.databaseOperationBudget.max, to: budgetOperation.databaseOperationBudget.max + 1, reason: "unapproved increase"}],
-    };
+    const staticCatalog = read(catalogPath, scratch);
+    staticCatalog.operations[0].databaseOperationBudget = {kind: "FIXED", max: 1};
+    fs.writeFileSync(path.join(scratch, catalogPath), normalized(staticCatalog));
     try {
-      validateBudgetChange({operationId: budgetOperation.operationId, from: budgetOperation.databaseOperationBudget, to: raisedBudget});
-      fail("R5_EDGE_BUDGET_INCREASE_WITHOUT_DECISION_REF_RED_NOT_DETECTED");
+      load(scratch);
+      fail("R5_EDGE_STATIC_BUDGET_RETIRED_RED_NOT_DETECTED");
     } catch (error) {
-      if (!["BUDGET_HISTORY_INCREASE_DECISION_REF_REQUIRED", "BUDGET_INCREASE_DECISION_REF_REQUIRED"].includes(error.code)) throw error;
+      if (error.code !== "R5_EDGE_STATIC_BUDGET_RETIRED") throw error;
     }
+    fs.writeFileSync(path.join(scratch, catalogPath), normalized(read(catalogPath, root)));
     const capabilityRequirementCatalogSource = fs.readFileSync(path.join(scratch, targets.workspaceCapabilityRequirementCatalogJava), "utf8");
     for (const capability of ["EDIT_HEAD_COMPANY_CATALOG", "EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"]) {
       if (!capabilityRequirementCatalogSource.includes(`WorkspaceAuthorizationCatalog.CapabilityKeys.${capability}`)) {

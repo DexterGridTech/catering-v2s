@@ -4,12 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ProductionTagOwnerContractTest {
-    private final ObjectMapper mapper = new ObjectMapper();
-
     @Test
     void productionOwnerRequiresAnIdempotencyKeyAtTheOwnerBoundary() {
         ProductionTagOwnerApi.Problem problem = assertThrows(
@@ -23,15 +22,10 @@ class ProductionTagOwnerContractTest {
     }
 
     @Test
-    void productionTagKindIsAClosedSixValueSet() throws Exception {
-        for (String value : new String[] {"PRODUCTION", "PACKAGE", "LABEL", "HANDOFF", "REVIEW", "OTHER"}) {
-            var request = mapper.createObjectNode().put("tagKind", value);
-            assertEquals(value, ProductionTagOwnerService.requiredTagKind(request, "tagKind"));
-        }
-        var invalid = mapper.createObjectNode().put("tagKind", "SPEC");
-        ProductionTagOwnerApi.Problem problem = assertThrows(
-                ProductionTagOwnerApi.Problem.class,
-                () -> ProductionTagOwnerService.requiredTagKind(invalid, "tagKind"));
-        assertEquals("VALIDATION_ERROR", problem.code());
+    void productionTagCommandHasOnlyTheApprovedBusinessFacts() {
+        List<String> fields = Arrays.stream(ProductionTagOwnerApi.CreateTagCommand.class.getRecordComponents())
+                .map(component -> component.getName())
+                .toList();
+        assertEquals(List.of("code", "name"), fields);
     }
 }

@@ -15,17 +15,23 @@ const catalogRtk = read('apps/frontend/operations-admin/src/app/api/generated/ca
 const operationsRtk = read('apps/frontend/operations-admin/src/app/api/generated/operations-edge.rtk.ts');
 const operationsApi = read('apps/frontend/operations-admin/src/app/api/OperationsApi.ts');
 const catalogWorkbench = read(
-  'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx',
+  'apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/CatalogWorkbenchController.tsx',
 );
-const catalogItemDrawer = read(
-  'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx',
+const catalogWorkbenchReadModel = read(
+  'apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/useCatalogWorkbenchReadModel.tsx',
+);
+const catalogItemViewDrawer = read(
+  'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx',
+);
+const catalogItemEditorState = read(
+  'apps/frontend/operations-admin/src/features/catalog-management/ui/useCatalogItemEditorWorkspaceState.tsx',
 );
 const catalogDefinitionLibraries = read(
   'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDefinitionLibraries.tsx',
 );
 const catalogModel = read('apps/frontend/operations-admin/src/features/catalog-management/model/catalogModel.ts');
 const catalogDictionaryDrawer = read(
-  'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx',
+  'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawerState.tsx',
 );
 const localCatalogCopyDrawer = read(
   'apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx',
@@ -79,16 +85,17 @@ test('catalog-inventory content refresh reaches every open read model without ov
   assert.doesNotMatch(catalogWorkbench, /setSelectedRows\(\[\]\);\s*refresh\(\)/);
   assert.doesNotMatch(catalogWorkbench, /onChanged=\{refresh\}|onCompleted=\{refresh\}/);
 
-  assert.doesNotMatch(catalogItemDrawer, /onChanged/);
-  assert.match(catalogItemDrawer, /const refetchDetail = detailQuery\.refetch;/);
-  assert.match(catalogItemDrawer, /void refetchDetail\(\);/);
-  assert.match(catalogItemDrawer, /onClick=\{\(\) => void detailQuery\.refetch\(\)\}/);
-  assert.match(catalogItemDrawer, /useRefreshVersion\(operationsContentTabRefreshSignal\)/);
+  assert.doesNotMatch(catalogItemViewDrawer, /onChanged/);
+  assert.match(catalogItemViewDrawer, /await detailQuery\.refetch\(\);/);
+  assert.match(catalogItemViewDrawer, /onClick=\{\(\) => void detailQuery\.refetch\(\)\}/);
+  assert.match(catalogItemEditorState, /const refetchDetail = detailQuery\.refetch;/);
+  assert.match(catalogItemEditorState, /void refetchDetail\(\);/);
+  assert.match(catalogItemEditorState, /useRefreshVersion\(operationsContentTabRefreshSignal\)/);
   assert.doesNotMatch(localCatalogCopyDrawer, /onCompleted/);
   assert.match(localCatalogCopyDrawer, /onComplete=\{onClose\}/);
   assert.doesNotMatch(brandCatalogCopyDrawer, /onCompleted/);
 
-  assert.match(catalogWorkbench, /useRefreshVersion\(operationsContentTabRefreshSignal\)/);
+  assert.match(catalogWorkbenchReadModel, /useRefreshVersion\(operationsContentTabRefreshSignal\)/);
   assert.match(catalogDictionaryDrawer, /useRefreshVersion\(operationsContentTabRefreshSignal\)/);
   assert.match(catalogDictionaryDrawer, /const refetchProduction = productionQuery\.refetch;/);
   assert.match(catalogDictionaryDrawer, /void refetchProduction\(\);/);
@@ -179,7 +186,10 @@ test('definition library preserves every material, searches candidates by cursor
   assert.match(catalogDefinitionLibraries, /hydrateOrderOptionDefinitionValues\(definition\.values\)/);
   assert.match(catalogDefinitionLibraries, /serializeOrderOptionDefinitionValues\(values\.values\)/);
   assert.match(catalogDefinitionLibraries, /useCursorCandidates<MaterialCandidate>/);
-  assert.match(catalogDefinitionLibraries, /onPopupScroll=\{event =>\s*onMaterialCandidatePopupScroll\(event,\s*inventoryQuery\.isFetching\)/);
+  assert.match(
+    catalogDefinitionLibraries,
+    /onPopupScroll=\{event =>\s*onMaterialCandidatePopupScroll\(event,\s*inventoryQuery\.isFetching\)/,
+  );
   assert.match(catalogDefinitionLibraries, /<Form\.List name=\{\[field\.name, 'materials'\]\}/);
   assert.doesNotMatch(catalogDefinitionLibraries, /pageSize:\s*200/);
 
@@ -196,11 +206,11 @@ test('current-page refresh invalidates active queries without remounting page st
     operationsTransport,
     /refreshOperationsCurrentPage[\s\S]*invalidateTags\(\[\s*\{type: 'wire', id: 'LIST'\}/,
   );
-  assert.match(operationsTransport, /refreshOperationsCurrentPage[\s\S]*operationsContentTabRefreshSignal\.publish\(\)/);
   assert.match(
-    platformTransport,
-    /refreshPlatformCurrentPage[\s\S]*invalidateTags\(\[\s*\{type: 'wire', id: 'LIST'\}/,
+    operationsTransport,
+    /refreshOperationsCurrentPage[\s\S]*operationsContentTabRefreshSignal\.publish\(\)/,
   );
+  assert.match(platformTransport, /refreshPlatformCurrentPage[\s\S]*invalidateTags\(\[\s*\{type: 'wire', id: 'LIST'\}/);
   assert.match(operationsApp, /onClick=\{refreshOperationsCurrentPage\}/);
   assert.match(platformApp, /onClick=\{refreshPlatformCurrentPage\}/);
   assert.doesNotMatch(operationsApp, /pageReload|setPageReload/);

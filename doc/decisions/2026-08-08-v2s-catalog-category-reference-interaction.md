@@ -40,3 +40,4 @@ Low-fidelity task surfaces:
 
 `向上移动` and `向下移动` act immediately after explicit owner validation; they do not open a
 form because neither task has user-entered business facts.
+# SUPERSEDED-BY: 商品分类层级上限已由 `doc/plans/platform/2026-08-23-v2s-catalog-library-ui-experience-formal-requirements-codex.md` §12.4 统一为最多三级；本历史交互中的旧层级假设不得作为实施依据。

@@ -35,14 +35,15 @@ public class WorkspaceOperationsCommandService implements WorkspaceOperationsCom
                 .map(roleId ->
                         new WorkspaceInvitationService.AssignmentIntent(roleId, target.targetType(), target.targetId()))
                 .toList();
-        return invitations.managementView(invitations.createForOperations(
+        return invitations.createForOperations(
                 session.workspaceUuid(),
                 session.groupWorkspaceKey(),
                 session.currentAssignmentId(),
+                target,
                 command.mobile(),
                 intents,
                 command.idempotencyKey(),
-                command.actor()));
+                command.actor());
     }
 
     @Override

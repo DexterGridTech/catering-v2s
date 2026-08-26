@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 
 /** Catalog-owned definition aggregates. Inventory resolution/deletion is intentionally composed by the coordinator. */
 final class CatalogDefinitionFacts {
@@ -23,21 +24,56 @@ final class CatalogDefinitionFacts {
     }
 
     List<CatalogOwnerApi.AttributeDefinitionReadback> listAttributes(String scope, String brand) {
-        List<AttributeRow> rows = jdbc.query(
-                "SELECT attribute_definition_ref,code,name,value_type,version FROM catalog.catalog_attribute_defini"
-                        + "tion "
-                        + "WHERE data_node_ref=? AND brand_ref=? ORDER BY name,code,attribute_definition_ref LIMIT ?",
-                (result, row) -> new AttributeRow(
-                        result.getObject(1, UUID.class),
-                        result.getString(2),
-                        result.getString(3),
-                        result.getString(4),
-                        result.getLong(5)),
+        return jdbc.query(
+                "WITH bounded_definition AS ("
+                        + "SELECT attribute_definition_ref,code,name,value_type,version "
+                        + "FROM catalog.catalog_attribute_definition "
+                        + "WHERE data_node_ref=? AND brand_ref=? "
+                        + "ORDER BY name,code,attribute_definition_ref LIMIT ?) "
+                        + "SELECT definition.attribute_definition_ref,definition.code,definition.name,"
+                        + "definition.value_type,definition.version,option.attribute_definition_option_ref,"
+                        + "option.name,option.display_order "
+                        + "FROM bounded_definition definition "
+                        + "LEFT JOIN catalog.catalog_attribute_definition_option option "
+                        + "ON option.attribute_definition_ref=definition.attribute_definition_ref "
+                        + "ORDER BY definition.name,definition.code,definition.attribute_definition_ref,"
+                        + "option.display_order,option.attribute_definition_option_ref",
+                (ResultSetExtractor<List<CatalogOwnerApi.AttributeDefinitionReadback>>) result -> {
+                    Map<UUID, AttributeRow> definitions = new LinkedHashMap<>();
+                    Map<UUID, List<CatalogOwnerApi.AttributeDefinitionOption>> optionsByDefinition =
+                            new LinkedHashMap<>();
+                    while (result.next()) {
+                        UUID definitionRef = result.getObject(1, UUID.class);
+                        if (!definitions.containsKey(definitionRef))
+                            definitions.put(
+                                    definitionRef,
+                                    new AttributeRow(
+                                            definitionRef,
+                                            result.getString(2),
+                                            result.getString(3),
+                                            result.getString(4),
+                                            result.getLong(5)));
+                        UUID optionRef = result.getObject(6, UUID.class);
+                        if (optionRef != null)
+                            optionsByDefinition
+                                    .computeIfAbsent(definitionRef, ignored -> new ArrayList<>())
+                                    .add(new CatalogOwnerApi.AttributeDefinitionOption(
+                                            optionRef, result.getString(7), result.getInt(8)));
+                    }
+                    requireBounded(definitions.size());
+                    return definitions.values().stream()
+                            .map(definition -> new CatalogOwnerApi.AttributeDefinitionReadback(
+                                    definition.ref(),
+                                    definition.code(),
+                                    definition.name(),
+                                    definition.valueType(),
+                                    List.copyOf(optionsByDefinition.getOrDefault(definition.ref(), List.of())),
+                                    definition.version()))
+                            .toList();
+                },
                 scope,
                 brand,
                 BOUNDED_LIST_LIMIT + 1);
-        requireBounded(rows.size());
-        return rows.stream().map(this::attributeReadback).toList();
     }
 
     CatalogOwnerApi.AttributeDefinitionReadback createAttribute(

@@ -28,6 +28,15 @@ public final class CatalogTaskReadService {
         return primary(() -> owner.readItems(dataNodeRef, brandRef, request, requestId));
     }
 
+    public JsonNode categoryCandidates(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
+        return primary(() -> owner.readCategoryCandidates(dataNodeRef, brandRef, request, requestId));
+    }
+
+    public JsonNode itemSkus(
+            String dataNodeRef, String brandRef, String itemCode, ObjectNode request, String requestId) {
+        return primary(() -> owner.readItemSkus(dataNodeRef, brandRef, itemCode, request, requestId));
+    }
+
     public JsonNode item(String dataNodeRef, String brandRef, String itemCode, String requestId) {
         return primary(() -> owner.readItem(dataNodeRef, brandRef, itemCode, requestId));
     }

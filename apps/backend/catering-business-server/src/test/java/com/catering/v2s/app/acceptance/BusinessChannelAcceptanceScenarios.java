@@ -87,13 +87,12 @@ final class BusinessChannelAcceptanceScenarios {
                 .json();
     }
 
-    /** CP-05 calibration bridge: exercises the operations binding update and delete owners on a real binding. */
-    void calibrationUpdateAndDeleteExternalBinding(
+    /** CP-05 calibration bridge: exercises legal local unbind on a real externally authorized binding. */
+    void calibrationDeleteLocallyUnboundExternalBinding(
             BackendAcceptanceTest.ScenarioContext context,
             BackendAcceptanceTest.Fixture fixture,
             BackendAcceptanceTest.Session session,
-            String providerCode,
-            Set<Integer> expectedStatuses)
+            String providerCode)
             throws Exception {
         OperationsFixture operations = new OperationsFixture(fixture, session);
         enableProvider(context, fixture, providerCode);
@@ -105,7 +104,7 @@ final class BusinessChannelAcceptanceScenarios {
         BackendAcceptanceTest.Response template = createTemplate(
                 context,
                 projectOperations,
-                "Calibration binding update template",
+                "Calibration binding delete template",
                 "EXTERNAL",
                 "STORE",
                 "GROUP_BUY",
@@ -117,19 +116,17 @@ final class BusinessChannelAcceptanceScenarios {
                 template.json().path("templateRef").asText(),
                 "STORE",
                 fixture.storeId(),
-                "Calibration binding update channel");
+                "Calibration binding delete channel");
         UUID channelRef = UUID.fromString(channel.json().path("channelRef").asText());
-        Map<String, Object> channelUpdate = new LinkedHashMap<>();
-        channelUpdate.put("channelName", "Calibration binding update channel renamed");
-        channelUpdate.put("bindingRef", null);
-        channelUpdate.put("expectedVersion", channel.json().path("version").asLong());
-        context.patch(
-                CHANNEL_UPDATE,
-                channelPath(fixture, channelRef),
+        BackendAcceptanceTest.Response storeChannels = context.get(
+                CHANNEL_LIST_STORE,
+                "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/stores/" + fixture.storeId()
+                        + "/business-channels?pageSize=20",
                 session.cookie(),
-                channelUpdate,
-                headers(),
-                expectedStatuses);
+                Set.of(200));
+        assertTrue(
+                find(storeChannels.json().path("items"), "channelRef", channelRef.toString()) != null,
+                "BUSINESS: store channel task read returns the newly created channel");
         BackendAcceptanceTest.Response binding = createBinding(
                 context,
                 operations,
@@ -140,32 +137,85 @@ final class BusinessChannelAcceptanceScenarios {
                 fixture.storeId(),
                 "Calibration binding",
                 "calibration-binding-" + UUID.randomUUID());
-        BackendAcceptanceTest.RouteIdentity update = new BackendAcceptanceTest.RouteIdentity(
-                "updateOperationsOwnerBinding",
-                "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding");
+        BackendAcceptanceTest.Response bindingDetail = context.get(
+                OWNER_BINDING_DETAIL,
+                channelPath(fixture, channelRef) + "/owner-binding",
+                session.cookie(),
+                Set.of(200));
+        assertEquals(
+                binding.json().path("bindingRef").asText(),
+                bindingDetail.json().path("bindingRef").asText(),
+                "BUSINESS: owner-binding detail reads back the created owner identity");
         BackendAcceptanceTest.RouteIdentity delete = new BackendAcceptanceTest.RouteIdentity(
                 "deleteOperationsOwnerBinding",
                 "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding");
-        BackendAcceptanceTest.Response updated = context.patch(
-                update,
-                channelPath(fixture, channelRef) + "/owner-binding",
-                session.cookie(),
-                Map.of(
-                        "bindingDisplayName", "Calibration binding updated",
-                        "externalOwnerId", "calibration-binding-updated",
-                        "expectedVersion", binding.json().path("version").asLong()),
-                headers(),
-                expectedStatuses);
-        context.delete(
+        BackendAcceptanceTest.Response deleted = context.delete(
                 delete,
                 channelPath(fixture, channelRef) + "/owner-binding",
                 session.cookie(),
+                Map.of("expectedVersion", binding.json().path("version").asLong()),
+                Set.of(200));
+        assertEquals("DELETED", deleted.json().path("status").asText(), "BUSINESS: local unbind deletes the binding");
+    }
+
+    /**
+     * CP-05 normal-path bridge: supplies real successful update completions for the two business-channel operations
+     * whose bounded product scenarios otherwise exercise only rejected updates. It is deliberately not an
+     * {@link AcceptanceScenario}: the run-level performance verifier owns this calibration proof and the business
+     * scenario denominator remains unchanged.
+     */
+    void calibrationUpdateInternalTemplateAndChannel(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        OperationsFixture projectOwner =
+                operationsFixture(context, "PROJECT", Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
+        BackendAcceptanceTest.Response template = createTemplate(
+                context,
+                projectOwner,
+                "Performance calibration template",
+                "INTERNAL",
+                "PROJECT",
+                "TAKEAWAY",
+                null,
+                null);
+        UUID templateRef = UUID.fromString(template.json().path("templateRef").asText());
+        BackendAcceptanceTest.Response updatedTemplate = context.patch(
+                TEMPLATE_UPDATE,
+                templatePath(projectOwner.fixture(), templateRef),
+                projectOwner.session().cookie(),
                 Map.of(
-                        "bindingDisplayName",
-                        "Calibration binding deleted",
+                        "templateName",
+                        "Performance calibration template updated",
                         "expectedVersion",
-                        updated.json().path("version").asLong()),
-                expectedStatuses);
+                        template.json().path("version").asLong()),
+                headers(),
+                Set.of(200));
+        assertEquals(
+                "Performance calibration template updated",
+                updatedTemplate.json().path("templateName").asText(),
+                "BUSINESS: normal calibration saves the internal template name");
+
+        BackendAcceptanceTest.Response channel = createChannel(
+                context,
+                projectOwner,
+                templateRef.toString(),
+                "PROJECT",
+                projectOwner.fixture().projectId(),
+                "Performance calibration channel");
+        UUID channelRef = UUID.fromString(channel.json().path("channelRef").asText());
+        BackendAcceptanceTest.Response updatedChannel = context.patch(
+                CHANNEL_UPDATE,
+                channelPath(projectOwner.fixture(), channelRef),
+                projectOwner.session().cookie(),
+                Map.of(
+                        "channelName",
+                        "Performance calibration channel updated",
+                        "expectedVersion",
+                        channel.json().path("version").asLong()),
+                headers(),
+                Set.of(200));
+        assertEquals(
+                "Performance calibration channel updated",
+                updatedChannel.json().path("channelName").asText(),
+                "BUSINESS: normal calibration saves the internal channel name");
     }
 
     @AcceptanceScenario(

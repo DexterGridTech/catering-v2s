@@ -24,7 +24,11 @@ const l2Scenarios = readJson("contracts/policy/catalog-inventory-l2-scenarios.js
 const copyPolicy = readJson("contracts/policy/catalog-inventory-copy-policy.json");
 const routes = readJson("apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json");
 const manifest = readJson("contracts/catalog/catalog-item-editor-manifest.json");
+const LEGACY_OPERATION_COUNT = 43;
+const CATALOG_LIBRARY_OPERATION_COUNT = 17;
+const CATALOG_OPERATION_COUNT = 59;
 const CATALOG_LIBRARY_OPERATION_IDS = new Set([
+  "getOperationsProductionTags",
   "listOperationsCatalogAttributeDefinitions",
   "createOperationsCatalogAttributeDefinition",
   "updateOperationsCatalogAttributeDefinition",
@@ -38,7 +42,11 @@ const CATALOG_LIBRARY_OPERATION_IDS = new Set([
   "updateOperationsCatalogUnit",
   "disableOperationsCatalogUnit",
   "deleteOperationsCatalogUnit",
+  "getOperationsInventoryConsumptionTargetCandidates",
+  "getOperationsCatalogCategoryCandidates",
+  "getOperationsCatalogItemSkus",
 ]);
+const LEGACY_LIBRARY_OVERLAP_OPERATION_IDS = new Set(["getOperationsProductionTags"]);
 
 function hasTypedCatalogCopySourcePolicy(source) {
   const boundary = source.match(/public JsonNode copy\s*\(\s*WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey\)\s*\{[\s\S]*?private JsonNode executeCopy\(/)?.[0];
@@ -58,13 +66,16 @@ function runChecks() {
   if (source?.designPath && source?.designSha256) check(sha256(readText(source.designPath)) === source.designSha256, "P1_DESIGN_SHA_DRIFT");
 
   const legacyOperationIds = operationDesign.operations.map((operation) => operation.operationId);
-  const libraryOperationIds = edge.operations.filter((operation) => !legacyOperationIds.includes(operation.operationId)).map((operation) => operation.operationId);
+  const libraryOperationIds = edge.operations.filter((operation) => CATALOG_LIBRARY_OPERATION_IDS.has(operation.operationId)).map((operation) => operation.operationId);
+  const legacyLibraryOverlapIds = legacyOperationIds.filter((operationId) => CATALOG_LIBRARY_OPERATION_IDS.has(operationId));
+  const unionOperationIds = [...new Set([...legacyOperationIds, ...libraryOperationIds])];
   const routeIds = routes.operations.map((operation) => operation.operationId);
-  check(legacyOperationIds.length === 43 && new Set(legacyOperationIds).size === 43, `OPERATION_DESIGN_COUNT:${legacyOperationIds.length}`);
-  check(setEqual(libraryOperationIds, [...CATALOG_LIBRARY_OPERATION_IDS]), "LIBRARY_OPERATION_EXACT_SET_DRIFT");
-  check(routeIds.length === 56 && new Set(routeIds).size === 56, `ROUTE_REGISTRY_COUNT:${routeIds.length}`);
-  check(edge.operations.length === 56 && setEqual(edge.operations.map((operation) => operation.operationId), [...legacyOperationIds, ...libraryOperationIds]), "EDGE_OPERATION_EXACT_SET_DRIFT");
-  check(setEqual([...legacyOperationIds, ...libraryOperationIds], routeIds), "OPERATION_ROUTE_EXACT_SET_DRIFT");
+  check(legacyOperationIds.length === LEGACY_OPERATION_COUNT && new Set(legacyOperationIds).size === LEGACY_OPERATION_COUNT, `OPERATION_DESIGN_COUNT:${legacyOperationIds.length}`);
+  check(libraryOperationIds.length === CATALOG_LIBRARY_OPERATION_COUNT && setEqual(libraryOperationIds, [...CATALOG_LIBRARY_OPERATION_IDS]), "LIBRARY_OPERATION_EXACT_SET_DRIFT");
+  check(setEqual(legacyLibraryOverlapIds, [...LEGACY_LIBRARY_OVERLAP_OPERATION_IDS]), "LEGACY_LIBRARY_OVERLAP_EXACT_SET_DRIFT");
+  check(routeIds.length === CATALOG_OPERATION_COUNT && new Set(routeIds).size === CATALOG_OPERATION_COUNT, `ROUTE_REGISTRY_COUNT:${routeIds.length}`);
+  check(edge.operations.length === CATALOG_OPERATION_COUNT && setEqual(edge.operations.map((operation) => operation.operationId), unionOperationIds), "EDGE_OPERATION_EXACT_SET_DRIFT");
+  check(setEqual(unionOperationIds, routeIds), "OPERATION_ROUTE_EXACT_SET_DRIFT");
   check(routes.operations.every((operation) => operation.consumerFaces?.length === 1 && operation.consumerFaces[0] === "operations-admin"), "ROUTE_FACE_DRIFT");
   const controller = readText("apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java");
   const application = readText("apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java");
@@ -175,7 +186,7 @@ function runChecks() {
     process.stderr.write(failures.map((failure) => `FAIL:${failure}`).join("\n") + "\n");
     process.exitCode = 1;
   } else {
-    process.stdout.write(`CATALOG_INVENTORY_P2_STATIC=PASS\nOPERATIONS=56\nAPI_SCENARIOS=${apiScenarios.scenarioCount}/${apiScenarios.caseCount}\nL2_SCENARIOS=${l2Scenarios.scenarioCount}/${l2Scenarios.caseCount}\n`);
+    process.stdout.write(`CATALOG_INVENTORY_P2_STATIC=PASS\nOPERATIONS=${CATALOG_OPERATION_COUNT}\nLEGACY_OPERATIONS=${LEGACY_OPERATION_COUNT}\nCATALOG_LIBRARY_OPERATIONS=${CATALOG_LIBRARY_OPERATION_COUNT}\nAPI_SCENARIOS=${apiScenarios.scenarioCount}/${apiScenarios.caseCount}\nL2_SCENARIOS=${l2Scenarios.scenarioCount}/${l2Scenarios.caseCount}\n`);
   }
 }
 
@@ -190,6 +201,9 @@ function selfTest() {
   check(mutated.length !== operationIdsForSelfTest(), "SELF_TEST_MUTATION_NOT_RED");
   const routeSet = setEqual(operationDesign.operations.map((operation) => operation.operationId), mutated.map((operation) => operation.operationId));
   check(!routeSet, "SELF_TEST_ROUTE_SET_MUTATION_NOT_RED");
+  const libraryRouteMutation = routes.operations.filter((operation) => operation.operationId !== "getOperationsCatalogItemSkus");
+  const libraryRouteIds = libraryRouteMutation.filter((operation) => CATALOG_LIBRARY_OPERATION_IDS.has(operation.operationId)).map((operation) => operation.operationId);
+  check(!setEqual(libraryRouteIds, [...CATALOG_LIBRARY_OPERATION_IDS]), "SELF_TEST_LIBRARY_ROUTE_MUTATION_NOT_RED");
   const catalogOwner = readText("apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java");
   const inventoryOwner = readText("apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java");
   const productionOwner = readText("apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java");

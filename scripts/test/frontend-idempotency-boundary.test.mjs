@@ -10,9 +10,13 @@ function contentKeyPattern(namespace, operationId) {
 }
 const featureSources = [
   'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemCreateDrawer.tsx',
-  'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx',
-  'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx',
-  'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx',
+  'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx',
+  'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogTemporaryPromotionTask.tsx',
+  'apps/frontend/operations-admin/src/features/catalog-management/model/useCatalogItemEditorSession.ts',
+  'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawerState.tsx',
+  'apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/CatalogWorkbenchController.tsx',
+  'apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/useCatalogCategoryActionController.tsx',
+  'apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/useCatalogBatchActionController.ts',
   'apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx',
   'apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx',
   'apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx',
@@ -52,11 +56,11 @@ test('set-value catalog commands derive keys from operation and request content'
     );
   }
   assert.match(
-    read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx'),
+    read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawerState.tsx'),
     /const requestOperationId = isProduction[\s\S]*?createOperationsProductionTag[\s\S]*?createOperationsCatalogDictionaryEntry/,
   );
   assert.match(
-    read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx'),
+    read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawerState.tsx'),
     /createContentIdempotencyKey\(requestOperationId, body\)/,
   );
   for (const [, content] of featureSources) {
@@ -64,7 +68,7 @@ test('set-value catalog commands derive keys from operation and request content'
   }
   assert.doesNotMatch(source, /reorderOperationsCatalogDictionaryEntry/);
   assert.doesNotMatch(
-    read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx'),
+    read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx'),
     /lifecycle\.getIdempotencyKey\(\)/,
   );
   assert.doesNotMatch(

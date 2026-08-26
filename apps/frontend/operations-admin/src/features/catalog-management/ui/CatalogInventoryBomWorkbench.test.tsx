@@ -2,30 +2,36 @@ import {readFileSync} from 'node:fs';
 import {describe, expect, it, vi} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {collectCursorPages, mergeCursorCandidateItems} from '@catering-v2s/admin-ui-foundation';
+import {isCurrentOwnerConsumptionTarget} from './useInventoryConsumptionTargetCandidates';
 import type {Uuid} from '../../../app/api/generated/catalog-inventory-edge';
-import {catalogInventoryProblemTab} from '../model/catalogModel';
+import {catalogInventoryProblemTab, type CatalogDetail, type CatalogInventoryRuleNode} from '../model/catalogModel';
 import {
   CatalogInventoryBomWorkbench,
-  inventoryRuleOwnerKey,
   inventoryWorkbenchLayout,
   inventoryWorkbenchModeOptions,
   truncateDecimalTowardZero,
 } from './CatalogInventoryBomWorkbench';
+import {CatalogInventoryBomView} from './CatalogInventoryBomView';
+import {inventoryRuleOwnerKey} from './CatalogInventoryRuleOwnerNavigation';
 
-vi.mock('./useInventoryConsumptionTargetCandidates', () => ({
-  useInventoryConsumptionTargetCandidates: () => ({
-    keyword: '',
-    setKeyword: () => undefined,
-    items: [],
-    total: 0,
-    loading: false,
-    error: undefined,
-    hasNext: false,
-    loadNext: () => undefined,
-    onPopupScroll: () => undefined,
-    retry: async () => undefined,
-  }),
-}));
+vi.mock('./useInventoryConsumptionTargetCandidates', async importOriginal => {
+  const actual = await importOriginal<typeof import('./useInventoryConsumptionTargetCandidates')>();
+  return {
+    ...actual,
+    useInventoryConsumptionTargetCandidates: () => ({
+      keyword: '',
+      setKeyword: () => undefined,
+      items: [],
+      total: 0,
+      loading: false,
+      error: undefined,
+      hasNext: false,
+      loadNext: () => undefined,
+      onPopupScroll: () => undefined,
+      retry: async () => undefined,
+    }),
+  };
+});
 
 const uuid = (value: string) => value as Uuid;
 const unit = {
@@ -45,7 +51,7 @@ function node(
   allowedModes: Array<'NONE' | 'DIRECT' | 'BOM'> = ownerType === 'OPTION_VALUE'
     ? ['NONE', 'BOM']
     : ['NONE', 'DIRECT', 'BOM'],
-) {
+): CatalogInventoryRuleNode {
   return {
     owner: {
       ownerType,
@@ -63,17 +69,32 @@ function node(
     mode,
     directConfiguration: null,
     bom: mode === 'BOM' ? {version: null, lines: []} : null,
-  } as const;
+  };
 }
 
-function renderWorkbench(nodes: ReturnType<typeof node>[]) {
+const detail = {
+  item: {
+    name: '当前商品',
+    skus: [{productSkuRef: uuid('sku-1'), skuCode: 'SKU-1', skuName: '小杯当前商品'}],
+    orderOptionConfigs: [
+      {
+        name: '加料',
+        values: [{definitionValueRef: uuid('value-1'), name: '加珍珠'}],
+      },
+    ],
+  },
+} as Pick<CatalogDetail, 'item'>;
+
+function renderWorkbench(nodes: ReturnType<typeof node>[], editing = true) {
   return renderToStaticMarkup(
     <CatalogInventoryBomWorkbench
       shapeKey="STANDARD_SALE_COUNTED"
+      detail={detail}
       nodes={nodes}
-      editing
+      editing={editing}
       scopeRef="00000000-0000-4000-8000-000000000001"
       unitOptions={[unit]}
+      createDraftRowId={prefix => `${prefix}-test`}
       baseUnitForOwner={() => unit}
       onChange={() => undefined}
       onDirty={() => undefined}
@@ -81,7 +102,33 @@ function renderWorkbench(nodes: ReturnType<typeof node>[]) {
   );
 }
 
+function renderView(nodes: ReturnType<typeof node>[]) {
+  return renderToStaticMarkup(
+    <CatalogInventoryBomView detail={detail} nodes={nodes} baseUnitForOwner={() => unit} />,
+  );
+}
+
 describe('catalog inventory and BOM workbench rules', () => {
+  it('does not offer the stock target belonging to the BOM owner, while preserving distinct SKU targets', () => {
+    const owner = {itemRef: 'item-1', productSkuRef: 'sku-1'};
+    expect(
+      isCurrentOwnerConsumptionTarget(
+        {targetRef: 'target-1', itemRef: 'item-1', productSkuRef: 'sku-1'} as Parameters<
+          typeof isCurrentOwnerConsumptionTarget
+        >[0],
+        owner,
+      ),
+    ).toBe(true);
+    expect(
+      isCurrentOwnerConsumptionTarget(
+        {targetRef: 'target-2', itemRef: 'item-1', productSkuRef: 'sku-2'} as Parameters<
+          typeof isCurrentOwnerConsumptionTarget
+        >[0],
+        owner,
+      ),
+    ).toBe(false);
+  });
+
   it('truncates source quantities toward zero at the declared unit precision', () => {
     expect(truncateDecimalTowardZero('0.3567', 3)).toBe('0.356');
     expect(truncateDecimalTowardZero('0.3567', 0)).toBe('0');
@@ -119,11 +166,110 @@ describe('catalog inventory and BOM workbench rules', () => {
     expect(renderWorkbench([node('ITEM'), node('SKU')])).toContain('data-testid="catalog-inventory-owner-tree"');
   });
 
+  it('uses one business-name navigation in view and edit contexts instead of primary action buttons', () => {
+    const nodes = [node('ITEM'), node('SKU', 'BOM'), node('OPTION_VALUE', 'BOM')];
+    for (const markup of [renderWorkbench(nodes), renderView(nodes)]) {
+      expect(markup).toContain('选择要配置的对象');
+      expect(markup).toContain('商品和每个规格可以分别设置库存扣减方式。');
+      expect(markup).toContain('规格</span>');
+      expect(markup).toContain('当前商品');
+      expect(markup).toContain('小杯当前商品');
+      expect(markup).toContain('按 BOM 扣组件');
+      expect(markup).not.toContain('SKU-1 · 按 BOM 扣组件');
+      expect(markup).not.toContain('SKU-1</span>');
+      expect(markup).toContain('加珍珠');
+      expect(markup).toContain('点单选项');
+      expect(markup).toContain('aria-current="page"');
+      expect(markup).toContain('border-inline-start:3px solid');
+      expect(markup).not.toContain('ant-btn-primary');
+    }
+  });
+
+  it('keeps configuration-object switching outside the whole-save draft mutation paths', () => {
+    const navigation = readFileSync(new URL('./CatalogInventoryRuleOwnerNavigation.tsx', import.meta.url), 'utf8');
+    expect(navigation).toContain('onClick={() => onSelect(key)}');
+    expect(navigation).not.toContain('onChange(');
+    expect(navigation).not.toContain('onDirty(');
+  });
+
+  it('renders read-only inventory facts as business content instead of disabled form controls', () => {
+    const direct = node('ITEM', 'DIRECT');
+    const directMarkup = renderWorkbench([direct], false);
+    expect(directMarkup).toContain('销售/使用时怎么扣库存');
+    expect(directMarkup).toContain('库存消费单位');
+    expect(directMarkup).not.toContain('ant-input');
+    expect(directMarkup).not.toContain('ant-select');
+    expect(directMarkup).not.toContain('ant-radio');
+    expect(directMarkup).not.toContain('ant-switch');
+
+    const bom = node('ITEM', 'BOM');
+    bom.bom!.lines.push({
+      targetRef: uuid('material-1'),
+      itemRef: uuid('material-1'),
+      productSkuRef: null,
+      itemCode: 'MATERIAL-1',
+      skuCode: null,
+      itemName: '鸡胸肉',
+      skuName: null,
+      lineSign: 'POSITIVE',
+      quantity: '160',
+      consumptionUnitSnapshot: unit,
+    });
+    const bomMarkup = renderWorkbench([bom], false);
+    expect(bomMarkup).toContain('物料耗用明细');
+    expect(bomMarkup).toContain('鸡胸肉');
+    expect(bomMarkup).toContain('消费单位');
+    expect(bomMarkup).not.toContain('ant-input');
+    expect(bomMarkup).not.toContain('ant-select');
+    expect(bomMarkup).not.toContain('ant-radio');
+    expect(bomMarkup).not.toContain('ant-switch');
+  });
+
+  it('keeps a saved BOM selection identifiable by its business name without inventing a saved-state label', () => {
+    const bom = node('SKU', 'BOM');
+    bom.bom!.lines.push({
+      targetRef: uuid('material-1'),
+      itemRef: uuid('material-1'),
+      productSkuRef: null,
+      itemCode: 'MAT-COFFEE-BEAN-001',
+      skuCode: null,
+      itemName: '咖啡豆',
+      skuName: null,
+      lineSign: 'POSITIVE',
+      quantity: '18',
+      consumptionUnitSnapshot: unit,
+    });
+
+    const markup = renderWorkbench([bom]);
+    expect(markup).toContain('咖啡豆');
+    expect(markup).not.toContain('（已保存）');
+  });
+
+  it('never presents a historical code copied into a BOM name field as the product name', () => {
+    const bom = node('SKU', 'BOM');
+    bom.bom!.lines.push({
+      targetRef: uuid('material-1'),
+      itemRef: uuid('material-1'),
+      productSkuRef: null,
+      itemCode: 'MAT-COFFEE-BEAN-001',
+      skuCode: null,
+      itemName: 'MAT-COFFEE-BEAN-001',
+      skuName: null,
+      lineSign: 'POSITIVE',
+      quantity: '18',
+      consumptionUnitSnapshot: unit,
+    });
+
+    const markup = renderWorkbench([bom]);
+    expect(markup).toContain('耗用商品名称暂时无法读取');
+    expect(markup).not.toContain('MAT-COFFEE-BEAN-001（已保存）');
+  });
+
   it('exposes no entry for a mode that the owner did not allow', () => {
     expect(inventoryWorkbenchModeOptions(['NONE'])).toEqual([{label: '不参与库存', value: 'NONE'}]);
     const markup = renderWorkbench([node('ITEM', 'NONE', ['NONE'])]);
     expect(markup).toContain('不参与库存');
-    expect(markup).not.toContain('直接扣当前商品或 SKU');
+    expect(markup).not.toContain('直接扣当前商品或规格');
   });
 
   it('keeps cursor-backed component candidates across two pages without duplicates', async () => {
@@ -161,9 +307,12 @@ describe('catalog inventory and BOM workbench rules', () => {
     expect(catalogInventoryProblemTab('CATALOG_BASE_MEASURE_UNIT_CHANGE_BLOCKED')).toBe('basic');
   });
 
-  it('clears the inventory draft when the mounted Drawer closes', () => {
-    const source = readFileSync(new URL('./CatalogItemDrawer.tsx', import.meta.url), 'utf8');
-    expect(source).toMatch(/if \(!itemCode\) \{[\s\S]*setInventoryRulesDraft\(\[\]\);[\s\S]*lifecycle\.reset\(\);/);
+  it('clears the complete editor draft, including inventory rules, when the mounted Drawer closes', () => {
+    const source = readFileSync(new URL('./useCatalogItemEditorWorkspaceState.tsx', import.meta.url), 'utf8');
+    expect(source).toMatch(
+      /if \(!itemCode\) \{[\s\S]*replaceDraft\(emptyCatalogItemDraftSnapshot\(\)\);[\s\S]*resetLifecycle\(\);/,
+    );
+    expect(source).toContain("setDraftField('inventoryRulesDraft', next)");
   });
 
   it('invalidates only the item detail and affected candidate identities after save', () => {

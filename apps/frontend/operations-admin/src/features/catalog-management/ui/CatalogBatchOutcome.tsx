@@ -1,6 +1,7 @@
 import {Alert, Button, Table, Tooltip, Typography} from 'antd';
 import {testId} from '@catering-v2s/admin-ui-foundation';
 import type {CatalogBatchResult} from '../model/catalogModel';
+import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 
 type Props = {
   results: readonly CatalogBatchResult[];
@@ -17,7 +18,7 @@ export function CatalogBatchOutcome({results, refreshProblem, onClose}: Props) {
 
   return (
     <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-      <div aria-live="polite" {...testId('catalog-batch-outcome-summary')}>
+      <div aria-live="polite" {...testId(catalogTestIdControls.batch.summary)}>
         <Alert
           type={failed.length === 0 ? 'success' : 'warning'}
           showIcon
@@ -25,51 +26,67 @@ export function CatalogBatchOutcome({results, refreshProblem, onClose}: Props) {
           description={`成功 ${succeeded} 项，失败 ${failed.length} 项`}
         />
       </div>
-      {refreshProblem && <Alert type="error" showIcon title={refreshProblem} />}
-      {failed.length > 0 && (
-        <div
-          aria-label="批量操作失败商品"
-          style={{maxHeight: '50vh', overflowY: 'auto'}}
-          {...testId('catalog-batch-outcome-failures')}
-        >
-          <Typography.Text strong style={{display: 'block', marginBottom: 8}}>
-            以下 {failed.length} 个商品未处理成功
-          </Typography.Text>
-          <Table<CatalogBatchResult>
-            bordered
-            columns={[
-              {
-                title: '商品编码',
-                dataIndex: 'itemCode',
-                key: 'itemCode',
-                width: 220,
-                render: (itemCode: string) => (
-                  <Tooltip title={itemCode}>
-                    <Typography.Text ellipsis style={{display: 'block', maxWidth: 200}}>
-                      {itemCode}
-                    </Typography.Text>
-                  </Tooltip>
-                ),
-              },
-              {
-                title: '失败原因',
-                dataIndex: 'reason',
-                key: 'reason',
-                render: (reason: string | null) => (
-                  <Typography.Text style={{whiteSpace: 'normal', overflowWrap: 'anywhere'}}>
-                    {reason || '未提供失败原因'}
-                  </Typography.Text>
-                ),
-              },
-            ]}
-            dataSource={failed}
-            pagination={false}
-            rowKey="itemCode"
-            size="small"
-          />
+      {refreshProblem && (
+        <div {...testId(catalogTestIdControls.batch.refreshError)}>
+          <Alert type="error" showIcon title={refreshProblem} />
         </div>
       )}
-      <Button type="primary" onClick={onClose} {...testId('catalog-batch-outcome-close')}>
+      <div
+        aria-label="批量操作逐项结果"
+        style={results.length > 8 ? {maxHeight: 360, overflowY: 'auto'} : undefined}
+        {...testId(catalogTestIds.static.batchOutcomeFailures)}
+      >
+        <Typography.Text strong style={{display: 'block', marginBottom: 8}}>
+          逐项处理结果
+        </Typography.Text>
+        <Table<CatalogBatchResult>
+          bordered
+          columns={[
+            {
+              title: '商品编码',
+              dataIndex: 'itemCode',
+              key: 'itemCode',
+              width: 220,
+              render: (itemCode: string) => (
+                <Tooltip title={itemCode}>
+                  <Typography.Text ellipsis style={{display: 'block', maxWidth: 200}}>
+                    {itemCode}
+                  </Typography.Text>
+                </Tooltip>
+              ),
+            },
+            {
+              title: '处理结果',
+              dataIndex: 'outcome',
+              key: 'outcome',
+              width: 104,
+              render: (outcome: CatalogBatchResult['outcome']) => (
+                <Typography.Text type={outcome === 'SUCCEEDED' ? 'success' : 'danger'}>
+                  {outcome === 'SUCCEEDED' ? '已处理' : '未处理'}
+                </Typography.Text>
+              ),
+            },
+            {
+              title: '说明',
+              dataIndex: 'reason',
+              key: 'reason',
+              render: (reason: string | null, result: CatalogBatchResult) => (
+                <Typography.Text
+                  style={{whiteSpace: 'normal', overflowWrap: 'anywhere'}}
+                  type={result.outcome === 'FAILED' ? undefined : 'secondary'}
+                >
+                  {result.outcome === 'FAILED' ? reason || '未提供失败原因' : '已按本次操作处理'}
+                </Typography.Text>
+              ),
+            },
+          ]}
+          dataSource={results}
+          pagination={false}
+          rowKey="itemCode"
+          size="small"
+        />
+      </div>
+      <Button type="primary" onClick={onClose} {...testId(catalogTestIds.static.batchOutcomeClose)}>
         关闭
       </Button>
     </div>

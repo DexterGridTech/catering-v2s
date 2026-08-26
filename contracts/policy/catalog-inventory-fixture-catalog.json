@@ -10,7 +10,7 @@
     },
     "ia": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
-      "sha256": "860224dc6b167bf66b2025715be6eb8f1d24312d3fca728801b6183e4f44d959"
+      "sha256": "a532610f6635e3ac235d50e0b285ac0ad4f79fa0b7ce4dac21bf2c61ea512c7e"
     },
     "copyPolicy": {
       "path": "contracts/policy/catalog-inventory-copy-policy.json"
@@ -22,7 +22,7 @@
   "seedDatasets": [
     {
       "fixtureId": "SEED-LATTE",
-      "purpose": "三 SKU、每 SKU 独立 BOM，验证 SKU 结构和库存/BOM读模型。",
+      "purpose": "三种规格、每种规格独立 BOM，验证规格结构和库存/BOM读模型。",
       "entities": {
         "catalogItems": [
           {
@@ -147,7 +147,7 @@
     },
     {
       "fixtureId": "SEED-DINNER-SET",
-      "purpose": "套餐跨商品引用并引用具体 SKU。",
+      "purpose": "套餐跨商品引用并引用具体规格。",
       "entities": {
         "catalogItems": [
           {
@@ -823,6 +823,10 @@
   ],
   "seedBusinessLabels": {
     "categories": {
+      "FOOD": "餐食",
+      "DRINK": "饮品类",
+      "MATERIALS": "物料管理",
+      "NON_SALE": "非销售项目",
       "APPETIZER": "前菜",
       "SALAD": "沙拉",
       "SOUP": "汤品",
@@ -934,6 +938,96 @@
     }
   },
   "catalogDefinitionSeed": {
+    "experienceLifecycle": {
+      "targetStatus": "ENABLED",
+      "activateSourceShapeKeys": [
+        "STANDARD_SALE_COUNTED",
+        "STANDARD_SALE_WEIGHED",
+        "SKU_VARIANT_SALE_COUNTED"
+      ]
+    },
+    "categoryDefinitions": [
+      {
+        "code": "FOOD",
+        "name": "餐食",
+        "parentCode": null
+      },
+      {
+        "code": "DRINK",
+        "name": "饮品类",
+        "parentCode": null
+      },
+      {
+        "code": "MATERIALS",
+        "name": "物料管理",
+        "parentCode": null
+      },
+      {
+        "code": "NON_SALE",
+        "name": "非销售项目",
+        "parentCode": null
+      },
+      {
+        "code": "APPETIZER",
+        "name": "前菜",
+        "parentCode": "FOOD"
+      },
+      {
+        "code": "SALAD",
+        "name": "沙拉",
+        "parentCode": "APPETIZER"
+      },
+      {
+        "code": "SOUP",
+        "name": "汤品",
+        "parentCode": "APPETIZER"
+      },
+      {
+        "code": "PASTA_RICE",
+        "name": "意面与饭",
+        "parentCode": "FOOD"
+      },
+      {
+        "code": "MAIN",
+        "name": "主菜",
+        "parentCode": "FOOD"
+      },
+      {
+        "code": "PIZZA",
+        "name": "披萨",
+        "parentCode": "FOOD"
+      },
+      {
+        "code": "DESSERT",
+        "name": "甜品",
+        "parentCode": "FOOD"
+      },
+      {
+        "code": "BEVERAGE",
+        "name": "饮品",
+        "parentCode": "DRINK"
+      },
+      {
+        "code": "COMBO",
+        "name": "套餐",
+        "parentCode": "FOOD"
+      },
+      {
+        "code": "MATERIAL",
+        "name": "物料",
+        "parentCode": "MATERIALS"
+      },
+      {
+        "code": "SERVICE",
+        "name": "服务",
+        "parentCode": "NON_SALE"
+      },
+      {
+        "code": "BENEFIT",
+        "name": "权益",
+        "parentCode": "NON_SALE"
+      }
+    ],
     "tagDefinitions": [
       {
         "code": "RECOMMENDED",
@@ -1203,6 +1297,7 @@
         "tagCodes": [
           "RECOMMENDED"
         ],
+        "productionTagCode": "COLD_DISH",
         "identifiers": [
           {
             "identifierType": "BARCODE",
@@ -1214,9 +1309,6 @@
           }
         ],
         "preparationProfile": {
-          "productionTagCodes": [
-            "COLD_DISH"
-          ],
           "productionDisplayName": "凯撒沙拉",
           "estimatedPreparationSeconds": 180,
           "preparationNotes": "出餐前拌匀并装盘"
@@ -1226,17 +1318,11 @@
         "optionPreparationEffects": [
           {
             "valueCode": "BACON",
-            "addProductionTagCodes": [
-              "HOT_KITCHEN"
-            ],
             "preparationSecondsDelta": 20,
             "instruction": "加培根"
           },
           {
             "valueCode": "CHICKEN",
-            "addProductionTagCodes": [
-              "HOT_KITCHEN"
-            ],
             "preparationSecondsDelta": 30,
             "instruction": "加鸡胸肉"
           }
@@ -1355,6 +1441,7 @@
       {
         "itemCode": "MILK-TEA-001",
         "tagCodes": [],
+        "productionTagCode": "BEVERAGE",
         "identifiers": [
           {
             "identifierType": "BARCODE",
@@ -1362,9 +1449,6 @@
           }
         ],
         "preparationProfile": {
-          "productionTagCodes": [
-            "BEVERAGE"
-          ],
           "productionDisplayName": "奶茶",
           "estimatedPreparationSeconds": 120,
           "preparationNotes": "按选择的奶基底制作"
@@ -1374,9 +1458,6 @@
         "optionPreparationEffects": [
           {
             "valueCode": "OAT_MILK",
-            "addProductionTagCodes": [
-              "BEVERAGE"
-            ],
             "preparationSecondsDelta": 15,
             "instruction": "使用燕麦奶"
           }
@@ -1438,11 +1519,9 @@
         "tagCodes": [
           "SEASONAL"
         ],
+        "productionTagCode": "BEVERAGE",
         "identifiers": [],
         "preparationProfile": {
-          "productionTagCodes": [
-            "BEVERAGE"
-          ],
           "productionDisplayName": "拿铁咖啡",
           "estimatedPreparationSeconds": 90,
           "preparationNotes": "按规格制作并完成拉花"
@@ -1488,9 +1567,6 @@
             "mode": "OVERRIDE",
             "clearAfterReadback": true,
             "profile": {
-              "productionTagCodes": [
-                "BEVERAGE"
-              ],
               "productionDisplayName": "小杯拿铁",
               "estimatedPreparationSeconds": 75,
               "preparationNotes": "小杯少量奶泡"
@@ -1538,6 +1614,7 @@
       {
         "itemCode": "DINNER-SET-001",
         "tagCodes": [],
+        "productionTagCode": null,
         "identifiers": [
           {
             "identifierType": "BARCODE",
@@ -1557,6 +1634,7 @@
       {
         "itemCode": "PORK-WEIGHT-001",
         "tagCodes": [],
+        "productionTagCode": "HOT_KITCHEN",
         "identifiers": [
           {
             "identifierType": "BARCODE",
@@ -1568,9 +1646,6 @@
           }
         ],
         "preparationProfile": {
-          "productionTagCodes": [
-            "HOT_KITCHEN"
-          ],
           "productionDisplayName": "称重猪排",
           "estimatedPreparationSeconds": 300,
           "preparationNotes": "按实际称重份量制作"
@@ -1587,6 +1662,7 @@
       {
         "itemCode": "DRESSING-001",
         "tagCodes": [],
+        "productionTagCode": null,
         "identifiers": [
           {
             "identifierType": "BARCODE",
@@ -1606,6 +1682,7 @@
       {
         "itemCode": "BACON-001",
         "tagCodes": [],
+        "productionTagCode": null,
         "identifiers": [],
         "preparationProfile": null,
         "skuIdentifiers": [],
@@ -1620,6 +1697,7 @@
       {
         "itemCode": "EGG-001",
         "tagCodes": [],
+        "productionTagCode": null,
         "identifiers": [],
         "preparationProfile": null,
         "skuIdentifiers": [],
@@ -1634,6 +1712,7 @@
       {
         "itemCode": "CHICKEN-001",
         "tagCodes": [],
+        "productionTagCode": null,
         "identifiers": [],
         "preparationProfile": null,
         "skuIdentifiers": [],
@@ -1648,6 +1727,7 @@
       {
         "itemCode": "BEAN-001",
         "tagCodes": [],
+        "productionTagCode": null,
         "identifiers": [],
         "preparationProfile": null,
         "skuIdentifiers": [],
@@ -1662,6 +1742,7 @@
       {
         "itemCode": "BOX-001",
         "tagCodes": [],
+        "productionTagCode": null,
         "identifiers": [],
         "preparationProfile": null,
         "skuIdentifiers": [],
@@ -1676,6 +1757,7 @@
       {
         "itemCode": "LETTUCE-001",
         "tagCodes": [],
+        "productionTagCode": null,
         "identifiers": [],
         "preparationProfile": null,
         "skuIdentifiers": [],
@@ -1690,6 +1772,7 @@
       {
         "itemCode": "CUTLERY-001",
         "tagCodes": [],
+        "productionTagCode": null,
         "identifiers": [],
         "preparationProfile": null,
         "skuIdentifiers": [],
@@ -1704,6 +1787,7 @@
       {
         "itemCode": "MILK-001",
         "tagCodes": [],
+        "productionTagCode": null,
         "identifiers": [],
         "preparationProfile": null,
         "skuIdentifiers": [],
@@ -1718,6 +1802,7 @@
       {
         "itemCode": "OAT-MILK-001",
         "tagCodes": [],
+        "productionTagCode": null,
         "identifiers": [],
         "preparationProfile": null,
         "skuIdentifiers": [],
@@ -1733,6 +1818,7 @@
     "sourceItemAssignments": [
       {
         "itemCode": "FEE-PACKAGING-001",
+        "productionTagCode": null,
         "identifiers": [
           {
             "identifierType": "MNEMONIC",
@@ -1746,6 +1832,7 @@
       },
       {
         "itemCode": "BEV-POUROVER-001",
+        "productionTagCode": "BEVERAGE",
         "identifiers": [
           {
             "identifierType": "BARCODE",
@@ -1753,9 +1840,6 @@
           }
         ],
         "preparationProfile": {
-          "productionTagCodes": [
-            "BEVERAGE"
-          ],
           "productionDisplayName": "手冲咖啡",
           "estimatedPreparationSeconds": 240,
           "preparationNotes": "按选定豆种与出品方式制作"
@@ -1766,11 +1850,9 @@
       },
       {
         "itemCode": "MAIN-STEAK-SIRLOIN-001",
+        "productionTagCode": "HOT_KITCHEN",
         "identifiers": [],
         "preparationProfile": {
-          "productionTagCodes": [
-            "HOT_KITCHEN"
-          ],
           "productionDisplayName": "黑椒西冷牛排",
           "estimatedPreparationSeconds": 720,
           "preparationNotes": "按熟度煎制，出餐前淋黑椒汁"
@@ -1782,9 +1864,6 @@
             "mode": "OVERRIDE",
             "clearAfterReadback": false,
             "profile": {
-              "productionTagCodes": [
-                "HOT_KITCHEN"
-              ],
               "productionDisplayName": "七分熟西冷牛排",
               "estimatedPreparationSeconds": 780,
               "preparationNotes": "七分熟出餐"
@@ -2093,7 +2172,7 @@
     {
       "fixtureId": "FIXTURE-STALE-SOURCE",
       "class": "TEST",
-      "purpose": "预检后来源版本漂移",
+      "purpose": "检查影响后来源版本漂移",
       "scenarioIds": [
         "CI-API-021",
         "CI-L2-015"
@@ -2173,7 +2252,7 @@
     {
       "fixtureId": "FIXTURE-STALE-TARGET",
       "class": "TEST",
-      "purpose": "预检后目标版本漂移",
+      "purpose": "检查影响后目标版本漂移",
       "scenarioIds": [
         "CI-API-021",
         "CI-L2-015"
@@ -2253,7 +2332,7 @@
     {
       "fixtureId": "FIXTURE-ARCHIVED-ONLY-SKU",
       "class": "TEST",
-      "purpose": "只剩归档 SKU，派生 NO_SKU",
+      "purpose": "只剩归档规格，派生 NO_SKU",
       "scenarioIds": [
         "CI-API-013",
         "CI-L2-007"
@@ -2325,7 +2404,7 @@
     {
       "fixtureId": "FIXTURE-DISABLED-SKU",
       "class": "TEST",
-      "purpose": "只有停用 SKU，仍派生 HAS_SKU",
+      "purpose": "只有停用规格，仍派生 HAS_SKU",
       "scenarioIds": [
         "CI-API-013",
         "CI-L2-007"
@@ -2557,7 +2636,7 @@
     {
       "fixtureId": "FIXTURE-SKU-STRUCTURE-CONFLICT",
       "class": "TEST",
-      "purpose": "同 SKU 编码但属性组合不同，商品结构阻断",
+      "purpose": "同规格编码但属性组合不同，商品结构阻断",
       "scenarioIds": [
         "CI-API-018",
         "CI-L2-007",
@@ -3282,7 +3361,7 @@
     {
       "fixtureId": "FIXTURE-TEMPORARY-ITEM",
       "class": "TEST",
-      "purpose": "外部订单临时商品治理转正预检",
+      "purpose": "外部订单临时商品治理转正检查影响",
       "scenarioIds": [
         "CI-API-007",
         "CI-L2-009"
@@ -4534,7 +4613,15 @@
         },
         {
           "type": "SmartView",
-          "code": "INACTIVE"
+          "code": "INACTIVE",
+          "includedStatuses": [
+            "DRAFT",
+            "DISABLED"
+          ],
+          "excludedStatuses": [
+            "ARCHIVED",
+            "VOIDED"
+          ]
         },
         {
           "type": "SmartView",
@@ -4569,6 +4656,16 @@
           "RECENTLY_UPDATED",
           "AUTO_SYNC"
         ],
+        "inactiveMembership": {
+          "includedStatuses": [
+            "DRAFT",
+            "DISABLED"
+          ],
+          "excludedStatuses": [
+            "ARCHIVED",
+            "VOIDED"
+          ]
+        },
         "needsAttentionExcludedFromStockState": true,
         "caseParameterKey": "viewKey"
       },
@@ -4597,7 +4694,15 @@
           },
           {
             "type": "SmartView",
-            "code": "INACTIVE"
+            "code": "INACTIVE",
+            "includedStatuses": [
+              "DRAFT",
+              "DISABLED"
+            ],
+            "excludedStatuses": [
+              "ARCHIVED",
+              "VOIDED"
+            ]
           },
           {
             "type": "SmartView",
@@ -4858,6 +4963,2353 @@
       }
     },
     {
+      "fixtureId": "FIXTURE-CATALOG-LIBRARY-FIND",
+      "class": "TEST",
+      "purpose": "商品查找、分类树、生产标签筛选与结果恢复",
+      "scenarioIds": [
+        "CI-L2-019"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogCategory",
+          "code": "L2-FIND-ROOT",
+          "name": "L2FIND商品",
+          "parentCode": null,
+          "displayOrder": 0,
+          "selectable": false,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogCategory",
+          "code": "L2-FIND-CATEGORY",
+          "name": "L2FIND可选分类",
+          "parentCode": "L2-FIND-ROOT",
+          "displayOrder": 0,
+          "selectable": true,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "L2-FIND-001",
+          "name": "L2FIND商品",
+          "shapeKey": "STANDARD_SALE_COUNTED",
+          "status": "ENABLED",
+          "version": 1,
+          "scopeKind": "STORE_BRAND",
+          "categoryCode": "L2-FIND-CATEGORY",
+          "productionTagCode": "L2-FIND-BOUND-TAG",
+          "standardSalePrice": 100
+        },
+        {
+          "type": "ProductionTag",
+          "code": "L2-FIND-BOUND-TAG",
+          "name": "L2查找既有生产标签",
+          "status": "DISABLED",
+          "selectable": false,
+          "disabledReason": "已停用，已绑定商品仍可见"
+        },
+        {
+          "type": "ProductionTag",
+          "code": "L2-FIND-NEW-TAG",
+          "name": "L2查找停用候选",
+          "status": "DISABLED",
+          "selectable": false,
+          "disabledReason": "已停用，不能用于新的商品"
+        }
+      ],
+      "edges": [
+        {
+          "from": "L2-FIND-001",
+          "to": "L2-FIND-BOUND-TAG",
+          "refKind": "PRODUCTION_TAG",
+          "refCode": "L2-FIND-BOUND-TAG"
+        }
+      ],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-CATALOG-LIBRARY-FIND"
+      },
+      "setupChannel": "OWNER_HTTP_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "journeyStates": [
+          "SUCCESS",
+          "FAILURE",
+          "RECOVERY"
+        ],
+        "preState": {
+          "itemCode": "L2-FIND-001",
+          "version": 1,
+          "productionTagRef": null
+        },
+        "actionInput": {
+          "journey": "FIND",
+          "primaryItemFixtureCode": "L2-FIND-001",
+          "categorySelection": "L2-FIND-ROOT/L2-FIND-CATEGORY",
+          "productionTagSelection": "SINGLE_OR_CLEAR",
+          "invalidProductionTagSelection": "MULTIPLE_OR_SKU_OR_OPTION",
+          "find": {
+            "successKeyword": "${itemCode}",
+            "failureKeyword": "${itemCode}-重新查询"
+          }
+        },
+        "expectedReadback": {
+          "mode": "OWNER_FACTS_STRICT",
+          "outcome": "SUCCESS",
+          "readTarget": "ITEM_PAGE",
+          "requiredFields": [
+            "itemCode",
+            "categoryRef",
+            "status"
+          ],
+          "factPaths": [
+            "item.itemCode",
+            "item.categoryRef",
+            "item.status"
+          ],
+          "ownerReaders": [
+            "getOperationsCatalogItems"
+          ],
+          "versionRule": "AT_LEAST_BASELINE_VERSION",
+          "factTemplate": {
+            "item": {
+              "itemCode": "${itemCode}",
+              "categoryRef": "${categoryRef}",
+              "productionTagRef": "${productionTagRef}",
+              "version": "${baselineVersion}",
+              "status": "${baselineStatus}"
+            }
+          }
+        },
+        "unchangedReadback": {
+          "mode": "OWNER_FACTS_STRICT_PRE_STATE",
+          "outcome": "FAILURE",
+          "readTarget": "ITEM_PAGE",
+          "requiredFields": [
+            "itemCode",
+            "categoryRef",
+            "status"
+          ],
+          "factPaths": [
+            "item.itemCode",
+            "item.categoryRef",
+            "item.status"
+          ],
+          "ownerReaders": [
+            "getOperationsCatalogItems"
+          ],
+          "versionRule": "EXACT_PRE_STATE",
+          "factTemplate": {
+            "item": {
+              "itemCode": "${itemCode}",
+              "categoryRef": "${categoryRef}",
+              "productionTagRef": "${productionTagRef}",
+              "version": "${baselineVersion}",
+              "status": "${baselineStatus}"
+            }
+          }
+        },
+        "recoveryReadbackKind": "EXPECTED",
+        "requiredVisibleTabKeys": [],
+        "fixtureReferenceStateByJourneyState": {
+          "SUCCESS": "NOT_APPLICABLE",
+          "FAILURE": "NOT_APPLICABLE",
+          "RECOVERY": "NOT_APPLICABLE"
+        },
+        "caseParameterKey": "journeyState",
+        "fixtureCoverage": [
+          "生产标签树筛选",
+          "商品生产标签单选",
+          "清除商品生产标签",
+          "停用既有绑定可见",
+          "停用标签不可作为新候选",
+          "规格与选项值篡改拒绝"
+        ]
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogCategory",
+            "code": "L2-FIND-ROOT",
+            "name": "L2FIND商品",
+            "parentCode": null,
+            "displayOrder": 0,
+            "selectable": false,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogCategory",
+            "code": "L2-FIND-CATEGORY",
+            "name": "L2FIND可选分类",
+            "parentCode": "L2-FIND-ROOT",
+            "displayOrder": 0,
+            "selectable": true,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "L2-FIND-001",
+            "name": "L2FIND商品",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "status": "ENABLED",
+            "version": 1,
+            "scopeKind": "STORE_BRAND",
+            "categoryCode": "L2-FIND-CATEGORY",
+            "productionTagCode": "L2-FIND-BOUND-TAG",
+            "standardSalePrice": 100
+          },
+          {
+            "type": "ProductionTag",
+            "code": "L2-FIND-BOUND-TAG",
+            "name": "L2查找既有生产标签",
+            "status": "DISABLED",
+            "selectable": false,
+            "disabledReason": "已停用，已绑定商品仍可见"
+          },
+          {
+            "type": "ProductionTag",
+            "code": "L2-FIND-NEW-TAG",
+            "name": "L2查找停用候选",
+            "status": "DISABLED",
+            "selectable": false,
+            "disabledReason": "已停用，不能用于新的商品"
+          }
+        ],
+        "edges": [
+          {
+            "from": "L2-FIND-001",
+            "to": "L2-FIND-BOUND-TAG",
+            "refKind": "PRODUCTION_TAG",
+            "refCode": "L2-FIND-BOUND-TAG"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-CATALOG-LIBRARY-VIEW",
+      "class": "TEST",
+      "purpose": "商品只读详情与商品形态事实展示",
+      "scenarioIds": [
+        "CI-L2-020"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogCategory",
+          "code": "L2-VIEW-ROOT",
+          "name": "L2VIEW商品",
+          "parentCode": null,
+          "displayOrder": 0,
+          "selectable": false,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogCategory",
+          "code": "L2-VIEW-CATEGORY",
+          "name": "L2VIEW可选分类",
+          "parentCode": "L2-VIEW-ROOT",
+          "displayOrder": 0,
+          "selectable": true,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "L2-VIEW-001",
+          "name": "L2VIEW商品",
+          "shapeKey": "SKU_VARIANT_SALE_COUNTED",
+          "status": "DRAFT",
+          "version": 1,
+          "scopeKind": "STORE_BRAND",
+          "categoryCode": "L2-VIEW-CATEGORY",
+          "productionTagCode": null,
+          "standardSalePrice": null,
+          "skuCodes": [
+            "L2-VIEW-SKU-S",
+            "L2-VIEW-SKU-M",
+            "L2-VIEW-SKU-L"
+          ]
+        },
+        {
+          "type": "CatalogSkuAttributeDefinition",
+          "code": "L2-VIEW-SIZE",
+          "name": "杯型",
+          "status": "ENABLED",
+          "displayOrder": 0
+        },
+        {
+          "type": "CatalogSkuAttributeValue",
+          "code": "L2-VIEW-SIZE-SMALL",
+          "parentCode": "L2-VIEW-SIZE",
+          "name": "小规格",
+          "status": "ENABLED",
+          "displayOrder": 0
+        },
+        {
+          "type": "CatalogSkuAttributeValue",
+          "code": "L2-VIEW-SIZE-MEDIUM",
+          "parentCode": "L2-VIEW-SIZE",
+          "name": "中规格",
+          "status": "ENABLED",
+          "displayOrder": 1
+        },
+        {
+          "type": "CatalogSkuAttributeValue",
+          "code": "L2-VIEW-SIZE-LARGE",
+          "parentCode": "L2-VIEW-SIZE",
+          "name": "大规格",
+          "status": "ENABLED",
+          "displayOrder": 2
+        },
+        {
+          "type": "CatalogSku",
+          "code": "L2-VIEW-SKU-S",
+          "skuCode": "L2-VIEW-SKU-S",
+          "name": "L2查看小规格",
+          "status": "ENABLED",
+          "displayOrder": 0,
+          "standardSalePrice": 1800,
+          "attributeValues": {
+            "L2-VIEW-SIZE": "L2-VIEW-SIZE-SMALL"
+          }
+        },
+        {
+          "type": "CatalogSku",
+          "code": "L2-VIEW-SKU-M",
+          "skuCode": "L2-VIEW-SKU-M",
+          "name": "L2查看中规格",
+          "status": "DISABLED",
+          "displayOrder": 1,
+          "standardSalePrice": 2000,
+          "attributeValues": {
+            "L2-VIEW-SIZE": "L2-VIEW-SIZE-MEDIUM"
+          }
+        },
+        {
+          "type": "CatalogSku",
+          "code": "L2-VIEW-SKU-L",
+          "skuCode": "L2-VIEW-SKU-L",
+          "name": "L2查看大规格",
+          "status": "ARCHIVED",
+          "displayOrder": 2,
+          "standardSalePrice": null,
+          "attributeValues": {
+            "L2-VIEW-SIZE": "L2-VIEW-SIZE-LARGE"
+          }
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-CATALOG-LIBRARY-VIEW"
+      },
+      "setupChannel": "OWNER_HTTP_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "journeyStates": [
+          "SUCCESS",
+          "FAILURE",
+          "RECOVERY"
+        ],
+        "preState": {
+          "itemCode": "L2-VIEW-001",
+          "version": 1,
+          "productionTagRef": null
+        },
+        "actionInput": {
+          "journey": "VIEW",
+          "primaryItemFixtureCode": "L2-VIEW-001",
+          "categorySelection": "L2-VIEW-ROOT/L2-VIEW-CATEGORY",
+          "productionTagSelection": "SINGLE_OR_CLEAR",
+          "invalidProductionTagSelection": "MULTIPLE_OR_SKU_OR_OPTION"
+        },
+        "expectedReadback": {
+          "mode": "OWNER_FACTS_STRICT",
+          "outcome": "SUCCESS",
+          "readTarget": "ITEM_DETAIL",
+          "requiredFields": [
+            "itemCode",
+            "categoryRef",
+            "productionTagRef",
+            "version",
+            "status"
+          ],
+          "factPaths": [
+            "item.itemCode",
+            "item.categoryRef",
+            "item.productionTagRef",
+            "item.version",
+            "item.status"
+          ],
+          "ownerReaders": [
+            "getOperationsCatalogItem"
+          ],
+          "versionRule": "AT_LEAST_BASELINE_VERSION",
+          "factTemplate": {
+            "item": {
+              "itemCode": "${itemCode}",
+              "categoryRef": "${categoryRef}",
+              "productionTagRef": "${productionTagRef}",
+              "version": "${baselineVersion}",
+              "status": "${baselineStatus}"
+            }
+          }
+        },
+        "unchangedReadback": {
+          "mode": "OWNER_FACTS_STRICT_PRE_STATE",
+          "outcome": "FAILURE",
+          "readTarget": "ITEM_DETAIL",
+          "requiredFields": [
+            "itemCode",
+            "categoryRef",
+            "productionTagRef",
+            "version",
+            "status"
+          ],
+          "factPaths": [
+            "item.itemCode",
+            "item.categoryRef",
+            "item.productionTagRef",
+            "item.version",
+            "item.status"
+          ],
+          "ownerReaders": [
+            "getOperationsCatalogItem"
+          ],
+          "versionRule": "EXACT_PRE_STATE",
+          "factTemplate": {
+            "item": {
+              "itemCode": "${itemCode}",
+              "categoryRef": "${categoryRef}",
+              "productionTagRef": "${productionTagRef}",
+              "version": "${baselineVersion}",
+              "status": "${baselineStatus}"
+            }
+          }
+        },
+        "recoveryReadbackKind": "EXPECTED",
+        "requiredVisibleTabKeys": [
+          "sku-specifications-pricing",
+          "production-prompts",
+          "inventory-bom"
+        ],
+        "fixtureReferenceStateByJourneyState": {
+          "SUCCESS": "NOT_APPLICABLE",
+          "FAILURE": "NOT_APPLICABLE",
+          "RECOVERY": "NOT_APPLICABLE"
+        },
+        "caseParameterKey": "journeyState",
+        "fixtureCoverage": [
+          "父商品与规格同表",
+          "规格分页",
+          "商品无价仍可查看",
+          "规格展示不进入父商品分母"
+        ]
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogCategory",
+            "code": "L2-VIEW-ROOT",
+            "name": "L2VIEW商品",
+            "parentCode": null,
+            "displayOrder": 0,
+            "selectable": false,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogCategory",
+            "code": "L2-VIEW-CATEGORY",
+            "name": "L2VIEW可选分类",
+            "parentCode": "L2-VIEW-ROOT",
+            "displayOrder": 0,
+            "selectable": true,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "L2-VIEW-001",
+            "name": "L2VIEW商品",
+            "shapeKey": "SKU_VARIANT_SALE_COUNTED",
+            "status": "DRAFT",
+            "version": 1,
+            "scopeKind": "STORE_BRAND",
+            "categoryCode": "L2-VIEW-CATEGORY",
+            "productionTagCode": null,
+            "standardSalePrice": null,
+            "skuCodes": [
+              "L2-VIEW-SKU-S",
+              "L2-VIEW-SKU-M",
+              "L2-VIEW-SKU-L"
+            ]
+          },
+          {
+            "type": "CatalogSkuAttributeDefinition",
+            "code": "L2-VIEW-SIZE",
+            "name": "杯型",
+            "status": "ENABLED",
+            "displayOrder": 0
+          },
+          {
+            "type": "CatalogSkuAttributeValue",
+            "code": "L2-VIEW-SIZE-SMALL",
+            "parentCode": "L2-VIEW-SIZE",
+            "name": "小规格",
+            "status": "ENABLED",
+            "displayOrder": 0
+          },
+          {
+            "type": "CatalogSkuAttributeValue",
+            "code": "L2-VIEW-SIZE-MEDIUM",
+            "parentCode": "L2-VIEW-SIZE",
+            "name": "中规格",
+            "status": "ENABLED",
+            "displayOrder": 1
+          },
+          {
+            "type": "CatalogSkuAttributeValue",
+            "code": "L2-VIEW-SIZE-LARGE",
+            "parentCode": "L2-VIEW-SIZE",
+            "name": "大规格",
+            "status": "ENABLED",
+            "displayOrder": 2
+          },
+          {
+            "type": "CatalogSku",
+            "code": "L2-VIEW-SKU-S",
+            "skuCode": "L2-VIEW-SKU-S",
+            "name": "L2查看小规格",
+            "status": "ENABLED",
+            "displayOrder": 0,
+            "standardSalePrice": 1800,
+            "attributeValues": {
+              "L2-VIEW-SIZE": "L2-VIEW-SIZE-SMALL"
+            }
+          },
+          {
+            "type": "CatalogSku",
+            "code": "L2-VIEW-SKU-M",
+            "skuCode": "L2-VIEW-SKU-M",
+            "name": "L2查看中规格",
+            "status": "DISABLED",
+            "displayOrder": 1,
+            "standardSalePrice": 2000,
+            "attributeValues": {
+              "L2-VIEW-SIZE": "L2-VIEW-SIZE-MEDIUM"
+            }
+          },
+          {
+            "type": "CatalogSku",
+            "code": "L2-VIEW-SKU-L",
+            "skuCode": "L2-VIEW-SKU-L",
+            "name": "L2查看大规格",
+            "status": "ARCHIVED",
+            "displayOrder": 2,
+            "standardSalePrice": null,
+            "attributeValues": {
+              "L2-VIEW-SIZE": "L2-VIEW-SIZE-LARGE"
+            }
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-CATALOG-LIBRARY-CREATE",
+      "class": "TEST",
+      "purpose": "新建商品、分类树选择与创建失败恢复",
+      "scenarioIds": [
+        "CI-L2-021"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogCategory",
+          "code": "L2-CREATE-ROOT",
+          "name": "L2CREATE商品",
+          "parentCode": null,
+          "displayOrder": 0,
+          "selectable": false,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogCategory",
+          "code": "L2-CREATE-CATEGORY",
+          "name": "L2CREATE可选分类",
+          "parentCode": "L2-CREATE-ROOT",
+          "displayOrder": 0,
+          "selectable": true,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "L2-CREATE-001",
+          "name": "L2CREATE商品",
+          "shapeKey": "STANDARD_SALE_COUNTED",
+          "status": "ENABLED",
+          "version": 1,
+          "scopeKind": "STORE_BRAND",
+          "categoryCode": "L2-CREATE-CATEGORY",
+          "productionTagCode": null,
+          "standardSalePrice": 100
+        },
+        {
+          "type": "CatalogCategory",
+          "code": "L2-CREATE-DEEP",
+          "name": "L2新建深层分类",
+          "parentCode": "L2-CREATE-CATEGORY",
+          "displayOrder": 1,
+          "selectable": true,
+          "status": "ENABLED"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-CATALOG-LIBRARY-CREATE"
+      },
+      "setupChannel": "OWNER_HTTP_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "journeyStates": [
+          "SUCCESS",
+          "FAILURE",
+          "RECOVERY"
+        ],
+        "preState": {
+          "itemCode": "L2-CREATE-001",
+          "version": 1,
+          "productionTagRef": null
+        },
+        "actionInput": {
+          "journey": "CREATE",
+          "primaryItemFixtureCode": "L2-CREATE-001",
+          "categorySelection": "L2-CREATE-ROOT/L2-CREATE-CATEGORY",
+          "productionTagSelection": "SINGLE_OR_CLEAR",
+          "invalidProductionTagSelection": "MULTIPLE_OR_SKU_OR_OPTION",
+          "create": {
+            "successCode": "${createCode}",
+            "failureCode": "${itemCode}"
+          }
+        },
+        "expectedReadback": {
+          "mode": "OWNER_FACTS_STRICT",
+          "outcome": "SUCCESS",
+          "readTarget": "CREATED_ITEM",
+          "requiredFields": [
+            "itemCode",
+            "version",
+            "status"
+          ],
+          "factPaths": [
+            "item.itemCode",
+            "item.version",
+            "item.status"
+          ],
+          "ownerReaders": [
+            "getOperationsCatalogItem"
+          ],
+          "versionRule": "POSITIVE_CREATED_VERSION",
+          "factTemplate": {
+            "item": {
+              "itemCode": "${createCode}",
+              "version": {
+                "relation": "POSITIVE_INTEGER"
+              },
+              "status": {
+                "relation": "NON_EMPTY"
+              }
+            }
+          }
+        },
+        "unchangedReadback": {
+          "mode": "OWNER_FACTS_STRICT_PRE_STATE",
+          "outcome": "FAILURE",
+          "readTarget": "CREATED_ITEM",
+          "requiredFields": [
+            "itemCode",
+            "version",
+            "status"
+          ],
+          "factPaths": [
+            "item.itemCode",
+            "item.version",
+            "item.status"
+          ],
+          "ownerReaders": [
+            "getOperationsCatalogItem"
+          ],
+          "versionRule": "EXACT_PRE_STATE",
+          "factTemplate": {
+            "item": {
+              "itemCode": "${itemCode}",
+              "categoryRef": "${categoryRef}",
+              "productionTagRef": "${productionTagRef}",
+              "version": "${baselineVersion}",
+              "status": "${baselineStatus}"
+            }
+          }
+        },
+        "recoveryReadbackKind": "EXPECTED",
+        "requiredVisibleTabKeys": [],
+        "fixtureReferenceStateByJourneyState": {
+          "SUCCESS": "NOT_APPLICABLE",
+          "FAILURE": "NOT_APPLICABLE",
+          "RECOVERY": "NOT_APPLICABLE"
+        },
+        "caseParameterKey": "journeyState",
+        "fixtureCoverage": [
+          "树形分类选择",
+          "新建成功",
+          "重复编码失败后保留输入",
+          "失败后恢复"
+        ]
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogCategory",
+            "code": "L2-CREATE-ROOT",
+            "name": "L2CREATE商品",
+            "parentCode": null,
+            "displayOrder": 0,
+            "selectable": false,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogCategory",
+            "code": "L2-CREATE-CATEGORY",
+            "name": "L2CREATE可选分类",
+            "parentCode": "L2-CREATE-ROOT",
+            "displayOrder": 0,
+            "selectable": true,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "L2-CREATE-001",
+            "name": "L2CREATE商品",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "status": "ENABLED",
+            "version": 1,
+            "scopeKind": "STORE_BRAND",
+            "categoryCode": "L2-CREATE-CATEGORY",
+            "productionTagCode": null,
+            "standardSalePrice": 100
+          },
+          {
+            "type": "CatalogCategory",
+            "code": "L2-CREATE-DEEP",
+            "name": "L2新建深层分类",
+            "parentCode": "L2-CREATE-CATEGORY",
+            "displayOrder": 1,
+            "selectable": true,
+            "status": "ENABLED"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-CATALOG-LIBRARY-EDIT",
+      "class": "TEST",
+      "purpose": "整单编辑、单一生产标签与草稿恢复",
+      "scenarioIds": [
+        "CI-L2-022"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogCategory",
+          "code": "L2-EDIT-ROOT",
+          "name": "L2EDIT商品",
+          "parentCode": null,
+          "displayOrder": 0,
+          "selectable": false,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogCategory",
+          "code": "L2-EDIT-CATEGORY",
+          "name": "L2EDIT可选分类",
+          "parentCode": "L2-EDIT-ROOT",
+          "displayOrder": 0,
+          "selectable": true,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "L2-EDIT-001",
+          "name": "L2EDIT商品",
+          "shapeKey": "STANDARD_SALE_COUNTED",
+          "status": "ENABLED",
+          "version": 1,
+          "scopeKind": "STORE_BRAND",
+          "categoryCode": "L2-EDIT-CATEGORY",
+          "productionTagCode": "L2-EDIT-BOUND-TAG",
+          "standardSalePrice": 100
+        },
+        {
+          "type": "ProductionTag",
+          "code": "L2-EDIT-BOUND-TAG",
+          "name": "L2编辑既有生产标签",
+          "status": "ENABLED",
+          "selectable": true
+        },
+        {
+          "type": "ProductionTag",
+          "code": "L2-EDIT-DISABLED-TAG",
+          "name": "L2编辑停用生产标签",
+          "status": "DISABLED",
+          "selectable": false,
+          "disabledReason": "已停用，不能用于新的商品"
+        }
+      ],
+      "edges": [
+        {
+          "from": "L2-EDIT-001",
+          "to": "L2-EDIT-BOUND-TAG",
+          "refKind": "PRODUCTION_TAG",
+          "refCode": "L2-EDIT-BOUND-TAG"
+        }
+      ],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-CATALOG-LIBRARY-EDIT"
+      },
+      "setupChannel": "OWNER_HTTP_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "journeyStates": [
+          "SUCCESS",
+          "FAILURE",
+          "RECOVERY"
+        ],
+        "preState": {
+          "itemCode": "L2-EDIT-001",
+          "version": 1,
+          "productionTagRef": null
+        },
+        "actionInput": {
+          "journey": "EDIT",
+          "primaryItemFixtureCode": "L2-EDIT-001",
+          "categorySelection": "L2-EDIT-ROOT/L2-EDIT-CATEGORY",
+          "productionTagSelection": "SINGLE_OR_CLEAR",
+          "invalidProductionTagSelection": "MULTIPLE_OR_SKU_OR_OPTION"
+        },
+        "expectedReadback": {
+          "mode": "OWNER_FACTS_STRICT",
+          "outcome": "SUCCESS",
+          "readTarget": "SAVED_ITEM",
+          "requiredFields": [
+            "itemCode",
+            "productionTagRef",
+            "version",
+            "status"
+          ],
+          "factPaths": [
+            "item.itemCode",
+            "item.productionTagRef",
+            "item.version",
+            "item.status"
+          ],
+          "ownerReaders": [
+            "getOperationsCatalogItem"
+          ],
+          "versionRule": "AT_LEAST_BASELINE_VERSION",
+          "factTemplate": {
+            "item": {
+              "itemCode": "${itemCode}",
+              "categoryRef": "${categoryRef}",
+              "productionTagRef": "${existingProductionTagRef}",
+              "version": {
+                "relation": "AT_LEAST_BASELINE"
+              },
+              "status": "${baselineStatus}"
+            }
+          }
+        },
+        "unchangedReadback": {
+          "mode": "OWNER_FACTS_STRICT_PRE_STATE",
+          "outcome": "FAILURE",
+          "readTarget": "SAVED_ITEM",
+          "requiredFields": [
+            "itemCode",
+            "productionTagRef",
+            "version",
+            "status"
+          ],
+          "factPaths": [
+            "item.itemCode",
+            "item.productionTagRef",
+            "item.version",
+            "item.status"
+          ],
+          "ownerReaders": [
+            "getOperationsCatalogItem"
+          ],
+          "versionRule": "EXACT_PRE_STATE",
+          "factTemplate": {
+            "item": {
+              "itemCode": "${itemCode}",
+              "categoryRef": "${categoryRef}",
+              "productionTagRef": "${productionTagRef}",
+              "version": "${baselineVersion}",
+              "status": "${baselineStatus}"
+            }
+          }
+        },
+        "recoveryReadbackKind": "UNCHANGED",
+        "requiredVisibleTabKeys": [
+          "production-prompts"
+        ],
+        "fixtureReferenceStateByJourneyState": {
+          "SUCCESS": "NOT_APPLICABLE",
+          "FAILURE": "NOT_APPLICABLE",
+          "RECOVERY": "NOT_APPLICABLE"
+        },
+        "caseParameterKey": "journeyState",
+        "fixtureCoverage": [
+          "商品只保留一个生产标签",
+          "既有标签仍可见",
+          "停用标签不能作为新候选",
+          "清除标签后读回为空",
+          "规格与选项值篡改拒绝"
+        ]
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogCategory",
+            "code": "L2-EDIT-ROOT",
+            "name": "L2EDIT商品",
+            "parentCode": null,
+            "displayOrder": 0,
+            "selectable": false,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogCategory",
+            "code": "L2-EDIT-CATEGORY",
+            "name": "L2EDIT可选分类",
+            "parentCode": "L2-EDIT-ROOT",
+            "displayOrder": 0,
+            "selectable": true,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "L2-EDIT-001",
+            "name": "L2EDIT商品",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "status": "ENABLED",
+            "version": 1,
+            "scopeKind": "STORE_BRAND",
+            "categoryCode": "L2-EDIT-CATEGORY",
+            "productionTagCode": "L2-EDIT-BOUND-TAG",
+            "standardSalePrice": 100
+          },
+          {
+            "type": "ProductionTag",
+            "code": "L2-EDIT-BOUND-TAG",
+            "name": "L2编辑既有生产标签",
+            "status": "ENABLED",
+            "selectable": true
+          },
+          {
+            "type": "ProductionTag",
+            "code": "L2-EDIT-DISABLED-TAG",
+            "name": "L2编辑停用生产标签",
+            "status": "DISABLED",
+            "selectable": false,
+            "disabledReason": "已停用，不能用于新的商品"
+          }
+        ],
+        "edges": [
+          {
+            "from": "L2-EDIT-001",
+            "to": "L2-EDIT-BOUND-TAG",
+            "refKind": "PRODUCTION_TAG",
+            "refCode": "L2-EDIT-BOUND-TAG"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-CATALOG-LIBRARY-CONFIG",
+      "class": "TEST",
+      "purpose": "六库配置、级联选择与返回编辑",
+      "scenarioIds": [
+        "CI-L2-023"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogCategory",
+          "code": "L2-CONFIG-ROOT",
+          "name": "L2CONFIG商品",
+          "parentCode": null,
+          "displayOrder": 0,
+          "selectable": false,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogCategory",
+          "code": "L2-CONFIG-CATEGORY",
+          "name": "L2CONFIG可选分类",
+          "parentCode": "L2-CONFIG-ROOT",
+          "displayOrder": 0,
+          "selectable": true,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "L2-CONFIG-001",
+          "name": "L2CONFIG商品",
+          "shapeKey": "STANDARD_SALE_COUNTED",
+          "status": "ENABLED",
+          "version": 1,
+          "scopeKind": "STORE_BRAND",
+          "categoryCode": "L2-CONFIG-CATEGORY",
+          "productionTagCode": null,
+          "standardSalePrice": 100
+        },
+        {
+          "type": "CatalogUnit",
+          "code": "L2-CONFIG-EACH",
+          "name": "个",
+          "status": "ENABLED",
+          "unitDimension": "COUNT",
+          "precision": 0,
+          "displayOrder": 0
+        },
+        {
+          "type": "CatalogUnit",
+          "code": "L2-CONFIG-GRAM",
+          "name": "克",
+          "status": "ENABLED",
+          "unitDimension": "WEIGHT",
+          "precision": 0,
+          "displayOrder": 1
+        },
+        {
+          "type": "CatalogAttributeDefinition",
+          "code": "L2-CONFIG-SIZE",
+          "name": "规格",
+          "status": "ENABLED"
+        },
+        {
+          "type": "OrderOptionDefinition",
+          "code": "L2-CONFIG-MILK",
+          "name": "奶类选择",
+          "status": "ENABLED",
+          "displayOrder": 0
+        },
+        {
+          "type": "OrderOptionValue",
+          "code": "L2-CONFIG-OAT",
+          "groupCode": "L2-CONFIG-MILK",
+          "name": "燕麦奶",
+          "status": "ENABLED",
+          "displayOrder": 0
+        }
+      ],
+      "edges": [
+        {
+          "from": "L2-CONFIG-MILK",
+          "to": "L2-CONFIG-OAT",
+          "refKind": "ORDER_OPTION_VALUE",
+          "refCode": "L2-CONFIG-OAT"
+        }
+      ],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-CATALOG-LIBRARY-CONFIG"
+      },
+      "setupChannel": "OWNER_HTTP_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "journeyStates": [
+          "SUCCESS",
+          "FAILURE",
+          "RECOVERY"
+        ],
+        "preState": {
+          "itemCode": "L2-CONFIG-001",
+          "version": 1,
+          "productionTagRef": null
+        },
+        "actionInput": {
+          "journey": "CONFIG",
+          "primaryItemFixtureCode": "L2-CONFIG-001",
+          "categorySelection": "L2-CONFIG-ROOT/L2-CONFIG-CATEGORY",
+          "productionTagSelection": "SINGLE_OR_CLEAR",
+          "invalidProductionTagSelection": "MULTIPLE_OR_SKU_OR_OPTION"
+        },
+        "expectedReadback": {
+          "mode": "OWNER_FACTS_STRICT",
+          "outcome": "SUCCESS",
+          "readTarget": "DICTIONARY_ENTRY",
+          "requiredFields": [
+            "code",
+            "name",
+            "status"
+          ],
+          "factPaths": [
+            "dictionary.code",
+            "dictionary.name",
+            "dictionary.status"
+          ],
+          "ownerReaders": [
+            "getOperationsProductionTags"
+          ],
+          "versionRule": "AT_LEAST_BASELINE_VERSION",
+          "factTemplate": {
+            "dictionary": {
+              "code": "${productionTagCode}",
+              "name": "${productionTagName}",
+              "status": "ENABLED"
+            }
+          }
+        },
+        "unchangedReadback": {
+          "mode": "OWNER_FACTS_STRICT_PRE_STATE",
+          "outcome": "FAILURE",
+          "readTarget": "DICTIONARY_ENTRY",
+          "requiredFields": [
+            "code",
+            "name",
+            "status"
+          ],
+          "factPaths": [
+            "dictionary.code",
+            "dictionary.name",
+            "dictionary.status"
+          ],
+          "ownerReaders": [
+            "getOperationsProductionTags"
+          ],
+          "versionRule": "EXACT_PRE_STATE",
+          "factTemplate": {
+            "dictionary": {
+              "code": "${productionTagCode}",
+              "name": "${productionTagName}",
+              "status": "ABSENT"
+            }
+          }
+        },
+        "recoveryReadbackKind": "EXPECTED",
+        "requiredVisibleTabKeys": [
+          "production-prompts"
+        ],
+        "fixtureReferenceStateByJourneyState": {
+          "SUCCESS": "NOT_APPLICABLE",
+          "FAILURE": "NOT_APPLICABLE",
+          "RECOVERY": "NOT_APPLICABLE"
+        },
+        "caseParameterKey": "journeyState",
+        "fixtureCoverage": [
+          "六库配置抽屉",
+          "单位与规格级联",
+          "商品属性候选",
+          "点单选项候选",
+          "配置完成后恢复编辑"
+        ]
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogCategory",
+            "code": "L2-CONFIG-ROOT",
+            "name": "L2CONFIG商品",
+            "parentCode": null,
+            "displayOrder": 0,
+            "selectable": false,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogCategory",
+            "code": "L2-CONFIG-CATEGORY",
+            "name": "L2CONFIG可选分类",
+            "parentCode": "L2-CONFIG-ROOT",
+            "displayOrder": 0,
+            "selectable": true,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "L2-CONFIG-001",
+            "name": "L2CONFIG商品",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "status": "ENABLED",
+            "version": 1,
+            "scopeKind": "STORE_BRAND",
+            "categoryCode": "L2-CONFIG-CATEGORY",
+            "productionTagCode": null,
+            "standardSalePrice": 100
+          },
+          {
+            "type": "CatalogUnit",
+            "code": "L2-CONFIG-EACH",
+            "name": "个",
+            "status": "ENABLED",
+            "unitDimension": "COUNT",
+            "precision": 0,
+            "displayOrder": 0
+          },
+          {
+            "type": "CatalogUnit",
+            "code": "L2-CONFIG-GRAM",
+            "name": "克",
+            "status": "ENABLED",
+            "unitDimension": "WEIGHT",
+            "precision": 0,
+            "displayOrder": 1
+          },
+          {
+            "type": "CatalogAttributeDefinition",
+            "code": "L2-CONFIG-SIZE",
+            "name": "规格",
+            "status": "ENABLED"
+          },
+          {
+            "type": "OrderOptionDefinition",
+            "code": "L2-CONFIG-MILK",
+            "name": "奶类选择",
+            "status": "ENABLED",
+            "displayOrder": 0
+          },
+          {
+            "type": "OrderOptionValue",
+            "code": "L2-CONFIG-OAT",
+            "groupCode": "L2-CONFIG-MILK",
+            "name": "燕麦奶",
+            "status": "ENABLED",
+            "displayOrder": 0
+          }
+        ],
+        "edges": [
+          {
+            "from": "L2-CONFIG-MILK",
+            "to": "L2-CONFIG-OAT",
+            "refKind": "ORDER_OPTION_VALUE",
+            "refCode": "L2-CONFIG-OAT"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-CATALOG-LIBRARY-BATCH",
+      "class": "TEST",
+      "purpose": "批量操作摘要、进度与逐项结果",
+      "scenarioIds": [
+        "CI-L2-024"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogCategory",
+          "code": "L2-BATCH-ROOT",
+          "name": "L2BATCH商品",
+          "parentCode": null,
+          "displayOrder": 0,
+          "selectable": false,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogCategory",
+          "code": "L2-BATCH-CATEGORY",
+          "name": "L2BATCH可选分类",
+          "parentCode": "L2-BATCH-ROOT",
+          "displayOrder": 0,
+          "selectable": true,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "L2-BATCH-001",
+          "name": "L2BATCH商品",
+          "shapeKey": "STANDARD_SALE_COUNTED",
+          "status": "ENABLED",
+          "version": 1,
+          "scopeKind": "STORE_BRAND",
+          "categoryCode": "L2-BATCH-CATEGORY",
+          "productionTagCode": null,
+          "standardSalePrice": 100
+        },
+        {
+          "type": "CatalogItem",
+          "code": "L2-BATCH-002",
+          "name": "L2批量第二商品",
+          "shapeKey": "STANDARD_SALE_COUNTED",
+          "status": "ENABLED",
+          "version": 1,
+          "categoryCode": "L2-BATCH-CATEGORY",
+          "standardSalePrice": 100
+        },
+        {
+          "type": "CatalogItem",
+          "code": "L2-BATCH-003",
+          "name": "L2批量第三商品",
+          "shapeKey": "STANDARD_SALE_COUNTED",
+          "status": "ENABLED",
+          "version": 1,
+          "categoryCode": "L2-BATCH-CATEGORY",
+          "standardSalePrice": 120
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-CATALOG-LIBRARY-BATCH"
+      },
+      "setupChannel": "OWNER_HTTP_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "journeyStates": [
+          "SUCCESS",
+          "FAILURE",
+          "RECOVERY"
+        ],
+        "preState": {
+          "itemCode": "L2-BATCH-001",
+          "version": 1,
+          "productionTagRef": null
+        },
+        "actionInput": {
+          "journey": "BATCH",
+          "primaryItemFixtureCode": "L2-BATCH-001",
+          "categorySelection": "L2-BATCH-ROOT/L2-BATCH-CATEGORY",
+          "productionTagSelection": "SINGLE_OR_CLEAR",
+          "invalidProductionTagSelection": "MULTIPLE_OR_SKU_OR_OPTION",
+          "batchItemFixtureCodes": [
+            "L2-BATCH-001",
+            "L2-BATCH-002",
+            "L2-BATCH-003"
+          ]
+        },
+        "expectedReadback": {
+          "mode": "OWNER_FACTS_STRICT",
+          "outcome": "SUCCESS",
+          "readTarget": "BATCH_RECEIPT_AND_ITEMS",
+          "requiredFields": [
+            "itemCode",
+            "outcome",
+            "version"
+          ],
+          "factPaths": [
+            "receipt.itemCode",
+            "receipt.outcome",
+            "receipt.version",
+            "item.itemCode",
+            "item.status",
+            "item.version"
+          ],
+          "ownerReaders": [
+            "batchTransitionOperationsCatalogItemStatus",
+            "getOperationsCatalogItems"
+          ],
+          "versionRule": "AT_LEAST_BASELINE_VERSION",
+          "factTemplate": {
+            "receipt": {
+              "itemCode": "${itemCode}",
+              "outcome": "SUCCEEDED",
+              "version": {
+                "relation": "SAME_AS_ITEM_AFTER"
+              }
+            },
+            "item": {
+              "itemCode": "${itemCode}",
+              "categoryRef": "${categoryRef}",
+              "productionTagRef": "${productionTagRef}",
+              "version": {
+                "relation": "AT_LEAST_BASELINE"
+              },
+              "status": "DISABLED"
+            }
+          }
+        },
+        "unchangedReadback": {
+          "mode": "OWNER_FACTS_STRICT_PRE_STATE",
+          "outcome": "FAILURE",
+          "readTarget": "BATCH_RECEIPT_AND_ITEMS",
+          "requiredFields": [
+            "itemCode",
+            "outcome",
+            "version"
+          ],
+          "factPaths": [
+            "receipt.itemCode",
+            "receipt.outcome",
+            "receipt.version",
+            "item.itemCode",
+            "item.status",
+            "item.version"
+          ],
+          "ownerReaders": [
+            "batchTransitionOperationsCatalogItemStatus",
+            "getOperationsCatalogItems"
+          ],
+          "versionRule": "EXACT_PRE_STATE",
+          "factTemplate": {
+            "receipt": {
+              "itemCode": "${itemCode}",
+              "outcome": "FAILED",
+              "version": null
+            },
+            "item": {
+              "itemCode": "${itemCode}",
+              "categoryRef": "${categoryRef}",
+              "productionTagRef": "${productionTagRef}",
+              "version": {
+                "relation": "SAME_AS_FIXTURE_MUTATION"
+              },
+              "status": "${baselineStatus}"
+            }
+          }
+        },
+        "recoveryReadbackKind": "EXPECTED",
+        "requiredVisibleTabKeys": [],
+        "fixtureReferenceStateByJourneyState": {
+          "SUCCESS": "NOT_APPLICABLE",
+          "FAILURE": "NOT_APPLICABLE",
+          "RECOVERY": "NOT_APPLICABLE"
+        },
+        "caseParameterKey": "journeyState",
+        "fixtureCoverage": [
+          "父商品批量选择",
+          "提交前摘要",
+          "逐项进度",
+          "成功与失败逐项结果"
+        ]
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogCategory",
+            "code": "L2-BATCH-ROOT",
+            "name": "L2BATCH商品",
+            "parentCode": null,
+            "displayOrder": 0,
+            "selectable": false,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogCategory",
+            "code": "L2-BATCH-CATEGORY",
+            "name": "L2BATCH可选分类",
+            "parentCode": "L2-BATCH-ROOT",
+            "displayOrder": 0,
+            "selectable": true,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "L2-BATCH-001",
+            "name": "L2BATCH商品",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "status": "ENABLED",
+            "version": 1,
+            "scopeKind": "STORE_BRAND",
+            "categoryCode": "L2-BATCH-CATEGORY",
+            "productionTagCode": null,
+            "standardSalePrice": 100
+          },
+          {
+            "type": "CatalogItem",
+            "code": "L2-BATCH-002",
+            "name": "L2批量第二商品",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "status": "ENABLED",
+            "version": 1,
+            "categoryCode": "L2-BATCH-CATEGORY",
+            "standardSalePrice": 100
+          },
+          {
+            "type": "CatalogItem",
+            "code": "L2-BATCH-003",
+            "name": "L2批量第三商品",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "status": "ENABLED",
+            "version": 1,
+            "categoryCode": "L2-BATCH-CATEGORY",
+            "standardSalePrice": 120
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-CATALOG-LIBRARY-COPY",
+      "class": "TEST",
+      "purpose": "复制向导检查影响、版本漂移与逐步恢复",
+      "scenarioIds": [
+        "CI-L2-025"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogCategory",
+          "code": "L2-COPY-ROOT",
+          "name": "L2COPY商品",
+          "parentCode": null,
+          "displayOrder": 0,
+          "selectable": false,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogCategory",
+          "code": "L2-COPY-CATEGORY",
+          "name": "L2COPY可选分类",
+          "parentCode": "L2-COPY-ROOT",
+          "displayOrder": 0,
+          "selectable": true,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "L2-COPY-TARGET",
+          "name": "L2复制目标商品",
+          "shapeKey": "STANDARD_SALE_COUNTED",
+          "status": "ENABLED",
+          "version": 1,
+          "scopeKind": "STORE_BRAND",
+          "categoryCode": "L2-COPY-CATEGORY",
+          "productionTagCode": null,
+          "standardSalePrice": 100
+        },
+        {
+          "type": "CatalogCategory",
+          "code": "L2-COPY-SOURCE-ROOT",
+          "name": "L2复制来源分类",
+          "parentCode": null,
+          "displayOrder": 0,
+          "selectable": false,
+          "status": "ENABLED",
+          "scopeKind": "HEAD_COMPANY_BRAND"
+        },
+        {
+          "type": "CatalogCategory",
+          "code": "L2-COPY-SOURCE-CATEGORY",
+          "name": "L2复制来源可选分类",
+          "parentCode": "L2-COPY-SOURCE-ROOT",
+          "displayOrder": 0,
+          "selectable": true,
+          "status": "ENABLED",
+          "scopeKind": "HEAD_COMPANY_BRAND"
+        },
+        {
+          "type": "CatalogUnit",
+          "code": "L2-COPY-SOURCE-EACH",
+          "name": "个",
+          "status": "ENABLED",
+          "unitDimension": "COUNT",
+          "precision": 0,
+          "scopeKind": "HEAD_COMPANY_BRAND"
+        },
+        {
+          "type": "ProductionTag",
+          "code": "L2-COPY-SOURCE-PRODUCTION-TAG",
+          "name": "L2复制来源生产标签",
+          "status": "ENABLED",
+          "selectable": true,
+          "scopeKind": "HEAD_COMPANY_BRAND"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "L2-COPY-SOURCE-SUCCESS",
+          "name": "L2复制来源商品 SUCCESS",
+          "shapeKey": "STANDARD_SALE_COUNTED",
+          "status": "ENABLED",
+          "version": 1,
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "categoryCode": "L2-COPY-SOURCE-CATEGORY",
+          "productionTagCode": "L2-COPY-SOURCE-PRODUCTION-TAG",
+          "standardSalePrice": 100
+        },
+        {
+          "type": "CatalogItem",
+          "code": "L2-COPY-SOURCE-FAILURE",
+          "name": "L2复制来源商品 FAILURE",
+          "shapeKey": "STANDARD_SALE_COUNTED",
+          "status": "ENABLED",
+          "version": 1,
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "categoryCode": "L2-COPY-SOURCE-CATEGORY",
+          "productionTagCode": "L2-COPY-SOURCE-PRODUCTION-TAG",
+          "standardSalePrice": 100
+        },
+        {
+          "type": "CatalogItem",
+          "code": "L2-COPY-SOURCE-RECOVERY",
+          "name": "L2复制来源商品 RECOVERY",
+          "shapeKey": "STANDARD_SALE_COUNTED",
+          "status": "ENABLED",
+          "version": 1,
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "categoryCode": "L2-COPY-SOURCE-CATEGORY",
+          "productionTagCode": "L2-COPY-SOURCE-PRODUCTION-TAG",
+          "standardSalePrice": 100
+        }
+      ],
+      "edges": [
+        {
+          "from": "L2-COPY-SOURCE-SUCCESS",
+          "to": "L2-COPY-SOURCE-PRODUCTION-TAG",
+          "refKind": "PRODUCTION_TAG",
+          "refCode": "L2-COPY-SOURCE-PRODUCTION-TAG"
+        },
+        {
+          "from": "L2-COPY-SOURCE-FAILURE",
+          "to": "L2-COPY-SOURCE-PRODUCTION-TAG",
+          "refKind": "PRODUCTION_TAG",
+          "refCode": "L2-COPY-SOURCE-PRODUCTION-TAG"
+        },
+        {
+          "from": "L2-COPY-SOURCE-RECOVERY",
+          "to": "L2-COPY-SOURCE-PRODUCTION-TAG",
+          "refKind": "PRODUCTION_TAG",
+          "refCode": "L2-COPY-SOURCE-PRODUCTION-TAG"
+        }
+      ],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-CATALOG-LIBRARY-COPY"
+      },
+      "setupChannel": "OWNER_HTTP_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "journeyStates": [
+          "SUCCESS",
+          "FAILURE",
+          "RECOVERY"
+        ],
+        "preState": {
+          "itemCode": "L2-COPY-TARGET",
+          "version": 1,
+          "productionTagRef": null
+        },
+        "actionInput": {
+          "journey": "COPY",
+          "primaryItemFixtureCode": "L2-COPY-TARGET",
+          "categorySelection": "L2-COPY-ROOT/L2-COPY-CATEGORY",
+          "productionTagSelection": "SINGLE_OR_CLEAR",
+          "invalidProductionTagSelection": "MULTIPLE_OR_SKU_OR_OPTION",
+          "copySourceFixtureCodes": {
+            "SUCCESS": "L2-COPY-SOURCE-SUCCESS",
+            "FAILURE": "L2-COPY-SOURCE-FAILURE",
+            "RECOVERY": "L2-COPY-SOURCE-RECOVERY"
+          }
+        },
+        "expectedReadback": {
+          "mode": "OWNER_FACTS_STRICT",
+          "outcome": "SUCCESS",
+          "readTarget": "COPY_PREFLIGHT_AND_EXECUTION",
+          "requiredFields": [
+            "preflightDigest",
+            "created"
+          ],
+          "factPaths": [
+            "preflight.preflightDigest",
+            "preflight.selectedItemCode",
+            "execution.requestPreflightDigest",
+            "execution.createdCodes"
+          ],
+          "ownerReaders": [
+            "preflightOperationsBrandCatalogCopy",
+            "executeOperationsBrandCatalogCopy"
+          ],
+          "versionRule": "AT_LEAST_BASELINE_VERSION",
+          "factTemplate": {
+            "preflight": {
+              "preflightDigest": {
+                "relation": "CAPTURED_PREFLIGHT_DIGEST"
+              },
+              "selectedItemCode": "${sourceItemCode}"
+            },
+            "execution": {
+              "requestPreflightDigest": {
+                "relation": "SAME_AS_PREFLIGHT"
+              },
+              "createdCodes": {
+                "relation": "CONTAINS_ITEM_CODE",
+                "itemCode": "${sourceItemCode}"
+              }
+            }
+          }
+        },
+        "unchangedReadback": {
+          "mode": "OWNER_FACTS_STRICT_PRE_STATE",
+          "outcome": "FAILURE",
+          "readTarget": "COPY_PREFLIGHT_AND_EXECUTION",
+          "requiredFields": [
+            "preflightDigest",
+            "created"
+          ],
+          "factPaths": [
+            "preflight.preflightDigest",
+            "preflight.selectedItemCode",
+            "execution.requestPreflightDigest",
+            "execution.createdCodes"
+          ],
+          "ownerReaders": [
+            "preflightOperationsBrandCatalogCopy"
+          ],
+          "versionRule": "EXACT_PRE_STATE",
+          "factTemplate": {
+            "preflight": {
+              "preflightDigest": {
+                "relation": "CAPTURED_PREFLIGHT_DIGEST"
+              },
+              "selectedItemCode": "${sourceItemCode}"
+            },
+            "execution": {
+              "preflightDigest": {
+                "relation": "NO_EXECUTION"
+              },
+              "createdCodes": {
+                "relation": "NO_EXECUTION"
+              },
+              "absent": true
+            }
+          }
+        },
+        "recoveryReadbackKind": "EXPECTED",
+        "requiredVisibleTabKeys": [],
+        "fixtureReferenceStateByJourneyState": {
+          "SUCCESS": "NOT_APPLICABLE",
+          "FAILURE": "NOT_APPLICABLE",
+          "RECOVERY": "NOT_APPLICABLE"
+        },
+        "caseParameterKey": "journeyState",
+        "fixtureCoverage": [
+          "来源范围",
+          "目标范围",
+          "单一生产标签闭包重写",
+          "检查影响确认",
+          "版本漂移失败",
+          "重试成功"
+        ]
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogCategory",
+            "code": "L2-COPY-ROOT",
+            "name": "L2COPY商品",
+            "parentCode": null,
+            "displayOrder": 0,
+            "selectable": false,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogCategory",
+            "code": "L2-COPY-CATEGORY",
+            "name": "L2COPY可选分类",
+            "parentCode": "L2-COPY-ROOT",
+            "displayOrder": 0,
+            "selectable": true,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "L2-COPY-TARGET",
+            "name": "L2复制目标商品",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "status": "ENABLED",
+            "version": 1,
+            "scopeKind": "STORE_BRAND",
+            "categoryCode": "L2-COPY-CATEGORY",
+            "productionTagCode": null,
+            "standardSalePrice": 100
+          },
+          {
+            "type": "CatalogCategory",
+            "code": "L2-COPY-SOURCE-ROOT",
+            "name": "L2复制来源分类",
+            "parentCode": null,
+            "displayOrder": 0,
+            "selectable": false,
+            "status": "ENABLED",
+            "scopeKind": "HEAD_COMPANY_BRAND"
+          },
+          {
+            "type": "CatalogCategory",
+            "code": "L2-COPY-SOURCE-CATEGORY",
+            "name": "L2复制来源可选分类",
+            "parentCode": "L2-COPY-SOURCE-ROOT",
+            "displayOrder": 0,
+            "selectable": true,
+            "status": "ENABLED",
+            "scopeKind": "HEAD_COMPANY_BRAND"
+          },
+          {
+            "type": "CatalogUnit",
+            "code": "L2-COPY-SOURCE-EACH",
+            "name": "个",
+            "status": "ENABLED",
+            "unitDimension": "COUNT",
+            "precision": 0,
+            "scopeKind": "HEAD_COMPANY_BRAND"
+          },
+          {
+            "type": "ProductionTag",
+            "code": "L2-COPY-SOURCE-PRODUCTION-TAG",
+            "name": "L2复制来源生产标签",
+            "status": "ENABLED",
+            "selectable": true,
+            "scopeKind": "HEAD_COMPANY_BRAND"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "L2-COPY-SOURCE-SUCCESS",
+            "name": "L2复制来源商品 SUCCESS",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "status": "ENABLED",
+            "version": 1,
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "categoryCode": "L2-COPY-SOURCE-CATEGORY",
+            "productionTagCode": "L2-COPY-SOURCE-PRODUCTION-TAG",
+            "standardSalePrice": 100
+          },
+          {
+            "type": "CatalogItem",
+            "code": "L2-COPY-SOURCE-FAILURE",
+            "name": "L2复制来源商品 FAILURE",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "status": "ENABLED",
+            "version": 1,
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "categoryCode": "L2-COPY-SOURCE-CATEGORY",
+            "productionTagCode": "L2-COPY-SOURCE-PRODUCTION-TAG",
+            "standardSalePrice": 100
+          },
+          {
+            "type": "CatalogItem",
+            "code": "L2-COPY-SOURCE-RECOVERY",
+            "name": "L2复制来源商品 RECOVERY",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "status": "ENABLED",
+            "version": 1,
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "categoryCode": "L2-COPY-SOURCE-CATEGORY",
+            "productionTagCode": "L2-COPY-SOURCE-PRODUCTION-TAG",
+            "standardSalePrice": 100
+          }
+        ],
+        "edges": [
+          {
+            "from": "L2-COPY-SOURCE-SUCCESS",
+            "to": "L2-COPY-SOURCE-PRODUCTION-TAG",
+            "refKind": "PRODUCTION_TAG",
+            "refCode": "L2-COPY-SOURCE-PRODUCTION-TAG"
+          },
+          {
+            "from": "L2-COPY-SOURCE-FAILURE",
+            "to": "L2-COPY-SOURCE-PRODUCTION-TAG",
+            "refKind": "PRODUCTION_TAG",
+            "refCode": "L2-COPY-SOURCE-PRODUCTION-TAG"
+          },
+          {
+            "from": "L2-COPY-SOURCE-RECOVERY",
+            "to": "L2-COPY-SOURCE-PRODUCTION-TAG",
+            "refKind": "PRODUCTION_TAG",
+            "refCode": "L2-COPY-SOURCE-PRODUCTION-TAG"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-CATALOG-LIBRARY-GOVERNANCE",
+      "class": "TEST",
+      "purpose": "生命周期治理与引用阻断结果",
+      "scenarioIds": [
+        "CI-L2-026"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "CatalogCategory",
+          "code": "L2-GOVERNANCE-ROOT",
+          "name": "L2GOVERNANCE商品",
+          "parentCode": null,
+          "displayOrder": 0,
+          "selectable": false,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogCategory",
+          "code": "L2-GOVERNANCE-CATEGORY",
+          "name": "L2GOVERNANCE可选分类",
+          "parentCode": "L2-GOVERNANCE-ROOT",
+          "displayOrder": 0,
+          "selectable": true,
+          "status": "ENABLED"
+        },
+        {
+          "type": "CatalogItem",
+          "code": "L2-GOVERNANCE-001",
+          "name": "L2GOVERNANCE商品",
+          "shapeKey": "STANDARD_SALE_COUNTED",
+          "status": "ENABLED",
+          "version": 1,
+          "scopeKind": "STORE_BRAND",
+          "categoryCode": "L2-GOVERNANCE-CATEGORY",
+          "productionTagCode": null,
+          "standardSalePrice": 100
+        },
+        {
+          "type": "CatalogItem",
+          "code": "L2-GOVERNANCE-CONSUMER",
+          "name": "L2治理引用商品",
+          "shapeKey": "COMPOSITE",
+          "status": "ENABLED",
+          "version": 1,
+          "categoryCode": "L2-GOVERNANCE-CATEGORY",
+          "referenceKind": "CATALOG_ITEM"
+        }
+      ],
+      "edges": [
+        {
+          "from": "L2-GOVERNANCE-CONSUMER",
+          "to": "L2-GOVERNANCE-001",
+          "refKind": "COMPOSITE_COMPONENT",
+          "refCode": "L2-GOVERNANCE-001"
+        }
+      ],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-CATALOG-LIBRARY-GOVERNANCE"
+      },
+      "setupChannel": "OWNER_HTTP_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "journeyStates": [
+          "SUCCESS",
+          "FAILURE",
+          "RECOVERY"
+        ],
+        "preState": {
+          "itemCode": "L2-GOVERNANCE-001",
+          "version": 1,
+          "productionTagRef": null
+        },
+        "actionInput": {
+          "journey": "GOVERNANCE",
+          "primaryItemFixtureCode": "L2-GOVERNANCE-001",
+          "categorySelection": "L2-GOVERNANCE-ROOT/L2-GOVERNANCE-CATEGORY",
+          "productionTagSelection": "SINGLE_OR_CLEAR",
+          "invalidProductionTagSelection": "MULTIPLE_OR_SKU_OR_OPTION"
+        },
+        "expectedReadback": {
+          "mode": "OWNER_FACTS_STRICT",
+          "outcome": "SUCCESS",
+          "readTarget": "LIFECYCLE_ITEM",
+          "requiredFields": [
+            "itemCode",
+            "version",
+            "status"
+          ],
+          "factPaths": [
+            "item.itemCode",
+            "item.version",
+            "item.status"
+          ],
+          "ownerReaders": [
+            "getOperationsCatalogItem"
+          ],
+          "versionRule": "AT_LEAST_BASELINE_VERSION",
+          "factTemplate": {
+            "item": {
+              "itemCode": "${itemCode}",
+              "categoryRef": "${categoryRef}",
+              "productionTagRef": "${productionTagRef}",
+              "version": {
+                "relation": "AT_LEAST_BASELINE"
+              },
+              "status": "DISABLED"
+            }
+          }
+        },
+        "unchangedReadback": {
+          "mode": "OWNER_FACTS_STRICT_PRE_STATE",
+          "outcome": "FAILURE",
+          "readTarget": "LIFECYCLE_ITEM",
+          "requiredFields": [
+            "itemCode",
+            "version",
+            "status"
+          ],
+          "factPaths": [
+            "item.itemCode",
+            "item.version",
+            "item.status"
+          ],
+          "ownerReaders": [
+            "getOperationsCatalogItem"
+          ],
+          "versionRule": "EXACT_PRE_STATE",
+          "factTemplate": {
+            "item": {
+              "itemCode": "${itemCode}",
+              "categoryRef": "${categoryRef}",
+              "productionTagRef": "${productionTagRef}",
+              "version": "${baselineVersion}",
+              "status": "${baselineStatus}"
+            }
+          }
+        },
+        "recoveryReadbackKind": "EXPECTED",
+        "requiredVisibleTabKeys": [
+          "governance"
+        ],
+        "fixtureReferenceStateByJourneyState": {
+          "SUCCESS": "NO_DECLARED_REFERENCE",
+          "FAILURE": "DECLARED_REFERENCE_PRESENT",
+          "RECOVERY": "DECLARED_REFERENCE_REMOVED"
+        },
+        "caseParameterKey": "journeyState",
+        "fixtureCoverage": [
+          "生命周期动作可用性",
+          "引用中的事实提示",
+          "确认后执行",
+          "失败后恢复"
+        ]
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "CatalogCategory",
+            "code": "L2-GOVERNANCE-ROOT",
+            "name": "L2GOVERNANCE商品",
+            "parentCode": null,
+            "displayOrder": 0,
+            "selectable": false,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogCategory",
+            "code": "L2-GOVERNANCE-CATEGORY",
+            "name": "L2GOVERNANCE可选分类",
+            "parentCode": "L2-GOVERNANCE-ROOT",
+            "displayOrder": 0,
+            "selectable": true,
+            "status": "ENABLED"
+          },
+          {
+            "type": "CatalogItem",
+            "code": "L2-GOVERNANCE-001",
+            "name": "L2GOVERNANCE商品",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "status": "ENABLED",
+            "version": 1,
+            "scopeKind": "STORE_BRAND",
+            "categoryCode": "L2-GOVERNANCE-CATEGORY",
+            "productionTagCode": null,
+            "standardSalePrice": 100
+          },
+          {
+            "type": "CatalogItem",
+            "code": "L2-GOVERNANCE-CONSUMER",
+            "name": "L2治理引用商品",
+            "shapeKey": "COMPOSITE",
+            "status": "ENABLED",
+            "version": 1,
+            "categoryCode": "L2-GOVERNANCE-CATEGORY",
+            "referenceKind": "CATALOG_ITEM"
+          }
+        ],
+        "edges": [
+          {
+            "from": "L2-GOVERNANCE-CONSUMER",
+            "to": "L2-GOVERNANCE-001",
+            "refKind": "COMPOSITE_COMPONENT",
+            "refCode": "L2-GOVERNANCE-001"
+          }
+        ]
+      }
+    },
+    {
       "fixtureId": "FIXTURE-SCENARIO-CI-L2-001",
       "class": "TEST",
       "purpose": "该 L2 场景的最小业务状态与可观察结果",
@@ -5080,11 +7532,11 @@
   },
   "denominators": {
     "seed": 6,
-    "test": 39,
+    "test": 47,
     "apiDefinitions": 26,
     "apiCases": 99,
-    "l2Definitions": 18,
-    "l2Cases": 41
+    "l2Definitions": 26,
+    "l2Cases": 65
   },
   "consumerBindings": {
     "P2_API": {
@@ -5173,5 +7625,5 @@
     ],
     "seedExecutionNotAuthorized": true
   },
-  "fixtureDigest": "ca5a053f74c92ec7b568a22d3a737dc01c74af92df05aa4e5a62b02df6802151"
+  "fixtureDigest": "3f31f08c73cdfb6cf4bf035e68a8caef479bae4efe5b00dd7910caa8d672ab38"
 }

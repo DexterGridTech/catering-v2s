@@ -3160,18 +3160,6 @@
       "noClientDerivedAuthorization": true
     },
     {
-      "requirementId": "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_UPDATE",
-      "operationIdentity": {"operationId": "updateOperationsOwnerBinding", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding", "consumerFace": "operations-admin", "ownerModule": "collaboration"},
-      "authorizationMode": "AUTHENTICATED_WORKSPACE",
-      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"PROJECT": "BC-BUSINESS-CHANNEL-PROJECT-EDIT", "STORE": "BC-BUSINESS-CHANNEL-STORE-EDIT"}, "unsupportedResourceTypeDecision": "DENY"},
-      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
-      "ownerModule": "collaboration",
-      "ownerRecheckId": "OWNER_RECHECK_COLLABORATION",
-      "typedProblemMappingId": "PROBLEM_COLLABORATION_TYPED_OWNER_EXCEPTION",
-      "redFixtureId": "RED_OPERATIONS_CHANNEL_GRANT",
-      "noClientDerivedAuthorization": true
-    },
-    {
       "requirementId": "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_DELETE",
       "operationIdentity": {"operationId": "deleteOperationsOwnerBinding", "method": "DELETE", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding", "consumerFace": "operations-admin", "ownerModule": "collaboration"},
       "authorizationMode": "AUTHENTICATED_WORKSPACE",

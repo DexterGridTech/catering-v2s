@@ -77,6 +77,77 @@ class HttpRequestMetricsInterceptorTest {
     }
 
     @Test
+    void validBrowserL2ActivationPublishesItsOwnCanonicalServerMetadata() throws Exception {
+        Path events = tempDirectory.resolve("l2-events.jsonl");
+        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
+                new ObjectMapper(),
+                "non-production",
+                "browser-l2",
+                "l2-run-1234",
+                "012345678901234567890123",
+                "v2s_l2_catalog_run",
+                events.toString());
+        MockHttpServletRequest request = request("X-L2", "getPlatformAdminPage");
+        request.addHeader("X-L2-Secret", "012345678901234567890123");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        assertTrue(interceptor.preHandle(request, response, new Object()));
+        assertTrue(HttpRequestMetricsInterceptor.isManagedEventRequest(request));
+        interceptor.afterCompletion(request, response, new Object(), null);
+
+        String event = Files.readString(events);
+        assertTrue(event.contains("\"runId\":\"l2-run-1234\""));
+        assertTrue(event.contains("\"operationId\":\"getPlatformAdminPage\""));
+        assertTrue(event.contains("\"outcome\":\"SUCCEEDED\""));
+    }
+
+    @Test
+    void managedCompletionCarriesFiniteFailureClassifierFromTheRequestBoundary() throws Exception {
+        Path events = tempDirectory.resolve("failure-events.jsonl");
+        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
+                new ObjectMapper(),
+                "non-production",
+                "backend-acceptance",
+                "run-test-1234",
+                "012345678901234567890123",
+                "v2s-backend-acceptance-test",
+                events.toString());
+        MockHttpServletRequest request = request("X-Backend-Acceptance", "getPlatformAdminPage");
+        request.addHeader("X-Backend-Acceptance-Secret", "012345678901234567890123");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        assertTrue(interceptor.preHandle(request, response, new Object()));
+        HttpRequestMetricsInterceptor.freezeFailure(request, "CATALOG_SCOPE_REJECTED:ASSIGNMENT_OUTSIDE_TARGET_PATH");
+        response.setStatus(403);
+        interceptor.afterCompletion(request, response, new Object(), null);
+
+        assertTrue(Files.readString(events)
+                .contains("\"failureCode\":\"CATALOG_SCOPE_REJECTED:ASSIGNMENT_OUTSIDE_TARGET_PATH\""));
+    }
+
+    @Test
+    void browserL2RejectsADevNamespaceWithoutPublishingEvidence() throws Exception {
+        Path events = tempDirectory.resolve("l2-invalid-namespace-events.jsonl");
+        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
+                new ObjectMapper(),
+                "non-production",
+                "browser-l2",
+                "l2-run-1234",
+                "012345678901234567890123",
+                "v2s-dev-not-l2",
+                events.toString());
+        MockHttpServletRequest request = request("X-L2", "getPlatformAdminPage");
+        request.addHeader("X-L2-Secret", "012345678901234567890123");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        assertTrue(interceptor.preHandle(request, response, new Object()));
+        assertFalse(HttpRequestMetricsInterceptor.isManagedEventRequest(request));
+        interceptor.afterCompletion(request, response, new Object(), null);
+
+        assertFalse(Files.exists(events));
+    }
+
+    @Test
     void managedCompletionEventCarriesEdgeLifecycleCheckpoints() throws Exception {
         Path events = tempDirectory.resolve("phase-events.jsonl");
         HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
@@ -114,6 +185,7 @@ class HttpRequestMetricsInterceptorTest {
                 events.toString());
         MockHttpServletRequest request = request("X-Backend-Acceptance", "wrongOperation");
         request.addHeader("X-Backend-Acceptance-Secret", "012345678901234567890123");
+        request.addHeader("X-Backend-Acceptance-Measurement-Scenario-Id", "performance.coverage-only");
         MockHttpServletResponse response = new MockHttpServletResponse();
         assertTrue(interceptor.preHandle(request, response, new Object()));
         assertTrue(HttpRequestMetricsInterceptor.isManagedEventRequest(request));
@@ -121,8 +193,61 @@ class HttpRequestMetricsInterceptorTest {
         interceptor.afterCompletion(request, response, new Object(), null);
         String event = Files.readString(events);
         assertTrue(event.contains("\"outcome\":\"FAILED\""));
+        assertTrue(event.contains("\"measurementScenarioId\":\"performance.coverage-only\""));
         assertTrue(event.contains("BACKEND_ACCEPTANCE_OPERATION_METADATA_MISMATCH"));
         assertFalse(DatabaseOperationTracker.isActive());
+    }
+
+    @Test
+    void backendAcceptanceRejectsAnyMeasurementScenarioOutsideTheTwoValueClosedSet() throws Exception {
+        Path events = tempDirectory.resolve("measurement-scenario-events.jsonl");
+        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
+                new ObjectMapper(),
+                "non-production",
+                "backend-acceptance",
+                "run-test-1234",
+                "012345678901234567890123",
+                "v2s-backend-acceptance-test",
+                events.toString());
+        MockHttpServletRequest request = request("X-Backend-Acceptance", "getPlatformAdminPage");
+        request.addHeader("X-Backend-Acceptance-Secret", "012345678901234567890123");
+        request.addHeader("X-Backend-Acceptance-Measurement-Scenario-Id", "performance.unapproved");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        assertTrue(interceptor.preHandle(request, response, new Object()));
+        interceptor.afterCompletion(request, response, new Object(), null);
+
+        String event = Files.readString(events);
+        assertTrue(event.contains("\"measurementScenarioId\":\"performance.unapproved\""));
+        assertTrue(event.contains("\"outcome\":\"FAILED\""));
+        assertTrue(event.contains("MEASUREMENT_SCENARIO_ID_INVALID"));
+    }
+
+    @Test
+    void managedRequestExceptionPublishesOnlySafeFailureClassification() throws Exception {
+        Path events = tempDirectory.resolve("request-exception-events.jsonl");
+        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
+                new ObjectMapper(),
+                "non-production",
+                "backend-acceptance",
+                "run-test-1234",
+                "012345678901234567890123",
+                "v2s-backend-acceptance-test",
+                events.toString());
+        MockHttpServletRequest request = request("X-Backend-Acceptance", "getPlatformAdminPage");
+        request.addHeader("X-Backend-Acceptance-Secret", "012345678901234567890123");
+        request.addHeader("X-Backend-Acceptance-Measurement-Scenario-Id", "performance.normal-path");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        interceptor.preHandle(request, response, new Object());
+        interceptor.afterCompletion(request, response, new Object(), new IllegalStateException("do-not-publish"));
+
+        String event = Files.readString(events);
+        assertTrue(event.contains("\"observationError\":\"REQUEST_EXCEPTION\""));
+        assertTrue(event.contains("\"exceptionType\":\"IllegalStateException\""));
+        assertTrue(event.contains("\"rootCauseType\":\"IllegalStateException\""));
+        assertTrue(event.contains("\"exceptionOrigin\":\"external\""));
+        assertFalse(event.contains("do-not-publish"));
     }
 
     @Test

@@ -9,7 +9,8 @@
     "executeOperationsTemporaryCatalogItemPromotion",
     "stageOperationsCatalogAsset",
     "releaseOperationsCatalogStagedAsset",
-    "batchTransitionOperationsCatalogItemStatus"
+    "batchTransitionOperationsCatalogItemStatus",
+    "getOperationsCatalogItemSkus"
   ],
   "paths": {
     "/operations/catalog-inventory/items": {
@@ -42,15 +43,15 @@
         "x-mutation": true,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 15,
+          "max": 13,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
-              "to": 15,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "to": 13,
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -132,15 +133,15 @@
         "x-mutation": true,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 43,
+          "max": 41,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
-              "to": 43,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "to": 41,
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -236,15 +237,15 @@
         "x-mutation": true,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 16,
+          "max": 14,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
-              "to": 16,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "to": 14,
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -328,15 +329,15 @@
         "x-mutation": true,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 7,
+          "max": 23,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
-              "to": 7,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "to": 23,
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -420,15 +421,15 @@
         "x-mutation": true,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 7,
+          "max": 66,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
-              "to": 7,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "to": 66,
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -512,15 +513,15 @@
         "x-mutation": true,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 23,
+          "max": 18,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
-              "to": 23,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "to": 18,
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -598,15 +599,15 @@
         "x-mutation": true,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 14,
+          "max": 12,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
-              "to": 14,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "to": 12,
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -697,13 +698,13 @@
           "perItem": 5,
           "cardinalityPath": "$.items",
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
               "to": 20,
-              "reason": "approved batch cardinality budget"
+              "reason": "CP-05 calibrated linear shape"
             }
           ]
         },
@@ -749,6 +750,103 @@
             }
           }
         }
+      }
+    },
+    "/operations/catalog-inventory/items/{itemCode}/skus": {
+      "get": {
+        "operationId": "getOperationsCatalogItemSkus",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 11,
+          "measurementScenarioIds": [
+            "performance.normal-path"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 11,
+              "reason": "current managed acceptance program maximum"
+            }
+          ]
+        },
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemSkuPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "itemCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dataNodeRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "selected data node"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "opaque SKU cursor"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "SKU page size"
+            }
+          }
+        ]
       }
     }
   }

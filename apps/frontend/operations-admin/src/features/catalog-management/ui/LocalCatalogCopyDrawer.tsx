@@ -26,6 +26,7 @@ import {
 } from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import type {ReactNode} from 'react';
+import {CatalogLifecycleStatusTag} from './CatalogLifecycleStatusTag';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import {CATALOG_INVENTORY_OPERATION_IDS} from '../../../app/api/generated/catalog-inventory-edge';
@@ -38,7 +39,9 @@ import {
   copyConfirmationRows,
   catalogCopyActionLabel,
   catalogCopyObjectTypeLabel,
+  catalogCopyReasonLabel,
   catalogCopyScopeLabel,
+  decodeDetail,
   decodeLocalCopyCandidatePage,
   decodeLocalCopyPreflight,
   decodeLocalCopyReadback,
@@ -49,6 +52,9 @@ import {
   shapeHasVisibleTab,
 } from '../model/catalogModel';
 import {catalogEnumLabel, catalogEnumOptions} from '../model/catalogManifestLabels';
+import {catalogUiProblemFeedback} from '../model/catalogUiProblemFeedback';
+import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
+import {catalogBusinessName} from './catalogBusinessName';
 
 type Props = {
   open: boolean;
@@ -61,13 +67,27 @@ type Props = {
 type CatalogManifest = Pick<CatalogShapeManifestView, 'enumLabels' | 'fields' | 'tabRules'>;
 type WizardStep = 'source-scope' | 'source-item' | 'copy-scope' | 'bom-mapping' | 'preview';
 
-const LOCAL_COPY_STEPS: Array<{key: WizardStep; title: string}> = [
-  {key: 'source-scope', title: '来源范围'},
-  {key: 'source-item', title: '来源商品'},
-  {key: 'copy-scope', title: '复制范围'},
-  {key: 'bom-mapping', title: 'BOM映射'},
-  {key: 'preview', title: '预览确认'},
-];
+const LOCAL_COPY_USER_VISIBLE_COPY = {
+  steps: [
+    {key: 'source-scope', title: '来源范围'},
+    {key: 'source-item', title: '来源商品'},
+    {key: 'copy-scope', title: '复制范围'},
+    {key: 'bom-mapping', title: 'BOM映射'},
+    {key: 'preview', title: '预览确认'},
+  ] satisfies Array<{key: WizardStep; title: string}>,
+  scopeDescriptions: {
+    BASIC_INFO: '复制名称、属性、图片、分类、标签和销售单位等基础资料；商品编码与来源身份不变。',
+    SKU_STRUCTURE: '复制规格结构、规格维度与规格行；目标商品现有规格会按检查影响结果处理。',
+    SKU_BOM: '复制各规格的库存与 BOM 配置，并按目标商品的规格与库存对象重新建立引用。',
+    ORDER_OPTIONS: '复制点单选项组和值，供点单选项页签继续维护。',
+    OPTION_VALUE_BOM: '复制点单选项值上的 BOM，并按目标商品的选项值重新建立引用。',
+    ITEM_BOM: '复制商品的库存与 BOM 配置，并按目标商品的库存对象重新建立引用。',
+    PACKAGE_STRUCTURE: '复制套餐组件关系，并按目标商品的组件规格重新建立引用。',
+    PRODUCTION_PROMPTS: '复制制作信息和生产标签等商品制作配置。',
+  } satisfies Record<LocalCopyScope, string>,
+} as const;
+
+const LOCAL_COPY_STEPS = LOCAL_COPY_USER_VISIBLE_COPY.steps;
 
 const DEFAULT_LOCAL_COPY_SCOPES: LocalCopyScope[] = ['BASIC_INFO'];
 
@@ -76,16 +96,7 @@ const LOCAL_COPY_SCOPE_DEPENDENCIES: Array<[LocalCopyScope, LocalCopyScope[]]> =
   ['OPTION_VALUE_BOM', ['ORDER_OPTIONS']],
 ];
 
-const LOCAL_COPY_SCOPE_DESCRIPTIONS: Record<LocalCopyScope, string> = {
-  BASIC_INFO: '复制名称、属性、图片、分类、标签和销售单位等基础资料；商品编码与来源身份不变。',
-  SKU_STRUCTURE: '复制 SKU 结构、规格维度与 SKU 行；目标商品现有 SKU 事实会按预检结果处理。',
-  SKU_BOM: '复制 SKU 级库存 BOM，并按目标商品的 SKU 与库存对象重新建立引用。',
-  ORDER_OPTIONS: '复制点单选项组和值，供点单选项页签继续维护。',
-  OPTION_VALUE_BOM: '复制点单选项值上的 BOM，并按目标商品的选项值重新建立引用。',
-  ITEM_BOM: '复制商品级库存 BOM，并按目标商品的库存对象重新建立引用。',
-  PACKAGE_STRUCTURE: '复制套餐组件关系，并按目标商品的组件 SKU 重新建立引用。',
-  PRODUCTION_PROMPTS: '复制生产提示与生产标签等制作处理配置。',
-};
+const LOCAL_COPY_SCOPE_DESCRIPTIONS = LOCAL_COPY_USER_VISIBLE_COPY.scopeDescriptions;
 
 export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, queryContext, brandRef, onClose}: Props) {
   // The detail drawer opens this journey for the current item. The selected
@@ -115,14 +126,31 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, qu
     onOpenChange: next => {
       if (!next) onClose();
     },
-    dirtyMessage: '本库复制预检和选择尚未提交。',
+    dirtyMessage: '本库复制检查影响和选择尚未提交。',
     dirtyGuardTestIds: {
-      confirm: testId('catalog-local-copy-dirty-discard'),
-      cancel: testId('catalog-local-copy-dirty-continue'),
+      confirm: testId(catalogTestIds.static.localCopyDirtyDiscard),
+      cancel: testId(catalogTestIds.static.localCopyDirtyContinue),
     },
     diagnosticOperationId: 'local-catalog-copy',
   });
   const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
+  const targetDetailRequest = useMemo(
+    () =>
+      catalogInventoryRtkRequest.getOperationsCatalogItem(
+        {itemCode: targetItemCode},
+        {query: {dataNodeRef: wireUuid(queryContext.scopeRef ?? '')}, headers},
+      ),
+    [headers, queryContext.scopeRef, targetItemCode],
+  );
+  const targetDetailQuery = operationsRtk.useGetOperationsCatalogItemQuery(targetDetailRequest, {
+    skip: !open || !targetItemCode || !queryContext.scopeRef,
+  });
+  const targetDetail = decodeDetail(targetDetailQuery.currentData);
+  const targetItemName = catalogBusinessName(
+    targetDetail?.item.name,
+    targetItemCode,
+    '当前商品名称暂时无法读取',
+  );
   const manifestRequest = useMemo(
     () =>
       catalogInventoryRtkRequest.getOperationsCatalogShapeManifest(
@@ -154,14 +182,16 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, qu
     skip: !open,
   });
   const candidatePage = decodeLocalCopyCandidatePage(candidatesQuery.currentData);
+  const acceptCandidatePage = candidateState.acceptPage;
+  const candidatePageSize = candidateState.pageSize;
   useEffect(() => {
     if (!candidatePage) return;
-    candidateState.acceptPage(candidatePage.items, {
-      pageSize: candidateState.pageSize,
+    acceptCandidatePage(candidatePage.items, {
+      pageSize: candidatePageSize,
       total: candidatePage.total,
       nextCursor: candidatePage.cursor,
     });
-  }, [candidatePage, candidateState.acceptPage, candidateState.pageSize]);
+  }, [acceptCandidatePage, candidatePage, candidatePageSize]);
   const candidates = useMemo(
     () =>
       candidateState.items.filter(
@@ -261,8 +291,8 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, qu
     } catch (error) {
       setProblem(
         error instanceof Error && error.message === 'COPY_PREFLIGHT_SHAPE_MISSING'
-          ? '本库复制预检返回不完整，请重试。'
-          : operationsProblemOf(error).detail,
+          ? '本库复制检查影响返回不完整，请重试。'
+          : catalogUiProblemFeedback(error, '复制检查未完成，请稍后重试。').message,
       );
     } finally {
       setPreflightPending(false);
@@ -318,14 +348,14 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, qu
       const feedback = operationsProblemOf(error);
       const errorCode = feedback.errorCode as string;
       if (error instanceof Error && error.message === 'COPY_PREFLIGHT_VERSIONS_MISSING') {
-        setProblem('预检未返回来源或目标版本，请重新生成预检。');
+        setProblem('检查影响资料不完整，请重新检查。');
         return;
       }
       if (error instanceof Error && error.message === 'COPY_READBACK_SHAPE_MISSING') {
         setProblem('复制已提交，但结果暂未完整返回。请保留当前页面后重试。');
         return;
       }
-      setProblem(feedback.detail);
+      setProblem(catalogUiProblemFeedback(error, '复制未完成，请重新检查后再试。').message);
       if (errorCode === 'STALE_COPY_PREFLIGHT') {
         // Keep the safe source/scope/mapping choices. Only the digest-bound
         // preflight is discarded; the user can regenerate it from this point.
@@ -353,13 +383,13 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, qu
       destroyOnHidden={false}
       maskClosable={!lifecycle.submitting}
       {...adminWideDrawerSurfaceProps}
-      {...testId('catalog-local-copy-drawer')}
+      {...testId(catalogTestIds.static.localCopyDrawer)}
     >
       <Steps
         current={stepIndex}
         items={LOCAL_COPY_STEPS.map(({key, title}) => ({key, title}))}
         style={{marginBottom: 24}}
-        {...testId('catalog-local-copy-steps')}
+        {...testId(catalogTestIds.static.localCopySteps)}
       />
       {problem && (
         <Alert
@@ -368,21 +398,21 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, qu
           title="本库复制未完成"
           description={problem}
           style={{marginBottom: 16}}
-          {...testId('catalog-local-copy-problem')}
+          {...testId(catalogTestIds.static.localCopyProblem)}
         />
       )}
       {step === 'source-scope' && (
         <SourceScopeStep
           sourceScope={sourceScope}
           targetScope={targetScope}
-          targetItemCode={targetItemCode}
+          targetItemName={targetItemName}
           onNext={() => setStep('source-item')}
         />
       )}
       {step === 'source-item' && (
         <SourceItemStep
           manifest={manifest}
-          targetItemCode={targetItemCode}
+          targetItemName={targetItemName}
           candidates={candidates}
           selectedSourceItemCode={selectedSourceItemCode}
           sourceKeyword={sourceKeyword}
@@ -416,7 +446,7 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, qu
         <CopyScopeStep
           selectedSections={selectedSections}
           selectedSource={selectedSource}
-          targetItemCode={targetItemCode}
+          targetItemName={targetItemName}
           onChange={values => {
             setSelectedSections(values);
             setPreflight(undefined);
@@ -474,12 +504,12 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, qu
 function SourceScopeStep({
   sourceScope,
   targetScope,
-  targetItemCode,
+  targetItemName,
   onNext,
 }: {
   sourceScope?: LocalCopyPreflightData['sourceScope'];
   targetScope?: LocalCopyPreflightData['targetScope'];
-  targetItemCode: string;
+  targetItemName: string;
   onNext: () => void;
 }) {
   return (
@@ -489,7 +519,7 @@ function SourceScopeStep({
         showIcon
         title="同一商品库内复制"
         description="仅在当前商品库内复制；不会新建商品或复制其他商品库内容。"
-        {...testId('catalog-local-copy-source-scope')}
+        {...testId(catalogTestIds.static.localCopySourceScope)}
       />
       <Descriptions
         size="small"
@@ -510,12 +540,12 @@ function SourceScopeStep({
           {
             key: 'target-item',
             label: '当前目标商品',
-            children: <NameCodeText name="当前打开商品" code={targetItemCode || '—'} />,
+            children: targetItemName,
           },
         ]}
       />
       <Space wrap style={{marginTop: 16}}>
-        <Button onClick={onNext} type="primary" {...testId('catalog-local-copy-source-scope-next')}>
+        <Button onClick={onNext} type="primary" {...testId(catalogTestIds.static.localCopySourceScopeNext)}>
           下一步：选择来源商品
         </Button>
       </Space>
@@ -525,7 +555,7 @@ function SourceScopeStep({
 
 function SourceItemStep({
   manifest,
-  targetItemCode,
+  targetItemName,
   candidates,
   selectedSourceItemCode,
   sourceKeyword,
@@ -541,7 +571,7 @@ function SourceItemStep({
   onNextPage,
 }: {
   manifest?: CatalogManifest;
-  targetItemCode: string;
+  targetItemName: string;
   candidates: LocalCopyCandidatePage['data']['items'];
   selectedSourceItemCode?: string;
   sourceKeyword: string;
@@ -559,7 +589,7 @@ function SourceItemStep({
   return (
     <>
       <Typography.Paragraph type="secondary">
-        来源商品只从当前商品库选择；当前打开的 {targetItemCode || '目标商品'}{' '}
+        来源商品只从当前商品库选择；当前打开的“{targetItemName}”{' '}
         不会出现在来源列表中，且只显示与目标商品相同形态的来源。
       </Typography.Paragraph>
       <Input
@@ -568,9 +598,9 @@ function SourceItemStep({
         onChange={event => onKeywordChange(event.target.value)}
         placeholder="按来源商品名称或编码搜索"
         style={{marginBottom: 12}}
-        {...testId('catalog-local-copy-source-keyword')}
+        {...testId(catalogTestIds.static.localCopySourceKeyword)}
       />
-      {candidateLoading && <Skeleton active {...testId('catalog-local-copy-candidates-loading')} />}
+      {candidateLoading && <Skeleton active {...testId(catalogTestIds.static.localCopyCandidatesLoading)} />}
       {!candidateLoading && candidateError && (
         <Alert
           type="error"
@@ -581,27 +611,27 @@ function SourceItemStep({
               重试
             </Button>
           }
-          {...testId('catalog-local-copy-candidates-error')}
+          {...testId(catalogTestIds.static.localCopyCandidatesError)}
         />
       )}
       {!candidateLoading && !candidateError && !candidates.length && (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           description="当前商品库没有可复制来源"
-          {...testId('catalog-local-copy-candidates-empty')}
+          {...testId(catalogTestIds.static.localCopyCandidatesEmpty)}
         />
       )}
       {!candidateLoading && !candidateError && candidates.length > 0 && (
         <List
           size="small"
           dataSource={candidates}
-          {...testId('catalog-local-copy-candidates')}
+          {...testId(catalogTestIds.static.localCopyCandidates)}
           renderItem={item => (
             <List.Item>
               <Radio
                 checked={selectedSourceItemCode === item.code}
                 onChange={() => onSelect(item.code)}
-                {...testId(`catalog-local-copy-source-${item.code}`)}
+                {...testId(catalogTestIdControls.copy.sourceRow(item.code))}
               >
                 <Space size={8} wrap>
                   <NameCodeText name={item.name} code={item.code} />
@@ -609,7 +639,7 @@ function SourceItemStep({
                   {item.compatibilityHint && item.compatibilityHint !== 'REVIEW_REQUIRED' && (
                     <Tag>兼容性：{item.compatibilityHint}</Tag>
                   )}
-                  <Tag>{catalogEnumLabel(manifest, 'catalogItemStatus', item.status)}</Tag>
+                  <CatalogLifecycleStatusTag manifest={manifest} kind="ITEM" status={item.status} />
                 </Space>
               </Radio>
             </List.Item>
@@ -621,7 +651,7 @@ function SourceItemStep({
           type="link"
           loading={nextLoading}
           onClick={onNextPage}
-          {...testId('catalog-local-copy-candidates-next')}
+          {...testId(catalogTestIds.static.localCopyCandidatesNext)}
         >
           加载更多
         </Button>
@@ -632,7 +662,7 @@ function SourceItemStep({
           type="primary"
           disabled={!selectedSourceItemCode}
           onClick={onNext}
-          {...testId('catalog-local-copy-source-item-next')}
+          {...testId(catalogTestIds.static.localCopySourceItemNext)}
         >
           下一步：选择复制范围
         </Button>
@@ -644,7 +674,7 @@ function SourceItemStep({
 function CopyScopeStep({
   selectedSections,
   selectedSource,
-  targetItemCode,
+  targetItemName,
   onChange,
   onBack,
   onNext,
@@ -655,7 +685,7 @@ function CopyScopeStep({
 }: {
   selectedSections: LocalCopyScope[];
   selectedSource?: LocalCopyCandidatePage['data']['items'][number];
-  targetItemCode: string;
+  targetItemName: string;
   onChange: (values: LocalCopyScope[]) => void;
   onBack: () => void;
   onNext: () => void;
@@ -710,12 +740,12 @@ function CopyScopeStep({
           {
             key: 'target',
             label: '目标商品',
-            children: <NameCodeText name="当前打开商品" code={targetItemCode || '—'} />,
+            children: targetItemName,
           },
         ]}
       />
       <Typography.Paragraph type="secondary" style={{marginTop: 16}}>
-        默认只复制基础资料；相关内容会在检查时一并处理。商品编码、来源和版本不会被复制。
+        默认只复制基础资料；相关内容会在检查时一并处理。商品编码、来源和历史记录不会被复制。
       </Typography.Paragraph>
       {scopeOptionsError && (
         <Alert
@@ -724,10 +754,15 @@ function CopyScopeStep({
           title="复制范围加载失败"
           description="未能读取可复制内容，请重试。"
           style={{marginBottom: 12}}
-          {...testId('catalog-local-copy-scope-options-error')}
+          {...testId(catalogTestIds.static.localCopyScopeOptionsError)}
         />
       )}
-      <Space direction="vertical" size={8} style={{display: 'flex'}} {...testId('catalog-local-copy-sections')}>
+      <Space
+        direction="vertical"
+        size={8}
+        style={{display: 'flex'}}
+        {...testId(catalogTestIds.static.localCopySections)}
+      >
         {scopeOptions.map(option => (
           <div key={option.value}>
             <Checkbox
@@ -740,7 +775,7 @@ function CopyScopeStep({
             <Typography.Text
               type="secondary"
               style={{display: 'block', marginInlineStart: 24}}
-              {...testId(`catalog-local-copy-scope-description-${option.value}`)}
+              {...testId(catalogTestIdControls.copy.scopeDescription(option.value))}
             >
               {LOCAL_COPY_SCOPE_DESCRIPTIONS[option.value]}
             </Typography.Text>
@@ -748,7 +783,7 @@ function CopyScopeStep({
               <Typography.Text
                 type="warning"
                 style={{display: 'block', marginInlineStart: 24}}
-                {...testId(`catalog-local-copy-scope-reason-${option.value}`)}
+                {...testId(catalogTestIdControls.copy.scopeReason(option.value))}
               >
                 {option.reason}
               </Typography.Text>
@@ -763,9 +798,9 @@ function CopyScopeStep({
           disabled={!scopeOptionsReady || !selectedSections.length || loading}
           loading={loading}
           onClick={onNext}
-          {...testId('catalog-local-copy-preflight')}
+          {...testId(catalogTestIds.static.localCopyPreflight)}
         >
-          生成预检
+          检查影响
         </Button>
       </Space>
     </>
@@ -791,9 +826,9 @@ function BomMappingStep({
 }) {
   if (loading)
     return (
-      <div {...testId('catalog-local-copy-preflight-loading')}>
+      <div {...testId(catalogTestIds.static.localCopyPreflightLoading)}>
         <Skeleton active />
-        <Skeleton active {...testId('catalog-local-copy-mapping-loading')} />
+        <Skeleton active {...testId(catalogTestIds.static.localCopyMappingLoading)} />
       </div>
     );
   if (!preflight)
@@ -803,15 +838,15 @@ function BomMappingStep({
           <Alert
             type="warning"
             showIcon
-            title="预检已失效"
-            description="来源商品、复制内容或映射已发生变化，请重新生成预检。"
-            {...testId('catalog-local-copy-stale')}
+            title="影响已变化"
+            description="来源商品、复制内容或映射已发生变化，请重新检查。"
+            {...testId(catalogTestIds.static.localCopyStale)}
           />
         )}
-        {!stale && <Alert type="info" title="尚未生成预检" description="返回复制范围后重新生成预检。" />}
+        {!stale && <Alert type="info" title="尚未检查影响" description="返回复制范围后重新检查。" />}
         {referenceMappingsSnapshot.length > 0 && (
           <LocalCopyArraySection
-            title="上次预检的引用映射（待刷新）"
+            title="上次检查影响的引用映射（待刷新）"
             rows={referenceMappingsSnapshot}
             locator="catalog-local-copy-reference-mappings-stale"
             renderRow={renderReferenceMappingRow}
@@ -819,8 +854,8 @@ function BomMappingStep({
         )}
         <Space wrap style={{marginTop: 16}}>
           <Button onClick={onBack}>返回复制范围</Button>
-          <Button type="primary" onClick={onRetry} {...testId('catalog-local-copy-preflight-retry')}>
-            重新生成预检
+          <Button type="primary" onClick={onRetry} {...testId(catalogTestIds.static.localCopyPreflightRetry)}>
+            重新检查
           </Button>
         </Space>
       </>
@@ -850,7 +885,7 @@ function BomMappingStep({
           showIcon
           title="存在阻断项"
           description="存在无法复制的内容，请调整后重新检查。"
-          {...testId('catalog-local-copy-bom-blocked')}
+          {...testId(catalogTestIds.static.localCopyBomBlocked)}
         />
       )}
       <Space wrap style={{marginTop: 16}}>
@@ -859,7 +894,7 @@ function BomMappingStep({
           type="primary"
           disabled={preflight.blockingCount > 0}
           onClick={onNext}
-          {...testId('catalog-local-copy-bom-mapping-next')}
+          {...testId(catalogTestIds.static.localCopyBomMappingNext)}
         >
           下一步：预览确认
         </Button>
@@ -893,7 +928,7 @@ function PreviewStep({
   onExecute: () => void;
   onComplete: () => void;
 }) {
-  if (!preflight) return <Alert type="warning" title="预览不可用" description="请返回 BOM 映射并重新生成预检。" />;
+  if (!preflight) return <Alert type="warning" title="预览不可用" description="请返回 BOM 映射并重新检查。" />;
   const skippedClosureItems = preflight.closureItems.filter(row => row.action === 'SKIP');
   const overwriteItems = preflight.closureItems.filter(row => row.action !== 'SKIP');
   return (
@@ -932,8 +967,8 @@ function PreviewStep({
         <Alert
           type="error"
           showIcon
-          title="预检确认项与明细不一致"
-          description="当前预检不能安全执行，请返回重新生成预检。"
+          title="检查影响确认项与明细不一致"
+          description="当前检查影响不能安全执行，请返回重新检查。"
           style={{marginBottom: 12}}
         />
       )}
@@ -947,9 +982,9 @@ function PreviewStep({
               if (!event.target.checked) confirmedCompatibilityKeys.forEach(key => onToggleConfirmation(key, false));
             }}
             disabled={preflight.blockingCount > 0 || !confirmationCountMatches || confirmationRows.length === 0}
-            {...testId('catalog-local-copy-confirm')}
+            {...testId(catalogTestIds.static.localCopyConfirm)}
           >
-            我已逐项核对覆盖字段、BOM 映射、跳过项和兼容处理，并确认提交当前版本。
+            我已逐项核对覆盖字段、BOM 映射、跳过项和兼容处理，并确认按当前检查结果提交。
           </Checkbox>
           <Space wrap style={{marginTop: 16}}>
             <Button onClick={onBack}>返回 BOM 映射</Button>
@@ -958,7 +993,7 @@ function PreviewStep({
               disabled={preflight.blockingCount > 0 || !allConfirmationsHandled}
               loading={executeLoading}
               onClick={onExecute}
-              {...testId('catalog-local-copy-execute')}
+              {...testId(catalogTestIds.static.localCopyExecute)}
             >
               确认并复制
             </Button>
@@ -1032,28 +1067,28 @@ function LocalCopyConfirmationSection({
   onToggle: (key: string, checked: boolean) => void;
 }) {
   return (
-    <section style={{marginBottom: 16}} {...testId('catalog-local-copy-compatibility-results')}>
+    <section style={{marginBottom: 16}} {...testId(catalogTestIds.static.localCopyCompatibilityResults)}>
       <Typography.Title level={5} style={{marginBottom: 8}}>
         兼容处理
       </Typography.Title>
       {rows.length ? (
         <List
           size="small"
-          dataSource={rows.map((row, index) => ({row, index}))}
-          renderItem={({row, index}) => {
+          dataSource={rows}
+          renderItem={row => {
             const key = copyConfirmationKey(row);
             const confirmable = row.result !== 'BLOCKED' && confirmationRows.some(candidate => candidate.key === key);
             return (
               <List.Item>
                 <Space size={8} wrap>
-                  <Tag>{row.objectType}</Tag>
-                  <Tag color={mappingColor(row.result)}>{row.result}</Tag>
-                  <Typography.Text>{row.reason || '—'}</Typography.Text>
+                  <Tag>{catalogCopyObjectTypeLabel(row.objectType)}</Tag>
+                  <Tag color={mappingColor(row.result)}>{catalogCopyActionLabel(row.result)}</Tag>
+                  <Typography.Text>{catalogCopyReasonLabel(row.reasonCode)}</Typography.Text>
                   {confirmable && (
                     <Checkbox
                       checked={confirmedKeys.includes(key)}
                       onChange={event => onToggle(key, event.target.checked)}
-                      {...testId(`catalog-local-copy-confirm-${index}`)}
+                      {...testId(catalogTestIdControls.copy.confirmation('LOCAL', key))}
                     >
                       {copyConfirmationLabel(row.result)}
                     </Checkbox>
@@ -1136,7 +1171,7 @@ function renderReferenceMappingRow(row: LocalCopyPreflightData['referenceMapping
     <Space size={8} wrap>
       <Tag>{catalogCopyObjectTypeLabel(row.objectType)}</Tag>
       <Typography.Text code>{row.targetCode}</Typography.Text>
-      {row.targetSkuCode && <Tag>SKU：{row.targetSkuCode}</Tag>}
+      {row.targetSkuCode && <Tag>规格编码：{row.targetSkuCode}</Tag>}
       {row.targetOptionValueCode && <Tag>选项：{row.targetOptionValueCode}</Tag>}
     </Space>
   );
@@ -1219,11 +1254,11 @@ function LocalCopyReadbackPanel({readback, onComplete}: {readback: LocalCopyRead
         </>
       }
       action={
-        <Button onClick={onComplete} {...testId('catalog-local-copy-open-target')}>
+        <Button onClick={onComplete} {...testId(catalogTestIds.static.localCopyOpenTarget)}>
           完成并返回目标商品
         </Button>
       }
-      {...testId('catalog-local-copy-result')}
+      {...testId(catalogTestIds.static.localCopyResult)}
     />
   );
 }
@@ -1237,12 +1272,16 @@ function ReadbackRows({rows, locator}: {rows: Array<{objectType: string; code: s
 }
 
 function SkippedRows({rows}: {rows: LocalCopyReadbackData['skipped']}) {
-  return <span {...testId('catalog-local-copy-skipped-readback')}>{rows.length ? '存在未复制的关联内容' : '—'}</span>;
+  return (
+    <span {...testId(catalogTestIds.static.localCopySkippedReadback)}>
+      {rows.length ? '存在未复制的关联内容' : '—'}
+    </span>
+  );
 }
 
 function ReadbackMappings({rows}: {rows: LocalCopyReadbackData['referenceMappings']}) {
   return (
-    <span {...testId('catalog-local-copy-readback-reference-mappings')}>
+    <span {...testId(catalogTestIds.static.localCopyReadbackReferenceMappings)}>
       {rows.length ? rows.map(row => referenceMappingLabel(row)).join('、') : '—'}
     </span>
   );
@@ -1252,7 +1291,7 @@ function referenceMappingLabel(row: LocalCopyPreflightData['referenceMappings'][
   return [
     catalogCopyObjectTypeLabel(row.objectType),
     row.targetCode,
-    row.targetSkuCode && `SKU：${row.targetSkuCode}`,
+    row.targetSkuCode && `规格编码：${row.targetSkuCode}`,
     row.targetOptionValueCode && `选项：${row.targetOptionValueCode}`,
   ]
     .filter(Boolean)

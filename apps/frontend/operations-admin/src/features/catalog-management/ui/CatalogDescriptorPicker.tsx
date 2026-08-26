@@ -1,6 +1,6 @@
 import {Alert, Button, Flex, Space, Tag, Typography} from 'antd';
-import {DescriptorFieldRenderer, NameCodeText, testId} from '@catering-v2s/admin-ui-foundation';
-import type {ReactNode} from 'react';
+import {DescriptorFieldRenderer, testId} from '@catering-v2s/admin-ui-foundation';
+import type {CSSProperties, ReactNode} from 'react';
 import {useEffect, useMemo, useState} from 'react';
 import type {CatalogShapeManifestView} from '../../../app/api/generated/catalog-inventory-edge';
 import {catalogJoinedField, type CatalogDescriptorManifest} from '../model/catalogDescriptorManifest';
@@ -11,6 +11,7 @@ import {
   type CatalogCandidateRow,
   type CatalogFieldRuntimeContext,
 } from '../model/catalogFieldRuntime';
+import {catalogBusinessName} from './catalogBusinessName';
 
 type CatalogManifest = Pick<CatalogShapeManifestView, 'fields' | 'fieldRules' | 'tabRules'>;
 
@@ -24,7 +25,10 @@ type Props = {
   readOnly?: boolean;
   hideLabel?: boolean;
   disabledMessage?: string;
+  /** A persisted business label for a selected value which is not in the current candidate page. */
+  selectedLabel?: string;
   actions?: ReactNode;
+  width?: CSSProperties['width'];
   testIdValue: string;
   onChange: (value: string | string[], row?: CatalogCandidateRow | CatalogCandidateRow[]) => void;
 };
@@ -35,6 +39,7 @@ function selectedDescriptorValues(
   result: CatalogCandidateOptionResult | undefined,
   source: {valueField?: string; labelField?: string} | undefined,
   value: string | string[],
+  selectedLabel?: string,
 ) {
   const selectedValues = Array.isArray(value) ? value : value ? [value] : [];
   return selectedValues.map(selectedValue => {
@@ -47,7 +52,9 @@ function selectedDescriptorValues(
     const code = typeof row?.code === 'string' ? row.code : undefined;
     return {
       value: selectedValue,
-      name: name ?? (typeof option?.label === 'string' ? option.label : selectedValue),
+      // A selected ref is never a user-facing label. If its authoritative name is
+      // unavailable, preserve the value for saving but expose a recoverable read error.
+      name: name ?? (typeof option?.label === 'string' ? option.label : selectedLabel || '已选项名称无法读取'),
       code,
       disabled: Boolean(option?.disabled),
     };
@@ -76,7 +83,9 @@ export function CatalogDescriptorPicker({
   readOnly = false,
   hideLabel = false,
   disabledMessage,
+  selectedLabel,
   actions,
+  width = '100%',
   testIdValue,
   onChange,
 }: Props) {
@@ -153,8 +162,12 @@ export function CatalogDescriptorPicker({
   const fieldHelpText = selectionHint ? `${field.helpText} 当前可选择多项。` : field.helpText;
   const renderedField = (effectiveDisabled || readOnly) && !field.readonly ? {...field, readonly: true} : field;
   const presentationField = {...renderedField, label: fieldLabel, helpText: fieldHelpText};
-  const options = visibleDescriptorOptions(result?.options ?? [], value);
-  const selectedValues = selectedDescriptorValues(result, source, value);
+  const resolvedOptions = visibleDescriptorOptions(result?.options ?? [], value);
+  const selectedValues = selectedDescriptorValues(result, source, value, selectedLabel);
+  const options =
+    typeof value === 'string' && value && selectedLabel && !resolvedOptions.some(option => option.value === value)
+      ? [...resolvedOptions, {value, label: selectedLabel, disabled: false}]
+      : resolvedOptions;
   const optionResolutionPending = Boolean(source) && !effectiveDisabled && !error && !result;
   const handleChange = (next: unknown) => {
     if (Array.isArray(next)) {
@@ -200,7 +213,7 @@ export function CatalogDescriptorPicker({
               {selectedValues.length > 0 ? (
                 selectedValues.map(entry => (
                   <Tag key={entry.value}>
-                    <NameCodeText name={entry.name} code={entry.code} />
+                    {catalogBusinessName(entry.name, entry.code, '已选项名称无法读取')}
                     {entry.disabled && <Typography.Text type="secondary">（已停用）</Typography.Text>}
                   </Tag>
                 ))
@@ -211,7 +224,7 @@ export function CatalogDescriptorPicker({
           )}
         </Flex>
       ) : (
-        <Space align="end" style={{display: 'flex'}}>
+        <Space align="end" style={{display: 'flex', width}}>
           <div style={{flex: 1, minWidth: 0}}>
             {optionResolutionPending ? (
               <Typography.Text type="secondary">候选加载中…</Typography.Text>

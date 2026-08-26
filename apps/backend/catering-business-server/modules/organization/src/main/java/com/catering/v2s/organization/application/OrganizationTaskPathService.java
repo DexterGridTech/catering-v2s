@@ -1,5 +1,6 @@
 package com.catering.v2s.organization.application;
 
+import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationNodeTypes;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
@@ -128,6 +129,23 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                                     ancestors,
                                     result.getString("display_path")));
                 });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CatalogCommandScopeFacts resolveCatalogCommandScopeFacts(
+            UUID workspaceUuid,
+            String key,
+            String targetType,
+            UUID targetId,
+            CatalogScopeLookup.CatalogBrandSelection selection) {
+        if (workspaceUuid == null || key == null || targetId == null) throw new TaskPathNotFoundException();
+        return switch (targetType) {
+            case ServiceNodeTypes.STORE -> storeCatalogCommandScopeFacts(workspaceUuid, key, targetId, selection);
+            case ServiceNodeTypes.HEAD_COMPANY -> headCompanyCatalogCommandScopeFacts(
+                    workspaceUuid, key, targetId, selection);
+            default -> throw new TaskPathNotFoundException();
+        };
     }
 
     /**
@@ -703,6 +721,55 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                 target.code() + " " + target.name());
     }
 
+    private CatalogCommandScopeFacts headCompanyCatalogCommandScopeFacts(
+            UUID workspaceUuid, String key, UUID targetId, CatalogScopeLookup.CatalogBrandSelection selection) {
+        String requestedBrandRef = selection == null ? null : selection.value();
+        if (requestedBrandRef == null || requestedBrandRef.isBlank()) {
+            throw new BusinessEntityService.OrganizationValidationException();
+        }
+        UUID brandRef;
+        try {
+            brandRef = UUID.fromString(requestedBrandRef);
+        } catch (IllegalArgumentException invalid) {
+            throw new BusinessEntityService.OrganizationValidationException(invalid);
+        }
+        return jdbc.query(
+                "WITH group_root AS (SELECT commercial_group_uuid FROM organization.commercial_group WHERE "
+                        + "group_workspace_key=?) SELECT group_root.commercial_group_uuid, company.id, company.code, "
+                        + "company.name, company.version, brand.version, "
+                        + "authorization_fact.authorized_at_epoch_millis FROM "
+                        + "group_root CROSS JOIN organization.head_company company JOIN "
+                        + "organization.head_company_brand_authorization authorization_fact ON "
+                        + "authorization_fact.head_company_id=company.id JOIN organization.brand brand ON "
+                        + "brand.id=authorization_fact.brand_id WHERE company.id=? AND company.workspace_uuid=? AND "
+                        + "company.group_workspace_key=? AND company.status='ENABLED' AND "
+                        + "authorization_fact.brand_id=? "
+                        + "AND brand.status='ENABLED'",
+                statement -> {
+                    statement.setString(1, key);
+                    statement.setObject(2, targetId);
+                    statement.setObject(3, workspaceUuid);
+                    statement.setString(4, key);
+                    statement.setObject(5, brandRef);
+                },
+                rows -> {
+                    if (!rows.next()) throw new BusinessEntityService.OrganizationValidationException();
+                    UUID groupRef = rows.getObject(1, UUID.class);
+                    UUID companyRef = rows.getObject(2, UUID.class);
+                    return new CatalogCommandScopeFacts(
+                            new TaskPath(
+                                    ServiceNodeTypes.HEAD_COMPANY,
+                                    companyRef,
+                                    List.of(groupRef, companyRef),
+                                    rows.getString(3) + " " + rows.getString(4)),
+                            new CatalogScopeLookup.CatalogBrandJudgment(
+                                    brandRef.toString(),
+                                    "HEAD_COMPANY_BRAND_AUTHORIZATION",
+                                    "HEAD_COMPANY_VERSION:" + rows.getLong(5) + ":BRAND_VERSION:" + rows.getLong(6)
+                                            + ":AUTHORIZED_AT:" + rows.getLong(7)));
+                });
+    }
+
     private TaskPath storePath(UUID workspaceUuid, String key, UUID groupId, UUID targetId) {
         StorePathRow target = jdbc.query(
                 "SELECT s.id, s.project_id, s.code, s.name, p.id, p.parent_id, p.code, p.name, r.id, r.code, r.name "
@@ -737,6 +804,63 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                 target.regionCode() + " " + target.regionName() + " / " + target.projectCode() + " "
                         + target.projectName() + " / "
                         + target.code() + " " + target.name());
+    }
+
+    private CatalogCommandScopeFacts storeCatalogCommandScopeFacts(
+            UUID workspaceUuid, String key, UUID targetId, CatalogScopeLookup.CatalogBrandSelection selection) {
+        String requestedBrandRef = selection == null ? null : selection.value();
+        return jdbc.query(
+                "SELECT group_root.commercial_group_uuid, store.id, store.project_id, store.code, store.name, "
+                        + "region.id, project.code, project.name, region.code, region.name, store.brand_id, "
+                        + "store.version "
+                        + "FROM organization.commercial_group group_root JOIN organization.store store ON "
+                        + "store.group_workspace_key=group_root.group_workspace_key JOIN "
+                        + "organization.organization_node "
+                        + "project ON project.id=store.project_id AND project.workspace_uuid=store.workspace_uuid AND "
+                        + "project.group_workspace_key=store.group_workspace_key AND project.node_type='PROJECT' AND "
+                        + "project.status='ENABLED' JOIN organization.organization_node region ON "
+                        + "region.id=project.parent_id "
+                        + "AND region.workspace_uuid=project.workspace_uuid AND region.group_workspace_key="
+                        + "project.group_workspace_key AND region.node_type='REGION' AND region.status='ENABLED' WHERE "
+                        + "group_root.group_workspace_key=? AND store.id=? AND store.workspace_uuid=? AND "
+                        + "store.group_workspace_key=? AND store.status='ENABLED'",
+                statement -> {
+                    statement.setString(1, key);
+                    statement.setObject(2, targetId);
+                    statement.setObject(3, workspaceUuid);
+                    statement.setString(4, key);
+                },
+                rows -> {
+                    if (!rows.next()) throw new TaskPathNotFoundException();
+                    UUID brandRef = rows.getObject(11, UUID.class);
+                    if (requestedBrandRef != null && !requestedBrandRef.equals(brandRef.toString())) {
+                        throw new BusinessEntityService.OrganizationValidationException();
+                    }
+                    UUID groupRef = rows.getObject(1, UUID.class);
+                    UUID storeRef = rows.getObject(2, UUID.class);
+                    return new CatalogCommandScopeFacts(
+                            new TaskPath(
+                                    ServiceNodeTypes.STORE,
+                                    storeRef,
+                                    List.of(
+                                            groupRef,
+                                            rows.getObject(6, UUID.class),
+                                            rows.getObject(3, UUID.class),
+                                            storeRef),
+                                    rows.getString(9)
+                                            + " "
+                                            + rows.getString(10)
+                                            + " / "
+                                            + rows.getString(7)
+                                            + " "
+                                            + rows.getString(8)
+                                            + " / "
+                                            + rows.getString(4)
+                                            + " "
+                                            + rows.getString(5)),
+                            new CatalogScopeLookup.CatalogBrandJudgment(
+                                    brandRef.toString(), "STORE_PERSISTED_BRAND", "STORE_VERSION:" + rows.getLong(12)));
+                });
     }
 
     private Map<UUID, Store> stores(UUID workspaceUuid, String key, Set<UUID> ids, boolean includeDisabledFacts) {

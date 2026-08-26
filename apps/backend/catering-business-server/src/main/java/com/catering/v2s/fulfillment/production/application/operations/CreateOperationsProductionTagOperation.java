@@ -37,7 +37,7 @@ public class CreateOperationsProductionTagOperation {
         ProductionTagCreateRequest request = invocation.request();
         ProductionTagOwnerApi.ProductionTagCommandReadback readback = productionTags.createTag(
                 context,
-                new ProductionTagOwnerApi.CreateTagCommand(request.code(), request.tagKind(), request.name()),
+                new ProductionTagOwnerApi.CreateTagCommand(request.code(), request.name()),
                 invocation.idempotencyKey());
         return response(context.requestId(), readback);
     }
@@ -58,7 +58,6 @@ public class CreateOperationsProductionTagOperation {
                 new ProductionTagReadback.Result(
                         value.tagRef(),
                         value.code(),
-                        value.tagKind(),
                         value.name(),
                         new ProductionTagReadback.Result.OwnerScope("PRODUCTION_TAG", REVISION),
                         value.status(),

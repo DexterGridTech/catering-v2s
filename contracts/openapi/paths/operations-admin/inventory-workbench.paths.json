@@ -34,15 +34,15 @@
         "x-mutation": false,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 12,
+          "max": 13,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
-              "to": 12,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "to": 13,
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -158,15 +158,15 @@
         "x-mutation": false,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 10,
+          "max": 11,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
-              "to": 10,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "to": 11,
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -225,15 +225,15 @@
         "x-mutation": false,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 8,
+          "max": 9,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
-              "to": 8,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "to": 9,
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -301,15 +301,15 @@
         "x-mutation": false,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 8,
+          "max": 9,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
-              "to": 8,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "to": 9,
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -388,15 +388,15 @@
         "x-mutation": false,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 19,
+          "max": 17,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
-              "to": 19,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "to": 17,
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -475,13 +475,13 @@
           "kind": "FIXED",
           "max": 9,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
               "to": 9,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -560,13 +560,13 @@
           "kind": "FIXED",
           "max": 7,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
               "to": 7,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -628,13 +628,13 @@
           "kind": "FIXED",
           "max": 8,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
               "to": 8,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },

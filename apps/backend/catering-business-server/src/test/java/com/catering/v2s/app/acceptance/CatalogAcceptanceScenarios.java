@@ -86,6 +86,12 @@ final class CatalogAcceptanceScenarios {
     private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_ITEMS =
             new BackendAcceptanceTest.RouteIdentity(
                     "getOperationsCatalogItems", "/api/operations/catalog-inventory/items");
+    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_CATEGORY_CANDIDATES =
+            new BackendAcceptanceTest.RouteIdentity(
+                    "getOperationsCatalogCategoryCandidates", "/api/operations/catalog-inventory/category-candidates");
+    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_ITEM_SKUS =
+            new BackendAcceptanceTest.RouteIdentity(
+                    "getOperationsCatalogItemSkus", "/api/operations/catalog-inventory/items/{itemCode}/skus");
     private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_UNIT_CREATE =
             new BackendAcceptanceTest.RouteIdentity(
                     "createOperationsCatalogUnit", "/api/operations/catalog-inventory/units");
@@ -211,6 +217,9 @@ final class CatalogAcceptanceScenarios {
                     }
 
                     boolean allowed = admissionCaseAllowed(shape, ownerType, mode);
+                    JsonNode current = readItem(context, fixture, session, code);
+                    Map<String, Object> consumptionUnitSnapshot =
+                            allowed && "DIRECT".equals(mode) ? unitSnapshotFromItem(current) : null;
                     Map<String, Object> rule;
                     if ("SKU".equals(ownerType)) {
                         String skuCode = "MATRIX-SKU-" + executed;
@@ -232,6 +241,7 @@ final class CatalogAcceptanceScenarios {
                                 code,
                                 skuCode,
                                 mode,
+                                consumptionUnitSnapshot,
                                 componentTargetRef,
                                 null,
                                 null);
@@ -245,25 +255,25 @@ final class CatalogAcceptanceScenarios {
                                 code,
                                 optionValueCode,
                                 mode,
+                                consumptionUnitSnapshot,
                                 componentTargetRef,
                                 null,
                                 null);
                     } else {
                         rule = inventoryRuleForMode(
                                 ownerType,
-                                readItem(context, fixture, session, code)
-                                        .path("itemRef")
-                                        .asText(),
+                                current.path("itemRef").asText(),
                                 null,
                                 code,
                                 null,
                                 mode,
+                                consumptionUnitSnapshot,
                                 componentTargetRef,
                                 null,
                                 null);
                     }
 
-                    JsonNode before = readItem(context, fixture, session, code);
+                    JsonNode before = current;
                     Response response = saveInventoryNodes(
                             context,
                             fixture,
@@ -333,6 +343,7 @@ final class CatalogAcceptanceScenarios {
     private String sharedAcceptanceUnitRef(
             BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String suffix)
             throws Exception {
+        // spotless:off
         JsonNode created = createAcceptanceUnit(
                 context,
                 fixture,
@@ -341,6 +352,7 @@ final class CatalogAcceptanceScenarios {
                 "个",
                 "COUNT",
                 0);
+        // spotless:on
         String unitRef = created.path("result").path("unit").path("unitRef").asText();
         assertFalse(unitRef.isBlank(), "BUSINESS: CIPG acceptance fixture has one shared catalog unit");
         return unitRef;
@@ -353,12 +365,7 @@ final class CatalogAcceptanceScenarios {
             String suffix,
             String unitRef)
             throws Exception {
-        String tagRef = createProductionTag(
-                context,
-                fixture,
-                session,
-                "ACC-CIPG-PRODUCTION-TAG-" + suffix,
-                "热厨");
+        String tagRef = createProductionTag(context, fixture, session, "ACC-CIPG-PRODUCTION-TAG-" + suffix, "热厨");
         CreatedItem ordinary = createItemWithShape(
                 context,
                 fixture,
@@ -370,8 +377,7 @@ final class CatalogAcceptanceScenarios {
                 Map.of(),
                 "STANDARD_SALE_COUNTED",
                 unitRef);
-        Map<String, Object> ordinaryProfile = preparationProfile(
-                List.of(tagRef), "热厨制作", 100000L, "按默认流程制作");
+        Map<String, Object> ordinaryProfile = preparationProfile("热厨制作", 100000L, "按默认流程制作");
         Response ordinarySaved = saveCatalogDraft(
                 context,
                 fixture,
@@ -383,6 +389,7 @@ final class CatalogAcceptanceScenarios {
                             List.of(
                                     identifierFact("BARCODE", "000123"),
                                     identifierFact("MNEMONIC", "Kitchen Default")));
+                    draft.put("productionTagRef", tagRef);
                     draft.put("preparationProfile", ordinaryProfile);
                 },
                 Set.of(200));
@@ -406,12 +413,22 @@ final class CatalogAcceptanceScenarios {
                 "BUSINESS: mnemonic readback preserves display value and derives case-insensitive normalization");
         assertEquals(
                 "热厨制作",
-                ordinaryRead.path("preparationProfile").path("productionDisplayName").asText(),
+                ordinaryRead
+                        .path("preparationProfile")
+                        .path("productionDisplayName")
+                        .asText(),
                 "BUSINESS: item default preparation display name is read back");
         assertEquals(
                 100000,
-                ordinaryRead.path("preparationProfile").path("estimatedPreparationSeconds").asInt(),
+                ordinaryRead
+                        .path("preparationProfile")
+                        .path("estimatedPreparationSeconds")
+                        .asInt(),
                 "BUSINESS: preparation accepts a non-negative integer well above one day");
+        assertEquals(
+                tagRef,
+                ordinaryRead.path("productionTagRef").asText(),
+                "BUSINESS: item owns one production tag independently of preparation profile");
         JsonNode ordinaryBeforeDuplicate = ordinaryRead.deepCopy();
         Response duplicateMnemonic = saveCatalogDraft(
                 context,
@@ -613,12 +630,7 @@ final class CatalogAcceptanceScenarios {
         }
         assertEquals(42, identifierCells, "BUSINESS: identifier admission executes all 7x2x3 cells");
 
-        String tagRef = createProductionTag(
-                context,
-                fixture,
-                session,
-                "ACC-CIPG-PREP-TAG-" + suffix,
-                "冷菜");
+        String tagRef = createProductionTag(context, fixture, session, "ACC-CIPG-PREP-TAG-" + suffix, "冷菜");
         int preparationCells = 0;
         for (String shape : shapes) {
             for (String targetKind : List.of("ITEM", "SKU", "OPTION_VALUE")) {
@@ -662,15 +674,7 @@ final class CatalogAcceptanceScenarios {
                         session,
                         code,
                         draft -> applyPreparationTarget(
-                                context,
-                                fixture,
-                                session,
-                                draft,
-                                before,
-                                targetKind,
-                                tagRef,
-                                suffix,
-                                cellNumber),
+                                context, fixture, session, draft, before, targetKind, tagRef, suffix, cellNumber),
                         Set.of(200, 422));
                 boolean allowed = preparationAdmissionAllowed(shape, targetKind);
                 if (allowed) {
@@ -679,15 +683,25 @@ final class CatalogAcceptanceScenarios {
                     if ("ITEM".equals(targetKind)) {
                         assertEquals(
                                 "CIPG default " + cell,
-                                after.path("preparationProfile").path("productionDisplayName").asText(),
+                                after.path("preparationProfile")
+                                        .path("productionDisplayName")
+                                        .asText(),
                                 "BUSINESS: item preparation target reads back the typed profile " + cell);
                     } else {
                         assertTrue(
-                                StreamSupport.stream(after.path("orderOptionConfigs").spliterator(), false)
-                                                .flatMap(config -> StreamSupport.stream(config.path("values").spliterator(), false))
-                                                .anyMatch(value -> value.path("preparationEffect").isObject())
-                                        || StreamSupport.stream(after.path("skus").spliterator(), false)
-                                                .anyMatch(sku -> "SKU_OVERRIDE".equals(sku.path("preparationSource").asText())),
+                                StreamSupport.stream(
+                                                        after.path("orderOptionConfigs")
+                                                                .spliterator(),
+                                                        false)
+                                                .flatMap(config -> StreamSupport.stream(
+                                                        config.path("values").spliterator(), false))
+                                                .anyMatch(value -> value.path("preparationEffect")
+                                                        .isObject())
+                                        || StreamSupport.stream(
+                                                        after.path("skus").spliterator(), false)
+                                                .anyMatch(sku -> "SKU_OVERRIDE"
+                                                        .equals(sku.path("preparationSource")
+                                                                .asText())),
                                 "BUSINESS: admitted preparation target reads back its concrete target " + cell);
                     }
                 } else {
@@ -720,7 +734,9 @@ final class CatalogAcceptanceScenarios {
         if ("ITEM".equals(targetKind)) {
             draft.put(
                     "preparationProfile",
-                    preparationProfile(List.of(tagRef), "CIPG default " + current.path("shapeKey").asText() + ":ITEM", 5L, "默认制作说明"));
+                    preparationProfile(
+                            "CIPG default " + current.path("shapeKey").asText() + ":ITEM", 5L, "默认制作说明"));
+            draft.put("productionTagRef", tagRef);
             return;
         }
         if ("SKU".equals(targetKind)) {
@@ -732,25 +748,26 @@ final class CatalogAcceptanceScenarios {
                             "mode",
                             "OVERRIDE",
                             "profile",
-                            preparationProfile(List.of(tagRef), "CIPG default " + current.path("shapeKey").asText() + ":SKU", 7L, "规格制作说明")));
+                            preparationProfile(
+                                    "CIPG default " + ""
+                                            + current.path("shapeKey").asText() + ":SKU",
+                                    7L,
+                                    "规格制作说明")));
             draft.put("skus", List.of(sku));
             return;
         }
-        String definitionCode = "ACC-CIPG-PREP-OPTION-" + suffix + "-" + cell;
         JsonNode definition = createOrderOptionDefinition(
                 context,
                 fixture,
                 session,
-                definitionCode,
                 "制作变化选项 " + cell,
+                "SINGLE",
                 List.of(Map.of("name", "增加冷菜处理", "displayOrder", 1, "materials", List.of())));
         JsonNode value = definition.path("values").get(0);
         Map<String, Object> effect = new LinkedHashMap<>();
-        effect.put("addProductionTagRefs", List.of(tagRef));
         effect.put("instruction", "最后加冷菜处理");
         effect.put("preparationSecondsDelta", 3);
-        Map<String, Object> option = optionOverride(
-                value.path("valueRef").asText(), false, null, 0L, List.of());
+        Map<String, Object> option = optionOverride(value.path("valueRef").asText(), false, null, 0L, List.of());
         option.put("preparationEffect", effect);
         draft.put(
                 "orderOptionConfigs",
@@ -769,7 +786,9 @@ final class CatalogAcceptanceScenarios {
         Map<String, Object> draft = itemDraft(context, fixture, session, itemCode);
         draftCustomizer.accept(draft);
         Map<String, Object> sections = new LinkedHashMap<>();
-        sections.put("expectedCatalogVersion", readItem(context, fixture, session, itemCode).path("version").asLong());
+        sections.put(
+                "expectedCatalogVersion",
+                readItem(context, fixture, session, itemCode).path("version").asLong());
         sections.put("catalogDraft", draft);
         sections.put("inventoryRules", Map.of("nodes", List.of()));
         return context.patch(
@@ -785,10 +804,8 @@ final class CatalogAcceptanceScenarios {
         return Map.of("identifierType", type, "identifierValue", value);
     }
 
-    private static Map<String, Object> preparationProfile(
-            List<String> tagRefs, String displayName, long seconds, String notes) {
+    private static Map<String, Object> preparationProfile(String displayName, long seconds, String notes) {
         Map<String, Object> profile = new LinkedHashMap<>();
-        profile.put("productionTagRefs", tagRefs);
         profile.put("productionDisplayName", displayName);
         profile.put("estimatedPreparationSeconds", seconds);
         profile.put("preparationNotes", notes);
@@ -810,10 +827,16 @@ final class CatalogAcceptanceScenarios {
         sku.put("isDefault", true);
         sku.put("status", "ENABLED");
         sku.put("mediaRefs", List.of());
-        sku.put("salesUnitOverrideRef", current.path("salesUnitRef").isNull() ? null : current.path("salesUnitRef").asText());
+        sku.put(
+                "salesUnitOverrideRef",
+                current.path("salesUnitRef").isNull()
+                        ? null
+                        : current.path("salesUnitRef").asText());
         sku.put(
                 "baseMeasureUnitOverrideRef",
-                current.path("baseMeasureUnitRef").isNull() ? null : current.path("baseMeasureUnitRef").asText());
+                current.path("baseMeasureUnitRef").isNull()
+                        ? null
+                        : current.path("baseMeasureUnitRef").asText());
         sku.put("identifiers", identifiers);
         sku.put("preparationOverride", preparationOverride);
         return sku;
@@ -825,37 +848,38 @@ final class CatalogAcceptanceScenarios {
         if ("SKU_VARIANT_SALE_COUNTED".equals(shape))
             return "SKU".equals(grain) && Set.of("BARCODE", "MNEMONIC").contains(type);
         if ("STANDARD_SALE_WEIGHED".equals(shape))
-            return "CATALOG_ITEM".equals(grain) && Set.of("BARCODE", "PLU", "MNEMONIC").contains(type);
+            return "CATALOG_ITEM".equals(grain)
+                    && Set.of("BARCODE", "PLU", "MNEMONIC").contains(type);
         return "SERVICE".equals(shape) && "CATALOG_ITEM".equals(grain) && "MNEMONIC".equals(type);
     }
 
     private static boolean preparationAdmissionAllowed(String shape, String targetKind) {
         if (Set.of("STANDARD_SALE_COUNTED", "STANDARD_SALE_WEIGHED").contains(shape))
             return Set.of("ITEM", "OPTION_VALUE").contains(targetKind);
-        if ("SKU_VARIANT_SALE_COUNTED".equals(shape)) return Set.of("ITEM", "SKU").contains(targetKind);
+        if ("SKU_VARIANT_SALE_COUNTED".equals(shape))
+            return Set.of("ITEM", "SKU").contains(targetKind);
         return false;
     }
 
     private static void assertIdentifier(
-            JsonNode item,
-            String ownerType,
-            String type,
-            String value,
-            String normalized,
-            String message) {
+            JsonNode item, String ownerType, String type, String value, String normalized, String message) {
         boolean present;
         if ("CATALOG_ITEM".equals(ownerType)) {
             present = StreamSupport.stream(item.path("identifiers").spliterator(), false)
-                    .anyMatch(identifier -> type.equals(identifier.path("identifierType").asText())
+                    .anyMatch(identifier -> type.equals(
+                                    identifier.path("identifierType").asText())
                             && value.equals(identifier.path("identifierValue").asText())
-                            && normalized.equals(identifier.path("normalizedValue").asText())
+                            && normalized.equals(
+                                    identifier.path("normalizedValue").asText())
                             && ownerType.equals(identifier.path("ownerType").asText()));
         } else {
             present = StreamSupport.stream(item.path("skus").spliterator(), false)
                     .flatMap(sku -> StreamSupport.stream(sku.path("identifiers").spliterator(), false))
-                    .anyMatch(identifier -> type.equals(identifier.path("identifierType").asText())
+                    .anyMatch(identifier -> type.equals(
+                                    identifier.path("identifierType").asText())
                             && value.equals(identifier.path("identifierValue").asText())
-                            && normalized.equals(identifier.path("normalizedValue").asText())
+                            && normalized.equals(
+                                    identifier.path("normalizedValue").asText())
                             && ownerType.equals(identifier.path("ownerType").asText()));
         }
         assertTrue(present, message);
@@ -891,6 +915,18 @@ final class CatalogAcceptanceScenarios {
         JsonNode firstData = firstPage.json().path("data");
         assertEquals(101, firstData.path("total").asInt(), "BUSINESS: candidate total is the complete 101-row set");
         assertEquals(100, firstData.path("items").size(), "BUSINESS: first candidate page is bounded at 100");
+        JsonNode firstCandidate = StreamSupport.stream(firstData.path("items").spliterator(), false)
+                .filter(candidate -> componentTargetRef.equals(candidate.path("targetRef").asText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("BUSINESS: first material remains present in the candidate page"));
+        assertEquals(
+                firstMaterial.path("name").asText(),
+                firstCandidate.path("itemName").asText(),
+                "BUSINESS: component candidates expose the catalog material name, not its code");
+        assertNotEquals(
+                firstMaterial.path("code").asText(),
+                firstCandidate.path("itemName").asText(),
+                "BUSINESS: a material code must never stand in for its display name");
         String nextCursor = firstData.path("nextCursor").asText();
         assertFalse(
                 nextCursor.isBlank() || "null".equals(nextCursor),
@@ -1170,6 +1206,12 @@ final class CatalogAcceptanceScenarios {
         assertOptionBomLines(optionAfter, positiveRef, "POSITIVE", "1.25");
         assertOptionBomLines(optionAfter, negativeRef, "NEGATIVE", "0.50");
         assertOptionBomLines(optionAfter, negativeRef, "POSITIVE", "0.75");
+        assertOptionBomLineDisplayName(
+                optionAfter,
+                positiveRef,
+                componentTargetRef,
+                firstMaterial.path("name").asText(),
+                firstMaterial.path("code").asText());
 
         CreatedItem decimalItem = createMaterialItem(
                 context, fixture, session, "ACC-COMPONENT-DECIMAL-" + suffix, "decimal material", kilogramsRef);
@@ -1405,6 +1447,17 @@ final class CatalogAcceptanceScenarios {
                         .anyMatch(row -> unitRef.equals(row.path("unitRef").asText())
                                 && "ENABLED".equals(row.path("status").asText())),
                 "BUSINESS: false query value is decoded and enabled unit is a candidate");
+        Response searched = context.get(
+                OPERATIONS_CATALOG_UNIT_LIST,
+                basePath + "&includeInactive=true&query="
+                        + java.net.URLEncoder.encode(
+                                unit.path("code").asText(), java.nio.charset.StandardCharsets.UTF_8),
+                session.cookie(),
+                Set.of(200));
+        assertTrue(
+                array(searched.json().path("data").path("units")).stream()
+                        .allMatch(row -> unitRef.equals(row.path("unitRef").asText())),
+                "BUSINESS: unit search is owner-filtered by the requested business code, not only the loaded page");
 
         Response disabled = context.post(
                 OPERATIONS_CATALOG_UNIT_DISABLE,
@@ -1432,14 +1485,32 @@ final class CatalogAcceptanceScenarios {
                         .anyMatch(row -> unitRef.equals(row.path("unitRef").asText())
                                 && "DISABLED".equals(row.path("status").asText())),
                 "BUSINESS: true query value exposes disabled units to maintenance without restoring candidates");
+        Response disabledOnly = context.get(
+                OPERATIONS_CATALOG_UNIT_LIST,
+                basePath + "&includeInactive=true&status=DISABLED&query="
+                        + java.net.URLEncoder.encode(
+                                unit.path("code").asText(), java.nio.charset.StandardCharsets.UTF_8),
+                session.cookie(),
+                Set.of(200));
+        assertEquals(
+                List.of(unitRef),
+                array(disabledOnly.json().path("data").path("units")).stream()
+                        .map(row -> row.path("unitRef").asText())
+                        .toList(),
+                "BUSINESS: unit lifecycle filter is an exact owner query fact");
     }
 
     @AcceptanceScenario(
-            id = "inventory.count-truncates-converted-quantity-toward-zero",
+            id = "inventory.counting-unit-precision-semantics",
             module = "CATALOG",
             operation = "countOperationsInventoryTarget")
-    void inventoryCountTruncatesConvertedQuantityTowardZero(BackendAcceptanceTest.ScenarioContext context)
-            throws Exception {
+    void countingUnitPrecisionSemantics(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        inventoryCountTruncatesConvertedQuantityTowardZeroSubcase(context);
+        inventoryCountPreservesConsumptionPrecisionWithoutCountingUnitSubcase(context);
+    }
+
+    private void inventoryCountTruncatesConvertedQuantityTowardZeroSubcase(
+            BackendAcceptanceTest.ScenarioContext context) throws Exception {
         Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
         host.completeInvitation(context, fixture);
         Session session = host.login(context, fixture);
@@ -1566,12 +1637,8 @@ final class CatalogAcceptanceScenarios {
                 "BUSINESS: changing a unit definition later does not reinterpret the historical ledger snapshot");
     }
 
-    @AcceptanceScenario(
-            id = "inventory.count-preserves-consumption-precision-without-counting-unit",
-            module = "CATALOG",
-            operation = "countOperationsInventoryTarget")
-    void inventoryCountPreservesConsumptionPrecisionWithoutCountingUnit(BackendAcceptanceTest.ScenarioContext context)
-            throws Exception {
+    private void inventoryCountPreservesConsumptionPrecisionWithoutCountingUnitSubcase(
+            BackendAcceptanceTest.ScenarioContext context) throws Exception {
         Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
         host.completeInvitation(context, fixture);
         Session session = host.login(context, fixture);
@@ -1877,6 +1944,33 @@ final class CatalogAcceptanceScenarios {
                 "ACC-OTHER-DICT-" + suffix,
                 "Other parent value",
                 otherParent.path("entryRef").asText());
+        String disabledValueCode = "ACC-PAGE-DISABLED-" + suffix;
+        createDictionaryEntryWithoutReadback(
+                context,
+                fixture,
+                session,
+                fixture.storeId().toString(),
+                "SKU_ATTRIBUTE_VALUE",
+                disabledValueCode,
+                "Disabled page value",
+                requestedParent.path("entryRef").asText());
+        context.post(
+                OPERATIONS_CATALOG_DICTIONARY_STATUS,
+                "/api/operations/catalog-inventory/dictionaries/SKU_ATTRIBUTE_VALUE/entries/" + disabledValueCode
+                        + "/status",
+                session.cookie(),
+                Map.of(
+                        "dictionaryKind",
+                        "SKU_ATTRIBUTE_VALUE",
+                        "entryCode",
+                        disabledValueCode,
+                        "expectedVersion",
+                        1,
+                        "targetStatus",
+                        "DISABLED",
+                        "dataNodeRef",
+                        fixture.storeId().toString()),
+                Set.of(200));
         JsonNode siblingParent = createDictionaryEntry(
                 context,
                 sibling,
@@ -1898,6 +1992,8 @@ final class CatalogAcceptanceScenarios {
                 + fixture.storeId()
                 + "&parentEntryRef="
                 + requestedParent.path("entryRef").asText()
+                + "&query=ACC-PAGE-DICT-"
+                + suffix
                 + "&pageSize=2";
         String firstDictionaryCursor = context.get(
                         OPERATIONS_CATALOG_DICTIONARY_READ, dictionaryPath, session.cookie(), Set.of(200))
@@ -1922,6 +2018,23 @@ final class CatalogAcceptanceScenarios {
                 "VALIDATION_ERROR",
                 mismatchedDictionaryCursor.problemCode(),
                 "BUSINESS: a cursor from another dictionary query identity is rejected as a typed validation failure");
+
+        Response disabledDictionary = context.get(
+                OPERATIONS_CATALOG_DICTIONARY_READ,
+                "/api/operations/catalog-inventory/dictionaries/SKU_ATTRIBUTE_VALUE?dataNodeRef="
+                        + fixture.storeId()
+                        + "&parentEntryRef="
+                        + requestedParent.path("entryRef").asText()
+                        + "&status=DISABLED&query=ACC-PAGE-DISABLED-"
+                        + suffix,
+                session.cookie(),
+                Set.of(200));
+        assertEquals(
+                List.of(disabledValueCode),
+                array(disabledDictionary.json().path("data").path("entries")).stream()
+                        .map(entry -> entry.path("code").asText())
+                        .toList(),
+                "BUSINESS: dictionary lifecycle status and search filter the owner collection together");
 
         Set<String> observed = collectCursorCodes(
                 context,
@@ -1985,7 +2098,8 @@ final class CatalogAcceptanceScenarios {
         assertEquals(
                 expectedCodes,
                 observedManagement,
-                "BUSINESS: management cursor pages contain every target-scope tag, including disabled tags, and no sibling-scope tag");
+                "BUSINESS: management cursor pages contain every target-scope tag, including disabled "
+                        + "tags, and no sibling-scope tag");
 
         Set<String> expectedEnabledCodes = new LinkedHashSet<>(expectedCodes);
         expectedEnabledCodes.remove(disabledCode);
@@ -2017,17 +2131,29 @@ final class CatalogAcceptanceScenarios {
                 observedCandidates,
                 "BUSINESS: bindable candidate query returns every enabled matching tag and no disabled/foreign tag");
 
-        Response firstManagementPage = context.get(
+        Response disabledManagement = context.get(
                 OPERATIONS_PRODUCTION_TAGS,
                 "/api/operations/catalog-inventory/production-tags?dataNodeRef="
                         + fixture.storeId()
-                        + "&pageSize=20",
+                        + "&usage=MANAGEMENT&status=DISABLED&query="
+                        + java.net.URLEncoder.encode(disabledCode, java.nio.charset.StandardCharsets.UTF_8),
                 session.cookie(),
                 Set.of(200));
-        String managementCursor = firstManagementPage.json().path("data").path("cursor").asText();
-        assertFalse(
-                managementCursor.isBlank(),
-                "BUSINESS: management page exposes a cursor for the second page");
+        assertEquals(
+                List.of(disabledCode),
+                array(disabledManagement.json().path("data").path("entries")).stream()
+                        .map(entry -> entry.path("code").asText())
+                        .toList(),
+                "BUSINESS: production-tag status and search filter the owner collection together");
+
+        Response firstManagementPage = context.get(
+                OPERATIONS_PRODUCTION_TAGS,
+                "/api/operations/catalog-inventory/production-tags?dataNodeRef=" + fixture.storeId() + "&pageSize=20",
+                session.cookie(),
+                Set.of(200));
+        String managementCursor =
+                firstManagementPage.json().path("data").path("cursor").asText();
+        assertFalse(managementCursor.isBlank(), "BUSINESS: management page exposes a cursor for the second page");
         Response usageChangedCursor = context.get(
                 OPERATIONS_PRODUCTION_TAGS,
                 "/api/operations/catalog-inventory/production-tags?dataNodeRef="
@@ -2318,6 +2444,20 @@ final class CatalogAcceptanceScenarios {
                         "BUSINESS: successful item reaches the requested status");
             }
             JsonNode after = readItem(context, item.fixture(), item.session(), item.code());
+            if (expectedFailure) {
+                assertEquals(
+                        "DISABLED",
+                        after.path("lifecycle").path("status").asText(),
+                        "BUSINESS: stale batch receipt leaves the independently committed owner status intact");
+                assertTrue(
+                        after.path("version").asLong() > item.expectedVersion(),
+                        "BUSINESS: stale batch receipt reads the owner version that made the request stale");
+            } else {
+                assertEquals(
+                        result.path("version").asLong(),
+                        after.path("version").asLong(),
+                        "BUSINESS: each successful batch receipt is verified against its own owner version");
+            }
             assertEquals(
                     item.imagesBefore(),
                     after.path("images"),
@@ -2551,22 +2691,31 @@ final class CatalogAcceptanceScenarios {
                 "BUSINESS: removing the item relation makes the category deletable");
     }
 
+    @AcceptanceScenario(id = "catalog.tag-navigation", module = "CATALOG", operation = "getOperationsCatalogNavigation")
+    void tagNavigation(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        tagNavigationAndFilterSubcase(context, true);
+    }
+
+    @AcceptanceScenario(id = "catalog.item-tag-filter", module = "CATALOG", operation = "getOperationsCatalogItems")
+    void itemTagFilter(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        tagNavigationAndFilterSubcase(context, false);
+    }
+
     /**
      * Fixture: creates two enabled catalog tags, binds only one to a catalog item, then reads the same owner facts
-     * through navigation and the item page. It proves that tree counts include every enabled tag and that a tag
-     * selection does not leak untagged items into the product list.
+     * through navigation and the item page. The two read tasks are separate operation-identity subcases so each
+     * scenario is measured against the HTTP operation it actually exercises.
      */
-    @AcceptanceScenario(
-            id = "catalog.tag-navigation-and-filter",
-            module = "CATALOG",
-            operation = "getOperationsCatalogNavigation")
-    void tagNavigationAndFilter(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+    private void tagNavigationAndFilterSubcase(BackendAcceptanceTest.ScenarioContext context, boolean readNavigation)
+            throws Exception {
         Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG"));
         host.completeInvitation(context, fixture);
         Session session = host.login(context, fixture);
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         JsonNode selectedTag = createDictionaryEntry(
                 context, fixture, session, "TAG", "ACC-TAG-SELECTED-" + suffix, "Selected tag " + suffix);
+        JsonNode laterTag = createDictionaryEntry(
+                context, fixture, session, "TAG", "ACC-TAG-LATER-" + suffix, "Later tag " + suffix);
         JsonNode unusedTag = createDictionaryEntry(
                 context, fixture, session, "TAG", "ACC-TAG-UNUSED-" + suffix, "Unused tag " + suffix);
         JsonNode disabledTag = createDictionaryEntry(
@@ -2590,6 +2739,13 @@ final class CatalogAcceptanceScenarios {
                         fixture.storeId().toString()),
                 Set.of(200));
 
+        String selectedProductionTagCode = "ACC-PRODUCTION-TAG-SELECTED-" + suffix;
+        String selectedProductionTagRef = createProductionTag(
+                context, fixture, session, selectedProductionTagCode, "Selected production tag " + suffix);
+        String disabledProductionTagCode = "ACC-PRODUCTION-TAG-DISABLED-" + suffix;
+        String disabledProductionTagRef = createProductionTag(
+                context, fixture, session, disabledProductionTagCode, "Disabled production tag " + suffix);
+
         String taggedItemCode = "ACC-TAGGED-ITEM-" + suffix;
         long taggedItemVersion = createItem(context, fixture, session, taggedItemCode, "tagged item " + suffix);
         saveCatalogTags(
@@ -2598,70 +2754,759 @@ final class CatalogAcceptanceScenarios {
                 session,
                 taggedItemCode,
                 taggedItemVersion,
-                List.of(selectedTag.path("entryRef").asText()));
+                List.of(
+                        laterTag.path("entryRef").asText(),
+                        selectedTag.path("entryRef").asText()));
+        long taggedWithProductionTagVersion = saveCatalogProductionTag(
+                context,
+                fixture,
+                session,
+                taggedItemCode,
+                readItem(context, fixture, session, taggedItemCode)
+                        .path("version")
+                        .asLong(),
+                selectedProductionTagRef);
+        String disabledTaggedItemCode = "ACC-DISABLED-TAGGED-ITEM-" + suffix;
+        long disabledTaggedItemVersion =
+                createItem(context, fixture, session, disabledTaggedItemCode, "disabled tagged item " + suffix);
+        saveCatalogProductionTag(
+                context, fixture, session, disabledTaggedItemCode, disabledTaggedItemVersion, disabledProductionTagRef);
+        transitionProductionTag(context, fixture, session, disabledProductionTagCode, "DISABLED");
         String untaggedItemCode = "ACC-UNTAGGED-ITEM-" + suffix;
         createItem(context, fixture, session, untaggedItemCode, "untagged item " + suffix);
+        JsonNode categoryRoot =
+                createAcceptanceCategory(context, fixture, session, "ACC-NAV-ROOT-" + suffix, "导航根分类", null);
+        JsonNode categoryBranch = createAcceptanceCategory(
+                context,
+                fixture,
+                session,
+                "ACC-NAV-BRANCH-" + suffix,
+                "导航中间分类",
+                categoryRoot.path("result").path("categoryRef").asText());
+        createAcceptanceCategory(
+                context,
+                fixture,
+                session,
+                "ACC-NAV-LEAF-" + suffix,
+                "导航叶分类",
+                categoryBranch.path("result").path("categoryRef").asText());
 
-        Response navigation = context.get(
-                OPERATIONS_CATALOG_NAVIGATION,
-                "/api/operations/catalog-inventory/navigation?dataNodeRef=" + fixture.storeId(),
+        if (readNavigation) {
+            Response navigation = context.get(
+                    OPERATIONS_CATALOG_NAVIGATION,
+                    "/api/operations/catalog-inventory/navigation?dataNodeRef=" + fixture.storeId(),
+                    session.cookie(),
+                    Set.of(200));
+            JsonNode selectedNavigationTag = findByCode(
+                    navigation.json().path("data").path("tags"),
+                    selectedTag.path("code").asText());
+            assertEquals(
+                    selectedTag.path("entryRef").asText(),
+                    selectedNavigationTag.path("tagRef").asText(),
+                    "BUSINESS: navigation returns the enabled catalog tag's opaque owner identity");
+            assertEquals(
+                    1,
+                    selectedNavigationTag.path("count").asInt(),
+                    "BUSINESS: navigation count equals the number of non-voided products using this tag");
+            assertEquals(
+                    0,
+                    findByCode(
+                                    navigation.json().path("data").path("tags"),
+                                    unusedTag.path("code").asText())
+                            .path("count")
+                            .asInt(),
+                    "BUSINESS: navigation retains enabled tags even when no product currently uses them");
+            assertFalse(
+                    array(navigation.json().path("data").path("tags")).stream().anyMatch(tag -> disabledTag
+                            .path("code")
+                            .asText()
+                            .equals(tag.path("code").asText())),
+                    "BUSINESS: navigation excludes disabled catalog tags from the tree collection");
+            JsonNode selectedNavigationProductionTag =
+                    findByCode(navigation.json().path("data").path("productionTags"), selectedProductionTagCode);
+            assertEquals(
+                    selectedProductionTagRef,
+                    selectedNavigationProductionTag.path("tagRef").asText(),
+                    "BUSINESS: navigation exposes the bound production tag identity");
+            assertEquals(
+                    1,
+                    selectedNavigationProductionTag.path("count").asInt(),
+                    "BUSINESS: production-tag navigation count equals the matching parent product count");
+            JsonNode disabledNavigationProductionTag =
+                    findByCode(navigation.json().path("data").path("productionTags"), disabledProductionTagCode);
+            assertEquals(
+                    "DISABLED",
+                    disabledNavigationProductionTag.path("status").asText(),
+                    "BUSINESS: navigation keeps a disabled production tag visible for existing bindings");
+            assertEquals(
+                    1,
+                    disabledNavigationProductionTag.path("count").asInt(),
+                    "BUSINESS: navigation counts the parent product that keeps the disabled production-tag binding");
+            JsonNode rootNavigationCategory =
+                    findByCode(navigation.json().path("data").path("tree"), "ACC-NAV-ROOT-" + suffix);
+            assertEquals(
+                    3,
+                    rootNavigationCategory
+                            .path("deletionAvailability")
+                            .path("subtreeSize")
+                            .asInt(),
+                    "BUSINESS: category navigation counts every descendant, not only the direct child level");
+        } else {
+            Response filtered = context.get(
+                    OPERATIONS_CATALOG_ITEMS,
+                    "/api/operations/catalog-inventory/items?dataNodeRef="
+                            + fixture.storeId()
+                            + "&tagRef="
+                            + selectedTag.path("entryRef").asText()
+                            + "&pageSize=20",
+                    session.cookie(),
+                    Set.of(200));
+            List<String> filteredCodes = array(filtered.json().path("data").path("items")).stream()
+                    .map(item -> item.path("code").asText())
+                    .toList();
+            assertEquals(
+                    1,
+                    filtered.json().path("data").path("total").asInt(),
+                    "BUSINESS: tag filter total is the matching item count");
+            assertEquals(
+                    List.of(taggedItemCode),
+                    filteredCodes,
+                    "BUSINESS: tag filter returns the tagged product and excludes the untagged product "
+                            + untaggedItemCode);
+            assertEquals(
+                    List.of(
+                            selectedTag.path("name").asText(),
+                            laterTag.path("name").asText()),
+                    array(filtered.json().path("data").path("items").get(0).path("tagSummary")).stream()
+                            .map(JsonNode::asText)
+                            .toList(),
+                    "BUSINESS: item page projects catalog-tag business labels in dictionary display order,"
+                            + " not submitted ref order");
+            Response productionFiltered = context.get(
+                    OPERATIONS_CATALOG_ITEMS,
+                    "/api/operations/catalog-inventory/items?dataNodeRef="
+                            + fixture.storeId()
+                            + "&productionTagRef="
+                            + selectedProductionTagRef
+                            + "&pageSize=20",
+                    session.cookie(),
+                    Set.of(200));
+            List<JsonNode> productionRows =
+                    array(productionFiltered.json().path("data").path("items"));
+            assertEquals(
+                    1,
+                    productionFiltered.json().path("data").path("total").asInt(),
+                    "BUSINESS: production-tag filter total is the matching parent product count");
+            assertEquals(
+                    List.of(taggedItemCode),
+                    productionRows.stream()
+                            .map(item -> item.path("code").asText())
+                            .toList(),
+                    "BUSINESS: production-tag filter returns the parent product once and excludes unrelated products");
+            assertEquals(
+                    List.of(
+                            selectedTag.path("name").asText(),
+                            laterTag.path("name").asText()),
+                    array(productionRows.getFirst().path("tagSummary")).stream()
+                            .map(JsonNode::asText)
+                            .toList(),
+                    "BUSINESS: production-tag filtering remains independent while the parent row retains "
+                            + "its catalog-tag business labels");
+            assertTrue(
+                    array(productionRows.getFirst().path("preparationSummary")).stream()
+                            .map(JsonNode::asText)
+                            .anyMatch(("生产标签：Selected production tag " + suffix)::equals),
+                    "BUSINESS: parent row projects the bound production tag business name rather than a "
+                            + "generic configured marker");
+            assertTrue(
+                    taggedWithProductionTagVersion > taggedItemVersion,
+                    "BUSINESS: production-tag binding is versioned by the catalog owner");
+            Response disabledProductionFiltered = context.get(
+                    OPERATIONS_CATALOG_ITEMS,
+                    "/api/operations/catalog-inventory/items?dataNodeRef="
+                            + fixture.storeId()
+                            + "&productionTagRef="
+                            + disabledProductionTagRef
+                            + "&pageSize=20",
+                    session.cookie(),
+                    Set.of(200));
+            assertEquals(
+                    List.of(disabledTaggedItemCode),
+                    array(disabledProductionFiltered.json().path("data").path("items")).stream()
+                            .map(item -> item.path("code").asText())
+                            .toList(),
+                    "BUSINESS: a disabled production tag remains a valid filter for its existing product binding");
+        }
+    }
+
+    @AcceptanceScenario(
+            id = "catalog.item-sku-page-contract",
+            module = "CATALOG",
+            operation = "getOperationsCatalogItemSkus")
+    void itemSkuPageContract(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG"));
+        host.completeInvitation(context, fixture);
+        Session session = host.login(context, fixture);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        JsonNode size = createDictionaryEntry(
+                context, fixture, session, "SKU_ATTRIBUTE", "ACC-PAGE-SIZE-" + suffix, "Page size");
+        JsonNode temperature = createDictionaryEntry(
+                context, fixture, session, "SKU_ATTRIBUTE", "ACC-PAGE-TEMP-" + suffix, "Page temperature");
+        JsonNode small = createDictionaryEntry(
+                context,
+                fixture,
+                session,
+                "SKU_ATTRIBUTE_VALUE",
+                "ACC-PAGE-SMALL-" + suffix,
+                "Small",
+                size.path("entryRef").asText());
+        JsonNode large = createDictionaryEntry(
+                context,
+                fixture,
+                session,
+                "SKU_ATTRIBUTE_VALUE",
+                "ACC-PAGE-LARGE-" + suffix,
+                "Large",
+                size.path("entryRef").asText());
+        JsonNode hot = createDictionaryEntry(
+                context,
+                fixture,
+                session,
+                "SKU_ATTRIBUTE_VALUE",
+                "ACC-PAGE-HOT-" + suffix,
+                "Hot",
+                temperature.path("entryRef").asText());
+        JsonNode cold = createDictionaryEntry(
+                context,
+                fixture,
+                session,
+                "SKU_ATTRIBUTE_VALUE",
+                "ACC-PAGE-COLD-" + suffix,
+                "Cold",
+                temperature.path("entryRef").asText());
+        String itemCode = "ACC-SKU-PAGE-" + suffix;
+        Response created = context.post(
+                OPERATIONS_CATALOG_ITEM_CREATE,
+                "/api/operations/catalog-inventory/items",
                 session.cookie(),
+                itemCreateBody(
+                        fixture.storeId().toString(),
+                        itemCode,
+                        "SKU page fixture " + suffix,
+                        "SKU_VARIANT_SALE_COUNTED",
+                        null),
                 Set.of(200));
-        JsonNode selectedNavigationTag = findByCode(
-                navigation.json().path("data").path("tags"),
-                selectedTag.path("code").asText());
+        String unitRef = createAcceptanceUnit(context, fixture, session, "ACC-PAGE-UNIT-" + suffix)
+                .path("result")
+                .path("unit")
+                .path("unitRef")
+                .asText();
+        String productionTagRef = createProductionTag(
+                context, fixture, session, "ACC-PAGE-PRODUCTION-TAG-" + suffix, "Page production tag " + suffix);
+        context.patch(
+                OPERATIONS_CATALOG_ITEM_SAVE,
+                itemPath(itemCode),
+                session.cookie(),
+                matrixSaveBody(
+                        fixture,
+                        itemCode,
+                        created.json().path("result").path("version").asLong(),
+                        size,
+                        temperature,
+                        small,
+                        large,
+                        hot,
+                        cold,
+                        unitRef,
+                        productionTagRef),
+                Set.of(200));
+
+        JsonNode savedDetail = context.get(
+                        OPERATIONS_CATALOG_ITEM_READ,
+                        "/api/operations/catalog-inventory/items/" + itemCode + "?dataNodeRef=" + fixture.storeId(),
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("data")
+                .path("item");
+        Map<String, JsonNode> savedSkuFactsByRef = new LinkedHashMap<>();
+        array(savedDetail.path("skus"))
+                .forEach(sku -> savedSkuFactsByRef.put(sku.path("productSkuRef").asText(), sku));
+
+        String basePath = "/api/operations/catalog-inventory/items/" + itemCode + "/skus?dataNodeRef="
+                + fixture.storeId() + "&pageSize=3";
+        JsonNode beforeParentList = context.get(
+                        OPERATIONS_CATALOG_ITEMS,
+                        "/api/operations/catalog-inventory/items?dataNodeRef=" + fixture.storeId() + "&pageSize=100",
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("data");
+        JsonNode skuManagedParent = array(beforeParentList.path("items")).stream()
+                .filter(row -> itemCode.equals(row.path("code").asText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("BUSINESS: SKU-managed parent remains present in the item list"));
+        JsonNode skuManagedParentInventory = skuManagedParent.path("inventoryDeductionSummary");
         assertEquals(
-                selectedTag.path("entryRef").asText(),
-                selectedNavigationTag.path("tagRef").asText(),
-                "BUSINESS: navigation returns the enabled catalog tag's opaque owner identity");
+                "SKU",
+                skuManagedParentInventory.path("grain").asText(),
+                "BUSINESS: a SKU-managed parent tells the user that inventory is configured by specification");
+        assertTrue(
+                skuManagedParentInventory.path("mode").isNull()
+                        && skuManagedParentInventory
+                                .path("consumptionUnitSnapshot")
+                                .isNull()
+                        && skuManagedParentInventory.path("bomLineCount").isNull(),
+                "BUSINESS: the parent list never presents its edit-only ITEM/NONE zero state as an inventory mode;"
+                        + " each SKU owns its deduction setting");
+        JsonNode firstData = context.get(OPERATIONS_CATALOG_ITEM_SKUS, basePath, session.cookie(), Set.of(200))
+                .json()
+                .path("data");
+        assertEquals(4, firstData.path("total").asInt(), "BUSINESS: SKU task read reports the complete parent total");
+        assertEquals(3, firstData.path("items").size(), "BUSINESS: SKU task read respects the requested page size");
+        assertTrue(firstData.path("cursor").isNull(), "BUSINESS: the first SKU page has no echoed cursor");
+        String nextCursor = firstData.path("nextCursor").asText();
+        assertFalse(nextCursor.isBlank(), "BUSINESS: the first SKU page exposes a continuation cursor");
+        Set<String> firstRefs = new LinkedHashSet<>();
+        firstData.path("items").forEach(row -> {
+            assertFalse(row.path("productSkuRef").asText().isBlank(), "BUSINESS: SKU page exposes stable SKU identity");
+            assertFalse(row.path("skuCode").asText().isBlank(), "BUSINESS: SKU page exposes the business SKU code");
+            assertTrue(row.path("attributeValueRefs").isArray(), "BUSINESS: SKU page exposes specification values");
+            JsonNode detailSkuFacts =
+                    savedSkuFactsByRef.get(row.path("productSkuRef").asText());
+            assertTrue(detailSkuFacts != null, "BUSINESS: SKU page row resolves to the same owner SKU fact");
+            assertEquals(
+                    detailSkuFacts.path("attributeValueRefs"),
+                    row.path("attributeValueRefs"),
+                    "BUSINESS: SKU page preserves the exact owner specification facts, including the business label, "
+                            + "status and display order");
+            assertTrue(row.path("attributeSummary").isArray(), "BUSINESS: SKU page exposes the attribute summary");
+            assertEquals(
+                    array(row.path("attributeValueRefs")).stream()
+                            .map(value -> value.path("attributeName").asText() + "："
+                                    + value.path("valueLabel").asText())
+                            .toList(),
+                    array(row.path("attributeSummary")).stream()
+                            .map(JsonNode::asText)
+                            .toList(),
+                    "BUSINESS: SKU page uses owner-ordered specification names and values rather than an "
+                            + "empty or generic summary");
+            assertFalse(
+                    array(row.path("attributeSummary")).stream()
+                            .map(JsonNode::asText)
+                            .anyMatch("已设置"::equals),
+                    "BUSINESS: SKU page never substitutes a generic selected-attribute placeholder");
+            assertTrue(row.path("preparationSummary").isArray(), "BUSINESS: SKU page exposes the production summary");
+            assertTrue(
+                    array(row.path("preparationSummary")).stream()
+                            .map(JsonNode::asText)
+                            .anyMatch(("生产标签：Page production tag " + suffix)::equals),
+                    "BUSINESS: SKU page projects the bound production tag business name rather than a "
+                            + "generic configured marker");
+            assertTrue(
+                    row.path("inventoryDeductionSummary").isObject(), "BUSINESS: SKU page exposes inventory summary");
+            assertEquals(
+                    "NONE",
+                    row.path("inventoryDeductionSummary").path("mode").asText(),
+                    "BUSINESS: a concrete SKU with no deduction rule is explicitly shown as "
+                            + "not participating in inventory; "
+                            + "only the SKU-managed parent summary uses a null mode");
+            assertTrue(
+                    firstRefs.add(row.path("productSkuRef").asText()),
+                    "BUSINESS: first SKU page has no duplicate identity");
+        });
+
+        JsonNode secondData = context.get(
+                        OPERATIONS_CATALOG_ITEM_SKUS,
+                        basePath + "&cursor="
+                                + java.net.URLEncoder.encode(nextCursor, java.nio.charset.StandardCharsets.UTF_8),
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("data");
         assertEquals(
-                1,
-                selectedNavigationTag.path("count").asInt(),
-                "BUSINESS: navigation count equals the number of non-voided products using this tag");
+                nextCursor,
+                secondData.path("cursor").asText(),
+                "BUSINESS: SKU page echoes the exact continuation cursor");
         assertEquals(
-                0,
-                findByCode(
-                                navigation.json().path("data").path("tags"),
-                                unusedTag.path("code").asText())
-                        .path("count")
-                        .asInt(),
-                "BUSINESS: navigation retains enabled tags even when no product currently uses them");
+                4,
+                secondData.path("total").asInt(),
+                "BUSINESS: continuation SKU page keeps the complete parent total rather than the remaining rows");
+        assertEquals(1, secondData.path("items").size(), "BUSINESS: second SKU page contains the remaining SKU");
+        secondData.path("items").forEach(row -> {
+            assertTrue(firstRefs.add(row.path("productSkuRef").asText()), "BUSINESS: SKU pages do not overlap");
+            assertTrue(
+                    row.path("attributeValueRefs").isArray(),
+                    "BUSINESS: the second page keeps the SKU specification shape");
+            assertEquals(
+                    array(row.path("attributeValueRefs")).stream()
+                            .map(value -> value.path("attributeName").asText() + "："
+                                    + value.path("valueLabel").asText())
+                            .toList(),
+                    array(row.path("attributeSummary")).stream()
+                            .map(JsonNode::asText)
+                            .toList(),
+                    "BUSINESS: every SKU page keeps the owner-ordered specification summary");
+            assertFalse(
+                    array(row.path("attributeSummary")).stream()
+                            .map(JsonNode::asText)
+                            .anyMatch("已设置"::equals),
+                    "BUSINESS: continuation SKU page never substitutes a generic selected-attribute placeholder");
+        });
+        assertEquals(4, firstRefs.size(), "BUSINESS: SKU pages have no omission");
+        assertTrue(secondData.path("nextCursor").isNull(), "BUSINESS: the final SKU page has no further cursor");
+        int afterSkuPageTotal = context.get(
+                        OPERATIONS_CATALOG_ITEMS,
+                        "/api/operations/catalog-inventory/items?dataNodeRef=" + fixture.storeId() + "&pageSize=100",
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("data")
+                .path("total")
+                .asInt();
+        assertEquals(
+                beforeParentList.path("total").asInt(),
+                afterSkuPageTotal,
+                "BUSINESS: SKU task read does not change the parent item total");
+
+        String noSkuCode = "ACC-NO-SKU-PAGE-" + suffix;
+        createItem(context, fixture, session, noSkuCode, "No SKU page fixture " + suffix);
+        JsonNode noSkuData = context.get(
+                        OPERATIONS_CATALOG_ITEM_SKUS,
+                        "/api/operations/catalog-inventory/items/" + noSkuCode + "/skus?dataNodeRef="
+                                + fixture.storeId() + "&pageSize=2",
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("data");
+        assertEquals(0, noSkuData.path("total").asInt(), "BUSINESS: a product without SKU has an empty SKU result");
+        assertTrue(
+                noSkuData.path("items").isArray() && noSkuData.path("items").isEmpty(),
+                "BUSINESS: no-SKU read returns no synthetic child");
+        assertTrue(noSkuData.path("nextCursor").isNull(), "BUSINESS: no-SKU read has no continuation cursor");
+
+        Fixture sibling = host.siblingStoreFixtureSameBrand(fixture, Set.of("EDIT_STORE_CATALOG"));
+        host.completeInvitation(context, sibling);
+        Session siblingSession = host.login(context, sibling);
+        Response scopeRejected =
+                context.get(OPERATIONS_CATALOG_ITEM_SKUS, basePath, siblingSession.cookie(), Set.of(403));
+        assertEquals(
+                "SCOPE_FORBIDDEN", scopeRejected.problemCode(), "BUSINESS: SKU task read cannot cross the store scope");
+        int beforeParentTotal = beforeParentList.path("total").asInt();
+        int afterParentTotal = context.get(
+                        OPERATIONS_CATALOG_ITEMS,
+                        "/api/operations/catalog-inventory/items?dataNodeRef=" + fixture.storeId() + "&pageSize=100",
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("data")
+                .path("total")
+                .asInt();
+        assertEquals(
+                beforeParentTotal + 1,
+                afterParentTotal,
+                "BUSINESS: SKU page read does not create or duplicate parent rows");
+    }
+
+    @AcceptanceScenario(
+            id = "catalog.category-candidate-hierarchy",
+            module = "CATALOG",
+            operation = "getOperationsCatalogCategoryCandidates")
+    void categoryCandidateHierarchy(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG"));
+        host.completeInvitation(context, fixture);
+        Session session = host.login(context, fixture);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        // spotless:off
+        JsonNode root = createAcceptanceCategory(
+                context,
+                fixture,
+                session,
+                "ACC-CAND-ROOT-" + suffix,
+                "候选根分类",
+                null);
+        JsonNode siblingOne = createAcceptanceCategory(
+                context,
+                fixture,
+                session,
+                "ACC-CAND-SIBLING-1-" + suffix,
+                "候选同级一",
+                null);
+        JsonNode siblingTwo = createAcceptanceCategory(
+                context,
+                fixture,
+                session,
+                "ACC-CAND-SIBLING-2-" + suffix,
+                "候选同级二",
+                null);
+        // spotless:on
+        JsonNode branch = createAcceptanceCategory(
+                context,
+                fixture,
+                session,
+                "ACC-CAND-BRANCH-" + suffix,
+                "候选中间分类",
+                root.path("result").path("categoryRef").asText());
+        JsonNode leaf = createAcceptanceCategory(
+                context,
+                fixture,
+                session,
+                "ACC-CAND-LEAF-" + suffix,
+                "候选叶分类",
+                branch.path("result").path("categoryRef").asText());
+        String moveRootCode = "ACC-CAND-MOVE-ROOT-" + suffix;
+        JsonNode moveRoot = createAcceptanceCategory(context, fixture, session, moveRootCode, "移动根分类", null);
+        JsonNode moveChild = createAcceptanceCategory(
+                context,
+                fixture,
+                session,
+                "ACC-CAND-MOVE-CHILD-" + suffix,
+                "移动子分类",
+                moveRoot.path("result").path("categoryRef").asText());
+        String basePath = "/api/operations/catalog-inventory/category-candidates?dataNodeRef=" + fixture.storeId()
+                + "&usage=ITEM_ASSIGNMENT&pageSize=2";
+        JsonNode firstData = context.get(
+                        OPERATIONS_CATALOG_CATEGORY_CANDIDATES, basePath, session.cookie(), Set.of(200))
+                .json()
+                .path("data");
+        assertTrue(
+                firstData.path("total").asInt() >= 3, "BUSINESS: category candidate total includes all root siblings");
+        assertEquals(2, firstData.path("items").size(), "BUSINESS: category candidates respect page size");
+        Set<String> observed = new LinkedHashSet<>();
+        firstData.path("items").forEach(row -> {
+            assertTrue(row.path("parentCategoryRef").isNull(), "BUSINESS: first candidate page is the root level");
+            assertTrue(
+                    row.path("selectable").asBoolean(), "BUSINESS: normal item-assignment candidates are selectable");
+            assertTrue(row.path("disabledReason").isNull(), "BUSINESS: selectable candidates have no disabled reason");
+            assertTrue(
+                    observed.add(row.path("categoryRef").asText()), "BUSINESS: first category page has no duplicate");
+        });
+        String nextCursor = firstData.path("nextCursor").asText();
+        assertFalse(nextCursor.isBlank(), "BUSINESS: category candidate page exposes a continuation cursor");
+        JsonNode secondData = context.get(
+                        OPERATIONS_CATALOG_CATEGORY_CANDIDATES,
+                        basePath + "&cursor="
+                                + java.net.URLEncoder.encode(nextCursor, java.nio.charset.StandardCharsets.UTF_8),
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("data");
+        assertEquals(nextCursor, secondData.path("cursor").asText(), "BUSINESS: category candidates echo the cursor");
+        assertEquals(
+                firstData.path("total").asInt(),
+                secondData.path("total").asInt(),
+                "BUSINESS: continuation category page keeps the complete matching total "
+                        + "rather than the remaining rows");
+        secondData
+                .path("items")
+                .forEach(row -> assertTrue(
+                        observed.add(row.path("categoryRef").asText()), "BUSINESS: category pages do not overlap"));
+        assertEquals(firstData.path("total").asInt(), observed.size(), "BUSINESS: category pages have no omission");
+
+        String rootCode = "ACC-CAND-ROOT-" + suffix;
+        String branchCode = "ACC-CAND-BRANCH-" + suffix;
+        String leafCode = "ACC-CAND-LEAF-" + suffix;
+        JsonNode searched = context.get(
+                        OPERATIONS_CATALOG_CATEGORY_CANDIDATES,
+                        "/api/operations/catalog-inventory/category-candidates?dataNodeRef=" + fixture.storeId()
+                                + "&usage=ITEM_ASSIGNMENT&keyword="
+                                + java.net.URLEncoder.encode(leafCode, java.nio.charset.StandardCharsets.UTF_8)
+                                + "&pageSize=20",
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("data");
+        JsonNode leafRow = array(searched.path("items")).stream()
+                .filter(row -> leafCode.equals(row.path("code").asText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("BUSINESS: category search returns the matching leaf"));
+        assertTrue(
+                leafRow.path("path").isArray() && leafRow.path("path").size() >= 3,
+                "BUSINESS: category search returns the complete ancestor path");
+        assertEquals(rootCode, leafRow.path("path").get(0).path("code").asText(), "BUSINESS: path starts at the root");
+        assertEquals(
+                branchCode,
+                leafRow.path("path").get(1).path("code").asText(),
+                "BUSINESS: path contains the intermediate category");
+
+        JsonNode createCandidates = context.get(
+                        OPERATIONS_CATALOG_CATEGORY_CANDIDATES,
+                        "/api/operations/catalog-inventory/category-candidates?dataNodeRef=" + fixture.storeId()
+                                + "&usage=CATEGORY_CREATE&keyword="
+                                + java.net.URLEncoder.encode(leafCode, java.nio.charset.StandardCharsets.UTF_8)
+                                + "&pageSize=20",
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("data");
+        JsonNode createLeaf = array(createCandidates.path("items")).stream()
+                .filter(row -> leafCode.equals(row.path("code").asText()))
+                .findFirst()
+                .orElseThrow(() ->
+                        new AssertionError("BUSINESS: create candidates return the matching third-level category"));
+        assertFalse(createLeaf.path("selectable").asBoolean(), "BUSINESS: third-level category cannot accept a child");
+        assertEquals(
+                "商品分类最多只能建立三级",
+                createLeaf.path("disabledReason").asText(),
+                "BUSINESS: create candidates explain the three-level category limit in business language");
+
+        String rejectedFourthLevelCode = "ACC-CAND-FOURTH-" + suffix;
+        Response fourthLevelRejected = context.post(
+                OPERATIONS_CATALOG_CATEGORY_CREATE,
+                "/api/operations/catalog-inventory/categories",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef",
+                        fixture.storeId().toString(),
+                        "code",
+                        rejectedFourthLevelCode,
+                        "name",
+                        "不应创建的第四级",
+                        "parentCategoryRef",
+                        leaf.path("result").path("categoryRef").asText()),
+                Set.of(422));
+        assertEquals(
+                "CATEGORY_DEPTH_EXCEEDED",
+                fourthLevelRejected.problemCode(),
+                "BUSINESS: owner rejects a fourth category level rather than accepting a UI-only limit");
+        JsonNode noFourthLevel = context.get(
+                        OPERATIONS_CATALOG_CATEGORY_CANDIDATES,
+                        "/api/operations/catalog-inventory/category-candidates?dataNodeRef=" + fixture.storeId()
+                                + "&usage=ITEM_ASSIGNMENT&keyword="
+                                + java.net.URLEncoder.encode(
+                                        rejectedFourthLevelCode, java.nio.charset.StandardCharsets.UTF_8)
+                                + "&pageSize=20",
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("data");
+        assertTrue(
+                array(noFourthLevel.path("items")).stream()
+                        .noneMatch(row ->
+                                rejectedFourthLevelCode.equals(row.path("code").asText())),
+                "BUSINESS: rejected fourth level leaves no category fact behind");
+
+        String rootRef = root.path("result").path("categoryRef").asText();
+        JsonNode reparent = context.get(
+                        OPERATIONS_CATALOG_CATEGORY_CANDIDATES,
+                        "/api/operations/catalog-inventory/category-candidates?dataNodeRef=" + fixture.storeId()
+                                + "&usage=CATEGORY_REPARENT&currentCategoryRef=" + rootRef
+                                + "&keyword="
+                                + java.net.URLEncoder.encode(leafCode, java.nio.charset.StandardCharsets.UTF_8)
+                                + "&pageSize=20",
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("data");
+        assertTrue(
+                array(reparent.path("items")).stream()
+                        .filter(row -> rootRef.equals(row.path("categoryRef").asText()))
+                        .allMatch(row -> !row.path("selectable").asBoolean()
+                                && "不能选择当前分类或其下级分类"
+                                        .equals(row.path("disabledReason").asText())),
+                "BUSINESS: reparent candidates disable the current category");
+        assertTrue(
+                array(reparent.path("items")).stream()
+                        .filter(row -> branch.path("result")
+                                .path("categoryRef")
+                                .asText()
+                                .equals(row.path("categoryRef").asText()))
+                        .allMatch(row -> !row.path("selectable").asBoolean()
+                                && !row.path("disabledReason").asText().isBlank()),
+                "BUSINESS: reparent candidates disable descendants with a reason");
+
+        String moveRootRef = moveRoot.path("result").path("categoryRef").asText();
+        JsonNode tooDeepReparentCandidates = context.get(
+                        OPERATIONS_CATALOG_CATEGORY_CANDIDATES,
+                        "/api/operations/catalog-inventory/category-candidates?dataNodeRef=" + fixture.storeId()
+                                + "&usage=CATEGORY_REPARENT&currentCategoryRef=" + moveRootRef
+                                + "&keyword="
+                                + java.net.URLEncoder.encode(leafCode, java.nio.charset.StandardCharsets.UTF_8)
+                                + "&pageSize=20",
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("data");
+        JsonNode tooDeepTarget = array(tooDeepReparentCandidates.path("items")).stream()
+                .filter(row -> leafCode.equals(row.path("code").asText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("BUSINESS: reparent candidates return the third-level target"));
         assertFalse(
-                array(navigation.json().path("data").path("tags")).stream().anyMatch(tag -> disabledTag
-                        .path("code")
-                        .asText()
-                        .equals(tag.path("code").asText())),
-                "BUSINESS: navigation excludes disabled catalog tags from the tree collection");
-
-        Response filtered = context.get(
-                OPERATIONS_CATALOG_ITEMS,
-                "/api/operations/catalog-inventory/items?dataNodeRef="
-                        + fixture.storeId()
-                        + "&tagRef="
-                        + selectedTag.path("entryRef").asText()
-                        + "&pageSize=20",
+                tooDeepTarget.path("selectable").asBoolean(),
+                "BUSINESS: a subtree cannot move under a third-level category"
+                        + " when it would exceed the three-level limit");
+        assertEquals(
+                "移动后分类不能超过三级",
+                tooDeepTarget.path("disabledReason").asText(),
+                "BUSINESS: reparent candidates explain the category depth limit in business language");
+        Response tooDeepMoveRejected = context.post(
+                new BackendAcceptanceTest.RouteIdentity(
+                        "moveOperationsCatalogCategory",
+                        "/api/operations/catalog-inventory/categories/{categoryRef}/move"),
+                "/api/operations/catalog-inventory/categories/" + moveRootRef + "/move",
                 session.cookie(),
-                Set.of(200));
-        List<String> filteredCodes = array(filtered.json().path("data").path("items")).stream()
-                .map(item -> item.path("code").asText())
-                .toList();
+                Map.of(
+                        "dataNodeRef", fixture.storeId().toString(),
+                        "categoryRef", moveRootRef,
+                        "expectedVersion",
+                                moveRoot.path("result").path("version").asLong(),
+                        "action", "REPARENT",
+                        "parentCategoryRef",
+                                leaf.path("result").path("categoryRef").asText()),
+                Set.of(422));
         assertEquals(
-                1,
-                filtered.json().path("data").path("total").asInt(),
-                "BUSINESS: tag filter total is the matching item count");
+                "CATEGORY_DEPTH_EXCEEDED",
+                tooDeepMoveRejected.problemCode(),
+                "BUSINESS: owner rejects a move that would create fourth- and fifth-level categories");
+        JsonNode retainedMoveChild = context.get(
+                        OPERATIONS_CATALOG_CATEGORY_CANDIDATES,
+                        "/api/operations/catalog-inventory/category-candidates?dataNodeRef=" + fixture.storeId()
+                                + "&usage=ITEM_ASSIGNMENT&keyword="
+                                + java.net.URLEncoder.encode(
+                                        "ACC-CAND-MOVE-CHILD-" + suffix, java.nio.charset.StandardCharsets.UTF_8)
+                                + "&pageSize=20",
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("data");
+        JsonNode moveChildRow = array(retainedMoveChild.path("items")).stream()
+                .filter(row -> ("ACC-CAND-MOVE-CHILD-" + suffix)
+                        .equals(row.path("code").asText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("BUSINESS: rejected reparent retains the original child fact"));
         assertEquals(
-                List.of(taggedItemCode),
-                filteredCodes,
-                "BUSINESS: tag filter returns the tagged product and excludes the untagged product "
-                        + untaggedItemCode);
+                moveRootRef,
+                moveChildRow.path("parentCategoryRef").asText(),
+                "BUSINESS: rejected reparent leaves the subtree at its original parent");
+        Fixture sibling = host.siblingStoreFixtureSameBrand(fixture, Set.of("EDIT_STORE_CATALOG"));
+        host.completeInvitation(context, sibling);
+        Session siblingSession = host.login(context, sibling);
+        Response scopeRejected =
+                context.get(OPERATIONS_CATALOG_CATEGORY_CANDIDATES, basePath, siblingSession.cookie(), Set.of(403));
+        assertEquals(
+                "SCOPE_FORBIDDEN",
+                scopeRejected.problemCode(),
+                "BUSINESS: category candidates cannot cross the store scope");
+        assertFalse(
+                siblingOne.path("result").path("categoryRef").asText().isBlank(),
+                "BUSINESS: same-level category fixture is real");
+        assertFalse(
+                siblingTwo.path("result").path("categoryRef").asText().isBlank(),
+                "BUSINESS: page overflow fixtures are real");
+    }
+
+    /** Preserves both SKU inventory-identity and removal guard subcases under one save operation. */
+    @AcceptanceScenario(
+            id = "catalog.sku-inventory-identity-and-removal",
+            module = "CATALOG",
+            operation = "saveOperationsCatalogItem")
+    void skuInventoryIdentityAndRemoval(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        skuRemovalBlockedByInventorySubcase(context);
+        skuCodeChangeKeepsInventorySubcase(context);
     }
 
     /** Proves an inventory-owned SKU reference blocks removal without permitting a partial catalog write. */
-    @AcceptanceScenario(
-            id = "catalog.sku-removal-blocked-by-inventory",
-            module = "CATALOG",
-            operation = "saveOperationsCatalogItem")
-    void skuRemovalBlockedByInventory(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+    private void skuRemovalBlockedByInventorySubcase(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
         host.completeInvitation(context, fixture);
         Session session = host.login(context, fixture);
@@ -2706,16 +3551,15 @@ final class CatalogAcceptanceScenarios {
                 "BUSINESS: a SKU referenced by Inventory cannot be silently archived or removed; response="
                         + rejected.raw());
         String rejectionDetail = rejected.json().path("detail").asText();
-        assertTrue(
-                rejectionDetail.contains("库存对象"),
-                () -> "BUSINESS: rejection identifies the inventory reference source instead of a generic failure; "
-                        + "detail="
-                        + rejectionDetail);
+        assertEquals(
+                "该规格存在库存记录或用料，暂不能作废",
+                rejectionDetail,
+                "BUSINESS: rejection names the inventory-or-BOM business blocker without a generic fallback");
         assertFalse(
-                rejectionDetail.contains("stock_target"), "BUSINESS: rejection does not expose inventory schema names");
+                rejectionDetail.contains(skuRef), "BUSINESS: rejection does not expose the opaque SKU identity");
         assertFalse(
-                rejectionDetail.contains("product_sku_ref"),
-                "BUSINESS: rejection does not expose inventory column names");
+                rejectionDetail.contains("stock_target") || rejectionDetail.contains("product_sku_ref"),
+                "BUSINESS: rejection does not expose inventory schema names");
         assertEquals(
                 skuRef,
                 readItem(context, fixture, session, code)
@@ -2785,7 +3629,13 @@ final class CatalogAcceptanceScenarios {
                 compositeSaved.json().path("version").asLong() > compositeOwner.version(),
                 "BUSINESS: catalog composite fixture is persisted before the SKU guard is exercised");
         assertSkuRemovalBlocked(
-                context, fixture, session, compositeBlockedCode, compositeVersion, compositeSkuRef, "catalog facts");
+                context,
+                fixture,
+                session,
+                compositeBlockedCode,
+                compositeVersion,
+                compositeSkuRef,
+                "该规格已被套餐内容使用，暂不能作废");
 
         String bomBlockedCode = "ACC-SKU-BOM-" + UUID.randomUUID().toString().substring(0, 8);
         CreatedItem bomBlocked = createSkuVariantItem(context, fixture, session, bomBlockedCode, "BOM guarded SKU");
@@ -2796,7 +3646,14 @@ final class CatalogAcceptanceScenarios {
         String bomSkuRef = bomSku.path("productSkuRef").asText();
         bomVersion =
                 saveSkuBom(context, fixture, session, bomBlockedCode, bomVersion, bomSkuRef, bomComponentTargetRef);
-        assertSkuRemovalBlocked(context, fixture, session, bomBlockedCode, bomVersion, bomSkuRef, "BOM");
+        assertSkuRemovalBlocked(
+                context,
+                fixture,
+                session,
+                bomBlockedCode,
+                bomVersion,
+                bomSkuRef,
+                "该规格存在库存记录或用料，暂不能作废");
     }
 
     private void assertSkuRemovalBlocked(
@@ -2806,7 +3663,7 @@ final class CatalogAcceptanceScenarios {
             String itemCode,
             long expectedVersion,
             String skuRef,
-            String sourceLabel)
+            String expectedDetail)
             throws Exception {
         JsonNode current = readItem(context, fixture, session, itemCode);
         Map<String, Object> request = skuVoidRequest(current, expectedVersion, skuRef);
@@ -2830,8 +3687,8 @@ final class CatalogAcceptanceScenarios {
                 "BUSINESS: SKU blocker returns an unprocessable response; response=" + rejected.raw());
         assertEquals("REFERENCE_BLOCKS_VOID", rejected.problemCode(), "BUSINESS: SKU removal has a typed blocker");
         String detail = rejected.json().path("detail").asText();
-        assertTrue(detail.contains(skuRef), "BUSINESS: blocker is attributable to the requested SKU ref");
-        assertTrue(detail.contains(sourceLabel), "BUSINESS: blocker identifies its owning source " + sourceLabel);
+        assertEquals(expectedDetail, detail, "BUSINESS: blocker gives the owner-approved business reason");
+        assertFalse(detail.contains(skuRef), "BUSINESS: blocker never leaks the opaque SKU identity");
         assertEquals(
                 skuRef,
                 current.path("skus").get(0).path("productSkuRef").asText(),
@@ -2896,11 +3753,7 @@ final class CatalogAcceptanceScenarios {
     }
 
     /** Proves the catalog-to-inventory relation is keyed by SKU ref rather than mutable business code. */
-    @AcceptanceScenario(
-            id = "catalog.sku-code-change-keeps-inventory",
-            module = "CATALOG",
-            operation = "saveOperationsCatalogItem")
-    void skuCodeChangeKeepsInventory(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+    private void skuCodeChangeKeepsInventorySubcase(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
         host.completeInvitation(context, fixture);
         Session session = host.login(context, fixture);
@@ -3109,9 +3962,11 @@ final class CatalogAcceptanceScenarios {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String firstCode = "ACC-PAGE-" + suffix + "-A";
         String secondCode = "ACC-PAGE-" + suffix + "-B";
-        long firstVersion = createItem(context, fixture, session, firstCode, "inventory page first");
+        String firstName = "inventory page first";
+        String secondName = "inventory page second";
+        long firstVersion = createItem(context, fixture, session, firstCode, firstName);
         saveDirectItem(context, fixture, session, firstCode, firstVersion, "ACC-PAGE-SKU-A");
-        long secondVersion = createItem(context, fixture, session, secondCode, "inventory page second");
+        long secondVersion = createItem(context, fixture, session, secondCode, secondName);
         saveDirectItem(context, fixture, session, secondCode, secondVersion, "ACC-PAGE-SKU-B");
         JsonNode first = readItem(context, fixture, session, firstCode);
         JsonNode second = readItem(context, fixture, session, secondCode);
@@ -3154,6 +4009,14 @@ final class CatalogAcceptanceScenarios {
                 firstPageData.path("items").get(0).path("targetRef").asText(),
                 secondPageData.path("items").get(0).path("targetRef").asText(),
                 "BUSINESS: cursor paging does not repeat the first target");
+        Map<String, String> expectedNames = Map.of(firstCode, firstName, secondCode, secondName);
+        for (JsonNode pageItem : List.of(firstPageData.path("items").get(0), secondPageData.path("items").get(0))) {
+            String code = pageItem.path("productCode").asText();
+            assertEquals(
+                    expectedNames.get(code),
+                    pageItem.path("productName").asText(),
+                    "BUSINESS: inventory list projects the catalog-owned product name, not only its code");
+        }
 
         for (String targetRef : List.of(firstTargetRef, secondTargetRef)) {
             Response detail = context.get(
@@ -3166,6 +4029,11 @@ final class CatalogAcceptanceScenarios {
                     targetRef,
                     detail.json().path("target").path("targetRef").asText(),
                     "BUSINESS: detail readback returns the requested opaque target");
+            String productCode = detail.json().path("target").path("productCode").asText();
+            assertEquals(
+                    expectedNames.get(productCode),
+                    detail.json().path("target").path("productName").asText(),
+                    "BUSINESS: inventory detail projects the catalog-owned product name, not only its code");
             assertTrue(
                     detail.json().path("changeSummary").isObject()
                             && detail.json().path("recentChanges").isArray(),
@@ -3734,16 +4602,8 @@ final class CatalogAcceptanceScenarios {
                                 List.of(optionOverride(
                                         optionValue.path("valueRef").asText(), true, null, 0L, List.of())))));
             }
-            JsonNode result =
-                    localCopy(
-                            context,
-                            fixture,
-                            session,
-                            copySourceCode,
-                            targetCode,
-                            copySourceVersion,
-                            targetVersion,
-                            section);
+            JsonNode result = localCopy(
+                    context, fixture, session, copySourceCode, targetCode, copySourceVersion, targetVersion, section);
             JsonNode target = readItem(context, fixture, session, targetCode);
             switch (section) {
                 case "BASIC_INFO" -> assertEquals(
@@ -3892,6 +4752,11 @@ final class CatalogAcceptanceScenarios {
             long targetVersion,
             List<String> sections)
             throws Exception {
+        JsonNode targetBeforePreflight = readItem(context, fixture, session, targetCode);
+        assertEquals(
+                targetVersion,
+                targetBeforePreflight.path("version").asLong(),
+                "BUSINESS: local-copy preflight begins from the requested target owner version for " + sections);
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("dataNodeRef", fixture.storeId().toString());
         request.put("sourceItemCode", sourceCode);
@@ -3939,6 +4804,19 @@ final class CatalogAcceptanceScenarios {
                 session.cookie(),
                 request,
                 Set.of(200));
+        JsonNode targetAfterExecute = readItem(context, fixture, session, targetCode);
+        assertEquals(
+                targetBeforePreflight.path("itemRef").asText(),
+                targetAfterExecute.path("itemRef").asText(),
+                "BUSINESS: local-copy execution keeps the target owner identity for " + sections);
+        assertEquals(
+                targetCode,
+                targetAfterExecute.path("code").asText(),
+                "BUSINESS: local-copy execution is read back from the requested target owner for " + sections);
+        assertTrue(
+                targetAfterExecute.path("version").asLong() >= targetVersion,
+                "BUSINESS: local-copy execution either advances a copied owner fact or preserves a skipped target for "
+                        + sections);
         return executed.json().path("data");
     }
 
@@ -4004,11 +4882,42 @@ final class CatalogAcceptanceScenarios {
         return observed;
     }
 
+    private void assertAttributeDefinitionCreate(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG"));
+        host.completeInvitation(context, fixture);
+        Session session = host.login(context, fixture);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        JsonNode created = createAttributeDefinition(
+                context,
+                fixture,
+                session,
+                "ACC-ATTRIBUTE-CREATE-" + suffix,
+                "保质期",
+                "MULTI_SELECT",
+                List.of(Map.of("name", "三个月", "displayOrder", 0)));
+        assertEquals(
+                "ACC-ATTRIBUTE-CREATE-" + suffix,
+                created.path("code").asText(),
+                "BUSINESS: attribute create readback preserves its business code");
+        assertEquals(
+                1,
+                created.path("options").size(),
+                "BUSINESS: attribute create readback preserves its typed selection option");
+    }
+
     @AcceptanceScenario(
-            id = "catalog.attribute-definition-create-update",
+            id = "catalog.attribute-definition-create",
+            module = "CATALOG",
+            operation = "createOperationsCatalogAttributeDefinition")
+    void attributeDefinitionCreate(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        assertAttributeDefinitionCreate(context);
+    }
+
+    @AcceptanceScenario(
+            id = "catalog.attribute-definition-update",
             module = "CATALOG",
             operation = "updateOperationsCatalogAttributeDefinition")
-    void attributeDefinitionCreateUpdate(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+    void attributeDefinitionUpdate(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG"));
         host.completeInvitation(context, fixture);
         Session session = host.login(context, fixture);
@@ -4076,6 +4985,26 @@ final class CatalogAcceptanceScenarios {
                 2,
                 definition.path("options").size(),
                 "BUSINESS: selection choices remain typed children of the attribute definition");
+        JsonNode ownerDefinition = definitionByRef(
+                context.get(
+                                OPERATIONS_CATALOG_ATTRIBUTE_DEFINITIONS,
+                                "/api/operations/catalog-inventory/attribute-definitions?dataNodeRef="
+                                        + fixture.storeId(),
+                                session.cookie(),
+                                Set.of(200))
+                        .json()
+                        .path("data")
+                        .path("definitions"),
+                ref,
+                "updated attribute definition");
+        assertEquals(
+                "ACC-EXPIRY-RENAMED-" + suffix,
+                ownerDefinition.path("code").asText(),
+                "BUSINESS: attribute update is read back from the owner dictionary, not only its receipt");
+        assertEquals(
+                definition.path("version").asLong(),
+                ownerDefinition.path("version").asLong(),
+                "BUSINESS: attribute owner dictionary exposes the updated version");
     }
 
     @AcceptanceScenario(
@@ -4088,20 +5017,52 @@ final class CatalogAcceptanceScenarios {
         Session session = host.login(context, fixture);
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         JsonNode definition = createAttributeDefinition(
-                context, fixture, session, "ACC-DELETE-ATTR-" + suffix, "保存说明", "TEXT", List.of());
+                context,
+                fixture,
+                session,
+                "ACC-DELETE-ATTR-" + suffix,
+                "保存说明",
+                "MULTI_SELECT",
+                List.of(Map.of("name", "半年", "displayOrder", 1), Map.of("name", "三个月", "displayOrder", 0)));
         String firstCode = "ACC-DELETE-ATTR-A-" + suffix;
         String secondCode = "ACC-DELETE-ATTR-B-" + suffix;
         long firstVersion = createItem(context, fixture, session, firstCode, "attribute cascade one");
         long secondVersion = createItem(context, fixture, session, secondCode, "attribute cascade two");
-        Map<String, Object> assignment = Map.of(
-                "definitionRef",
-                definition.path("definitionRef").asText(),
-                "textValue",
-                "三个月",
+        Map<String, Object> assignment = new LinkedHashMap<>();
+        assignment.put("definitionRef", definition.path("definitionRef").asText());
+        assignment.put("textValue", null);
+        assignment.put(
                 "optionRefs",
-                List.of());
+                List.of(
+                        definition.path("options").get(0).path("optionRef").asText(),
+                        definition.path("options").get(1).path("optionRef").asText()));
         saveTypedItemFacts(context, fixture, session, firstCode, firstVersion, List.of(assignment), List.of());
         saveTypedItemFacts(context, fixture, session, secondCode, secondVersion, List.of(assignment), List.of());
+        JsonNode listedFirst = array(context.get(
+                                OPERATIONS_CATALOG_ITEMS,
+                                "/api/operations/catalog-inventory/items?dataNodeRef=" + fixture.storeId()
+                                        + "&pageSize=100",
+                                session.cookie(),
+                                Set.of(200))
+                        .json()
+                        .path("data")
+                        .path("items"))
+                .stream()
+                .filter(item -> firstCode.equals(item.path("code").asText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("BUSINESS: item page returns the saved attribute fixture"));
+        assertEquals(
+                List.of("保存说明：三个月、半年"),
+                array(listedFirst.path("attributeSummary")).stream()
+                        .map(JsonNode::asText)
+                        .toList(),
+                "BUSINESS: item page resolves selected attribute labels in the definition display order, "
+                        + "not request order");
+        assertFalse(
+                array(listedFirst.path("attributeSummary")).stream()
+                        .map(JsonNode::asText)
+                        .anyMatch("保存说明：已设置"::equals),
+                "BUSINESS: item page never substitutes a generic selected-attribute placeholder");
         Response deleted = context.delete(
                 OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_DELETE,
                 "/api/operations/catalog-inventory/attribute-definitions/"
@@ -4187,17 +5148,20 @@ final class CatalogAcceptanceScenarios {
                 version > 0, "BUSINESS: typed selection configuration is persisted through the product owner command");
     }
 
-    @AcceptanceScenario(
-            id = "catalog.order-option-definition-create-update",
-            module = "CATALOG",
-            operation = "createOperationsCatalogOrderOptionDefinition")
-    void orderOptionDefinitionCreateUpdate(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+    private void assertOrderOptionDefinitionCreate(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
         host.completeInvitation(context, fixture);
         Session session = host.login(context, fixture);
         String suffix = UUID.randomUUID().toString().substring(0, 8);
+        // spotless:off
         CreatedItem unprepared = createItemWithAttributes(
-                context, fixture, session, "ACC-NO-TARGET" + "-" + suffix, "没有库存对象的原料", Map.of());
+                context,
+                fixture,
+                session,
+                "ACC-NO-TARGET-" + suffix,
+                "没有库存对象的原料",
+                Map.of());
+        // spotless:on
         Response rejected = context.post(
                 OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_CREATE,
                 "/api/operations/catalog-inventory/order-option-definitions",
@@ -4227,9 +5191,25 @@ final class CatalogAcceptanceScenarios {
         assertEquals(
                 "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL",
                 rejected.problemCode(),
-                "BUSINESS: library definition, not product configuration, rejects a material without an existing in"
-                        + "ventory object");
+                "BUSINESS: definition create rejects a material without an existing inventory object");
+        JsonNode created = createOrderOptionDefinition(
+                context,
+                fixture,
+                session,
+                "创建蘸料-" + suffix,
+                "SINGLE",
+                List.of(Map.of("name", "番茄酱", "displayOrder", 0, "materials", List.of())));
+        assertEquals(
+                1,
+                created.path("values").size(),
+                "BUSINESS: definition create readback preserves its typed option value");
+    }
 
+    private void assertOrderOptionDefinitionUpdate(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
+        host.completeInvitation(context, fixture);
+        Session session = host.login(context, fixture);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
         JsonNode material = createInventoryBackedMaterialItem(context, fixture, session, suffix);
         JsonNode created = createOrderOptionDefinition(
                 context,
@@ -4323,6 +5303,26 @@ final class CatalogAcceptanceScenarios {
                         .path("selectionMode")
                         .asText(),
                 "BUSINESS: definition readback retains the library-controlled choice mode");
+        JsonNode ownerDefinition = definitionByRef(
+                context.get(
+                                OPERATIONS_CATALOG_ORDER_OPTION_DEFINITIONS,
+                                "/api/operations/catalog-inventory/order-option-definitions?dataNodeRef="
+                                        + fixture.storeId(),
+                                session.cookie(),
+                                Set.of(200))
+                        .json()
+                        .path("data")
+                        .path("definitions"),
+                definitionRef,
+                "updated ordering-option definition");
+        assertEquals(
+                "蘸料说明-" + suffix,
+                ownerDefinition.path("name").asText(),
+                "BUSINESS: ordering-option update is read back from the owner dictionary, not only its receipt");
+        assertEquals(
+                updated.json().path("version").asLong(),
+                ownerDefinition.path("version").asLong(),
+                "BUSINESS: ordering-option owner dictionary exposes the updated version");
 
         Map<String, Object> changedGroupCode = new LinkedHashMap<>();
         changedGroupCode.put("dataNodeRef", fixture.storeId().toString());
@@ -4667,6 +5667,7 @@ final class CatalogAcceptanceScenarios {
                 keep.path("valueRef").asText(),
                 config.path("values").get(0).path("definitionValueRef").asText(),
                 "BUSINESS: the sibling library value and product override survive the diff update");
+        assertOrderOptionDefinitionUpdate(context);
     }
 
     @AcceptanceScenario(
@@ -4677,6 +5678,7 @@ final class CatalogAcceptanceScenarios {
         Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG"));
         host.completeInvitation(context, fixture);
         Session session = host.login(context, fixture);
+        String rejectedCode = "ACC-FIXED-" + UUID.randomUUID().toString().substring(0, 8);
         Response rejected = context.post(
                 OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_CREATE,
                 "/api/operations/catalog-inventory/order-option-definitions",
@@ -4685,7 +5687,7 @@ final class CatalogAcceptanceScenarios {
                         "dataNodeRef",
                         fixture.storeId().toString(),
                         "code",
-                        "ACC-FIXED-" + UUID.randomUUID().toString().substring(0, 8),
+                        rejectedCode,
                         "name",
                         "固定包含",
                         "selectionMode",
@@ -4707,6 +5709,21 @@ final class CatalogAcceptanceScenarios {
                 "VALIDATION_ERROR",
                 rejected.problemCode(),
                 "BUSINESS: the retired FIXED selection mode is rejected as typed business input");
+        assertTrue(
+                array(context.get(
+                                        OPERATIONS_CATALOG_ORDER_OPTION_DEFINITIONS,
+                                        "/api/operations/catalog-inventory/order-option-definitions?dataNodeRef="
+                                                + fixture.storeId(),
+                                        session.cookie(),
+                                        Set.of(200))
+                                .json()
+                                .path("data")
+                                .path("definitions"))
+                        .stream()
+                        .noneMatch(definition ->
+                                rejectedCode.equals(definition.path("code").asText())),
+                "BUSINESS: rejected FIXED input creates no owner definition");
+        assertOrderOptionDefinitionCreate(context);
     }
 
     @AcceptanceScenario(
@@ -4745,6 +5762,14 @@ final class CatalogAcceptanceScenarios {
                 "BUSINESS: first step atomically creates a versioned draft fact");
         JsonNode item = readItem(context, fixture, session, itemCode);
         assertEquals(
+                created.json().path("result").path("resourceRef").asText(),
+                item.path("itemRef").asText(),
+                "BUSINESS: create receipt is read back through the same catalog owner identity");
+        assertEquals(
+                created.json().path("result").path("version").asLong(),
+                item.path("version").asLong(),
+                "BUSINESS: create receipt version is read back through the catalog owner");
+        assertEquals(
                 categoryRef,
                 item.path("categoryRef").asText(),
                 "BUSINESS: first-step category is already persisted on the draft product");
@@ -4761,10 +5786,15 @@ final class CatalogAcceptanceScenarios {
      * UUID.
      */
     @AcceptanceScenario(
-            id = "catalog.copy-definition-semantic-conflict",
+            id = "catalog.copy-definition-semantic-conflicts",
             module = "CATALOG",
             operation = "executeOperationsBrandCatalogCopy")
-    void copyDefinitionSemanticConflict(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+    void copyDefinitionSemanticConflicts(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        copyDefinitionSemanticConflictSubcase(context);
+        copyOrderOptionDefinitionSemanticConflictSubcase(context);
+    }
+
+    private void copyDefinitionSemanticConflictSubcase(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         BrandCopyFixtures fixtures = host.brandCopyFixtures(Set.of("EDIT_STORE_CATALOG"));
         host.completeInvitation(context, fixtures.source());
         host.completeInvitation(context, fixtures.target());
@@ -4872,11 +5902,8 @@ final class CatalogAcceptanceScenarios {
                 Set.of(404));
     }
 
-    @AcceptanceScenario(
-            id = "catalog.copy-order-option-definition-semantic-conflict",
-            module = "CATALOG",
-            operation = "executeOperationsBrandCatalogCopy")
-    void copyOrderOptionDefinitionSemanticConflict(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+    private void copyOrderOptionDefinitionSemanticConflictSubcase(BackendAcceptanceTest.ScenarioContext context)
+            throws Exception {
         BrandCopyFixtures fixtures = host.brandCopyFixtures(Set.of("EDIT_STORE_CATALOG"));
         host.completeInvitation(context, fixtures.source());
         host.completeInvitation(context, fixtures.target());
@@ -5069,6 +6096,11 @@ final class CatalogAcceptanceScenarios {
                         ? null
                         : current.path("categoryRef").asText());
         draft.put(
+                "productionTagRef",
+                current.path("productionTagRef").isNull()
+                        ? null
+                        : current.path("productionTagRef").asText());
+        draft.put(
                 "salesUnitRef",
                 current.path("salesUnitRef").isNull()
                         ? null
@@ -5134,11 +6166,6 @@ final class CatalogAcceptanceScenarios {
                         savedValue.put("preparationEffect", null);
                     } else {
                         Map<String, Object> savedEffect = new LinkedHashMap<>();
-                        savedEffect.put(
-                                "addProductionTagRefs",
-                                array(effect.path("addProductionTagRefs")).stream()
-                                        .map(JsonNode::asText)
-                                        .toList());
                         if (effect.has("instruction"))
                             savedEffect.put(
                                     "instruction",
@@ -5150,7 +6177,8 @@ final class CatalogAcceptanceScenarios {
                                     "preparationSecondsDelta",
                                     effect.path("preparationSecondsDelta").isNull()
                                             ? null
-                                            : effect.path("preparationSecondsDelta").asLong());
+                                            : effect.path("preparationSecondsDelta")
+                                                    .asLong());
                         savedValue.put("preparationEffect", savedEffect);
                     }
                     values.add(savedValue);
@@ -5178,7 +6206,8 @@ final class CatalogAcceptanceScenarios {
         if (skus == null || !skus.isArray()) return result;
         for (JsonNode source : skus) {
             Map<String, Object> target = new LinkedHashMap<>();
-            if (source.hasNonNull("productSkuRef")) target.put("productSkuRef", source.path("productSkuRef").asText());
+            if (source.hasNonNull("productSkuRef"))
+                target.put("productSkuRef", source.path("productSkuRef").asText());
             target.put("skuCode", source.path("skuCode").asText());
             target.put("skuName", source.path("skuName").asText());
             target.put("displayOrder", source.path("displayOrder").asInt(0));
@@ -5190,7 +6219,9 @@ final class CatalogAcceptanceScenarios {
                             : source.path("standardSalePrice").asLong());
             target.put("isDefault", source.path("isDefault").asBoolean(false));
             target.put("status", source.path("status").asText("ENABLED"));
-            List<String> mediaRefs = array(source.path("mediaRefs")).stream().map(JsonNode::asText).toList();
+            List<String> mediaRefs = array(source.path("mediaRefs")).stream()
+                    .map(JsonNode::asText)
+                    .toList();
             target.put("mediaRefs", mediaRefs);
             target.put(
                     "salesUnitOverrideRef",
@@ -5489,22 +6520,14 @@ final class CatalogAcceptanceScenarios {
                 OPERATIONS_PRODUCTION_TAG_CREATE,
                 "/api/operations/catalog-inventory/production-tags",
                 session.cookie(),
-                Map.of(
-                        "dataNodeRef",
-                        fixture.storeId().toString(),
-                        "code",
-                        code,
-                        "tagKind",
-                        "PRODUCTION",
-                        "name",
-                        name),
+                Map.of("dataNodeRef", fixture.storeId().toString(), "code", code, "name", name),
                 Map.of("Idempotency-Key", "acceptance-production-tag-" + UUID.randomUUID()),
                 Set.of(200));
         assertEquals(
                 code,
                 created.json().path("result").path("code").asText(),
                 "BUSINESS: production-tag fixture is created through the real owner command");
-        String ref = created.json().path("result").path("entryRef").asText();
+        String ref = created.json().path("result").path("tagRef").asText();
         assertFalse(ref.isBlank(), "BUSINESS: production-tag fixture exposes its owner reference");
         return ref;
     }
@@ -5521,10 +6544,14 @@ final class CatalogAcceptanceScenarios {
                 "/api/operations/catalog-inventory/production-tags/" + code + "/status",
                 session.cookie(),
                 Map.of(
-                        "dataNodeRef", fixture.storeId().toString(),
-                        "tagCode", code,
-                        "expectedVersion", 1,
-                        "targetStatus", targetStatus),
+                        "dataNodeRef",
+                        fixture.storeId().toString(),
+                        "tagCode",
+                        code,
+                        "expectedVersion",
+                        1,
+                        "targetStatus",
+                        targetStatus),
                 Map.of("Idempotency-Key", "acceptance-production-tag-transition-" + UUID.randomUUID()),
                 Set.of(200));
         assertEquals(
@@ -5836,6 +6863,31 @@ final class CatalogAcceptanceScenarios {
         return body;
     }
 
+    private JsonNode createAcceptanceCategory(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String code,
+            String name,
+            String parentCategoryRef)
+            throws Exception {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("dataNodeRef", fixture.storeId().toString());
+        body.put("code", code);
+        body.put("name", name);
+        body.put("parentCategoryRef", parentCategoryRef);
+        Response created = context.post(
+                OPERATIONS_CATALOG_CATEGORY_CREATE,
+                "/api/operations/catalog-inventory/categories",
+                session.cookie(),
+                body,
+                Set.of(200));
+        assertFalse(
+                created.json().path("result").path("categoryRef").asText().isBlank(),
+                "BUSINESS: category fixture is created by the public owner command");
+        return created.json();
+    }
+
     private long saveImage(
             BackendAcceptanceTest.ScenarioContext context,
             Fixture fixture,
@@ -5926,11 +6978,45 @@ final class CatalogAcceptanceScenarios {
         return version;
     }
 
+    private long saveCatalogProductionTag(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String itemCode,
+            long expectedVersion,
+            String productionTagRef)
+            throws Exception {
+        Map<String, Object> sections = new LinkedHashMap<>();
+        sections.put("expectedCatalogVersion", expectedVersion);
+        Map<String, Object> draft = itemDraft(context, fixture, session, itemCode);
+        draft.put("productionTagRef", productionTagRef);
+        sections.put("catalogDraft", draft);
+        sections.put("inventoryRules", Map.of("nodes", List.of()));
+        Response saved = context.patch(
+                OPERATIONS_CATALOG_ITEM_SAVE,
+                itemPath(itemCode),
+                session.cookie(),
+                Map.of("dataNodeRef", fixture.storeId().toString(), "itemCode", itemCode, "sections", sections),
+                Set.of(200));
+        long version = saved.json().path("version").asLong();
+        assertTrue(version > expectedVersion, "BUSINESS: production-tag binding advances the item version");
+        return version;
+    }
+
     private static JsonNode findByCode(JsonNode rows, String code) {
         return array(rows).stream()
                 .filter(row -> code.equals(row.path("code").asText()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("BUSINESS: expected catalog tag is present in navigation"));
+    }
+
+    private static JsonNode definitionByRef(JsonNode definitions, String definitionRef, String context) {
+        return array(definitions).stream()
+                .filter(definition ->
+                        definitionRef.equals(definition.path("definitionRef").asText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "BUSINESS: catalog owner dictionary is missing " + context + " " + definitionRef));
     }
 
     private static JsonNode inventoryRuleNodes(JsonNode item) {
@@ -6039,6 +7125,7 @@ final class CatalogAcceptanceScenarios {
             String itemCode,
             String displayCode,
             String mode,
+            Map<String, Object> consumptionUnitSnapshot,
             String componentTargetRef,
             Long expectedTargetVersion,
             Long expectedBomVersion) {
@@ -6050,6 +7137,7 @@ final class CatalogAcceptanceScenarios {
                     "SKU".equals(ownerType) ? referenceRef : null,
                     itemCode,
                     "SKU".equals(ownerType) ? displayCode : null,
+                    consumptionUnitSnapshot,
                     expectedTargetVersion,
                     null,
                     "1");
@@ -6066,6 +7154,25 @@ final class CatalogAcceptanceScenarios {
                 lines);
     }
 
+    private static Map<String, Object> unitSnapshotFromItem(JsonNode item) {
+        JsonNode unit = item.path("baseMeasureUnit");
+        if (!unit.isObject()
+                || unit.path("unitRef").asText().isBlank()
+                || unit.path("code").asText().isBlank()
+                || unit.path("name").asText().isBlank()
+                || unit.path("unitDimension").asText().isBlank()
+                || !unit.path("precision").isIntegralNumber()) {
+            throw new AssertionError("BUSINESS: direct inventory fixture must expose a complete base-unit snapshot");
+        }
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("unitRef", unit.path("unitRef").asText());
+        snapshot.put("code", unit.path("code").asText());
+        snapshot.put("name", unit.path("name").asText());
+        snapshot.put("unitDimension", unit.path("unitDimension").asText());
+        snapshot.put("precision", unit.path("precision").asInt());
+        return snapshot;
+    }
+
     private Map<String, Object> itemBomRuleForExistingItem(
             BackendAcceptanceTest.ScenarioContext context,
             Fixture fixture,
@@ -6075,7 +7182,16 @@ final class CatalogAcceptanceScenarios {
             throws Exception {
         JsonNode current = readItem(context, fixture, session, itemCode);
         return inventoryRuleForMode(
-                "ITEM", current.path("itemRef").asText(), null, itemCode, null, "BOM", componentTargetRef, null, null);
+                "ITEM",
+                current.path("itemRef").asText(),
+                null,
+                itemCode,
+                null,
+                "BOM",
+                null,
+                componentTargetRef,
+                null,
+                null);
     }
 
     private Map<String, Object> itemDirectRuleForExistingItem(
@@ -6083,7 +7199,16 @@ final class CatalogAcceptanceScenarios {
             throws Exception {
         JsonNode current = readItem(context, fixture, session, itemCode);
         return inventoryRuleForMode(
-                "ITEM", current.path("itemRef").asText(), null, itemCode, null, "DIRECT", null, null, null);
+                "ITEM",
+                current.path("itemRef").asText(),
+                null,
+                itemCode,
+                null,
+                "DIRECT",
+                unitSnapshotFromItem(current),
+                null,
+                null,
+                null);
     }
 
     private Response saveInventoryNodes(
@@ -6135,7 +7260,16 @@ final class CatalogAcceptanceScenarios {
             throws Exception {
         JsonNode current = readItem(context, fixture, session, itemCode);
         Map<String, Object> rule = inventoryRuleForMode(
-                "ITEM", current.path("itemRef").asText(), null, itemCode, null, mode, componentTargetRef, null, null);
+                "ITEM",
+                current.path("itemRef").asText(),
+                null,
+                itemCode,
+                null,
+                mode,
+                unitSnapshotFromItem(current),
+                componentTargetRef,
+                null,
+                null);
         Response saved = saveInventoryNodes(
                 context, fixture, session, itemCode, expectedCatalogVersion, List.of(rule), Set.of(200));
         assertEquals(200, saved.status(), "BUSINESS: item inventory mode whole-save succeeds");
@@ -6168,8 +7302,17 @@ final class CatalogAcceptanceScenarios {
         sku.put("baseMeasureUnitOverrideRef", unitRef);
         sku.put("identifiers", List.of());
         sku.put("preparationOverride", inheritPreparationOverride());
-        Map<String, Object> rule =
-                inventoryRuleForMode("SKU", itemRef, null, itemCode, skuCode, mode, componentTargetRef, null, null);
+        Map<String, Object> rule = inventoryRuleForMode(
+                "SKU",
+                itemRef,
+                null,
+                itemCode,
+                skuCode,
+                mode,
+                unitSnapshotFromItem(current),
+                componentTargetRef,
+                null,
+                null);
         Response saved = saveInventoryNodes(
                 context,
                 fixture,
@@ -6259,6 +7402,24 @@ final class CatalogAcceptanceScenarios {
                 "BUSINESS: option-value BOM preserves its sign and actual quantity");
     }
 
+    private static void assertOptionBomLineDisplayName(
+            JsonNode item, String optionValueRef, String targetRef, String expectedName, String prohibitedCode) {
+        JsonNode node =
+                findInventoryOwner(item, "OPTION_VALUE", item.path("itemRef").asText(), optionValueRef, null);
+        JsonNode line = StreamSupport.stream(node.path("bom").path("lines").spliterator(), false)
+                .filter(candidate -> targetRef.equals(candidate.path("targetRef").asText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("BUSINESS: option-value BOM line remains present in readback"));
+        assertEquals(
+                expectedName,
+                line.path("itemName").asText(),
+                "BUSINESS: saved BOM readback exposes the component's catalog name");
+        assertNotEquals(
+                prohibitedCode,
+                line.path("itemName").asText(),
+                "BUSINESS: saved BOM readback must not project a component code as its name");
+    }
+
     private static Map<String, Object> inventoryOwner(
             String ownerType,
             String itemRef,
@@ -6283,13 +7444,14 @@ final class CatalogAcceptanceScenarios {
             String productSkuRef,
             String itemCode,
             String skuCode,
+            Map<String, Object> consumptionUnitSnapshot,
             Long expectedTargetVersion,
             String countingUnitRef,
             String conversionFactor) {
         Map<String, Object> rule = new LinkedHashMap<>();
         rule.put("owner", inventoryOwner(ownerType, itemRef, productSkuRef, null, itemCode, skuCode));
         rule.put("mode", "DIRECT");
-        rule.put("consumptionUnitSnapshot", null);
+        rule.put("consumptionUnitSnapshot", consumptionUnitSnapshot);
         rule.put("expectedTargetVersion", expectedTargetVersion);
         rule.put("expectedBomVersion", null);
         Map<String, Object> configuration = new LinkedHashMap<>();
@@ -6530,6 +7692,7 @@ final class CatalogAcceptanceScenarios {
                                 null,
                                 itemCode,
                                 null,
+                                unitSnapshotFromItem(current),
                                 expectedTargetVersion,
                                 countingUnitRef,
                                 conversionFactor))));
@@ -6621,6 +7784,7 @@ final class CatalogAcceptanceScenarios {
                                 skuRef,
                                 itemCode,
                                 skuCode,
+                                unitSnapshotFromItem(current),
                                 expectedTargetVersion,
                                 null,
                                 "1"))));
@@ -6712,6 +7876,22 @@ final class CatalogAcceptanceScenarios {
             JsonNode hot,
             JsonNode cold,
             String unitRef) {
+        return matrixSaveBody(
+                fixture, itemCode, expectedVersion, size, temperature, small, large, hot, cold, unitRef, null);
+    }
+
+    private Map<String, Object> matrixSaveBody(
+            Fixture fixture,
+            String itemCode,
+            long expectedVersion,
+            JsonNode size,
+            JsonNode temperature,
+            JsonNode small,
+            JsonNode large,
+            JsonNode hot,
+            JsonNode cold,
+            String unitRef,
+            String productionTagRef) {
         List<Map<String, Object>> axes =
                 List.of(axis(size, List.of(small, large)), axis(temperature, List.of(hot, cold)));
         List<Map<String, Object>> skus = new ArrayList<>();
@@ -6722,6 +7902,7 @@ final class CatalogAcceptanceScenarios {
         Map<String, Object> draft = new LinkedHashMap<>();
         draft.put("salesUnitRef", unitRef);
         draft.put("baseMeasureUnitRef", unitRef);
+        if (productionTagRef != null) draft.put("productionTagRef", productionTagRef);
         draft.put("skuVariantDimensions", axes);
         draft.put("skus", skus);
         Map<String, Object> sections = new LinkedHashMap<>();
@@ -6847,6 +8028,25 @@ final class CatalogAcceptanceScenarios {
             throws Exception {
         createItemWithAttributes(context, fixture, session, code, name, Map.of());
         return readItem(context, fixture, session, code);
+    }
+
+    /**
+     * Creates the same minimal catalog item through the real HTTP command at an explicitly selected catalog node.
+     *
+     * <p>This is intentionally a calibration fixture rather than a second request shape: head-company catalog facts
+     * require the caller's selected brand context, whereas the store helper above correctly relies on the session's
+     * default store context.
+     */
+    void calibrationCreatePlainItemAtNode(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String dataNodeRef,
+            String code,
+            String name,
+            Map<String, String> headers)
+            throws Exception {
+        createItemWithAttributes(context, fixture, session, dataNodeRef, code, name, Map.of(), headers);
     }
 
     JsonNode calibrationCreateUnit(

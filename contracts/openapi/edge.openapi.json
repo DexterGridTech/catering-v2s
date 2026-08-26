@@ -1040,6 +1040,9 @@
       "BusinessChannelTemplateView": {
         "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateView"
       },
+      "BusinessChannelTemplateSortKey": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateSortKey"
+      },
       "BusinessChannelTemplatePage": {
         "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplatePage"
       },
@@ -1057,6 +1060,9 @@
       },
       "BusinessChannelView": {
         "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelView"
+      },
+      "BusinessChannelSortKey": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelSortKey"
       },
       "BusinessChannelPage": {
         "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelPage"

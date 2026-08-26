@@ -13,7 +13,7 @@ JOURNEY_DECISION=doc/decisions/2026-08-23-v2s-catalog-library-workbench-journey.
 BUSINESS_REQUIREMENT_SOURCE=doc/plans/platform/2026-08-23-v2s-catalog-library-ui-experience-formal-requirements-codex.md
 BUSINESS_PROBLEM=用户无法在商品库中稳定区分查找、查看、编辑、配置、批量、复制与治理，禁用表单和叠层使事实难读、任务易丢
 BUSINESS_USER_OR_OWNER=总部/门店商品资料维护者、门店店长、后厨、库存员、治理处理人及 catalog/inventory/fulfillment-production owner
-CURRENT_TASK=在商品库唯一工作区完成八类任务，并在失败、关闭、刷新或配置绕行后恢复原上下文
+CURRENT_TASK=在商品库唯一工作区完成八类任务；编辑中维护元数据不离开当前编辑，失败、关闭或刷新按各自边界恢复原上下文
 SUCCESS_OUTCOME=父商品与每个规格可直接比较；详情纯只读；编辑整单可恢复；配置按复杂度完成；专题任务结果可对账
 UI_BEARING=true
 SKILL_USED=cs-brainstorming@4a54a4858b99807f3155ed1614b2f116e35ea5c1b788e793f565dd837fd3891f;ui-ux-pro-max;antd@6.5.0
@@ -37,7 +37,7 @@ HOST_AND_ENTRY=/operations/:workspaceKey/catalog/store-items 或总部商品库�
 ACTOR=全部商品库 actor
 BUSINESS_SCENARIO=用户需要先缩小范围、比较父商品与规格，再选择下一任务
 BUSINESS_GOAL=不离开商品库页面完成查找、比较与所有第一层任务发起
-USER_VISIBLE_COPY=树表视图；仅表格；商品元数据；从品牌复制；新建商品；当前结果域：〈当前树节点或视图〉；在当前结果域搜索：编码/名称/短名；状态；来源；重置；生产标签；商品形态；价格和单位；规格或选项；商品属性；制作信息；库存与 BOM；更新时间；已选择 N 项；批量操作；继续编辑〈商品名〉；当前条件下还没有商品
+USER_VISIBLE_COPY=树表视图；仅表格；商品元数据；从品牌复制；新建商品；当前结果域：〈当前树节点或视图〉；在当前结果域搜索：编码/名称/短名；状态；来源；重置；生产标签；商品形态；价格和单位；规格或选项；商品属性；制作信息；库存与 BOM；更新时间；已选择 N 项；批量操作；当前条件下还没有商品
 TECHNICAL_BOUNDARY=U-CATUI-06 冻结顶部工具区和结果域筛选区；范围、父列表分页、hasSkuChildren、categoryPathLabels、规格懒加载、actionAvailability、十列结构化摘要与批量父行选择均由 contract/owner；生产标签筛选使用专用单值 query；规格子行不改变父结果分母；不存在列显隐偏好
 FOUNDATION_PRIMITIVE=adminListState,useCursorStack,CursorPagination,useRefreshVersion,testId,EllipsisTooltip,NameCodeText,useOverlayLock
 CONTAINER_LAYOUT=工作台占内容区满宽；顶部工具区与右侧结果域筛选区保持当前两段 Card 结构、控件顺序和相对位置；左树 240px 可收起，间距 16px，右表 min-width 0；页面不得横向溢出，表格是唯一横向滚动区；树与表为并列滚动区而非嵌套滚动祖先；商品列固定左侧；父子行共享表头；十个业务列全部常显且不为避免横向滚动压缩
@@ -51,10 +51,10 @@ CONTAINER_LAYOUT=工作台占内容区满宽；顶部工具区与右侧结果域
 
 | 列 | 父商品单元格 | 规格单元格 | 视觉规则 |
 | --- | --- | --- | --- |
-| 商品 | 严格四行：商品名、商品编码、完整分类路径、最多 2 个商品标签 + `+N` | 严格两行：规格名、规格编码 | 360px、固定左侧；名称 14px/600/链接色，编码与分类 12px/次级色；名称不带编码；每个省略项均有 `EllipsisTooltip` |
+| 商品 | 严格四行：商品名、商品编码、完整分类路径、最多 2 个商品标签 + `+N` | 严格两行：规格名、规格编码 | 240px、固定左侧；父商品主图 72px、规格主图 60px；名称 14px/600/链接色，编码与分类 12px/次级色；名称不带编码；单标签全宽、双标签均分；每个省略项均有 `EllipsisTooltip` |
 | 商品形态 | 业务形态名称 | “规格”；默认规格下一行显示中性 Tag | 176px；不出现内部 key、粒度或 `SKU` |
 | 价格和单位 | 价格/“未设置”；逐行“销售单位：X”“基础计量：Y” | 规格价格/“未设置”；逐行显示生效销售单位与基础计量单位 | 208px；多种单位逐项标类型；无销售单位合法；盘点单位不在此列 |
-| 规格或选项 | 按规格商品逐行列维度与可选值；非规格商品逐行列实际点单选项及值 | 每行“规格名称：规格值” | 280px；不使用“共 N 个”替代内容；最多四行，第四行可显示“还有 N 项” |
+| 规格或选项 | 按规格商品逐行列维度与可选值；非规格商品逐行列实际点单选项及值 | 每行“规格名称：规格值” | 280px；不使用“共 N 个/还有 N 项”替代内容；最多四行均显示实际业务内容，超出由 Tooltip 按业务顺序完整呈现 |
 | 商品属性 | 每行“属性名：业务值” | 本规格有效属性；没有规格专属值时“同商品” | 240px；不显示内部键；最多四行 |
 | 制作信息 | 单一生产标签、制作单显示名称、预计制作时长、说明摘要；按规格内容不同时说明“各规格制作内容不同” | 同一商品生产标签 + 本规格有效名称/时长/说明 | 220px；生产标签最多一个；无内容中性“未设置”；不显示 profile/source/override |
 | 库存与 BOM | 不参与库存、直接扣当前商品、按用料扣减 · N 项或各规格分别设置 | 该规格方式；可补消费单位或 N 项用料 | 240px；不得显示 target、ref、库存对象数量或技术 code |
@@ -63,7 +63,7 @@ CONTAINER_LAYOUT=工作台占内容区满宽；顶部工具区与右侧结果域
 | 来源 | 自主维护、从品牌复制、外部临时等业务来源 | 灰色“同商品” | 160px、默认常显；只显示业务来源 |
 
 表头高 44px；父行与规格行的内容高度都以最多四行文字为上限，并用极浅底色、层级引导线和缩进表达从属，不用更小字号。
-选择列与展开列各 40px 且固定左侧：规格行的选择位为空白占位，无规格父行不显示展开入口。加载、失败、重新加载、
+选择列与展开列各 40px 且固定左侧：有规格父行显示“展开/收起〈商品名〉的规格”可访问入口，无规格父行不显示展开入口；规格行的选择位为空白占位。加载、失败、重新加载、
 加载更多各是一条规格行，只在商品列显示文案/动作，其它单元格留空，列宽不变。
 
 表格按十列最小宽度求 `scroll.x`，不把列压入视口；商品列固定，表头与表体同步，使用 Ant Design 原生/sticky
@@ -164,7 +164,7 @@ HOST_AND_ENTRY=CATUI-WB 主按钮“新建商品”
 ACTOR=总部或门店商品资料维护者
 BUSINESS_SCENARIO=用户要建立最小商品身份，再继续完善
 BUSINESS_GOAL=用最少必填事实原子创建草稿，成功后进入编辑抽屉
-USER_VISIBLE_COPY=新建商品；商品名称；商品编码；商品类型；商品分类；分类路径；取消；新建并继续完善；商品未新建，请修改标出的内容后重试
+USER_VISIBLE_COPY=新建商品；商品名称；商品编码；商品形态；商品分类；分类路径；取消；新建并继续完善；商品未新建，请修改标出的内容后重试
 TECHNICAL_BOUNDARY=商品分类使用 owner-returned 单选树形候选；类型闭集、编码规则、范围、默认状态、idempotency 与 owner 最终校验来自 contract/owner
 FOUNDATION_PRIMITIVE=useSubmissionLifecycle,testId,useOverlayLock
 CONTAINER_LAYOUT=中档 720px；vertical Form，中宽字段；无内部滚动；提交中三径不可关闭
@@ -175,10 +175,10 @@ CONTAINER_LAYOUT=中档 720px；vertical Form，中宽字段；无内部滚动�
 ```text
 CONSUMER_FACE=operations-admin
 UI_SURFACE=Drawer
-HOST_AND_ENTRY=CATUI-VIEW“编辑商品”、CATUI-CREATE 成功、CATUI-WB“继续编辑〈商品名〉”
+HOST_AND_ENTRY=CATUI-VIEW“编辑商品”、CATUI-CREATE 成功
 ACTOR=总部/门店商品资料维护者、门店库存维护者
 BUSINESS_SCENARIO=用户跨多个适用事实族修改一个商品并整单保存
-BUSINESS_GOAL=随时知道当前区段、未保存区段、错误区段和保存结果；关闭/刷新/配置绕行后能恢复
+BUSINESS_GOAL=随时知道当前区段、未保存区段、错误区段和保存结果；意外关闭/刷新后可恢复，编辑内元数据子任务不离开当前编辑
 USER_VISIBLE_COPY=〈商品名〉 · 编辑商品；基础资料；条码与标识；规格与价格；点单选项；商品属性；制作信息；库存扣减与用料；套餐内容；引用关系；未保存；有错误；取消；保存商品；维护商品共用设置；检测到未保存草稿
 TECHNICAL_BOUNDARY=shape admission、字段可改性、latest detail、expectedVersion、whole-save 与 typed problems；UI 不分区提交、不猜准入
 FOUNDATION_PRIMITIVE=adminWideDrawerSurfaceProps,useDrawerFormLifecycle,useSubmissionLifecycle,useRefreshVersion,testId,useOverlayLock,useCursorCandidates,NameCodeText,EllipsisTooltip
@@ -192,7 +192,7 @@ CONSUMER_FACE=operations-admin
 UI_SURFACE=Modal
 HOST_AND_ENTRY=打开 CATUI-EDIT 时命中同商品编码+原版本的 sessionStorage 草稿
 ACTOR=商品编辑者
-BUSINESS_SCENARIO=上次编辑因刷新、意外关闭或配置绕行中断
+BUSINESS_SCENARIO=上次编辑因刷新或意外关闭中断
 BUSINESS_GOAL=明确选择恢复原任务或放弃草稿
 USER_VISIBLE_COPY=检测到〈商品名〉的未保存内容；上次停留在“〈区段〉”；放弃未保存内容；恢复编辑
 TECHNICAL_BOUNDARY=草稿键、原版本、区段 dirty/error 与过期判定由 draft owner；不把 sessionStorage 当服务端事实
@@ -235,14 +235,14 @@ CONTAINER_LAYOUT=宽档 960px；目标摘要和页脚固定，body 唯一滚动�
 ```text
 CONSUMER_FACE=operations-admin
 UI_SURFACE=Drawer
-HOST_AND_ENTRY=CATUI-WB“商品元数据”，或 CATUI-EDIT 配置绕行关闭编辑后打开
+HOST_AND_ENTRY=CATUI-WB“商品元数据”为第一层 Drawer；CATUI-EDIT 内“维护〈对应元数据〉”为仍打开编辑抽屉上的唯一第二层 child Drawer
 ACTOR=总部或门店商品资料维护者
 BUSINESS_SCENARIO=用户维护六类被商品复用的配置事实
-BUSINESS_GOAL=按简单、父子、复杂三种形态完成配置，不离开工作台、不叠 Drawer
+BUSINESS_GOAL=按简单、父子、复杂三种形态完成配置，不离开工作台；从编辑发起时不关闭父编辑，只叠一层元数据 child Drawer
 USER_VISIBLE_COPY=商品元数据；维护商品共用的标签、单位、规格、生产标签、属性和点单选项；商品标签；计量单位；规格维度；生产标签；商品属性；点单选项；搜索名称或编码；正在使用；新建；编辑；启用；停用；删除；返回列表；还没有 X
 TECHNICAL_BOUNDARY=各 owner 列表、引用状态、更新准入与 typed problem；六库同壳不合并 owner
 FOUNDATION_PRIMITIVE=adminWideDrawerSurfaceProps,useCursorCandidates,useRefreshVersion,useSubmissionLifecycle,testId,useOverlayLock,NameCodeText,EllipsisTooltip,adminListState
-CONTAINER_LAYOUT=超宽 Drawer 使用 adminWideDrawerSurfaceProps；左导航 184px 固定，右栏唯一纵向滚动；简单列表、父子两列、复杂同栏切换均在右栏内；配置 Drawer 上禁止任何 Drawer
+CONTAINER_LAYOUT=超宽 Drawer 使用 adminWideDrawerSurfaceProps；左导航 184px 固定，右栏唯一纵向滚动；简单列表、父子两列、复杂同栏切换均在右栏内。工作台配置是第一层；编辑内元数据是第二层 child Drawer；child 之上禁止再开 Drawer，只允许原子 Modal/confirm。
 ```
 
 ### Screen `CATUI-CONFIG-ATOM` · 配置原子输入/确认
@@ -284,7 +284,7 @@ HOST_AND_ENTRY=CATUI-VIEW 的外部临时商品下一步动作
 ACTOR=治理处理人
 BUSINESS_SCENARIO=临时商品缺少正式资料，需要先检查是否可转正，再补全并确认
 BUSINESS_GOAL=先看缺口和阻断，再补全最少事实，成功后读回正式商品
-USER_VISIBLE_COPY=〈商品名〉 · 转为正式商品；待补资料；检查是否可以转为正式商品；商品名称；商品编码；商品类型；重新检查；确认转正；商品尚未转正，请按提示补全或处理阻止项
+USER_VISIBLE_COPY=〈商品名〉 · 转为正式商品；待补资料；检查是否可以转为正式商品；商品名称；商品编码；商品形态；重新检查；确认转正；商品尚未转正，请按提示补全或处理阻止项
 TECHNICAL_BOUNDARY=来源快照、编码可用性、类型映射、版本和 promotion command 由 catalog owner；不改历史快照
 FOUNDATION_PRIMITIVE=useSubmissionLifecycle,testId,useOverlayLock,NameCodeText
 CONTAINER_LAYOUT=宽档 960px；缺口摘要固定，补全表单 body 唯一滚动，footer 固定；第三层只允许转正确认
@@ -321,7 +321,7 @@ CONTAINER_LAYOUT=宽档 960px；缺口摘要固定，补全表单 body 唯一滚
 | 5 | 有编辑能力 | `CATUI-EDIT` | 整单编辑 | 区段锚点、dirty/error、保存栏 | latest detail + shape rules | 保存后关闭到 `CATUI-VIEW` | 保草稿；未知先读回 |
 | 6 | 有同版本草稿 | `CATUI-RESTORE` | 恢复中断任务 | 草稿对象、原区段 | local draft identity + latest version check | 恢复 `CATUI-EDIT` | 放弃仅清本地草稿 |
 | 7 | 区段需专注任务 | `CATUI-CHILD` | 编辑规格/选择组件 | 目标、候选、已选 | owner candidates | 应用到整单草稿 | 保当前选择，原位错误 |
-| 8 | 缺复用配置 | `CATUI-EDIT`→`CATUI-CONFIG` | 创建缺少的定义 | 先持久化草稿，配置完成后继续编辑入口 | dictionary readback | 回 `CATUI-WB` 后恢复编辑 | 草稿仍在，配置失败不改草稿 |
+| 8 | 缺复用配置 | `CATUI-EDIT` + child `CATUI-CONFIG` | 创建缺少的定义 | 父编辑保持打开；子任务维护对应库 | dictionary readback | 关闭子任务回原维护控件 | 草稿、区段、错误与滚动位置不变；配置失败不改草稿 |
 | 9 | 维护六库 | `CATUI-CONFIG` | 列表/主从/复杂定义 | 六库左导航、三类右栏 | dictionary/definition owner | 留在原库原行 | 右栏重试，跨库状态不漂移 |
 | 10 | 选择父商品 | `CATUI-BATCH` | 批量整理 | 摘要→进度→结果 | per-item receipts | 关闭回刷新列表 | 失败项事实未变，结果保留 |
 | 11 | 复制能力成立 | `CATUI-COPY` | 从品牌复制或覆盖设置 | 来源、目标、范围、影响检查、结果 | candidates/preflight/receipt | 回工作台定位结果 | 上一步可改；执行后结果权威 |
@@ -334,8 +334,8 @@ CONTAINER_LAYOUT=宽档 960px；缺口摘要固定，补全表单 body 唯一滚
 | 查找 | 冻结筛选区；焦点在用户触发的树节点或筛选控件 | 应用筛选/展开父商品 | 原位更新父商品集合；规格在父行下逐行出现 | 失败只占当前结果区或规格子行，保留已确认列表 | 显示“暂时无法加载…/重新加载”，不显示旧范围数据 | 无弹层；清筛选回当前结果域，不改变树选择 |
 | 查看 | 商品或规格名称；Drawer 标题 | 阅读/进入“编辑商品” | 关闭回原行；进入编辑时 View 先关闭，焦点交给 Edit 标题 | Drawer 内说明“商品内容暂时无法加载”，保工作台 | 原位重新加载，不跳整页 | X/Esc/遮罩均关闭；焦点回原商品或规格名称 |
 | 新建 | “新建商品”；名称字段 | “新建并继续完善” | 原子创建后关闭 Modal，打开同商品 Edit | “商品未新建，请修改标出的内容后重试”；保输入 | “结果正在确认”，读回前不打开编辑 | 取消零写，焦点回“新建商品” |
-| 编辑 | View“编辑商品”或“继续编辑”；目标区段标题 | “保存商品” | 权威 readback 成功后清草稿，打开最新 View | 定位字段/行/区段并保草稿 | 显示“结果正在确认”，按同一意图读回 | 四径共用 dirty confirm；放弃后回 View/触发点 |
-| 配置 | “商品元数据”或编辑绕行；当前库标题 | 新建/保存/启停/删除对应事实 | 留在原库原行并显示最新事实；绕行时出现“继续编辑” | 当前库原位说明，商品草稿不变 | 重读当前定义，不关闭配置 | 脏定义先确认；关闭回入口或继续编辑入口 |
+| 编辑 | View“编辑商品”；目标区段标题 | “保存商品” | 权威 readback 成功后清草稿，打开最新 View | 定位字段/行/区段并保草稿 | 显示“结果正在确认”，按同一意图读回 | 四径共用 dirty confirm；放弃后回 View/触发点 |
+| 配置 | “商品元数据”或编辑内维护动作；当前库标题 | 新建/保存/启停/删除对应事实 | 留在原库原行并显示最新事实；从编辑发起时父编辑保持打开 | 当前库原位说明，商品草稿不变 | 重读当前定义，不关闭配置 | 脏定义先确认；关闭回工作台入口或编辑内原触发控件 |
 | 批量 | “批量操作”；摘要标题 | 确认当前批量动作 | 原位展示成功 N/失败 M 与逐项结果 | 失败项说明原因和事实未变，先前成功项保留 | receipt 权威；列表未更新单独提示“重新加载” | 提交前可取消；提交后关闭回批量入口 |
 | 复制 | “从品牌复制”或“复制其他商品设置”；来源步骤 | “检查影响”后“复制” | 逐项结果与目标 readback 一致，回工作台定位目标 | 差异与冲突原位列出，目标不变 | 保来源/目标/范围并确认结果，不盲重试 | 执行前可上一步/取消；关闭回原入口 |
 | 治理 | View 当前动作；缺口标题 | “检查是否可以转为正式商品”后“确认转正” | 最新正式商品 View | “商品尚未转正”，列阻止项与下一步，原事实不变 | 保已填内容并读回状态 | 取消回同商品 View 和原动作 |
@@ -405,7 +405,7 @@ carry-over-first 的页面搬运。V4 仅作为只读取证，且 Dexter 明确�
 | 新建商品分类 | searchable single TreeSelect | catalog category hierarchy task read | 当前范围成立 | 范围变化清空并重取；选择不清其它身份字段 | 显示完整路径；是否可选由 owner 返回 | loading 保字段；空树解释；失败原位重试 | create owner 复核 scope/category |
 | 编辑商品分类 | searchable single TreeSelect | latest detail + category hierarchy task read | 商品可编辑、当前范围与版本成立 | 范围/上游事实变化清失效选择并标 dirty | 单值；显示当前完整路径与 unknown-old 边界 | 失败保草稿旧值，不退平铺列表 | whole-save owner 复核 scope/category/version |
 | 分类挪父的上级分类 | searchable single TreeSelect | category hierarchy task read | 当前分类与影响摘要已读取 | 当前分类变化重取树；旧目标清空 | 当前节点及后代不可选并显示原因 | 失败保当前树和输入，可重试 | move owner 拒绝自环/后代环/越范围/版本漂移 |
-| 编辑区段字段 | 分区表单，按事实选择控件 | latest detail + owner candidates | 商品类型、粒度、动作能力与版本成立 | 上游变化只清理该区段已失效下游，标 dirty/error | 不显示不适用区段；不可改事实用文本展示 | 区段候选失败不清其它草稿 | whole-save owner 复核整单不变量 |
+| 编辑区段字段 | 分区表单，按事实选择控件 | latest detail + owner candidates | 商品形态、粒度、动作能力与版本成立 | 上游变化只清理该区段已失效下游，标 dirty/error | 不显示不适用区段；不可改事实用文本展示 | 区段候选失败不清其它草稿 | whole-save owner 复核整单不变量 |
 | 商品生产标签 | 可清空单选搜索 Select | production tag cursor；当前绑定与候选合并显示 | 商品制作区段适用且可编辑 | 清空只清商品单值；切标签不改规格制作草稿或选项制作变化 | 0..1；停用既有值可见但不能新选 | 候选失败保当前绑定与其它草稿 | whole-save/production owner 复核单值、scope 与可绑定状态 |
 | 规格制作内容 | “使用商品默认/单独设置” + 名称/时长/说明 | 商品制作内容 + 当前规格覆盖 readback | 当前商品按规格管理 | 切回默认清规格覆盖，不清商品生产标签 | 不提供生产标签控件；规格始终显示商品标签 | 失败保当前规格 working copy | whole-save 拒绝规格内任何标签字段 |
 | 点单选项制作变化 | 非负时长 + 追加说明 | 当前选项值 effect readback | 该商品与选项值允许制作变化 | 清空一项不影响另一项 | 不提供生产标签增删控件 | 失败保当前选项值 working copy | whole-save 拒绝任何选项标签字段与负时长 |
@@ -529,7 +529,7 @@ response/problem；UI 可以汇总展示 N/M，但不得猜测单项结果，也
 | 从品牌复制/从已有商品复制 | `J-CATUI-07` | 分步确认覆盖影响 | Drawer 向导保留上下文；不做一次性大表单 | Journey/owner | 否 |
 | 查看抽屉关闭、区段切换、图片预览 | `J-CATUI-02` | 阅读并回到原上下文 | 区段导航优于禁用表单 Tab | Journey | 否 |
 | 编辑商品、生命周期动作 | `J-CATUI-04/08` | 从事实进入合法写任务 | 一个主动作，其余按普通/危险分组 | owner action availability | 否 |
-| 编辑区段锚点、去商品元数据、继续编辑 | `J-CATUI-04/05` | 定位错误、补定义、恢复草稿 | 绕行关闭第一层 Drawer，遵守互斥 | Dexter | 否 |
+| 编辑区段锚点、维护商品元数据 | `J-CATUI-04/05` | 定位错误、补定义 | 作为编辑的一层子任务，父编辑保持打开 | Dexter | 否 |
 | 编辑规格/组件/选项值、应用到草稿 | `J-CATUI-04` | 专注动态集合的一项 | 一层子任务面；不再开选择 Drawer | Dexter + product | 否 |
 | 保存商品、取消、关闭、恢复、放弃 | `J-CATUI-04` | 控制整单草稿生命周期 | 常驻保存栏 + 三径脏确认 | frontend standard | 否 |
 | 六库切换、库内搜索、新建、编辑、启停、删除、排序 | `J-CATUI-05` | 维护配置事实 | 三种右栏形态覆盖复杂度；无独立详情 | Dexter/owner | 否 |
@@ -571,3 +571,6 @@ response/problem；UI 可以汇总展示 N/M，但不得猜测单项结果，也
 - 低保真线框结论：`ACCEPTED_FOR_IA_DETAIL_COMPLETION`。Dexter 已确认 IA 的整体交互方向；目录树、顶部操作区、当前结果域与筛选区保持不变，父商品与规格独立行、四类互斥第一层抽屉、超宽编辑抽屉、全高配置抽屉、批量与复制专题形态进入 IA 细化。后续 `U-CATUI-08/09` 又确认库存扣减默认常显，并允许表体横向滚动承载完整列；以本节逐列正本覆盖线框中的简化列宽表达。
 - IA 准入：`true`。本次准入要求 IA 必须把每个控件的上游依赖、级联清理、状态唯一住址、状态控制者、消费者、失效与恢复边界逐项写死，实施者不得自行改成交互推断或组件局部镜像。
 - 授权边界：仅授权继续 Journey/交互/IA/implementation-facing design 与实施计划工件；不授权契约、代码、测试、DEV、reset、seed、browser L2、UAT 或数据操作。
+
+> 2026-08-26 观察问题整改附录：展开入口、生命周期体验 seed 与引用/作废表达按
+> `2026-08-26-v2s-catalog-workbench-observed-remediation-design-addendum-codex.md` 覆盖。

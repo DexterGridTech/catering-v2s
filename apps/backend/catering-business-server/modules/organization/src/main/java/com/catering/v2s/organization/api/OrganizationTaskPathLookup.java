@@ -73,6 +73,21 @@ public interface OrganizationTaskPathLookup {
     }
 
     /**
+     * One organization-owner projection for a catalog command. It combines the enabled target path with the persisted
+     * catalog-brand judgment so a command does not read the same Store or Head Company once for scope and again for
+     * brand selection. The caller still performs capability judgment and the catalog owner still rechecks its write
+     * invariant in the command transaction.
+     */
+    default CatalogCommandScopeFacts resolveCatalogCommandScopeFacts(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String targetType,
+            UUID targetId,
+            CatalogScopeLookup.CatalogBrandSelection selection) {
+        throw new UnsupportedOperationException("catalog command scope facts are not implemented by this owner");
+    }
+
+    /**
      * Resolves display and ancestry facts for a bounded set of persisted task targets. This is a display/read API only:
      * it neither grants authority nor replaces {@link #isScopeAllowed(UUID, String, String, UUID, TaskPath)}.
      */
@@ -142,6 +157,8 @@ public interface OrganizationTaskPathLookup {
     record TaskPathRef(String targetType, UUID targetId) {}
 
     record CommandTaskPathFacts(TaskPath taskPath, boolean assignmentScopeAllowed) {}
+
+    record CatalogCommandScopeFacts(TaskPath taskPath, CatalogScopeLookup.CatalogBrandJudgment brandJudgment) {}
 
     record StoreProjectCommandFacts(UUID projectId, UUID tenantId, UUID brandId, String code, TaskPath taskPath) {}
 

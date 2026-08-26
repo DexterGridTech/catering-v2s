@@ -8,7 +8,8 @@
     "getOperationsCatalogItem",
     "getOperationsLocalCatalogCopyCandidates",
     "getOperationsBrandCatalogCopyCandidates",
-    "getOperationsCatalogShapeManifest"
+    "getOperationsCatalogShapeManifest",
+    "getOperationsCatalogCategoryCandidates"
   ],
   "paths": {
     "/operations/catalog-inventory/workbench/context": {
@@ -37,13 +38,13 @@
           "kind": "FIXED",
           "max": 8,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
               "to": 8,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -106,13 +107,13 @@
           "kind": "FIXED",
           "max": 12,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
               "to": 12,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -186,13 +187,13 @@
           "kind": "FIXED",
           "max": 20,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
               "to": 20,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -327,6 +328,27 @@
             }
           },
           {
+            "name": "candidateUsage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field",
+              "enum": [
+                "COMPOSITE_COMPONENT"
+              ]
+            }
+          },
+          {
+            "name": "excludeItemCode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "required": false,
@@ -380,15 +402,15 @@
         "x-mutation": false,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 21,
+          "max": 25,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
-              "to": 21,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "to": 25,
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -460,13 +482,13 @@
           "kind": "FIXED",
           "max": 9,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
               "to": 9,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -557,13 +579,13 @@
           "kind": "FIXED",
           "max": 13,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
               "to": 13,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -653,13 +675,13 @@
           "kind": "FIXED",
           "max": 7,
           "measurementScenarioIds": [
-            "performance.operation-budget-exact-set"
+            "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
               "to": 7,
-              "reason": "CP-05 maximum database operation count across three runs"
+              "reason": "current managed acceptance program maximum"
             }
           ]
         },
@@ -703,6 +725,144 @@
             "schema": {
               "type": "string",
               "description": "requested manifest revision"
+            }
+          }
+        ]
+      }
+    },
+    "/operations/catalog-inventory/category-candidates": {
+      "get": {
+        "operationId": "getOperationsCatalogCategoryCandidates",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 8,
+          "measurementScenarioIds": [
+            "performance.normal-path"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 8,
+              "reason": "current managed acceptance program maximum"
+            }
+          ]
+        },
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogCategoryCandidatePage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "dataNodeRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "selected data node"
+            }
+          },
+          {
+            "name": "usage",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ITEM_ASSIGNMENT",
+                "CATEGORY_CREATE",
+                "CATEGORY_REPARENT"
+              ],
+              "description": "category picker task intent"
+            }
+          },
+          {
+            "name": "currentCategoryRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid",
+              "description": "current category for reparent exclusion"
+            }
+          },
+          {
+            "name": "parentCategoryRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid",
+              "description": "parent whose direct children are requested"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "category search keyword"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "opaque category cursor"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "category candidate page size"
             }
           }
         ]

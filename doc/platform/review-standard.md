@@ -116,6 +116,14 @@ PY
 
 **不一致 ⇒ finding。IA 没写 ⇒ 记为设计侧缺口(见 §2),⛔ 不得因"文档没写"就放行。**
 
+### 实施步骤级独立对账 · 在下一步骤前完成
+
+长任务的每一个已批准实施步骤（通常是一个 CP）结束后，主 agent 必须在开始下一步骤前，交由 fresh `INDEPENDENT_SUBAGENT` 执行本节的步骤级对账。主 agent 可以设计和实施，但不得对自己刚完成的步骤作出对账结论。
+
+步骤 reviewer 必须从当前步骤的 RECALL、IA/交互工件/implementation-facing 详设、owning source、当前实现和 focused proof 提取事实，再以证伪为目标逐条比较：行为、形态、动作、关系、位置、用户可见文案、限制、状态/控制、失败/恢复、可访问性/焦点、数据来源/失效边界。输出只能是当前步骤的 `MATCHED` 或逐项 `OPEN`，并指向精确 source/design 位置；不得用“整体看起来一致”、静态通过或后续 L2 代替。
+
+`OPEN` 时，主 agent 必须先按同根范围修复，再由另一 fresh 独立子 agent 复查后才能开始下一步骤。该步骤级对账是实施过程的质量闸，不是整批 `REVIEW_TARGET=IMPLEMENTATION` verdict：不写 `GO`/`NO-GO`，不消耗正式对抗 review 的两轮上限，也不能替代最后的整批独立 review。
+
 ### 动作 3 · 同族全集扫描
 
 任何 finding 都要枚举**本批该形态的全集**并逐个判定,在交付里写明"其余 N 个已核对"。

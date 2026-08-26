@@ -246,8 +246,7 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
 
         service.readInventoryTarget("scope", "brand", "target", "request", "STORE");
 
-        verify(catalog)
-                .readInventoryTargetDisplayFact("scope", "brand", itemRef, null);
+        verify(catalog).readInventoryTargetDisplayFact("scope", "brand", itemRef, null);
         verify(catalog, never())
                 .readItems(
                         org.mockito.ArgumentMatchers.anyString(),
@@ -266,7 +265,7 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
     }
 
     @Test
-    void catalogItemDetailIncludesInventoryTargetAsVoidBlockingReference() {
+    void catalogItemDetailExplainsBomConsumptionAsItsOwnVoidBlockingReason() {
         ObjectMapper mapper = new ObjectMapper();
         CatalogOwnerApi catalog = mock(CatalogOwnerApi.class);
         InventoryOwnerApi inventory = mock(InventoryOwnerApi.class);
@@ -290,19 +289,19 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                 .putArray("blockingReferences");
         ((ObjectNode) data.path("actionAvailability").path("voidAvailability")).putArray("dependentFacts");
         ObjectNode definition = mapper.createObjectNode();
-        ObjectNode inventoryNode = definition.putObject("data")
+        ObjectNode inventoryNode = definition
+                .putObject("data")
                 .putObject("inventoryRules")
                 .putArray("nodes")
                 .addObject();
-        inventoryNode.putObject("owner")
+        inventoryNode
+                .putObject("owner")
                 .put("ownerType", "ITEM")
                 .put("itemRef", itemRef.toString())
                 .putNull("productSkuRef")
                 .putNull("optionValueRef");
-        inventoryNode.put("mode", "DIRECT")
-                .putObject("directConfiguration")
-                .put("targetRef", targetRef.toString());
-        inventoryNode.putNull("bom");
+        inventoryNode.put("mode", "BOM").putNull("directConfiguration");
+        inventoryNode.putObject("bom").putArray("lines").addObject().put("targetRef", targetRef.toString());
         when(catalog.readItem(
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString(),
@@ -329,16 +328,157 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
         assertEquals(
                 "INVENTORY_BOM",
                 availability.path("dependentFacts").path(0).path("factKind").asText());
+        assertEquals("已配置用料", availability.path("blockingReasons").path(0).path("label").asText());
+        assertEquals(1, availability.path("blockingReasons").path(0).path("count").asInt());
         verify(production, never())
                 .readTags(
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.any(com.fasterxml.jackson.databind.node.ObjectNode.class),
-                        org.mockito.ArgumentMatchers.anyString());
+                org.mockito.ArgumentMatchers.anyString());
     }
 
     @Test
-    void copyBridgeCarriesOpaqueItemAndProductionTagRefsRatherThanCodes() {
+    void catalogItemDetailExplainsWhenAnInventoryTargetBlocksSkuVoid() {
+        ObjectMapper mapper = new ObjectMapper();
+        CatalogOwnerApi catalog = mock(CatalogOwnerApi.class);
+        InventoryOwnerApi inventory = mock(InventoryOwnerApi.class);
+        CatalogInventoryCoordinator service =
+                new CatalogInventoryCoordinator(catalog, inventory, null, null, mapper, null, null);
+        UUID itemRef = UUID.randomUUID();
+        UUID skuRef = UUID.randomUUID();
+        UUID targetRef = UUID.randomUUID();
+        ObjectNode detail = mapper.createObjectNode();
+        ObjectNode item = detail.putObject("data")
+                .putObject("item")
+                .put("itemRef", itemRef.toString())
+                .put("code", "ITEM-1")
+                .put("name", "测试商品")
+                .put("shapeKey", "SKU_MANAGED");
+        ObjectNode skuAvailability = item.putArray("skus")
+                .addObject()
+                .put("productSkuRef", skuRef.toString())
+                .put("skuCode", "ITEM-1-S")
+                .put("status", "ENABLED")
+                .putObject("voidAvailability");
+        skuAvailability.put("canVoid", true).putArray("blockingReferences");
+        skuAvailability.putArray("dependentFacts").removeAll();
+        skuAvailability.putArray("blockingReasons").removeAll();
+        ObjectNode definition = mapper.createObjectNode();
+        ObjectNode inventoryNode = definition
+                .putObject("data")
+                .putObject("inventoryRules")
+                .putArray("nodes")
+                .addObject();
+        inventoryNode
+                .putObject("owner")
+                .put("ownerType", "SKU")
+                .put("itemRef", itemRef.toString())
+                .put("productSkuRef", skuRef.toString())
+                .putNull("optionValueRef");
+        inventoryNode.put("mode", "DIRECT").putObject("directConfiguration").put("targetRef", targetRef.toString());
+        inventoryNode.putNull("bom");
+        when(catalog.readItem(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(detail);
+        when(inventory.readCatalogInventoryDefinition(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(definition);
+
+        JsonNode availability = service
+                .readCatalogItem("scope", "brand", "ITEM-1", mapper.createObjectNode(), "request")
+                .path("data")
+                .path("item")
+                .path("skus")
+                .path(0)
+                .path("voidAvailability");
+
+        assertFalse(availability.path("canVoid").asBoolean());
+        assertEquals("INVENTORY_TARGET", availability.path("dependentFacts").path(0).path("factKind").asText());
+        assertEquals("已配置库存对象", availability.path("blockingReasons").path(0).path("label").asText());
+        assertEquals(1, availability.path("blockingReasons").path(0).path("count").asInt());
+        JsonNode itemAvailability = service
+                .readCatalogItem("scope", "brand", "ITEM-1", mapper.createObjectNode(), "request")
+                .path("data")
+                .path("actionAvailability")
+                .path("voidAvailability");
+        assertFalse(itemAvailability.path("canVoid").asBoolean());
+        assertEquals("INVENTORY_TARGET", itemAvailability.path("dependentFacts").path(0).path("factKind").asText());
+        assertEquals("已配置库存对象", itemAvailability.path("blockingReasons").path(0).path("label").asText());
+        assertEquals(1, itemAvailability.path("blockingReasons").path(0).path("count").asInt());
+    }
+
+    @Test
+    void catalogItemDetailKeepsBomFactKindForBothSkuAndItemVoidAvailability() {
+        ObjectMapper mapper = new ObjectMapper();
+        CatalogOwnerApi catalog = mock(CatalogOwnerApi.class);
+        InventoryOwnerApi inventory = mock(InventoryOwnerApi.class);
+        CatalogInventoryCoordinator service =
+                new CatalogInventoryCoordinator(catalog, inventory, null, null, mapper, null, null);
+        UUID itemRef = UUID.randomUUID();
+        UUID skuRef = UUID.randomUUID();
+        UUID targetRef = UUID.randomUUID();
+        ObjectNode detail = mapper.createObjectNode();
+        ObjectNode item = detail.putObject("data")
+                .putObject("item")
+                .put("itemRef", itemRef.toString())
+                .put("code", "ITEM-1")
+                .put("name", "测试商品")
+                .put("shapeKey", "SKU_MANAGED");
+        ObjectNode skuAvailability = item.putArray("skus")
+                .addObject()
+                .put("productSkuRef", skuRef.toString())
+                .put("skuCode", "ITEM-1-S")
+                .put("status", "ENABLED")
+                .putObject("voidAvailability");
+        skuAvailability.put("canVoid", true).putArray("blockingReferences");
+        skuAvailability.putArray("dependentFacts").removeAll();
+        skuAvailability.putArray("blockingReasons").removeAll();
+        ObjectNode definition = mapper.createObjectNode();
+        ObjectNode inventoryNode = definition
+                .putObject("data")
+                .putObject("inventoryRules")
+                .putArray("nodes")
+                .addObject();
+        inventoryNode
+                .putObject("owner")
+                .put("ownerType", "SKU")
+                .put("itemRef", itemRef.toString())
+                .put("productSkuRef", skuRef.toString())
+                .putNull("optionValueRef");
+        inventoryNode.put("mode", "BOM").putNull("directConfiguration");
+        inventoryNode.putObject("bom").putArray("lines").addObject().put("targetRef", targetRef.toString());
+        when(catalog.readItem(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(detail);
+        when(inventory.readCatalogInventoryDefinition(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(definition);
+
+        JsonNode result = service.readCatalogItem("scope", "brand", "ITEM-1", mapper.createObjectNode(), "request");
+        JsonNode skuAvailabilityResult = result.path("data").path("item").path("skus").path(0).path("voidAvailability");
+        JsonNode itemAvailability = result.path("data").path("actionAvailability").path("voidAvailability");
+        for (JsonNode availability : List.of(skuAvailabilityResult, itemAvailability)) {
+            assertFalse(availability.path("canVoid").asBoolean());
+            assertEquals("INVENTORY_BOM", availability.path("dependentFacts").path(0).path("factKind").asText());
+            assertEquals("已配置用料", availability.path("blockingReasons").path(0).path("label").asText());
+        }
+    }
+
+    @Test
+    void copyBridgeCarriesOpaqueItemAndProductionTagDefinitionRefsRatherThanCodes() {
         CatalogInventoryCoordinator service =
                 new CatalogInventoryCoordinator(null, null, null, null, new ObjectMapper(), null, null);
         ObjectMapper mapper = new ObjectMapper();
@@ -366,7 +506,7 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                 mapper.convertValue(plan.closureItemRefs(), java.util.List.class));
         assertEquals(
                 java.util.List.of(tagRef.toString()),
-                mapper.convertValue(plan.productionTagRefs(), java.util.List.class));
+                mapper.convertValue(plan.productionTagDefinitionRefs(), java.util.List.class));
         assertEquals(
                 targetItemRef.toString(),
                 plan.referenceMappings().get(0).path("targetRef").asText());
@@ -409,13 +549,13 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
         assertEquals("VALIDATION_ERROR", nonObject.code());
 
         ObjectNode oversizedRequest = mapper.createObjectNode();
-        oversizedRequest.putObject("sections")
+        oversizedRequest
+                .putObject("sections")
                 .putObject("catalogDraft")
                 .putObject("preparationProfile")
                 .put("preparationNotes", "x".repeat(256 * 1024));
         CatalogOwnerApi.Problem oversizedDraft = assertThrows(
-                CatalogOwnerApi.Problem.class,
-                () -> canonicalSaveRequest(service, oversizedRequest.toString()));
+                CatalogOwnerApi.Problem.class, () -> canonicalSaveRequest(service, oversizedRequest.toString()));
         assertEquals("VALIDATION_ERROR", oversizedDraft.code());
 
         CatalogOwnerApi.Problem malformedRequest =

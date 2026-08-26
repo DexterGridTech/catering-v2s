@@ -47,6 +47,46 @@ public class WorkspaceCommandAuthorizationService {
     }
 
     /**
+     * Consumes the target path already resolved for this same owner command. The path stays invocation-local: this
+     * avoids reopening the identical organization task-path read while retaining the final active-assignment and
+     * capability checks at the workspace-IAM command boundary.
+     */
+    @Transactional(readOnly = true)
+    public void requireUserManagementAction(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID actorAssignmentId,
+            String targetOrganizationType,
+            OrganizationTaskPathLookup.TaskPath validatedTarget,
+            UserManagementAction action) {
+        if (validatedTarget == null
+                || targetOrganizationType == null
+                || !targetOrganizationType.equals(validatedTarget.targetType())) {
+            throw new AuthorizationDeniedException();
+        }
+        requireUserManagementCapabilityOnValidatedScope(
+                workspaceUuid, groupWorkspaceKey, actorAssignmentId, targetOrganizationType, action, validatedTarget);
+    }
+
+    /**
+     * A command can have an endpoint-fixed capability target while its selected operation scope is an aggregate
+     * ancestor. The caller has already proved that selected scope against the concrete target; reuse that one
+     * invocation-local path for the final authorization rather than resolving it again.
+     */
+    @Transactional(readOnly = true)
+    public void requireUserManagementActionOnValidatedScope(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID actorAssignmentId,
+            String capabilityTargetType,
+            OrganizationTaskPathLookup.TaskPath validatedScope,
+            UserManagementAction action) {
+        if (validatedScope == null || capabilityTargetType == null) throw new AuthorizationDeniedException();
+        requireUserManagementCapabilityOnValidatedScope(
+                workspaceUuid, groupWorkspaceKey, actorAssignmentId, capabilityTargetType, action, validatedScope);
+    }
+
+    /**
      * The endpoint-fixed user-management capability and the server-resolved scope target are deliberately separate. A
      * GROUP role may, for example, operate the aggregate HEAD_COMPANY page while its first owner query is the
      * commercial-group root.
@@ -63,11 +103,41 @@ public class WorkspaceCommandAuthorizationService {
         if (assignments == null || taskPaths == null) throw new AuthorizationDeniedException();
         WorkspaceAssignmentScopeLookup.AssignmentScope assignment =
                 assignments.requireActiveScope(workspaceUuid, groupWorkspaceKey, actorAssignmentId);
-        OrganizationTaskPathLookup.TaskPath target =
-                taskPaths.requireTaskPath(workspaceUuid, groupWorkspaceKey, scopeTargetType, scopeTargetId);
-        if (!taskPaths.isScopeAllowed(
-                workspaceUuid, groupWorkspaceKey, assignment.serviceNodeType(), assignment.serviceNodeId(), target))
+        OrganizationTaskPathLookup.CommandTaskPathFacts target = taskPaths.commandTaskPathFacts(
+                workspaceUuid,
+                groupWorkspaceKey,
+                assignment.serviceNodeType(),
+                assignment.serviceNodeId(),
+                scopeTargetType,
+                scopeTargetId,
+                false);
+        if (!target.assignmentScopeAllowed()) throw new AuthorizationDeniedException();
+        requireCapability(workspaceUuid, groupWorkspaceKey, actorAssignmentId, capabilityTargetType, action);
+    }
+
+    private void requireUserManagementCapabilityOnValidatedScope(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID actorAssignmentId,
+            String capabilityTargetType,
+            UserManagementAction action,
+            OrganizationTaskPathLookup.TaskPath validatedTarget) {
+        if (assignments == null || taskPaths == null) throw new AuthorizationDeniedException();
+        WorkspaceAssignmentScopeLookup.AssignmentScope assignment =
+                assignments.requireActiveScope(workspaceUuid, groupWorkspaceKey, actorAssignmentId);
+        if (!OrganizationTaskPathLookup.scopeAllows(
+                assignment.serviceNodeType(), assignment.serviceNodeId(), validatedTarget)) {
             throw new AuthorizationDeniedException();
+        }
+        requireCapability(workspaceUuid, groupWorkspaceKey, actorAssignmentId, capabilityTargetType, action);
+    }
+
+    private void requireCapability(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID actorAssignmentId,
+            String capabilityTargetType,
+            UserManagementAction action) {
         String capability = WorkspaceAuthorizationCatalog.requiredUserManagementCapabilityForTarget(
                         capabilityTargetType, action)
                 .orElseThrow(AuthorizationDeniedException::new);

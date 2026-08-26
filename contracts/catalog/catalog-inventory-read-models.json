@@ -5,7 +5,7 @@
   "sourceBindings": {
     "designCoverage": {
       "path": "contracts/policy/catalog-inventory-design-byte-coverage.json",
-      "sha256": "9113e59320b36901b45c783b30d74381a3c261838fe18f1456425d2005a1a59c"
+      "sha256": "59ad4b1f18f7a83a6f4711cc2bcbaa9b3d51aae0d6f72493275139ad93377ade"
     },
     "categoryRemediationDesign": {
       "path": "doc/plans/platform/2026-08-08-v2s-catalog-reference-model-category-remediation-design-codex.md",
@@ -13,7 +13,7 @@
     },
     "referencePathMatrix": {
       "path": "contracts/policy/catalog-inventory-reference-path-matrix.json",
-      "sha256": "b026c14108a2bf1183d13cb79d3aacb856c7fd741b6a8d00b45d47cdd838f34f"
+      "sha256": "cf518954797d8154a7c0dc7b168497d4a40d2e9b5611b5d37bf9ea6a62b1d2d4"
     }
   },
   "models": [
@@ -38,6 +38,7 @@
         "allCount",
         "tree",
         "tags",
+        "productionTags",
         "smartViews",
         "shapeCounts",
         "uncategorizedCount",
@@ -112,6 +113,38 @@
         "revision",
         "requestId",
         "data"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "CatalogCategoryCandidatePage",
+      "required": [
+        "items",
+        "total",
+        "cursor",
+        "nextCursor"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "CatalogItemSkuPage",
+      "required": [
+        "items",
+        "total",
+        "cursor",
+        "nextCursor"
       ],
       "recovery": [
         "loading",
@@ -455,7 +488,9 @@
         "linkageRules",
         "typeEffects",
         "saveSections",
-        "detailSections"
+        "detailSections",
+        "identifierRules",
+        "preparationRules"
       ],
       "recovery": [
         "loading",

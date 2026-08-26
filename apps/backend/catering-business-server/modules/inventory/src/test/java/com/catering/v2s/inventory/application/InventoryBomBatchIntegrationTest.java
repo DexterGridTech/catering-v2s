@@ -123,16 +123,7 @@ class InventoryBomBatchIntegrationTest {
 
     private static void insertTarget(JdbcTemplate jdbc, UUID targetRef, String itemCode) {
         InventoryTestUnitFacts.insertDirectTarget(
-                jdbc,
-                targetRef,
-                SCOPE,
-                "BRAND",
-                UUID.randomUUID(),
-                null,
-                itemCode,
-                null,
-                BigDecimal.ZERO,
-                1L);
+                jdbc, targetRef, SCOPE, "BRAND", UUID.randomUUID(), null, itemCode, null, BigDecimal.ZERO, 1L);
     }
 
     private static OperationsOwnerScopeGrant grant() {

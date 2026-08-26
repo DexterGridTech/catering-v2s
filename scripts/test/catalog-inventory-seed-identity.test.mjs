@@ -113,7 +113,26 @@ test("seed executor preserves SKU dictionaries while materializing current reusa
   assert.match(executor, /skuVariantDimensionsFor\(source\.skus/);
   assert.match(executor, /skuVariantDimensionsFor\(entities\.skus/);
   assert.match(executor, /const skuAttributeValues = new Map\(\)/);
-  assert.match(executor, /"getOperationsCatalogDictionary".*?pageSize: 100/s);
+  assert.match(executor, /const readCompleteSeedCollection = async/);
+  assert.match(executor, /const readCompleteCollection = async/);
+  for (const operationId of [
+    "getOperationsCatalogItemSkus",
+    "getOperationsCatalogCategoryCandidates",
+    "getOperationsCatalogDictionary",
+    "getOperationsProductionTags",
+    "getOperationsCatalogItems",
+    "getOperationsInventoryTargets",
+  ]) {
+    assert.match(
+      executor,
+      new RegExp(`readCompleteCollection\\(\\{[\\s\\S]*?operationId: "${operationId}"`),
+      `complete seed collection consumer uses the shared cursor protocol: ${operationId}`,
+    );
+  }
+  assert.match(executor, /\$\{failurePrefix\}_TOTAL_CHANGED_DURING_READBACK/);
+  assert.match(executor, /\$\{failurePrefix\}_CURSOR_NON_TERMINATING/);
+  assert.match(executor, /\$\{failurePrefix\}_DUPLICATE_IDENTITY/);
+  assert.match(executor, /\$\{failurePrefix\}_PAGE_NOT_COMPLETE/);
   assert.match(executor, /parentEntryRef: entry\.parentEntryRef/);
   assert.match(executor, /SEED_SKU_ATTRIBUTE_VALUE_PARENT_READBACK_INVALID/);
   assert.match(executor, /SEED_REFERENCE_PREFLIGHT_INVALID/);

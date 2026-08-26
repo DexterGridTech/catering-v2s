@@ -85,19 +85,19 @@
     },
     {
       "path": "contracts/openapi-source/collaboration.schemas.json",
-      "sha256": "22e981b96401d4edc2049483594bf95d41a0c20c704343c4033a1524b1a843d7"
+      "sha256": "f21665dbe869563d89960fbbf21ab0255c44f18b0073eb502dec195bccf78cc8"
     },
     {
       "path": "contracts/openapi-source/business-channel.schemas.json",
-      "sha256": "bc32e1c9c589e9c0ed68d1a0ad1e42d3f6f7951d7ffc648aae58e2e3f0242543"
+      "sha256": "be594aa53eaf5289ca6083b824322482b6848342023a8c31c1a3a7132e6c51b4"
     }
   ],
   "denominator": {
     "scenarios": 33,
-    "operations": 181,
+    "operations": 180,
     "faces": {
       "platform-admin": 61,
-      "operations-admin": 108,
+      "operations-admin": 107,
       "public": 12
     },
     "owners": [
@@ -515,8 +515,7 @@
       "WORKSPACE_IAM_ROLE_STATUS_TRANSITION_INVALID",
       "WORKSPACE_IAM_ROLE_VERSION_CONFLICT"
     ],
-    "addOperationsOrganizationHeadCompanyBrandAuthorization": [
-    ],
+    "addOperationsOrganizationHeadCompanyBrandAuthorization": [],
     "removeOperationsOrganizationHeadCompanyBrandAuthorization": [
       "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE"
     ],
@@ -549,12 +548,6 @@
       "BINDING_EDIT_NOT_ALLOWED",
       "EXTERNAL_OWNER_ID_MISMATCH"
     ],
-    "updateOperationsOwnerBinding": [
-      "AUTHORIZATION_REQUIRED",
-      "BINDING_EDIT_NOT_ALLOWED",
-      "EXTERNAL_OWNER_ID_MISMATCH",
-      "VERSION_CONFLICT"
-    ],
     "deleteOperationsOwnerBinding": [
       "ADAPTER_UNBIND_REQUIRED",
       "AUTHORIZATION_REQUIRED",
@@ -562,11 +555,11 @@
       "VERSION_CONFLICT"
     ],
     "createOperationsBusinessChannelTemplate": [
-        "BUSINESS_SCOPE_EXCEEDED",
-        "DINE_IN_FORM_MISMATCH",
-        "DINE_IN_MUST_BE_INTERNAL",
-        "DUPLICATE_CODE",
-        "PROVIDER_NOT_ENABLED",
+      "BUSINESS_SCOPE_EXCEEDED",
+      "DINE_IN_FORM_MISMATCH",
+      "DINE_IN_MUST_BE_INTERNAL",
+      "DUPLICATE_CODE",
+      "PROVIDER_NOT_ENABLED",
       "VERSION_CONFLICT"
     ],
     "updateOperationsBusinessChannelTemplate": [
@@ -579,11 +572,11 @@
       "VERSION_CONFLICT"
     ],
     "createOperationsBusinessChannel": [
-        "BINDING_NOT_EFFECTIVE",
-        "DINE_IN_FORM_MISMATCH",
-        "DINE_IN_MUST_BE_INTERNAL",
-        "DUPLICATE_CODE",
-        "ORDER_KIND_MISMATCH",
+      "BINDING_NOT_EFFECTIVE",
+      "DINE_IN_FORM_MISMATCH",
+      "DINE_IN_MUST_BE_INTERNAL",
+      "DUPLICATE_CODE",
+      "ORDER_KIND_MISMATCH",
       "PROVIDER_NOT_ENABLED",
       "VERSION_CONFLICT"
     ],
@@ -756,8 +749,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getWorkspaceInvitations",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getWorkspaceInvitations"
     },
     {
       "operationId": "createWorkspaceInvitation",
@@ -784,8 +776,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createWorkspaceInvitation",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createWorkspaceInvitation"
     },
     {
       "operationId": "getWorkspaceInvitation",
@@ -813,8 +804,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getWorkspaceInvitation",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getWorkspaceInvitation"
     },
     {
       "operationId": "getWorkspaceInvitationCandidates",
@@ -911,8 +901,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getWorkspaceInvitationCandidates",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getWorkspaceInvitationCandidates"
     },
     {
       "operationId": "cancelWorkspaceInvitation",
@@ -940,8 +929,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.cancelWorkspaceInvitation",
-      "databaseOperationBudget": {"kind":"FIXED","max":14,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":14,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.cancelWorkspaceInvitation"
     },
     {
       "operationId": "reissueWorkspaceInvitation",
@@ -969,8 +957,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.reissueWorkspaceInvitation",
-      "databaseOperationBudget": {"kind":"FIXED","max":14,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":14,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.reissueWorkspaceInvitation"
     },
     {
       "operationId": "getPlatformContractOverviewPage",
@@ -1086,8 +1073,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformContractOverviewPage",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformContractOverviewPage"
     },
     {
       "operationId": "getPlatformContractOverviewDetail",
@@ -1115,8 +1101,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformContractOverviewDetail",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformContractOverviewDetail"
     },
     {
       "operationId": "getOperationsWorkspaceLoginEntry",
@@ -1143,8 +1128,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "WORKSPACE_AUTH",
-      "focusedTestId": "edge.getOperationsWorkspaceLoginEntry",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceLoginEntry"
     },
     {
       "operationId": "operationsWorkspacePasswordLogin",
@@ -1171,8 +1155,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "WORKSPACE_AUTH",
-      "focusedTestId": "edge.operationsWorkspacePasswordLogin",
-      "databaseOperationBudget": {"kind":"FIXED","max":22,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":22,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.operationsWorkspacePasswordLogin"
     },
     {
       "operationId": "sendOperationsWorkspaceOtp",
@@ -1199,8 +1182,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "WORKSPACE_AUTH",
-      "focusedTestId": "edge.sendOperationsWorkspaceOtp",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.sendOperationsWorkspaceOtp"
     },
     {
       "operationId": "verifyOperationsWorkspaceOtp",
@@ -1227,8 +1209,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "WORKSPACE_AUTH",
-      "focusedTestId": "edge.verifyOperationsWorkspaceOtp",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.verifyOperationsWorkspaceOtp"
     },
     {
       "operationId": "getOperationsWorkspaceSessionEntry",
@@ -1255,8 +1236,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceSessionEntry",
-      "databaseOperationBudget": {"kind":"FIXED","max":11,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":11,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceSessionEntry"
     },
     {
       "operationId": "selectOperationsWorkspaceSessionContext",
@@ -1283,8 +1263,7 @@
       },
       "expectedVersion": "REQUIRED_CONTEXT_VERSION",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.selectOperationsWorkspaceSessionContext",
-      "databaseOperationBudget": {"kind":"FIXED","max":12,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":12,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.selectOperationsWorkspaceSessionContext"
     },
     {
       "operationId": "changeCurrentWorkspacePassword",
@@ -1311,8 +1290,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.changeCurrentWorkspacePassword",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.changeCurrentWorkspacePassword"
     },
     {
       "operationId": "selectOperationsWorkspaceSessionDataNode",
@@ -1339,8 +1317,7 @@
       },
       "expectedVersion": "REQUIRED_CONTEXT_VERSION",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.selectOperationsWorkspaceSessionDataNode",
-      "databaseOperationBudget": {"kind":"FIXED","max":15,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":15,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.selectOperationsWorkspaceSessionDataNode"
     },
     {
       "operationId": "operationsWorkspaceLogout",
@@ -1367,8 +1344,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.operationsWorkspaceLogout",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.operationsWorkspaceLogout"
     },
     {
       "operationId": "getPlatformGroupWorkspaceDetail",
@@ -1398,8 +1374,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformGroupWorkspaceDetail",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformGroupWorkspaceDetail"
     },
     {
       "operationId": "transitionPlatformGroupWorkspaceStatus",
@@ -1426,8 +1401,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.transitionPlatformGroupWorkspaceStatus",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.transitionPlatformGroupWorkspaceStatus"
     },
     {
       "operationId": "updatePlatformGroupWorkspaceDisplay",
@@ -1454,8 +1428,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.updatePlatformGroupWorkspaceDisplay",
-      "databaseOperationBudget": {"kind":"FIXED","max":18,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":18,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.updatePlatformGroupWorkspaceDisplay"
     },
     {
       "operationId": "getPlatformOrganizationCandidates",
@@ -1549,8 +1522,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformOrganizationCandidates",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformOrganizationCandidates"
     },
     {
       "operationId": "getPlatformOrganizationOverviewPage",
@@ -1717,8 +1689,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformOrganizationOverviewPage",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformOrganizationOverviewPage"
     },
     {
       "operationId": "getPlatformOrganizationHierarchyTree",
@@ -1745,8 +1716,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformOrganizationHierarchyTree",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformOrganizationHierarchyTree"
     },
     {
       "operationId": "getPlatformOrganizationOverviewDetail",
@@ -1775,8 +1745,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformOrganizationOverviewDetail",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformOrganizationOverviewDetail"
     },
     {
       "operationId": "initializeCommercialGroup",
@@ -1804,8 +1773,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.initializeCommercialGroup",
-      "databaseOperationBudget": {"kind":"FIXED","max":15,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":15,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.initializeCommercialGroup"
     },
     {
       "operationId": "getWorkspaceRoles",
@@ -1894,8 +1862,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getWorkspaceRoles",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getWorkspaceRoles"
     },
     {
       "operationId": "getWorkspaceRole",
@@ -1924,8 +1891,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getWorkspaceRole",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getWorkspaceRole"
     },
     {
       "operationId": "createWorkspaceRole",
@@ -1953,8 +1919,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createWorkspaceRole",
-      "databaseOperationBudget": {"kind":"FIXED","max":14,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":14,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createWorkspaceRole"
     },
     {
       "operationId": "updateWorkspaceRole",
@@ -1983,8 +1948,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.updateWorkspaceRole",
-      "databaseOperationBudget": {"kind":"FIXED","max":15,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":15,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.updateWorkspaceRole"
     },
     {
       "operationId": "transitionWorkspaceRoleStatus",
@@ -2013,8 +1977,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.transitionWorkspaceRoleStatus",
-      "databaseOperationBudget": {"kind":"FIXED","max":15,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":15,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.transitionWorkspaceRoleStatus"
     },
     {
       "operationId": "getWorkspaceAccounts",
@@ -2139,8 +2102,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getWorkspaceAccounts",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getWorkspaceAccounts"
     },
     {
       "operationId": "getWorkspaceAccount",
@@ -2168,8 +2130,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getWorkspaceAccount",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getWorkspaceAccount"
     },
     {
       "operationId": "transitionWorkspaceAccountStatus",
@@ -2197,8 +2158,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.transitionWorkspaceAccountStatus",
-      "databaseOperationBudget": {"kind":"FIXED","max":15,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":15,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.transitionWorkspaceAccountStatus"
     },
     {
       "operationId": "requestWorkspaceCredentialReset",
@@ -2226,8 +2186,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.requestWorkspaceCredentialReset",
-      "databaseOperationBudget": {"kind":"FIXED","max":15,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":15,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.requestWorkspaceCredentialReset"
     },
     {
       "operationId": "revokePlatformWorkspaceAssignment",
@@ -2256,8 +2215,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.revokePlatformWorkspaceAssignment",
-      "databaseOperationBudget": {"kind":"FIXED","max":15,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":15,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.revokePlatformWorkspaceAssignment"
     },
     {
       "operationId": "getExtensionEntityCatalog",
@@ -2284,8 +2242,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getExtensionEntityCatalog",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getExtensionEntityCatalog"
     },
     {
       "operationId": "getExtensionDefinition",
@@ -2313,8 +2270,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getExtensionDefinition",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getExtensionDefinition"
     },
     {
       "operationId": "replaceExtensionDefinition",
@@ -2342,8 +2298,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.replaceExtensionDefinition",
-      "databaseOperationBudget": {"kind":"FIXED","max":18,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":18,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.replaceExtensionDefinition"
     },
     {
       "operationId": "platformPasswordLogin",
@@ -2368,8 +2323,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PLATFORM_AUTH_LOGIN",
-      "focusedTestId": "edge.platformPasswordLogin",
-      "databaseOperationBudget": {"kind":"FIXED","max":11,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":11,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.platformPasswordLogin"
     },
     {
       "operationId": "getCurrentPlatformSession",
@@ -2394,8 +2348,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getCurrentPlatformSession",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getCurrentPlatformSession"
     },
     {
       "operationId": "changeCurrentPlatformPassword",
@@ -2420,8 +2373,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.changeCurrentPlatformPassword",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.changeCurrentPlatformPassword"
     },
     {
       "operationId": "platformLogout",
@@ -2446,8 +2398,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.platformLogout",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.platformLogout"
     },
     {
       "operationId": "listPlatformGroupWorkspaces",
@@ -2546,8 +2497,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.listPlatformGroupWorkspaces",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.listPlatformGroupWorkspaces"
     },
     {
       "operationId": "createPlatformGroupWorkspace",
@@ -2572,8 +2522,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createPlatformGroupWorkspace",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createPlatformGroupWorkspace"
     },
     {
       "operationId": "stagePlatformAsset",
@@ -2598,8 +2547,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.stagePlatformAsset",
-      "databaseOperationBudget": {"kind":"FIXED","max":13,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":13,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.stagePlatformAsset"
     },
     {
       "operationId": "releasePlatformStagedAsset",
@@ -2638,8 +2586,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.releasePlatformStagedAsset",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.releasePlatformStagedAsset"
     },
     {
       "operationId": "getPublicAssetContent",
@@ -2668,8 +2615,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PUBLIC_ASSET_CONTENT",
-      "focusedTestId": "edge.getPublicAssetContent",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPublicAssetContent"
     },
     {
       "operationId": "getPlatformAdminPage",
@@ -2756,8 +2702,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformAdminPage",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformAdminPage"
     },
     {
       "operationId": "createPlatformAdmin",
@@ -2782,8 +2727,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createPlatformAdmin",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createPlatformAdmin"
     },
     {
       "operationId": "getPlatformAdminDetail",
@@ -2810,8 +2754,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformAdminDetail",
-      "databaseOperationBudget": {"kind":"FIXED","max":5,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":5,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformAdminDetail"
     },
     {
       "operationId": "updatePlatformAdminProfile",
@@ -2838,8 +2781,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.updatePlatformAdminProfile",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.updatePlatformAdminProfile"
     },
     {
       "operationId": "transitionPlatformAdminStatus",
@@ -2866,8 +2808,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.transitionPlatformAdminStatus",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.transitionPlatformAdminStatus"
     },
     {
       "operationId": "resetPlatformAdminCredential",
@@ -2894,8 +2835,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.resetPlatformAdminCredential",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.resetPlatformAdminCredential"
     },
     {
       "operationId": "getOperationsOrganizationBrands",
@@ -2986,8 +2926,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOrganizationBrands",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsOrganizationBrands"
     },
     {
       "operationId": "createOperationsOrganizationBrand",
@@ -3015,8 +2954,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsOrganizationBrand",
-      "databaseOperationBudget": {"kind":"FIXED","max":18,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":18,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsOrganizationBrand"
     },
     {
       "operationId": "getOperationsOrganizationBrand",
@@ -3056,8 +2994,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOrganizationBrand",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsOrganizationBrand"
     },
     {
       "operationId": "updateOperationsOrganizationBrand",
@@ -3086,8 +3023,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.updateOperationsOrganizationBrand",
-      "databaseOperationBudget": {"kind":"FIXED","max":20,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":20,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.updateOperationsOrganizationBrand"
     },
     {
       "operationId": "transitionOperationsOrganizationBrandStatus",
@@ -3116,8 +3052,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.transitionOperationsOrganizationBrandStatus",
-      "databaseOperationBudget": {"kind":"FIXED","max":22,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":22,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.transitionOperationsOrganizationBrandStatus"
     },
     {
       "operationId": "getOperationsOrganizationTenants",
@@ -3235,8 +3170,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOrganizationTenants",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsOrganizationTenants"
     },
     {
       "operationId": "createOperationsOrganizationTenant",
@@ -3264,8 +3198,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsOrganizationTenant",
-      "databaseOperationBudget": {"kind":"FIXED","max":23,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":23,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsOrganizationTenant"
     },
     {
       "operationId": "getOperationsOrganizationTenant",
@@ -3305,8 +3238,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOrganizationTenant",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsOrganizationTenant"
     },
     {
       "operationId": "updateOperationsOrganizationTenant",
@@ -3335,8 +3267,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.updateOperationsOrganizationTenant",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.updateOperationsOrganizationTenant"
     },
     {
       "operationId": "transitionOperationsOrganizationTenantStatus",
@@ -3365,8 +3296,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.transitionOperationsOrganizationTenantStatus",
-      "databaseOperationBudget": {"kind":"FIXED","max":22,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":22,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.transitionOperationsOrganizationTenantStatus"
     },
     {
       "operationId": "getOperationsOrganizationHeadCompanies",
@@ -3493,8 +3423,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOrganizationHeadCompanies",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsOrganizationHeadCompanies"
     },
     {
       "operationId": "createOperationsOrganizationHeadCompany",
@@ -3522,8 +3451,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsOrganizationHeadCompany",
-      "databaseOperationBudget": {"kind":"FIXED","max":23,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":23,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsOrganizationHeadCompany"
     },
     {
       "operationId": "getOperationsOrganizationHeadCompany",
@@ -3563,8 +3491,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOrganizationHeadCompany",
-      "databaseOperationBudget": {"kind":"FIXED","max":10,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":10,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsOrganizationHeadCompany"
     },
     {
       "operationId": "updateOperationsOrganizationHeadCompany",
@@ -3593,8 +3520,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.updateOperationsOrganizationHeadCompany",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.updateOperationsOrganizationHeadCompany"
     },
     {
       "operationId": "transitionOperationsOrganizationHeadCompanyStatus",
@@ -3623,8 +3549,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.transitionOperationsOrganizationHeadCompanyStatus",
-      "databaseOperationBudget": {"kind":"FIXED","max":21,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":21,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.transitionOperationsOrganizationHeadCompanyStatus"
     },
     {
       "operationId": "addOperationsOrganizationHeadCompanyBrandAuthorization",
@@ -3653,8 +3578,7 @@
       },
       "expectedVersion": "FORBIDDEN",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.addOperationsOrganizationHeadCompanyBrandAuthorization",
-      "databaseOperationBudget": {"kind":"FIXED","max":19,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":19,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.addOperationsOrganizationHeadCompanyBrandAuthorization"
     },
     {
       "operationId": "removeOperationsOrganizationHeadCompanyBrandAuthorization",
@@ -3684,8 +3608,7 @@
       },
       "expectedVersion": "FORBIDDEN",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.removeOperationsOrganizationHeadCompanyBrandAuthorization",
-      "databaseOperationBudget": {"kind":"FIXED","max":20,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":20,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.removeOperationsOrganizationHeadCompanyBrandAuthorization"
     },
     {
       "operationId": "getOperationsOrganizationBusinessEntityExtensionDefinition",
@@ -3737,8 +3660,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOrganizationBusinessEntityExtensionDefinition",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsOrganizationBusinessEntityExtensionDefinition"
     },
     {
       "operationId": "getOperationsWorkspaceGroupInvitations",
@@ -3875,8 +3797,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceInvitations.group",
-      "databaseOperationBudget": {"kind":"FIXED","max":15,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":15,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceInvitations.group"
     },
     {
       "operationId": "getOperationsWorkspaceRegionInvitations",
@@ -4013,8 +3934,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceInvitations.region",
-      "databaseOperationBudget": {"kind":"FIXED","max":9,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":9,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceInvitations.region"
     },
     {
       "operationId": "getOperationsWorkspaceProjectInvitations",
@@ -4151,8 +4071,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceInvitations.project",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceInvitations.project"
     },
     {
       "operationId": "getOperationsWorkspaceHeadCompanyInvitations",
@@ -4289,8 +4208,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceInvitations.head-company",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceInvitations.head-company"
     },
     {
       "operationId": "getOperationsWorkspaceStoreInvitations",
@@ -4427,8 +4345,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceInvitations.store",
-      "databaseOperationBudget": {"kind":"FIXED","max":14,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":14,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceInvitations.store"
     },
     {
       "operationId": "createOperationsWorkspaceGroupInvitation",
@@ -4455,8 +4372,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsWorkspaceInvitation.group",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsWorkspaceInvitation.group"
     },
     {
       "operationId": "createOperationsWorkspaceRegionInvitation",
@@ -4483,8 +4399,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsWorkspaceInvitation.region",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsWorkspaceInvitation.region"
     },
     {
       "operationId": "createOperationsWorkspaceProjectInvitation",
@@ -4511,8 +4426,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsWorkspaceInvitation.project",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsWorkspaceInvitation.project"
     },
     {
       "operationId": "createOperationsWorkspaceHeadCompanyInvitation",
@@ -4539,8 +4453,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsWorkspaceInvitation.head-company",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsWorkspaceInvitation.head-company"
     },
     {
       "operationId": "createOperationsWorkspaceStoreInvitation",
@@ -4567,8 +4480,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsWorkspaceInvitation.store",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsWorkspaceInvitation.store"
     },
     {
       "operationId": "getOperationsWorkspaceGroupInvitationCandidates",
@@ -4676,8 +4588,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceInvitationCandidates.group",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceInvitationCandidates.group"
     },
     {
       "operationId": "getOperationsWorkspaceRegionInvitationCandidates",
@@ -4785,8 +4696,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceInvitationCandidates.region",
-      "databaseOperationBudget": {"kind":"FIXED","max":9,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":9,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceInvitationCandidates.region"
     },
     {
       "operationId": "getOperationsWorkspaceProjectInvitationCandidates",
@@ -4894,8 +4804,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceInvitationCandidates.project",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceInvitationCandidates.project"
     },
     {
       "operationId": "getOperationsWorkspaceHeadCompanyInvitationCandidates",
@@ -5003,8 +4912,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceInvitationCandidates.head-company",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceInvitationCandidates.head-company"
     },
     {
       "operationId": "getOperationsWorkspaceStoreInvitationCandidates",
@@ -5112,8 +5020,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceInvitationCandidates.store",
-      "databaseOperationBudget": {"kind":"FIXED","max":10,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":10,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceInvitationCandidates.store"
     },
     {
       "operationId": "cancelOperationsWorkspaceGroupInvitation",
@@ -5141,8 +5048,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.cancelOperationsWorkspaceInvitation.group",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.cancelOperationsWorkspaceInvitation.group"
     },
     {
       "operationId": "cancelOperationsWorkspaceRegionInvitation",
@@ -5170,8 +5076,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.cancelOperationsWorkspaceInvitation.region",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.cancelOperationsWorkspaceInvitation.region"
     },
     {
       "operationId": "cancelOperationsWorkspaceProjectInvitation",
@@ -5199,8 +5104,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.cancelOperationsWorkspaceInvitation.project",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.cancelOperationsWorkspaceInvitation.project"
     },
     {
       "operationId": "cancelOperationsWorkspaceHeadCompanyInvitation",
@@ -5228,8 +5132,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.cancelOperationsWorkspaceInvitation.head-company",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.cancelOperationsWorkspaceInvitation.head-company"
     },
     {
       "operationId": "cancelOperationsWorkspaceStoreInvitation",
@@ -5257,8 +5160,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.cancelOperationsWorkspaceInvitation.store",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.cancelOperationsWorkspaceInvitation.store"
     },
     {
       "operationId": "reissueOperationsWorkspaceGroupInvitation",
@@ -5286,8 +5188,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.reissueOperationsWorkspaceInvitation.group",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.reissueOperationsWorkspaceInvitation.group"
     },
     {
       "operationId": "reissueOperationsWorkspaceRegionInvitation",
@@ -5315,8 +5216,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.reissueOperationsWorkspaceInvitation.region",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.reissueOperationsWorkspaceInvitation.region"
     },
     {
       "operationId": "reissueOperationsWorkspaceProjectInvitation",
@@ -5344,8 +5244,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.reissueOperationsWorkspaceInvitation.project",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.reissueOperationsWorkspaceInvitation.project"
     },
     {
       "operationId": "reissueOperationsWorkspaceHeadCompanyInvitation",
@@ -5373,8 +5272,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.reissueOperationsWorkspaceInvitation.head-company",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.reissueOperationsWorkspaceInvitation.head-company"
     },
     {
       "operationId": "reissueOperationsWorkspaceStoreInvitation",
@@ -5402,8 +5300,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.reissueOperationsWorkspaceInvitation.store",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.reissueOperationsWorkspaceInvitation.store"
     },
     {
       "operationId": "getOperationsOrganizationHierarchy",
@@ -5430,8 +5327,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOrganizationHierarchy",
-      "databaseOperationBudget": {"kind":"FIXED","max":9,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":9,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsOrganizationHierarchy"
     },
     {
       "operationId": "getOperationsOrganizationHierarchyExtensionDefinition",
@@ -5482,8 +5378,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOrganizationHierarchyExtensionDefinition",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsOrganizationHierarchyExtensionDefinition"
     },
     {
       "operationId": "getOperationsWorkspaceGroupUser",
@@ -5600,8 +5495,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceUser.group",
-      "databaseOperationBudget": {"kind":"FIXED","max":19,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":19,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceUser.group"
     },
     {
       "operationId": "getOperationsWorkspaceRegionUser",
@@ -5718,8 +5612,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceUser.region",
-      "databaseOperationBudget": {"kind":"FIXED","max":9,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":9,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceUser.region"
     },
     {
       "operationId": "getOperationsWorkspaceProjectUser",
@@ -5836,8 +5729,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceUser.project",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceUser.project"
     },
     {
       "operationId": "getOperationsWorkspaceHeadCompanyUser",
@@ -5954,8 +5846,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceUser.head-company",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceUser.head-company"
     },
     {
       "operationId": "getOperationsWorkspaceStoreUser",
@@ -6072,8 +5963,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceUser.store",
-      "databaseOperationBudget": {"kind":"FIXED","max":19,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":19,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceUser.store"
     },
     {
       "operationId": "getOperationsWorkspaceGroupUserAccount",
@@ -6112,8 +6002,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceUserAccount.group",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceUserAccount.group"
     },
     {
       "operationId": "getOperationsWorkspaceRegionUserAccount",
@@ -6152,8 +6041,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceUserAccount.region",
-      "databaseOperationBudget": {"kind":"FIXED","max":9,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":9,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceUserAccount.region"
     },
     {
       "operationId": "getOperationsWorkspaceProjectUserAccount",
@@ -6192,8 +6080,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceUserAccount.project",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceUserAccount.project"
     },
     {
       "operationId": "getOperationsWorkspaceHeadCompanyUserAccount",
@@ -6232,8 +6119,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceUserAccount.head-company",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceUserAccount.head-company"
     },
     {
       "operationId": "getOperationsWorkspaceStoreUserAccount",
@@ -6272,8 +6158,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsWorkspaceUserAccount.store",
-      "databaseOperationBudget": {"kind":"FIXED","max":10,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":10,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsWorkspaceUserAccount.store"
     },
     {
       "operationId": "revokeOperationsWorkspaceGroupUserAssignment",
@@ -6301,8 +6186,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.revokeOperationsWorkspaceUserAssignment.group",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.revokeOperationsWorkspaceUserAssignment.group"
     },
     {
       "operationId": "revokeOperationsWorkspaceRegionUserAssignment",
@@ -6330,8 +6214,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.revokeOperationsWorkspaceUserAssignment.region",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.revokeOperationsWorkspaceUserAssignment.region"
     },
     {
       "operationId": "revokeOperationsWorkspaceProjectUserAssignment",
@@ -6359,8 +6242,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.revokeOperationsWorkspaceUserAssignment.project",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.revokeOperationsWorkspaceUserAssignment.project"
     },
     {
       "operationId": "revokeOperationsWorkspaceHeadCompanyUserAssignment",
@@ -6388,8 +6270,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.revokeOperationsWorkspaceUserAssignment.head-company",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.revokeOperationsWorkspaceUserAssignment.head-company"
     },
     {
       "operationId": "revokeOperationsWorkspaceStoreUserAssignment",
@@ -6417,8 +6298,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.revokeOperationsWorkspaceUserAssignment.store",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.revokeOperationsWorkspaceUserAssignment.store"
     },
     {
       "operationId": "createOperationsOrganizationRegion",
@@ -6445,8 +6325,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsOrganizationRegion",
-      "databaseOperationBudget": {"kind":"FIXED","max":23,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":23,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsOrganizationRegion"
     },
     {
       "operationId": "createOperationsOrganizationProject",
@@ -6474,8 +6353,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsOrganizationProject",
-      "databaseOperationBudget": {"kind":"FIXED","max":24,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":24,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsOrganizationProject"
     },
     {
       "operationId": "updateOperationsCommercialGroup",
@@ -6502,8 +6380,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.updateOperationsCommercialGroup",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.updateOperationsCommercialGroup"
     },
     {
       "operationId": "updateOperationsOrganizationNode",
@@ -6531,8 +6408,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.updateOperationsOrganizationNode",
-      "databaseOperationBudget": {"kind":"FIXED","max":22,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":22,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.updateOperationsOrganizationNode"
     },
     {
       "operationId": "transitionOperationsOrganizationNodeStatus",
@@ -6560,8 +6436,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.transitionOperationsOrganizationNodeStatus",
-      "databaseOperationBudget": {"kind":"FIXED","max":23,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":23,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.transitionOperationsOrganizationNodeStatus"
     },
     {
       "operationId": "getOperationsOrganizationStores",
@@ -6661,8 +6536,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOrganizationStores",
-      "databaseOperationBudget": {"kind":"FIXED","max":14,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":14,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsOrganizationStores"
     },
     {
       "operationId": "createOperationsOrganizationStore",
@@ -6690,8 +6564,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsOrganizationStore",
-      "databaseOperationBudget": {"kind":"FIXED","max":20,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":20,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsOrganizationStore"
     },
     {
       "operationId": "getOperationsOrganizationCandidates",
@@ -6816,8 +6689,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOrganizationCandidates",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsOrganizationCandidates"
     },
     {
       "operationId": "getOperationsOrganizationStoreExtensionDefinition",
@@ -6856,8 +6728,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOrganizationStoreExtensionDefinition",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsOrganizationStoreExtensionDefinition"
     },
     {
       "operationId": "getOperationsOrganizationStore",
@@ -6897,8 +6768,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOrganizationStore",
-      "databaseOperationBudget": {"kind":"FIXED","max":12,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":12,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsOrganizationStore"
     },
     {
       "operationId": "updateOperationsOrganizationStore",
@@ -6927,8 +6797,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.updateOperationsOrganizationStore",
-      "databaseOperationBudget": {"kind":"FIXED","max":19,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":19,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.updateOperationsOrganizationStore"
     },
     {
       "operationId": "transitionOperationsOrganizationStoreStatus",
@@ -6957,8 +6826,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.transitionOperationsOrganizationStoreStatus",
-      "databaseOperationBudget": {"kind":"FIXED","max":17,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":17,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.transitionOperationsOrganizationStoreStatus"
     },
     {
       "operationId": "getOperationsStoreProfile",
@@ -6996,8 +6864,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsStoreProfile",
-      "databaseOperationBudget": {"kind":"FIXED","max":10,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":10,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsStoreProfile"
     },
     {
       "operationId": "getOperationsContracts",
@@ -7141,8 +7008,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsContracts",
-      "databaseOperationBudget": {"kind":"FIXED","max":9,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":9,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsContracts"
     },
     {
       "operationId": "createOperationsContract",
@@ -7169,8 +7035,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsContract",
-      "databaseOperationBudget": {"kind":"FIXED","max":18,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":18,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsContract"
     },
     {
       "operationId": "getOperationsContractExtensionDefinition",
@@ -7209,8 +7074,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsContractExtensionDefinition",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsContractExtensionDefinition"
     },
     {
       "operationId": "getOperationsContractCandidates",
@@ -7287,8 +7151,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsContractCandidates",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsContractCandidates"
     },
     {
       "operationId": "getOperationsFixedStoreContracts",
@@ -7353,8 +7216,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsFixedStoreContracts",
-      "databaseOperationBudget": {"kind":"FIXED","max":9,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":9,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsFixedStoreContracts"
     },
     {
       "operationId": "getOperationsContract",
@@ -7393,8 +7255,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsContract",
-      "databaseOperationBudget": {"kind":"FIXED","max":9,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":9,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsContract"
     },
     {
       "operationId": "updateOperationsContract",
@@ -7422,8 +7283,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.updateOperationsContract",
-      "databaseOperationBudget": {"kind":"FIXED","max":20,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":20,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.updateOperationsContract"
     },
     {
       "operationId": "invalidateOperationsContract",
@@ -7451,8 +7311,7 @@
       },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.invalidateOperationsContract",
-      "databaseOperationBudget": {"kind":"FIXED","max":18,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":18,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.invalidateOperationsContract"
     },
     {
       "operationId": "getPublicInvitationView",
@@ -7480,8 +7339,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PUBLIC_INVITATION",
-      "focusedTestId": "edge.getPublicInvitationView",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPublicInvitationView"
     },
     {
       "operationId": "acceptPublicInvitation",
@@ -7509,8 +7367,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PUBLIC_INVITATION",
-      "focusedTestId": "edge.acceptPublicInvitation",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.acceptPublicInvitation"
     },
     {
       "operationId": "sendPublicInvitationOtp",
@@ -7538,8 +7395,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PUBLIC_INVITATION",
-      "focusedTestId": "edge.sendPublicInvitationOtp",
-      "databaseOperationBudget": {"kind":"FIXED","max":9,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":9,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.sendPublicInvitationOtp"
     },
     {
       "operationId": "verifyPublicInvitationOtp",
@@ -7567,8 +7423,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PUBLIC_INVITATION",
-      "focusedTestId": "edge.verifyPublicInvitationOtp",
-      "databaseOperationBudget": {"kind":"FIXED","max":13,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":13,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.verifyPublicInvitationOtp"
     },
     {
       "operationId": "savePublicInvitationCredentials",
@@ -7596,8 +7451,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PUBLIC_INVITATION",
-      "focusedTestId": "edge.savePublicInvitationCredentials",
-      "databaseOperationBudget": {"kind":"FIXED","max":9,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":9,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.savePublicInvitationCredentials"
     },
     {
       "operationId": "completePublicInvitation",
@@ -7625,8 +7479,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PUBLIC_INVITATION",
-      "focusedTestId": "edge.completePublicInvitation",
-      "databaseOperationBudget": {"kind":"FIXED","max":18,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":18,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.completePublicInvitation"
     },
     {
       "operationId": "getPublicInvitationCompletion",
@@ -7654,8 +7507,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PUBLIC_INVITATION",
-      "focusedTestId": "edge.getPublicInvitationCompletion",
-      "databaseOperationBudget": {"kind":"FIXED","max":5,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":5,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPublicInvitationCompletion"
     },
     {
       "operationId": "getPlatformEntityAuditHistory",
@@ -7735,8 +7587,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformEntityAuditHistory",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformEntityAuditHistory"
     },
     {
       "operationId": "getOperationsEntityAuditHistory",
@@ -7818,8 +7669,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsEntityAuditHistory",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsEntityAuditHistory"
     },
     {
       "operationId": "sendPlatformLoginOtp",
@@ -7844,8 +7694,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PLATFORM_LOGIN_OTP",
-      "focusedTestId": "edge.sendPlatformLoginOtp",
-      "databaseOperationBudget": {"kind":"FIXED","max":14,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":14,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.sendPlatformLoginOtp"
     },
     {
       "operationId": "verifyPlatformLoginOtp",
@@ -7870,8 +7719,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PLATFORM_LOGIN_OTP",
-      "focusedTestId": "edge.verifyPlatformLoginOtp",
-      "databaseOperationBudget": {"kind":"FIXED","max":13,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":13,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.verifyPlatformLoginOtp"
     },
     {
       "operationId": "startPlatformPasswordRecovery",
@@ -7896,8 +7744,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PLATFORM_RECOVERY_DISPATCH",
-      "focusedTestId": "edge.startPlatformPasswordRecovery",
-      "databaseOperationBudget": {"kind":"FIXED","max":17,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":17,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.startPlatformPasswordRecovery"
     },
     {
       "operationId": "sendPlatformPasswordRecoveryOtp",
@@ -7922,8 +7769,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PLATFORM_RECOVERY_DISPATCH",
-      "focusedTestId": "edge.sendPlatformPasswordRecoveryOtp",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.sendPlatformPasswordRecoveryOtp"
     },
     {
       "operationId": "verifyPlatformPasswordRecoveryOtp",
@@ -7948,8 +7794,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PLATFORM_RECOVERY_GRANT",
-      "focusedTestId": "edge.verifyPlatformPasswordRecoveryOtp",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.verifyPlatformPasswordRecoveryOtp"
     },
     {
       "operationId": "completePlatformPasswordRecovery",
@@ -7974,8 +7819,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PLATFORM_RECOVERY_GRANT",
-      "focusedTestId": "edge.completePlatformPasswordRecovery",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.completePlatformPasswordRecovery"
     },
     {
       "operationId": "startOperationsPasswordRecovery",
@@ -8002,8 +7846,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OPERATIONS_RECOVERY_START",
-      "focusedTestId": "edge.startOperationsPasswordRecovery",
-      "databaseOperationBudget": {"kind":"FIXED","max":18,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":18,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.startOperationsPasswordRecovery"
     },
     {
       "operationId": "sendOperationsPasswordRecoveryOtp",
@@ -8030,8 +7873,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OPERATIONS_RECOVERY_SEND",
-      "focusedTestId": "edge.sendOperationsPasswordRecoveryOtp",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.sendOperationsPasswordRecoveryOtp"
     },
     {
       "operationId": "verifyOperationsPasswordRecoveryOtp",
@@ -8058,8 +7900,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OPERATIONS_RECOVERY_VERIFY",
-      "focusedTestId": "edge.verifyOperationsPasswordRecoveryOtp",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.verifyOperationsPasswordRecoveryOtp"
     },
     {
       "operationId": "completeOperationsPasswordRecovery",
@@ -8086,8 +7927,7 @@
       },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OPERATIONS_RECOVERY_COMPLETE",
-      "focusedTestId": "edge.completeOperationsPasswordRecovery",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.completeOperationsPasswordRecovery"
     },
     {
       "operationId": "getPlatformExternalCollaborationTree",
@@ -8095,20 +7935,26 @@
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/external-collaboration",
       "face": "platform-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "PLATFORM_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey"],
+      "pathParameters": [
+        "groupWorkspaceKey"
+      ],
       "queryParameters": [],
       "requestSchema": "NoBody",
       "responseSchema": "ExternalCollaborationTree",
       "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformExternalCollaborationTree",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformExternalCollaborationTree"
     },
     {
       "operationId": "getPlatformExternalSystemDetail",
@@ -8116,20 +7962,27 @@
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/external-systems/{externalSystemCode}",
       "face": "platform-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "PLATFORM_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "externalSystemCode"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "externalSystemCode"
+      ],
       "queryParameters": [],
       "requestSchema": "NoBody",
       "responseSchema": "ExternalSystemView",
       "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformExternalSystemDetail",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformExternalSystemDetail"
     },
     {
       "operationId": "getPlatformProviderProfileDetail",
@@ -8137,20 +7990,27 @@
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}",
       "face": "platform-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "PLATFORM_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "providerCode"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "providerCode"
+      ],
       "queryParameters": [],
       "requestSchema": "NoBody",
       "responseSchema": "ProviderProfileView",
       "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformProviderProfileDetail",
-      "databaseOperationBudget": {"kind":"FIXED","max":6,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":6,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformProviderProfileDetail"
     },
     {
       "operationId": "transitionPlatformExternalSystemStatus",
@@ -8158,20 +8018,27 @@
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/external-systems/{externalSystemCode}/status",
       "face": "platform-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "PLATFORM_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "externalSystemCode"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "externalSystemCode"
+      ],
       "queryParameters": [],
       "requestSchema": "ExternalSystemStatusRequest",
       "responseSchema": "ExternalSystemView",
       "successStatus": "200",
-      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.transitionPlatformExternalSystemStatus",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.transitionPlatformExternalSystemStatus"
     },
     {
       "operationId": "transitionPlatformProviderProfileStatus",
@@ -8179,20 +8046,27 @@
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/status",
       "face": "platform-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "PLATFORM_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "providerCode"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "providerCode"
+      ],
       "queryParameters": [],
       "requestSchema": "ProviderProfileStatusRequest",
       "responseSchema": "ProviderProfileView",
       "successStatus": "200",
-      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.transitionPlatformProviderProfileStatus",
-      "databaseOperationBudget": {"kind":"FIXED","max":20,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":20,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.transitionPlatformProviderProfileStatus"
     },
     {
       "operationId": "getPlatformProviderProfileBindings",
@@ -8200,27 +8074,95 @@
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/owner-bindings",
       "face": "platform-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "PLATFORM_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "providerCode"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "providerCode"
+      ],
       "queryParameters": [
-        {"name": "bindingName", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 120, "description": "Case-insensitive substring matched server-side against the binding display name."}},
-        {"name": "nodeQueryText", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 120, "description": "Case-insensitive substring matched server-side against the business node display name, path, or node reference."}},
-        {"name": "sortKey", "in": "query", "required": false, "schema": {"type": "string", "enum": ["BINDING_NAME", "NODE", "BUSINESS", "EXTERNAL_OWNER_ID", "STATUS"]}},
-        {"name": "sortDirection", "in": "query", "required": false, "schema": {"type": "string", "enum": ["ASC", "DESC"], "default": "ASC"}},
-        {"name": "page", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1}},
-        {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 100}}
+        {
+          "name": "bindingName",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Case-insensitive substring matched server-side against the binding display name."
+          }
+        },
+        {
+          "name": "nodeQueryText",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Case-insensitive substring matched server-side against the business node display name, path, or node reference."
+          }
+        },
+        {
+          "name": "sortKey",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "BINDING_NAME",
+              "NODE",
+              "BUSINESS",
+              "EXTERNAL_OWNER_ID",
+              "STATUS"
+            ]
+          }
+        },
+        {
+          "name": "sortDirection",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "ASC",
+              "DESC"
+            ],
+            "default": "ASC"
+          }
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
       ],
       "requestSchema": "NoBody",
       "responseSchema": "OwnerBindingPage",
       "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformProviderProfileBindings",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformProviderProfileBindings"
     },
     {
       "operationId": "getPlatformOwnerBindingDetail",
@@ -8228,20 +8170,27 @@
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
       "face": "platform-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "PLATFORM_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "bindingRef"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "bindingRef"
+      ],
       "queryParameters": [],
       "requestSchema": "NoBody",
       "responseSchema": "OwnerBindingView",
       "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformOwnerBindingDetail",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformOwnerBindingDetail"
     },
     {
       "operationId": "updatePlatformOwnerBinding",
@@ -8249,20 +8198,27 @@
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
       "face": "platform-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "PLATFORM_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "bindingRef"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "bindingRef"
+      ],
       "queryParameters": [],
       "requestSchema": "OwnerBindingUpdateRequest",
       "responseSchema": "OwnerBindingView",
       "successStatus": "200",
-      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.updatePlatformOwnerBinding",
-      "databaseOperationBudget": {"kind":"FIXED","max":24,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":24,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.updatePlatformOwnerBinding"
     },
     {
       "operationId": "deletePlatformOwnerBinding",
@@ -8270,20 +8226,27 @@
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
       "face": "platform-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "PLATFORM_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "bindingRef"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "bindingRef"
+      ],
       "queryParameters": [],
       "requestSchema": "OwnerBindingUpdateRequest",
       "responseSchema": "OwnerBindingView",
       "successStatus": "200",
-      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.deletePlatformOwnerBinding",
-      "databaseOperationBudget": {"kind":"FIXED","max":24,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":24,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.deletePlatformOwnerBinding"
     },
     {
       "operationId": "createPlatformOwnerBinding",
@@ -8291,20 +8254,26 @@
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings",
       "face": "platform-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "PLATFORM_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey"],
+      "pathParameters": [
+        "groupWorkspaceKey"
+      ],
       "queryParameters": [],
       "requestSchema": "OwnerBindingCreateRequest",
       "responseSchema": "OwnerBindingView",
       "successStatus": "200",
-      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createPlatformOwnerBinding",
-      "databaseOperationBudget": {"kind":"FIXED","max":22,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":22,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createPlatformOwnerBinding"
     },
     {
       "operationId": "getPlatformExternalCapabilityDictionary",
@@ -8312,7 +8281,9 @@
       "path": "/api/platform/external-capability-dictionary",
       "face": "platform-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "PLATFORM_SESSION_COOKIE",
@@ -8321,11 +8292,13 @@
       "requestSchema": "NoBody",
       "responseSchema": "CapabilityDictionary",
       "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getPlatformExternalCapabilityDictionary",
-      "databaseOperationBudget": {"kind":"FIXED","max":4,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":4,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getPlatformExternalCapabilityDictionary"
     },
     {
       "operationId": "getOperationsExternalCapabilityDictionary",
@@ -8333,7 +8306,9 @@
       "path": "/api/operations/external-capability-dictionary",
       "face": "operations-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
@@ -8342,11 +8317,13 @@
       "requestSchema": "NoBody",
       "responseSchema": "CapabilityDictionary",
       "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsExternalCapabilityDictionary",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsExternalCapabilityDictionary"
     },
     {
       "operationId": "getOperationsExternalProviderCandidates",
@@ -8354,24 +8331,63 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/external-provider-candidates",
       "face": "operations-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey"],
+      "pathParameters": [
+        "groupWorkspaceKey"
+      ],
       "queryParameters": [
-        {"name": "capabilityClass", "in": "query", "required": false, "schema": {"type": "string", "enum": ["MASTER_DATA_SYNC", "MEMBER_BENEFIT", "GROUP_BUY", "TAKEAWAY", "INVENTORY_SYNC", "TAKEAWAY_DELIVERY", "ORDER_SYNC"]}},
-        {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "description": "cursor"}},
-        {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 100}}
+        {
+          "name": "capabilityClass",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "MASTER_DATA_SYNC",
+              "MEMBER_BENEFIT",
+              "GROUP_BUY",
+              "TAKEAWAY",
+              "INVENTORY_SYNC",
+              "TAKEAWAY_DELIVERY",
+              "ORDER_SYNC"
+            ]
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "description": "cursor"
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
       ],
       "requestSchema": "NoBody",
       "responseSchema": "ExternalProviderCandidatePage",
       "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsExternalProviderCandidates",
-      "databaseOperationBudget": {"kind":"FIXED","max":7,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":7,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsExternalProviderCandidates"
     },
     {
       "operationId": "getOperationsOwnerBindingDetail",
@@ -8379,20 +8395,27 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
       "face": "operations-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "channelRef"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "channelRef"
+      ],
       "queryParameters": [],
       "requestSchema": "NoBody",
       "responseSchema": "OwnerBindingView",
       "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOwnerBindingDetail",
-      "databaseOperationBudget": {"kind":"FIXED","max":9,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":9,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsOwnerBindingDetail"
     },
     {
       "operationId": "createOperationsOwnerBinding",
@@ -8400,41 +8423,27 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
       "face": "operations-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "channelRef"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "channelRef"
+      ],
       "queryParameters": [],
       "requestSchema": "OwnerBindingCreateRequest",
       "responseSchema": "OwnerBindingView",
       "successStatus": "200",
-      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsOwnerBinding",
-      "databaseOperationBudget": {"kind":"FIXED","max":20,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":20,"reason":"CP-05 maximum database operation count across three runs"}]}
-    },
-    {
-      "operationId": "updateOperationsOwnerBinding",
-      "method": "PATCH",
-      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
-      "face": "operations-admin",
-      "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
-      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
-      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
-      "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "channelRef"],
-      "queryParameters": [],
-      "requestSchema": "OwnerBindingUpdateRequest",
-      "responseSchema": "OwnerBindingView",
-      "successStatus": "200",
-      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
-      "expectedVersion": "REQUIRED",
-      "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.updateOperationsOwnerBinding",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsOwnerBinding"
     },
     {
       "operationId": "deleteOperationsOwnerBinding",
@@ -8442,20 +8451,27 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
       "face": "operations-admin",
       "owner": "collaboration",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "channelRef"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "channelRef"
+      ],
       "queryParameters": [],
       "requestSchema": "OwnerBindingUpdateRequest",
       "responseSchema": "OwnerBindingView",
       "successStatus": "200",
-      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.deleteOperationsOwnerBinding",
-      "databaseOperationBudget": {"kind":"FIXED","max":0,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":0,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.deleteOperationsOwnerBinding"
     },
     {
       "operationId": "getOperationsBusinessChannelTemplates",
@@ -8463,24 +8479,52 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates",
       "face": "operations-admin",
       "owner": "business-channel",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey"],
+      "pathParameters": [
+        "groupWorkspaceKey"
+      ],
       "queryParameters": [
-        {"name": "projectRef", "in": "query", "required": false, "schema": {"type": "string", "format": "uuid"}},
-        {"name": "sortKey", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/BusinessChannelTemplateSortKey"}},
-        {"name": "sortDirection", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/SortDirection"}}
+        {
+          "name": "projectRef",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "sortKey",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/BusinessChannelTemplateSortKey"
+          }
+        },
+        {
+          "name": "sortDirection",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/SortDirection"
+          }
+        }
       ],
       "requestSchema": "NoBody",
       "responseSchema": "BusinessChannelTemplatePage",
       "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsBusinessChannelTemplates",
-      "databaseOperationBudget": {"kind":"FIXED","max":9,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":9,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsBusinessChannelTemplates"
     },
     {
       "operationId": "createOperationsBusinessChannelTemplate",
@@ -8488,20 +8532,26 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates",
       "face": "operations-admin",
       "owner": "business-channel",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey"],
+      "pathParameters": [
+        "groupWorkspaceKey"
+      ],
       "queryParameters": [],
       "requestSchema": "BusinessChannelTemplateCreateRequest",
       "responseSchema": "BusinessChannelTemplateView",
       "successStatus": "200",
-      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsBusinessChannelTemplate",
-      "databaseOperationBudget": {"kind":"FIXED","max":19,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":19,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsBusinessChannelTemplate"
     },
     {
       "operationId": "updateOperationsBusinessChannelTemplate",
@@ -8509,20 +8559,27 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}",
       "face": "operations-admin",
       "owner": "business-channel",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "templateRef"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "templateRef"
+      ],
       "queryParameters": [],
       "requestSchema": "BusinessChannelTemplateUpdateRequest",
       "responseSchema": "BusinessChannelTemplateView",
       "successStatus": "200",
-      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.updateOperationsBusinessChannelTemplate",
-      "databaseOperationBudget": {"kind":"FIXED","max":19,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":19,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.updateOperationsBusinessChannelTemplate"
     },
     {
       "operationId": "transitionOperationsBusinessChannelTemplateStatus",
@@ -8530,20 +8587,27 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/status",
       "face": "operations-admin",
       "owner": "business-channel",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "templateRef"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "templateRef"
+      ],
       "queryParameters": [],
       "requestSchema": "BusinessChannelTemplateStatusRequest",
       "responseSchema": "BusinessChannelTemplateView",
       "successStatus": "200",
-      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.transitionOperationsBusinessChannelTemplateStatus",
-      "databaseOperationBudget": {"kind":"FIXED","max":22,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":22,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.transitionOperationsBusinessChannelTemplateStatus"
     },
     {
       "operationId": "getOperationsStoreBusinessChannelTemplateCandidates",
@@ -8551,27 +8615,80 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-template-candidates",
       "face": "operations-admin",
       "owner": "business-channel",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey"],
+      "pathParameters": [
+        "groupWorkspaceKey"
+      ],
       "queryParameters": [
-        {"name": "projectRef", "in": "query", "required": false, "schema": {"type": "string", "format": "uuid"}},
-        {"name": "storeRef", "in": "query", "required": false, "schema": {"type": "string", "format": "uuid"}},
-        {"name": "sortKey", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/BusinessChannelTemplateSortKey"}},
-        {"name": "sortDirection", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/SortDirection"}},
-        {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "description": "cursor"}},
-        {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 100}}
+        {
+          "name": "projectRef",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "storeRef",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "sortKey",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/BusinessChannelTemplateSortKey"
+          }
+        },
+        {
+          "name": "sortDirection",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/SortDirection"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "description": "cursor"
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
       ],
       "requestSchema": "NoBody",
       "responseSchema": "BusinessChannelTemplateCandidatePage",
       "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsStoreBusinessChannelTemplateCandidates",
-      "databaseOperationBudget": {"kind":"FIXED","max":10,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":10,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsStoreBusinessChannelTemplateCandidates"
     },
     {
       "operationId": "getOperationsProjectBusinessChannels",
@@ -8579,23 +8696,44 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/business-channels",
       "face": "operations-admin",
       "owner": "business-channel",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "projectRef"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "projectRef"
+      ],
       "queryParameters": [
-        {"name": "sortKey", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/BusinessChannelSortKey"}},
-        {"name": "sortDirection", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/SortDirection"}}
+        {
+          "name": "sortKey",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/BusinessChannelSortKey"
+          }
+        },
+        {
+          "name": "sortDirection",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/SortDirection"
+          }
+        }
       ],
       "requestSchema": "NoBody",
       "responseSchema": "BusinessChannelPage",
       "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsProjectBusinessChannels",
-      "databaseOperationBudget": {"kind":"FIXED","max":9,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":9,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsProjectBusinessChannels"
     },
     {
       "operationId": "getOperationsStoreBusinessChannels",
@@ -8603,23 +8741,44 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels",
       "face": "operations-admin",
       "owner": "business-channel",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "storeRef"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef"
+      ],
       "queryParameters": [
-        {"name": "sortKey", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/BusinessChannelSortKey"}},
-        {"name": "sortDirection", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/SortDirection"}}
+        {
+          "name": "sortKey",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/BusinessChannelSortKey"
+          }
+        },
+        {
+          "name": "sortDirection",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/SortDirection"
+          }
+        }
       ],
       "requestSchema": "NoBody",
       "responseSchema": "BusinessChannelPage",
       "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsStoreBusinessChannels",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsStoreBusinessChannels"
     },
     {
       "operationId": "createOperationsBusinessChannel",
@@ -8627,20 +8786,26 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels",
       "face": "operations-admin",
       "owner": "business-channel",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey"],
+      "pathParameters": [
+        "groupWorkspaceKey"
+      ],
       "queryParameters": [],
       "requestSchema": "BusinessChannelCreateRequest",
       "responseSchema": "BusinessChannelView",
       "successStatus": "200",
-      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.createOperationsBusinessChannel",
-      "databaseOperationBudget": {"kind":"FIXED","max":24,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":24,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.createOperationsBusinessChannel"
     },
     {
       "operationId": "getOperationsBusinessChannelDetail",
@@ -8648,20 +8813,27 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
       "face": "operations-admin",
       "owner": "business-channel",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "channelRef"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "channelRef"
+      ],
       "queryParameters": [],
       "requestSchema": "NoBody",
       "responseSchema": "BusinessChannelView",
       "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsBusinessChannelDetail",
-      "databaseOperationBudget": {"kind":"FIXED","max":9,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":9,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.getOperationsBusinessChannelDetail"
     },
     {
       "operationId": "updateOperationsBusinessChannel",
@@ -8669,20 +8841,27 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
       "face": "operations-admin",
       "owner": "business-channel",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "channelRef"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "channelRef"
+      ],
       "queryParameters": [],
       "requestSchema": "BusinessChannelUpdateRequest",
       "responseSchema": "BusinessChannelView",
       "successStatus": "200",
-      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.updateOperationsBusinessChannel",
-      "databaseOperationBudget": {"kind":"FIXED","max":8,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":8,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.updateOperationsBusinessChannel"
     },
     {
       "operationId": "transitionOperationsBusinessChannelStatus",
@@ -8690,20 +8869,27 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
       "face": "operations-admin",
       "owner": "business-channel",
-      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
       "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
       "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "channelRef"],
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "channelRef"
+      ],
       "queryParameters": [],
       "requestSchema": "BusinessChannelStatusRequest",
       "responseSchema": "BusinessChannelView",
       "successStatus": "200",
-      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
-      "focusedTestId": "edge.transitionOperationsBusinessChannelStatus",
-      "databaseOperationBudget": {"kind":"FIXED","max":21,"measurementScenarioIds":["performance.operation-budget-exact-set"],"history":[{"from":null,"to":21,"reason":"CP-05 maximum database operation count across three runs"}]}
+      "focusedTestId": "edge.transitionOperationsBusinessChannelStatus"
     }
   ],
   "scenarioOperationCrosswalk": [
@@ -10386,34 +10572,276 @@
     {
       "scenarioId": "R5-EXTERNAL-COLLABORATION",
       "orderedSteps": [
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-01", "operationId": "getPlatformExternalCollaborationTree", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getPlatformExternalCollaborationTree.positive", "negativeProofRef": "edge.getPlatformExternalCollaborationTree.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-02", "operationId": "getPlatformExternalSystemDetail", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getPlatformExternalSystemDetail.positive", "negativeProofRef": "edge.getPlatformExternalSystemDetail.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-03", "operationId": "getPlatformProviderProfileDetail", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getPlatformProviderProfileDetail.positive", "negativeProofRef": "edge.getPlatformProviderProfileDetail.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-04", "operationId": "transitionPlatformExternalSystemStatus", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.transitionPlatformExternalSystemStatus.positive", "negativeProofRef": "edge.transitionPlatformExternalSystemStatus.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-05", "operationId": "transitionPlatformProviderProfileStatus", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.transitionPlatformProviderProfileStatus.positive", "negativeProofRef": "edge.transitionPlatformProviderProfileStatus.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-06", "operationId": "getPlatformProviderProfileBindings", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getPlatformProviderProfileBindings.positive", "negativeProofRef": "edge.getPlatformProviderProfileBindings.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-07", "operationId": "getPlatformOwnerBindingDetail", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getPlatformOwnerBindingDetail.positive", "negativeProofRef": "edge.getPlatformOwnerBindingDetail.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-08", "operationId": "updatePlatformOwnerBinding", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.updatePlatformOwnerBinding.positive", "negativeProofRef": "edge.updatePlatformOwnerBinding.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-09", "operationId": "deletePlatformOwnerBinding", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.deletePlatformOwnerBinding.positive", "negativeProofRef": "edge.deletePlatformOwnerBinding.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-10", "operationId": "createPlatformOwnerBinding", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.createPlatformOwnerBinding.positive", "negativeProofRef": "edge.createPlatformOwnerBinding.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-11", "operationId": "getPlatformExternalCapabilityDictionary", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getPlatformExternalCapabilityDictionary.positive", "negativeProofRef": "edge.getPlatformExternalCapabilityDictionary.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-12", "operationId": "getOperationsExternalCapabilityDictionary", "face": "operations-admin", "owner": "collaboration", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsExternalCapabilityDictionary.positive", "negativeProofRef": "edge.getOperationsExternalCapabilityDictionary.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-13", "operationId": "getOperationsExternalProviderCandidates", "face": "operations-admin", "owner": "collaboration", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsExternalProviderCandidates.positive", "negativeProofRef": "edge.getOperationsExternalProviderCandidates.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-14", "operationId": "getOperationsOwnerBindingDetail", "face": "operations-admin", "owner": "collaboration", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsOwnerBindingDetail.positive", "negativeProofRef": "edge.getOperationsOwnerBindingDetail.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-15", "operationId": "createOperationsOwnerBinding", "face": "operations-admin", "owner": "collaboration", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.createOperationsOwnerBinding.positive", "negativeProofRef": "edge.createOperationsOwnerBinding.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-16", "operationId": "updateOperationsOwnerBinding", "face": "operations-admin", "owner": "collaboration", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.updateOperationsOwnerBinding.positive", "negativeProofRef": "edge.updateOperationsOwnerBinding.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-17", "operationId": "deleteOperationsOwnerBinding", "face": "operations-admin", "owner": "collaboration", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.deleteOperationsOwnerBinding.positive", "negativeProofRef": "edge.deleteOperationsOwnerBinding.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-18", "operationId": "getOperationsBusinessChannelTemplates", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsBusinessChannelTemplates.positive", "negativeProofRef": "edge.getOperationsBusinessChannelTemplates.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-19", "operationId": "createOperationsBusinessChannelTemplate", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.createOperationsBusinessChannelTemplate.positive", "negativeProofRef": "edge.createOperationsBusinessChannelTemplate.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-20", "operationId": "updateOperationsBusinessChannelTemplate", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.updateOperationsBusinessChannelTemplate.positive", "negativeProofRef": "edge.updateOperationsBusinessChannelTemplate.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-21", "operationId": "transitionOperationsBusinessChannelTemplateStatus", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.transitionOperationsBusinessChannelTemplateStatus.positive", "negativeProofRef": "edge.transitionOperationsBusinessChannelTemplateStatus.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-22", "operationId": "getOperationsStoreBusinessChannelTemplateCandidates", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsStoreBusinessChannelTemplateCandidates.positive", "negativeProofRef": "edge.getOperationsStoreBusinessChannelTemplateCandidates.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-23", "operationId": "getOperationsProjectBusinessChannels", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsProjectBusinessChannels.positive", "negativeProofRef": "edge.getOperationsProjectBusinessChannels.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-24", "operationId": "getOperationsStoreBusinessChannels", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsStoreBusinessChannels.positive", "negativeProofRef": "edge.getOperationsStoreBusinessChannels.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-25", "operationId": "createOperationsBusinessChannel", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.createOperationsBusinessChannel.positive", "negativeProofRef": "edge.createOperationsBusinessChannel.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-26", "operationId": "getOperationsBusinessChannelDetail", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsBusinessChannelDetail.positive", "negativeProofRef": "edge.getOperationsBusinessChannelDetail.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-27", "operationId": "updateOperationsBusinessChannel", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.updateOperationsBusinessChannel.positive", "negativeProofRef": "edge.updateOperationsBusinessChannel.negative"},
-        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-28", "operationId": "transitionOperationsBusinessChannelStatus", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.transitionOperationsBusinessChannelStatus.positive", "negativeProofRef": "edge.transitionOperationsBusinessChannelStatus.negative"}
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-01",
+          "operationId": "getPlatformExternalCollaborationTree",
+          "face": "platform-admin",
+          "owner": "collaboration",
+          "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getPlatformExternalCollaborationTree.positive",
+          "negativeProofRef": "edge.getPlatformExternalCollaborationTree.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-02",
+          "operationId": "getPlatformExternalSystemDetail",
+          "face": "platform-admin",
+          "owner": "collaboration",
+          "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getPlatformExternalSystemDetail.positive",
+          "negativeProofRef": "edge.getPlatformExternalSystemDetail.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-03",
+          "operationId": "getPlatformProviderProfileDetail",
+          "face": "platform-admin",
+          "owner": "collaboration",
+          "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getPlatformProviderProfileDetail.positive",
+          "negativeProofRef": "edge.getPlatformProviderProfileDetail.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-04",
+          "operationId": "transitionPlatformExternalSystemStatus",
+          "face": "platform-admin",
+          "owner": "collaboration",
+          "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.transitionPlatformExternalSystemStatus.positive",
+          "negativeProofRef": "edge.transitionPlatformExternalSystemStatus.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-05",
+          "operationId": "transitionPlatformProviderProfileStatus",
+          "face": "platform-admin",
+          "owner": "collaboration",
+          "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.transitionPlatformProviderProfileStatus.positive",
+          "negativeProofRef": "edge.transitionPlatformProviderProfileStatus.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-06",
+          "operationId": "getPlatformProviderProfileBindings",
+          "face": "platform-admin",
+          "owner": "collaboration",
+          "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getPlatformProviderProfileBindings.positive",
+          "negativeProofRef": "edge.getPlatformProviderProfileBindings.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-07",
+          "operationId": "getPlatformOwnerBindingDetail",
+          "face": "platform-admin",
+          "owner": "collaboration",
+          "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getPlatformOwnerBindingDetail.positive",
+          "negativeProofRef": "edge.getPlatformOwnerBindingDetail.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-08",
+          "operationId": "updatePlatformOwnerBinding",
+          "face": "platform-admin",
+          "owner": "collaboration",
+          "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.updatePlatformOwnerBinding.positive",
+          "negativeProofRef": "edge.updatePlatformOwnerBinding.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-09",
+          "operationId": "deletePlatformOwnerBinding",
+          "face": "platform-admin",
+          "owner": "collaboration",
+          "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.deletePlatformOwnerBinding.positive",
+          "negativeProofRef": "edge.deletePlatformOwnerBinding.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-10",
+          "operationId": "createPlatformOwnerBinding",
+          "face": "platform-admin",
+          "owner": "collaboration",
+          "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.createPlatformOwnerBinding.positive",
+          "negativeProofRef": "edge.createPlatformOwnerBinding.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-11",
+          "operationId": "getPlatformExternalCapabilityDictionary",
+          "face": "platform-admin",
+          "owner": "collaboration",
+          "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getPlatformExternalCapabilityDictionary.positive",
+          "negativeProofRef": "edge.getPlatformExternalCapabilityDictionary.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-12",
+          "operationId": "getOperationsExternalCapabilityDictionary",
+          "face": "operations-admin",
+          "owner": "collaboration",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getOperationsExternalCapabilityDictionary.positive",
+          "negativeProofRef": "edge.getOperationsExternalCapabilityDictionary.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-13",
+          "operationId": "getOperationsExternalProviderCandidates",
+          "face": "operations-admin",
+          "owner": "collaboration",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getOperationsExternalProviderCandidates.positive",
+          "negativeProofRef": "edge.getOperationsExternalProviderCandidates.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-14",
+          "operationId": "getOperationsOwnerBindingDetail",
+          "face": "operations-admin",
+          "owner": "collaboration",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getOperationsOwnerBindingDetail.positive",
+          "negativeProofRef": "edge.getOperationsOwnerBindingDetail.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-15",
+          "operationId": "createOperationsOwnerBinding",
+          "face": "operations-admin",
+          "owner": "collaboration",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.createOperationsOwnerBinding.positive",
+          "negativeProofRef": "edge.createOperationsOwnerBinding.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-17",
+          "operationId": "deleteOperationsOwnerBinding",
+          "face": "operations-admin",
+          "owner": "collaboration",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.deleteOperationsOwnerBinding.positive",
+          "negativeProofRef": "edge.deleteOperationsOwnerBinding.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-18",
+          "operationId": "getOperationsBusinessChannelTemplates",
+          "face": "operations-admin",
+          "owner": "business-channel",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getOperationsBusinessChannelTemplates.positive",
+          "negativeProofRef": "edge.getOperationsBusinessChannelTemplates.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-19",
+          "operationId": "createOperationsBusinessChannelTemplate",
+          "face": "operations-admin",
+          "owner": "business-channel",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.createOperationsBusinessChannelTemplate.positive",
+          "negativeProofRef": "edge.createOperationsBusinessChannelTemplate.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-20",
+          "operationId": "updateOperationsBusinessChannelTemplate",
+          "face": "operations-admin",
+          "owner": "business-channel",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.updateOperationsBusinessChannelTemplate.positive",
+          "negativeProofRef": "edge.updateOperationsBusinessChannelTemplate.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-21",
+          "operationId": "transitionOperationsBusinessChannelTemplateStatus",
+          "face": "operations-admin",
+          "owner": "business-channel",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.transitionOperationsBusinessChannelTemplateStatus.positive",
+          "negativeProofRef": "edge.transitionOperationsBusinessChannelTemplateStatus.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-22",
+          "operationId": "getOperationsStoreBusinessChannelTemplateCandidates",
+          "face": "operations-admin",
+          "owner": "business-channel",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getOperationsStoreBusinessChannelTemplateCandidates.positive",
+          "negativeProofRef": "edge.getOperationsStoreBusinessChannelTemplateCandidates.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-23",
+          "operationId": "getOperationsProjectBusinessChannels",
+          "face": "operations-admin",
+          "owner": "business-channel",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getOperationsProjectBusinessChannels.positive",
+          "negativeProofRef": "edge.getOperationsProjectBusinessChannels.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-24",
+          "operationId": "getOperationsStoreBusinessChannels",
+          "face": "operations-admin",
+          "owner": "business-channel",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getOperationsStoreBusinessChannels.positive",
+          "negativeProofRef": "edge.getOperationsStoreBusinessChannels.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-25",
+          "operationId": "createOperationsBusinessChannel",
+          "face": "operations-admin",
+          "owner": "business-channel",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.createOperationsBusinessChannel.positive",
+          "negativeProofRef": "edge.createOperationsBusinessChannel.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-26",
+          "operationId": "getOperationsBusinessChannelDetail",
+          "face": "operations-admin",
+          "owner": "business-channel",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getOperationsBusinessChannelDetail.positive",
+          "negativeProofRef": "edge.getOperationsBusinessChannelDetail.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-27",
+          "operationId": "updateOperationsBusinessChannel",
+          "face": "operations-admin",
+          "owner": "business-channel",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.updateOperationsBusinessChannel.positive",
+          "negativeProofRef": "edge.updateOperationsBusinessChannel.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-28",
+          "operationId": "transitionOperationsBusinessChannelStatus",
+          "face": "operations-admin",
+          "owner": "business-channel",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.transitionOperationsBusinessChannelStatus.positive",
+          "negativeProofRef": "edge.transitionOperationsBusinessChannelStatus.negative"
+        }
       ],
       "candidateDispositions": []
     }
@@ -12553,6 +12981,9 @@
     "BusinessChannelTemplateView": {
       "ref": "BusinessChannelTemplateView"
     },
+    "BusinessChannelTemplateSortKey": {
+      "ref": "BusinessChannelTemplateSortKey"
+    },
     "BusinessChannelTemplatePage": {
       "ref": "BusinessChannelTemplatePage"
     },
@@ -12571,6 +13002,9 @@
     "BusinessChannelView": {
       "ref": "BusinessChannelView"
     },
+    "BusinessChannelSortKey": {
+      "ref": "BusinessChannelSortKey"
+    },
     "BusinessChannelPage": {
       "ref": "BusinessChannelPage"
     },
@@ -12579,7 +13013,7 @@
     }
   },
   "componentReferenceClosure": {
-    "baselineCount": 192,
+    "baselineCount": 194,
     "operationDirectReferenceCount": 147,
     "directReferencesMissingFromBaseline": [],
     "supportingOnly": [
@@ -12604,54 +13038,8 @@
   "componentOverrides": {
     "OwnerBindingPage": {
       "removeProperties": [
-        "nextCursor",
-        "total"
-      ],
-      "required": [
-        "metadata",
-        "items"
-      ],
-      "properties": {
-        "metadata": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "queryText",
-            "page",
-            "pageSize",
-            "total"
-          ],
-          "properties": {
-            "queryText": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "maxLength": 120
-            },
-            "page": {
-              "type": "integer",
-              "minimum": 1
-            },
-            "pageSize": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100
-            },
-            "total": {
-              "type": "integer",
-              "format": "int64",
-              "minimum": 0
-            }
-          }
-        },
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/components/schemas/OwnerBindingView"
-          }
-        }
-      }
+        "nextCursor"
+      ]
     },
     "BusinessChannelTemplatePage": {
       "removeProperties": [
@@ -12684,6 +13072,26 @@
           "items": {
             "$ref": "#/components/schemas/BusinessChannelView"
           }
+        }
+      }
+    },
+    "BusinessChannelView": {
+      "requiredAdditions": [
+        "bindingStatus",
+        "bindingStatusDisplayName"
+      ],
+      "properties": {
+        "bindingStatus": {
+          "type": "string",
+          "enum": [
+            "NOT_REQUIRED",
+            "UNBOUND",
+            "BOUND"
+          ]
+        },
+        "bindingStatusDisplayName": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },
@@ -13722,11 +14130,11 @@
   "projectionState": {
     "status": "MATERIALIZED",
     "pipeline": "R24_P3C",
-    "sourceOperationCount": 149,
-    "operationCount": 181,
+    "sourceOperationCount": 148,
+    "operationCount": 180,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 108,
+      "operations-admin": 107,
       "public": 12
     }
   }

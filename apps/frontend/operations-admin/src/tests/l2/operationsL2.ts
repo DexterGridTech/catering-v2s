@@ -8,6 +8,20 @@ function currentVisibleOption(page: Page, label?: string) {
   return label ? options.filter({hasText: label}).last() : options.last();
 }
 
+/**
+ * Ant Design renders menu actions in a portal separate from the trigger and
+ * keeps closing portals in the DOM. Resolve the current visible portal before
+ * selecting its real interactive menu item; callers retain command-completion
+ * ownership rather than duplicating a click helper per feature suite.
+ */
+export async function visibleOperationsMenuItem(page: Page, label: string) {
+  const dropdown = page.locator('.ant-dropdown:not(.ant-dropdown-hidden):visible').last();
+  await expect(dropdown).toBeVisible();
+  const item = dropdown.getByRole('menuitem', {name: label, exact: true});
+  await expect(item).toBeVisible();
+  return item;
+}
+
 /** Select an exact owner-returned option and prove it became this control's value. */
 export async function selectOperationsOption(page: Page, testId: string, label?: string): Promise<void> {
   const control = page.getByTestId(testId);

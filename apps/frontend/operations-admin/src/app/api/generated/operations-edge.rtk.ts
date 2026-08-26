@@ -862,14 +862,6 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
-    updateOperationsOwnerBinding: (pathParameters: FaceOperationContracts["updateOperationsOwnerBinding"]["path"], options: FaceOperationOptions<"updateOperationsOwnerBinding">): FaceOperationRequest<"updateOperationsOwnerBinding"> => ({
-      operationId: "updateOperationsOwnerBinding",
-      method: "PATCH",
-      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
-      pathParameters,
-      requiresSession: true,
-      ...options,
-    }),
     verifyOperationsWorkspaceOtp: (pathParameters: FaceOperationContracts["verifyOperationsWorkspaceOtp"]["path"], options: FaceOperationOptions<"verifyOperationsWorkspaceOtp">): FaceOperationRequest<"verifyOperationsWorkspaceOtp"> => ({
       operationId: "verifyOperationsWorkspaceOtp",
       method: "POST",
@@ -1310,10 +1302,6 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     updateOperationsOrganizationTenant: build.mutation<FaceOperationContracts["updateOperationsOrganizationTenant"]["response"], FaceOperationRequest<"updateOperationsOrganizationTenant">>({
-      query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
-    }),
-    updateOperationsOwnerBinding: build.mutation<FaceOperationContracts["updateOperationsOwnerBinding"]["response"], FaceOperationRequest<"updateOperationsOwnerBinding">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),

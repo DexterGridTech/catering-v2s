@@ -201,45 +201,56 @@ export function WorkspaceInvitationPanel({
     pageSize: 50,
     keyOf: role => role.id,
   });
+  const {
+    acceptPage: acceptOrganizationCandidatePage,
+    debouncedQueryText: organizationCandidateQueryText,
+    items: organizationCandidateItems,
+    onPopupScroll: onOrganizationCandidatePopupScroll,
+    page: organizationCandidatePage,
+    pageSize: organizationCandidatePageSize,
+  } = organizationCandidates;
+  const {
+    acceptPage: acceptRoleCandidatePage,
+    debouncedQueryText: roleCandidateQueryText,
+    items: roleCandidateItems,
+    onPopupScroll: onRoleCandidatePopupScroll,
+    page: roleCandidatePage,
+    pageSize: roleCandidatePageSize,
+  } = roleCandidates;
   const organizationCandidateResult = useWorkspaceInvitationCandidates({
     targetType,
     queryContext,
     subjectType: 'ORGANIZATION',
     candidateUsage: 'LIST_FILTER',
-    queryText: organizationCandidates.debouncedQueryText,
-    page: organizationCandidates.page,
-    pageSize: organizationCandidates.pageSize,
+    queryText: organizationCandidateQueryText,
+    page: organizationCandidatePage,
+    pageSize: organizationCandidatePageSize,
   });
   const roleCandidateResult = useWorkspaceInvitationCandidates({
     targetType,
     queryContext,
     subjectType: 'ROLE',
     candidateUsage: 'LIST_FILTER',
-    queryText: roleCandidates.debouncedQueryText,
-    page: roleCandidates.page,
-    pageSize: roleCandidates.pageSize,
+    queryText: roleCandidateQueryText,
+    page: roleCandidatePage,
+    pageSize: roleCandidatePageSize,
   });
   useEffect(() => {
     if (!organizationCandidateResult.currentData) return;
     const items = organizationCandidateResult.currentData.organizations.filter(
       candidate => candidate.serviceNodeType === targetType,
     );
-    organizationCandidates.acceptPage(items, organizationCandidateResult.currentData.metadata);
-  }, [
-    organizationCandidateResult.currentData,
-    organizationCandidates.acceptPage,
-    organizationCandidates.page,
-    targetType,
-  ]);
+    acceptOrganizationCandidatePage(items, organizationCandidateResult.currentData.metadata);
+  }, [organizationCandidateResult.currentData, acceptOrganizationCandidatePage, organizationCandidatePage, targetType]);
   useEffect(() => {
     if (!roleCandidateResult.currentData) return;
-    roleCandidates.acceptPage(roleCandidateResult.currentData.roles, roleCandidateResult.currentData.metadata);
-  }, [roleCandidateResult.currentData, roleCandidates.acceptPage, roleCandidates.page]);
-  const organizationOptions = organizationCandidates.items.map(candidate => ({
+    acceptRoleCandidatePage(roleCandidateResult.currentData.roles, roleCandidateResult.currentData.metadata);
+  }, [acceptRoleCandidatePage, roleCandidatePage, roleCandidateResult.currentData]);
+  const organizationOptions = organizationCandidateItems.map(candidate => ({
     value: candidate.organizationRef,
     label: <NameCodePathText value={candidate.path} />,
   }));
-  const roleOptions = roleCandidates.items.map(role => ({value: role.id, label: role.name}));
+  const roleOptions = roleCandidateItems.map(role => ({value: role.id, label: role.name}));
   const selected = detail.target;
   const columns = useMemo<ProColumns<WorkspaceInvitation>[]>(
     () => [
@@ -281,8 +292,8 @@ export function WorkspaceInvitationPanel({
           showSearch: true,
           filterOption: false,
           onSearch: setOrganizationCandidateQuery,
-          onPopupScroll: (event: Parameters<typeof organizationCandidates.onPopupScroll>[0]) =>
-            organizationCandidates.onPopupScroll(event, organizationCandidateResult.isFetching),
+          onPopupScroll: (event: Parameters<typeof onOrganizationCandidatePopupScroll>[0]) =>
+            onOrganizationCandidatePopupScroll(event, organizationCandidateResult.isFetching),
           options: organizationOptions,
           loading: organizationCandidateResult.isFetching,
           allowClear: true,
@@ -299,8 +310,8 @@ export function WorkspaceInvitationPanel({
           showSearch: true,
           filterOption: false,
           onSearch: setRoleCandidateQuery,
-          onPopupScroll: (event: Parameters<typeof roleCandidates.onPopupScroll>[0]) =>
-            roleCandidates.onPopupScroll(event, roleCandidateResult.isFetching),
+          onPopupScroll: (event: Parameters<typeof onRoleCandidatePopupScroll>[0]) =>
+            onRoleCandidatePopupScroll(event, roleCandidateResult.isFetching),
           options: roleOptions,
           loading: roleCandidateResult.isFetching,
           allowClear: true,
@@ -389,7 +400,15 @@ export function WorkspaceInvitationPanel({
         render: (_, value) => time(value.createdAt),
       },
     ],
-    [detail, organizationCandidateResult.isFetching, organizationOptions, roleCandidateResult.isFetching, roleOptions],
+    [
+      detail,
+      onOrganizationCandidatePopupScroll,
+      onRoleCandidatePopupScroll,
+      organizationCandidateResult.isFetching,
+      organizationOptions,
+      roleCandidateResult.isFetching,
+      roleOptions,
+    ],
   );
 
   return (

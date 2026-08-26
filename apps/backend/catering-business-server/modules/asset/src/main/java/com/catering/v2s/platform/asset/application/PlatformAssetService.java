@@ -839,19 +839,17 @@ public class PlatformAssetService
         LinkedHashSet<UUID> distinct = new LinkedHashSet<>();
         for (UUID assetRef : assetRefs) if (assetRef != null) distinct.add(assetRef);
         LinkedHashSet<UUID> held = transactionCatalogAssetLocks();
-        distinct.stream()
-                .sorted()
-                .forEach(assetRef -> {
-                    if (held != null && held.contains(assetRef)) return;
-                    jdbc.query(
-                            "SELECT pg_advisory_xact_lock(?, ?)",
-                            statement -> {
-                                statement.setInt(1, (int) (assetRef.getMostSignificantBits() >>> 32));
-                                statement.setInt(2, (int) assetRef.getLeastSignificantBits());
-                            },
-                            result -> null);
-                    if (held != null) held.add(assetRef);
-                });
+        distinct.stream().sorted().forEach(assetRef -> {
+            if (held != null && held.contains(assetRef)) return;
+            jdbc.query(
+                    "SELECT pg_advisory_xact_lock(?, ?)",
+                    statement -> {
+                        statement.setInt(1, (int) (assetRef.getMostSignificantBits() >>> 32));
+                        statement.setInt(2, (int) assetRef.getLeastSignificantBits());
+                    },
+                    result -> null);
+            if (held != null) held.add(assetRef);
+        });
     }
 
     @SuppressWarnings("unchecked")

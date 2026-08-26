@@ -19,14 +19,21 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 
 /** Non-production server-canonical HTTP completion metric source for isolated Seed and backend-acceptance runs. */
 public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
+    private static final Logger log = LoggerFactory.getLogger(HttpRequestMetricsInterceptor.class);
     private static final String STATE = HttpRequestMetricsInterceptor.class.getName();
     private static final Object EVENT_LOCK = new Object();
+    private static final Set<String> BACKEND_ACCEPTANCE_MEASUREMENT_SCENARIO_IDS =
+            Set.of("performance.normal-path", "performance.coverage-only");
     private final ObjectMapper mapper;
     private final Map<String, Definition> definitions;
     private final Mode mode;
@@ -106,6 +113,10 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
         Definition actual = definitions.get(method + " " + pattern);
         String assertedOperation = request.getHeader(mode.operationHeader());
         String assertedRoute = request.getHeader(mode.routeHeader());
+        String measurementScenarioId =
+                mode == Mode.BACKEND_ACCEPTANCE ? request.getHeader(mode.measurementScenarioHeader()) : null;
+        boolean measurementScenarioInvalid = mode == Mode.BACKEND_ACCEPTANCE
+                && !BACKEND_ACCEPTANCE_MEASUREMENT_SCENARIO_IDS.contains(measurementScenarioId);
         boolean credentialAuthorized = eventActive
                 && validSecret(request.getHeader(mode.secretHeader()))
                 && runId.equals(request.getHeader(mode.runIdHeader()));
@@ -138,7 +149,10 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
                         resolved,
                         lifecycle,
                         eventAuthorized,
-                        metadataMismatch));
+                        metadataMismatch,
+                        measurementScenarioInvalid,
+                        measurementScenarioId,
+                        new AtomicReference<>()));
         response.setHeader("X-Correlation-Id", correlationId);
         response.setHeader("X-Request-Id", requestId);
         return true;
@@ -168,7 +182,14 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
             event.put("operationId", state.actual().operationId());
             event.put("owner", state.actual().owner());
             event.put("consumerFace", state.actual().consumerFace());
+            if (mode == Mode.BACKEND_ACCEPTANCE) {
+                // This is test-observability metadata behind the same credential as the
+                // operation tuple. It deliberately records no fixture/body identity.
+                event.put("measurementScenarioId", state.measurementScenarioId());
+            }
             event.put("status", response.getStatus());
+            String failureCode = state.failureCode().get();
+            if (failureCode != null) event.put("failureCode", failureCode);
             event.put("measurementSchemaVersion", DatabaseOperationTracker.MEASUREMENT_SCHEMA_VERSION);
             event.put("measurementBasis", DatabaseOperationTracker.MEASUREMENT_BASIS);
             event.put("durationMillis", Math.max(0, (System.nanoTime() - state.startedAtNanos()) / 1_000_000));
@@ -215,12 +236,38 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
                     exception == null
                                     && response.getStatus() < 400
                                     && !state.metadataMismatch()
+                                    && !state.measurementScenarioInvalid()
                                     && !databaseCaptureHmacMissing
                             ? "SUCCEEDED"
                             : "FAILED");
             if (state.metadataMismatch()) event.put("observationError", mode.mismatchError());
+            if (state.measurementScenarioInvalid()) event.put("observationError", "MEASUREMENT_SCENARIO_ID_INVALID");
             if (databaseCaptureHmacMissing) event.put("observationError", "DB_OPERATION_HMAC_KEY_MISSING");
-            if (exception != null) event.put("observationError", "REQUEST_EXCEPTION");
+            if (exception != null) {
+                Throwable root = rootCause(exception);
+                String exceptionType = safeType(exception);
+                String rootCauseType = safeType(root);
+                String exceptionOrigin = safeOrigin(root);
+                event.put("observationError", "REQUEST_EXCEPTION");
+                event.put("exceptionType", exceptionType);
+                event.put("rootCauseType", rootCauseType);
+                event.put("exceptionOrigin", exceptionOrigin);
+                log.atWarn()
+                        .addKeyValue("event", "MANAGED_HTTP_REQUEST_EXCEPTION")
+                        .addKeyValue("operationId", state.actual().operationId())
+                        .addKeyValue("requestId", state.context().requestId())
+                        .addKeyValue("exceptionType", exceptionType)
+                        .addKeyValue("rootCauseType", rootCauseType)
+                        .addKeyValue("exceptionOrigin", exceptionOrigin)
+                        .log(
+                                "managed HTTP request failed operationId={} requestId={} exceptionType={} "
+                                        + "rootCauseType={} exceptionOrigin={}",
+                                state.actual().operationId(),
+                                state.context().requestId(),
+                                exceptionType,
+                                rootCauseType,
+                                exceptionOrigin);
+            }
             if (append(event)) {
                 appendDatabaseOperations(state, snapshot, response.getStatus());
                 appendStatementDictionary(snapshot.statementDictionary());
@@ -249,6 +296,18 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
     static boolean isManagedEventRequest(HttpServletRequest request) {
         Object value = request.getAttribute(STATE);
         return value instanceof State state && state.eventAuthorized();
+    }
+
+    /**
+     * Adds a finite, payload-free business failure classifier to the canonical managed completion event. The managed
+     * interceptor intentionally owns that artifact, so advice code must not rely on the separate normal-request
+     * completion observer when a Testcontainers, seed, or L2 run is active.
+     */
+    public static void freezeFailure(HttpServletRequest request, String failureCode) {
+        if (failureCode == null || !failureCode.matches("[A-Z0-9_:-]{1,128}"))
+            throw new IllegalArgumentException("invalid managed completion failure code");
+        Object value = request.getAttribute(STATE);
+        if (value instanceof State state) state.failureCode().compareAndSet(null, failureCode);
     }
 
     private void appendDatabaseOperations(State state, DatabaseOperationTracker.Snapshot snapshot, int status) {
@@ -342,6 +401,34 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
         return Collections.unmodifiableMap(result);
     }
 
+    private static Throwable rootCause(Throwable failure) {
+        Throwable current = failure;
+        while (current != null && current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current;
+    }
+
+    private static String safeType(Throwable failure) {
+        if (failure == null) return "none";
+        String value = failure.getClass().getSimpleName();
+        return value.matches("[A-Za-z0-9_$]{1,128}") ? value : "unknown";
+    }
+
+    private static String safeOrigin(Throwable failure) {
+        if (failure == null) return "unavailable";
+        for (StackTraceElement frame : failure.getStackTrace()) {
+            String className = frame.getClassName();
+            String methodName = frame.getMethodName();
+            if (className.startsWith("com.catering.v2s.")
+                    && className.matches("[A-Za-z0-9_.$]{1,240}")
+                    && methodName.matches("[A-Za-z0-9_$<>]{1,128}")) {
+                return className + "#" + methodName;
+            }
+        }
+        return "external";
+    }
+
     private static Map<String, Long> readBudgetCounts(ReadBudgetComponent.Snapshot snapshot) {
         Map<String, Long> result = new LinkedHashMap<>();
         for (ReadBudgetComponent.Component component : ReadBudgetComponent.Component.values()) {
@@ -426,6 +513,7 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
     private static boolean namespaceMatches(Mode mode, String namespace) {
         if (namespace == null) return false;
         if (mode == Mode.BACKEND_ACCEPTANCE) return namespace.matches("v2s-backend-acceptance-[a-z0-9-]{3,32}");
+        if (mode == Mode.L2) return namespace.matches("v2s_l2_[a-z0-9_]{3,64}");
         return namespace.matches("v2s-dev-[a-z0-9-]{3,32}");
     }
 
@@ -456,7 +544,8 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
                 "backend-acceptance",
                 "V2S_BACKEND_ACCEPTANCE",
                 "X-Backend-Acceptance",
-                "BACKEND_ACCEPTANCE_OPERATION_METADATA_MISMATCH");
+                "BACKEND_ACCEPTANCE_OPERATION_METADATA_MISMATCH"),
+        L2("browser-l2", "V2S_L2", "X-L2", "L2_OPERATION_METADATA_MISMATCH");
 
         private final String profile;
         private final String variablePrefix;
@@ -498,6 +587,10 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
         String routeHeader() {
             return headerPrefix + "-Route-Template";
         }
+
+        String measurementScenarioHeader() {
+            return headerPrefix + "-Measurement-Scenario-Id";
+        }
     }
 
     private record Definition(String operationId, String method, String path, String owner, String consumerFace) {}
@@ -512,5 +605,8 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
             Definition actual,
             RequestDiagnosticLifecycle.Lifecycle lifecycle,
             boolean eventAuthorized,
-            boolean metadataMismatch) {}
+            boolean metadataMismatch,
+            boolean measurementScenarioInvalid,
+            String measurementScenarioId,
+            AtomicReference<String> failureCode) {}
 }

@@ -260,17 +260,80 @@
                                 "factRef"
                               ]
                             }
+                          },
+                          "blockingReasons": {
+                            "type": "array",
+                            "description": "user-visible reasons the SKU cannot be voided",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "label",
+                                "count",
+                                "relatedItemNames"
+                              ],
+                              "properties": {
+                                "label": {
+                                  "type": "string",
+                                  "description": "business reason label",
+                                  "minLength": 1
+                                },
+                                "count": {
+                                  "type": "integer",
+                                  "description": "number of facts represented by the reason",
+                                  "minimum": 1
+                                },
+                                "relatedItemNames": {
+                                  "type": "array",
+                                  "description": "related catalog item names",
+                                  "items": {
+                                    "type": "string",
+                                    "description": "catalog item name"
+                                  }
+                                }
+                              }
+                            }
                           }
                         },
                         "required": [
                           "canVoid",
                           "blockingReferences",
-                          "dependentFacts"
+                          "dependentFacts",
+                          "blockingReasons"
+                        ],
+                        "allOf": [
+                          {
+                            "if": {
+                              "required": [
+                                "canVoid"
+                              ],
+                              "properties": {
+                                "canVoid": {
+                                  "const": false
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "blockingReasons"
+                              ],
+                              "properties": {
+                                "blockingReasons": {
+                                  "minItems": 1
+                                }
+                              }
+                            }
+                          }
                         ]
                       },
                       "version": {
                         "type": "integer",
                         "description": "design-bound field"
+                      },
+                      "updatedAt": {
+                        "type": "integer",
+                        "format": "epoch-millis",
+                        "description": "SKU update time"
                       },
                       "mediaRefs": {
                         "type": "array",
@@ -514,15 +577,6 @@
                             ],
                             "additionalProperties": false,
                             "properties": {
-                              "productionTagRefs": {
-                                "type": "array",
-                                "description": "production processing tag references",
-                                "items": {
-                                  "type": "string",
-                                  "format": "uuid",
-                                  "description": "production processing tag reference"
-                                }
-                              },
                               "productionDisplayName": {
                                 "type": [
                                   "string",
@@ -548,9 +602,7 @@
                                 "description": "optional preparation notes"
                               }
                             },
-                            "required": [
-                              "productionTagRefs"
-                            ],
+                            "required": [],
                             "description": "complete profile when mode is OVERRIDE; null when inheriting"
                           }
                         }
@@ -562,15 +614,6 @@
                         ],
                         "additionalProperties": false,
                         "properties": {
-                          "productionTagRefs": {
-                            "type": "array",
-                            "description": "production processing tag references",
-                            "items": {
-                              "type": "string",
-                              "format": "uuid",
-                              "description": "production processing tag reference"
-                            }
-                          },
                           "productionDisplayName": {
                             "type": [
                               "string",
@@ -596,9 +639,7 @@
                             "description": "optional preparation notes"
                           }
                         },
-                        "required": [
-                          "productionTagRefs"
-                        ],
+                        "required": [],
                         "description": "null means no effective preparation profile is configured"
                       },
                       "preparationSource": {
@@ -622,6 +663,7 @@
                       "status",
                       "voidAvailability",
                       "version",
+                      "updatedAt",
                       "mediaRefs",
                       "salesUnitOverrideRef",
                       "baseMeasureUnitOverrideRef",
@@ -631,6 +673,14 @@
                       "preparationSource"
                     ]
                   }
+                },
+                "productionTagRef": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "one optional item-level production tag"
                 },
                 "tagRefs": {
                   "type": "array",
@@ -960,10 +1010,6 @@
                     "SKU"
                   ]
                 },
-                "missingPriceCount": {
-                  "type": "integer",
-                  "description": "design-bound field"
-                },
                 "compositeGroups": {
                   "type": "array",
                   "description": "design-bound field",
@@ -1054,6 +1100,17 @@
                             "displayOrder": {
                               "type": "integer",
                               "description": "design-bound field"
+                            },
+                            "itemName": {
+                              "type": "string",
+                              "description": "component catalog item name"
+                            },
+                            "skuName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "description": "optional component SKU name"
                             }
                           },
                           "required": [
@@ -1066,7 +1123,9 @@
                             "default",
                             "extraPrice",
                             "status",
-                            "displayOrder"
+                            "displayOrder",
+                            "itemName",
+                            "skuName"
                           ]
                         }
                       }
@@ -1357,15 +1416,6 @@
                                   "type": "integer",
                                   "description": "option value business display order"
                                 },
-                                "addProductionTagRefs": {
-                                  "type": "array",
-                                  "description": "production processing tags added by this option value",
-                                  "items": {
-                                    "type": "string",
-                                    "format": "uuid",
-                                    "description": "production processing tag reference"
-                                  }
-                                },
                                 "instruction": {
                                   "type": [
                                     "string",
@@ -1386,8 +1436,7 @@
                               "required": [
                                 "definitionValueRef",
                                 "optionGroupDisplayOrder",
-                                "optionValueDisplayOrder",
-                                "addProductionTagRefs"
+                                "optionValueDisplayOrder"
                               ],
                               "description": "optional additive preparation change readback"
                             }
@@ -1397,6 +1446,14 @@
                     }
                   }
                 },
+                "categoryPathLabels": {
+                  "type": "array",
+                  "description": "owner-provided complete category path for the item detail",
+                  "items": {
+                    "type": "string",
+                    "description": "category path label"
+                  }
+                },
                 "preparationProfile": {
                   "type": [
                     "object",
@@ -1404,15 +1461,6 @@
                   ],
                   "additionalProperties": false,
                   "properties": {
-                    "productionTagRefs": {
-                      "type": "array",
-                      "description": "production processing tag references",
-                      "items": {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "production processing tag reference"
-                      }
-                    },
                     "productionDisplayName": {
                       "type": [
                         "string",
@@ -1438,15 +1486,14 @@
                       "description": "optional preparation notes"
                     }
                   },
-                  "required": [
-                    "productionTagRefs"
-                  ],
+                  "required": [],
                   "description": "null means no effective preparation profile is configured"
                 }
               },
               "required": [
                 "skuVariantDimensions",
                 "skus",
+                "productionTagRef",
                 "tagRefs",
                 "salesUnitRef",
                 "baseMeasureUnitRef",
@@ -1467,7 +1514,6 @@
                 "skuSummary",
                 "standardSalePrice",
                 "priceGranularity",
-                "missingPriceCount",
                 "compositeGroups",
                 "lifecycle",
                 "source",
@@ -1477,15 +1523,8 @@
                 "categoryRef",
                 "attributeAssignments",
                 "orderOptionConfigs",
-                "categoryRef",
-                "salesUnitRef",
-                "baseMeasureUnitRef",
-                "salesUnit",
-                "baseMeasureUnit",
-                "identifiers",
-                "preparationProfile",
-                "attributeAssignments",
-                "orderOptionConfigs"
+                "categoryPathLabels",
+                "preparationProfile"
               ]
             },
             "tabs": {
@@ -1546,13 +1585,23 @@
                   "direction": {
                     "type": "string",
                     "description": "design-bound field"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "referenced catalog item name"
+                  },
+                  "relationLabel": {
+                    "type": "string",
+                    "description": "user-visible relationship label"
                   }
                 },
                 "required": [
                   "referenceKind",
                   "referenceRef",
                   "code",
-                  "direction"
+                  "direction",
+                  "name",
+                  "relationLabel"
                 ]
               }
             },
@@ -1646,6 +1695,17 @@
                         "displayOrder": {
                           "type": "integer",
                           "description": "design-bound field"
+                        },
+                        "itemName": {
+                          "type": "string",
+                          "description": "component catalog item name"
+                        },
+                        "skuName": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "optional component SKU name"
                         }
                       },
                       "required": [
@@ -1658,7 +1718,9 @@
                         "default",
                         "extraPrice",
                         "status",
-                        "displayOrder"
+                        "displayOrder",
+                        "itemName",
+                        "skuName"
                       ]
                     }
                   }
@@ -1855,12 +1917,70 @@
                           "factRef"
                         ]
                       }
+                    },
+                    "blockingReasons": {
+                      "type": "array",
+                      "description": "user-visible reasons the item cannot be voided",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "label",
+                          "count",
+                          "relatedItemNames"
+                        ],
+                        "properties": {
+                          "label": {
+                            "type": "string",
+                            "description": "business reason label",
+                            "minLength": 1
+                          },
+                          "count": {
+                            "type": "integer",
+                            "description": "number of facts represented by the reason",
+                            "minimum": 1
+                          },
+                          "relatedItemNames": {
+                            "type": "array",
+                            "description": "related catalog item names",
+                            "items": {
+                              "type": "string",
+                              "description": "catalog item name"
+                            }
+                          }
+                        }
+                      }
                     }
                   },
                   "required": [
                     "canVoid",
                     "blockingReferences",
-                    "dependentFacts"
+                    "dependentFacts",
+                    "blockingReasons"
+                  ],
+                  "allOf": [
+                    {
+                      "if": {
+                        "required": [
+                          "canVoid"
+                        ],
+                        "properties": {
+                          "canVoid": {
+                            "const": false
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "blockingReasons"
+                        ],
+                        "properties": {
+                          "blockingReasons": {
+                            "minItems": 1
+                          }
+                        }
+                      }
+                    }
                   ]
                 }
               },
@@ -2372,6 +2492,403 @@
         }
       }
     },
+    "CatalogItemSkuPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "items",
+            "total",
+            "cursor",
+            "nextCursor"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "description": "parent-scoped SKU summary page",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "productSkuRef",
+                  "skuCode",
+                  "skuName",
+                  "attributeValueRefs",
+                  "standardSalePrice",
+                  "salesUnit",
+                  "baseMeasureUnit",
+                  "isDefault",
+                  "status",
+                  "primaryImageAssetRef",
+                  "inventoryDeductionSummary",
+                  "attributeSummary",
+                  "preparationSummary",
+                  "updatedAt"
+                ],
+                "properties": {
+                  "productSkuRef": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "SKU reference"
+                  },
+                  "skuCode": {
+                    "type": "string",
+                    "description": "SKU business code"
+                  },
+                  "skuName": {
+                    "type": "string",
+                    "description": "SKU name"
+                  },
+                  "attributeValueRefs": {
+                    "type": "array",
+                    "description": "SKU specification values",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "attributeRef",
+                        "attributeCode",
+                        "attributeName",
+                        "attributeValueRef",
+                        "valueCode",
+                        "valueLabel",
+                        "displayOrder",
+                        "status"
+                      ],
+                      "properties": {
+                        "attributeRef": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "specification definition reference"
+                        },
+                        "attributeCode": {
+                          "type": "string",
+                          "description": "specification definition code"
+                        },
+                        "attributeName": {
+                          "type": "string",
+                          "description": "specification definition name"
+                        },
+                        "attributeValueRef": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "specification value reference"
+                        },
+                        "valueCode": {
+                          "type": "string",
+                          "description": "specification value code"
+                        },
+                        "valueLabel": {
+                          "type": "string",
+                          "description": "specification value name"
+                        },
+                        "displayOrder": {
+                          "type": "integer",
+                          "description": "specification value display order"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "specification value status"
+                        }
+                      }
+                    }
+                  },
+                  "standardSalePrice": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "format": "cents",
+                    "description": "nullable SKU standard price"
+                  },
+                  "salesUnit": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "unitRef": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "unit definition reference"
+                      },
+                      "code": {
+                        "type": "string",
+                        "description": "unit code"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "unit name"
+                      },
+                      "unitDimension": {
+                        "type": "string",
+                        "enum": [
+                          "COUNT",
+                          "WEIGHT",
+                          "VOLUME",
+                          "SERVICE_DURATION",
+                          "PACKAGE"
+                        ],
+                        "description": "unit category"
+                      },
+                      "precision": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "decimal places; zero means whole numbers"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "ENABLED",
+                          "DISABLED"
+                        ],
+                        "description": "unit lifecycle status"
+                      },
+                      "inheritanceSource": {
+                        "type": "string",
+                        "enum": [
+                          "ITEM_DEFAULT",
+                          "SKU_OVERRIDE"
+                        ],
+                        "description": "effective assignment source"
+                      }
+                    },
+                    "required": [
+                      "unitRef",
+                      "code",
+                      "name",
+                      "unitDimension",
+                      "precision",
+                      "status",
+                      "inheritanceSource"
+                    ]
+                  },
+                  "baseMeasureUnit": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "unitRef": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "unit definition reference"
+                      },
+                      "code": {
+                        "type": "string",
+                        "description": "unit code"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "unit name"
+                      },
+                      "unitDimension": {
+                        "type": "string",
+                        "enum": [
+                          "COUNT",
+                          "WEIGHT",
+                          "VOLUME",
+                          "SERVICE_DURATION",
+                          "PACKAGE"
+                        ],
+                        "description": "unit category"
+                      },
+                      "precision": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "decimal places; zero means whole numbers"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "ENABLED",
+                          "DISABLED"
+                        ],
+                        "description": "unit lifecycle status"
+                      },
+                      "inheritanceSource": {
+                        "type": "string",
+                        "enum": [
+                          "ITEM_DEFAULT",
+                          "SKU_OVERRIDE"
+                        ],
+                        "description": "effective assignment source"
+                      }
+                    },
+                    "required": [
+                      "unitRef",
+                      "code",
+                      "name",
+                      "unitDimension",
+                      "precision",
+                      "status",
+                      "inheritanceSource"
+                    ]
+                  },
+                  "isDefault": {
+                    "type": "boolean",
+                    "description": "whether this is the default SKU"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "SKU lifecycle status"
+                  },
+                  "primaryImageAssetRef": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid",
+                    "description": "primary SKU image"
+                  },
+                  "inventoryDeductionSummary": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "grain",
+                      "mode",
+                      "consumptionUnitSnapshot",
+                      "bomLineCount"
+                    ],
+                    "properties": {
+                      "grain": {
+                        "type": "string",
+                        "enum": [
+                          "ITEM",
+                          "SKU"
+                        ],
+                        "description": "inventory deduction owner grain"
+                      },
+                      "mode": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "NONE",
+                          "DIRECT",
+                          "BOM",
+                          null
+                        ],
+                        "description": "effective deduction mode; null means a SKU-grain parent summary"
+                      },
+                      "consumptionUnitSnapshot": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "unitRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "unit definition reference"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "unit code"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "unit name"
+                          },
+                          "unitDimension": {
+                            "type": "string",
+                            "enum": [
+                              "COUNT",
+                              "WEIGHT",
+                              "VOLUME",
+                              "SERVICE_DURATION",
+                              "PACKAGE"
+                            ],
+                            "description": "unit category"
+                          },
+                          "precision": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "decimal places; zero means whole numbers"
+                          }
+                        },
+                        "required": [
+                          "unitRef",
+                          "code",
+                          "name",
+                          "unitDimension",
+                          "precision"
+                        ]
+                      },
+                      "bomLineCount": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0,
+                        "description": "component line count when deduction mode is BOM"
+                      }
+                    }
+                  },
+                  "attributeSummary": {
+                    "type": "array",
+                    "description": "SKU-specific product attribute display lines; empty means inherit the parent product",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "preparationSummary": {
+                    "type": "array",
+                    "description": "effective SKU production information display lines",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "updatedAt": {
+                    "type": "integer",
+                    "format": "epoch-millis",
+                    "description": "SKU update time"
+                  }
+                }
+              }
+            },
+            "total": {
+              "type": "integer",
+              "description": "complete SKU count for the parent item"
+            },
+            "cursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "echoed opaque cursor"
+            },
+            "nextCursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "opaque cursor for the next page"
+            }
+          }
+        }
+      }
+    },
     "CatalogItemCommandReadback": {
       "type": "object",
       "additionalProperties": false,
@@ -2807,15 +3324,6 @@
                             ],
                             "additionalProperties": false,
                             "properties": {
-                              "productionTagRefs": {
-                                "type": "array",
-                                "description": "production processing tag references",
-                                "items": {
-                                  "type": "string",
-                                  "format": "uuid",
-                                  "description": "production processing tag reference"
-                                }
-                              },
                               "productionDisplayName": {
                                 "type": [
                                   "string",
@@ -2841,9 +3349,7 @@
                                 "description": "optional preparation notes"
                               }
                             },
-                            "required": [
-                              "productionTagRefs"
-                            ],
+                            "required": [],
                             "description": "complete profile when mode is OVERRIDE; null when inheriting"
                           }
                         },
@@ -3046,6 +3552,14 @@
                     "type": "string"
                   }
                 },
+                "productionTagRef": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "one optional item-level production tag"
+                },
                 "tagRefs": {
                   "type": "array",
                   "description": "design-bound field",
@@ -3194,15 +3708,6 @@
                               ],
                               "additionalProperties": false,
                               "properties": {
-                                "addProductionTagRefs": {
-                                  "type": "array",
-                                  "description": "production processing tags added by this option value",
-                                  "items": {
-                                    "type": "string",
-                                    "format": "uuid",
-                                    "description": "production processing tag reference"
-                                  }
-                                },
                                 "instruction": {
                                   "type": [
                                     "string",
@@ -3220,10 +3725,7 @@
                                   "description": "optional non-negative added preparation seconds"
                                 }
                               },
-                              "required": [
-                                "addProductionTagRefs"
-                              ],
-                              "x-tagOperation": "ADD_ONLY",
+                              "required": [],
                               "x-noNegativeDuration": true,
                               "description": "optional additive preparation change for one option value"
                             }
@@ -3247,15 +3749,6 @@
                   ],
                   "additionalProperties": false,
                   "properties": {
-                    "productionTagRefs": {
-                      "type": "array",
-                      "description": "production processing tag references",
-                      "items": {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "production processing tag reference"
-                      }
-                    },
                     "productionDisplayName": {
                       "type": [
                         "string",
@@ -3281,16 +3774,15 @@
                       "description": "optional preparation notes"
                     }
                   },
-                  "required": [
-                    "productionTagRefs"
-                  ],
+                  "required": [],
                   "description": "null means no item default profile is configured"
                 }
               },
               "required": [
                 "name",
                 "shapeKey",
-                "images"
+                "images",
+                "productionTagRef"
               ]
             },
             "expectedCatalogVersion": {
@@ -3603,6 +4095,7 @@
                 "attributeAssignments",
                 "orderOptionConfigs",
                 "version",
+                "productionTagRef",
                 "identifiers",
                 "preparationProfile"
               ],
@@ -3946,15 +4439,6 @@
                                   "type": "integer",
                                   "description": "option value business display order"
                                 },
-                                "addProductionTagRefs": {
-                                  "type": "array",
-                                  "description": "production processing tags added by this option value",
-                                  "items": {
-                                    "type": "string",
-                                    "format": "uuid",
-                                    "description": "production processing tag reference"
-                                  }
-                                },
                                 "instruction": {
                                   "type": [
                                     "string",
@@ -3975,8 +4459,7 @@
                               "required": [
                                 "definitionValueRef",
                                 "optionGroupDisplayOrder",
-                                "optionValueDisplayOrder",
-                                "addProductionTagRefs"
+                                "optionValueDisplayOrder"
                               ],
                               "description": "optional additive preparation change readback"
                             }
@@ -3989,6 +4472,14 @@
                 "version": {
                   "type": "integer",
                   "description": "saved catalog version"
+                },
+                "productionTagRef": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "one optional item-level production tag"
                 },
                 "identifiers": {
                   "type": "array",
@@ -4066,15 +4557,6 @@
                   ],
                   "additionalProperties": false,
                   "properties": {
-                    "productionTagRefs": {
-                      "type": "array",
-                      "description": "production processing tag references",
-                      "items": {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "production processing tag reference"
-                      }
-                    },
                     "productionDisplayName": {
                       "type": [
                         "string",
@@ -4100,9 +4582,7 @@
                       "description": "optional preparation notes"
                     }
                   },
-                  "required": [
-                    "productionTagRefs"
-                  ],
+                  "required": [],
                   "description": "null means no effective preparation profile is configured"
                 }
               }
@@ -4580,7 +5060,8 @@
                   "version",
                   "canVoid",
                   "blockingReferences",
-                  "dependentFacts"
+                  "dependentFacts",
+                  "blockingReasons"
                 ],
                 "properties": {
                   "skuRef": {
@@ -4648,8 +5129,65 @@
                         }
                       }
                     }
+                  },
+                  "blockingReasons": {
+                    "type": "array",
+                    "description": "user-visible reasons the voided SKU remains unavailable",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "count",
+                        "relatedItemNames"
+                      ],
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "business reason label",
+                          "minLength": 1
+                        },
+                        "count": {
+                          "type": "integer",
+                          "description": "number of facts represented by the reason",
+                          "minimum": 1
+                        },
+                        "relatedItemNames": {
+                          "type": "array",
+                          "description": "related catalog item names",
+                          "items": {
+                            "type": "string",
+                            "description": "catalog item name"
+                          }
+                        }
+                      }
+                    }
                   }
-                }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "required": [
+                        "canVoid"
+                      ],
+                      "properties": {
+                        "canVoid": {
+                          "const": false
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "blockingReasons"
+                      ],
+                      "properties": {
+                        "blockingReasons": {
+                          "minItems": 1
+                        }
+                      }
+                    }
+                  }
+                ]
               }
             },
             "version": {
@@ -4866,6 +5404,34 @@
           "type": "string",
           "format": "uuid",
           "description": "selected data node"
+        }
+      }
+    },
+    "CatalogItemSkusQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "itemCode"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "itemCode": {
+          "type": "string",
+          "description": "parent catalog item code"
+        },
+        "cursor": {
+          "type": "string",
+          "description": "opaque SKU cursor"
+        },
+        "pageSize": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "SKU page size"
         }
       }
     }

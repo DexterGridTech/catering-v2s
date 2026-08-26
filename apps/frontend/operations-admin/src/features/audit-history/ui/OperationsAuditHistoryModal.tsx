@@ -104,18 +104,19 @@ export function OperationsAuditHistoryModal({
     [groupWorkspaceKey, targetId, targetType],
   );
   const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
+  const resetPagination = pagination.reset;
   useOverlayLock(open);
 
   useEffect(() => {
     if (!open) {
-      pagination.reset();
+      resetPagination();
       setSelectedId(undefined);
       setLastSuccessful(undefined);
       return;
     }
     setSelectedId(undefined);
     setLastSuccessful(undefined);
-  }, [groupWorkspaceKey, open, pagination.reset, targetId, targetType]);
+  }, [groupWorkspaceKey, open, resetPagination, targetId, targetType]);
   const request = useMemo(
     () =>
       targetType && targetId

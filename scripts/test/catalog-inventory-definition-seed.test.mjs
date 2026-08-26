@@ -60,14 +60,13 @@ const assertDefinitionSeed = (seed) => {
     {identifierType: "MNEMONIC", identifierValue: "CAESAR"},
   ]);
   assert.deepEqual(caesar.preparationProfile, {
-    productionTagCodes: ["COLD_DISH"],
     productionDisplayName: "凯撒沙拉",
     estimatedPreparationSeconds: 180,
     preparationNotes: "出餐前拌匀并装盘",
   });
   assert.deepEqual(
     caesar.optionPreparationEffects.find((effect) => effect.valueCode === "CHICKEN"),
-    {valueCode: "CHICKEN", addProductionTagCodes: ["HOT_KITCHEN"], preparationSecondsDelta: 30, instruction: "加鸡胸肉"},
+    {valueCode: "CHICKEN", preparationSecondsDelta: 30, instruction: "加鸡胸肉"},
   );
   const latte = seed.itemAssignments.find((assignment) => assignment.itemCode === "LATTE-001");
   assert.equal(latte.salesUnitCode, "CUP");

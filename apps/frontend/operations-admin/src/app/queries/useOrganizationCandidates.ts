@@ -85,10 +85,12 @@ export function useOrganizationCandidates({
     [query, queryContext.groupWorkspaceKey],
   );
   const result = operationsRtk.useGetOperationsOrganizationCandidatesQuery(request, {skip: !open});
+  const acceptPage = candidates.acceptPage;
+  const page = candidates.page;
   useEffect(() => {
     if (!result.currentData) return;
-    candidates.acceptPage(result.currentData.items, result.currentData.metadata);
-  }, [candidates.acceptPage, candidates.page, result.currentData]);
+    acceptPage(result.currentData.items, result.currentData.metadata);
+  }, [acceptPage, page, result.currentData]);
 
   const onPopupScroll = (event: Parameters<typeof candidates.onPopupScroll>[0]) =>
     candidates.onPopupScroll(event, result.isFetching);

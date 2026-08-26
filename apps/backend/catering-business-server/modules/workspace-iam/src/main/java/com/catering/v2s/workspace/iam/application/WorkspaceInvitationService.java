@@ -17,6 +17,7 @@ import com.catering.v2s.platform.foundation.seed.DevFixedOtpIssuer;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog.UserManagementAction;
 import com.catering.v2s.workspace.iam.api.WorkspaceInvitationReadback;
+import com.catering.v2s.workspace.iam.api.WorkspaceRoleReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -136,29 +137,62 @@ public class WorkspaceInvitationService {
                 idempotencyKey,
                 canonical("create", workspaceUuid, groupWorkspaceKey, mobile, intents),
                 WorkspaceInvitationReadback.class,
-                () -> create(
-                        workspaceUuid,
-                        groupWorkspaceKey,
-                        mobile,
-                        intents,
-                        time.currentEpochMillis() + MANAGEMENT_INVITATION_TTL_MILLIS,
-                        actor));
+                () -> createWithFacts(
+                                workspaceUuid,
+                                groupWorkspaceKey,
+                                mobile,
+                                intents,
+                                time.currentEpochMillis() + MANAGEMENT_INVITATION_TTL_MILLIS,
+                                actor)
+                        .readback());
     }
 
     @Transactional
-    public WorkspaceInvitationReadback createForOperations(
+    public ManagementInvitationView createForOperations(
             UUID workspaceUuid,
             String groupWorkspaceKey,
             UUID actorAssignmentId,
+            OrganizationTaskPathLookup.TaskPath validatedTarget,
             String mobile,
             List<AssignmentIntent> intents,
             String idempotencyKey,
             AuditActor actor) {
         String targetType = singleTargetType(intents);
         UUID targetId = singleTargetId(intents);
+        if (validatedTarget == null
+                || !targetType.equals(validatedTarget.targetType())
+                || !targetId.equals(validatedTarget.targetId())) {
+            throw new WorkspaceCommandAuthorizationService.AuthorizationDeniedException();
+        }
         commandAuthorization.requireUserManagementAction(
-                workspaceUuid, groupWorkspaceKey, actorAssignmentId, targetType, targetId, UserManagementAction.INVITE);
-        return create(workspaceUuid, groupWorkspaceKey, mobile, intents, idempotencyKey, actor);
+                workspaceUuid,
+                groupWorkspaceKey,
+                actorAssignmentId,
+                targetType,
+                validatedTarget,
+                UserManagementAction.INVITE);
+        List<CreatedInvitation> created = new ArrayList<>(1);
+        WorkspaceInvitationReadback invitation = receipts.execute(
+                workspaceUuid,
+                idempotencyKey,
+                canonical("create", workspaceUuid, groupWorkspaceKey, mobile, intents),
+                WorkspaceInvitationReadback.class,
+                () -> {
+                    CreatedInvitation value = createWithFacts(
+                            workspaceUuid,
+                            groupWorkspaceKey,
+                            mobile,
+                            intents,
+                            time.currentEpochMillis() + MANAGEMENT_INVITATION_TTL_MILLIS,
+                            actor);
+                    created.add(value);
+                    return value.readback();
+                });
+        // A replay must preserve the stored receipt exactly, so it uses the standard owner read. A fresh create has
+        // all display facts in the command-local result and must not reopen them merely to paint the response.
+        return created.isEmpty()
+                ? managementView(invitation)
+                : createdManagementView(created.getFirst(), validatedTarget, actor.displaySnapshot());
     }
 
     @Transactional
@@ -173,6 +207,17 @@ public class WorkspaceInvitationService {
 
     @Transactional
     public WorkspaceInvitationReadback create(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String mobile,
+            List<AssignmentIntent> intents,
+            long expiresAtEpochMillis,
+            AuditActor actor) {
+        return createWithFacts(workspaceUuid, groupWorkspaceKey, mobile, intents, expiresAtEpochMillis, actor)
+                .readback();
+    }
+
+    private CreatedInvitation createWithFacts(
             UUID workspaceUuid,
             String groupWorkspaceKey,
             String mobile,
@@ -201,19 +246,21 @@ public class WorkspaceInvitationService {
                 actor.displaySnapshot(),
                 expiresAtEpochMillis,
                 now);
+        Map<UUID, WorkspaceRoleReadback> rolesById = roles.requireAll(
+                workspaceUuid,
+                groupWorkspaceKey,
+                intents.stream().map(AssignmentIntent::roleId).toList());
+        Invitation pending = new Invitation(
+                invitationId, workspaceUuid, groupWorkspaceKey, normalizedMobile, "PENDING", expiresAtEpochMillis, 1);
         for (AssignmentIntent intent : intents) {
-            var role = roles.require(workspaceUuid, groupWorkspaceKey, intent.roleId());
+            WorkspaceRoleReadback role = rolesById.get(intent.roleId());
+            if (role == null) throw new InvitationValidationException();
             if (!role.serviceNodeType().equals(intent.serviceNodeType())) throw new InvitationValidationException();
-            requireEnterable(
-                    new Invitation(
-                            invitationId,
-                            workspaceUuid,
-                            groupWorkspaceKey,
-                            normalizedMobile,
-                            "PENDING",
-                            expiresAtEpochMillis,
-                            1),
-                    intent);
+        }
+        // A create command admits exactly one service-node target. Its enterability is a command fact, not a
+        // per-role fact; validating it once preserves the same guard without multiplying organization reads.
+        requireEnterable(pending, intents.getFirst());
+        for (AssignmentIntent intent : intents) {
             jdbc.update(
                     "INSERT INTO workspace_iam.invitation_assignment_intent (invitation_id, role_id, "
                             + "service_node_type, service_node_id) VALUES (?, ?, ?, ?)",
@@ -223,7 +270,7 @@ public class WorkspaceInvitationService {
                     intent.serviceNodeId());
         }
         audit(workspaceUuid, groupWorkspaceKey, invitationId, "WORKSPACE_INVITATION_CREATED", actor, null, "PENDING");
-        return new WorkspaceInvitationReadback(
+        WorkspaceInvitationReadback readback = new WorkspaceInvitationReadback(
                 invitationId,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -236,6 +283,11 @@ public class WorkspaceInvitationService {
                 null,
                 null,
                 raw);
+        List<String> roleNames = rolesById.values().stream()
+                .map(WorkspaceRoleReadback::name)
+                .sorted()
+                .toList();
+        return new CreatedInvitation(readback, roleNames);
     }
 
     /** Owner-owned platform page: filters, total and bounds finish before edge mapping. */
@@ -371,6 +423,31 @@ public class WorkspaceInvitationService {
     @Transactional(readOnly = true)
     public ManagementInvitationView managementView(WorkspaceInvitationReadback invitation) {
         return managementViews(List.of(invitation)).getFirst();
+    }
+
+    private ManagementInvitationView createdManagementView(
+            CreatedInvitation created, OrganizationTaskPathLookup.TaskPath target, String issuerDisplayName) {
+        WorkspaceInvitationReadback invitation = created.readback();
+        String invitationPageUrl =
+                "/operations/invitations/" + invitation.groupWorkspaceKey() + "/" + invitation.rawInvitationToken();
+        return new ManagementInvitationView(
+                invitation.id(),
+                invitation.groupWorkspaceKey(),
+                maskMobile(invitation.mobileNormalized()),
+                invitation.mobileNormalized(),
+                issuerDisplayName,
+                target.targetType(),
+                target.displayPath(),
+                created.roleNames(),
+                invitation.status(),
+                1L,
+                invitation.expiresAtEpochMillis(),
+                invitation.version(),
+                invitation.createdAtEpochMillis(),
+                invitation.consentedAtEpochMillis(),
+                invitation.completedAtEpochMillis(),
+                invitation.cancelledAtEpochMillis(),
+                invitationPageUrl);
     }
 
     /** Owner read used by the platform detail before a CAS command; it is scoped to one workspace. */
@@ -512,7 +589,7 @@ public class WorkspaceInvitationService {
                 groupWorkspaceKey,
                 actorAssignmentId,
                 target.serviceNodeType(),
-                target.serviceNodeId(),
+                selectedScope,
                 UserManagementAction.INVITE);
         return cancel(workspaceUuid, groupWorkspaceKey, invitationId, expectedVersion, idempotencyKey, actor);
     }
@@ -607,12 +684,12 @@ public class WorkspaceInvitationService {
         AssignmentIntent target = invitationTarget(invitationId);
         requireExpectedTargetType(expectedTargetType, target.serviceNodeType());
         requireExactOperationScope(selectedScope, target);
-        commandAuthorization.requireUserManagementAction(
+        commandAuthorization.requireUserManagementActionOnValidatedScope(
                 workspaceUuid,
                 groupWorkspaceKey,
                 actorAssignmentId,
-                target.serviceNodeType(),
-                target.serviceNodeId(),
+                expectedTargetType,
+                selectedScope,
                 UserManagementAction.INVITE);
         return reissue(workspaceUuid, groupWorkspaceKey, invitationId, expectedVersion, idempotencyKey, actor);
     }
@@ -1511,6 +1588,9 @@ public class WorkspaceInvitationService {
 
     private record InvitationAssignmentIntentFacts(
             Map<UUID, List<AssignmentIntent>> intentsByInvitation, Map<UUID, List<String>> roleNamesByInvitation) {}
+
+    /** Fresh command-only display facts; receipts intentionally persist only the public invitation readback. */
+    private record CreatedInvitation(WorkspaceInvitationReadback readback, List<String> roleNames) {}
 
     private record Progress(String loginName, String displayName, String passwordHash, UUID accountId) {}
 

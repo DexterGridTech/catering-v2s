@@ -57,6 +57,18 @@ is operation-specific, not a global performance threshold.
   adding random headroom. Source:
   `doc/plans/platform/2026-08-22-v2s-backend-performance-remediation-implementation-design-codex.md`, CP-02/CP-05.
 
+- `BUSINESS_CORRECTNESS_PRECEDES_DB_EFFICIENCY`: DB count is a diagnostic constraint, never permission
+  to delete or weaken business facts, owner rechecks, required transactions, idempotent replay,
+  concurrency locking, typed problems, audit or authoritative readback. After an event-level proof
+  shows that an operation's remaining DB closure is correctness-preserving and that a consolidation
+  would cost more safety/review surface than it returns, Dexter may authorize one exact budget increase
+  with a named `decisionRef`. The exception has exactly two admission criteria: (1) it weakens no
+  business fact; and (2) the source proof shows that applicable shared/general mechanisms have already
+  been reused, leaving neither duplicate implementation nor avoidable owner fan-out/N+1. The record must
+  state both proofs, the measured closure, rejected alternative, cost and narrow operation boundary; the
+  generic undecided-increase red mutation remains mandatory. This is not a blanket performance exemption.
+  Source: Dexter decision, 2026-08-26.
+
 - `OPTIMIZATION_CLOSURE_NEEDS_BEFORE_AFTER_NUMBERS`: an efficiency round is not closed without
   same-workload before/after numbers in the closure document. Two prior rounds (2026-08-08 refactor,
   2026-08-09 phase3/phase4 rebaseline) produced no measurable improvement and their closure carried

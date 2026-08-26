@@ -171,7 +171,7 @@ class ProductionTagCopyPreflightIntegrationTest {
 
     private static ObjectNode requestWithRefs(UUID... refs) {
         ObjectNode request = MAPPER.createObjectNode();
-        var values = request.putArray("productionTagRefs");
+        var values = request.putArray("productionTagDefinitionRefs");
         for (UUID ref : refs) values.add(ref.toString());
         return request;
     }
@@ -179,13 +179,12 @@ class ProductionTagCopyPreflightIntegrationTest {
     private static void insertTag(UUID ref, UUID scope, String code, String status, long version) {
         jdbc.update(
                 "INSERT INTO fulfillment_production.production_tag_definition "
-                        + "(tag_ref,data_node_ref,brand_ref,code,tag_kind,name,status,version,created_at_epoch_millis,"
-                        + "updated_at_epoch_millis) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                        + "(tag_ref,data_node_ref,brand_ref,code,name,status,version,"
+                        + "created_at_epoch_millis,updated_at_epoch_millis) VALUES (?,?,?,?,?,?,?,?,?)",
                 ref,
                 scope.toString(),
                 BRAND,
                 code,
-                "PRODUCTION",
                 code,
                 status,
                 version,

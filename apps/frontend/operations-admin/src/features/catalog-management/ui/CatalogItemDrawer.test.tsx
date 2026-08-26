@@ -3,22 +3,35 @@ import {describe, expect, it, vi} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {collectCursorPages} from '@catering-v2s/admin-ui-foundation';
 import type {Uuid} from '../../../app/api/generated/catalog-inventory-edge';
-import type {CatalogOrderOptionConfig, CatalogPreparationEffect, CatalogSkuRow} from '../model/catalogModel';
+import {
+  decodeDetail,
+  type CatalogOrderOptionConfig,
+  type CatalogPreparationEffect,
+  type CatalogCompositeGroup,
+  type CatalogSkuRow,
+} from '../model/catalogModel';
 import {
   CATALOG_IDENTIFIER_PREPARATION_PROBLEM_CODES,
   CATALOG_IDENTIFICATION_PREPARATION_FEEDBACK,
   catalogIdentifierProblemFeedback,
 } from '../model/catalogIdentificationPreparationFeedback';
+import {PreparationProfileEditor} from './CatalogItemProductionEditor';
 import {
-  IdentifierEditor,
-  PreparationProfileEditor,
+  PreparationProfileReadOnly,
   PreparationVariationSummary,
+  CompositeGroupsReadOnly,
+  SkuMatrixReadOnly,
+} from './CatalogItemReadOnlyPresenters';
+import {IdentifierEditor, manifestIdentifierTypes} from './CatalogItemIdentifiersEditor';
+import {
   buildAdditivePreparationEffect,
   catalogPreparationLayout,
   cloneSkuRows,
-  manifestIdentifierTypes,
   skuPreparationOverrideForMode,
-} from './CatalogItemDrawer';
+  type CatalogCompositeGroupDraft,
+} from '../model/catalogItemEditorDraftAdapters';
+import {catalogUiProblemFeedback} from '../model/catalogUiProblemFeedback';
+import {CatalogItemCompositeEditor} from './CatalogItemCompositeEditor';
 
 // The focused surfaces below do not mount ProList. Keep its unrelated CJS
 // package boundary out of this SSR-oriented component test.
@@ -26,10 +39,9 @@ vi.mock('@ant-design/pro-components', () => ({ProList: () => null}));
 
 const uuid = (value: string) => value as Uuid;
 type IdentifierDraft = Parameters<typeof IdentifierEditor>[0]['values'][number];
-type ProductionTagOption = Parameters<typeof PreparationProfileEditor>[0]['selectedTags'][number];
+type ProductionTagOption = NonNullable<Parameters<typeof PreparationProfileEditor>[0]['selectedTag']>;
 
 const profile = (overrides: Partial<Parameters<typeof PreparationProfileEditor>[0]['profile']> = {}) => ({
-  productionTagRefs: [uuid('tag-hot-kitchen')],
   productionDisplayName: '黑椒牛排',
   estimatedPreparationSeconds: 720,
   preparationNotes: '按熟度煎制',
@@ -62,6 +74,7 @@ const sku = (overrides: Partial<CatalogSkuRow> = {}): CatalogSkuRow => ({
   isDefault: true,
   status: 'ENABLED',
   version: 1,
+  updatedAt: 0,
   mediaRefs: [],
   salesUnitOverrideRef: null,
   baseMeasureUnitOverrideRef: null,
@@ -91,7 +104,10 @@ const optionConfig = (preparationEffect: CatalogPreparationEffect | null): Catal
   ],
 });
 
-function renderIdentifiers(allowedTypes: Parameters<typeof IdentifierEditor>[0]['allowedTypes'], values: IdentifierDraft[] = []) {
+function renderIdentifiers(
+  allowedTypes: Parameters<typeof IdentifierEditor>[0]['allowedTypes'],
+  values: IdentifierDraft[] = [],
+) {
   return renderToStaticMarkup(
     <IdentifierEditor
       values={values}
@@ -114,8 +130,8 @@ function renderPreparationProfile() {
   return renderToStaticMarkup(
     <PreparationProfileEditor
       profile={profile()}
-      selectedTagRefs={[String(tag.tagRef)]}
-      selectedTags={[tag]}
+      selectedTagRef={String(tag.tagRef)}
+      selectedTag={tag}
       tagOptions={[{value: String(tag.tagRef), label: tag.name}]}
       tagsLoading={false}
       onTagsSearch={() => undefined}
@@ -156,7 +172,7 @@ describe('catalog identification and preparation editor boundaries', () => {
     expect(serviceMarkup).toContain('添加识别码');
     expect(serviceMarkup).toContain('助记码');
     expect(serviceMarkup).not.toMatch(/title="条码"|>条码<|>称重键码（PLU）</);
-    expect(renderIdentifiers([])).toContain('当前商品类型不提供识别方式');
+    expect(renderIdentifiers([])).toContain('当前商品形态不提供识别方式');
     expect(renderIdentifiers([])).toContain('disabled');
   });
 
@@ -184,15 +200,36 @@ describe('catalog identification and preparation editor boundaries', () => {
     const draft = cloneSkuRows(original);
     draft[0].identifiers[0].identifierValue = 'changed';
     draft[0].attributeValueRefs[0].valueLabel = '大杯';
-    draft[0].preparationOverride.profile?.productionTagRefs.push(uuid('tag-cold-dish'));
-    draft[0].effectivePreparation?.productionTagRefs.push(uuid('tag-beverage'));
     draft[0].mediaRefs.push(uuid('asset-2'));
 
     expect(original[0].identifiers[0].identifierValue).toBe('690100000001');
     expect(original[0].attributeValueRefs[0].valueLabel).toBe('中杯');
-    expect(original[0].preparationOverride.profile?.productionTagRefs).toEqual([uuid('tag-hot-kitchen')]);
-    expect(original[0].effectivePreparation?.productionTagRefs).toEqual([uuid('tag-hot-kitchen')]);
     expect(original[0].mediaRefs).toEqual([uuid('asset-1')]);
+  });
+
+  it('keeps the production tag singularly on the item and still shows a tag-only production fact', () => {
+    const tag: ProductionTagOption = {
+      tagRef: uuid('tag-hot-kitchen'),
+      code: 'HOT_KITCHEN',
+      name: '热厨制作',
+      owner: 'FULFILLMENT_PRODUCTION',
+      status: 'ENABLED',
+    };
+    const specificationMarkup = renderToStaticMarkup(
+      <PreparationProfileEditor
+        profile={profile()}
+        showProductionTag={false}
+        onChange={() => undefined}
+        onDirty={() => undefined}
+      />,
+    );
+    const tagOnlyMarkup = renderToStaticMarkup(<PreparationProfileReadOnly profile={null} tag={tag} />);
+
+    expect(specificationMarkup).not.toContain('生产标签');
+    expect(specificationMarkup).not.toContain('catalog-item-production-tags');
+    expect(tagOnlyMarkup).toContain('生产标签');
+    expect(tagOnlyMarkup).toContain('热厨制作');
+    expect(tagOnlyMarkup).not.toContain('尚未设置制作信息');
   });
 
   it('maps every typed problem to a business target without exposing the transport code', () => {
@@ -212,17 +249,204 @@ describe('catalog identification and preparation editor boundaries', () => {
     });
   });
 
-  it('clears all identification and preparation drafts on Drawer close and keeps modal edits local', () => {
-    const source = readFileSync(new URL('./CatalogItemDrawer.tsx', import.meta.url), 'utf8');
-    expect(source).toMatch(
-      /if \(!itemCode\) \{[\s\S]*setIdentifierDraft\(\[\]\);[\s\S]*setPreparationProfileDraft\(null\);[\s\S]*setSkusDraft\(\[\]\);[\s\S]*lifecycle\.reset\(\);/,
+  it('keeps an unmapped owner reason instead of replacing it with a generic retry', () => {
+    expect(
+      catalogUiProblemFeedback(
+        {
+          status: 422,
+          data: {
+            title: '商品与库存操作失败',
+            detail: '商品分类最多只能建立三级',
+            errorCode: 'CATEGORY_DEPTH_EXCEEDED',
+          },
+        },
+        '分类操作未完成，请重试。',
+      ),
+    ).toEqual({message: '商品分类最多只能建立三级', known: false});
+  });
+
+  it('uses the shared debounced cursor lifecycle only for category search while preserving lazy tree loading', () => {
+    const source = readFileSync(new URL('./useCatalogCategoryCandidates.tsx', import.meta.url), 'utf8');
+    expect(source).toContain('const searchCandidates = useCursorCandidates<Candidate>');
+    expect(source).toContain('searchCandidates.debouncedQueryText');
+    expect(source).toContain('const onSearch = useCallback((value: string) => setSearchValue(value), []);');
+    expect(source).toContain('const loadChildren = useCallback');
+    expect(source).not.toMatch(/const onSearch[\s\S]{0,160}readPage/);
+  });
+
+  it('passes basic and production facts as typed draft slices rather than one callback per field', () => {
+    const assembler = readFileSync(new URL('./CatalogItemEditorSectionAssembler.tsx', import.meta.url), 'utf8');
+    const workspace = readFileSync(new URL('./useCatalogItemEditorWorkspaceState.tsx', import.meta.url), 'utf8');
+    const adapters = readFileSync(new URL('../model/catalogItemEditorDraftAdapters.ts', import.meta.url), 'utf8');
+    const basic = readFileSync(new URL('./CatalogItemBasicEditor.tsx', import.meta.url), 'utf8');
+    const production = readFileSync(new URL('./CatalogItemProductionEditor.tsx', import.meta.url), 'utf8');
+
+    expect(assembler).toContain('basicDraft={basicDraft}');
+    expect(assembler).toContain('productionDraft={productionDraft}');
+    expect(assembler).not.toContain('onSalesUnitRefChange=');
+    expect(assembler).not.toContain('onProductionTagChange=');
+    expect(workspace).toContain('values: selectCatalogItemBasicDraft(draft)');
+    expect(workspace).toContain('values: selectCatalogItemProductionDraft(draft)');
+    expect(workspace).not.toContain('selectedSalesUnitRef: draft.selectedSalesUnitRef');
+    expect(workspace).not.toContain('selectedProductionTagRef: draft.selectedProductionTagRef');
+    expect(adapters).toContain('function selectCatalogItemBasicDraft');
+    expect(adapters).toContain('function selectCatalogItemProductionDraft');
+    expect(workspace).toContain("updateFields(patch, 'basic')");
+    expect(workspace).toContain("updateFields(patch, 'production-prompts')");
+    expect(basic).toContain("basicDraft.onChange({selectedSalesUnitRef: next})");
+    expect(production).toContain("productionDraft.onChange({selectedProductionTagRef: next})");
+  });
+
+  it('keeps first-level task ownership in the workbench and gives SKU sub-editors stable identity', () => {
+    const drawerSource = readFileSync(new URL('./CatalogItemDrawer.tsx', import.meta.url), 'utf8');
+    const editorSource = readFileSync(new URL('./CatalogItemSkuSpecificationsEditor.tsx', import.meta.url), 'utf8');
+    expect(drawerSource).toContain('CatalogItemEditorDrawer');
+    expect(drawerSource).not.toContain('useState');
+    expect(drawerSource).not.toContain('LocalCatalogCopyDrawer');
+    expect(editorSource).toContain('identifierModalEditorId');
+    expect(editorSource).toContain('preparationModalEditorId');
+    expect(editorSource).toContain('updateSku(identifierModalEditorId, {identifiers})');
+    expect(editorSource).toContain('updateSku(preparationModalEditorId, {preparationOverride})');
+    expect(editorSource).not.toMatch(/updateSku\((?:identifierModalIndex|preparationModalIndex)/);
+  });
+
+  it('keeps the editor open when maintaining metadata and retires the transition-persistence path', () => {
+    const workspace = readFileSync(new URL('./CatalogItemEditorWorkspace.tsx', import.meta.url), 'utf8');
+    const state = readFileSync(new URL('./useCatalogItemEditorWorkspaceState.tsx', import.meta.url), 'utf8');
+    const dictionaryState = readFileSync(new URL('./CatalogDictionaryDrawerState.tsx', import.meta.url), 'utf8');
+    const configurationSurface = readFileSync(new URL('./CatalogConfigurationDrawerSurface.tsx', import.meta.url), 'utf8');
+    const coordinator = readFileSync(new URL('./controllers/useCatalogWorkbenchTaskCoordinator.tsx', import.meta.url), 'utf8');
+    const content = readFileSync(new URL('./CatalogWorkbenchContent.tsx', import.meta.url), 'utf8');
+    const childTask = readFileSync(new URL('../model/catalogEditorChildTask.ts', import.meta.url), 'utf8');
+    const openChild = state.match(/const openCatalogConfig[\s\S]*?const closeConfiguration/u)?.[0] ?? '';
+
+    expect(workspace).toContain('<CatalogDictionaryDrawer');
+    expect(workspace).toContain('presentation="EDITOR_CHILD"');
+    expect(workspace).toContain('keyboard={!state.lifecycleSubmitting}');
+    expect(workspace).toContain('onAfterClose={state.afterConfigurationClose}');
+    expect(state).toContain('catalogEditorChildTaskReducer');
+    expect(state).toContain('catalogEditorCanClose(configurationTask)');
+    expect(state).toContain('catalogEditorChildCloseResult(configurationTask)');
+    expect(childTask).toContain('CATALOG_EDITOR_CHILD_TASK_CLOSE_REQUIRED');
+    expect(childTask).toContain('export function catalogEditorCanClose');
+    expect(childTask).toContain('export function catalogEditorChildCloseResult');
+    expect(openChild).toContain("dispatchConfigurationTask({type: 'OPEN_CONFIG'");
+    expect(openChild).not.toContain('persistCurrentDraft');
+    expect(openChild).not.toContain('onOpenCatalogConfig');
+    expect(openChild).not.toContain('sessionStorage');
+    expect(state).toContain('const afterConfigurationClose = useCallback');
+    expect(state).toContain('pendingConfigurationFocusTestId.current');
+    expect(openChild).not.toContain('focus()');
+    expect(dictionaryState).toContain('onAfterClose?: () => void');
+    expect(dictionaryState).toContain('onAfterClose={onAfterClose}');
+    expect(configurationSurface).toContain('if (!visible && !open) onAfterClose?.();');
+    expect(coordinator).not.toContain('onOpenCatalogConfig');
+    expect(content).not.toContain('商品编辑已暂停');
+    expect(content).not.toContain('继续编辑');
+  });
+
+  it('keeps the saved-product view free of SKU governance controls', () => {
+    const source = readFileSync(new URL('./CatalogItemSkuSpecificationsView.tsx', import.meta.url), 'utf8');
+    expect(source).toContain('canWriteCatalog={false}');
+    expect(source).not.toContain('onVoidSku=');
+    const markup = renderToStaticMarkup(
+      <SkuMatrixReadOnly
+        dimensions={[]}
+        skus={[
+          sku({
+            productSkuRef: uuid('sku-view-only'),
+            skuCode: 'SKU-VIEW-ONLY',
+            skuName: '查看规格',
+            voidAvailability: {canVoid: false, blockingReferences: [], dependentFacts: [], blockingReasons: []},
+          }),
+        ]}
+        summary={{enabledCount: 1, nonArchivedCount: 1, totalCount: 1, dimensions: []}}
+        priceGranularity="SKU"
+        canWriteCatalog={false}
+      />,
     );
-    expect(source).toMatch(
-      /onConfirm=\{identifiers => \{[\s\S]*updateSku\(identifierModalIndex, \{identifiers\}\);[\s\S]*setIdentifierModalIndex\(undefined\);/,
-    );
-    expect(source).toMatch(
-      /onConfirm=\{preparationOverride => \{[\s\S]*updateSku\(preparationModalIndex, \{preparationOverride\}\);[\s\S]*setPreparationModalIndex\(undefined\);/,
-    );
+    expect(markup).not.toContain('作废规格');
+    expect(markup).not.toContain('disabled');
+  });
+
+  it('keeps an opened item identity-bound while a detail request settles', () => {
+    const viewSource = readFileSync(new URL('./CatalogItemViewDrawer.tsx', import.meta.url), 'utf8');
+    const sessionSource = readFileSync(new URL('../model/useCatalogItemEditorSession.ts', import.meta.url), 'utf8');
+    expect(viewSource).toContain('selectCatalogDetailForItem(viewedItemCode, detailQuery.currentData, detailQuery.data)');
+    expect(viewSource).toContain('setViewedItemCode(code)');
+    expect(viewSource).toContain('detailQuery.isError ? undefined');
+    expect(sessionSource).toContain('selectCatalogDetailForItem(itemCode, detailQuery.currentData, detailQuery.data)');
+    expect(sessionSource).toContain('detailQuery.isError ? undefined');
+    expect(viewSource).toContain('detailQuery.isLoading && !detail');
+    expect(viewSource).toContain('onOpenReferencedItem={code => {');
+    expect(viewSource).toContain("setActiveTab('basic')");
+  });
+
+  it('lets the catalog owner, rather than a client-side shape guess, provide package-content candidates', () => {
+    const source = readFileSync(new URL('./CatalogItemCompositeEditor.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain("candidateUsage: 'COMPOSITE_COMPONENT'");
+    expect(source).toContain('excludeItemCode: currentItemCode');
+    expect(source).toContain('currentItemCode,');
+    expect(source).toContain('const selectableItems = candidateState.items');
+    expect(source).not.toContain('filter(item => item.code !== currentItemCode)');
+  });
+
+  it('decodes the detail contract without importing list-only projections', () => {
+    const detail = decodeDetail({
+      revision: 'test',
+      requestId: 'request-test',
+      data: {
+        item: {
+          itemRef: 'item-1',
+          code: 'DETAIL-ONLY',
+          name: '详情商品',
+          shortName: null,
+          materialRole: null,
+          categoryRef: null,
+          categoryPathLabels: ['餐饮', '饮品'],
+          productionTagRef: null,
+          tagRefs: [],
+          shapeKey: 'STANDARD_SALE_COUNTED',
+          itemKind: 'STANDARD',
+          measureMode: 'COUNT',
+          usageCapabilities: [],
+          images: [],
+          primaryImageAssetRef: null,
+          salesUnitRef: null,
+          baseMeasureUnitRef: null,
+          salesUnit: null,
+          baseMeasureUnit: null,
+          identifiers: [],
+          skuVariantDimensions: [],
+          skus: [],
+          skuSummary: {enabledCount: 0, nonArchivedCount: 0, totalCount: 0, dimensions: []},
+          standardSalePrice: null,
+          priceGranularity: 'ITEM',
+          attributeAssignments: [],
+          orderOptionConfigs: [],
+          compositeGroups: [],
+          preparationProfile: null,
+          lifecycle: {status: 'DRAFT', version: 1, source: 'CATALOG'},
+          source: 'CATALOG',
+          externalIdentity: null,
+          version: 1,
+          updatedAt: 0,
+        },
+        tabs: [],
+        references: [],
+        inventoryRules: {nodes: []},
+        productionTags: [],
+        compositeGroups: [],
+        governance: {deniedFields: [], externalIdentity: null},
+        actionAvailability: {canEdit: true, canEnable: true, canDisable: false, canArchive: false},
+        deniedFields: [],
+        fieldOwnership: {catalog: 'CATALOG', inventory: 'INVENTORY', asset: 'ASSET'},
+        queryIdentity: {dataNodeRef: 'scope-1', generation: 'generation-1'},
+      },
+    } as never);
+    expect(detail?.item.code).toBe('DETAIL-ONLY');
+    expect(detail?.item.categoryPathLabels).toEqual(['餐饮', '饮品']);
   });
 
   it('covers item-only, specification, option, and combined preparation layouts', () => {
@@ -235,7 +459,6 @@ describe('catalog identification and preparation editor boundaries', () => {
       definitionValueRef: uuid('option-value-1'),
       optionGroupDisplayOrder: 0,
       optionValueDisplayOrder: 0,
-      addProductionTagRefs: [uuid('tag-beverage')],
       instruction: '最后加冰',
       preparationSecondsDelta: 10,
     };
@@ -284,7 +507,6 @@ describe('catalog identification and preparation editor boundaries', () => {
       definitionValueRef: uuid('option-value-1'),
       optionGroupDisplayOrder: 1,
       optionValueDisplayOrder: 2,
-      addProductionTagRefs: [uuid('tag-old')],
       instruction: '先摇匀',
       preparationSecondsDelta: 5,
     };
@@ -295,10 +517,9 @@ describe('catalog identification and preparation editor boundaries', () => {
         optionValueDisplayOrder: current.optionValueDisplayOrder,
       },
       current,
-      {addProductionTagRefs: [uuid('tag-old'), uuid('tag-new')], instruction: '最后加冰', preparationSecondsDelta: 10},
+      {instruction: '最后加冰', preparationSecondsDelta: 10},
     );
     expect(next).toMatchObject({
-      addProductionTagRefs: [uuid('tag-old'), uuid('tag-new')],
       instruction: '最后加冰',
       preparationSecondsDelta: 10,
     });
@@ -312,7 +533,7 @@ describe('catalog identification and preparation editor boundaries', () => {
           optionValueDisplayOrder: current.optionValueDisplayOrder,
         },
         null,
-        {addProductionTagRefs: [], instruction: '', preparationSecondsDelta: null},
+        {instruction: '', preparationSecondsDelta: null},
       ),
     ).toBeNull();
   });
@@ -320,7 +541,13 @@ describe('catalog identification and preparation editor boundaries', () => {
   it('keeps production-tag candidate pagination and stale-query isolation bounded by the cursor', async () => {
     const calls: Array<string | undefined> = [];
     const pages = new Map<string | undefined, {items: ProductionTagOption[]; nextCursor?: string}>([
-      [undefined, {items: [{tagRef: uuid('tag-1'), code: 'HOT', name: '热厨制作', owner: 'FULFILLMENT_PRODUCTION'}], nextCursor: 'cursor-2'}],
+      [
+        undefined,
+        {
+          items: [{tagRef: uuid('tag-1'), code: 'HOT', name: '热厨制作', owner: 'FULFILLMENT_PRODUCTION'}],
+          nextCursor: 'cursor-2',
+        },
+      ],
       ['cursor-2', {items: [{tagRef: uuid('tag-2'), code: 'COLD', name: '冷菜制作', owner: 'FULFILLMENT_PRODUCTION'}]}],
     ]);
     await expect(
@@ -338,10 +565,11 @@ describe('catalog identification and preparation editor boundaries', () => {
     ).resolves.toMatchObject({items: [{code: 'HOT'}, {code: 'COLD'}], pageCount: 2});
     expect(calls).toEqual([undefined, 'cursor-2']);
 
-    const source = readFileSync(new URL('./CatalogItemDrawer.tsx', import.meta.url), 'utf8');
-    expect(source).toMatch(/const productionTagCandidates = useCursorCandidates/);
-    expect(source).toMatch(/resetKey: `\$\{itemCode \?\? ''\}\|\$\{queryContext\.scopeRef \?\? ''\}\|\$\{brandRef \?\? ''\}`/);
-    expect(source).toMatch(/if \(cancelled \|\| result\.stale\) return;/);
+    const source = readFileSync(new URL('./CatalogItemProductionEditor.tsx', import.meta.url), 'utf8');
+    expect(source).toMatch(/const candidates = useCursorCandidates/);
+    expect(source).toMatch(/resetKey: `\$\{scopeRef \?\? ''\}\|\$\{brandRef \?\? ''\}`/);
+    expect(source).toMatch(/usage: 'BINDABLE_CANDIDATE'/);
+    expect(source).toMatch(/status !== undefined && tag\.status !== 'ENABLED'/);
   });
 
   it('keeps user-facing surfaces free of the implementation vocabulary', () => {
@@ -371,14 +599,17 @@ describe('catalog identification and preparation editor boundaries', () => {
       'BARCODE',
       'PLU',
       'MNEMONIC',
+      '商品类型',
     ]) {
       expect(markup).not.toContain(forbidden);
     }
     expect(markup).toContain('条码与标识');
     expect(markup).toContain('制作单显示名称');
-    const source = readFileSync(new URL('./CatalogItemDrawer.tsx', import.meta.url), 'utf8');
-    expect(source).toContain('增加制作时长（秒）');
-    expect(source).toContain('追加制作说明');
+    const productionSource = readFileSync(new URL('./CatalogItemProductionEditor.tsx', import.meta.url), 'utf8');
+    const optionSource = readFileSync(new URL('./CatalogItemOrderOptionsEditor.tsx', import.meta.url), 'utf8');
+    expect(productionSource).toContain('生产标签');
+    expect(optionSource).toContain('增加制作时长（秒）');
+    expect(optionSource).toContain('追加制作说明');
   });
 
   it('keeps the whole-save invalidation policy exact for identification and preparation edits', () => {
@@ -387,7 +618,12 @@ describe('catalog identification and preparation editor boundaries', () => {
         new URL('../../../../../../../contracts/catalog/catalog-inventory-rtk-tag-policy.json', import.meta.url),
         'utf8',
       ),
-    ) as {operations: Array<{operationId: string; invalidates: Array<{kind: string; id?: string; prefix?: string; path?: string}>}>};
+    ) as {
+      operations: Array<{
+        operationId: string;
+        invalidates: Array<{kind: string; id?: string; prefix?: string; path?: string}>;
+      }>;
+    };
     const save = policy.operations.find(operation => operation.operationId === 'saveOperationsCatalogItem');
     expect(save?.invalidates).toEqual([
       {kind: 'static', id: 'catalog-workbench'},
@@ -399,5 +635,103 @@ describe('catalog identification and preparation editor boundaries', () => {
       {kind: 'static', id: 'inventory-target-page'},
       {kind: 'static', id: 'inventory-rule-definition'},
     ]);
+  });
+
+  it('presents a package as groups and business content, not codes or persisted enum values', () => {
+    const groups: CatalogCompositeGroup[] = [
+      {
+        groupCode: 'MAIN',
+        groupName: '主菜',
+        selectionRule: 'SINGLE',
+        minSelections: 1,
+        maxSelections: 1,
+        displayOrder: 0,
+        components: [
+          {
+            itemCode: 'MAIN-STEAK-SIRLOIN',
+            itemName: '西冷牛排',
+            itemRef: uuid('item-steak'),
+            productSkuRef: uuid('sku-medium'),
+            skuCode: 'STEAK-MEDIUM',
+            skuName: '七分熟',
+            quantity: '1',
+            unit: '份',
+            default: true,
+            extraPrice: 600,
+            status: 'ENABLED',
+            displayOrder: 0,
+          },
+        ],
+      },
+    ];
+
+    const markup = renderToStaticMarkup(<CompositeGroupsReadOnly values={groups} />);
+    expect(markup).toContain('主菜');
+    expect(markup).toContain('任选一项');
+    expect(markup).toContain('西冷牛排');
+    expect(markup).toContain('七分熟');
+    expect(markup).toContain('数量：1 份');
+    expect(markup).toContain('加价：¥6.00');
+    expect(markup).toContain('默认内容');
+    expect(markup).not.toContain('MAIN-STEAK-SIRLOIN');
+    expect(markup).not.toContain('STEAK-MEDIUM');
+    expect(markup).not.toContain('SINGLE');
+  });
+
+  it('uses a group-and-content task surface for package editing instead of a wide technical components table', () => {
+    const values: CatalogCompositeGroupDraft[] = [
+      {
+        editorId: 'group-1',
+        groupCode: 'MAIN',
+        groupName: '主菜',
+        selectionRule: 'SINGLE',
+        minSelections: 1,
+        maxSelections: 1,
+        displayOrder: 0,
+        components: [
+          {
+            editorId: 'component-1',
+            itemCode: '',
+            itemName: '',
+            itemRef: uuid('item-1'),
+            productSkuRef: null,
+            skuCode: null,
+            skuName: null,
+            quantity: '1',
+            unit: '份',
+            default: false,
+            extraPrice: null,
+            status: 'ENABLED',
+            displayOrder: 0,
+          },
+        ],
+      },
+    ];
+    const markup = renderToStaticMarkup(
+      <CatalogItemCompositeEditor
+        mode="edit"
+        shapeKey="COMPOSITE"
+        values={values}
+        readOnlyValues={[]}
+        onChange={() => undefined}
+        onDirty={() => undefined}
+        queryContext={{
+          groupWorkspaceKey: 'workspace-test',
+          expectedContextVersion: 1,
+          scopeRef: uuid('00000000-0000-4000-8000-000000000001'),
+        }}
+        version={1}
+        createDraftRowId={prefix => `${prefix}-new`}
+      />,
+    );
+
+    expect(markup).toContain('套餐分组');
+    expect(markup).toContain('添加内容');
+    expect(markup).toContain('选择商品');
+    expect(markup).toContain('规格');
+    expect(markup).toContain('默认内容');
+    const source = readFileSync(new URL('./CatalogItemCompositeEditor.tsx', import.meta.url), 'utf8');
+    expect(source).not.toContain('scroll={{x: 1336}}');
+    expect(source).toContain('title="选择套餐内容"');
   });
 });

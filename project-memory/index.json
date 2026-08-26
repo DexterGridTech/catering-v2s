@@ -1067,6 +1067,86 @@
       ]
     },
     {
+      "id": "operations.browser-l2-execution-standard",
+      "path": "project-memory/operations/browser-l2-execution-standard.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "testing",
+          "review",
+          "runtime-management"
+        ],
+        "domains": [
+          "admin-ui",
+          "platform",
+          "contract",
+          "backend"
+        ],
+        "consumerFaces": [
+          "platform-admin",
+          "operations-admin"
+        ],
+        "owners": [
+          "frontend-platform",
+          "platform",
+          "contract",
+          "backend"
+        ],
+        "impacts": [
+          "runtime",
+          "evidence",
+          "cleanup",
+          "contract"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review",
+          "runtime",
+          "failure"
+        ]
+      },
+      "assertions": [
+        "BROWSER_L2_STANDARD_SINGLE_SOURCE",
+        "BROWSER_L2_MANAGED_ISOLATED_TOPOLOGY",
+        "BROWSER_L2_SOURCE_OF_TRUTH_CHAIN",
+        "BROWSER_L2_CASE_PROGRESS_AND_JOIN",
+        "BROWSER_L2_FRESH_ROOT_CAUSE_RECOVERY"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BROWSER_L2_STANDARD_SINGLE_SOURCE",
+          "path": "doc/platform/browser-l2-execution-standard.md",
+          "anchor": "## 1. 目的、边界与唯一正本"
+        },
+        {
+          "assertionKey": "BROWSER_L2_MANAGED_ISOLATED_TOPOLOGY",
+          "path": "doc/platform/browser-l2-execution-standard.md",
+          "anchor": "## 2. 执行面与授权"
+        },
+        {
+          "assertionKey": "BROWSER_L2_SOURCE_OF_TRUTH_CHAIN",
+          "path": "doc/platform/browser-l2-execution-standard.md",
+          "anchor": "## 3. 单一真相与生成链"
+        },
+        {
+          "assertionKey": "BROWSER_L2_CASE_PROGRESS_AND_JOIN",
+          "path": "doc/platform/browser-l2-execution-standard.md",
+          "anchor": "## 5. 运行期进度、日志与 join 证据"
+        },
+        {
+          "assertionKey": "BROWSER_L2_FRESH_ROOT_CAUSE_RECOVERY",
+          "path": "doc/platform/browser-l2-execution-standard.md",
+          "anchor": "## 7. 通过条件、失败纪律与可复用检查"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/browser-l2-execution-standard.md"
+      ]
+    },
+    {
       "id": "operations.business-corpus-adoption-and-read-policy",
       "path": "project-memory/operations/business-corpus-adoption-and-read-policy.md",
       "layer": "routed",
@@ -1461,6 +1541,8 @@
       },
       "assertions": [
         "SYSTEMIC_REPAIR_BEFORE_NEXT_PHASE",
+        "IMPLEMENTATION_DESIGN_SOURCE_RECONCILIATION_IS_UNBOUNDED",
+        "STEP_BOUNDARY_INDEPENDENT_RECONCILIATION_REQUIRED",
         "PHASE_RETROSPECTIVE_FINITE_DENOMINATOR",
         "PHASE_RETROSPECTIVE_R4_GATE_PENDING",
         "IDENTIFIED_FINDING_GENERALIZATION_REQUIRED",
@@ -1486,6 +1568,16 @@
           "assertionKey": "SYSTEMIC_REPAIR_BEFORE_NEXT_PHASE",
           "path": "doc/review/platform/2026-07-25-v2s-all-v2-governance-disposition-ledger.md",
           "anchor": "## 缺口补齐与未来接线"
+        },
+        {
+          "assertionKey": "IMPLEMENTATION_DESIGN_SOURCE_RECONCILIATION_IS_UNBOUNDED",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### IMPLEMENTATION_DESIGN_SOURCE_RECONCILIATION_IS_UNBOUNDED"
+        },
+        {
+          "assertionKey": "STEP_BOUNDARY_INDEPENDENT_RECONCILIATION_REQUIRED",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### STEP_BOUNDARY_INDEPENDENT_RECONCILIATION_REQUIRED"
         },
         {
           "assertionKey": "PHASE_RETROSPECTIVE_FINITE_DENOMINATOR",
@@ -2530,7 +2622,7 @@
         {
           "assertionKey": "PRODUCTION_NEGATIVE_CONTROL_MUST_REMAIN",
           "path": "tools/verify-gates/cli.mjs",
-          "anchor": "  assertNoMatch(businessSources.filter((file) => !file.includes(\"/src/test/\")), /Map\\s*<\\s*String\\s*,\\s*Object\\s*>/, \"R4_DATABASE_UNTYPED_ROW_OR_COMMAND\", base);"
+          "anchor": "    'R4_DATABASE_UNTYPED_ROW_OR_COMMAND',"
         }
       ],
       "sourceRefs": [

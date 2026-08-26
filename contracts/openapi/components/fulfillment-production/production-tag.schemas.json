@@ -44,18 +44,6 @@
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "tagKind": {
-                    "type": "string",
-                    "description": "design-bound field",
-                    "enum": [
-                      "PRODUCTION",
-                      "PACKAGE",
-                      "LABEL",
-                      "HANDOFF",
-                      "REVIEW",
-                      "OTHER"
-                    ]
-                  },
                   "status": {
                     "type": "string",
                     "description": "design-bound field"
@@ -154,7 +142,6 @@
                   "tagRef",
                   "code",
                   "name",
-                  "tagKind",
                   "status",
                   "ownerType",
                   "ownerRef",
@@ -210,6 +197,15 @@
           "type": "string",
           "description": "server-side tag search"
         },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ENABLED",
+            "DISABLED",
+            "VOIDED"
+          ],
+          "description": "optional production tag lifecycle status filter"
+        },
         "cursor": {
           "type": "string",
           "description": "cursor"
@@ -225,7 +221,6 @@
       "additionalProperties": false,
       "required": [
         "code",
-        "tagKind",
         "name",
         "dataNodeRef"
       ],
@@ -239,18 +234,6 @@
           "type": "string",
           "description": "immutable tag code"
         },
-        "tagKind": {
-          "type": "string",
-          "enum": [
-            "PRODUCTION",
-            "PACKAGE",
-            "LABEL",
-            "HANDOFF",
-            "REVIEW",
-            "OTHER"
-          ],
-          "description": "closed production tag kind"
-        },
         "name": {
           "type": "string",
           "description": "tag name"
@@ -263,7 +246,6 @@
       "required": [
         "tagCode",
         "expectedVersion",
-        "tagKind",
         "name",
         "dataNodeRef"
       ],
@@ -275,18 +257,6 @@
         "expectedVersion": {
           "type": "integer",
           "description": "expected version"
-        },
-        "tagKind": {
-          "type": "string",
-          "enum": [
-            "PRODUCTION",
-            "PACKAGE",
-            "LABEL",
-            "HANDOFF",
-            "REVIEW",
-            "OTHER"
-          ],
-          "description": "immutable production tag kind"
         },
         "name": {
           "type": "string",
@@ -322,7 +292,6 @@
           "required": [
             "tagRef",
             "code",
-            "tagKind",
             "name",
             "status"
           ],
@@ -335,18 +304,6 @@
             "code": {
               "type": "string",
               "description": "tag code"
-            },
-            "tagKind": {
-              "type": "string",
-              "enum": [
-                "PRODUCTION",
-                "PACKAGE",
-                "LABEL",
-                "HANDOFF",
-                "REVIEW",
-                "OTHER"
-              ],
-              "description": "production tag kind"
             },
             "name": {
               "type": "string",

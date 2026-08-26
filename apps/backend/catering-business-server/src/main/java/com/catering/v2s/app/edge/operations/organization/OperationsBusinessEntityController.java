@@ -176,6 +176,7 @@ public final class OperationsBusinessEntityController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody TenantCreateRequest body) {
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
+        OrganizationTaskPathLookup.TaskPath groupPath = groupTaskPath(session, groupWorkspaceKey);
         OrganizationEntityReadback result = m1Bindings.bindCreateOperationsOrganizationTenant(
                 new OperationsBusinessEntityCommandApi.TenantCreateCommand(
                         session.workspaceUuid(),
@@ -188,11 +189,7 @@ public final class OperationsBusinessEntityController {
                         tenantCreateSubmission(body.extensionValues()),
                         idempotencyKey,
                         actor(session),
-                        requireCapability(
-                                session,
-                                "REQ_CREATE_OPERATIONS_ORGANIZATION_TENANT",
-                                ServiceNodeTypes.GROUP,
-                                entities.requireCommercialGroupId(session.workspaceUuid(), groupWorkspaceKey))));
+                        requireCapability(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_TENANT", groupPath)));
         return ResponseEntity.status(HttpStatus.CREATED).body(BusinessEntityWireMapper.tenant(result));
     }
 
@@ -203,6 +200,7 @@ public final class OperationsBusinessEntityController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody HeadCompanyCreateRequest body) {
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
+        OrganizationTaskPathLookup.TaskPath groupPath = groupTaskPath(session, groupWorkspaceKey);
         var result = m1Bindings.bindCreateOperationsOrganizationHeadCompany(
                 new OperationsBusinessEntityCommandApi.HeadCompanyCreateCommand(
                         session.workspaceUuid(),
@@ -215,11 +213,7 @@ public final class OperationsBusinessEntityController {
                         headCompanyCreateSubmission(body.extensionValues()),
                         idempotencyKey,
                         actor(session),
-                        requireCapability(
-                                session,
-                                "REQ_CREATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY",
-                                ServiceNodeTypes.GROUP,
-                                entities.requireCommercialGroupId(session.workspaceUuid(), groupWorkspaceKey))));
+                        requireCapability(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY", groupPath)));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(BusinessEntityWireMapper.headCompany(result.entity(), result.authorizedBrands()));
     }
@@ -397,6 +391,7 @@ public final class OperationsBusinessEntityController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody TenantUpdateRequest body) {
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
+        OrganizationTaskPathLookup.TaskPath groupPath = groupTaskPath(session, groupWorkspaceKey);
         return BusinessEntityWireMapper.tenant(m1Bindings.bindUpdateOperationsOrganizationTenant(
                 new OperationsBusinessEntityCommandApi.TenantUpdateCommand(
                         session.workspaceUuid(),
@@ -411,11 +406,7 @@ public final class OperationsBusinessEntityController {
                         tenantUpdateSubmission(body.extensionValues()),
                         idempotencyKey,
                         actor(session),
-                        requireCapability(
-                                session,
-                                "REQ_UPDATE_OPERATIONS_ORGANIZATION_TENANT",
-                                ServiceNodeTypes.GROUP,
-                                entities.requireCommercialGroupId(session.workspaceUuid(), groupWorkspaceKey)))));
+                        requireCapability(session, "REQ_UPDATE_OPERATIONS_ORGANIZATION_TENANT", groupPath))));
     }
 
     @PatchMapping("/head-companies/{headCompanyId}")

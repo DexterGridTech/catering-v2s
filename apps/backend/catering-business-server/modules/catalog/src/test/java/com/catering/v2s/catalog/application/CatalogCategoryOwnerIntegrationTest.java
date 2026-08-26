@@ -3,6 +3,7 @@ package com.catering.v2s.catalog.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -85,8 +86,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 mock(CatalogAssetReferenceLock.class),
                 production,
                 inventory);
-        defaultTestUnit = createUnit(
-                "TEST-DEFAULT-UNIT", "测试默认单位", CatalogOwnerApi.UnitDimension.COUNT, 0);
+        defaultTestUnit = createUnit("TEST-DEFAULT-UNIT", "测试默认单位", CatalogOwnerApi.UnitDimension.COUNT, 0);
     }
 
     @Test
@@ -171,6 +171,180 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
+    void categoryHierarchyAllowsExactlyThreeLevelsAndRejectsADeeperCreateOrMove() {
+        String suffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase(java.util.Locale.ROOT);
+        JsonNode root = create("DEPTH-ROOT-" + suffix, "三级根", null);
+        JsonNode second = create(
+                "DEPTH-SECOND-" + suffix, "三级中间", root.path("categoryRef").asText());
+        JsonNode third = create(
+                "DEPTH-THIRD-" + suffix, "三级叶", second.path("categoryRef").asText());
+
+        CatalogOwnerApi.Problem createBlocked = assertThrows(
+                CatalogOwnerApi.Problem.class,
+                () -> create(
+                        "DEPTH-FOURTH-" + suffix,
+                        "第四级",
+                        third.path("categoryRef").asText()));
+        assertEquals("CATEGORY_DEPTH_EXCEEDED", createBlocked.code());
+        assertEquals("商品分类最多只能建立三级", createBlocked.getMessage());
+
+        JsonNode movableRoot = create("DEPTH-MOVE-ROOT-" + suffix, "待移动根", null);
+        JsonNode movableChild = create(
+                "DEPTH-MOVE-CHILD-" + suffix,
+                "待移动子",
+                movableRoot.path("categoryRef").asText());
+        CatalogOwnerApi.Problem moveBlocked = assertThrows(
+                CatalogOwnerApi.Problem.class,
+                () -> write(
+                        "moveOperationsCatalogCategory",
+                        MAPPER.createObjectNode()
+                                .put(
+                                        "categoryRef",
+                                        movableRoot.path("categoryRef").asText())
+                                .put(
+                                        "expectedVersion",
+                                        movableRoot.path("version").asLong())
+                                .put("action", "REPARENT")
+                                .put(
+                                        "parentCategoryRef",
+                                        third.path("categoryRef").asText())));
+        assertEquals("CATEGORY_DEPTH_EXCEEDED", moveBlocked.code());
+        assertEquals("商品分类最多只能建立三级", moveBlocked.getMessage());
+        assertEquals(
+                second.path("categoryRef").asText(),
+                jdbc.queryForObject(
+                        "SELECT parent_category_ref::text FROM catalog.catalog_category WHERE category_ref=?",
+                        String.class,
+                        third.path("categoryRef").asText()),
+                "the rejected move does not mutate the existing three-level branch");
+        assertNull(
+                jdbc.queryForObject(
+                        "SELECT parent_category_ref::text FROM catalog.catalog_category WHERE category_ref=?",
+                        String.class,
+                        movableRoot.path("categoryRef").asText()),
+                "the rejected move does not mutate the moving root");
+        assertFalse(movableChild.path("categoryRef").asText().isBlank(), "the move guard uses a real subtree");
+    }
+
+    @Test
+    void brandCopyRejectsTheWholeCopyWhenAReusedCategoryWouldMakeItsCopiedSubtreeFourLevelsDeep() {
+        String suffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase(java.util.Locale.ROOT);
+        String sourceRootCode = "COPY-DEPTH-ROOT-" + suffix;
+        String sourceChildCode = "COPY-DEPTH-CHILD-" + suffix;
+        String sourceLeafCode = "COPY-DEPTH-LEAF-" + suffix;
+        JsonNode sourceRoot = create(sourceRootCode, "来源一级", null);
+        JsonNode sourceChild = create(sourceChildCode, "来源二级", sourceRoot.path("categoryRef").asText());
+        JsonNode sourceLeaf = create(sourceLeafCode, "来源三级", sourceChild.path("categoryRef").asText());
+        String sourceItemCode = generatedCatalogCode("COPY-DEPTH-ITEM");
+        JsonNode sourceItem = write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", sourceItemCode)
+                        .put("name", "分类复制深度来源")
+                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
+        ObjectNode sourceSave = MAPPER.createObjectNode().put("itemCode", sourceItemCode);
+        sourceSave.putObject("sections")
+                .put("expectedCatalogVersion", sourceItem.path("version").asLong())
+                .putObject("catalogDraft")
+                .putArray("categoryRefs")
+                .add(sourceLeaf.path("categoryRef").asText());
+        write("saveOperationsCatalogItem", sourceSave);
+
+        UUID targetRootRef = UUID.randomUUID();
+        UUID reusedSourceRootRef = UUID.randomUUID();
+        insertCategory(COPY_TARGET_SCOPE, targetRootRef, "COPY-DEPTH-TARGET-" + suffix);
+        insertCategory(COPY_TARGET_SCOPE, reusedSourceRootRef, sourceRootCode, targetRootRef);
+
+        ObjectNode selection = MAPPER.createObjectNode();
+        selection.putArray("selectedItemCodes").add(sourceItemCode);
+        JsonNode preflight = service.preflightCopy(
+                copyContext("preflightOperationsBrandCatalogCopy", "copy-depth-preflight"), selection);
+        ObjectNode execute = selection
+                .deepCopy()
+                .put("expectedSourceVersion", preflight.path("sourceVersion").asLong())
+                .put("expectedTargetVersion", preflight.path("targetVersion").asLong())
+                .put("preflightDigest", preflight.path("preflightDigest").asText());
+        execute.set("referenceMappings", preflight.path("referenceMappings").deepCopy());
+        execute.set("compatibilityDispositions", confirmedCompatibilityDispositions(preflight));
+
+        CatalogOwnerApi.Problem rejected = assertThrows(
+                CatalogOwnerApi.Problem.class,
+                () -> service.copy(
+                        copyContext("executeOperationsBrandCatalogCopy", "copy-depth-execute"),
+                        execute,
+                        "copy-depth-key"));
+        assertEquals("CATEGORY_DEPTH_EXCEEDED", rejected.code());
+        assertEquals("商品分类最多只能建立三级", rejected.getMessage());
+        assertEquals(
+                targetRootRef,
+                jdbc.queryForObject(
+                        "SELECT parent_category_ref FROM catalog.catalog_category WHERE category_ref=?",
+                        UUID.class,
+                        reusedSourceRootRef),
+                "the reused target category remains where it was before the rejected copy");
+        assertEquals(
+                0,
+                jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? "
+                                + "AND code IN (?,?)",
+                        Integer.class,
+                        COPY_TARGET_SCOPE.toString(),
+                        BRAND,
+                        sourceChildCode,
+                        sourceLeafCode),
+                "the rejected copy writes neither child of the copied subtree");
+        assertEquals(
+                0,
+                jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND code=?",
+                        Integer.class,
+                        COPY_TARGET_SCOPE.toString(),
+                        BRAND,
+                        sourceItemCode),
+                "the rejected copy does not create a partial target item");
+    }
+
+    @Test
+    void categoryCandidateCursorUsesDisplayOrderThenNameThenCodeAndKeepsFullPaths() {
+        String suffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase(java.util.Locale.ROOT);
+        JsonNode alpha = create("Z-CANDIDATE-" + suffix, "Alpha candidate " + suffix, null);
+        JsonNode beta = create("A-CANDIDATE-" + suffix, "Beta candidate " + suffix, null);
+        JsonNode gamma = create("M-CANDIDATE-" + suffix, "Gamma candidate " + suffix, null);
+        List<String> refs = List.of(
+                alpha.path("categoryRef").asText(),
+                beta.path("categoryRef").asText(),
+                gamma.path("categoryRef").asText());
+        jdbc.update(
+                "UPDATE catalog.catalog_category SET display_order=-99999 WHERE category_ref::text IN (?,?,?)",
+                refs.toArray());
+
+        ObjectNode firstRequest =
+                MAPPER.createObjectNode().put("usage", "ITEM_ASSIGNMENT").put("pageSize", 1);
+        JsonNode first = service.readCategoryCandidates(SCOPE.toString(), BRAND, firstRequest, "candidate-first")
+                .path("data");
+        assertEquals(
+                "Alpha candidate " + suffix,
+                first.path("items").get(0).path("name").asText());
+        assertEquals(1, first.path("items").get(0).path("path").size());
+
+        ObjectNode secondRequest =
+                firstRequest.deepCopy().put("cursor", first.path("nextCursor").asText());
+        JsonNode second = service.readCategoryCandidates(SCOPE.toString(), BRAND, secondRequest, "candidate-second")
+                .path("data");
+        assertEquals(
+                "Beta candidate " + suffix,
+                second.path("items").get(0).path("name").asText());
+
+        ObjectNode thirdRequest =
+                firstRequest.deepCopy().put("cursor", second.path("nextCursor").asText());
+        JsonNode third = service.readCategoryCandidates(SCOPE.toString(), BRAND, thirdRequest, "candidate-third")
+                .path("data");
+        assertEquals(
+                "Gamma candidate " + suffix,
+                third.path("items").get(0).path("name").asText());
+    }
+
+    @Test
     void navigationAllCountMatchesTheSmartAllScopeAndExcludesVoidedItems() {
         long before = navigationData().path("allCount").asLong();
         String visibleCode = generatedCatalogCode("NAV-ALL-VISIBLE");
@@ -218,6 +392,7 @@ class CatalogCategoryOwnerIntegrationTest {
         JsonNode category = create("NAV-COUNT-CATEGORY", "navigation count category", null);
         String categoryRef = category.path("categoryRef").asText();
         JsonNode before = category(navigation(), categoryRef);
+        long inactiveBefore = smartView(navigationData(), "INACTIVE").path("count").asLong();
         String itemCode = generatedCatalogCode("NAV-CATEGORY-ITEM");
 
         JsonNode created = write(
@@ -231,6 +406,10 @@ class CatalogCategoryOwnerIntegrationTest {
         assertEquals("DRAFT", created.path("status").asText());
         JsonNode after = category(navigation(), categoryRef);
         assertEquals(before.path("count").asLong() + 1, after.path("count").asLong());
+        assertEquals(
+                inactiveBefore + 1,
+                smartView(navigationData(), "INACTIVE").path("count").asLong(),
+                "DRAFT 商品必须进入未启用商品集合");
         assertEquals(
                 categoryRef,
                 service.readItem(SCOPE.toString(), BRAND, itemCode, "navigation-category-detail")
@@ -325,6 +504,17 @@ class CatalogCategoryOwnerIntegrationTest {
                 null,
                 itemCode,
                 null);
+
+        JsonNode voidAvailability = service.readItem(SCOPE.toString(), BRAND, itemCode, "inventory-guard-detail")
+                .path("data")
+                .path("actionAvailability")
+                .path("voidAvailability");
+        assertFalse(voidAvailability.path("canVoid").asBoolean());
+        assertTrue(
+                java.util.stream.StreamSupport.stream(voidAvailability.path("blockingReasons").spliterator(), false)
+                        .anyMatch(reason -> "已配置库存对象".equals(reason.path("label").asText())
+                                && reason.path("count").asLong() == 1L),
+                "详情必须直接表达 inventory owner 的作废阻断，而不是泛化为关联");
 
         CatalogOwnerApi.Problem blocked = assertThrows(
                 CatalogOwnerApi.Problem.class,
@@ -486,12 +676,21 @@ class CatalogCategoryOwnerIntegrationTest {
         JsonNode before = service.readItem(SCOPE.toString(), BRAND, itemCode, "qg10-retire-before")
                 .path("data")
                 .path("item");
+        ObjectNode catalogBlockedVoid = skuVoidSaveMany(
+                itemCode, before.path("version").asLong(), before, List.of(catalogBlockedSkuRef), 1L);
+        CatalogOwnerApi.Problem catalogBlocked = assertThrows(
+                CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", catalogBlockedVoid));
+        assertEquals("REFERENCE_BLOCKS_VOID", catalogBlocked.code());
+        assertEquals("该规格已被套餐内容使用，暂不能作废", catalogBlocked.getMessage());
+        assertFalse(catalogBlocked.getMessage().contains(catalogBlockedSkuRef.toString()));
+        assertFalse(catalogBlocked.getMessage().contains(ownerItemRef.toString()));
         ObjectNode batchVoid = skuVoidSaveMany(
                 itemCode, before.path("version").asLong(), before, List.of(inventoryBlockedSkuRef, freeSkuRef), 1L);
         CatalogOwnerApi.Problem blocked =
                 assertThrows(CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", batchVoid));
         assertEquals("REFERENCE_BLOCKS_VOID", blocked.code());
-        assertTrue(blocked.getMessage().contains(inventoryBlockedSkuRef.toString()));
+        assertEquals("该规格存在库存记录或用料，暂不能作废", blocked.getMessage());
+        assertFalse(blocked.getMessage().contains(inventoryBlockedSkuRef.toString()));
         assertEquals(
                 "ENABLED",
                 jdbc.queryForObject(
@@ -551,7 +750,7 @@ class CatalogCategoryOwnerIntegrationTest {
         String code = generatedCatalogCode("TYPED-TAG-REF");
         ProductionTagOwnerApi.ProductionTagCommandReadback readback = production.createTag(
                 context("createOperationsProductionTag", SCOPE, "typed-tag-ref"),
-                new ProductionTagOwnerApi.CreateTagCommand(code, "PRODUCTION", "typed tag"),
+                new ProductionTagOwnerApi.CreateTagCommand(code, "typed tag"),
                 "typed-tag-ref-key");
         assertTrue(readback.tagRef() != null);
         assertEquals(
@@ -560,6 +759,39 @@ class CatalogCategoryOwnerIntegrationTest {
                         "SELECT tag_ref FROM fulfillment_production.production_tag_definition WHERE data_node_ref=? "
                                 + "AND brand_ref=? AND code=?",
                         UUID.class,
+                        SCOPE.toString(),
+                        BRAND,
+                        code));
+    }
+
+    @Test
+    void typedProductionTagUpdateAndTransitionLockTheCurrentFactAndReturnTheirPersistedReadback() {
+        String code = generatedCatalogCode("TYPED-TAG-MUTATION");
+        ProductionTagOwnerApi.ProductionTagCommandReadback created = production.createTag(
+                context("createOperationsProductionTag", SCOPE, "typed-tag-mutation-create"),
+                new ProductionTagOwnerApi.CreateTagCommand(code, "initial production tag"),
+                "typed-tag-mutation-create-key");
+
+        ProductionTagOwnerApi.ProductionTagCommandReadback renamed = production.updateTag(
+                context("updateOperationsProductionTag", SCOPE, "typed-tag-mutation-update"),
+                new ProductionTagOwnerApi.UpdateTagCommand(code, created.version(), "renamed production tag"),
+                "typed-tag-mutation-update-key");
+        assertEquals("renamed production tag", renamed.name());
+        assertEquals(created.version() + 1L, renamed.version());
+
+        ProductionTagOwnerApi.ProductionTagCommandReadback disabled = production.transitionTagStatus(
+                context("transitionOperationsProductionTagStatus", SCOPE, "typed-tag-mutation-transition"),
+                new ProductionTagOwnerApi.TransitionTagStatusCommand(code, renamed.version(), "DISABLED"),
+                "typed-tag-mutation-transition-key");
+        assertEquals("DISABLED", disabled.status());
+        assertEquals(renamed.version() + 1L, disabled.version());
+        assertEquals(
+                List.of("renamed production tag", "DISABLED", String.valueOf(disabled.version())),
+                jdbc.queryForObject(
+                        "SELECT name,status,version FROM fulfillment_production.production_tag_definition "
+                                + "WHERE data_node_ref=? AND brand_ref=? AND code=?",
+                        (result, row) ->
+                                List.of(result.getString(1), result.getString(2), String.valueOf(result.getLong(3))),
                         SCOPE.toString(),
                         BRAND,
                         code));
@@ -1058,10 +1290,8 @@ class CatalogCategoryOwnerIntegrationTest {
                 .putNull("expectedBomVersion")
                 .putNull("directConfiguration");
         bomNode.putObject("bom").putArray("lines");
-        CatalogOwnerApi.Problem optionValueRejected =
-                assertThrows(
-                        CatalogOwnerApi.Problem.class,
-                        () -> coordinatorSave(optionValueBom, "shape-admission-sku-item"));
+        CatalogOwnerApi.Problem optionValueRejected = assertThrows(
+                CatalogOwnerApi.Problem.class, () -> coordinatorSave(optionValueBom, "shape-admission-sku-item"));
         assertEquals("INVENTORY_DEDUCTION_MODE_NOT_ALLOWED", optionValueRejected.code());
         assertEquals(
                 1L,
@@ -1098,10 +1328,8 @@ class CatalogCategoryOwnerIntegrationTest {
                 .putNull("expectedBomVersion")
                 .putNull("directConfiguration");
         serviceNode.putObject("bom").putArray("lines");
-        CatalogOwnerApi.Problem serviceBomRejected =
-                assertThrows(
-                        CatalogOwnerApi.Problem.class,
-                        () -> coordinatorSave(serviceBom, "shape-admission-service"));
+        CatalogOwnerApi.Problem serviceBomRejected = assertThrows(
+                CatalogOwnerApi.Problem.class, () -> coordinatorSave(serviceBom, "shape-admission-service"));
         assertEquals("REFERENCE_MAPPING_UNRESOLVED", serviceBomRejected.code());
 
         String standardItemCode = generatedCatalogCode("OPTION-VALUE-MODE");
@@ -1136,8 +1364,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 .put("conversionFactor", "1");
         invalidOptionNode.putNull("bom");
         CatalogOwnerApi.Problem invalidOptionModeRejected = assertThrows(
-                CatalogOwnerApi.Problem.class,
-                () -> coordinatorSave(invalidOptionMode, "shape-admission-option"));
+                CatalogOwnerApi.Problem.class, () -> coordinatorSave(invalidOptionMode, "shape-admission-option"));
         assertEquals("REFERENCE_MAPPING_UNRESOLVED", invalidOptionModeRejected.code());
         assertEquals(
                 1L,
@@ -1421,7 +1648,6 @@ class CatalogCategoryOwnerIntegrationTest {
                 .path("data")
                 .path("item");
         assertEquals("SKU", detail.path("priceGranularity").asText());
-        assertEquals(2, detail.path("missingPriceCount").asInt());
         assertEquals(3, detail.path("skuSummary").path("totalCount").asInt());
         assertEquals(3, detail.path("skuSummary").path("nonArchivedCount").asInt());
         assertEquals(3, detail.path("skuSummary").path("enabledCount").asInt());
@@ -1439,7 +1665,6 @@ class CatalogCategoryOwnerIntegrationTest {
         JsonNode afterPriceFix = service.readItem(SCOPE.toString(), BRAND, itemCode, "derived-summary-price-fixed")
                 .path("data")
                 .path("item");
-        assertEquals(1, afterPriceFix.path("missingPriceCount").asInt());
         ObjectNode listRequest = MAPPER.createObjectNode();
         listRequest.putArray("itemCodes").add(itemCode);
         JsonNode listItem = service.readItems(SCOPE.toString(), BRAND, listRequest, "derived-summary-list-readback")
@@ -1455,9 +1680,9 @@ class CatalogCategoryOwnerIntegrationTest {
         assertEquals(
                 afterPriceFix.path("skuSummary").path("totalCount").asInt(),
                 listItem.path("skuTotalCount").asInt());
-        assertEquals(
-                afterPriceFix.path("missingPriceCount").asInt(),
-                listItem.path("missingPriceCount").asInt());
+        assertTrue(
+                listItem.path("hasSkuChildren").asBoolean(),
+                "SKU-managed parent list rows declare their expandable child relation from the owner SKU facts");
 
         ObjectNode archiveThirdSku = request.deepCopy();
         ((ArrayNode) archiveThirdSku.path("sections").path("catalogDraft").path("skus")).remove(2);
@@ -1484,6 +1709,9 @@ class CatalogCategoryOwnerIntegrationTest {
         assertEquals(
                 afterArchive.path("skuSummary").path("totalCount").asInt(),
                 archivedListItem.path("skuTotalCount").asInt());
+        assertTrue(
+                archivedListItem.path("hasSkuChildren").asBoolean(),
+                "archiving one of several SKU rows does not remove the parent row's expandable child relation");
     }
 
     @Test
@@ -1687,7 +1915,8 @@ class CatalogCategoryOwnerIntegrationTest {
         submittedInventoryNode.put("expectedTargetVersion", 1L);
         submittedInventoryNode.putNull("expectedBomVersion");
         ObjectNode submittedDirect = submittedInventoryNode.putObject("directConfiguration");
-        submittedDirect.put("targetRef", targetRef.toString())
+        submittedDirect
+                .put("targetRef", targetRef.toString())
                 .put("allowNegative", false)
                 .put("lowStockThreshold", "2")
                 .put("countingUnitRef", box.unitRef().toString())
@@ -1716,7 +1945,9 @@ class CatalogCategoryOwnerIntegrationTest {
                         + before
                         + "; after="
                         + after);
-        assertEquals(targetRef.toString(), after.get(0).path("directConfiguration").path("targetRef").asText());
+        assertEquals(
+                targetRef.toString(),
+                after.get(0).path("directConfiguration").path("targetRef").asText());
     }
 
     private static CatalogInventoryCoordinator coordinatorForSave() {
@@ -1733,8 +1964,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 mock(CatalogScopeLookup.class));
     }
 
-    private static CatalogOwnerApi.CatalogItemSaveReadback coordinatorSave(
-            ObjectNode request, String requestId) {
+    private static CatalogOwnerApi.CatalogItemSaveReadback coordinatorSave(ObjectNode request, String requestId) {
         ObjectNode effectiveRequest = withDefaultUnitFacts(request);
         CatalogInventoryCoordinator coordinator = coordinatorForSave();
         return new TransactionTemplate(new DataSourceTransactionManager(jdbc.getDataSource()))
@@ -1770,7 +2000,9 @@ class CatalogCategoryOwnerIntegrationTest {
         assertEquals(2L, replay.path("version").asLong());
         JsonNode replayResult = replay.path("result");
         assertEquals(5, replayResult.size());
-        assertEquals(created.path("resourceRef").asText(), replayResult.path("item").path("itemRef").asText());
+        assertEquals(
+                created.path("resourceRef").asText(),
+                replayResult.path("item").path("itemRef").asText());
         assertTrue(replayResult.path("inventoryRules").path("nodes").isArray());
         assertEquals(0, replayResult.path("inventoryRules").path("nodes").size());
         assertTrue(replayResult.path("productionTags").isArray());
@@ -2384,11 +2616,11 @@ class CatalogCategoryOwnerIntegrationTest {
         assertEquals("DISABLED", disabledDetail.path("salesUnit").path("status").asText());
 
         CatalogOwnerApi.UnitDefinitionListReadback activeUnits =
-                service.listUnitDefinitions(SCOPE.toString(), BRAND, false, null);
+                service.listUnitDefinitions(SCOPE.toString(), BRAND, false, null, null, null);
         assertTrue(activeUnits.units().stream()
                 .noneMatch(unit -> usedUnit.unitRef().equals(unit.unitRef())));
         CatalogOwnerApi.UnitDefinitionListReadback allUnits =
-                service.listUnitDefinitions(SCOPE.toString(), BRAND, true, null);
+                service.listUnitDefinitions(SCOPE.toString(), BRAND, true, null, null, null);
         assertEquals(
                 "DISABLED",
                 allUnits.units().stream()
@@ -2409,7 +2641,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 context("deleteOperationsCatalogUnit", SCOPE, "delete-free-snapshot-unit"),
                 new CatalogOwnerApi.UnitDefinitionDeleteCommand(freeUnit.unitRef(), freeUnit.version()),
                 "delete-free-snapshot-unit-key");
-        assertTrue(service.listUnitDefinitions(SCOPE.toString(), BRAND, true, null).units().stream()
+        assertTrue(service.listUnitDefinitions(SCOPE.toString(), BRAND, true, null, null, null).units().stream()
                 .noneMatch(unit -> freeUnit.unitRef().equals(unit.unitRef())));
     }
 
@@ -2468,9 +2700,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 .putNull("directConfiguration")
                 .putNull("bom");
         CatalogOwnerApi.Problem rejected =
-                assertThrows(
-                        CatalogOwnerApi.Problem.class,
-                        () -> coordinatorSave(save, "shape-admission-cross-sku"));
+                assertThrows(CatalogOwnerApi.Problem.class, () -> coordinatorSave(save, "shape-admission-cross-sku"));
         assertEquals(
                 "REFERENCE_MAPPING_UNRESOLVED",
                 rejected.code(),
@@ -2493,7 +2723,8 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("code", "SKU-LINK-REF-" + UUID.randomUUID())
                         .put("name", "referenced")
                         .put("shapeKey", "STANDARD_SALE_COUNTED"));
-        UUID referencedItemRef = UUID.fromString(referencedItem.path("resourceRef").asText());
+        UUID referencedItemRef =
+                UUID.fromString(referencedItem.path("resourceRef").asText());
         UUID referencedSkuRef = UUID.randomUUID();
         jdbc.update(
                 "INSERT INTO "
@@ -2522,10 +2753,8 @@ class CatalogCategoryOwnerIntegrationTest {
                 .putNull("directConfiguration")
                 .putNull("bom");
 
-        CatalogOwnerApi.Problem rejected =
-                assertThrows(
-                        CatalogOwnerApi.Problem.class,
-                        () -> coordinatorSave(save, "shape-admission-ordinary-item"));
+        CatalogOwnerApi.Problem rejected = assertThrows(
+                CatalogOwnerApi.Problem.class, () -> coordinatorSave(save, "shape-admission-ordinary-item"));
         assertEquals("REFERENCE_MAPPING_UNRESOLVED", rejected.code());
     }
 
@@ -2561,7 +2790,8 @@ class CatalogCategoryOwnerIntegrationTest {
                 .put("isDefault", true)
                 .put("status", "ENABLED")
                 .put("version", 0);
-        sourceSku.putNull("standardSalePrice")
+        sourceSku
+                .putNull("standardSalePrice")
                 .putNull("salesUnitOverrideRef")
                 .putNull("baseMeasureUnitOverrideRef")
                 .putArray("identifiers");
@@ -2770,6 +3000,30 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
+    void itemVoidAvailabilityUsesTheSameBusinessReasonsThatItShowsForSkuBlockers() {
+        String itemCode = generatedCatalogCode("VOID-SKU-REASONS");
+        JsonNode created = write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", itemCode)
+                        .put("name", "sku void blocker")
+                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
+        write("saveOperationsCatalogItem", skuSave(itemCode, created.path("version").asLong(), UUID.randomUUID(), "VOID-SKU"));
+
+        JsonNode availability = service.readItem(SCOPE.toString(), BRAND, itemCode, "void-sku-reasons")
+                .path("data")
+                .path("actionAvailability")
+                .path("voidAvailability");
+
+        assertFalse(availability.path("canVoid").asBoolean());
+        assertTrue(
+                java.util.stream.StreamSupport.stream(availability.path("blockingReasons").spliterator(), false)
+                        .anyMatch(reason -> "包含规格".equals(reason.path("label").asText())
+                                && reason.path("count").asLong() == 1L),
+                "不可作废的 SKU 父商品必须返回同一条可见阻断原因");
+    }
+
+    @Test
     void skuOwnershipValidationExecutesARefBoundLockQuery() {
         RecordingJdbcTemplate recordingJdbc = new RecordingJdbcTemplate(dataSource());
         InventoryOwnerService recordingInventory =
@@ -2846,6 +3100,17 @@ class CatalogCategoryOwnerIntegrationTest {
                 .path("voidAvailability")
                 .path("canVoid")
                 .asBoolean());
+        assertTrue(
+                java.util.stream.StreamSupport.stream(
+                                skuDetail(detail, firstSkuRef)
+                                        .path("voidAvailability")
+                                        .path("blockingReasons")
+                                        .spliterator(),
+                                false)
+                        .anyMatch(reason -> "被套餐内容使用".equals(reason.path("label").asText())
+                                && reason.path("count").asLong() == 1L
+                                && "SKU inbound owner".equals(reason.path("relatedItemNames").path(0).asText())),
+                "不可作废的规格必须返回同一条可见阻断原因");
         assertFalse(skuDetail(detail, secondSkuRef)
                 .path("voidAvailability")
                 .path("canVoid")
@@ -3673,9 +3938,9 @@ class CatalogCategoryOwnerIntegrationTest {
                 .put("displayOrder", 1)
                 .put("variantCombinationDigest", "same-combination");
 
-        CatalogOwnerApi.Problem rejected =
-                assertThrows(CatalogOwnerApi.Problem.class, () -> new CatalogSkuFacts(jdbc, MAPPER)
-                        .replace(itemRef, competing, java.util.Set.of()));
+        CatalogOwnerApi.Problem rejected = assertThrows(CatalogOwnerApi.Problem.class, () -> new CatalogSkuFacts(
+                        jdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L)
+                .replace(itemRef, competing, java.util.Set.of()));
         assertEquals("DUPLICATE_VARIANT_COMBINATION", rejected.code());
         assertEquals(
                 1,
@@ -3813,7 +4078,8 @@ class CatalogCategoryOwnerIntegrationTest {
             JsonNode value = currentItem.path(field);
             draft.set(field, value.isMissingNode() ? MAPPER.createArrayNode() : value.deepCopy());
         }
-        if (currentItem.has("categoryRef")) draft.set("categoryRef", currentItem.path("categoryRef").deepCopy());
+        if (currentItem.has("categoryRef"))
+            draft.set("categoryRef", currentItem.path("categoryRef").deepCopy());
         else draft.putNull("categoryRef");
         sections.putObject("inventoryRules").putArray("nodes");
         return request;
@@ -3868,16 +4134,20 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     private static void insertCategory(UUID scope, UUID ref, String code) {
+        insertCategory(scope, ref, code, null);
+    }
+
+    private static void insertCategory(UUID scope, UUID ref, String code, UUID parentCategoryRef) {
         jdbc.update(
                 "INSERT INTO catalog.catalog_category "
-                        + "(category_ref,data_node_ref,brand_ref,code,name,status,display_order,version,created_at_epoc"
-                        + "h_mi"
-                        + "llis,updated_at_epoch_millis) VALUES (?,?,?,?,?,'ENABLED',0,1,1,1)",
+                        + "(category_ref,data_node_ref,brand_ref,code,name,parent_category_ref,status,display_order,version,"
+                        + "created_at_epoch_millis,updated_at_epoch_millis) VALUES (?,?,?,?,?,?,'ENABLED',0,1,1,1)",
                 ref,
                 scope.toString(),
                 BRAND,
                 code,
-                code);
+                code,
+                parentCategoryRef);
     }
 
     private static void insertDictionary(UUID scope, UUID ref, String kind, String code) {
@@ -4016,14 +4286,13 @@ class CatalogCategoryOwnerIntegrationTest {
     private static void insertProductionTag(UUID scope, UUID ref, String code) {
         jdbc.update(
                 "INSERT INTO fulfillment_production.production_tag_definition "
-                        + "(tag_ref,data_node_ref,brand_ref,code,tag_kind,name,status,version,created_at_epoch_millis,u"
-                        + "pdat"
-                        + "ed_at_epoch_millis) VALUES (?,?,?,?,? ,?,'ENABLED',1,1,1)",
+                        + "(tag_ref,data_node_ref,brand_ref,code,name,status,version,"
+                        + "created_at_epoch_millis,updated_at_epoch_millis) "
+                        + "VALUES (?,?,?,?,?,'ENABLED',1,1,1)",
                 ref,
                 scope.toString(),
                 BRAND,
                 code,
-                "PRODUCTION",
                 code);
     }
 
@@ -4333,28 +4602,30 @@ class CatalogCategoryOwnerIntegrationTest {
         ObjectNode effectiveRequest = request;
         if ("saveOperationsCatalogItem".equals(operation)) effectiveRequest = withDefaultUnitFacts(request);
         JsonNode response = target.write(
-                context(operation, SCOPE, requestId), effectiveRequest, UUID.randomUUID().toString());
+                context(operation, SCOPE, requestId),
+                effectiveRequest,
+                UUID.randomUUID().toString());
         return response.path("result");
     }
 
     private static JsonNode writeFull(String operation, ObjectNode request, String requestId, String idempotencyKey) {
-        ObjectNode effectiveRequest = "saveOperationsCatalogItem".equals(operation)
-                ? withDefaultUnitFacts(request)
-                : request;
+        ObjectNode effectiveRequest =
+                "saveOperationsCatalogItem".equals(operation) ? withDefaultUnitFacts(request) : request;
         return service.write(context(operation, SCOPE, requestId), effectiveRequest, idempotencyKey);
     }
 
     private static ObjectNode withDefaultUnitFacts(ObjectNode request) {
         if (request.has("skuTransitions")) return request.deepCopy();
         ObjectNode copy = request.deepCopy();
-        ObjectNode sections = copy.path("sections").isObject()
-                ? (ObjectNode) copy.path("sections")
-                : copy.putObject("sections");
+        ObjectNode sections =
+                copy.path("sections").isObject() ? (ObjectNode) copy.path("sections") : copy.putObject("sections");
         ObjectNode draft = sections.path("catalogDraft").isObject()
                 ? (ObjectNode) sections.path("catalogDraft")
                 : sections.putObject("catalogDraft");
-        if (!draft.has("salesUnitRef")) draft.put("salesUnitRef", defaultTestUnit.unitRef().toString());
-        if (!draft.has("baseMeasureUnitRef")) draft.put("baseMeasureUnitRef", defaultTestUnit.unitRef().toString());
+        if (!draft.has("salesUnitRef"))
+            draft.put("salesUnitRef", defaultTestUnit.unitRef().toString());
+        if (!draft.has("baseMeasureUnitRef"))
+            draft.put("baseMeasureUnitRef", defaultTestUnit.unitRef().toString());
         return copy;
     }
 
@@ -4399,6 +4670,11 @@ class CatalogCategoryOwnerIntegrationTest {
         for (JsonNode node : tree)
             if (categoryRef.equals(node.path("categoryRef").asText())) return node;
         throw new AssertionError("category not found: " + categoryRef);
+    }
+
+    private static JsonNode smartView(JsonNode navigation, String key) {
+        for (JsonNode view : navigation.path("smartViews")) if (key.equals(view.path("key").asText())) return view;
+        throw new AssertionError("smart view not found: " + key);
     }
 
     private static JsonNode dictionaryEntry(JsonNode entries, String code) {

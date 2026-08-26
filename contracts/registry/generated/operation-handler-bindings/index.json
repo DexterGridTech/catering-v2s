@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "generated-owner-operation-binding-index",
-  "operationCount": 238,
+  "operationCount": 239,
   "owners": [
     "asset",
     "business-channel",

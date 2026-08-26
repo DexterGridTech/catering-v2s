@@ -1156,7 +1156,6 @@
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
         "HIERARCHY_CYCLE",
-        "CATEGORY_DEPTH_EXCEEDED",
         "MOVE_BOUNDARY"
       ],
       "logicSteps": [
@@ -1247,11 +1246,6 @@
         },
         {
           "precedence": 9,
-          "problemCode": "CATEGORY_DEPTH_EXCEEDED",
-          "conditions": ["Requested reparenting exceeds the two-level tree limit."]
-        },
-        {
-          "precedence": 10,
           "problemCode": "MOVE_BOUNDARY",
           "conditions": ["No adjacent sibling exists in the requested move direction."]
         }

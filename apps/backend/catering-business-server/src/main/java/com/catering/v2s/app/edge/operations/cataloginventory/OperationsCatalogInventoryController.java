@@ -159,6 +159,16 @@ public final class OperationsCatalogInventoryController {
                 read.dataNodeRef(), read.brandRef(), read.request(), read.requestId(), read.dataNodeType()));
     }
 
+    @GetMapping("/category-candidates")
+    public ResponseEntity<Object> categoryCandidates(
+            EdgeRequestContext context,
+            @RequestParam Map<String, String> query,
+            @PathVariable Map<String, String> path) {
+        ReadRequest read = readRequest(context, query, path, CATALOG_SCOPE);
+        return readResponse(application.readCatalogCategoryCandidates(
+                read.dataNodeRef(), read.brandRef(), read.request(), read.requestId()));
+    }
+
     @GetMapping("/items/{itemCode}")
     public ResponseEntity<Object> item(
             EdgeRequestContext context,
@@ -171,6 +181,21 @@ public final class OperationsCatalogInventoryController {
                 required(read.request(), "itemCode"),
                 read.request(),
                 read.requestId()));
+    }
+
+    @GetMapping("/items/{itemCode}/skus")
+    public ResponseEntity<Object> itemSkus(
+            EdgeRequestContext context,
+            @RequestParam Map<String, String> query,
+            @PathVariable Map<String, String> path) {
+        ReadRequest read = readRequest(context, query, path, CATALOG_SCOPE);
+        return readResponse(application.readCatalogItemSkus(
+                read.dataNodeRef(),
+                read.brandRef(),
+                required(read.request(), "itemCode"),
+                read.request(),
+                read.requestId(),
+                read.dataNodeType()));
     }
 
     @GetMapping("/dictionaries/{dictionaryKind}")
@@ -351,7 +376,9 @@ public final class OperationsCatalogInventoryController {
                         read.dataNodeRef(),
                         read.brandRef(),
                         optionalBoolean(read.request(), "includeInactive"),
-                        optionalUnitDimension(read.request().path("dimension").asText(null)))));
+                        optionalUnitDimension(read.request().path("dimension").asText(null)),
+                        optionalText(read.request(), "query"),
+                        optionalUnitStatus(optionalText(read.request(), "status")))));
     }
 
     @PostMapping("/units")
@@ -1208,5 +1235,17 @@ public final class OperationsCatalogInventoryController {
         } catch (IllegalArgumentException failure) {
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "dimension is not supported", failure);
         }
+    }
+
+    private static String optionalUnitStatus(String value) {
+        if (value == null || value.isBlank()) return null;
+        if ("ENABLED".equals(value) || "DISABLED".equals(value)) return value;
+        throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "unit status is not supported");
+    }
+
+    private static String optionalText(ObjectNode request, String field) {
+        if (!request.has(field) || request.path(field).isNull()) return null;
+        String value = request.path(field).asText();
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

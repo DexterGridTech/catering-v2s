@@ -156,7 +156,10 @@ test('P3 SKU digest is read-only contract data and SKU ordering is preserved on 
   const saveSku = openApiJson.components.schemas.CatalogItemSaveRequest.properties.sections.properties.catalogDraft.properties.skus.items;
   assert.equal(detailSku.properties.displayOrder.type, 'integer');
   assert.equal(detailSku.properties.variantCombinationDigest.type, 'string');
+  assert.equal(detailSku.properties.updatedAt.format, 'epoch-millis');
+  assert.equal(detailSku.required.includes('updatedAt'), true);
   assert.equal(saveSku.properties.displayOrder.type, 'integer');
+  assert.equal(Object.hasOwn(saveSku.properties, 'updatedAt'), false);
   assert.equal(Object.hasOwn(saveSku.properties, 'variantCombinationDigest'), false);
   assert.equal(saveSku.additionalProperties, false);
 });
@@ -189,7 +192,9 @@ test('P3 derives the smart-view wire vocabulary and exposes dictionary entry ide
 
   const smartViewKey = pageQuery.fields.find((field) => field.path === 'smartViewKey');
   assert.deepEqual(smartViewKey, {
-    path: 'smartViewKey', type: 'string', enumSource: 'smartViewKey', required: false,
+    path: 'smartViewKey', type: 'string', enum: [
+      'ALL', 'EXTERNAL_ORDER_TEMP', 'INACTIVE', 'ARCHIVED', 'RECENTLY_UPDATED', 'AUTO_SYNC',
+    ], required: false,
   });
   assert.equal(dictionary.fields.some((field) => field.path === 'data.entries[].entryRef' && field.format === 'uuid'), true);
   assert.match(generator, /if \(spec\.enumSource\) schema\.enum = enumValues\(spec\.enumSource\);/);

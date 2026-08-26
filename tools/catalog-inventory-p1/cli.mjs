@@ -19,8 +19,9 @@ const REFERENCE_PATH_MATRIX = "contracts/policy/catalog-inventory-reference-path
 const ASSERTION_PATH = "contracts/policy/catalog-inventory-assertion-matrix.json";
 const API_SCENARIO_PATH = "contracts/policy/catalog-inventory-api-scenarios.json";
 const L2_SCENARIO_PATH = "contracts/policy/catalog-inventory-l2-scenarios.json";
+const L2_CASE_BLUEPRINT_PATH = "contracts/policy/catalog-inventory-l2-case-blueprint.json";
 const OPERATION_DESIGN_PATH = "doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json";
-const DESIGN_PATH = "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md";
+const DESIGN_PATH = "doc/plans/platform/2026-08-23-v2s-catalog-library-workbench-implementation-design-codex.md";
 const OPENAPI_ROOT_PATH = "contracts/openapi/catalog-inventory.openapi.json";
 const GENERATED_EDGE_JAVA = "contracts/catalog/CatalogInventoryEdgeWire.java";
 const GENERATED_EDGE_TS = "contracts/catalog/catalogInventoryEdgeWire.ts";
@@ -53,6 +54,8 @@ const CATALOG_LIBRARY_OPERATION_IDS = new Set([
   "disableOperationsCatalogUnit",
   "deleteOperationsCatalogUnit",
   "getOperationsInventoryConsumptionTargetCandidates",
+  "getOperationsCatalogCategoryCandidates",
+  "getOperationsCatalogItemSkus",
 ]);
 const TRANSPORT_OWNED_READ_RESPONSE_MODELS = new Set([
   "CatalogAttributeDefinitionList",
@@ -65,7 +68,7 @@ function inventoryDefinitionCommands(operationId) {
 }
 const SHAPE_MANIFEST_OPERATION_ID = "getOperationsCatalogShapeManifest";
 const DUAL_SCOPE_READ_DATA_NODE_TYPES = ["HEAD_COMPANY", "STORE"];
-const DUAL_SCOPE_READ_COUNT = 11;
+const DUAL_SCOPE_READ_COUNT = 13;
 
 function abs(rel) { return path.join(ROOT, rel); }
 function readJson(rel) { return JSON.parse(fs.readFileSync(abs(rel), "utf8")); }
@@ -103,7 +106,7 @@ function validateSchemaInstance(value, schema, currentPath, definitions) {
     const matches = types.some((type) => type === "null" ? value === null : type === "array" ? Array.isArray(value) : type === "object" ? value !== null && typeof value === "object" && !Array.isArray(value) : type === "integer" ? Number.isInteger(value) : typeof value === type);
     expect(matches, "P1_FIXTURE_SCHEMA_TYPE:" + currentPath);
   }
-  if (schema.type === "object" || (schema.properties && !Array.isArray(value))) {
+  if ((schema.type === "object" || (schema.properties && !Array.isArray(value))) && value !== null) {
     expect(value !== null && typeof value === "object" && !Array.isArray(value), "P1_FIXTURE_SCHEMA_OBJECT:" + currentPath);
     for (const required of schema.required || []) expect(Object.prototype.hasOwnProperty.call(value, required), "P1_FIXTURE_SCHEMA_REQUIRED:" + currentPath + "." + required);
     const properties = schema.properties || {};
@@ -224,7 +227,7 @@ function validateOpaqueReferencePaths(openapi, policy, matrix) {
     R04: [["CatalogItemDetail", "item.salesUnitRef"], ["CatalogItemDetail", "item.baseMeasureUnitRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.salesUnitRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.baseMeasureUnitRef"]],
     R05: [["CatalogItemDetail", "item.skuVariantDimensions[].attributeRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.skuVariantDimensions[].attributeRef"]],
     R06: [["CatalogItemDetail", "item.skus[].attributeValueRefs[].attributeValueRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.skus[].attributeValueRefs[].attributeValueRef"]],
-    R07: [["CatalogItemPage", "items[].productionTagRefs"], ["CatalogItemDetail", "item.productionTagRefs"], ["CatalogItemSaveRequest", "sections.catalogDraft.productionTagRefs"]],
+    R07: [["CatalogItemPage", "items[].productionTagRef"], ["CatalogItemDetail", "item.productionTagRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.productionTagRef"]],
     R08: [["CatalogItemDetail", "item.skus[].productSkuRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.skus[].productSkuRef"]],
     R09: [["CatalogItemDetail", "item.compositeGroups[].components[].itemRef"], ["CatalogItemDetail", "item.compositeGroups[].components[].productSkuRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.compositeGroups[].components[].itemRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.compositeGroups[].components[].productSkuRef"]],
     R10: [["CatalogItemDetail", "inventoryRules.nodes[].owner.itemRef"], ["CatalogItemDetail", "inventoryRules.nodes[].owner.productSkuRef"], ["CatalogItemDetail", "inventoryRules.nodes[].owner.optionValueRef"], ["CatalogItemSaveRequest", "sections.inventoryRules.nodes[].owner.itemRef"], ["CatalogItemSaveRequest", "sections.inventoryRules.nodes[].owner.productSkuRef"], ["CatalogItemSaveRequest", "sections.inventoryRules.nodes[].owner.optionValueRef"]],
@@ -257,7 +260,7 @@ function validateOpaqueReferencePaths(openapi, policy, matrix) {
 function validateOperationAuthorizationPolicy(edge, openapi) {
   const writes = edge.operations.filter((operation) => operation.mutation);
   const reads = edge.operations.filter((operation) => !operation.mutation);
-  expect(writes.length === 37 && reads.length === 20, "P1_OPERATION_AUTHORIZATION_CARDINALITY");
+  expect(writes.length === 37 && reads.length === 22, "P1_OPERATION_AUTHORIZATION_CARDINALITY");
   expect(reads.every((operation) => operation.authorizationRequirementId === null && operation.capabilityKeys.length === 0 && Object.keys(operation.capabilityByDataNodeType || {}).length === 0), "P1_GET_ACTION_CAPABILITY_FORBIDDEN");
   expect(writes.every((operation) => typeof operation.authorizationRequirementId === "string" && operation.authorizationRequirementId.startsWith("CATALOG_INVENTORY_OPERATION_") && operation.capabilityKeys.length > 0), "P1_MUTATION_AUTHORIZATION_REQUIREMENT");
   expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 2).length === 29 && writes.filter((operation) => operation.allowedDataNodeTypes.length === 1).length === 8, "P1_MUTATION_SCOPE_POLICY_CARDINALITY");
@@ -320,7 +323,6 @@ const expectedB3FieldSpecs = [
   {fieldKey: "inventoryRuleMode", dataPath: "inventoryRules.nodes[].mode", controlKind: "select", tabKey: "inventory-bom", admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL"]},
   {fieldKey: "inventoryBomComponent", dataPath: "inventoryRules.nodes[].bom.lines[].targetRef", controlKind: "select", tabKey: "inventory-bom", admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED"]},
   {fieldKey: "compositeComponentSku", dataPath: "compositeGroups[].components[].productSkuRef", controlKind: "select", tabKey: "composite-content", admittedShapes: ["COMPOSITE"]},
-  {fieldKey: "productionTagRefs", dataPath: "productionTagRefs[]", controlKind: "multiSelect", tabKey: "production-prompts", admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED"]},
   {fieldKey: "tagRefs", dataPath: "tagRefs[]", controlKind: "multiSelect", tabKey: "basic", admittedShapes: expectedShapes},
   {fieldKey: "salesUnitRef", dataPath: "salesUnitRef", controlKind: "select", tabKey: "basic", admittedShapes: expectedShapes},
   {fieldKey: "baseMeasureUnitRef", dataPath: "baseMeasureUnitRef", controlKind: "select", tabKey: "basic", admittedShapes: expectedShapes},
@@ -331,9 +333,7 @@ const expectedB3FieldByKey = new Map(expectedB3FieldSpecs.map((field) => [field.
 const expectedModeRuleKeys = ["CATALOG_ITEM|HAS_SKU", "CATALOG_ITEM|NO_SKU", "SKU|null", "OPTION_VALUE|null"];
 const expectedZones = ["current", "changeSummary", "businessHistory", "consumptionReferences", "ledger", "advancedDiagnostics"];
 const expectedApiCaseCounts = [1, 7, 1, 1, 9, 10, 0, 3, 2, 1, 6, 4, 3, 6, 2, 2, 2, 18, 2, 2, 2, 2, 1, 4, 3, 5];
-const expectedL2CaseCounts = [6, 1, 1, 1, 4, 2, 7, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 1];
 const expectedApiCaseTotal = expectedApiCaseCounts.reduce((sum, count) => sum + count, 0);
-const expectedL2CaseTotal = expectedL2CaseCounts.reduce((sum, count) => sum + count, 0);
 
 function resolveOpenApiSchema(openapi, schema) {
   let current = schema;
@@ -449,7 +449,7 @@ function validateB3OptionSource(shape, field, source, edge, openapi) {
   for (const part of source.labelParts || []) expect(schemaHasPath(openapi, item, part), "P1_B3_LABEL_PART:" + fieldKey + "." + part);
   if (source.parentField) expect(schemaHasPath(openapi, item, source.parentField), "P1_B3_PARENT_FIELD:" + fieldKey);
   if (source.disabledWhen !== null) {
-    const match = typeof source.disabledWhen === "string" && source.disabledWhen.match(/^([A-Za-z_$][A-Za-z0-9_$]*)\s*(?:<>|!=|==)/);
+    const match = typeof source.disabledWhen === "string" && source.disabledWhen.match(/^([A-Za-z_$][A-Za-z0-9_$]*)(?:\s*(?:<>|!=|==).*)?$/);
     expect(match && schemaHasPath(openapi, item, match[1]), "P1_B3_DISABLED_FIELD:" + fieldKey);
   }
 }
@@ -471,8 +471,7 @@ function validateB3Fields(shape, edge, openapi, transportText = fs.readFileSync(
     }
     for (const shapeKey of expectedShapes.filter((key) => !field.admittedShapes.includes(key))) {
       const rules = (shape.fieldRules?.[shapeKey] || []).filter((rule) => rule.field === field.fieldKey);
-      if (field.fieldKey !== "productionTagRefs") expect(rules.length === 0, "P1_B3_FIELD_RULE_OVERADMISSION:" + field.fieldKey + ":" + shapeKey);
-      else expect(rules.length === 1, "P1_B3_EXISTING_COMMON_RULE_LOST:" + shapeKey);
+      expect(rules.length === 0, "P1_B3_FIELD_RULE_OVERADMISSION:" + field.fieldKey + ":" + shapeKey);
     }
     if (field.optionSourceRef) validateB3OptionSource(shape, field, field.optionSourceRef, edge, openapi);
     else expect(["skuVariantMatrix", "detailTable"].includes(field.controlKind), "P1_B3_OPTION_SOURCE_REQUIRED:" + field.fieldKey);
@@ -489,6 +488,10 @@ function assertScenarioDenominators(apiScenarios, l2Scenarios, fixtures) {
   const actualApiCaseTotal = apiScenarios.scenarios.reduce((sum, entry) => sum + entry.caseCount, 0);
   expect(apiScenarios.caseCount === actualApiCaseTotal && actualApiCaseTotal === expectedApiCaseTotal && fixtures.denominators?.apiCases === actualApiCaseTotal, "P1_API_CASE_COUNT");
   expect(exact(apiScenarios.scenarios.map((entry) => entry.caseCount), expectedApiCaseCounts), "P1_API_CASE_VECTOR");
+  const l2Blueprint = readJson(L2_CASE_BLUEPRINT_PATH);
+  const expectedL2CaseCounts = l2Blueprint.scenarios.map((entry) => entry.cases.length);
+  const expectedL2CaseTotal = expectedL2CaseCounts.reduce((sum, count) => sum + count, 0);
+  expect(expectedL2CaseCounts.length === 26 && expectedL2CaseTotal === 65, "P1_L2_BLUEPRINT_DENOMINATOR");
   expect(l2Scenarios.scenarioCount === expectedL2CaseCounts.length && l2Scenarios.scenarios.length === expectedL2CaseCounts.length && fixtures.denominators?.l2Definitions === expectedL2CaseCounts.length, "P1_L2_SCENARIO_COUNT");
   const actualL2CaseTotal = l2Scenarios.scenarios.reduce((sum, entry) => sum + entry.caseCount, 0);
   expect(l2Scenarios.caseCount === actualL2CaseTotal && actualL2CaseTotal === expectedL2CaseTotal && fixtures.denominators?.l2Cases === actualL2CaseTotal, "P1_L2_CASE_COUNT");
@@ -567,10 +570,10 @@ function validate(root = ROOT) {
   expect(generatedTs.includes(shape.manifestDigest) && generatedTs.includes("shapeKeys") && generatedTs.includes("modeRules"), "P1_GENERATED_TS_DRIFT");
   const generatedEdgeJava = fs.readFileSync(abs(GENERATED_EDGE_JAVA), "utf8");
   const generatedEdgeTs = fs.readFileSync(abs(GENERATED_EDGE_TS), "utf8");
-  expect(generatedEdgeJava.includes("OPERATION_COUNT = 57") && generatedEdgeJava.includes("record Operation") && generatedEdgeJava.includes("OPERATIONS") && generatedEdgeJava.includes("List<String> coordinatedInventoryDefinitionCommands") && generatedEdgeJava.includes("replaceCatalogInventoryRules"), "P1_GENERATED_EDGE_JAVA_DRIFT");
+  expect(generatedEdgeJava.includes("OPERATION_COUNT = 59") && generatedEdgeJava.includes("record Operation") && generatedEdgeJava.includes("OPERATIONS") && generatedEdgeJava.includes("List<String> coordinatedInventoryDefinitionCommands") && generatedEdgeJava.includes("replaceCatalogInventoryRules"), "P1_GENERATED_EDGE_JAVA_DRIFT");
   expect(generatedEdgeTs.includes("operationCount") && generatedEdgeTs.includes("coordinatedInventoryDefinitionCommands") && generatedEdgeTs.includes("replaceCatalogInventoryRules"), "P1_GENERATED_EDGE_TS_DRIFT");
 
-  expect(edge.revision === REVISION && edge.operationCount === 57 && edge.operations.length === 57, "P1_EDGE_OPERATION_COUNT");
+  expect(edge.revision === REVISION && edge.operationCount === 59 && edge.operations.length === 59, "P1_EDGE_OPERATION_COUNT");
   expect(edge.contractDigest === digest(edge, "contractDigest"), "P1_EDGE_DIGEST");
   expect(catalogRouteRegistry.schemaVersion === 1 && catalogRouteRegistry.kind === "catalog-inventory-edge-route-registry" && catalogRouteRegistry.revision === REVISION && catalogRouteRegistry.generatedFrom === EDGE_PATH && catalogRouteRegistry.contractDigest === edge.contractDigest, "P1_CATALOG_ROUTE_REGISTRY_BINDING");
   const expectedCatalogRoutes = edge.operations.map((entry) => ({operationId: entry.operationId, method: entry.method, path: entry.path, owner: entry.initiatingOwner, consumerFaces: entry.consumerFaces, databaseOperationBudget: entry.databaseOperationBudget}));
@@ -590,7 +593,7 @@ function validate(root = ROOT) {
   for (const [route, pathItem] of Object.entries(openapi.paths || {})) {
     for (const [method, operation] of Object.entries(pathItem)) if (["get", "post", "patch", "put", "delete"].includes(method)) rootOperations.push(operation.operationId);
   }
-  expect(exact(rootOperations, edge.operations.map((entry) => entry.operationId)) && rootOperations.length === 57, "P1_OPENAPI_OPERATION_REACHABILITY");
+  expect(exact(rootOperations, edge.operations.map((entry) => entry.operationId)) && rootOperations.length === 59, "P1_OPENAPI_OPERATION_REACHABILITY");
   const assetStageSchema = openapi.components?.schemas?.CatalogAssetStageRequest;
   expect(assetStageSchema?.properties?.content?.type === "string" && assetStageSchema.properties.content.format === "binary" && assetStageSchema.required?.includes("dataNodeRef") && !Object.prototype.hasOwnProperty.call(assetStageSchema.properties, "assetRef"), "P1_ASSET_UPLOAD_BINARY_SCHEMA");
   const assetStageOperation = Object.values(openapi.paths || {}).flatMap((pathItem) => Object.values(pathItem)).find((operation) => operation?.operationId === "stageOperationsCatalogAsset");
@@ -606,7 +609,7 @@ function validate(root = ROOT) {
     const shardData = readJson("contracts/openapi/" + shard);
     for (const [route, pathItem] of Object.entries(shardData.paths || {})) for (const [method, operation] of Object.entries(pathItem)) if (["get", "post", "patch", "put", "delete"].includes(method)) shardOperations.push(operation.operationId);
   }
-  expect(exact(shardOperations, edge.operations.map((entry) => entry.operationId)) && shardOperations.length === 57, "P1_OPENAPI_SHARD_OPERATION_REACHABILITY");
+  expect(exact(shardOperations, edge.operations.map((entry) => entry.operationId)) && shardOperations.length === 59, "P1_OPENAPI_SHARD_OPERATION_REACHABILITY");
 
   expect(readModels.sixInventoryDetailZones.length === 6 && exact(readModels.sixInventoryDetailZones, expectedZones), "P1_SIX_INVENTORY_ZONES");
   for (const modelName of shape.readModelNames) expect(readModels.models.some((entry) => entry.name === modelName), "P1_READ_MODEL_MISSING:" + modelName);
@@ -676,7 +679,6 @@ function validate(root = ROOT) {
   const fixtureIds = new Set(seedIds.concat(testIds));
 
   assertScenarioDenominators(apiScenarios, l2Scenarios, fixtures);
-  expect(exact(l2Scenarios.scenarios.map((entry) => entry.caseCount), expectedL2CaseCounts), "P1_L2_CASE_VECTOR");
   for (const scenario of apiScenarios.scenarios.concat(l2Scenarios.scenarios)) {
     expect(scenario.businessRequirement && scenario.primaryVerifier, "P1_SCENARIO_BEHAVIOR:" + scenario.scenarioId);
     expect(scenario.cases.length === scenario.caseCount, "P1_SCENARIO_CASES:" + scenario.scenarioId);
@@ -689,7 +691,7 @@ function validate(root = ROOT) {
     if (scenario.layer === "L2") expect(noForbiddenLocatorFields(scenario), "P1_L2_LOCATOR_FIELD:" + scenario.scenarioId);
   }
 
-  expect(assertions.count === 57 && assertions.operations.length === 57, "P1_ASSERTION_OPERATION_COUNT");
+  expect(assertions.count === 59 && assertions.operations.length === 59, "P1_ASSERTION_OPERATION_COUNT");
   const operationIds = [...operationDesign.operations.map((entry) => entry.operationId), ...CATALOG_LIBRARY_OPERATION_IDS];
   expect(exact(assertions.operations.map((entry) => entry.operationId), operationIds), "P1_ASSERTION_OPERATION_EXACT_SET");
   const saveAssertion = assertions.operations.find((entry) => entry.operationId === SAVE_OPERATION_ID);
@@ -786,7 +788,7 @@ function selfTest() {
   expect(problemCodeRed, "SELF_TEST_BATCH_PROBLEM_CODE_NOT_RED");
   const rootIds = Object.values(root.paths).flatMap((pathItem) => Object.values(pathItem).filter((entry) => entry.operationId).map((entry) => entry.operationId));
   const redRouteIds = rootIds.slice(1);
-  expectRed(redRouteIds.length === 57, "OPENAPI_REACHABILITY");
+  expectRed(redRouteIds.length === 58, "OPENAPI_REACHABILITY");
   const firstSchema = Object.values(root.components.schemas).find((schema) => schema.properties && Object.keys(schema.properties).length);
   const firstProperty = firstSchema && Object.values(firstSchema.properties)[0];
   const redTyped = firstProperty ? {...firstProperty} : null;

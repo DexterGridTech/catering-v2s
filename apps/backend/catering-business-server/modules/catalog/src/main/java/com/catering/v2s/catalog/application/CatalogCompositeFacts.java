@@ -43,7 +43,7 @@ final class CatalogCompositeFacts {
                         + "nent"
                         + ".quantity,component.unit,component.is_default,component.extra_price,component.status,compone"
                         + "nt.d"
-                        + "isplay_order,item.code,sku.sku_code FROM catalog.catalog_composite_group group_row LEFT "
+                        + "isplay_order,item.code,item.name,sku.sku_code,sku.sku_name FROM catalog.catalog_composite_group group_row LEFT "
                         + "JOIN "
                         + "catalog.catalog_composite_component component ON "
                         + "component.composite_group_ref=group_row.composite_group_ref LEFT JOIN catalog.catalog_item "
@@ -84,8 +84,19 @@ final class CatalogCompositeFacts {
                                     "productSkuRef",
                                     rows.getObject(11, UUID.class).toString());
                         component.put("itemCode", rows.getString(18));
-                        if (rows.getString(19) == null) component.putNull("skuCode");
-                        else component.put("skuCode", rows.getString(19));
+                        String itemName = rows.getString(19);
+                        if (itemName == null || itemName.isBlank())
+                            throw new CatalogOwnerApi.Problem(
+                                    "RESULT_UNKNOWN", 500, "套餐内容的商品名称读取失败");
+                        component.put("itemName", itemName);
+                        if (rows.getString(20) == null) component.putNull("skuCode");
+                        else component.put("skuCode", rows.getString(20));
+                        String skuName = rows.getString(21);
+                        if (rows.getObject(11) != null && (skuName == null || skuName.isBlank()))
+                            throw new CatalogOwnerApi.Problem(
+                                    "RESULT_UNKNOWN", 500, "套餐内容的规格名称读取失败");
+                        if (skuName == null) component.putNull("skuName");
+                        else component.put("skuName", skuName);
                         component.put(
                                 "quantity",
                                 rows.getBigDecimal(12).stripTrailingZeros().toPlainString());

@@ -21,12 +21,12 @@ SKILL_USED=cs-writing-plans@72190c88b2b5a67a96b91d66aa72b9161913e10e8769da3f28a2
 BASELINE_CATALOG_OPERATIONS=57
 BASELINE_PLATFORM_OPERATIONS=238
 TARGET_CATALOG_OPERATIONS=59
-TARGET_PLATFORM_OPERATIONS=240
+TARGET_PLATFORM_OPERATIONS=239
 UI_OPERATION_DENOMINATOR=49（16 read，含既有 public asset read；33 mutation）
 ```
 
-目标 operation 数以 2026-08-23 当前树 57/238 为基线、仅新增两个 read operation 推导；CP-00 必须重算。
-若开工时分母漂移，不把 59/240 当权威，先更新本设计并重新 review。
+2026-08-23 的历史输入快照为 57/238；CP-00 在当前树重算后，实施目标收敛为 59/239。
+若后续开工树再漂移，不把 59/239 当权威，先更新本设计并重新 review。
 
 2026-08-24 最终裁定增补：本设计现同时承载十列表格、商品级单一生产标签、生产标签树筛选及旧多值制作标签
 模型的 fail-closed 迁移。凡旧段落仍出现“来源默认隐藏”“七默认列”“制作处理标签”“生产标签数组”、
@@ -56,15 +56,15 @@ SKU/选项值可增减生产标签或“本批不改 DB 事实形状”，均以
 
 | CP | 主题 | owner | 主要输出 | 依赖 |
 | --- | --- | --- | --- | --- |
-| CP-00 | 实时分母、锚点与红基线 | contract/frontend/test | 57/238、80 annotation、47 surface、20 anchor、当前红门 | 无 |
+| CP-00 | 实时分母、锚点与红基线 | contract/frontend/test | 59/239、80 annotation、47 surface、20 anchor、当前红门 | 无 |
 | CP-01 | 契约生成源与两个 task read | catalog contract | category candidate、SKU summary page、parent summary、RTK tags/budgets | CP-00 |
 | CP-02 | catalog owner/task-read/edge | catalog owner + operations edge | scoped SQL、cursor、业务路径、可选原因、两条 HTTP read | CP-01 schema |
-| CP-03 | P1→tokens→M1→bindings→P3 生成链 | generators | 59 catalog、240 platform、generated backend/frontend | CP-01/02 |
+| CP-03 | P1→tokens→M1→bindings→P3 生成链 | generators | 59 catalog、239 platform、generated backend/frontend | CP-01/02 |
 | CP-04 | 前端状态骨架 | operations-admin | task reducer、draft/config hooks、testIds、problem map | CP-03 |
 | CP-05 | 工作台与父/规格树形表 | operations-admin | 冻结区保留、Table tree-data、TreeSelect 分类任务 | CP-02..04 |
 | CP-06 | 查看与生命周期/治理 | operations-admin | 纯只读 View、业务摘要、动作可用性、治理子任务 | CP-04/05 |
 | CP-07 | 新建、编辑、九事实族与恢复 | operations-admin | 超宽 Editor、typed draft、稳定身份、session recovery | CP-04/06 |
-| CP-08 | 六库配置抽屉 | operations-admin | 简单/父子/复杂三形态、编辑绕行恢复 | CP-04/07 |
+| CP-08 | 六库配置抽屉 | operations-admin | 简单/父子/复杂三形态、编辑内元数据子任务 | CP-04/07 |
 | CP-09 | 批量、复制与结果 | operations-admin | 三态批量、复制向导、精确 readback/refresh | CP-04/05 |
 | CP-10 | focused/static/L2 准入 | frontend/contract/test/scripts | reducer/cascade/render proof、testId 双分母、65-case 单链、TEST fixture、受管 runner 与诊断 join | CP-04..09 |
 | CP-11 | acceptance、预算与 seed 设计落地 | backend/test/seed | 80 annotation、2 新 read 场景、预算实测、丰富体验夹具 | CP-02/03/10 |
@@ -79,7 +79,7 @@ SKU/选项值可增减生产标签或“本批不改 DB 事实形状”，均以
 | 写授权与 grant 复核 | 现有 generated operation authorization + coordinator command context | [acceptance] 33 个写 variant 的篡改请求由 owner 拒绝且 version/事实不变 | N/A；本批不新增写 operation，不改变 grant 语义 | interaction §4.2 的 33 个 mutation variant |
 | 跨 owner 写与事务 | `CatalogInventoryCoordinator`、现行 `REQUIRED` coordinator 和 owner command API | [acceptance] whole-save 任一目标 owner 拒绝则整单已存事实不变 | N/A；只重组 UI，不把当前事务拆成区段保存 | save item、inventory rules、option material、asset ref、copy、promotion；其它写为单 owner |
 | 集合形态与分页 | foundation charter §1-J、`collection-boundary-modes.md`、`useCursorStack`/`useCursorCandidates` | [acceptance] SKU 和 category fixture 超过单页，第二页可达、无重漏、total≠本页长度 | category 使用 lazy hierarchy cursor（根/子级或搜索命中+祖先路径）；SKU 使用 parent-scoped cursor page | 父 item Page、SKU Cursor、category Cursor、6 库现有 Page/Bounded、copy/inventory candidate Cursor、detail 子聚合 |
-| 缓存失效 / 改完刷新什么 | generated RTK tag policy、frontend standard §3-J | [focused] 每个 mutation 只触发 IA §4 指定 query；其它库 fetch spy 为 0 | 缺 tag 关系时只改唯一 P1 tag policy source；不得加 revision counter | 33 mutation、内容页统一刷新、配置绕行候选刷新 |
+| 缓存失效 / 改完刷新什么 | generated RTK tag policy、frontend standard §3-J | [focused] 每个 mutation 只触发 IA §4 指定 query；其它库 fetch spy 为 0 | 缺 tag 关系时只改唯一 P1 tag policy source；不得加 revision counter | 33 mutation、内容页统一刷新、编辑内元数据子任务候选刷新 |
 | **RTK 数据读取与加载判定** | frontend standard §3-B；generated RTK hooks | [focused] query args 改变时旧 `data` 不渲染，`currentData` 未就绪显示局部 loading | 新两个 read 由 P3 生成 hook；App 不手搓 fetch | 16 read operation、父表、SKU child、category TreeSelect、View、图片、6 库、候选、copy |
 | **同一事实只有一个住址** | frontend standard §3-E；IA §2 | [static+focused] `acceptedPage` 归零；detail/page/tree/actionAvailability 无 `useState` mirror；dirty refetch 不改 draft | App 新建 `useCatalogItemDraft` 与 `useCatalogConfigLibrary`；不得把它们放 foundation | server facts、item draft、config draft、workspace task、list/picker transient 全集 |
 | **失败可见且原因不得改写** | frontend standard §3-D/3-K-4；IA §6 | [focused] 46 code exact-set 全映射；unknown/refresh failure 不冒充 business failure | catalog 专属 map 与 generated exact-set 对账；用户文案不含 code/raw detail | 46 catalog problems、transport unknown、query failure、batch refresh failure |
@@ -97,7 +97,7 @@ SKU/选项值可增减生产标签或“本批不改 DB 事实形状”，均以
 
 ### CP-00 · 实时基线
 
-- 失败条件：57/238、80 annotations、47 surfaces 或 20/20 unique anchors 任一不等于开工树；设计仍按快照继续。
+- 失败条件：59/239、80 annotations、47 surfaces 或 20/20 unique anchors 任一不等于开工树；设计仍按快照继续。
 - 不变量：只读复算；当前 first failure 真实记录。
 - FORBID：不为吻合设计改源码、删场景、改分母。
 - 验证：[静态] exact-set 脚本/`rg -cF`，不执行生成或测试。
@@ -112,7 +112,8 @@ SKU/选项值可增减生产标签或“本批不改 DB 事实形状”，均以
   只增展示必要字段；parent page 每行含 owner 排序的 `categoryPathLabels` 与结构化 `inventoryDeductionSummary`，
   SKU page 每行含同形扣减摘要、价格、属性组合、状态、默认标识、图片与自身更新时间；operation 总数由 57→59；
   两条 GET 连接借用预算≤1；既有 save/detail/page 同批把 `productionTagRefs` 收敛为 nullable `productionTagRef`，
-  navigation 增 `productionTags[]`，items query 增专用 `productionTagRef`，profile/SKU/option schema 删除标签字段。
+  navigation 增 `productionTags[]`，items query 增专用 `productionTagRef`，profile/SKU/option schema 删除标签字段；
+  生产标签定义的旧 `tagKind` 同时从 contract、owner、Flyway、copy、seed 与前端退役，不保留隐藏默认值。
 - FORBID：手改 generated OpenAPI/Java/TS；新增 write；把 Journey/IA ID 放 runtime；为树设未经裁定的叶子规则。
 - 验证：[generator self-test] schema exact-set、red fixture 缺字段即红；[静态] operation count/budget/tag coverage。
 - 形态理由：新增两个闭合 task read，而不是复用 detail/N+1 或让 UI 推导 owner 事实。
@@ -130,10 +131,10 @@ SKU/选项值可增减生产标签或“本批不改 DB 事实形状”，均以
 
 ### CP-03 · 生成链
 
-- 失败条件：任一 generated registry 仍 57/238、operation token/binding 缺两项、P3 无 hook、预算 null/sentinel。
+- 失败条件：任一 generated registry 不为 59/239、operation token/binding 缺项、P3 无 hook、预算 null/sentinel。
 - 不变量：顺序 P1→workspace tokens→M1→operation bindings→P3；每步 emit/write 后 check/self-test。
 - FORBID：手改 generated；用 fallback path/字符串；在实值未齐时留无限预算。
-- 验证：[静态] 各生成器 exit=0、59/240 exact-set、调高差集空。
+- 验证：[静态] 各生成器 exit=0、59/239 exact-set、调高差集空。
 - 形态理由：保持既有单向生成链，避免第三个 registry。
 - RECALL：scripts/README、P1/M1/P3 README、自检与性能 budget library。
 
@@ -173,19 +174,19 @@ SKU/选项值可增减生产标签或“本批不改 DB 事实形状”，均以
 
 ### CP-07 · Create/Edit/Draft
 
-- 失败条件：创建失败进入编辑；任一九区段独立保存；关闭/刷新不能恢复；配置绕行丢 section/error；index 身份仍用于回写。
-- 不变量：create 最小原子；whole-save；九 View/Editor 分文件；session key 含 scope/brand/item/version；IA §3.3 级联逐项实现；商品草稿最多一个 `productionTagRef`，SKU 制作覆盖与选项影响均不持有生产标签。
+- 失败条件：创建失败进入编辑；任一九区段独立保存；异常关闭/刷新恢复偏离已裁定规则；编辑内维护元数据时父编辑关闭、该子任务读写过渡草稿/`returnToEdit`、或候选以外事实被改写；index 身份仍用于回写。
+- 不变量：create 最小原子；whole-save；九 View/Editor 分文件；session key 含 scope/brand/item/version；编辑内元数据维护由 Editor child-task UI state 控制，不写 `returnToEdit` 或过渡 session；IA §3.3 级联逐项实现；商品草稿最多一个 `productionTagRef`，SKU 制作覆盖与选项影响均不持有生产标签。
 - FORBID：自动 merge 版本冲突；持久化 staged grant；隐藏不适用 draft 仍提交；把 owner admission 改成本地规则。
-- 验证：[focused] 级联矩阵每行一正一反；[acceptance] whole-save rules；[L2另行授权] refresh restore/focus。
+- 验证：[focused] 级联矩阵每行一正一反；编辑不关闭、关闭子任务焦点归还触发控件、无过渡 session write；[acceptance] whole-save rules；[L2另行授权] refresh restore/focus。
 - 形态理由：typed slice 收敛整单草稿，但不把九类事实重新塞回巨型宿主。
 - RECALL：formal §4.4-4.6/§8、IA §2.3/§3.3、既有单位/库存/BOM/制作正式设计。
 
 ### CP-08 · Config
 
 - 失败条件：配置仍是顶部 Tabs/万能 Modal；复杂定义打开 Drawer；切库不拦 dirty；其它五库被无差别 refetch。
-- 不变量：左六库；“生产标签”是简单库且列表即详情；三右栏形态；`useCatalogConfigLibrary` 单住址；编辑绕行严格 EDIT close→CONFIG→continue EDIT。
+- 不变量：左六库；“生产标签”是简单库且列表即详情；三右栏形态；`useCatalogConfigLibrary` 单住址；工作台配置是第一层，编辑内配置是唯一 child task，父编辑保持打开。
 - FORBID：配置持有商品 draft；简单字典详情页；第三套 picker；停用删除混词。
-- 验证：[focused] 三代表态、切库/父子/definition 级联、精确 fetch spy、returnToEdit。
+- 验证：[focused] 三代表态、切库/父子/definition 级联、精确 fetch spy、编辑子任务关闭后的焦点归还与 draft 不变。
 - 形态理由：按实体复杂度分三种固定形态，比一个万能弹窗更小且更一致。
 - RECALL：formal §4.7/4.8、IA §2.4/3.4、frontend standard §3-K。
 
@@ -257,35 +258,46 @@ SKU/选项值可增减生产标签或“本批不改 DB 事实形状”，均以
 | 目录树/计数 | `getOperationsCatalogNavigation` | GET `/api/operations/catalog-inventory/navigation` | operations-admin | Detail aggregate | 智能视图、标签与导航摘要整体读取；分类选择不再复用它猜资格 |
 | 父商品页 | `getOperationsCatalogItems` | GET `/api/operations/catalog-inventory/items` | operations-admin | Cursor/Page | 数十至数千父商品；按经营商品增长；扩展 parent summaries 与每行 `categoryPathLabels`，供跨分类结果直接展示 |
 | 单商品详情 | `getOperationsCatalogItem` | GET `/api/operations/catalog-inventory/items/{itemCode}` | operations-admin | Detail aggregate | 单商品九事实族；子集合按既有 aggregate/边界 |
-| 分类树选择 | `getOperationsCatalogCategoryCandidates` | GET `/api/operations/catalog-inventory/category-candidates` | operations-admin | Cursor hierarchy | 数十至数千分类；根/子级 lazy cursor，搜索返回命中及祖先路径；`usage=ITEM_ASSIGNMENT` 服务新建、编辑、批量移动商品，`usage=CATEGORY_REPARENT` 服务分类挪父 |
+| 分类树选择 | `getOperationsCatalogCategoryCandidates` | GET `/api/operations/catalog-inventory/category-candidates` | operations-admin | Cursor hierarchy | 数十至数千分类；根/子级 lazy cursor，搜索返回命中及祖先路径；`usage=ITEM_ASSIGNMENT` 服务新建、编辑、批量移动商品，`usage=CATEGORY_CREATE` 服务新建分类选父，`usage=CATEGORY_REPARENT` 服务分类挪父；create/move 均由 owner 限制根起最多三级 |
 | 父商品规格页 | `getOperationsCatalogItemSkus` | GET `/api/operations/catalog-inventory/items/{itemCode}/skus` | operations-admin | Cursor | 通常 0–几十，极端更多；只在展开父行读取 |
 | shape/字段准入 | `getOperationsCatalogShapeManifest` | GET `/api/operations/catalog-inventory/shape-manifest` | operations-admin | Detail | 固定 7 shape 与已裁规则 |
-| 通用字典 | `getOperationsCatalogDictionary` | GET `/api/operations/catalog-inventory/dictionaries/{dictionaryKind}` | operations-admin | Cursor/Bounded 按 kind | 标签/规格定义与值随配置增长 |
-| 生产标签 | `getOperationsProductionTags` | GET `/api/operations/catalog-inventory/production-tags` | operations-admin | Cursor | 数十至数百标签 |
+| 通用字典 | `getOperationsCatalogDictionary` | GET `/api/operations/catalog-inventory/dictionaries/{dictionaryKind}` | operations-admin | Cursor/Bounded 按 kind | 标签/规格定义与值随配置增长；简单库管理的 `query/status` 属于 owner 过滤与 cursor identity |
+| 生产标签 | `getOperationsProductionTags` | GET `/api/operations/catalog-inventory/production-tags` | operations-admin | Cursor | 数十至数百标签；管理列表的 `query/status` 由 owner 过滤并进入 cursor identity |
 | 本地复制来源 | `getOperationsLocalCatalogCopyCandidates` | GET `/api/operations/catalog-inventory/copy/local/candidates` | operations-admin | Cursor | 随商品增长 |
 | 品牌复制来源 | `getOperationsBrandCatalogCopyCandidates` | GET `/api/operations/catalog-inventory/copy/brand/candidates` | operations-admin | Cursor | 随品牌商品增长 |
 | BOM/物料候选 | `getOperationsInventoryConsumptionTargetCandidates` | GET `/api/operations/catalog-inventory/inventory-consumption-target-candidates` | operations-admin | Cursor | 随库存对象增长 |
 | 商品属性定义 | `listOperationsCatalogAttributeDefinitions` | GET `/api/operations/catalog-inventory/attribute-definitions` | operations-admin | Detail aggregate/现行 bounded | 定义库整体维护；以 owner 现行替换语义为准 |
 | 点单选项定义 | `listOperationsCatalogOrderOptionDefinitions` | GET `/api/operations/catalog-inventory/order-option-definitions` | operations-admin | Detail aggregate/现行 bounded | 定义库整体维护 |
-| 计量单位 | `listOperationsCatalogUnits` | GET `/api/operations/catalog-inventory/units` | operations-admin | Bounded | hard max 99 |
+| 计量单位 | `listOperationsCatalogUnits` | GET `/api/operations/catalog-inventory/units` | operations-admin | Bounded | hard max 99；`query/status` 仍由 owner 过滤，不能以当前页前端筛选替代 |
 | 图片内容 | `getPublicAssetContent` | GET `/api/public/assets/{assetRef}/content` | public（由 operations-admin 图片 presenter 消费） | Detail | 单个已绑定 asset；assetRef 改变时必须读新 `currentData`，不得短暂显示旧图 |
 
 `getOperationsCatalogCategoryCandidates` 的 `usage` 是技术上的任务意图闭集，不是新的分类业务状态：
 
 - `ITEM_ASSIGNMENT`：用于新建商品、编辑商品和批量移动商品。`currentCategoryRef` 必须为空；owner 只按现行“商品可归入该分类”命令准入返回 `selectable/disabledReason`。
-- `CATEGORY_REPARENT`：用于分类挪父。`currentCategoryRef` 必填；owner 在同一现行 move admission 上排除当前分类及其全部后代，并返回逐节点不可选原因。
+- `CATEGORY_CREATE`：用于新建分类选择父级。`currentCategoryRef` 必须省略/null；深度已为三级的候选返回不可选和“商品分类最多只能建立三级”。
+- `CATEGORY_REPARENT`：用于分类挪父。`currentCategoryRef` 必填；owner 在同一现行 move admission 上排除当前分类及其全部后代，并拒绝会使移动子树超过三级的目标。
 - 两种 usage 都接收 `parentCategoryRef/keyword/cursor/pageSize`；切换 usage、scope、brand 或 `currentCategoryRef` 必须形成新的 query identity，旧 `currentData` 不得继续渲染。前端不得用节点是否有子节点、当前树形位置或历史选择结果自行推导资格。
+
+从品牌复制同样属于分类写入路径：execute 在分类层级 advisory lock 内，以目标现行父链和待复制闭包构成有效树；若目标复用同编码分类会使任一节点超过三级，整次 command 以 `CATEGORY_DEPTH_EXCEEDED` 拒绝，任何目标分类、商品或关联事实均不得写入。该裁定不允许压平、改挂或 pick-first；preflight 仅作当时影响检查，execute 必须在事务内重新计算。
 
 `CatalogCategoryCandidateQuery` 精确协议：
 
 | 字段 | 类型/边界 | 组合规则 |
 | --- | --- | --- |
 | `dataNodeRef` | optional UUID | 省略时取当前 session scope；传入时仍由 `readRequest(CATALOG_SCOPE)` 校验 |
-| `usage` | required enum `ITEM_ASSIGNMENT \| CATEGORY_REPARENT` | 闭集外 400；不进入用户文案 |
+| `usage` | required enum `ITEM_ASSIGNMENT \| CATEGORY_CREATE \| CATEGORY_REPARENT` | 闭集外 400；不进入用户文案 |
 | `currentCategoryRef` | UUID 或 null | `ITEM_ASSIGNMENT` 必须省略/null；`CATEGORY_REPARENT` 必填 |
 | `parentCategoryRef` | UUID 或 null | 省略/null 表示读取根分类；有值时只读该父级的直接子分类 |
 | `keyword` | optional string | 有非空关键词时 `parentCategoryRef` 必须省略/null；返回匹配节点及完整 `path`，不把搜索命中伪成根节点 |
 | `cursor` | opaque string 或 null | 只可在同一 scope/brand/usage/current/parent/keyword identity 下续页；漂移或伪造为 400 |
+
+### 9c. 2026-08-25 实施期收敛 addendum
+
+1. `V20260825_...retire_production_tag_kind` 删除没有业务语义、且不再有 consumer 的生产标签 `tag_kind`。这是单一生产标签裁定后的持久化收敛，不创建替代字段、兼容读取或默认值。
+2. 分类层级的唯一真相是 owner create/move guard：最大深度为三级。候选协议只消费同一规则以提前呈现不可选原因，P1 seed 自检对超过三级直接失败。
+3. `getOperationsCatalogItemSkus` 将同一 catalog item 的制作 profile、SKU override 与单一生产标签 reference 收敛进其既有 set-based SKU 查询；标签名称仍经 fulfillment owner API 读取一次。不得在懒加载页重新逐族读取相同 catalog 事实。
+4. option production effect 只保留非负制作时长增量和制作说明；P1 不得再声明或生成 `tagOperation`/`x-tagOperation`。这两个已退役符号的任一回归必须由 generator self-test 失败，而不是由 UI 忽略或 owner fallback 消化。
+5. 工作台路由宿主保持只装配；`CatalogWorkbenchController` 只组合 read-model、task coordinator、内容和任务 surface，目标不超过 300 行。query/filter/cursor/SKU cache 只在 `useCatalogWorkbenchReadModel`，first-level task transition 只在 `useCatalogWorkbenchTaskCoordinator`，树/内容/任务面均为独立 presenter；新增列表列或筛选不得修改路由宿主。
 | `pageSize` | integer 1..100，default 50 | 前端不得请求 unlimited |
 
 `CatalogCategoryCandidatePage` 精确协议：外层固定 `revision/requestId/data`；`data` 必须含
@@ -436,20 +448,20 @@ stage/release、local copy preflight/execute、temporary promotion preflight/exe
 | `apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/api/CatalogOwnerApi.java` | `JsonNode readNavigation(` | 增 task read API |
 | `apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogTaskReadService.java` | `public JsonNode navigation(` | 新 read wrapper |
 | `apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java` | `public JsonNode readCatalogNavigation(` | coordinator read |
-| `apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java` | `record CopyReferencePlan(ArrayNode closureItemRefs, ArrayNode productionTagRefs, ArrayNode referenceMappings) {` | copy closure 收敛商品级单一生产标签 |
+| `apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java` | `record CopyReferencePlan(` | copy closure 收敛商品级单一生产标签 |
 | `apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogPreparationFacts.java` | `final class CatalogPreparationFacts {` | profile/effect allowed-field 删除标签字段 |
 | `apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemReferenceFacts.java` | `final class CatalogItemReferenceFacts {` | `PRODUCTION_TAG` singular replace/read |
-| `apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java` | `private void validateProductionTagRefs(` | whole-save/copy/readback 从数组收敛为单值 |
+| `apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java` | `private void validateProductionTagRef(` | whole-save/copy/readback 从数组收敛为单值 |
 | `apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java` | `return readResponse(application.readCatalogItems(` | 两条 route 邻接落点 |
-| `apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx` | `function CatalogWorkbenchPage({` | 宿主拆分/任务装配 |
-| `apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx` | `function CatalogSkuExpandedRow({` | 退役文本展开 |
-| `apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx` | `export function CatalogItemDrawer({` | View/Edit 巨型混壳退役 |
+| `apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/CatalogWorkbenchController.tsx` | `export function CatalogWorkbenchController({` | 工作台查询与任务控制器；路由宿主只负责 Store/Brand 入口 |
+| `apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemListTable.tsx` | `export function catalogItemExpandControl(` | 显式 SKU 展开、加载、失败重试与继续加载 |
+| `apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx` | `export function CatalogItemDrawer(props:` | View/Edit 巨型混壳退役 |
 | `apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemCreateDrawer.tsx` | `export function CatalogItemCreateDrawer(` | 改 Modal/接力状态 |
-| `apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx` | `export function CatalogDictionaryDrawer({` | 改全高 Config Drawer |
+| `apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx` | `export function CatalogDictionaryDrawer(props:` | 改全高 Config Drawer |
 | `apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDefinitionLibraries.tsx` | `export function CatalogDefinitionLibraries(` | 复杂定义同栏化 |
 | `apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx` | `export function BrandCatalogCopyDrawer(` | 复制 state/refresh |
-| `apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/CatalogAcceptanceScenarios.java` | `id = "catalog.sku-removal-blocked-by-inventory"` | 合并场景释放 annotation |
-| `apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/CatalogAcceptanceScenarios.java` | `id = "catalog.copy-definition-semantic-conflict"` | 合并场景释放 annotation |
+| `apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/CatalogAcceptanceScenarios.java` | `id = "catalog.sku-inventory-identity-and-removal"` | 合并场景释放 annotation |
+| `apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/CatalogAcceptanceScenarios.java` | `id = "catalog.copy-definition-semantic-conflicts"` | 合并场景释放 annotation |
 
 新建文件没有旧锚点：`catalogTestIds.ts`、workspace task reducer、draft/config hooks、专用 Table、View/Editor 九族文件。
 它们由 CP 输出路径与模块职责约束，不伪造锚点。
@@ -585,7 +597,7 @@ constructor 生成。`codeToken` 必须由传入的 item/category/SKU/definition
 
 | key group | exact keys / constructors |
 | --- | --- |
-| `controls.workbench` | `viewTree`, `viewTable`, `openConfig`, `openBrandCopy`, `openCreate`, `treeSearch`, `filterKeyword`, `filterStatus`, `filterSource`, `filterReset`, `columnSettings`, `columnToggle(columnKey)`, `refresh` |
+| `controls.workbench` | `viewTree`, `viewTable`, `openConfig`, `openBrandCopy`, `openCreate`, `treeSearch`, `filterKeyword`, `filterStatus`, `filterSource`, `filterReset`, `refresh` |
 | `controls.itemTable` | `root`, `selectAll`, `itemSelect(itemCode)`, `itemOpen(itemCode)`, `itemExpand(itemCode)`, `skuOpen(itemCode,skuCode)`, `skuMore(itemCode)`, `skuRetry(itemCode)` |
 | `controls.create` | `root`, `name`, `code`, `shape`, `category`, `submit`, `cancel`, `problem` |
 | `controls.view` | `root`, `close`, `edit`, `more`, `section(sectionKey)`, `retry` |
@@ -624,10 +636,10 @@ Playwright 自写 selector；同时自动并入该 Journey 覆盖的 §11b.1 sur
 | J-CATUI-03 | `catalog-create-recovery` | create fields + create.cancel | 失败后修正可成功；取消后焦点回“新建商品”且无半商品 |
 | J-CATUI-04 | `catalog-edit-success` | edit.* + childTask.* | 区段级 dirty/error 聚合；一次保存后 readback 与 View 一致并清 session 草稿 |
 | J-CATUI-04 | `catalog-edit-failure` | edit.errorSummary + edit.field | typed problem 定位字段/区段，owner version 与事实不变、草稿保留 |
-| J-CATUI-04 | `catalog-edit-recovery` | edit.restorePrompt/restore/discard | 刷新或绕行配置后恢复同商品、同版本、同区段和字段草稿 |
+| J-CATUI-04 | `catalog-edit-recovery` | edit.restorePrompt/restore/discard | 意外关闭或页面刷新后恢复同商品、同版本、同区段和字段草稿；编辑内维护元数据不触发恢复链 |
 | J-CATUI-05 | `catalog-config-success` | config.* | 三种配置形态各完成一次合法变更，返回原库原行且只刷新相关候选 |
 | J-CATUI-05 | `catalog-config-failure` | config.action + config.detail | 被引用删除/非法更新拒绝，既有绑定和版本不变、原因可见 |
-| J-CATUI-05 | `catalog-config-recovery` | edit + config + edit.restore | 编辑绕行配置后“继续编辑”恢复草稿并自动选用新建配置 |
+| J-CATUI-05 | `catalog-config-in-editor` | edit + config child + trigger focus | 编辑保持打开；关闭元数据 child task 后草稿、区段和滚动位置不变，焦点回原维护控件；新建配置仅通过精确候选失效出现 |
 | J-CATUI-06 | `catalog-batch-success` | itemTable select + batch.* | SKU 行不可选；提交前摘要、进度、成功 N/失败 M 与逐项原因一致 |
 | J-CATUI-06 | `catalog-batch-failure` | batch.category/tags/resultRow | 非法目标或旧版本逐项拒绝，失败项 owner facts 不变、先前成功项保留 |
 | J-CATUI-06 | `catalog-batch-recovery` | batch.refreshError/close | receipt 已成立但刷新失败仍可见；重试刷新不伪造批量结果 |
@@ -691,7 +703,9 @@ L2 执行仍需 Dexter 单独授权；本节只冻结实现与 locator/blueprint
 
 共同 fixture 还必须创建当前 run 独有的有权限、只读、越范围登录身份，以及 DB/资产 namespace。fixture report
 只能写业务码、版本、数量和不可逆 HMAC fact digest，不得写用户输入、识别码值、说明、token/cookie/raw payload。
-setup business 非 PASS 时不启动浏览器；cleanup 只按 manifest identity 删除本 run 事实与资产并做零残留 readback。
+setup business 或 setup cleanup 非 PASS 时不启动浏览器。readiness 阶段资源为了交给浏览器继续使用，
+`cleanupStatus` 必须保持 `PENDING_HELD`，不得伪报 PASS；最终 L2 execution 才负责按 manifest identity
+删除本 run 事实与资产并做零残留 readback，结束后的 local/remote cleanup 必须分别为 PASS。
 
 ### 11c.4 24 case 的动作与 oracle
 
@@ -700,8 +714,8 @@ setup business 非 PASS 时不启动浏览器；cleanup 只按 manifest identity
 | 查找 | 选深分类→设状态/来源→搜索→展开父行→加载更多规格；父 total、3 个规格的十列/共享表头逐格正确；再选“生产标签”二级节点，只有匹配父商品且展开后显示全部规格；横滚到来源列，四行溢出 Tooltip 可读 | 对故障父行展开或篡改 `productionTagRef`；只出现对应错误，父页、筛选、其它展开、owner facts 不变，商品标签筛选不得被串用 | 刷新后筛选、cursor、横纵 scroll、expanded keys 保留且零额外请求；关闭 View 后焦点回触发行 |
 | 查看 | 以只读身份开长内容商品并逐区段滚动；九区段业务 copy、动作能力、空态成立，DOM 零 Form/disabled/技术词 | 注入 detail 读取失败后打开；显示逐字读取失败文案，工作台和 owner facts 不变 | 点击重新加载成功，再关闭；滚动无双祖先、焦点回商品/规格名称 |
 | 新建 | 输入名称/业务码/类型，TreeSelect 展开路径并选分类，提交；只建 DRAFT，readback 后接力同商品 Editor | 用重复码及越范围篡改分别提交；定位字段/任务原因，父列表/owner count/version 不变且不打开 Editor | 修改重复码后成功；另一路取消，零新增并回“新建商品” |
-| 编辑 | 修改两个区段并为商品单选/清除生产标签、重排稳定行、应用子任务并保存；一次 request，View/readback 一致，SKU/选项提交体无标签字段，session 草稿清空 | 篡改提交两个生产标签、向 SKU/选项 effect 注入标签、触发 field/row problem 或 version conflict；owner 拒绝且 version/facts 不变 | 制造刷新或配置绕行，重开并恢复同商品/版本/区段/单一标签/错误/焦点；放弃后 session 零残留 |
-| 配置 | 生产标签简单库改名、父子库新增值、复杂库同栏保存；各自 readback 正确，仅相关库/候选请求增加 | 删除被引用生产标签并提交非法更新；逐字原因，定义/绑定/version 不变 | 从 Edit 绕行新建生产标签，回工作台点“继续编辑”；恢复草稿并单选新标签，第一层 Drawer 不并存 |
+| 编辑 | 修改两个区段并为商品单选/清除生产标签、重排稳定行、应用子任务并保存；一次 request，View/readback 一致，SKU/选项提交体无标签字段，session 草稿清空 | 篡改提交两个生产标签、向 SKU/选项 effect 注入标签、触发 field/row problem 或 version conflict；owner 拒绝且 version/facts 不变 | 制造意外关闭或页面刷新，重开并恢复同商品/版本/区段/单一标签/错误/焦点；编辑内维护元数据时编辑保持打开、草稿不进入恢复链；放弃后 session 零残留 |
+| 配置 | 生产标签简单库改名、父子库新增值、复杂库同栏保存；各自 readback 正确，仅相关库/候选请求增加 | 删除被引用生产标签并提交非法更新；逐字原因，定义/绑定/version 不变 | 从 Edit 打开子任务新建生产标签；关闭后编辑仍打开、草稿不变，候选刷新并可单选新标签 |
 | 批量 | 只选父商品，选树形分类后提交；出现摘要→进度→逐项结果，规格行不可选，receipt 与 owner readback 一致 | 混合合法/旧版本/引用阻止项；成功项保留、失败项 unchanged，原因逐项可读 | 注入列表刷新失败；receipt 不变且显示“结果已保存，列表暂未更新”，重新加载后列表一致 |
 | 复制 | 从品牌复制选择来源/目标/范围→检查影响→复制；全过程对象持续可见，逐项结果与目标 readback 一致 | 选语义冲突范围；影响检查阻断，目标不存在或 version/digest 不变 | 返回修改范围使旧 token 失效；不重新检查时不能复制，重新检查后成功 |
 | 治理 | 查看可执行动作并确认转正/生命周期；结果 readback 的状态/version 正确，技术 code 不显示 | 用隐藏动作、旧版本、引用阻止请求；owner 拒绝，状态/version/引用/历史快照不变 | 失败或取消后回同商品同动作；补齐缺口重新检查，已填业务字段保留并可成功 |
@@ -716,7 +730,8 @@ setup business 非 PASS 时不启动浏览器；cleanup 只按 manifest identity
 往返成本。历史同口径实测为每次 DB 操作约 `42.7ms`；这个数值是 `DB duration / DB operation count` 的实测，
 但“全部由 SSH tunnel 导致”仍是推论，不写成因果事实，也不能用 Testcontainers 同侧数字替代。
 
-每个 L2 action 除 operationId exact-set 外，还必须声明该 operation 的 `maxRequestCount`。生成器从唯一 generated
+每个 L2 action 除 operationId exact-set 外，还必须声明该 operation 的 `maxRequestCount`。每个 fresh browser case 先计入
+登录、会话和商品工作台首次读取这一公共 HTTP envelope，再叠加该 case 的专属 action 请求；生成器从唯一 generated
 operation registry 读取 `databaseOperationBudget.max`，不得在 L2 blueprint 复制 DB 预算：
 
 ```text
@@ -729,7 +744,7 @@ fullRunTimeoutMs = ceilToSecond(2 × fullRunExpectedMs)
 ```
 
 `2` 是全套统一的 `L2_TIMEOUT_HEADROOM_FACTOR`，不是逐 case 手调值；任何 case 自写 timeout、缺 operation budget、
-`maxRequestCount` 为 null/无限或 registry 预算变化后未重算都 fail closed。readiness 在同一主机和浏览器配置下对
+公共 fresh-case envelope 漏算、`maxRequestCount` 为 null/无限或 registry 预算变化后未重算都 fail closed。readiness 在同一主机和浏览器配置下对
 无网络本地交互做固定 20 次 probe，记录 p95；namespace/fixture/cleanup 预算由其阶段 manifest 的 operation 预算与
 受管 provision/cleanup self-test 上界合成。作为量级校验，4 次 DB 操作的历史 DB 期望约 `171ms`，102 次约
 `4.36s`，均为 headroom 前数值。P1/runner 必须生成 `l2-timing-budget-report.json`，列出 24 个 active case 的
@@ -848,11 +863,11 @@ keyword/status/source 是结果域过滤条件，可与该选择器组合。切�
 1. 商品：父行依次为名称、编码、完整分类路径、商品标签；规格子行仅规格名称与规格编码。名称不拼编码。
 2. 商品形态：父行显示业务形态；规格子行显示“规格”，默认规格用同格弱强调 Tag。
 3. 价格和单位：第一行价格或中性“未设置”；其后完整列出销售单位、基础计量单位并标明类型。两类单位均无时不造占位；
-   盘点单位不进入此列。若类型行超过四行，第四行显示“另有 N 项”，Tooltip 给出完整有序清单。
+   盘点单位不进入此列。若类型行超过四行，第四行显示“还有 N 项”，Tooltip 给出完整有序清单。
 4. 规格或选项：父商品按业务顺序罗列实际规格维度或点单选项，不显示“共 N 个”；规格子行每行一个“规格名：规格值”，
-   最多四行，超出由第四行与 Tooltip 承载完整清单。
+   最多四行均为实际业务内容，不用“还有 N 项”替代第四行；超出仅由 Tooltip 按业务顺序承载完整清单。
 5. 商品属性：按定义业务顺序显示“属性名：值”，合法空为“未设置商品属性”。
-6. 制作信息：显示生产标签、制作单显示名称、预计制作时长、制作说明的业务摘要；空为“未设置制作信息”。不得显示
+6. 制作信息：显示生产标签、制作单显示名称、预计制作时长、制作说明的业务摘要；空为中性“未设置”。不得显示
    route、owner、profile、ref、override 等技术词。
 7. 库存与 BOM：用“直接扣当前商品或规格”“按配方扣减 N 种用料”“不参与库存”等业务句；不显示内部 mode/ref。
 8. 更新时间使用短格式并在 Tooltip 给完整时间；状态使用全库统一 Tag；来源使用业务名称。
@@ -920,7 +935,7 @@ keyword/status/source 是结果域过滤条件，可与该选择器组合。切�
 | §7 机制行 | collection/auth/cache/error/log/testId 均跨层逐值 |
 | 详设 ↔ IA | state 三住址、task union、cascade、refresh、46 problem、8 IA-ID 逐字一致 |
 | seed 全集 | 仅 P1 `catalogDefinitionSeed` 与 seed executor，两类改动齐全 |
-| 计数 | 开工实时复算；设计当前 57→59、238→240、80→80、20 anchors |
+| 计数 | 开工实时复算；历史输入 57→59、238→239、80→80、20 anchors |
 | 证据档位 | focused/static/acceptance/browser L2 分开；L2 未授权即留未验证 |
 | 控制权 | contract/owner/RTK/App/foundation 逐控件一个职责；现有 acceptedPage/category-local-admission gap 点名退役 |
 | L2 readiness | current NOT_READY；目标 26/65、active 24、TEST datasets 39→47、managed runner/join/cleanup 全有 red mutation |
@@ -932,3 +947,6 @@ IMPLEMENTATION_AUTHORITY=false
 OPEN_PRODUCT_DECISIONS=0
 KNOWN_UNVERIFIED=browser L2(current readiness NOT_READY);UAT;real migration separately authorized;reset/start/seed;implementation runtime
 ```
+
+> 2026-08-26 观察问题整改附录：展开入口、生命周期体验 seed 与引用/作废表达按
+> `2026-08-26-v2s-catalog-workbench-observed-remediation-design-addendum-codex.md` 覆盖。

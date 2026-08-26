@@ -9,7 +9,7 @@
     },
     "ia": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
-      "sha256": "860224dc6b167bf66b2025715be6eb8f1d24312d3fca728801b6183e4f44d959"
+      "sha256": "a532610f6635e3ac235d50e0b285ac0ad4f79fa0b7ce4dac21bf2c61ea512c7e"
     },
     "v4Manifest": {
       "path": "../catering-server-v4/frontend/packages/generated-contracts/src/catalog-item-editor-manifest.ts",
@@ -60,21 +60,13 @@
       "UP": "上移",
       "DOWN": "下移"
     },
-    "productionTagKind": {
-      "PRODUCTION": "制作",
-      "PACKAGE": "包装",
-      "LABEL": "标签",
-      "HANDOFF": "交接",
-      "REVIEW": "审核",
-      "OTHER": "其他"
-    },
     "countSemantics": {
       "SELF_ONLY": "仅本分类",
       "SELF_AND_DESCENDANTS": "本分类及子分类"
     },
     "shapeKey": {
       "STANDARD_SALE_COUNTED": "普通销售商品",
-      "SKU_VARIANT_SALE_COUNTED": "按 SKU 管理商品",
+      "SKU_VARIANT_SALE_COUNTED": "按规格管理商品",
       "STANDARD_SALE_WEIGHED": "称重销售商品",
       "MATERIAL": "原材料/半成品/包装物",
       "COMPOSITE": "商品型套餐",
@@ -98,17 +90,17 @@
       "PRODUCIBLE": "可制作"
     },
     "skuMode": {
-      "NONE": "无 SKU",
-      "OPTIONAL_TABLE": "可选 SKU",
-      "REQUIRED_MATRIX": "规格矩阵 SKU"
+      "NONE": "无规格",
+      "OPTIONAL_TABLE": "可选规格",
+      "REQUIRED_MATRIX": "规格矩阵"
     },
     "priceGranularity": {
       "ITEM": "商品级定价",
-      "SKU": "SKU 级定价"
+      "SKU": "规格级定价"
     },
     "inventoryNodeType": {
       "CATALOG_ITEM": "商品",
-      "SKU": "SKU",
+      "SKU": "规格",
       "OPTION_VALUE": "点单选项值"
     },
     "inventoryMode": {
@@ -118,8 +110,8 @@
     },
     "catalogSection": {
       "BASIC_INFO": "基本信息",
-      "SKU_STRUCTURE": "SKU 结构",
-      "SKU_BOM": "SKU BOM",
+      "SKU_STRUCTURE": "规格结构",
+      "SKU_BOM": "规格 BOM",
       "ORDER_OPTIONS": "点单选项",
       "OPTION_VALUE_BOM": "选项值 BOM",
       "ITEM_BOM": "商品 BOM",
@@ -165,7 +157,7 @@
       "ARCHIVED",
       "VOIDED"
     ],
-    "description": "存在至少一个非 ARCHIVED/VOIDED SKU 即为 HAS_SKU。"
+    "description": "存在至少一个未归档、未作废的规格即视为按规格管理。"
   },
   "shapeAdmission": {
     "source": "shapeKey",
@@ -228,20 +220,20 @@
       "helpText": "选择商品所属分类。",
       "optionSourceRef": {
         "kind": "endpoint",
-        "operationId": "getOperationsCatalogNavigation",
+        "operationId": "getOperationsCatalogCategoryCandidates",
         "path": {},
         "query": {
-          "viewKey": "ALL",
+          "usage": "ITEM_ASSIGNMENT",
           "dataNodeRef": {
             "context": "scope.dataNodeRef"
           }
         },
         "headers": {},
-        "itemsPath": "data.tree",
+        "itemsPath": "data.items",
         "valueField": "categoryRef",
         "labelField": "name",
         "parentField": "parentCategoryRef",
-        "disabledWhen": null
+        "disabledWhen": "disabledReason"
       }
     },
     {
@@ -312,7 +304,7 @@
       "admittedShapes": [
         "SKU_VARIANT_SALE_COUNTED"
       ],
-      "helpText": "选择该商品用于生成 SKU 矩阵的规格属性。",
+      "helpText": "选择该商品用于生成规格组合的规格属性。",
       "optionSourceRef": {
         "kind": "endpoint",
         "operationId": "getOperationsCatalogDictionary",
@@ -370,13 +362,13 @@
     {
       "fieldKey": "skuMatrix",
       "dataPath": "skus[]",
-      "label": "SKU 矩阵",
+      "label": "规格组合",
       "controlKind": "skuVariantMatrix",
       "tabKey": "sku-specifications-pricing",
       "admittedShapes": [
         "SKU_VARIANT_SALE_COUNTED"
       ],
-      "helpText": "按已选规格属性和属性值维护 SKU 矩阵。"
+      "helpText": "按已选规格属性和属性值维护规格组合。"
     },
     {
       "fieldKey": "inventoryRuleMode",
@@ -407,7 +399,7 @@
         "SKU_VARIANT_SALE_COUNTED",
         "STANDARD_SALE_WEIGHED"
       ],
-      "helpText": "从库存 owner 提供的合格候选中选择耗用对象。",
+      "helpText": "从可用于配方的库存对象中选择耗用对象。",
       "optionSourceRef": {
         "kind": "endpoint",
         "operationId": "getOperationsInventoryConsumptionTargetCandidates",
@@ -438,13 +430,13 @@
     {
       "fieldKey": "compositeComponentSku",
       "dataPath": "compositeGroups[].components[].productSkuRef",
-      "label": "组件 SKU",
+      "label": "组件规格",
       "controlKind": "select",
       "tabKey": "composite-content",
       "admittedShapes": [
         "COMPOSITE"
       ],
-      "helpText": "选择已选组件商品中的 SKU。",
+      "helpText": "选择已选组件商品中的规格。",
       "optionSourceRef": {
         "kind": "endpoint",
         "operationId": "getOperationsCatalogItem",
@@ -458,7 +450,6 @@
         "itemsPath": "data.item.skus",
         "valueField": "productSkuRef",
         "labelParts": [
-          "skuCode",
           "skuName"
         ],
         "disabledWhen": null
@@ -573,13 +564,13 @@
     {
       "fieldKey": "skuUnitOverrides",
       "dataPath": "skus[].unitOverrides",
-      "label": "SKU 单位覆盖",
+      "label": "规格单位覆盖",
       "controlKind": "detailTable",
       "tabKey": "sku-specifications-pricing",
       "admittedShapes": [
         "SKU_VARIANT_SALE_COUNTED"
       ],
-      "helpText": "SKU 可单独指定销售单位或基础计量单位；留空时沿用商品设置。"
+      "helpText": "规格可单独指定销售单位或基础计量单位；留空时沿用商品设置。"
     }
   ],
   "shapes": [
@@ -612,7 +603,7 @@
     },
     {
       "key": "SKU_VARIANT_SALE_COUNTED",
-      "label": "按 SKU 管理商品",
+      "label": "按规格管理商品",
       "itemKind": "STANDARD_ITEM",
       "measureMode": "COUNTED",
       "usageCapabilities": [
@@ -785,14 +776,14 @@
       "disabledModes": [
         {
           "mode": "DIRECT",
-          "reason": "按 SKU 管理商品的库存由 SKU 控制。"
+          "reason": "按规格管理商品的库存由规格控制。"
         },
         {
           "mode": "BOM",
-          "reason": "按 SKU 管理商品的主商品不能配置 BOM。"
+          "reason": "按规格管理商品的主商品不能配置 BOM。"
         }
       ],
-      "description": "主商品有启用或停用 SKU 时只能无库存控制。"
+      "description": "主商品有启用或停用规格时只能不参与库存。"
     },
     {
       "nodeType": "CATALOG_ITEM",
@@ -804,7 +795,7 @@
       ],
       "defaultMode": "NONE",
       "disabledModes": [],
-      "description": "无 SKU 主商品可选择无库存、直接扣本品或 BOM。"
+      "description": "没有规格的商品可选择不参与库存、直接扣本品或 BOM。"
     },
     {
       "nodeType": "SKU",
@@ -816,7 +807,7 @@
       ],
       "defaultMode": "NONE",
       "disabledModes": [],
-      "description": "SKU 可无库存、直接扣本品或配置 SKU BOM。"
+      "description": "规格可不参与库存、直接扣本品或配置规格 BOM。"
     },
     {
       "nodeType": "OPTION_VALUE",
@@ -852,7 +843,7 @@
     },
     {
       "shapeKey": "SKU_VARIANT_SALE_COUNTED",
-      "label": "按 SKU 管理商品",
+      "label": "按规格管理商品",
       "itemKind": "STANDARD_ITEM",
       "measureMode": "COUNTED",
       "skuMode": "REQUIRED_MATRIX",
@@ -2620,14 +2611,14 @@
         "disabledModes": [
           {
             "mode": "DIRECT",
-            "reason": "按 SKU 管理商品的库存由 SKU 控制。"
+            "reason": "按规格管理商品的库存由规格控制。"
           },
           {
             "mode": "BOM",
-            "reason": "按 SKU 管理商品的主商品不能配置 BOM。"
+            "reason": "按规格管理商品的主商品不能配置 BOM。"
           }
         ],
-        "description": "主商品有启用或停用 SKU 时只能无库存控制。"
+        "description": "主商品有启用或停用规格时只能不参与库存。"
       },
       {
         "nodeType": "CATALOG_ITEM",
@@ -2639,7 +2630,7 @@
         ],
         "defaultMode": "NONE",
         "disabledModes": [],
-        "description": "无 SKU 主商品可选择无库存、直接扣本品或 BOM。"
+        "description": "没有规格的商品可选择不参与库存、直接扣本品或 BOM。"
       },
       {
         "nodeType": "SKU",
@@ -2651,7 +2642,7 @@
         ],
         "defaultMode": "NONE",
         "disabledModes": [],
-        "description": "SKU 可无库存、直接扣本品或配置 SKU BOM。"
+        "description": "规格可不参与库存、直接扣本品或配置规格 BOM。"
       },
       {
         "nodeType": "OPTION_VALUE",
@@ -3007,8 +2998,7 @@
     "effect": {
       "instructionMaxLength": 1000,
       "secondsDeltaMinimum": 0,
-      "secondsDeltaIsInteger": true,
-      "tagOperation": "ADD_ONLY"
+      "secondsDeltaIsInteger": true
     },
     "admission": {
       "STANDARD_SALE_COUNTED": {
@@ -3074,6 +3064,8 @@
     "CatalogItemDetail",
     "CatalogDictionaryView",
     "ProductionTagPage",
+    "CatalogCategoryCandidatePage",
+    "CatalogItemSkuPage",
     "LocalCopyCandidatePage",
     "LocalCopyPreflight",
     "LocalCopyReadback",
@@ -3108,6 +3100,7 @@
       "allCount",
       "tree",
       "tags",
+      "productionTags",
       "smartViews",
       "shapeCounts",
       "uncategorizedCount",
@@ -3142,6 +3135,18 @@
       "revision",
       "requestId",
       "data"
+    ],
+    "CatalogCategoryCandidatePage": [
+      "items",
+      "total",
+      "cursor",
+      "nextCursor"
+    ],
+    "CatalogItemSkuPage": [
+      "items",
+      "total",
+      "cursor",
+      "nextCursor"
     ],
     "LocalCopyCandidatePage": [
       "revision",
@@ -3285,7 +3290,9 @@
       "linkageRules",
       "typeEffects",
       "saveSections",
-      "detailSections"
+      "detailSections",
+      "identifierRules",
+      "preparationRules"
     ],
     "CatalogAttributeDefinitionList": [
       "definitions"
@@ -3299,5 +3306,5 @@
       "data"
     ]
   },
-  "manifestDigest": "380eb845bb54e379ae4bf849935b734072ceae456fc549fe5e5cc4c63305a35f"
+  "manifestDigest": "9378d635bd8e7648cad0a6d44e0d7d57d4bc138fb09108feb6520f528b3cdabf"
 }

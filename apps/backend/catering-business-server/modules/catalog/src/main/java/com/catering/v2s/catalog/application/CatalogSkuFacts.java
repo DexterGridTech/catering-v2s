@@ -2,6 +2,7 @@ package com.catering.v2s.catalog.application;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
+import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -27,13 +28,28 @@ final class CatalogSkuFacts {
     private static final String VARIANT_COMBINATION_CONSTRAINT = "ux_catalog_sku_variant_digest_per_item";
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
+    private final TimeProvider time;
 
-    CatalogSkuFacts(JdbcTemplate jdbc, ObjectMapper mapper) {
+    CatalogSkuFacts(JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
         this.jdbc = jdbc;
         this.mapper = mapper;
+        this.time = time;
     }
 
     Map<UUID, ArrayNode> readByItemRefs(Collection<UUID> itemRefs) {
+        return readByItemRefs(itemRefs, false);
+    }
+
+    /**
+     * The list projection is the only reader that must combine an SKU's stored preparation override with the parent
+     * preparation profile. Carry that owner-local column in the existing SKU set read rather than opening a second
+     * page-wide lookup for the same SKU rows.
+     */
+    Map<UUID, ArrayNode> readByItemRefsForPreparationSummary(Collection<UUID> itemRefs) {
+        return readByItemRefs(itemRefs, true);
+    }
+
+    private Map<UUID, ArrayNode> readByItemRefs(Collection<UUID> itemRefs, boolean includePreparationOverride) {
         if (itemRefs == null || itemRefs.isEmpty()) return Map.of();
         List<UUID> refs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
         String placeholders = String.join(",", Collections.nCopies(refs.size(), "?"));
@@ -47,7 +63,10 @@ final class CatalogSkuFacts {
                         + " sku.base_measure_unit_ref, sku.base_measure_unit_code, sku.base_measure_unit_name,"
                         + " sku.base_measure_unit_dimension, sku.base_measure_unit_precision,"
                         + " attribute_value.attribute_ref, attribute.code, attribute.name, value.entry_ref, value.code,"
-                        + " value.name, value.status, COALESCE(axis_value.display_order,0), media_refs.media_refs FROM"
+                        + " value.name, value.status, COALESCE(axis_value.display_order,0), media_refs.media_refs,"
+                        + " "
+                        + (includePreparationOverride ? "sku.preparation_override::text" : "NULL::text")
+                        + " AS preparation_override, sku.updated_at_epoch_millis FROM"
                         + " catalog.catalog_sku sku LEFT JOIN catalog.catalog_sku_attribute_value attribute_value ON"
                         + " attribute_value.product_sku_ref = sku.product_sku_ref LEFT JOIN catalog.dictionary_entry"
                         + " attribute ON attribute.entry_ref = attribute_value.attribute_ref LEFT JOIN"
@@ -63,7 +82,8 @@ final class CatalogSkuFacts {
                         + " media.product_sku_ref = sku.product_sku_ref) AS media_refs WHERE sku.item_ref IN ("
                         + placeholders
                         + ") AND sku.status <> 'VOIDED' ORDER BY "
-                        + "sku.item_ref, sku.display_order, sku.sku_code, attribute_value.attribute_ref",
+                        + "sku.item_ref, sku.display_order, sku.sku_code, "
+                        + "COALESCE(axis_value.display_order,0), attribute.code, value.code",
                 statement -> {
                     for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
                 },
@@ -171,8 +191,10 @@ final class CatalogSkuFacts {
 
     void markVoided(UUID itemRef, UUID skuRef, long expectedVersion) {
         int changed = jdbc.update(
-                "UPDATE catalog.catalog_sku SET status='VOIDED',version=version+1 WHERE item_ref=? AND "
+                "UPDATE catalog.catalog_sku SET status='VOIDED',version=version+1,updated_at_epoch_millis=? "
+                        + "WHERE item_ref=? AND "
                         + "product_sku_ref=? AND version=? AND status NOT IN ('ARCHIVED','VOIDED')",
+                time.currentEpochMillis(),
                 itemRef,
                 skuRef,
                 expectedVersion);
@@ -185,10 +207,11 @@ final class CatalogSkuFacts {
 
         if (archivedRefs != null && !archivedRefs.isEmpty()) {
             List<Object[]> archivedRows = archivedRefs.stream()
-                    .map(skuRef -> new Object[] {itemRef, skuRef})
+                    .map(skuRef -> new Object[] {time.currentEpochMillis(), itemRef, skuRef})
                     .toList();
             jdbc.batchUpdate(
-                    "UPDATE catalog.catalog_sku SET status='ARCHIVED',version=version+1 WHERE item_ref=? AND "
+                    "UPDATE catalog.catalog_sku SET status='ARCHIVED',version=version+1,"
+                            + "updated_at_epoch_millis=? WHERE item_ref=? AND "
                             + "product_sku_ref=? AND status <> 'VOIDED'",
                     archivedRows);
         }
@@ -208,7 +231,8 @@ final class CatalogSkuFacts {
                 sku.displayOrder(),
                 sku.digest(),
                 sku.salesUnitOverrideRef(),
-                sku.baseMeasureUnitOverrideRef()
+                sku.baseMeasureUnitOverrideRef(),
+                time.currentEpochMillis()
             });
             for (AttributeValue value : sku.attributes())
                 attributeRows.add(new Object[] {sku.skuRef(), value.attributeRef(), value.valueRef()});
@@ -219,14 +243,15 @@ final class CatalogSkuFacts {
                             + "catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,standard_sale"
                             + "_price,is_default,status,display_order,variant_combination_digest,"
                             + "sales_unit_override_ref,"
-                            + "base_measure_unit_override_ref)"
-                            + " VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(product_sku_ref) DO UPDATE SET "
+                            + "base_measure_unit_override_ref,updated_at_epoch_millis)"
+                            + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(product_sku_ref) DO UPDATE SET "
                             + "sku_code=EXCLUDED.sku_code,sku_name=EXCLUDED.sku_name,"
                             + "standard_sale_price=EXCLUDED.standard_sale_price,is_default=EXCLUDED.is_default,status="
                             + "EXCLUDED.status,display_order=EXCLUDED.display_order,variant_combination_digest="
                             + "EXCLUDED.variant_combination_digest,"
                             + "sales_unit_override_ref=EXCLUDED.sales_unit_override_ref,"
                             + "base_measure_unit_override_ref=EXCLUDED.base_measure_unit_override_ref,"
+                            + "updated_at_epoch_millis=EXCLUDED.updated_at_epoch_millis,"
                             + "version=catalog.catalog_sku.version+1"
                             + " WHERE catalog.catalog_sku.item_ref=EXCLUDED.item_ref AND catalog.catalog_sku.status <>"
                             + " 'VOIDED'",
@@ -286,7 +311,8 @@ final class CatalogSkuFacts {
                 sku.defaultSku(),
                 sku.status(),
                 sku.displayOrder(),
-                sku.digest()
+                sku.digest(),
+                time.currentEpochMillis()
             });
             for (AttributeValue value : sku.attributes())
                 attributeRows.add(new Object[] {sku.skuRef(), value.attributeRef(), value.valueRef()});
@@ -296,8 +322,8 @@ final class CatalogSkuFacts {
                     "INSERT INTO "
                             + "catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,standard_sale"
                             + "_pri"
-                            + "ce,is_default,status,display_order,variant_combination_digest) "
-                            + "VALUES(?,?,?,?,?,?,?,?,?) "
+                            + "ce,is_default,status,display_order,variant_combination_digest,updated_at_epoch_millis) "
+                            + "VALUES(?,?,?,?,?,?,?,?,?,?) "
                             + "ON CONFLICT(product_sku_ref) DO NOTHING",
                     skuRows);
         } catch (DuplicateKeyException failure) {
@@ -317,10 +343,12 @@ final class CatalogSkuFacts {
                     attributeRows);
         for (CopySku sku : parsed)
             jdbc.update(
-                    "UPDATE catalog.catalog_sku SET sales_unit_override_ref=?,base_measure_unit_override_ref=? WHER"
+                    "UPDATE catalog.catalog_sku SET sales_unit_override_ref=?,base_measure_unit_override_ref=?,"
+                            + "updated_at_epoch_millis=? WHER"
                             + "E product_sku_ref=?",
                     sku.salesUnitOverrideRef(),
                     sku.baseMeasureUnitOverrideRef(),
+                    time.currentEpochMillis(),
                     sku.skuRef());
     }
 
@@ -342,7 +370,13 @@ final class CatalogSkuFacts {
                 ? node.path("standardSalePrice").asLong()
                 : null;
         if (node.has("skuBarcode"))
-            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "skuBarcode 已退役，请使用规格识别信息");
+            // spotless:off
+            throw new CatalogOwnerApi.Problem(
+                "VALIDATION_ERROR",
+                422,
+                "skuBarcode " + "已退役，请使用规格识别信息"
+            );
+            // spotless:on
         UUID salesUnitOverrideRef = optionalUuid(node, "salesUnitOverrideRef");
         UUID baseMeasureUnitOverrideRef = optionalUuid(node, "baseMeasureUnitOverrideRef");
         List<AttributeValue> attributes = new ArrayList<>();
@@ -380,6 +414,7 @@ final class CatalogSkuFacts {
         sku.put("isDefault", result.getBoolean(6));
         sku.put("status", result.getString(7));
         sku.put("version", result.getLong(8));
+        sku.put("updatedAt", result.getLong(33));
         sku.put("displayOrder", result.getInt(9));
         sku.put("variantCombinationDigest", result.getString(10));
         if (result.getObject(11, UUID.class) == null) sku.putNull("salesUnitOverrideRef");
@@ -394,6 +429,14 @@ final class CatalogSkuFacts {
         ArrayNode mediaRefs = sku.putArray("mediaRefs");
         String media = result.getString(31);
         if (media != null && !media.isBlank()) for (String assetRef : media.split(",")) mediaRefs.add(assetRef);
+        String storedPreparationOverride = result.getString(32);
+        if (storedPreparationOverride != null && !storedPreparationOverride.isBlank()) {
+            try {
+                sku.set("_storedPreparationOverride", mapper.readTree(storedPreparationOverride));
+            } catch (com.fasterxml.jackson.core.JsonProcessingException failure) {
+                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "规格制作设置读取失败", failure);
+            }
+        }
         sku.putArray("attributeValueRefs");
         return sku;
     }

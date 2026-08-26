@@ -77,6 +77,77 @@ final class CatalogItemDefinitionFacts {
         return Map.copyOf(result);
     }
 
+    /**
+     * Produces the already-business-ordered attribute lines for a bounded item page. The public assignment shape
+     * deliberately remains reference-only; this projection resolves selected option labels inside the owner rather than
+     * asking a consumer to join opaque option references or rendering a generic placeholder.
+     */
+    Map<UUID, ArrayNode> readAttributeSummaryLines(Collection<UUID> itemRefs) {
+        if (itemRefs == null || itemRefs.isEmpty()) return Map.of();
+        List<UUID> refs = distinct(itemRefs);
+        Map<UUID, ArrayNode> assignmentsByItem = emptyArrays(refs);
+        Map<UUID, ObjectNode> assignments = new LinkedHashMap<>();
+        jdbc.query(
+                "SELECT assignment.item_ref,assignment.item_attribute_assignment_ref,definition.name,"
+                        + "assignment.text_value,selection.attribute_definition_option_ref,selected_option.name "
+                        + "FROM catalog.catalog_item_attribute_assignment assignment "
+                        + "JOIN catalog.catalog_attribute_definition definition ON definition.attribute_definition_"
+                        + "ref=assignment.attribute_definition_ref "
+                        + "LEFT JOIN catalog.catalog_item_attribute_selection selection ON selection.item_attribute"
+                        + "_assignment_ref=assignment.item_attribute_assignment_ref "
+                        + "LEFT JOIN catalog.catalog_attribute_definition_option selected_option ON selected_option."
+                        + "attribute_definition_option_ref=selection.attribute_definition_option_ref "
+                        + "AND selected_option.attribute_definition_ref=definition.attribute_definition_ref "
+                        + "WHERE assignment.item_ref IN ("
+                        + placeholders(refs)
+                        + ") ORDER BY assignment.item_ref,definition.code,definition.attribute_definition_ref,"
+                        + "selected_option.display_order NULLS LAST,"
+                        + "selected_option.attribute_definition_option_ref NULLS LAST",
+                statement -> bind(statement, refs),
+                rows -> {
+                    while (rows.next()) {
+                        UUID itemRef = rows.getObject(1, UUID.class);
+                        UUID assignmentRef = rows.getObject(2, UUID.class);
+                        ObjectNode assignment = assignments.get(assignmentRef);
+                        if (assignment == null) {
+                            String definitionName = rows.getString(3);
+                            if (definitionName == null || definitionName.isBlank()) throw invalidAttributeSummary();
+                            assignment = assignmentsByItem.get(itemRef).addObject();
+                            assignment.put("name", definitionName);
+                            if (rows.getObject(4) == null) assignment.putNull("textValue");
+                            else assignment.put("textValue", rows.getString(4));
+                            assignment.putArray("optionNames");
+                            assignments.put(assignmentRef, assignment);
+                        }
+                        UUID selectedOptionRef = rows.getObject(5, UUID.class);
+                        if (selectedOptionRef != null) {
+                            String optionName = rows.getString(6);
+                            if (optionName == null || optionName.isBlank()) throw invalidAttributeSummary();
+                            assignment.withArray("optionNames").add(optionName);
+                        }
+                    }
+                    return null;
+                });
+        Map<UUID, ArrayNode> result = emptyArrays(refs);
+        assignmentsByItem.forEach((itemRef, assignmentsForItem) -> {
+            ArrayNode lines = result.get(itemRef);
+            assignmentsForItem.forEach(assignment -> {
+                String value = assignment.path("textValue").asText("");
+                if (value.isBlank()) {
+                    List<String> optionNames = new ArrayList<>();
+                    assignment.path("optionNames").forEach(option -> optionNames.add(option.asText()));
+                    value = String.join("、", optionNames);
+                }
+                lines.add(assignment.path("name").asText() + "：" + (value.isBlank() ? "未设置" : value));
+            });
+        });
+        return Map.copyOf(result);
+    }
+
+    private static CatalogOwnerApi.Problem invalidAttributeSummary() {
+        return new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品属性摘要读取失败");
+    }
+
     CopyAttributeFacts readCopyAttributeFacts(String scope, String brand, Collection<UUID> itemRefs) {
         if (itemRefs == null || itemRefs.isEmpty()) return CopyAttributeFacts.empty();
         List<UUID> refs = distinct(itemRefs);
@@ -425,7 +496,8 @@ final class CatalogItemDefinitionFacts {
         if (!inserts.isEmpty())
             jdbc.batchUpdate(
                     "INSERT INTO catalog.catalog_item_order_option_config(item_order_option_config_ref,item_ref,"
-                            + "order_option_definition_ref,display_order,is_required,min_selection_count,max_selection_count) "
+                            + "order_option_definition_ref,display_order,is_required,min_selection_count,"
+                            + "max_selection_count) "
                             + "VALUES(?,?,?,?,?,?,?)",
                     inserts);
         if (!updates.isEmpty())
@@ -555,8 +627,10 @@ final class CatalogItemDefinitionFacts {
                         + " WHERE definition.data_node_ref=? AND definition.brand_ref=? AND config.item_ref IN ("
                         + placeholders(refs)
                         + ") ORDER BY"
-                        + " config.item_ref,config.display_order,definition.name,definition.order_option_definition_ref,"
-                        + "value_definition.display_order NULLS LAST,value_definition.order_option_definition_value_ref,"
+                        + " config.item_ref,config.display_order,definition.name,"
+                        + "definition.order_option_definition_ref,"
+                        + "value_definition.display_order NULLS LAST,"
+                        + "value_definition.order_option_definition_value_ref,"
                         + "material.order_option_definition_material_ref",
                 statement -> {
                     statement.setString(1, scope);
@@ -617,8 +691,13 @@ final class CatalogItemDefinitionFacts {
                             UUID materialItemRef = rows.getObject(20, UUID.class);
                             String materialItemCode = rows.getString(21);
                             if (materialItemRef == null || materialItemCode == null || materialItemCode.isBlank()) {
+                                // spotless:off
                                 throw new CatalogOwnerApi.Problem(
-                                        "REFERENCE_MAPPING_UNRESOLVED", 422, "点单选项扣料原材料不存在");
+                                    "REFERENCE_MAPPING_UNRESOLVED",
+                                    422,
+                                    "点单选项扣料原材料不存在"
+                                );
+                                // spotless:on
                             }
                             optionValue.addMaterial(new CopyOrderOptionMaterial(
                                     materialRef,
@@ -635,11 +714,10 @@ final class CatalogItemDefinitionFacts {
                     }
                     return null;
                 });
-        List<CopyOrderOptionDefinition> definitions =
-                definitionBuilders.values().stream()
-                        .map(CopyOrderOptionDefinitionBuilder::build)
-                        .sorted(java.util.Comparator.comparing(CopyOrderOptionDefinition::code))
-                        .toList();
+        List<CopyOrderOptionDefinition> definitions = definitionBuilders.values().stream()
+                .map(CopyOrderOptionDefinitionBuilder::build)
+                .sorted(java.util.Comparator.comparing(CopyOrderOptionDefinition::code))
+                .toList();
         Map<UUID, List<UUID>> refsByItem = new LinkedHashMap<>();
         definitionRefsByItem.forEach((itemRef, refsForItem) -> refsByItem.put(itemRef, List.copyOf(refsForItem)));
         return new CopyOrderOptionFacts(definitions, Map.copyOf(refsByItem), Map.copyOf(configsByItem));
@@ -988,7 +1066,8 @@ final class CatalogItemDefinitionFacts {
                         + " catalog.catalog_order_option_definition_value value_row ON"
                         + " value_row.order_option_definition_ref=definition.order_option_definition_ref LEFT JOIN"
                         + " catalog.catalog_order_option_definition_material material ON"
-                        + " material.order_option_definition_value_ref=value_row.order_option_definition_value_ref LEFT JOIN"
+                        + " material.order_option_definition_value_ref="
+                        + "value_row.order_option_definition_value_ref LEFT JOIN"
                         + " catalog.catalog_item material_item ON material_item.item_ref=material.material_item_ref "
                         + "WHERE definition.data_node_ref=? AND definition.brand_ref=? AND definition.code IN ("
                         + placeholders
@@ -1022,8 +1101,13 @@ final class CatalogItemDefinitionFacts {
                         UUID materialItemRef = rows.getObject(11, UUID.class);
                         String materialItemCode = rows.getString(12);
                         if (materialItemRef == null || materialItemCode == null || materialItemCode.isBlank()) {
+                            // spotless:off
                             throw new CatalogOwnerApi.Problem(
-                                    "REFERENCE_MAPPING_UNRESOLVED", 422, "点单选项扣料原材料不存在");
+                                "REFERENCE_MAPPING_UNRESOLVED",
+                                422,
+                                "点单选项扣料原材料不存在"
+                            );
+                            // spotless:on
                         }
                         value.addMaterial(new CopyOrderOptionMaterial(
                                 materialRef,
@@ -1827,7 +1911,9 @@ final class CatalogItemDefinitionFacts {
                     name,
                     selectionMode,
                     version,
-                    values.values().stream().map(CopyOrderOptionValueBuilder::build).toList());
+                    values.values().stream()
+                            .map(CopyOrderOptionValueBuilder::build)
+                            .toList());
         }
     }
 

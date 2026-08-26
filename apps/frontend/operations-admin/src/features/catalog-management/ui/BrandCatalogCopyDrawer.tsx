@@ -27,13 +27,18 @@ import {useEffect, useMemo, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import {CATALOG_INVENTORY_OPERATION_IDS} from '../../../app/api/generated/catalog-inventory-edge';
-import type {BrandCopyCandidatePage, CatalogInventoryEnvelope} from '../../../app/api/generated/catalog-inventory-edge';
+import type {
+  BrandCatalogCopyPreflight,
+  BrandCopyCandidatePage,
+  CatalogInventoryEnvelope,
+} from '../../../app/api/generated/catalog-inventory-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
 import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 import {
   catalogCopyVersionRows,
   catalogCopyActionLabel,
   catalogCopyObjectTypeLabel,
+  catalogCopyReasonLabel,
   catalogCopyScopeLabel,
   copyConfirmationLabel,
   copyConfirmationRows,
@@ -47,6 +52,8 @@ import {
   type CopyPreflight,
 } from '../model/catalogModel';
 import {catalogEnumLabel} from '../model/catalogManifestLabels';
+import {catalogUiProblemFeedback} from '../model/catalogUiProblemFeedback';
+import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 
 type Props = {
   open: boolean;
@@ -111,18 +118,23 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
     onOpenChange: next => {
       if (!next) onClose();
     },
-    dirtyMessage: '复制预检和已选择商品尚未提交。',
-    dirtyGuardTestIds: {confirm: testId('catalog-copy-dirty-discard'), cancel: testId('catalog-copy-dirty-continue')},
+    dirtyMessage: '复制检查影响和已选择商品尚未提交。',
+    dirtyGuardTestIds: {
+      confirm: testId(catalogTestIds.static.copyDirtyDiscard),
+      cancel: testId(catalogTestIds.static.copyDirtyContinue),
+    },
     diagnosticOperationId: 'brand-catalog-copy',
   });
+  const acceptCandidatePage = candidateState.acceptPage;
+  const candidatePageSize = candidateState.pageSize;
   useEffect(() => {
     if (!candidatePage) return;
-    candidateState.acceptPage(candidatePage.items, {
-      pageSize: candidateState.pageSize,
+    acceptCandidatePage(candidatePage.items, {
+      pageSize: candidatePageSize,
       total: candidatePage.total,
       nextCursor: candidatePage.cursor,
     });
-  }, [candidatePage, candidateState.acceptPage, candidateState.pageSize]);
+  }, [acceptCandidatePage, candidatePage, candidatePageSize]);
   const compatibilityBuckets = partitionBrandCopyCompatibilityResults(preflight?.compatibilityResults ?? []);
   const confirmationRows = useMemo(
     () => copyConfirmationRows(preflight?.compatibilityResults ?? []),
@@ -170,7 +182,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
           {headers: {...(headers ?? {}), 'Idempotency-Key': idempotencyKey}, body},
         ),
       ).unwrap();
-      const next = decodePreflight(response as CatalogInventoryEnvelope);
+      const next = decodePreflight(response as CatalogInventoryEnvelope | BrandCatalogCopyPreflight);
       if (!next) throw new Error('COPY_PREFLIGHT_SHAPE_MISSING');
       setPreflight(next);
       setConfirmedCompatibilityKeys([]);
@@ -180,8 +192,8 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
     } catch (error) {
       setProblem(
         error instanceof Error && error.message === 'COPY_PREFLIGHT_SHAPE_MISSING'
-          ? '复制预检返回不完整，请重试。'
-          : operationsProblemOf(error).detail,
+          ? '复制检查影响返回不完整，请重试。'
+          : catalogUiProblemFeedback(error, '复制检查未完成，请稍后重试。').message,
       );
     }
   };
@@ -233,8 +245,8 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
       } else {
         setProblem(
           error instanceof Error && error.message === 'COPY_PREFLIGHT_CATALOG_VERSIONS_MISSING'
-            ? '预检未返回目录来源或目标版本，请重新生成预检。'
-            : feedback.detail,
+            ? '检查影响资料不完整，请重新检查。'
+            : catalogUiProblemFeedback(error, '复制未完成，请重新检查后再试。').message,
         );
       }
     }
@@ -249,14 +261,14 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
       destroyOnHidden={false}
       maskClosable={!lifecycle.submitting}
       {...adminWideDrawerSurfaceProps}
-      {...testId('catalog-brand-copy-drawer')}
+      {...testId(catalogTestIds.static.brandCopyDrawer)}
     >
       <Steps
         current={step}
         items={[
           {title: '来源范围'},
           {title: '选择商品'},
-          {title: '差异预检'},
+          {title: '检查影响'},
           {title: '确认执行'},
           {title: '复制结果'},
         ]}
@@ -269,7 +281,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
           title="品牌复制未完成"
           description={problem}
           style={{marginBottom: 16}}
-          {...testId('catalog-copy-problem')}
+          {...testId(catalogTestIds.static.copyProblem)}
         />
       )}
       {step === 0 && (
@@ -297,7 +309,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
             onChange={event => setKeyword(event.target.value)}
             placeholder="按商品名称或编码搜索品牌商品"
             style={{marginTop: 16}}
-            {...testId('catalog-brand-copy-source-keyword')}
+            {...testId(catalogTestIds.static.brandCopySourceKeyword)}
           />
           {candidatesQuery.isLoading && !candidates.length ? (
             <Skeleton active />
@@ -314,7 +326,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
                 dataSource={candidates}
                 renderItem={item => (
                   <List.Item>
-                    <Checkbox value={item.code} {...testId(`catalog-copy-candidate-${item.code}`)}>
+                    <Checkbox value={item.code} {...testId(catalogTestIdControls.copy.sourceRow(item.code))}>
                       <NameCodeText name={item.name} code={item.code} />{' '}
                       <Tag>{catalogEnumLabel(manifest, 'shapeKey', item.shapeKey)}</Tag>
                     </Checkbox>
@@ -330,7 +342,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
               type="link"
               loading={candidatesQuery.isFetching}
               onClick={() => candidateState.loadNext(candidatesQuery.isFetching)}
-              {...testId('catalog-brand-copy-candidates-next')}
+              {...testId(catalogTestIds.static.brandCopyCandidatesNext)}
             >
               加载更多
             </Button>
@@ -341,7 +353,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
               type="primary"
               disabled={!selected.length}
               onClick={() => setStep(1)}
-              {...testId('catalog-brand-copy-selection-next')}
+              {...testId(catalogTestIds.static.brandCopySelectionNext)}
             >
               下一步：确认范围
             </Button>
@@ -374,9 +386,9 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
               type="primary"
               loading={preflightState.isLoading}
               onClick={() => void runPreflight()}
-              {...testId('catalog-copy-preflight')}
+              {...testId(catalogTestIds.static.copyPreflight)}
             >
-              生成差异预检
+              检查影响
             </Button>
           </Space>
         </>
@@ -402,8 +414,8 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
             <Alert
               type="error"
               showIcon
-              title="预检确认项与明细不一致"
-              description="当前预检不能安全执行，请重新生成预检。"
+              title="检查影响确认项与明细不一致"
+              description="当前检查影响不能安全执行，请重新检查。"
               style={{marginTop: 16}}
             />
           )}
@@ -431,7 +443,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
               },
               {
                 key: 'production',
-                label: '生产提示',
+                label: '制作信息',
                 children: (
                   <CompatibilityList
                     rows={compatibilityBuckets.production}
@@ -458,7 +470,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
                   ]
                 : []),
             ]}
-            {...testId('catalog-inventory-copy-preflight')}
+            {...testId(catalogTestIds.static.inventoryCopyPreflight)}
           />
           <Checkbox
             checked={allConfirmationsHandled}
@@ -466,7 +478,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
               setConfirmedCompatibilityKeys(event.target.checked ? confirmationRows.map(({key}) => key) : []);
             }}
             disabled={preflight.blockingCount > 0 || !confirmationCountMatches || confirmationRows.length === 0}
-            {...testId('catalog-copy-confirm')}
+            {...testId(catalogTestIds.static.copyConfirm)}
           >
             我已核对所有可确认差异与引用映射
           </Checkbox>
@@ -484,7 +496,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
               type="primary"
               disabled={preflight.blockingCount > 0 || !allConfirmationsHandled}
               onClick={() => setStep(3)}
-              {...testId('catalog-brand-copy-preflight-next')}
+              {...testId(catalogTestIds.static.brandCopyPreflightNext)}
             >
               下一步：确认执行
             </Button>
@@ -496,9 +508,9 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
           <Alert
             type="warning"
             showIcon
-            title="复制预检已失效"
-            description="来源或目标事实在执行前发生变化，旧预检已丢弃，必须重新生成后才能继续。"
-            {...testId('catalog-copy-preflight-stale')}
+            title="影响已变化"
+            description="来源或目标事实在执行前发生变化，旧检查影响已丢弃，必须重新检查后才能继续。"
+            {...testId(catalogTestIds.static.copyPreflightStale)}
           />
           <Space style={{marginTop: 16}}>
             <Button
@@ -513,9 +525,9 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
               type="primary"
               loading={preflightState.isLoading}
               onClick={() => void runPreflight()}
-              {...testId('catalog-copy-preflight-retry')}
+              {...testId(catalogTestIds.static.copyPreflightRetry)}
             >
-              重新生成预检
+              重新检查
             </Button>
           </Space>
         </>
@@ -535,8 +547,8 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
             <Alert
               type="error"
               showIcon
-              title="预检确认项与明细不一致"
-              description="当前预检不能安全执行，请返回重新生成预检。"
+              title="检查影响确认项与明细不一致"
+              description="当前检查影响不能安全执行，请返回重新检查。"
               style={{marginBottom: 12}}
             />
           )}
@@ -546,18 +558,18 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
               setConfirmedCompatibilityKeys(event.target.checked ? confirmationRows.map(({key}) => key) : []);
             }}
             disabled={preflight.blockingCount > 0 || !confirmationCountMatches || confirmationRows.length === 0}
-            {...testId('catalog-copy-confirm')}
+            {...testId(catalogTestIds.static.copyConfirm)}
           >
             我已核对所有可确认差异与引用映射
           </Checkbox>
           <Space style={{marginTop: 16}}>
-            <Button onClick={() => setStep(2)}>返回预检</Button>
+            <Button onClick={() => setStep(2)}>返回检查影响</Button>
             <Button
               type="primary"
               disabled={preflight.blockingCount > 0 || !allConfirmationsHandled}
               loading={executeState.isLoading}
               onClick={() => void execute()}
-              {...testId('catalog-copy-execute')}
+              {...testId(catalogTestIds.static.copyExecute)}
             >
               确认并原子复制
             </Button>
@@ -571,7 +583,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
             showIcon
             title="品牌商品已复制"
             description="目录、库存、配方、制作信息和引用已完成复制。"
-            {...testId('catalog-copy-result')}
+            {...testId(catalogTestIds.static.copyResult)}
           />
           <Tabs
             style={{marginTop: 16}}
@@ -598,7 +610,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
             onClick={() => {
               onClose();
             }}
-            {...testId('catalog-copy-result-close')}
+            {...testId(catalogTestIds.static.copyResultClose)}
           >
             完成
           </Button>
@@ -619,14 +631,14 @@ function CopyBlockedDefinitions({rows}: {rows: CopyPreflight['compatibilityResul
           {rows.map(row => (
             <Typography.Text key={row.compatibilityId}>
               同编码的{catalogCopyObjectTypeLabel(row.objectType)}
-              {row.businessCode ? `（${row.businessCode}）` : ''}不一致：{row.reason || '业务内容不同'}
+              不一致：{catalogCopyReasonLabel(row.reasonCode)}
               。请先整理门店中的定义后重试。
             </Typography.Text>
           ))}
         </Space>
       }
       style={{marginTop: 16}}
-      {...testId('catalog-copy-blocked-definitions')}
+      {...testId(catalogTestIds.static.copyBlockedDefinitions)}
     />
   );
 }
@@ -679,8 +691,8 @@ function CompatibilityList({
   return (
     <List
       size="small"
-      dataSource={rows.map((row, index) => ({row, index}))}
-      renderItem={({row, index}) => {
+      dataSource={rows}
+      renderItem={row => {
         const key = confirmationRows.find(candidate => candidate.row === row)?.key;
         const confirmable = row.result !== 'BLOCKED' && Boolean(key);
         return (
@@ -688,12 +700,12 @@ function CompatibilityList({
             <Space size={8} wrap>
               <Tag>{catalogCopyObjectTypeLabel(row.objectType)}</Tag>
               <Tag>{catalogCopyActionLabel(row.result)}</Tag>
-              <Typography.Text>{row.reason || '—'}</Typography.Text>
+              <Typography.Text>{catalogCopyReasonLabel(row.reasonCode)}</Typography.Text>
               {confirmable && (
                 <Checkbox
                   checked={confirmedKeys.includes(key!)}
                   onChange={event => onToggleConfirm(key!, event.target.checked)}
-                  {...testId(`catalog-copy-confirm-${index}`)}
+                  {...testId(catalogTestIdControls.copy.confirmation('BRAND', key!))}
                 >
                   {copyConfirmationLabel(row.result)}
                 </Checkbox>
@@ -717,7 +729,7 @@ function ReferenceMappingList({rows}: {rows: CatalogCopyReferenceMapping[]}) {
           <Space size={8} wrap>
             <Tag>{catalogCopyObjectTypeLabel(row.objectType)}</Tag>
             <Typography.Text code>{row.targetCode}</Typography.Text>
-            {row.targetSkuCode && <Tag>SKU：{row.targetSkuCode}</Tag>}
+            {row.targetSkuCode && <Tag>规格编码：{row.targetSkuCode}</Tag>}
             {row.targetOptionValueCode && <Tag>选项：{row.targetOptionValueCode}</Tag>}
           </Space>
         </List.Item>

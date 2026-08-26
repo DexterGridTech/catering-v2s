@@ -16,8 +16,8 @@ describe('catalog descriptor manifest adapter', () => {
           helpText: '选择商品所属分类。',
           optionSourceRef: {
             kind: 'endpoint',
-            operationId: 'getOperationsCatalogNavigation',
-            itemsPath: 'data.tree',
+            operationId: 'getOperationsCatalogCategoryCandidates',
+            itemsPath: 'data.items',
             valueField: 'categoryRef',
             labelField: 'name',
             parentField: 'parentCategoryRef',
@@ -40,7 +40,7 @@ describe('catalog descriptor manifest adapter', () => {
     });
     expect(field?.optionSourceRef).toMatchObject({
       kind: 'endpoint',
-      operationId: 'getOperationsCatalogNavigation',
+      operationId: 'getOperationsCatalogCategoryCandidates',
       parentField: 'parentCategoryRef',
     });
   });

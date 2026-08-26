@@ -48,11 +48,13 @@ export function useContractStoreCandidates({
     ],
   );
   const result = operationsRtk.useGetOperationsContractCandidatesQuery(request, {skip: !open});
+  const acceptPage = candidates.acceptPage;
+  const page = candidates.page;
   useEffect(() => {
     const data = result.currentData;
     if (!data) return;
-    candidates.acceptPage(data.stores, data.metadata);
-  }, [candidates.acceptPage, candidates.page, result.currentData]);
+    acceptPage(data.stores, data.metadata);
+  }, [acceptPage, page, result.currentData]);
 
   const setStoreSearch = useCallback((value: string) => {
     setStoreSearchState(value);
