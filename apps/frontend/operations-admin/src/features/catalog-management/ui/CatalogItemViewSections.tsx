@@ -37,6 +37,8 @@ export function CatalogItemViewTabContent({
   if (tabKey === 'inventory-bom') return <CatalogItemInventoryBomView detail={detail} />;
   if (tabKey === 'composite-content') return <CatalogItemCompositeView detail={detail} />;
   if (tabKey === 'governance')
-    return <CatalogItemGovernanceView detail={detail} manifest={manifest} onOpenReferencedItem={onOpenReferencedItem} />;
+    return (
+      <CatalogItemGovernanceView detail={detail} manifest={manifest} onOpenReferencedItem={onOpenReferencedItem} />
+    );
   return <EmptySection text={`${catalogViewTabLabel(tabKey)}尚未维护`} />;
 }

@@ -103,9 +103,7 @@ function renderWorkbench(nodes: ReturnType<typeof node>[], editing = true) {
 }
 
 function renderView(nodes: ReturnType<typeof node>[]) {
-  return renderToStaticMarkup(
-    <CatalogInventoryBomView detail={detail} nodes={nodes} baseUnitForOwner={() => unit} />,
-  );
+  return renderToStaticMarkup(<CatalogInventoryBomView detail={detail} nodes={nodes} baseUnitForOwner={() => unit} />);
 }
 
 describe('catalog inventory and BOM workbench rules', () => {

@@ -10,8 +10,8 @@ consumerFaces: ["platform-admin", "operations-admin"]
 owners: ["platform", "frontend-platform", "product"]
 impacts: ["architecture", "contract", "governance"]
 triggers: ["implementation", "review", "failure"]
-assertions: ["STORE_TEMPLATE_CANDIDATE_IS_EFFECTIVE_STORE_TEMPLATE", "DISABLED_TEMPLATE_CASCADES_EXISTING_CHANNEL", "CONTRACT_VALIDITY_USES_SHARED_DOT_TEXT", "INTERNAL_CHANNEL_BINDING_STATUS_IS_NOT_REQUIRED"]
-sourceRefs: ["project-memory/practices/business-channel-list-scope-and-validity-display.md"]
+assertions: ["STORE_TEMPLATE_CANDIDATE_IS_EFFECTIVE_STORE_TEMPLATE", "TEMPLATE_STATUS_IS_A_DIMENSION_FACT_NOT_MATERIALIZED", "CONTRACT_VALIDITY_USES_SHARED_DOT_TEXT", "INTERNAL_CHANNEL_BINDING_STATUS_IS_NOT_REQUIRED"]
+sourceRefs: ["doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md", "project-memory/practices/business-channel-list-scope-and-validity-display.md"]
 ---
 
 # 经营渠道候选范围与合同有效性展示
@@ -30,11 +30,17 @@ sourceRefs: ["project-memory/practices/business-channel-list-scope-and-validity-
 
 ## 2. 模板失效会使既有渠道失效，但不删除历史事实
 
-门店新建渠道的候选条件只决定“现在还能不能新建”。它不应通过隐藏或删除历史渠道来实现。项目停用一个已被渠道引用的模板时，业务渠道 owner 必须在同一停用事务内把引用渠道置为 `DISABLED`，并追加 `CASCADE_TEMPLATE`；渠道仍保留在项目/门店列表与详情中，以停用状态和停用原因可读，且不可编辑或恢复为草稿，直到级联原因被明确清除。
+门店新建渠道的候选条件只决定“现在还能不能新建”。它不应通过隐藏或删除历史渠道来实现。项目停用一个已被渠道引用的模板时,渠道仍保留在项目/门店列表与详情中,以**各维度状态事实可读**的形式呈现。
 
-因此要区分两条读路径：候选查询只返回 `operatorKind=STORE AND status=ENABLED` 的项目模板；已有渠道查询不按模板有效性过滤，而是读回 owner 已物化的渠道状态与 `stopReasons`。候选表不展示状态列，渠道列表/详情仍展示渠道状态和停用原因。
+⚠️ **2026-08-27 按 Dexter 裁定十八修订。** 修订前本条要求 owner「在同一停用事务内把引用渠道置为 `DISABLED` 并追加 `CASCADE_TEMPLATE`」,即**把级联物化落库** —— 该做法已推翻。落库的派生值无法反派生(全仓 `array_remove` 零命中),直接导致渠道停用后**永久启用不回来**。
 
-防再犯最小反例是：有效 STORE 模板 → 门店渠道已生效 → 项目停用该模板 → 渠道仍可读但变为 `DISABLED/CASCADE_TEMPLATE` → 新建候选不再包含该模板。
+**现行做法**:渠道只存自身状态;owner 读时把**每个相关维度的状态各自作为事实返回**(所引用模板、模板所属项目、渠道目标节点、external system 与 provider profile、collaboration binding),⛔ **不合并成单一"有效状态"值** —— 合并会丢掉"是哪一维不可用"这个前端唯一需要的信息。模板恢复启用则该维度事实自动变回可用,不需要任何清除路径。
+
+原文里「不可编辑或恢复为草稿,直到级联原因被明确清除」一句作废:按适用矩阵,**管理编辑与重新启用只看自身状态**,不得因任何祖先维度不可用而阻断。
+
+因此要区分两条读路径：候选查询只返回 `operatorKind=STORE AND status=ENABLED` 的项目模板；已有渠道查询不按模板有效性**过滤**(不隐藏历史渠道),而是读回渠道**自身状态**,以及**每个相关维度各自的状态事实**(所引用模板、模板所属项目、渠道目标节点、external system 与 provider profile、collaboration binding)。候选表不展示状态列，渠道列表/详情展示渠道自身状态,并能指名道姓说出是哪一维不可用。
+
+防再犯最小反例是：有效 STORE 模板 → 门店渠道已生效 → 项目停用该模板 → 渠道仍可读,自身状态不变,**模板那一维的状态事实变为停用** → 新建候选不再包含该模板。
 
 ## 3. 合同有效性只表达 VALID/INVALID 合同事实
 

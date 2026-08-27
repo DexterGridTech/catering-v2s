@@ -4206,22 +4206,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                 .put("disabled", false)
                 .putNull("reason"));
         ArrayNode references = data.putArray("references");
-        List<TypedReference> refs = itemReferences(sections);
-        Map<String, ItemIdentity> itemIdentities = itemIdentitiesByRef(
-                dataNodeRef, brandRef, refs.stream().map(TypedReference::ref).toList());
-        refs.forEach(ref -> {
-            ItemIdentity identity = itemIdentities.get(ref.ref());
-            if (identity == null || identity.name().isBlank() || identity.name().trim().equals(identity.code().trim()))
-                throw new CatalogOwnerApi.Problem(
-                        "RESULT_UNKNOWN", 503, "商品关联信息暂时无法确认，请稍后重试");
-            references.addObject()
-                    .put("referenceKind", ref.referenceKind())
-                    .put("referenceRef", ref.ref())
-                    .put("code", identity.code())
-                    .put("name", identity.name())
-                    .put("relationLabel", outboundReferenceLabel(ref.referenceKind()))
-                    .put("direction", "OUTBOUND");
-        });
+        appendOutboundCompositeReferences(references, resolvedCompositeGroups);
         List<InboundItemReference> inboundReferences = inboundFacts.byItem();
         inboundReferences.forEach(reference -> {
             if (reference.name() == null
@@ -5935,24 +5920,12 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     }
 
     private void validateItemActivation(ItemRow row) {
-        JsonNode sections = json(row.sectionsJson());
-        String priceGranularity = sections.path("priceGranularity").asText("ITEM");
+        // The shape manifest owns derived price granularity.  SKU rows are relational owner facts and are not
+        // persisted inside catalog_item.sections, so lifecycle validation must not inspect the hydrated read shape.
+        String priceGranularity = shapeRule(row.shapeKey()).priceGranularity();
         if ("SKU".equals(priceGranularity)) {
-            JsonNode skus = sections.path("skus");
-            boolean hasEnabled = false;
-            if (skus.isArray())
-                for (JsonNode sku : skus) {
-                    if (!"ENABLED".equals(sku.path("status").asText("ENABLED"))) continue;
-                    hasEnabled = true;
-                    if (!sku.path("standardSalePrice").isIntegralNumber()) {
-                        throw new CatalogOwnerApi.Problem(
-                                ("VALIDATION_ERROR"),
-                                (422),
-                                /* format-wrap */
-                                ("启用前请为每个启用 SKU 补齐标准价"));
-                    }
-                }
-            if (!hasEnabled) {
+            CatalogSkuFacts.ActivationFacts skuFacts = this.skuFacts.activationFacts(row.ref());
+            if (skuFacts.enabledCount() == 0) {
                 throw new CatalogOwnerApi.Problem(
                         ("VALIDATION_ERROR"),
                         (422),
@@ -5961,8 +5934,6 @@ public class CatalogOwnerService implements CatalogOwnerApi {
             }
             return;
         }
-        if (!sections.path("standardSalePrice").isIntegralNumber())
-            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "启用前请补齐商品标准价");
     }
 
     private ObjectNode createCategory(String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
@@ -8542,20 +8513,30 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         return refs;
     }
 
-    private List<TypedReference> itemReferences(JsonNode node) {
-        return typedReferences(node).stream()
-                .filter(ref -> Set.of("CATALOG_ITEM", "COMPOSITE_COMPONENT", "BOM_COMPONENT")
-                        .contains(ref.referenceKind()))
-                .toList();
-    }
-
-    private static String outboundReferenceLabel(String referenceKind) {
-        return switch (referenceKind) {
-            case "COMPOSITE_COMPONENT" -> "套餐包含";
-            case "BOM_COMPONENT" -> "用料使用";
-            case "CATALOG_ITEM" -> "关联商品";
-            default -> "关联商品";
-        };
+    /**
+     * Package-component identities are already resolved by their relationship
+     * owner. Re-parsing hydrated JSON and querying catalog_item again creates a
+     * second projection and can make a valid package detail unreadable.
+     */
+    private void appendOutboundCompositeReferences(ArrayNode references, ArrayNode compositeGroups) {
+        LinkedHashSet<String> seenItemRefs = new LinkedHashSet<>();
+        for (JsonNode group : compositeGroups) {
+            for (JsonNode component : group.path("components")) {
+                String itemRef = component.path("itemRef").asText("");
+                String itemName = component.path("itemName").asText("").trim();
+                String itemCode = component.path("itemCode").asText("").trim();
+                if (itemRef.isBlank() || itemName.isBlank() || itemCode.isBlank())
+                    throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "套餐内容的商品关联读取失败");
+                if (!seenItemRefs.add(itemRef)) continue;
+                references.addObject()
+                        .put("referenceKind", "COMPOSITE_COMPONENT")
+                        .put("referenceRef", itemRef)
+                        .put("code", itemCode)
+                        .put("name", itemName)
+                        .put("relationLabel", "套餐包含")
+                        .put("direction", "OUTBOUND");
+            }
+        }
     }
 
     private Map<String, String> activeItemCodesByRef(String scope, String brand, Collection<String> refs) {
@@ -8584,28 +8565,6 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         return result;
     }
 
-    private Map<String, ItemIdentity> itemIdentitiesByRef(String scope, String brand, Collection<String> refs) {
-        if (refs.isEmpty()) return Map.of();
-        List<UUID> ids = new ArrayList<>();
-        for (String ref : refs) ids.add(UUID.fromString(ref));
-        String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
-        List<Object> args = new ArrayList<>();
-        args.add(scope);
-        args.add(brand);
-        args.addAll(ids);
-        Map<String, ItemIdentity> result = new LinkedHashMap<>();
-        jdbc.query(
-                "SELECT item_ref,code,name FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND item_ref IN ("
-                        + placeholders + ")",
-                args.toArray(),
-                rows -> {
-                    while (rows.next())
-                        result.put(
-                                rows.getObject(1, UUID.class).toString(),
-                                new ItemIdentity(rows.getString(2), rows.getString(3)));
-                });
-        return result;
-    }
 
     private boolean containsText(JsonNode values, String code) {
         if (!values.isArray()) return false;
@@ -12444,8 +12403,6 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     }
 
     private record TypedReference(String referenceKind, String ref) {}
-
-    private record ItemIdentity(String code, String name) {}
 
     private record InboundItemReference(UUID itemRef, String code, String name) {}
 

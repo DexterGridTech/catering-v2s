@@ -1,10 +1,6 @@
 import {Alert, Button, Card, Col, Input, InputNumber, Modal, Row, Select, Space, Switch, Typography} from 'antd';
 import {useEffect, useMemo, useState, type ReactNode} from 'react';
-import {
-  NameCodeText,
-  testId,
-  useCursorCandidates,
-} from '@catering-v2s/admin-ui-foundation';
+import {NameCodeText, testId, useCursorCandidates} from '@catering-v2s/admin-ui-foundation';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import {wireUuid} from '../../../app/api/wireUuid';
@@ -170,49 +166,52 @@ function CompositeCandidateSelectionModal({
   const selectableItems = candidateState.items;
   return (
     <Modal open title="选择套餐内容" width={720} footer={null} onCancel={onCancel}>
-        <Space direction="vertical" size={12} style={{display: 'flex'}}>
-          <Typography.Text type="secondary">先选择商品；如该商品有规格，可在下一步选择规格。</Typography.Text>
-          <Input.Search
-            autoFocus
-            allowClear
-            placeholder="按商品名称或编码搜索"
-            value={keyword}
-            onChange={event => setKeyword(event.target.value)}
-            loading={itemsQuery.isLoading || itemsQuery.isFetching}
-          />
-          {itemsQuery.isError ? <Alert type="error" showIcon message="可选商品暂时无法加载，请稍后重试。" /> : null}
-          {!itemsQuery.isError && selectableItems.length === 0 ? (
-            <Typography.Text type="secondary">暂无可选择的商品</Typography.Text>
-          ) : (
-            <Space direction="vertical" size={4} style={{display: 'flex'}}>
-              {selectableItems.map(item => (
-                <Button
-                  key={item.itemRef}
-                  block
-                  style={{height: 'auto', minHeight: 48, textAlign: 'left', whiteSpace: 'normal'}}
-                  onClick={() => {
-                    onSelect({itemCode: item.code, itemName: item.name, itemRef: item.itemRef});
-                  }}
-                  {...testId(catalogTestIdControls.edit.related(testIdValue, `item-${item.code}`))}
-                >
-                  <NameCodeText name={catalogBusinessName(item.name, item.code, '商品名称暂时无法读取')} code={item.code} />
-                  <Typography.Text type="secondary" style={{display: 'block', fontSize: 12}}>
-                    {catalogEnumLabel(manifest, 'shapeKey', item.shapeKey)}
-                  </Typography.Text>
-                </Button>
-              ))}
-            </Space>
-          )}
-          {candidateState.nextCursor ? (
-            <Button
-              onClick={() => candidateState.loadNext(itemsQuery.isFetching)}
-              loading={itemsQuery.isFetching}
-              {...testId(catalogTestIdControls.edit.related(testIdValue, 'next'))}
-            >
-              继续加载商品
-            </Button>
-          ) : null}
-        </Space>
+      <Space direction="vertical" size={12} style={{display: 'flex'}}>
+        <Typography.Text type="secondary">先选择商品；如该商品有规格，可在下一步选择规格。</Typography.Text>
+        <Input.Search
+          autoFocus
+          allowClear
+          placeholder="按商品名称或编码搜索"
+          value={keyword}
+          onChange={event => setKeyword(event.target.value)}
+          loading={itemsQuery.isLoading || itemsQuery.isFetching}
+        />
+        {itemsQuery.isError ? <Alert type="error" showIcon message="可选商品暂时无法加载，请稍后重试。" /> : null}
+        {!itemsQuery.isError && selectableItems.length === 0 ? (
+          <Typography.Text type="secondary">暂无可选择的商品</Typography.Text>
+        ) : (
+          <Space direction="vertical" size={4} style={{display: 'flex'}}>
+            {selectableItems.map(item => (
+              <Button
+                key={item.itemRef}
+                block
+                style={{height: 'auto', minHeight: 48, textAlign: 'left', whiteSpace: 'normal'}}
+                onClick={() => {
+                  onSelect({itemCode: item.code, itemName: item.name, itemRef: item.itemRef});
+                }}
+                {...testId(catalogTestIdControls.edit.related(testIdValue, `item-${item.code}`))}
+              >
+                <NameCodeText
+                  name={catalogBusinessName(item.name, item.code, '商品名称暂时无法读取')}
+                  code={item.code}
+                />
+                <Typography.Text type="secondary" style={{display: 'block', fontSize: 12}}>
+                  {catalogEnumLabel(manifest, 'shapeKey', item.shapeKey)}
+                </Typography.Text>
+              </Button>
+            ))}
+          </Space>
+        )}
+        {candidateState.nextCursor ? (
+          <Button
+            onClick={() => candidateState.loadNext(itemsQuery.isFetching)}
+            loading={itemsQuery.isFetching}
+            {...testId(catalogTestIdControls.edit.related(testIdValue, 'next'))}
+          >
+            继续加载商品
+          </Button>
+        ) : null}
+      </Space>
     </Modal>
   );
 }
@@ -335,7 +334,12 @@ function CompositeComponentsTable({
                   onDirty();
                 }}
                 {...testId(
-                  catalogTestIdControls.edit.dynamic('composite-component', 'remove', group.editorId, component.editorId),
+                  catalogTestIdControls.edit.dynamic(
+                    'composite-component',
+                    'remove',
+                    group.editorId,
+                    component.editorId,
+                  ),
                 )}
               >
                 移除
@@ -405,7 +409,14 @@ function CompositeComponentsTable({
                   updateComponent(component.editorId, {quantity: event.target.value});
                   onDirty();
                 }}
-                {...testId(catalogTestIdControls.edit.dynamic('composite-component', 'quantity', group.editorId, component.editorId))}
+                {...testId(
+                  catalogTestIdControls.edit.dynamic(
+                    'composite-component',
+                    'quantity',
+                    group.editorId,
+                    component.editorId,
+                  ),
+                )}
               />
             </Col>
             <Col xs={12} lg={6}>
@@ -417,7 +428,9 @@ function CompositeComponentsTable({
                   updateComponent(component.editorId, {unit: event.target.value});
                   onDirty();
                 }}
-                {...testId(catalogTestIdControls.edit.dynamic('composite-component', 'unit', group.editorId, component.editorId))}
+                {...testId(
+                  catalogTestIdControls.edit.dynamic('composite-component', 'unit', group.editorId, component.editorId),
+                )}
               />
             </Col>
             <Col xs={12} lg={6}>
@@ -433,7 +446,14 @@ function CompositeComponentsTable({
                   updateComponent(component.editorId, {extraPrice: catalogYuanToCents(extraPrice)});
                   onDirty();
                 }}
-                {...testId(catalogTestIdControls.edit.dynamic('composite-component', 'price', group.editorId, component.editorId))}
+                {...testId(
+                  catalogTestIdControls.edit.dynamic(
+                    'composite-component',
+                    'price',
+                    group.editorId,
+                    component.editorId,
+                  ),
+                )}
               />
             </Col>
             <Col xs={12} lg={6}>
@@ -449,7 +469,14 @@ function CompositeComponentsTable({
                   updateComponent(component.editorId, {status});
                   onDirty();
                 }}
-                {...testId(catalogTestIdControls.edit.dynamic('composite-component', 'status', group.editorId, component.editorId))}
+                {...testId(
+                  catalogTestIdControls.edit.dynamic(
+                    'composite-component',
+                    'status',
+                    group.editorId,
+                    component.editorId,
+                  ),
+                )}
               />
             </Col>
             <Col xs={12} lg={6}>
@@ -462,7 +489,14 @@ function CompositeComponentsTable({
                     updateComponent(component.editorId, {default: defaultValue});
                     onDirty();
                   }}
-                  {...testId(catalogTestIdControls.edit.dynamic('composite-component', 'default', group.editorId, component.editorId))}
+                  {...testId(
+                    catalogTestIdControls.edit.dynamic(
+                      'composite-component',
+                      'default',
+                      group.editorId,
+                      component.editorId,
+                    ),
+                  )}
                 />
               </Space>
             </Col>
@@ -567,10 +601,7 @@ function CompositeGroupsEditor({
             editorId: createDraftRowId('group'),
             components: [],
           };
-          commitGroups([
-            ...values,
-            group,
-          ]);
+          commitGroups([...values, group]);
           setSelectedGroupId(group.editorId);
           onDirty();
         }}
@@ -595,8 +626,9 @@ function CompositeGroupsEditor({
                   </Typography.Text>
                   <br />
                   <Typography.Text type="secondary" style={{fontSize: 12}}>
-                    {({FIXED: '固定包含', SINGLE: '单选', MULTIPLE: '多选'} as Record<string, string>)[group.selectionRule] ??
-                      '未设置'}
+                    {({FIXED: '固定包含', SINGLE: '单选', MULTIPLE: '多选'} as Record<string, string>)[
+                      group.selectionRule
+                    ] ?? '未设置'}
                     {' · '}
                     {group.components.length} 项内容
                   </Typography.Text>
@@ -605,138 +637,144 @@ function CompositeGroupsEditor({
             </Space>
           </Card>
           <div style={{flex: 1, minWidth: 0}}>
-      {(selectedGroupId ? values.filter(group => group.editorId === selectedGroupId) : []).map(group => {
-        const groupIndex = values.findIndex(entry => entry.editorId === group.editorId);
-        return (
-        <Card
-          key={group.editorId}
-          size="small"
-          title={`套餐分组 ${groupIndex + 1}`}
-          extra={
-            <Space size={2}>
-              <Button size="small" disabled={groupIndex === 0} onClick={() => moveGroup(group.editorId, -1)}>
-                上移
-              </Button>
-              <Button
-                size="small"
-                disabled={groupIndex === values.length - 1}
-                onClick={() => moveGroup(group.editorId, 1)}
-              >
-                下移
-              </Button>
-              <Button
-                danger
-                type="link"
-                onClick={() => {
-                  const next = values.filter(entry => entry.editorId !== group.editorId);
-                  commitGroups(next);
-                  setSelectedGroupId(next[0]?.editorId);
-                  onDirty();
-                }}
-                {...testId(catalogTestIdControls.edit.dynamic('composite-group', 'remove', group.editorId))}
-              >
-                移除组
-              </Button>
-            </Space>
-          }
-        >
-          <Space direction="vertical" size={8} style={{display: 'flex'}}>
-            <Row gutter={[16, 12]}>
-              <Col xs={24} lg={8}>
-                <Typography.Text strong>分组名称</Typography.Text>
-                <Input
-                  style={{width: '100%', marginTop: 4}}
-                  value={group.groupName}
-                  onChange={event => {
-                    updateGroup(group.editorId, {groupName: event.target.value});
-                    onDirty();
-                  }}
-                  {...testId(catalogTestIdControls.edit.dynamic('composite-group', 'name', group.editorId))}
-                />
-              </Col>
-              <Col xs={24} lg={8}>
-                <Typography.Text strong>选择方式</Typography.Text>
-                <Select
-                  style={{width: '100%', marginTop: 4}}
-                  value={group.selectionRule}
-                  options={[
-                    {value: 'FIXED', label: '固定包含'},
-                    {value: 'SINGLE', label: '单选'},
-                    {value: 'MULTIPLE', label: '多选'},
-                  ]}
-                  onChange={selectionRule => {
-                    updateGroup(group.editorId, {selectionRule});
-                    onDirty();
-                  }}
-                  {...testId(catalogTestIdControls.edit.dynamic('composite-group', 'rule', group.editorId))}
-                />
-              </Col>
-              <Col xs={24} lg={8}>
-                <Typography.Text strong>分组编码</Typography.Text>
-                <Input
-                  style={{width: '100%', marginTop: 4}}
-                  value={group.groupCode}
-                  onChange={event => {
-                    updateGroup(group.editorId, {groupCode: event.target.value});
-                    onDirty();
-                  }}
-                  {...testId(catalogTestIdControls.edit.dynamic('composite-group', 'code', group.editorId))}
-                />
-                <Typography.Text type="secondary" style={{fontSize: 12}}>用于区分套餐分组。</Typography.Text>
-              </Col>
-            </Row>
-            <Space style={{justifyContent: 'space-between', width: '100%'}}>
-              <Typography.Text type="secondary">先添加内容，再选择商品及其规格。</Typography.Text>
-              <Button
-                onClick={() => {
-                  updateGroup(group.editorId, {
-                    components: [
-                      ...group.components,
-                      {
-                        itemCode: '',
-                        itemName: '',
-                        itemRef: draftUuid(),
-                        editorId: createDraftRowId('component'),
-                        productSkuRef: null,
-                        skuCode: null,
-                        skuName: null,
-                        quantity: '1',
-                        unit: '',
-                        default: false,
-                        extraPrice: null,
-                        status: 'ENABLED',
-                        displayOrder: group.components.length,
-                      },
-                    ],
-                  });
-                  onDirty();
-                }}
-                {...testId(catalogTestIdControls.edit.dynamic('composite-component', 'add', group.editorId))}
-              >
-                添加内容
-              </Button>
-            </Space>
-            <CompositeComponentsTable
-              manifest={manifest}
-              shapeKey={shapeKey}
-              group={group}
-              currentItemCode={currentItemCode}
-              queryContext={queryContext}
-              brandRef={brandRef}
-              version={version}
-              updateComponent={(componentEditorId, patch) => updateComponent(group.editorId, componentEditorId, patch)}
-              moveComponent={(componentEditorId, offset) => moveComponent(group.editorId, componentEditorId, offset)}
-              removeComponent={componentEditorId =>
-                updateGroup(group.editorId, {
-                  components: group.components.filter(entry => entry.editorId !== componentEditorId),
-                })
-              }
-              onDirty={onDirty}
-            />
-          </Space>
-        </Card>
-        );
-      })}
+            {(selectedGroupId ? values.filter(group => group.editorId === selectedGroupId) : []).map(group => {
+              const groupIndex = values.findIndex(entry => entry.editorId === group.editorId);
+              return (
+                <Card
+                  key={group.editorId}
+                  size="small"
+                  title={`套餐分组 ${groupIndex + 1}`}
+                  extra={
+                    <Space size={2}>
+                      <Button size="small" disabled={groupIndex === 0} onClick={() => moveGroup(group.editorId, -1)}>
+                        上移
+                      </Button>
+                      <Button
+                        size="small"
+                        disabled={groupIndex === values.length - 1}
+                        onClick={() => moveGroup(group.editorId, 1)}
+                      >
+                        下移
+                      </Button>
+                      <Button
+                        danger
+                        type="link"
+                        onClick={() => {
+                          const next = values.filter(entry => entry.editorId !== group.editorId);
+                          commitGroups(next);
+                          setSelectedGroupId(next[0]?.editorId);
+                          onDirty();
+                        }}
+                        {...testId(catalogTestIdControls.edit.dynamic('composite-group', 'remove', group.editorId))}
+                      >
+                        移除组
+                      </Button>
+                    </Space>
+                  }
+                >
+                  <Space direction="vertical" size={8} style={{display: 'flex'}}>
+                    <Row gutter={[16, 12]}>
+                      <Col xs={24} lg={8}>
+                        <Typography.Text strong>分组名称</Typography.Text>
+                        <Input
+                          style={{width: '100%', marginTop: 4}}
+                          value={group.groupName}
+                          onChange={event => {
+                            updateGroup(group.editorId, {groupName: event.target.value});
+                            onDirty();
+                          }}
+                          {...testId(catalogTestIdControls.edit.dynamic('composite-group', 'name', group.editorId))}
+                        />
+                      </Col>
+                      <Col xs={24} lg={8}>
+                        <Typography.Text strong>选择方式</Typography.Text>
+                        <Select
+                          style={{width: '100%', marginTop: 4}}
+                          value={group.selectionRule}
+                          options={[
+                            {value: 'FIXED', label: '固定包含'},
+                            {value: 'SINGLE', label: '单选'},
+                            {value: 'MULTIPLE', label: '多选'},
+                          ]}
+                          onChange={selectionRule => {
+                            updateGroup(group.editorId, {selectionRule});
+                            onDirty();
+                          }}
+                          {...testId(catalogTestIdControls.edit.dynamic('composite-group', 'rule', group.editorId))}
+                        />
+                      </Col>
+                      <Col xs={24} lg={8}>
+                        <Typography.Text strong>分组编码</Typography.Text>
+                        <Input
+                          style={{width: '100%', marginTop: 4}}
+                          value={group.groupCode}
+                          onChange={event => {
+                            updateGroup(group.editorId, {groupCode: event.target.value});
+                            onDirty();
+                          }}
+                          {...testId(catalogTestIdControls.edit.dynamic('composite-group', 'code', group.editorId))}
+                        />
+                        <Typography.Text type="secondary" style={{fontSize: 12}}>
+                          用于区分套餐分组。
+                        </Typography.Text>
+                      </Col>
+                    </Row>
+                    <Space style={{justifyContent: 'space-between', width: '100%'}}>
+                      <Typography.Text type="secondary">先添加内容，再选择商品及其规格。</Typography.Text>
+                      <Button
+                        onClick={() => {
+                          updateGroup(group.editorId, {
+                            components: [
+                              ...group.components,
+                              {
+                                itemCode: '',
+                                itemName: '',
+                                itemRef: draftUuid(),
+                                editorId: createDraftRowId('component'),
+                                productSkuRef: null,
+                                skuCode: null,
+                                skuName: null,
+                                quantity: '1',
+                                unit: '',
+                                default: false,
+                                extraPrice: null,
+                                status: 'ENABLED',
+                                displayOrder: group.components.length,
+                              },
+                            ],
+                          });
+                          onDirty();
+                        }}
+                        {...testId(catalogTestIdControls.edit.dynamic('composite-component', 'add', group.editorId))}
+                      >
+                        添加内容
+                      </Button>
+                    </Space>
+                    <CompositeComponentsTable
+                      manifest={manifest}
+                      shapeKey={shapeKey}
+                      group={group}
+                      currentItemCode={currentItemCode}
+                      queryContext={queryContext}
+                      brandRef={brandRef}
+                      version={version}
+                      updateComponent={(componentEditorId, patch) =>
+                        updateComponent(group.editorId, componentEditorId, patch)
+                      }
+                      moveComponent={(componentEditorId, offset) =>
+                        moveComponent(group.editorId, componentEditorId, offset)
+                      }
+                      removeComponent={componentEditorId =>
+                        updateGroup(group.editorId, {
+                          components: group.components.filter(entry => entry.editorId !== componentEditorId),
+                        })
+                      }
+                      onDirty={onDirty}
+                    />
+                  </Space>
+                </Card>
+              );
+            })}
           </div>
         </Space>
       )}

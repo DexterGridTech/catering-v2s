@@ -820,6 +820,24 @@
           "format": "uuid"
         },
         {
+          "path": "item.skus[].voidAvailability.blockingReasons",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.skus[].voidAvailability.blockingReasons[].label",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].voidAvailability.blockingReasons[].count",
+          "type": "integer"
+        },
+        {
+          "path": "item.skus[].voidAvailability.blockingReasons[].relatedItemNames",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
           "path": "item.skus[].version",
           "type": "integer"
         },
@@ -1389,6 +1407,10 @@
           "type": "string"
         },
         {
+          "path": "item.compositeGroups[].components[].itemName",
+          "type": "string"
+        },
+        {
           "path": "item.compositeGroups[].components[].itemRef",
           "type": "string",
           "format": "uuid"
@@ -1403,6 +1425,13 @@
         },
         {
           "path": "item.compositeGroups[].components[].skuCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "item.compositeGroups[].components[].skuName",
           "type": [
             "string",
             "null"
@@ -1762,6 +1791,14 @@
           "type": "string"
         },
         {
+          "path": "references[].name",
+          "type": "string"
+        },
+        {
+          "path": "references[].relationLabel",
+          "type": "string"
+        },
+        {
           "path": "compositeGroups",
           "type": "array",
           "itemType": "object"
@@ -2002,7 +2039,7 @@
           "type": "integer"
         },
         {
-          "path": "actionAvailability.voidAvailability.blockingReasons[].relatedItemCodes",
+          "path": "actionAvailability.voidAvailability.blockingReasons[].relatedItemNames",
           "type": "array",
           "itemType": "string"
         },

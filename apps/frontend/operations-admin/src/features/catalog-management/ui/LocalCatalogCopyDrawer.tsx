@@ -146,11 +146,7 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, qu
     skip: !open || !targetItemCode || !queryContext.scopeRef,
   });
   const targetDetail = decodeDetail(targetDetailQuery.currentData);
-  const targetItemName = catalogBusinessName(
-    targetDetail?.item.name,
-    targetItemCode,
-    '当前商品名称暂时无法读取',
-  );
+  const targetItemName = catalogBusinessName(targetDetail?.item.name, targetItemCode, '当前商品名称暂时无法读取');
   const manifestRequest = useMemo(
     () =>
       catalogInventoryRtkRequest.getOperationsCatalogShapeManifest(

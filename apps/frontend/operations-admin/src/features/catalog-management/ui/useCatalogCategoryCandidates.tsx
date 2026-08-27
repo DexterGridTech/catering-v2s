@@ -237,10 +237,7 @@ export function useCatalogCategoryCandidates({open, scopeRef, brandRef, usage, c
     [childrenByParent, nextCursorByParent],
   );
 
-  const treeData = useMemo(
-    () => withSelectedCategoryPath(buildTree(null), selected),
-    [buildTree, selected],
-  );
+  const treeData = useMemo(() => withSelectedCategoryPath(buildTree(null), selected), [buildTree, selected]);
   const searchTreeData = useMemo(() => {
     if (!searchValue.trim()) return treeData;
     const byRef = new Map<string, SearchTreeEntry>();
@@ -271,11 +268,7 @@ export function useCatalogCategoryCandidates({open, scopeRef, brandRef, usage, c
         if (!entry) continue;
         const childNodes = buildSearchTree(ref);
         nodes.push({
-          title: entry.candidate ? (
-            categoryTitle(entry.candidate)
-          ) : (
-            <span>{entry.name}</span>
-          ),
+          title: entry.candidate ? categoryTitle(entry.candidate) : <span>{entry.name}</span>,
           value: ref,
           key: ref,
           selectable: Boolean(entry.candidate?.selectable),

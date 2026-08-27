@@ -41,6 +41,18 @@ final class CatalogSkuFacts {
     }
 
     /**
+     * Reads the authoritative SKU facts needed by the item lifecycle guard. SKU rows are relational owner facts;
+     * the catalog item JSON deliberately does not persist the hydrated {@code skus} projection.
+     */
+    ActivationFacts activationFacts(UUID itemRef) {
+        return jdbc.queryForObject(
+                "SELECT COUNT(*) FILTER (WHERE status='ENABLED') "
+                        + "FROM catalog.catalog_sku WHERE item_ref=? AND status <> 'VOIDED'",
+                (result, rowNumber) -> new ActivationFacts(result.getInt(1)),
+                itemRef);
+    }
+
+    /**
      * The list projection is the only reader that must combine an SKU's stored preparation override with the parent
      * preparation profile. Carry that owner-local column in the existing SKU set read rather than opening a second
      * page-wide lookup for the same SKU rows.
@@ -176,6 +188,8 @@ final class CatalogSkuFacts {
             return new ExistingSaveFacts(Set.of(), Set.of());
         }
     }
+
+    record ActivationFacts(int enabledCount) {}
 
     LifecycleRow lockLifecycle(UUID itemRef, UUID skuRef) {
         List<LifecycleRow> rows = jdbc.query(

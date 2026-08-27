@@ -741,7 +741,11 @@ const runScript = ({
     '  export TESTCONTAINERS_RYUK_DISABLED=true',
     '  export V2S_GRADLE_HOME="$gradle"',
     ...acceptanceEnvironment.map(line => `  ${line}`),
-    `  "$gradle/bin/gradle" --no-daemon --rerun-tasks "$task" ${selectorArguments}`,
+    // The managed artifact is the sole durable diagnostic after the remote
+    // workspace is reclaimed. Keep the causal test stack in that artifact;
+    // Gradle's default console summary otherwise reduces setup failures to a
+    // class and line number, which is not enough to identify the boundary.
+    `  "$gradle/bin/gradle" --no-daemon --rerun-tasks --stacktrace "$task" ${selectorArguments}`,
     ') 2>&1 | tee "$log_file"',
     'gradle_status=${PIPESTATUS[0]}',
     // The remote workspace is deliberately reclaimed below.  Preserve the

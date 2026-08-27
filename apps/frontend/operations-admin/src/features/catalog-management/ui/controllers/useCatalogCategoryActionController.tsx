@@ -41,7 +41,10 @@ type Input = {
   navigation?: CatalogNavigation;
 };
 
-function categoryPathLabels(navigation: CatalogNavigation | undefined, categoryRef: string | null | undefined): string[] {
+function categoryPathLabels(
+  navigation: CatalogNavigation | undefined,
+  categoryRef: string | null | undefined,
+): string[] {
   if (!navigation || !categoryRef) return [];
   const byRef = new Map(navigation.tree.map(node => [String(node.categoryRef), node]));
   const labels: string[] = [];

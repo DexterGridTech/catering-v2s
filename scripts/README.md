@@ -63,7 +63,7 @@ All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-b
 `scripts/test/backend-acceptance --operation all`（也可用同一参数聚焦单个 operation）。性能校准只可使用
 `scripts/test/backend-acceptance --operation all --calibration`：它校验 239 个 operation 的 exact-set、正常样本与连接门，
 但不把未校准的固定 DB 上限当作已验收预算。普通 `all` 则无条件执行完整预算门；两种模式都在真实远端
-Testcontainers 中启动应用，经真实 HTTP 自动发现并串行运行当前 80 条手写 fixture/request/business
+Testcontainers 中启动应用，经真实 HTTP 自动发现并串行运行全部已注册的手写 fixture/request/business
 assertion，逐条分开打印 `CONTRACT`、`BUSINESS` 和场景内信息性 `DB_OPERATIONS`；结果还明确标记
 `businessMode=REAL`，桩断言不得通过。当前场景覆盖 IAM、ORG、商业合同、asset、catalog、audit、extension、
 collaboration 与 business-channel 的权限、隔离、状态迁移、字段脱敏、读回和跨域业务规则；本批的绑定查询

@@ -82,7 +82,8 @@ export function useInventoryConsumptionTargetCandidates({
   const items = useMemo(
     () =>
       candidateState.items.filter(
-        candidate => candidate.targetRef !== excludedTargetRef && !isCurrentOwnerConsumptionTarget(candidate, excludedOwner),
+        candidate =>
+          candidate.targetRef !== excludedTargetRef && !isCurrentOwnerConsumptionTarget(candidate, excludedOwner),
       ),
     [candidateState.items, excludedOwner, excludedTargetRef],
   );

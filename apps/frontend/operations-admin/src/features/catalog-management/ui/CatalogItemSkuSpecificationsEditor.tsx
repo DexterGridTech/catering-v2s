@@ -1,21 +1,10 @@
-import {
-  Alert,
-  Button,
-  Card,
-  Divider,
-  Input,
-  Select,
-  Space,
-  Typography,
-} from 'antd';
+import {Alert, Button, Card, Divider, Input, Select, Space, Typography} from 'antd';
 import {useMemo, useState, type ReactNode} from 'react';
 import {testId} from '@catering-v2s/admin-ui-foundation';
 import {wireUuid} from '../../../app/api/wireUuid';
 import type {CatalogUnitList} from '../../../app/api/generated/catalog-inventory-edge';
 import type {CatalogDetail, CatalogIdentifierType, CatalogSkuRow} from '../model/catalogModel';
-import {
-  buildSkuMatrix,
-} from '../model/catalogModel';
+import {buildSkuMatrix} from '../model/catalogModel';
 import {
   draftUuid,
   type MediaDraft,
@@ -264,7 +253,7 @@ function SkuMatrixEditor({
               }
               {...testId(catalogTestIds.static.itemSkuDimensionAdd)}
             >
-                添加规格属性
+              添加规格属性
             </Button>
           </Space>
         }
@@ -322,7 +311,9 @@ function SkuMatrixEditor({
               <Divider plain style={{margin: '12px 0 8px'}}>
                 可选值
               </Divider>
-              <Typography.Text type="secondary">选择会参与生成规格的属性值；可用上移、下移调整顾客看到的顺序。</Typography.Text>
+              <Typography.Text type="secondary">
+                选择会参与生成规格的属性值；可用上移、下移调整顾客看到的顺序。
+              </Typography.Text>
               <Button
                 size="small"
                 disabled={!dimension.attributeRef}

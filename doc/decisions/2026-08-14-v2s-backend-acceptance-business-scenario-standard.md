@@ -14,7 +14,7 @@
 `backend-acceptance` 是后台统一测试的唯一能力。它在真实远端 Testcontainers 中启动真实
 业务应用，通过真实 HTTP 串行执行当前已实现的业务场景。当前场景覆盖 IAM、ORG、商业合同、asset
 与 Catalog；Catalog 组已完成其全部真实场景验证并计入当前能力。后续按业务价值逐条扩展，
-总数不得超过 80 条。
+**场景总数不设上限**(Dexter 2026-08-27 裁定去除原 80 条上限)。
 
 一次场景结果必须分开表达：
 
@@ -24,7 +24,7 @@
   不参与 `CONTRACT`/`BUSINESS` verdict。Dexter 2026-08-22 另行恢复的是**独立 run-level operation
   budget verifier**：它消费同一 production interceptor 的 run-scoped completion events，对 generated
   operation registry 全集判 DB/connection/transaction-begin/section 预算；不得把该 verifier 塞回
-  scenario 的 `performanceCriterion`，也不得改变业务 scenario 的 80 条上限与真实 oracle 义务。
+  scenario 的 `performanceCriterion`，也不得改变业务 scenario 的真实 oracle 义务。
 
 `CLEANUP` 不再是场景业务维度，也不需要为每条 scenario 编写 cleanup oracle；但受管 runner
 仍必须回收它实际创建的 JVM、Testcontainers 容器、卷和临时工作区，并将资源回收作为运行安全

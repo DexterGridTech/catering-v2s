@@ -135,19 +135,12 @@ function businessLines(
     <div style={{maxWidth: '100%'}}>
       {visible.map((line, index) =>
         hasOverflowCollection || options?.collectionTooltip ? (
-          <Typography.Text
-            key={`${line}-${index}`}
-            style={{...cellLineStyle, fontSize: 12}}
-          >
+          <Typography.Text key={`${line}-${index}`} style={{...cellLineStyle, fontSize: 12}}>
             {line}
           </Typography.Text>
         ) : (
           <EllipsisTooltip key={`${line}-${index}`} title={line}>
-            <Typography.Text
-              style={{...cellLineStyle, fontSize: 12}}
-            >
-              {line}
-            </Typography.Text>
+            <Typography.Text style={{...cellLineStyle, fontSize: 12}}>{line}</Typography.Text>
           </EllipsisTooltip>
         ),
       )}
@@ -324,10 +317,20 @@ function itemCell(
   if (row.rowType === 'SKU_STATE') return stateCell(row);
   if (row.rowType === 'SKU') {
     return (
-      <Space align="start" size={8} style={{display: 'flex', minWidth: 0, paddingInlineStart: 24, position: 'relative'}}>
+      <Space
+        align="start"
+        size={8}
+        style={{display: 'flex', minWidth: 0, paddingInlineStart: 24, position: 'relative'}}
+      >
         <span
           aria-hidden="true"
-          style={{position: 'absolute', insetInlineStart: 11, top: 0, bottom: 0, borderInlineStart: '1px solid #e6f4ff'}}
+          style={{
+            position: 'absolute',
+            insetInlineStart: 11,
+            top: 0,
+            bottom: 0,
+            borderInlineStart: '1px solid #e6f4ff',
+          }}
         />
         {row.sku.primaryImageAssetRef ? (
           <CatalogAssetPreview
@@ -531,7 +534,8 @@ export function CatalogItemListTable({
         key: 'item',
         fixed: 'left',
         width: catalogTableColumnWidths.item,
-        render: (_: unknown, row: CatalogTableRow) => itemCell(row, onOpenDetail, stateCell, expandedRows, onTableExpand),
+        render: (_: unknown, row: CatalogTableRow) =>
+          itemCell(row, onOpenDetail, stateCell, expandedRows, onTableExpand),
       },
       {
         title: '商品形态',

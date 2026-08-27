@@ -53,8 +53,8 @@ final class CatalogCommandContextFixture {
         when(sessions.commandAuthorizationFacts("test-session"))
                 .thenReturn(new com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts(
                         session, UUID.randomUUID(), "STORE", targetScope));
-        when(capabilities.resolveGeneratedOperation(any(), any(), any(), any()))
-                .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
+        WorkspaceCapabilityScopeResolver.ScopeResolution scopeResolution =
+                new WorkspaceCapabilityScopeResolver.ScopeResolution(
                         WorkspaceCapabilityScopeResolver.Decision.ALLOW,
                         token.capabilityFor("STORE"),
                         new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
@@ -64,9 +64,12 @@ final class CatalogCommandContextFixture {
                                 targetScope,
                                 "STORE",
                                 targetScope,
-                                List.of(targetScope))));
-        when(catalogScopes.resolveCatalogBrand(any(), any(), any(), any(), any()))
-                .thenReturn(new CatalogScopeLookup.CatalogBrandJudgment(brandRef, "TEST", "REVISION"));
+                                List.of(targetScope)));
+        CatalogScopeLookup.CatalogBrandJudgment brandJudgment =
+                new CatalogScopeLookup.CatalogBrandJudgment(brandRef, "TEST", "REVISION");
+        when(capabilities.resolveGeneratedCatalogOperation(any(), any(), any(), any(), any()))
+                .thenReturn(new WorkspaceCapabilityScopeResolver.CatalogScopeResolution(
+                        scopeResolution, brandJudgment, null));
         if (copySourceScope != null) {
             when(catalogScopes.resolveCatalogCopySource(any(), any(), any(), any(), any()))
                     .thenReturn(copySourceScope);

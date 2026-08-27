@@ -4,7 +4,11 @@
  * can carry a code in a former `*Name` slot, so expose that as a recoverable
  * read failure rather than silently presenting a code as the name.
  */
-export function catalogBusinessName(name: string | null | undefined, code: string | null | undefined, unavailable: string) {
+export function catalogBusinessName(
+  name: string | null | undefined,
+  code: string | null | undefined,
+  unavailable: string,
+) {
   const normalizedName = name?.trim();
   const normalizedCode = code?.trim();
   if (!normalizedName || (normalizedCode && normalizedName === normalizedCode)) return unavailable;

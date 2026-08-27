@@ -8744,8 +8744,9 @@ const l2NetworkFlows = Object.freeze({
   VERSION_DRIFT_WHOLE_SAVE: Object.freeze([{operationId: 'saveOperationsCatalogItem', maxRequestCount: 1}]),
   CONFIGURATION: Object.freeze([
     // One library open, two explicit filter applications and the owner-list
-    // invalidation after successful creation. The editor candidate fetch and
-    // resumed editor fetch are declared by their own composed flows below.
+    // invalidation after successful creation. The live parent candidate
+    // invalidation and the child-close candidate refresh are declared by
+    // their own composed flows below.
     {operationId: 'getOperationsProductionTags', maxRequestCount: 4},
     {operationId: 'getOperationsCatalogDictionary', maxRequestCount: 1},
     {operationId: 'createOperationsProductionTag', maxRequestCount: 1},
@@ -8754,7 +8755,18 @@ const l2NetworkFlows = Object.freeze({
   // submits the corrected value. That is a second user command, rather than
   // permission to inflate the ordinary configuration flow for every outcome.
   CONFIGURATION_RECOVERY_RETRY: Object.freeze([{operationId: 'createOperationsProductionTag', maxRequestCount: 1}]),
-  EDITOR_RESUME: Object.freeze([
+  // The metadata surface is now a child of the still-open item editor. Its
+  // owner write invalidates the parent's live candidate query before the child
+  // closes. This is not a duplicate request: it is what makes the newly
+  // created tag immediately selectable without saving or restoring a draft.
+  EDITOR_CHILD_LIVE_CANDIDATE_INVALIDATION: Object.freeze([
+    {operationId: 'getOperationsProductionTags', maxRequestCount: 1},
+  ]),
+  // Closing the child returns focus to the original editor control and
+  // refreshes its candidate snapshot. Keep this separate from the live
+  // invalidation above: collapsing them would under-declare the approved
+  // parent-stays-open interaction.
+  EDITOR_CHILD_CLOSE_REFRESH: Object.freeze([
     {operationId: 'listOperationsCatalogUnits', maxRequestCount: 1},
     {operationId: 'getOperationsProductionTags', maxRequestCount: 1},
   ]),
@@ -8828,7 +8840,8 @@ const l2JourneyFlowNamesFor = caseId => {
         'UNIT_CANDIDATES',
         'PRODUCTION_TAG_CANDIDATES',
         'CONFIGURATION',
-        'EDITOR_RESUME',
+        'EDITOR_CHILD_LIVE_CANDIDATE_INVALIDATION',
+        'EDITOR_CHILD_CLOSE_REFRESH',
       ],
       failure: [
         'FRESH_CATALOG_WORKBENCH',
@@ -8844,7 +8857,8 @@ const l2JourneyFlowNamesFor = caseId => {
         'PRODUCTION_TAG_CANDIDATES',
         'CONFIGURATION',
         'CONFIGURATION_RECOVERY_RETRY',
-        'EDITOR_RESUME',
+        'EDITOR_CHILD_LIVE_CANDIDATE_INVALIDATION',
+        'EDITOR_CHILD_CLOSE_REFRESH',
       ],
     },
     'catalog-batch': {

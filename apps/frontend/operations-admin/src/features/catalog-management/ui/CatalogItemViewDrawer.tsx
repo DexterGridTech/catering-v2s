@@ -53,7 +53,9 @@ export function CatalogItemViewDrawer({
   const detailQuery = operationsRtk.useGetOperationsCatalogItemQuery(detailRequest, {skip: !viewedItemCode});
   const detail = useMemo(
     () =>
-      detailQuery.isError ? undefined : selectCatalogDetailForItem(viewedItemCode, detailQuery.currentData, detailQuery.data),
+      detailQuery.isError
+        ? undefined
+        : selectCatalogDetailForItem(viewedItemCode, detailQuery.currentData, detailQuery.data),
     [detailQuery.currentData, detailQuery.data, detailQuery.isError, viewedItemCode],
   );
   const manifestRequest = useMemo(
@@ -225,11 +227,7 @@ export function CatalogItemViewDrawer({
                 编辑
               </Button>
             )}
-            {isReferencedDetail && (
-              <Button onClick={() => setViewedItemCode(itemCode)}>
-                返回当前商品
-              </Button>
-            )}
+            {isReferencedDetail && <Button onClick={() => setViewedItemCode(itemCode)}>返回当前商品</Button>}
             {canWriteCatalog && sourceLocked && (
               <Button
                 type="primary"

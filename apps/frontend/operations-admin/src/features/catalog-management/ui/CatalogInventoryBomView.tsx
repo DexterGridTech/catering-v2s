@@ -129,7 +129,9 @@ export function CatalogInventoryBomView({
   const direct = current.mode === 'DIRECT' ? current.directConfiguration : null;
   const consumptionUnit = direct?.consumptionUnitSnapshot ?? baseUnitForOwner(current);
   const lines = current.bom?.lines ?? [];
-  const facts = <InventoryRuleFacts current={current} detail={detail} consumptionUnit={consumptionUnit} lines={lines} />;
+  const facts = (
+    <InventoryRuleFacts current={current} detail={detail} consumptionUnit={consumptionUnit} lines={lines} />
+  );
 
   if (layout === 'SINGLE_DETAIL') return facts;
   return (

@@ -38,7 +38,9 @@ export function CatalogItemBasicView({
             {
               key: 'status',
               label: '状态',
-              children: <CatalogLifecycleStatusTag manifest={manifest} kind="ITEM" status={detail.item.lifecycle.status} />,
+              children: (
+                <CatalogLifecycleStatusTag manifest={manifest} kind="ITEM" status={detail.item.lifecycle.status} />
+              ),
             },
             {
               key: 'category',

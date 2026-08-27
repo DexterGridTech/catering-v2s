@@ -5,12 +5,10 @@ import type {CatalogLibraryKind} from './catalogWorkspaceTask';
  * return token or persisted value: the still-open editor remains their owner.
  */
 export type CatalogEditorChildTask =
-  | {kind: 'NONE'}
-  | {kind: 'CONFIG'; library: CatalogLibraryKind; triggerTestId: string};
+  {kind: 'NONE'} | {kind: 'CONFIG'; library: CatalogLibraryKind; triggerTestId: string};
 
 export type CatalogEditorChildTaskAction =
-  | {type: 'OPEN_CONFIG'; library: CatalogLibraryKind; triggerTestId: string}
-  | {type: 'CLOSE'};
+  {type: 'OPEN_CONFIG'; library: CatalogLibraryKind; triggerTestId: string} | {type: 'CLOSE'};
 
 export const initialCatalogEditorChildTask: CatalogEditorChildTask = {kind: 'NONE'};
 

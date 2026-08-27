@@ -4,7 +4,12 @@ import type {CatalogUnitList, Uuid} from '../../../app/api/generated/catalog-inv
 import type {CatalogShapeManifestView} from '../../../app/api/generated/catalog-inventory-edge';
 import type {CatalogSkuRow} from '../model/catalogModel';
 import {catalogCentsToYuan, catalogSkuIssueCodes, catalogYuanToCents} from '../model/catalogModel';
-import type {MediaDraft, PreparationProfileDraft, SkuDimensionDraft, SkuRowDraft} from '../model/catalogItemEditorDraftAdapters';
+import type {
+  MediaDraft,
+  PreparationProfileDraft,
+  SkuDimensionDraft,
+  SkuRowDraft,
+} from '../model/catalogItemEditorDraftAdapters';
 import {catalogEnumOptions, catalogFieldLabel} from '../model/catalogManifestLabels';
 import {CatalogAssetPreview} from './CatalogAssetPreview';
 import {catalogVoidBlockReason} from './CatalogItemEditorFieldPresentation';
@@ -118,15 +123,28 @@ function SkuMediaCell({
               testId={catalogTestIdControls.edit.skuMedia(sku.editorId, stagedAsset.id, 'staged-preview')}
             />
           )}
-          <Typography.Text type={stagedAsset.status === 'FAILED' ? 'danger' : 'secondary'} ellipsis={{tooltip: stagedAsset.fileName}}>
+          <Typography.Text
+            type={stagedAsset.status === 'FAILED' ? 'danger' : 'secondary'}
+            ellipsis={{tooltip: stagedAsset.fileName}}
+          >
             {stagedAsset.status === 'FAILED' ? (stagedAsset.error ?? '图片上传失败') : '待上传图片'}
           </Typography.Text>
           {stagedAsset.status === 'FAILED' && stagedAsset.file && (
-            <Button size="small" onClick={() => void onStage(stagedAsset.file as File, sku.editorId, stagedAsset.previous?.assetRef, stagedAsset.id)}>
+            <Button
+              size="small"
+              onClick={() =>
+                void onStage(stagedAsset.file as File, sku.editorId, stagedAsset.previous?.assetRef, stagedAsset.id)
+              }
+            >
               重试
             </Button>
           )}
-          <Button size="small" danger disabled={stagedAsset.status === 'UPLOADING'} onClick={() => onRemoveStaged(stagedAsset.id)}>
+          <Button
+            size="small"
+            danger
+            disabled={stagedAsset.status === 'UPLOADING'}
+            onClick={() => onRemoveStaged(stagedAsset.id)}
+          >
             移除
           </Button>
         </Space>
@@ -199,7 +217,11 @@ export function CatalogItemSkuMatrixTable({
       width: 160,
       render: (_value: unknown, sku: SkuRowDraft) => {
         const value = sku.attributeValueRefs.find(entry => entry.attributeRef === dimension.attributeRef);
-        return <Typography.Text ellipsis={{tooltip: value?.valueLabel ?? '未选择'}}>{value?.valueLabel || '未选择'}</Typography.Text>;
+        return (
+          <Typography.Text ellipsis={{tooltip: value?.valueLabel ?? '未选择'}}>
+            {value?.valueLabel || '未选择'}
+          </Typography.Text>
+        );
       },
     })),
     {
@@ -324,10 +346,18 @@ export function CatalogItemSkuMatrixTable({
       width: 200,
       render: (_value, sku) => (
         <Space direction="vertical" size={2}>
-          <Button size="small" onClick={() => onOpenIdentifiers(sku.editorId)} {...testId(catalogTestIdControls.edit.dynamic('sku', 'identifiers', sku.editorId))}>
+          <Button
+            size="small"
+            onClick={() => onOpenIdentifiers(sku.editorId)}
+            {...testId(catalogTestIdControls.edit.dynamic('sku', 'identifiers', sku.editorId))}
+          >
             识别码（{sku.identifiers.length || '未维护'}）
           </Button>
-          <Button size="small" onClick={() => onOpenPreparation(sku.editorId)} {...testId(catalogTestIdControls.edit.dynamic('sku', 'preparation', sku.editorId))}>
+          <Button
+            size="small"
+            onClick={() => onOpenPreparation(sku.editorId)}
+            {...testId(catalogTestIdControls.edit.dynamic('sku', 'preparation', sku.editorId))}
+          >
             制作信息（{sku.preparationOverride.mode === 'OVERRIDE' ? '已单独设置' : '使用商品默认'}）
           </Button>
         </Space>
@@ -348,7 +378,7 @@ export function CatalogItemSkuMatrixTable({
       ),
     },
     {
-      title: '操作',
+      title: '规格管理',
       width: 150,
       fixed: 'right',
       render: (_value, sku) => {
@@ -405,7 +435,9 @@ export function CatalogItemSkuMatrixTable({
         <Typography.Title level={5} style={{margin: 0}}>
           2. 检查并补充每个规格
         </Typography.Title>
-        <Typography.Text type="secondary">规格由上方属性和值生成；在这里补充每个规格的名称、价格、单位和制作信息。</Typography.Text>
+        <Typography.Text type="secondary">
+          规格由上方属性和值生成；在这里补充每个规格的名称、价格、单位和制作信息。
+        </Typography.Text>
       </div>
       <Table
         size="small"

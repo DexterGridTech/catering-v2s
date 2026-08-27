@@ -170,7 +170,8 @@ export function SkuMatrixReadOnly({
                         reason={
                           !canWriteCatalog
                             ? '当前角色无权作废规格。'
-                            : (catalogVoidBlockReason(sku.voidAvailability) ?? '作废限制信息暂时无法确认，请刷新后重试。')
+                            : (catalogVoidBlockReason(sku.voidAvailability) ??
+                              '作废限制信息暂时无法确认，请刷新后重试。')
                         }
                         onClick={() => onVoidSku(sku)}
                       >
@@ -360,7 +361,8 @@ export function CompositeGroupsReadOnly({values}: {values: CatalogCompositeGroup
           {group.components.length ? (
             <Space direction="vertical" size={8} style={{display: 'flex'}}>
               {group.components.map((component, index) => {
-                const hasExtraPrice = component.extraPrice !== null && component.extraPrice !== undefined && component.extraPrice !== 0;
+                const hasExtraPrice =
+                  component.extraPrice !== null && component.extraPrice !== undefined && component.extraPrice !== 0;
                 return (
                   <div
                     key={`${component.itemRef}-${index}`}

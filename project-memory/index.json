@@ -473,6 +473,132 @@
       ]
     },
     {
+      "id": "decisions.owner-read-model-and-lifecycle-standard",
+      "path": "project-memory/decisions/owner-read-model-and-lifecycle-standard.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "backend",
+          "contract",
+          "admin-ui",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "architecture",
+          "contract",
+          "database"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "FRONTEND_DICTIONARY_FOR_CODE_DEFINED_ENUMS",
+        "BUSINESS_IDENTITY_IS_ENTITY_SPECIFIC",
+        "COMMAND_SPECIFIC_STATUS_SEMANTICS",
+        "AGGREGATE_FACTS_ARE_OWNER_OWNED",
+        "CASCADE_STATUS_IS_DERIVED_NOT_STORED",
+        "OWNER_READ_EXPOSES_BUSINESS_MODEL",
+        "NO_BACKEND_DISPLAY_ASSEMBLY",
+        "COMPUTABLE_BY_CONSUMER_STAYS_WITH_CONSUMER",
+        "MASTER_DATA_LIFECYCLE_IS_THREE_STATES",
+        "NO_PHYSICAL_DELETE_FOR_ENTITIES",
+        "DISABLED_STAYS_EDITABLE",
+        "EXISTING_REFERENCE_EXEMPT_FROM_STATUS_CHECK",
+        "VOIDED_RELEASES_CODE_AND_REF_IS_IDENTITY",
+        "AUTHORIZATION_DIMENSION_STAYS_IN_OPERATION_IDENTITY"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "FRONTEND_DICTIONARY_FOR_CODE_DEFINED_ENUMS",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "### 7.4 形态三:前端建字典,后端不建接口"
+        },
+        {
+          "assertionKey": "BUSINESS_IDENTITY_IS_ENTITY_SPECIFIC",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "### 2.5 改造成本按事实来源分三档"
+        },
+        {
+          "assertionKey": "COMMAND_SPECIFIC_STATUS_SEMANTICS",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "### 3.1 配套规则"
+        },
+        {
+          "assertionKey": "AGGREGATE_FACTS_ARE_OWNER_OWNED",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "### 1.3 聚合事实是 owner 拥有的结构化事实,不是装配例外"
+        },
+        {
+          "assertionKey": "CASCADE_STATUS_IS_DERIVED_NOT_STORED",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "## 3.2 第三条原则 · 级联不落库,各维度状态各自作为事实返回"
+        },
+        {
+          "assertionKey": "OWNER_READ_EXPOSES_BUSINESS_MODEL",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "## 0. 核心思想"
+        },
+        {
+          "assertionKey": "NO_BACKEND_DISPLAY_ASSEMBLY",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "### 1.1 后台不得装配字符串"
+        },
+        {
+          "assertionKey": "COMPUTABLE_BY_CONSUMER_STAYS_WITH_CONSUMER",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "### 1.2 什么该后台算:能算 / 不能算"
+        },
+        {
+          "assertionKey": "MASTER_DATA_LIFECYCLE_IS_THREE_STATES",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "## 3. 第二条原则 · 生命周期统一三态"
+        },
+        {
+          "assertionKey": "NO_PHYSICAL_DELETE_FOR_ENTITIES",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "### 3.0 裁定 2 的适用面与不适用面(重写时丢失,现恢复)"
+        },
+        {
+          "assertionKey": "DISABLED_STAYS_EDITABLE",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "### 3.1 配套规则"
+        },
+        {
+          "assertionKey": "EXISTING_REFERENCE_EXEMPT_FROM_STATUS_CHECK",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "### 3.1 配套规则"
+        },
+        {
+          "assertionKey": "VOIDED_RELEASES_CODE_AND_REF_IS_IDENTITY",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "### 3.1 配套规则"
+        },
+        {
+          "assertionKey": "AUTHORIZATION_DIMENSION_STAYS_IN_OPERATION_IDENTITY",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "### 0.2 第三句的一处限定"
+        }
+      ],
+      "sourceRefs": [
+        "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md"
+      ]
+    },
+    {
       "id": "decisions.r5-full-seed-report-api-db-accounting",
       "path": "project-memory/decisions/r5-full-seed-report-api-db-accounting.md",
       "layer": "routed",
@@ -1937,6 +2063,49 @@
       ]
     },
     {
+      "id": "pitfalls.acceptance-scenario-count-freeze",
+      "path": "project-memory/pitfalls/acceptance-scenario-count-freeze.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "testing",
+          "review"
+        ],
+        "domains": [
+          "platform"
+        ],
+        "consumerFaces": [
+          "backend"
+        ],
+        "owners": [
+          "backend"
+        ],
+        "impacts": [
+          "evidence"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "assertions": [
+        "ACCEPTANCE_DISCOVERY_MUST_NOT_FREEZE_A_STALE_SCENARIO_COUNT"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "ACCEPTANCE_DISCOVERY_MUST_NOT_FREEZE_A_STALE_SCENARIO_COUNT",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "## 3. 第二条原则 · 生命周期统一三态"
+        }
+      ],
+      "sourceRefs": [
+        "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md"
+      ]
+    },
+    {
       "id": "pitfalls.after-state-not-checked-against-other-gates",
       "path": "project-memory/pitfalls/after-state-not-checked-against-other-gates.md",
       "layer": "routed",
@@ -2220,6 +2389,49 @@
       ],
       "sourceRefs": [
         "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.criterion-degraded-into-list",
+      "path": "project-memory/pitfalls/criterion-degraded-into-list.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "governance",
+          "contract"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "CRITERION_NOT_CLOSED_LIST"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "CRITERION_NOT_CLOSED_LIST",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "### 1.3 聚合事实是 owner 拥有的结构化事实,不是装配例外"
+        }
+      ],
+      "sourceRefs": [
+        "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md"
       ]
     },
     {
@@ -2761,6 +2973,48 @@
       ]
     },
     {
+      "id": "pitfalls.probe-narrower-than-criterion",
+      "path": "project-memory/pitfalls/probe-narrower-than-criterion.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "design",
+          "review"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "assertions": [
+        "PROBE_MUST_MATCH_CRITERION"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "PROBE_MUST_MATCH_CRITERION",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "### 1.1 后台不得装配字符串"
+        }
+      ],
+      "sourceRefs": [
+        "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md"
+      ]
+    },
+    {
       "id": "pitfalls.repo-rule-cited-against-dexter",
       "path": "project-memory/pitfalls/repo-rule-cited-against-dexter.md",
       "layer": "routed",
@@ -3030,7 +3284,7 @@
       },
       "assertions": [
         "STORE_TEMPLATE_CANDIDATE_IS_EFFECTIVE_STORE_TEMPLATE",
-        "DISABLED_TEMPLATE_CASCADES_EXISTING_CHANNEL",
+        "TEMPLATE_STATUS_IS_A_DIMENSION_FACT_NOT_MATERIALIZED",
         "CONTRACT_VALIDITY_USES_SHARED_DOT_TEXT",
         "INTERNAL_CHANNEL_BINDING_STATUS_IS_NOT_REQUIRED"
       ],
@@ -3041,9 +3295,9 @@
           "anchor": "## 1. 门店候选模板是受业务条件约束的投影"
         },
         {
-          "assertionKey": "DISABLED_TEMPLATE_CASCADES_EXISTING_CHANNEL",
-          "path": "project-memory/practices/business-channel-list-scope-and-validity-display.md",
-          "anchor": "## 2. 模板失效会使既有渠道失效，但不删除历史事实"
+          "assertionKey": "TEMPLATE_STATUS_IS_A_DIMENSION_FACT_NOT_MATERIALIZED",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "## 3.2 第三条原则 · 级联不落库,各维度状态各自作为事实返回"
         },
         {
           "assertionKey": "CONTRACT_VALIDITY_USES_SHARED_DOT_TEXT",
@@ -3057,6 +3311,7 @@
         }
       ],
       "sourceRefs": [
+        "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
         "project-memory/practices/business-channel-list-scope-and-validity-display.md"
       ]
     },
@@ -3855,16 +4110,23 @@
         ]
       },
       "assertions": [
-        "READ_MODEL_BY_TASK_FACT_CLOSURE"
+        "READ_MODEL_BY_TASK_FACT_CLOSURE",
+        "READ_MODEL_NOT_TRIMMED_TO_SCREEN"
       ],
       "assertionSources": [
         {
           "assertionKey": "READ_MODEL_BY_TASK_FACT_CLOSURE",
           "path": "doc/platform/foundation-charter.md",
           "anchor": "### 1-H · 读取粒度按业务任务的事实闭集,不按已有大对象"
+        },
+        {
+          "assertionKey": "READ_MODEL_NOT_TRIMMED_TO_SCREEN",
+          "path": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+          "anchor": "## 0. 核心思想"
         }
       ],
       "sourceRefs": [
+        "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
         "doc/platform/foundation-charter.md"
       ]
     },

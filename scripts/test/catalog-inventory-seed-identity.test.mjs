@@ -179,3 +179,9 @@ test("seed writes and verifies the single relational category reference", () => 
   assert.doesNotMatch(executor, /categoryRefs: source\.categoryKey/);
   assert.doesNotMatch(executor, /categoryRefs: \[\]/);
 });
+
+test("seed lifecycle readback consumes the current detail lifecycle fact, never a retired top-level status alias", () => {
+  assert.match(executor, /readback\?\.lifecycle\?\.status !== "ENABLED"/);
+  assert.doesNotMatch(executor, /readback\?\.status !== "ENABLED"/);
+  assert.match(executor, /SEED_EXPERIENCE_ITEM_ENABLE_DETAIL_INVALID/);
+});

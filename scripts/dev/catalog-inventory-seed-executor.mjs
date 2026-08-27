@@ -1213,6 +1213,46 @@ async function execute() {
       }
       return item;
     };
+    const assertCanonicalCompositeReadback = (client, refs, entry, detailData, item, context) => {
+      const relations = (entry.dataset.entities?.relations ?? []).filter((edge) =>
+        edge.from === entry.item.code && edge.refKind === "SKU");
+      const expectedComponents = relations.map((edge) => {
+        const target = canonicalByCode.get(edge.to);
+        if (!target) fail(`SEED_COMPOSITE_TARGET_FIXTURE_MISSING:${context}:${edge.to}`);
+        const sku = edge.refCode == null
+          ? null
+          : (target.dataset.entities?.skus ?? []).find((candidate) => candidate.code === edge.refCode);
+        if (edge.refCode != null && !sku)
+          fail(`SEED_COMPOSITE_SKU_FIXTURE_MISSING:${context}:${edge.refCode}`);
+        return {
+          itemRef: itemRef(refs, target.item.code),
+          itemCode: target.item.code,
+          itemName: target.item.name,
+          skuCode: edge.refCode ?? null,
+          skuName: sku == null ? null : skuDisplayName(target.item.name, sku),
+        };
+      });
+      const actualComponents = (item.compositeGroups ?? []).flatMap((group) => group.components ?? []);
+      if (actualComponents.length !== expectedComponents.length)
+        fail(`SEED_COMPOSITE_COMPONENT_COUNT_INVALID:${context}`);
+      for (const expected of expectedComponents) {
+        const actual = actualComponents.find((component) => component.itemRef === expected.itemRef && component.skuCode === expected.skuCode);
+        if (!actual
+            || actual.itemCode !== expected.itemCode
+            || actual.itemName !== expected.itemName
+            || actual.skuName !== expected.skuName)
+          fail(`SEED_COMPOSITE_COMPONENT_NAME_READBACK_INVALID:${context}:${expected.itemCode}:${expected.skuCode ?? "ITEM"}`);
+        const relation = (detailData.references ?? []).find((candidate) =>
+          candidate.direction === "OUTBOUND"
+          && candidate.referenceKind === "COMPOSITE_COMPONENT"
+          && candidate.referenceRef === expected.itemRef);
+        if (!relation
+            || relation.name !== expected.itemName
+            || relation.code !== expected.itemCode
+            || relation.relationLabel !== "套餐包含")
+          fail(`SEED_COMPOSITE_REFERENCE_NAME_READBACK_INVALID:${context}:${expected.itemCode}`);
+      }
+    };
     const inventoryRuleDraftFromReadback = (node) => {
       const owner = node?.owner ?? {};
       const mode = node?.mode ?? "NONE";
@@ -1534,6 +1574,9 @@ async function execute() {
         if (!itemResult(save.json)?.version) fail(`SEED_CANONICAL_SAVE_READBACK_MISSING:${client.scopeType}:${item.code}`);
         canonicalVersions.set(canonicalItemKey(client, item.code), itemVersion(save.json));
         const readback = await recordItemReadback(client, refs, item.code, `${client.scopeType}-canonical-${item.code}`);
+        const detailData = detailReadbacks.get(`${client.scopeType}:${client.dataNodeRef}:${item.code}`);
+        if (!detailData) fail(`SEED_DETAIL_READBACK_CONTEXT_MISSING:${client.scopeType}:${item.code}`);
+        assertCanonicalCompositeReadback(client, refs, {dataset, item}, detailData, readback, `${client.scopeType}-canonical-${item.code}`);
         if (readback?.categoryRef != null) {
           phase(`${client.scopeType}-canonical-category-readback-${item.code}`, "FAIL", {
             operationId: "getOperationsCatalogItem",
@@ -1900,7 +1943,10 @@ async function execute() {
           fail(`SEED_EXPERIENCE_ITEM_ENABLE_READBACK_INVALID:${client.scopeType}:${source.catalogItemCode}`);
         currentVersions.set(clientItemKey(client, source.catalogItemCode), itemVersion(enabled.json));
         const readback = await recordItemReadback(client, refs, source.catalogItemCode, `${client.scopeType}-experience-enable-${source.catalogItemCode}`);
-        if (readback?.status !== "ENABLED")
+        // Item detail owns lifecycle under its explicit lifecycle fact. Do not
+        // read a retired top-level status alias: the strict owner readback must
+        // verify the same response shape consumed by the catalog UI.
+        if (readback?.lifecycle?.status !== "ENABLED")
           fail(`SEED_EXPERIENCE_ITEM_ENABLE_DETAIL_INVALID:${client.scopeType}:${source.catalogItemCode}`);
       }
       if (client.scopeType !== "HEAD_COMPANY") {

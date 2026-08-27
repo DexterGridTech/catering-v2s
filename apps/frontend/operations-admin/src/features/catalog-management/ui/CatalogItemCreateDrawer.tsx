@@ -22,7 +22,13 @@ type Props = {
   open: boolean;
   queryContext: OperationsPageProps['queryContext'];
   brandRef?: string;
-  initialValues?: {code?: string; name?: string; shapeKey?: string; categoryRef?: string; categoryPathLabels?: string[]};
+  initialValues?: {
+    code?: string;
+    name?: string;
+    shapeKey?: string;
+    categoryRef?: string;
+    categoryPathLabels?: string[];
+  };
   onClose: () => void;
   onCreated: (itemCode: string) => void;
 };

@@ -141,7 +141,11 @@ export function CatalogDictionaryAtomModals({
                   initialValue="COUNT"
                   rules={[{required: true, message: '请选择单位维度'}]}
                 >
-                  <Select style={catalogFieldWidth('compact')} options={unitDimensionOptions} {...testId(catalogTestIds.static.unitDimension)} />
+                  <Select
+                    style={catalogFieldWidth('compact')}
+                    options={unitDimensionOptions}
+                    {...testId(catalogTestIds.static.unitDimension)}
+                  />
                 </Form.Item>
                 <Form.Item
                   label="精度"

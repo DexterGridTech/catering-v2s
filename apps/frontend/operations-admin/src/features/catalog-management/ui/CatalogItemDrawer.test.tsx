@@ -293,8 +293,8 @@ describe('catalog identification and preparation editor boundaries', () => {
     expect(adapters).toContain('function selectCatalogItemProductionDraft');
     expect(workspace).toContain("updateFields(patch, 'basic')");
     expect(workspace).toContain("updateFields(patch, 'production-prompts')");
-    expect(basic).toContain("basicDraft.onChange({selectedSalesUnitRef: next})");
-    expect(production).toContain("productionDraft.onChange({selectedProductionTagRef: next})");
+    expect(basic).toContain('basicDraft.onChange({selectedSalesUnitRef: next})');
+    expect(production).toContain('productionDraft.onChange({selectedProductionTagRef: next})');
   });
 
   it('keeps first-level task ownership in the workbench and gives SKU sub-editors stable identity', () => {
@@ -314,8 +314,14 @@ describe('catalog identification and preparation editor boundaries', () => {
     const workspace = readFileSync(new URL('./CatalogItemEditorWorkspace.tsx', import.meta.url), 'utf8');
     const state = readFileSync(new URL('./useCatalogItemEditorWorkspaceState.tsx', import.meta.url), 'utf8');
     const dictionaryState = readFileSync(new URL('./CatalogDictionaryDrawerState.tsx', import.meta.url), 'utf8');
-    const configurationSurface = readFileSync(new URL('./CatalogConfigurationDrawerSurface.tsx', import.meta.url), 'utf8');
-    const coordinator = readFileSync(new URL('./controllers/useCatalogWorkbenchTaskCoordinator.tsx', import.meta.url), 'utf8');
+    const configurationSurface = readFileSync(
+      new URL('./CatalogConfigurationDrawerSurface.tsx', import.meta.url),
+      'utf8',
+    );
+    const coordinator = readFileSync(
+      new URL('./controllers/useCatalogWorkbenchTaskCoordinator.tsx', import.meta.url),
+      'utf8',
+    );
     const content = readFileSync(new URL('./CatalogWorkbenchContent.tsx', import.meta.url), 'utf8');
     const childTask = readFileSync(new URL('../model/catalogEditorChildTask.ts', import.meta.url), 'utf8');
     const openChild = state.match(/const openCatalogConfig[\s\S]*?const closeConfiguration/u)?.[0] ?? '';
@@ -372,7 +378,9 @@ describe('catalog identification and preparation editor boundaries', () => {
   it('keeps an opened item identity-bound while a detail request settles', () => {
     const viewSource = readFileSync(new URL('./CatalogItemViewDrawer.tsx', import.meta.url), 'utf8');
     const sessionSource = readFileSync(new URL('../model/useCatalogItemEditorSession.ts', import.meta.url), 'utf8');
-    expect(viewSource).toContain('selectCatalogDetailForItem(viewedItemCode, detailQuery.currentData, detailQuery.data)');
+    expect(viewSource).toContain(
+      'selectCatalogDetailForItem(viewedItemCode, detailQuery.currentData, detailQuery.data)',
+    );
     expect(viewSource).toContain('setViewedItemCode(code)');
     expect(viewSource).toContain('detailQuery.isError ? undefined');
     expect(sessionSource).toContain('selectCatalogDetailForItem(itemCode, detailQuery.currentData, detailQuery.data)');

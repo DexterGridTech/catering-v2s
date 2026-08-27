@@ -1238,6 +1238,129 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
+    void skuItemActivationUsesRelationalSkuFactsWhenTheReadProjectionIsNotPersisted() {
+        String itemCode = generatedCatalogCode("SKU-ACTIVATION-RELATIONAL");
+        JsonNode created = write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", itemCode)
+                        .put("name", "relational SKU activation")
+                        .put("shapeKey", "SKU_VARIANT_SALE_COUNTED"));
+        UUID skuRef = UUID.randomUUID();
+        ObjectNode save = skuSave(itemCode, created.path("version").asLong(), skuRef, "RELATIONAL-SKU");
+        ((ObjectNode) save.path("sections").path("catalogDraft").path("skus").get(0))
+                .put("standardSalePrice", 12800);
+        JsonNode saved = write("saveOperationsCatalogItem", save);
+
+        assertFalse(
+                jdbc.queryForObject(
+                        "SELECT jsonb_exists(sections, 'skus') FROM catalog.catalog_item WHERE item_ref=?",
+                        Boolean.class,
+                        UUID.fromString(created.path("resourceRef").asText())),
+                "the stored item JSON must not be mistaken for the hydrated SKU read projection");
+        assertEquals(
+                1,
+                jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM catalog.catalog_sku WHERE item_ref=? AND status='ENABLED' "
+                                + "AND standard_sale_price=12800",
+                        Integer.class,
+                        UUID.fromString(created.path("resourceRef").asText())));
+
+        JsonNode enabled = write(
+                "transitionOperationsCatalogItemStatus",
+                MAPPER.createObjectNode()
+                        .put("itemCode", itemCode)
+                        .put("expectedVersion", saved.path("version").asLong())
+                        .put("targetStatus", "ENABLED"));
+        assertEquals("ENABLED", enabled.path("status").asText());
+        assertEquals(
+                "ENABLED",
+                service.readItem(SCOPE.toString(), BRAND, itemCode, "sku-activation-relational-readback")
+                        .path("data")
+                        .path("item")
+                        .path("lifecycle")
+                        .path("status")
+                        .asText());
+    }
+
+    @Test
+    void skuItemActivationAllowsRelationalSkuWithoutPriceWhenTheReadProjectionIsNotPersisted() {
+        String itemCode = generatedCatalogCode("SKU-ACTIVATION-MISSING-PRICE");
+        JsonNode created = write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", itemCode)
+                        .put("name", "relational SKU missing price")
+                        .put("shapeKey", "SKU_VARIANT_SALE_COUNTED"));
+        UUID itemRef = UUID.fromString(created.path("resourceRef").asText());
+        UUID skuRef = UUID.randomUUID();
+        JsonNode saved = write(
+                "saveOperationsCatalogItem",
+                skuSave(itemCode, created.path("version").asLong(), skuRef, "MISSING-PRICE-SKU"));
+
+        assertFalse(
+                jdbc.queryForObject(
+                        "SELECT jsonb_exists(sections, 'skus') FROM catalog.catalog_item WHERE item_ref=?",
+                        Boolean.class,
+                        itemRef),
+                "the stored item JSON must not be mistaken for the hydrated SKU read projection");
+        assertEquals(
+                1,
+                jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM catalog.catalog_sku WHERE item_ref=? AND status='ENABLED' "
+                                + "AND standard_sale_price IS NULL",
+                        Integer.class,
+                        itemRef));
+
+        JsonNode enabled = write(
+                "transitionOperationsCatalogItemStatus",
+                MAPPER.createObjectNode()
+                        .put("itemCode", itemCode)
+                        .put("expectedVersion", saved.path("version").asLong())
+                        .put("targetStatus", "ENABLED"));
+        assertEquals(
+                "ENABLED",
+                enabled.path("status").asText());
+        assertEquals(
+                saved.path("version").asLong() + 1,
+                enabled.path("version").asLong());
+        assertEquals(
+                "ENABLED",
+                jdbc.queryForObject("SELECT status FROM catalog.catalog_item WHERE item_ref=?", String.class, itemRef));
+    }
+
+    @Test
+    void itemActivationAllowsMissingPriceBecauseMenuOwnsPriceRequirement() {
+        String itemCode = generatedCatalogCode("ITEM-ACTIVATION-MISSING-PRICE");
+        JsonNode created = write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", itemCode)
+                        .put("name", "item without price")
+                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
+        UUID itemRef = UUID.fromString(created.path("resourceRef").asText());
+
+        JsonNode enabled = write(
+                "transitionOperationsCatalogItemStatus",
+                MAPPER.createObjectNode()
+                        .put("itemCode", itemCode)
+                        .put("expectedVersion", created.path("version").asLong())
+                        .put("targetStatus", "ENABLED"));
+        assertEquals("ENABLED", enabled.path("status").asText());
+        assertEquals(created.path("version").asLong() + 1, enabled.path("version").asLong());
+        assertEquals(
+                "ENABLED",
+                jdbc.queryForObject("SELECT status FROM catalog.catalog_item WHERE item_ref=?", String.class, itemRef));
+        assertEquals(
+                0,
+                jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM catalog.catalog_item "
+                                + "WHERE item_ref=? AND jsonb_exists(sections, 'standardSalePrice')",
+                        Integer.class,
+                        itemRef));
+    }
+
+    @Test
     void shapeOwnedInventoryRulesRejectUnsupportedNodesAndModesEvenWhenNodeTypeLooksLikeItemBom() {
         String skuItemCode = generatedCatalogCode("SKU-NO-OPTIONS");
         JsonNode skuItem = write(
@@ -3368,6 +3491,101 @@ class CatalogCategoryOwnerIntegrationTest {
                 SCOPE.toString(),
                 BRAND,
                 itemCode));
+    }
+
+    @Test
+    void compositeGroupReferencingASpecificSkuReturnsTheComponentAndSkuBusinessNames() {
+        String componentCode = generatedCatalogCode("COMPOSITE-SKU-COMPONENT");
+        JsonNode component = write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", componentCode)
+                        .put("name", "拿铁咖啡")
+                        .put("shapeKey", "SKU_VARIANT_SALE_COUNTED"));
+        UUID componentSkuRef = UUID.randomUUID();
+        ObjectNode componentSkuSave = skuSave(
+                componentCode, component.path("version").asLong(), componentSkuRef, "LATTE-MEDIUM");
+        ((ObjectNode) componentSkuSave.path("sections").path("catalogDraft").path("skus").get(0))
+                .put("skuName", "中杯拿铁");
+        write("saveOperationsCatalogItem", componentSkuSave);
+
+        String parentCode = generatedCatalogCode("COMPOSITE-SKU-PARENT");
+        JsonNode parent = write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", parentCode)
+                        .put("name", "双人晚餐套餐")
+                        .put("shapeKey", "COMPOSITE"));
+        ObjectNode request = MAPPER.createObjectNode().put("itemCode", parentCode);
+        ObjectNode group = request.putObject("sections")
+                .put("expectedCatalogVersion", parent.path("version").asLong())
+                .putObject("catalogDraft")
+                .putArray("compositeGroups")
+                .addObject();
+        group.put("groupCode", "DRINK")
+                .put("groupName", "饮品")
+                .put("selectionRule", "REQUIRED")
+                .put("minSelections", 1)
+                .put("maxSelections", 1);
+        group.putArray("components")
+                .addObject()
+                .put("itemRef", component.path("resourceRef").asText())
+                .put("productSkuRef", componentSkuRef.toString())
+                .put("skuCode", "LATTE-MEDIUM")
+                .put("quantity", "1")
+                .put("unit", "份")
+                .put("default", true)
+                .put("status", "ENABLED");
+        write("saveOperationsCatalogItem", request);
+
+        UUID componentItemRef = UUID.fromString(component.path("resourceRef").asText());
+        assertEquals(
+                "拿铁咖啡",
+                jdbc.queryForObject(
+                        "SELECT name FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND item_ref=?",
+                        String.class,
+                        SCOPE.toString(),
+                        BRAND,
+                        componentItemRef));
+        assertEquals(
+                componentItemRef,
+                jdbc.queryForObject(
+                        "SELECT component.component_item_ref FROM catalog.catalog_composite_component component JOIN "
+                                + "catalog.catalog_composite_group group_row ON "
+                                + "group_row.composite_group_ref=component.composite_group_ref WHERE group_row.item_ref=?",
+                        UUID.class,
+                        UUID.fromString(parent.path("resourceRef").asText())));
+
+        JsonNode detail;
+        try {
+            detail = service.readItem(SCOPE.toString(), BRAND, parentCode, "composite-sku-readback");
+        } catch (CatalogOwnerApi.Problem failure) {
+            throw new AssertionError(
+                    "composite detail must resolve its outgoing business reference: "
+                            + failure.code()
+                            + ":"
+                            + failure.getMessage(),
+                    failure);
+        }
+        JsonNode componentReadback = detail.path("data")
+                .path("item")
+                .path("compositeGroups")
+                .get(0)
+                .path("components")
+                .get(0);
+        assertEquals("拿铁咖啡", componentReadback.path("itemName").asText());
+        assertEquals("中杯拿铁", componentReadback.path("skuName").asText());
+        JsonNode outwardReference = detail.path("data")
+                .path("references")
+                .findValue("referenceRef");
+        assertTrue(outwardReference != null, "outbound package component reference must be present");
+        assertEquals(componentItemRef.toString(), outwardReference.asText());
+        JsonNode references = detail.path("data").path("references");
+        assertEquals(1, references.size());
+        assertEquals("COMPOSITE_COMPONENT", references.get(0).path("referenceKind").asText());
+        assertEquals("套餐包含", references.get(0).path("relationLabel").asText());
+        assertEquals("拿铁咖啡", references.get(0).path("name").asText());
+        assertEquals(componentCode, references.get(0).path("code").asText());
     }
 
     @Test

@@ -294,12 +294,15 @@ export function useCatalogItemEditorWorkspaceState({
     if (!itemCode || !detail || !lifecycleDirty || restoreCandidate) return;
     persistCurrentDraft();
   }, [detail, itemCode, lifecycleDirty, persistCurrentDraft, restoreCandidate]);
-  const openCatalogConfig = useCallback((library: CatalogLibraryKind, triggerTestId: string) => {
-    if (!itemCode) return;
-    // Configuration is an editor child task. It must not persist, close or
-    // rehydrate the item draft: the parent remains the sole draft owner.
-    dispatchConfigurationTask({type: 'OPEN_CONFIG', library, triggerTestId});
-  }, [itemCode]);
+  const openCatalogConfig = useCallback(
+    (library: CatalogLibraryKind, triggerTestId: string) => {
+      if (!itemCode) return;
+      // Configuration is an editor child task. It must not persist, close or
+      // rehydrate the item draft: the parent remains the sole draft owner.
+      dispatchConfigurationTask({type: 'OPEN_CONFIG', library, triggerTestId});
+    },
+    [itemCode],
+  );
   const closeConfiguration = useCallback(() => {
     const {focusTestId} = catalogEditorChildCloseResult(configurationTask);
     pendingConfigurationFocusTestId.current = focusTestId;

@@ -46,7 +46,7 @@ path-string declaration is not a business oracle.
 Each business run selects one catalog-discovered scenario or `all` and executes serially in the managed
 remote Testcontainers environment. There is no package-exit, P0/W0/P1, lane, scenario exact-set or
 accepted-baseline admission step. The independent operation-budget verifier may join run-scoped
-events to the generated operation registry only under its approved performance design. The scenario limit is 80; do not reduce business assertions
+events to the generated operation registry only under its approved performance design. There is no scenario count cap (Dexter 2026-08-27 removed the former 80 limit); never reduce business assertions
 to meet a runtime target.
 
 Each scenario reports two business dimensions, `CONTRACT` and `BUSINESS`, plus informational

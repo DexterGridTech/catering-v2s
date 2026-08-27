@@ -1263,17 +1263,17 @@
         },
         {
           "operationId": "getOperationsProductionTags",
-          "maxRequestCount": 6
+          "maxRequestCount": 7
         },
         {
           "operationId": "createOperationsProductionTag",
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 374,
-      "caseExpectedDbMs": 15969.800000000001,
+      "caseDbOperationUpperBound": 382,
+      "caseExpectedDbMs": 16311.400000000001,
       "caseLocalActionMs": 1500,
-      "caseTimeoutMs": 35000
+      "caseTimeoutMs": 36000
     },
     {
       "caseId": "catalog-config-failure",
@@ -1417,17 +1417,17 @@
         },
         {
           "operationId": "getOperationsProductionTags",
-          "maxRequestCount": 6
+          "maxRequestCount": 7
         },
         {
           "operationId": "createOperationsProductionTag",
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 380,
-      "caseExpectedDbMs": 16226.000000000002,
+      "caseDbOperationUpperBound": 388,
+      "caseExpectedDbMs": 16567.600000000002,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 35000
+      "caseTimeoutMs": 36000
     },
     {
       "caseId": "catalog-batch-success",
@@ -2046,6 +2046,6 @@
       "caseTimeoutMs": 29000
     }
   ],
-  "fullRunExpectedMs": 642726,
-  "fullRunTimeoutMs": 1286000
+  "fullRunExpectedMs": 643409.2,
+  "fullRunTimeoutMs": 1287000
 }

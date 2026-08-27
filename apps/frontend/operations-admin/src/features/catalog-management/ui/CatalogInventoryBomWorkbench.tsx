@@ -19,7 +19,12 @@ import {useMemo, type ReactNode} from 'react';
 import {testId} from '@catering-v2s/admin-ui-foundation';
 import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 import type {CatalogUnitList} from '../../../app/api/generated/catalog-inventory-edge';
-import type {CatalogDetail, CatalogInventoryRuleMode, CatalogInventoryRuleNode, CatalogUnitSnapshot} from '../model/catalogModel';
+import type {
+  CatalogDetail,
+  CatalogInventoryRuleMode,
+  CatalogInventoryRuleNode,
+  CatalogUnitSnapshot,
+} from '../model/catalogModel';
 import {
   CatalogInventoryRuleOwnerNavigation,
   inventoryRuleModeLabel,
@@ -232,7 +237,12 @@ export function CatalogInventoryBomWorkbench({
           <Col flex="1 1 0" style={{minWidth: 0}}>
             {current ? (
               readOnly ? (
-                <InventoryRuleReadOnly current={current} detail={detail} consumptionUnit={consumptionUnit} lines={lines} />
+                <InventoryRuleReadOnly
+                  current={current}
+                  detail={detail}
+                  consumptionUnit={consumptionUnit}
+                  lines={lines}
+                />
               ) : (
                 <InventoryRuleDetail
                   current={current}

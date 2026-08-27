@@ -20,12 +20,12 @@
 | **分流与批次** | `-backend-findings-triage-and-sequencing-claude.md` · `-part-one-coding-standards-batches-claude.md` · `-part-two-batches-claude.md` |
 | **门的清单** | `tools/verify-gates/verify.mjs`(⛔ **门存在 ≠ 门生效**,必须在 command 列表里) |
 
-**十类里只有四类能变成门。** 其余六类只能靠 review —— 这不是偷懒,是那六类的判据需要理解上下文,
+**十八类里有九类能变成门。** 其余九类只能靠 review —— 这不是偷懒,是那九类的判据需要理解上下文,
 做成关键词匹配就会变成"门全绿而功能是坏的"。
 
 ---
 
-## 1 · 能变成门的四类
+## 1 · 能变成门的九类
 
 ### 1-C · 契约声明必须传导到生成物
 
@@ -80,7 +80,91 @@
 
 ---
 
-## 2 · 只能靠 review 的六类
+### 1-J · 引用必须可解析为业务身份
+
+**规则**:task-read 响应中,**已登记为业务实体引用**的 ref 字段,必须能在同一响应体内解析到该实体的**业务身份**。三种满足形式等价:
+
+0. **业务身份由该实体自己决定,不得写死为 `code` + `name`。** 商品标签是 `code` + `name`;**属性选项没有编码概念**,契约 `required` 就是 `["optionRef","name","displayOrder"]`,身份即 `optionRef` + `name`;**运营角色也没有编码**,唯一键是名称。要求一个实体交出它从来没有的字段,只会逼出一次没必要的数据库迁移。
+
+1. **自身份**:ref 与身份字段同在一个对象里 —— `tags: [{tagRef, code, name, status}]`、`options: [{optionRef, name, displayOrder}]`
+2. **伴随实体**:`category: {categoryRef, code, name, …}`
+3. **兄弟集合**:`productionTagRef` 配同响应体内以 `tagRef` 为键的 `productionTags[]`
+
+**反例**:`categoryRef`(uuid)只配 `categoryPathLabels`(预渲染字符串数组)—— 前端拿到一个用不了的 ref 和一串只能原样打印的标签,想显示分类编码时该字段不在契约里。
+
+**为什么**:引用无法解析到业务身份,前端就只能消费后台预渲染的结果,展示决定因此长进契约。
+
+**必须先有登记,门才成立**:仓内 `format: uuid` 的属性有 837 个,其中作用域坐标(`dataNodeRef`、`brandRef`、`scopeRef`)、请求条件回显(`targetOrganizationRef`)、资产句柄(`assetRef`,资产没有 `code`/`name`)本就不该有业务身份。因此契约里必须显式登记**哪些 ref 是业务实体引用**;不登记就只能"去掉 `Ref` 后缀按名字找兄弟",那正是 1-L 自己禁止的名字猜测。**登记未建立之前,本条只能靠 review,不得接门。**
+
+**门**:`scripts/check/read-model-reference-identity`(**待建**);红夹具 = 把某个已登记 ref 的 `code`/`name` 从响应里摘掉,门必须红
+
+### 1-K · 响应字段的值不得由拼接产生
+
+**规则**:task-read 响应字段的值,不得由拼接从两个以上事实产生。**与语言无关、与分隔符无关、与发生在哪一层无关。**
+
+**三层都算**:Java 的 `+` / `String.join` / `String.format` / `StringBuilder`;**Stream 的 `Collectors.joining` 与 `.reduce((a,b) -> a + sep + b)`**;**SQL 的 `||` / `string_agg` / `concat` / `format`**。静态 enum mapper 不是装配,不要误收。只扫 Java 会漏掉 `commercial_group_name || '（' || commercial_group_code || '）' AS node_display_path` 这种 —— 全角括号的「名称(编码)」,表达细节全在后台。
+
+**三处例外**:时点快照(写入时冻结的值本身是事实,如 `actor_display_snapshot`、合同 `phase_name_snapshot`);**安全与隐私脱敏**(手机号等 PII,完整形态受访问控制,后端必须决定可展示形态,如 `mobile_mask_source`);非人读的复合串(游标、幂等键、SQL 占位符)。错误消息在原则内但当前不在 base-1 范围。
+
+**反例**(三种实测形态,注意第二种不含中文):
+
+- `preparationSummary.add("生产标签：" + productionTagName)`
+- `region.code() + " " + region.name() + " / " + target.code() + " " + target.name()` → 落进 `path` 字段
+- `String.join("、", optionNames)` → 落进 `attributeSummary`
+
+**为什么**:拼接把多个事实压成一个字符串,前端只能原样打印。表达一变就要改后台,契约、测试、seed 全线跟改。
+
+**判据就是被禁的那件事本身,不是代理。** 早先版本按"CJK 字面量"划范围,那是代理:既漏报(`code + " " + name` 一个中文都没有)又误报(错误消息里的中文与展示无关),还可以靠把中文放进 helper 实参绕过。现按"这个字段的值是不是拼出来的"判定,以上三条同时消失。
+
+**范围判据是"响应字段的值是不是拼出来的",不是"文件里有没有拼接"。** 二者不等价:`CatalogOwnerService` 实测 39 处 `String.join`,其中 31 处是 `String.join(",", Collections.nCopies(n, "?"))` 的 SQL 占位符,按"文件内出现装配"会误报 31 次。
+
+⚠️ **在"响应字段数据流可判"做出来之前,本条只能靠 2-H 的 review,不得按文件清单接门。** 文件清单只是范围登记,不是判据。**新建文件不在清单内不会被拦住** —— 这是本门已知的边界,由 2-H 的 review 覆盖。
+
+**门**:`scripts/check/read-model-assembly`(**待建**);红夹具 = 在清单内文件把某个响应字段改成两个事实拼接,门必须红
+
+### 1-L · 主数据状态词汇恰好三值
+
+**规则**:被显式登记为主数据实体的表,其 `status` CHECK 必须恰好是 `('ENABLED','DISABLED','VOIDED')`。
+
+**反例**:`catalog_item` 的 `DRAFT/ENABLED/DISABLED/ARCHIVED/VOIDED`;`business_channel` 的 `DRAFT/EFFECTIVE/DISABLED`;`unit_definition` 的 `delete` 与 `disable` 并存。
+
+**为什么**:实测全平台曾有六种生命周期形态,维护者要学六套模型,前端要写多套确认流,用户在不同库之间看到不同行为。
+
+**完备性靠反向判据,不靠正向清单**:只说"登记表必须三值",新建一张带 `status` 的表不登记就照样全绿——那是存在性判据。判据必须反过来写:
+
+> **任何带 `status` 列的表,不在主数据清单里就必须在豁免清单里并带理由,否则门红。**
+
+分母可查:`db/migration` 下 105 个 `CREATE TABLE`,建表体内带 `status` 的 20 张,另有 ALTER 追加的(brand、head_company、organization_node、store、tenant 等)。
+
+**门**:`scripts/check/lifecycle-vocabulary`(**待建**);红夹具 = 新建一张带 `status` 且两处清单都不登记的表,门必须红
+
+### 1-M · 作废后业务唯一键必须可复用
+
+**规则**:每张登记的主数据表,其**业务唯一键**约束必须是排除 `VOIDED` 的 partial index。
+
+**唯一键不一定叫 `code`。** 实测仓内至少四种:`(data_node_ref, brand_ref, code)`、`(data_node_ref, brand_ref, dictionary_kind, code)`、`(item_ref, sku_code)`、以及**按名称唯一**的 `uq_workspace_role_name`(`workspace_iam.workspace_role` 无 `code` 列);`workspace_iam.workspace_account` 的唯一键是登录名与手机号。登记项必须写明该表的 scope 列与唯一键列。
+
+**反例**:表级普通 `UNIQUE (data_node_ref, brand_ref, code)`——用户建错一个定义再删除,就再也不能用同一编码重建,而且撞的是一个他看不见的已删除行。
+
+**为什么**:取消物理删除后,已删除行仍在表内;不排除它,编码就被永久占住。
+
+**`scope + code` 不是统一形状,必须逐表登记**:仓内实际至少三种 —— `(data_node_ref, brand_ref, code)`、`(data_node_ref, brand_ref, dictionary_kind, code)`、`(item_ref, sku_code)`。登记项必须写明该表的 scope 列与 code 列。
+
+**不适用情形必须登记而不是硬套**:没有 `code` 列的表(如 `catalog.catalog_composite_component`,列为 `composite_component_ref / composite_group_ref / component_item_ref / …`,唯一约束是 `(composite_group_ref, display_order)`)在物理上无法满足本条。这类表通常根本不是主数据 —— 组件行是"整组删掉重插表达一次编辑",按 1-L 的可证伪判据(能不能由人手动在两个状态间来回切)就不该进主数据清单。**先按判据分类,再套约束;分类错了不要靠豁免打补丁。**
+
+**门**:`scripts/check/lifecycle-vocabulary`(**待建**);仓内已验证形态见 `V20260816_030000_000__catalog_dictionary_tag_voided_code_release.sql` 与 `V20260816_020000_000__catalog_sku_voided_code_release.sql`
+
+### 1-N · 校验只针对本次变更的引用
+
+**规则**:保存时只对**本次新增或改变**的引用做"必须启用"校验;未变更的既有引用一律放行。
+
+**反例**:保存商品时对全部引用一律要求 `ENABLED`——则任何引用了已停用/已删除定义的商品都会变成不可保存,用户连改个名字都做不到。
+
+**为什么**:停用与删除的业务含义是"不能再被**新**选中",不是"引用过它的东西全部冻结"。
+
+**门**:`backend-acceptance` 真实场景——把被引用的定义置停用后保存引用它的对象(不改该引用)必须成功;把该引用改成另一个停用的必须被拒。这是本组规则里唯一验证真实行为的门
+
+## 2 · 只能靠 review 的九类
 
 ### 2-A · 同类路径一致性
 
@@ -188,6 +272,31 @@
 
 ---
 
+### 2-H · owner 暴露业务模型,不暴露视图模型
+
+**规则**:owner 的 task-read 返回该实体的业务结构本身,含相关联的结构化实体;返回内容不由任何调用方要显示什么决定。为某一屏新增读接口或新增字段,默认是设计错误。
+
+**判据(能算 / 不能算)**:前端拿到完整模型后自己能算出来的,后台不许算;必须依赖模型之外的数据才能算的,后台必须算,并以结构化事实返回(枚举码 + 结构,不是句子)。
+
+- 「各规格制作内容不同」→ 各规格 profile 都在返回里 → 前端算 → 后台删掉
+- `deletionAvailability` → 依赖全局引用计数 → 后台算,但形状是 `{blocked, reason, count}` 而非句子
+
+**边界**:裁剪的正确对象是**无界集合**(流水、日志、可无限递归的关系、被显式裁定的懒加载子集合),不是**字段**。集合分页是集合语义,不算裁剪。
+
+**为什么只能靠 review**:1-J 与 1-K 只能抓住机械形态;"这个读模型是不是某一屏的取景框"是语义判断,仓规明定业务语义不得做成 checker。
+
+### 2-I · 决定授权的维度留在接口身份里,只决定展示的维度进数据
+
+**规则**:一个维度该不该出现在接口身份里,取决于它决定什么。
+
+**可证伪判据**:对任一接口问「去掉这个维度后,授权判定会不会变得依赖请求体?」答**会** ⇒ 必须保留分立接口;答**不会** ⇒ 应当合并。
+
+**正例(必须保留分立)**:IAM 的五个节点类型决定谁能执行,被 `noClientDerivedAuthorization: true` 与 `serverDerivedTarget: "STATIC_OPERATION_CAPABILITY"` 显式治理。合并成一个带 `targetType` 请求字段的接口,等于让目标由客户端提交决定。
+
+**反例(必须进数据)**:catalog 的分类路径标签只决定怎么显示。
+
+⛔ **接口形状的相似性不能作为合并依据。** "这个维度决定什么"只能从业务语料库与已批准裁决中读出,不能从代码形状反推。
+
 ## 3 · 执行顺序(有依赖,不能乱排)
 
 ```
@@ -218,6 +327,7 @@
 
 
 - **本文是唯一内容源。** 新增或修改规则只改本文。
+- **规则来源分两批**:1-C/1-D/1-H/1-I 与 2-A..2-G 来自 2026-08-14 的后台全量评审(33 条实例归纳);1-J..1-N 与 2-H/2-I 来自 2026-08-26 的 base-1 读模型与生命周期评审,实例见 `doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md` 第 1、2 章。**后一批的四个门尚未建成**,条目里已逐条标注「待建」;门存在 ≠ 门生效,建成后必须进 `tools/verify-gates/verify.mjs` 的 command 列表。
 - **别处只放指针**:`project-memory/`、skill、评审文档一律只写"见本文",不复述规则内容。
 - **新规则由实例产生**,写在修完之后 —— 没有实例的规则不进本文。
 - **每条规则必须自带反例**,否则它不是规范,是口号。

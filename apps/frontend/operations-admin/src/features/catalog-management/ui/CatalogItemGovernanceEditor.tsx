@@ -33,14 +33,18 @@ export function CatalogItemGovernanceEditor({
           {
             key: 'status',
             label: '生命周期状态',
-              children: <CatalogLifecycleStatusTag manifest={manifest} kind="ITEM" status={detail.item.lifecycle.status} />,
+            children: (
+              <CatalogLifecycleStatusTag manifest={manifest} kind="ITEM" status={detail.item.lifecycle.status} />
+            ),
           },
           {
             key: 'references',
             label: `关联与依赖（${detail.references.length}）`,
             children: detail.references.length
               ? [...new Map(detail.references.map(entry => [entry.relationLabel, 0])).keys()]
-                  .map(label => `${label}（${detail.references.filter(entry => entry.relationLabel === label).length}项）`)
+                  .map(
+                    label => `${label}（${detail.references.filter(entry => entry.relationLabel === label).length}项）`,
+                  )
                   .join('；')
               : '没有与其他商品的关联',
           },

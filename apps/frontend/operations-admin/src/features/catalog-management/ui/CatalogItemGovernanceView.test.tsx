@@ -3,18 +3,24 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import type {CatalogDetail} from '../model/catalogModel';
 import {CatalogItemGovernanceView} from './CatalogItemGovernanceView';
 
-function detailWithVoidReasons(blockingReasons: Array<{label: string; count: number; relatedItemNames: string[]}>): CatalogDetail {
+function detailWithVoidReasons(
+  blockingReasons: Array<{label: string; count: number; relatedItemNames: string[]}>,
+): CatalogDetail {
   return {
     item: {shapeKey: 'SKU_MANAGED', lifecycle: {status: 'DRAFT'}},
     references: [],
-    actionAvailability: {voidAvailability: {canVoid: false, blockingReferences: [], dependentFacts: [], blockingReasons}},
+    actionAvailability: {
+      voidAvailability: {canVoid: false, blockingReferences: [], dependentFacts: [], blockingReasons},
+    },
   } as unknown as CatalogDetail;
 }
 
 describe('CatalogItemGovernanceView', () => {
   it('shows the owner-provided reason for a SKU parent instead of a generic void warning', () => {
     const markup = renderToStaticMarkup(
-      <CatalogItemGovernanceView detail={detailWithVoidReasons([{label: '包含规格', count: 3, relatedItemNames: []}])} />,
+      <CatalogItemGovernanceView
+        detail={detailWithVoidReasons([{label: '包含规格', count: 3, relatedItemNames: []}])}
+      />,
     );
 
     expect(markup).toContain('包含规格（3项）');
@@ -49,7 +55,9 @@ describe('CatalogItemGovernanceView', () => {
       ],
       actionAvailability: {},
     } as unknown as CatalogDetail;
-    const markup = renderToStaticMarkup(<CatalogItemGovernanceView detail={detail} onOpenReferencedItem={() => undefined} />);
+    const markup = renderToStaticMarkup(
+      <CatalogItemGovernanceView detail={detail} onOpenReferencedItem={() => undefined} />,
+    );
 
     expect(markup).toContain('套餐内容');
     expect(markup).toContain('西冷牛排');

@@ -4,7 +4,7 @@
     "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
     "doc/evidence/platform/r5-u01-edge-placement-resolution.json"
   ],
-  "calibrationReportDigest": "0b34b51342d59f71a40bb92ee5f839c097037efe5b332320b23b49279bb559c5",
+  "calibrationReportDigest": "3b1f092abe9dc2a0dc57d7f409a2f3012528eff3d56b592561cffae8e161b5fb",
   "closure": {
     "operations": 180,
     "faceCounts": {

@@ -1052,6 +1052,10 @@
                               "type": "string",
                               "description": "design-bound field"
                             },
+                            "itemName": {
+                              "type": "string",
+                              "description": "component catalog item name"
+                            },
                             "itemRef": {
                               "type": "string",
                               "description": "design-bound field",
@@ -1071,6 +1075,13 @@
                                 "null"
                               ],
                               "description": "design-bound field"
+                            },
+                            "skuName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "description": "optional component SKU name"
                             },
                             "quantity": {
                               "type": "string",
@@ -1100,32 +1111,21 @@
                             "displayOrder": {
                               "type": "integer",
                               "description": "design-bound field"
-                            },
-                            "itemName": {
-                              "type": "string",
-                              "description": "component catalog item name"
-                            },
-                            "skuName": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
-                              "description": "optional component SKU name"
                             }
                           },
                           "required": [
                             "itemCode",
+                            "itemName",
                             "itemRef",
                             "productSkuRef",
                             "skuCode",
+                            "skuName",
                             "quantity",
                             "unit",
                             "default",
                             "extraPrice",
                             "status",
-                            "displayOrder",
-                            "itemName",
-                            "skuName"
+                            "displayOrder"
                           ]
                         }
                       }

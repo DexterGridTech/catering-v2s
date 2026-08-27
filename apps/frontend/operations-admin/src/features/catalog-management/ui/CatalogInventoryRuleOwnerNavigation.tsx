@@ -62,16 +62,26 @@ export function inventoryRuleOwnerDisplay(
       indent: 18,
     };
   }
-  return {name: detail.item.name || node.itemName || '当前商品', detail: `${ownerLabels.ITEM} · ${modeLabels[node.mode]}`, indent: 0};
+  return {
+    name: detail.item.name || node.itemName || '当前商品',
+    detail: `${ownerLabels.ITEM} · ${modeLabels[node.mode]}`,
+    indent: 0,
+  };
 }
 
 export function useInventoryRuleSelection(nodes: readonly CatalogInventoryRuleNode[]) {
   const [selectedKey, setSelectedKey] = useState<string>();
   const currentKey = useMemo(
-    () => selectedKey && nodes.some(node => inventoryRuleOwnerKey(node) === selectedKey) ? selectedKey : nodes[0] && inventoryRuleOwnerKey(nodes[0]),
+    () =>
+      selectedKey && nodes.some(node => inventoryRuleOwnerKey(node) === selectedKey)
+        ? selectedKey
+        : nodes[0] && inventoryRuleOwnerKey(nodes[0]),
     [nodes, selectedKey],
   );
-  const current = useMemo(() => nodes.find(node => inventoryRuleOwnerKey(node) === currentKey) ?? nodes[0], [currentKey, nodes]);
+  const current = useMemo(
+    () => nodes.find(node => inventoryRuleOwnerKey(node) === currentKey) ?? nodes[0],
+    [currentKey, nodes],
+  );
   useEffect(() => {
     if (!selectedKey || nodes.some(node => inventoryRuleOwnerKey(node) === selectedKey)) return;
     setSelectedKey(undefined);
@@ -138,8 +148,13 @@ export function CatalogInventoryRuleOwnerNavigation({
     );
   };
   return (
-    <section aria-labelledby="catalog-inventory-owner-navigation-heading" {...testId(catalogTestIds.static.inventoryOwnerTree)}>
-      <Typography.Text id="catalog-inventory-owner-navigation-heading" strong>选择要配置的对象</Typography.Text>
+    <section
+      aria-labelledby="catalog-inventory-owner-navigation-heading"
+      {...testId(catalogTestIds.static.inventoryOwnerTree)}
+    >
+      <Typography.Text id="catalog-inventory-owner-navigation-heading" strong>
+        选择要配置的对象
+      </Typography.Text>
       <Typography.Paragraph type="secondary" style={{margin: '4px 0 0', fontSize: 12}}>
         商品和每个规格可以分别设置库存扣减方式。
       </Typography.Paragraph>

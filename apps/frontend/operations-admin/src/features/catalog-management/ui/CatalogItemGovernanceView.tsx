@@ -1,5 +1,5 @@
 import {Alert, Button, Descriptions, Space, Typography} from 'antd';
-import {adminWideDetailDescriptionsProps, testId} from '@catering-v2s/admin-ui-foundation';
+import {adminWideDetailDescriptionsProps, NameCodeText, testId} from '@catering-v2s/admin-ui-foundation';
 import type {CatalogDetail} from '../model/catalogModel';
 import {catalogEnumLabel} from '../model/catalogManifestLabels';
 import type {CatalogManifest} from '../model/catalogItemSurfaceTypes';
@@ -20,29 +20,31 @@ export function CatalogItemGovernanceView({
   const blockingReasons = availability?.blockingReasons ?? [];
   const referenceSummary = detail.references.length ? (
     <Space direction="vertical" size={10} style={{display: 'flex'}}>
-      {[...new Map(detail.references.map(entry => [entry.relationLabel, detail.references.filter(row => row.relationLabel === entry.relationLabel)])).entries()].map(
-        ([location, entries]) => (
-          <div key={location}>
-            <Typography.Text strong>{location}</Typography.Text>
-            <Space wrap size={[4, 4]} style={{display: 'flex', marginTop: 4}}>
-              {entries.map(entry => (
-                <Button
-                  key={`${entry.direction}:${entry.referenceRef}`}
-                  type="link"
-                  style={{paddingInline: 0}}
-                  onClick={() => onOpenReferencedItem?.(entry.code)}
-                  disabled={!onOpenReferencedItem}
-                >
-                  <Space size={4}>
-                    <Typography.Text>{entry.name}</Typography.Text>
-                    <Typography.Text type="secondary">{entry.code}</Typography.Text>
-                  </Space>
-                </Button>
-              ))}
-            </Space>
-          </div>
-        ),
-      )}
+      {[
+        ...new Map(
+          detail.references.map(entry => [
+            entry.relationLabel,
+            detail.references.filter(row => row.relationLabel === entry.relationLabel),
+          ]),
+        ).entries(),
+      ].map(([location, entries]) => (
+        <div key={location}>
+          <Typography.Text strong>{location}</Typography.Text>
+          <Space wrap size={[4, 4]} style={{display: 'flex', marginTop: 4}}>
+            {entries.map(entry => (
+              <Button
+                key={`${entry.direction}:${entry.referenceRef}`}
+                type="link"
+                style={{paddingInline: 0}}
+                onClick={() => onOpenReferencedItem?.(entry.code)}
+                disabled={!onOpenReferencedItem}
+              >
+                <NameCodeText name={entry.name} code={entry.code} />
+              </Button>
+            ))}
+          </Space>
+        </div>
+      ))}
     </Space>
   ) : (
     '没有与其他商品的关联'
@@ -57,7 +59,9 @@ export function CatalogItemGovernanceView({
             {
               key: 'status',
               label: '生命周期状态',
-              children: <CatalogLifecycleStatusTag manifest={manifest} kind="ITEM" status={detail.item.lifecycle.status} />,
+              children: (
+                <CatalogLifecycleStatusTag manifest={manifest} kind="ITEM" status={detail.item.lifecycle.status} />
+              ),
             },
             {
               key: 'references',

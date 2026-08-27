@@ -293,7 +293,10 @@ describe('catalog management runtime model contracts', () => {
       ],
       requestedSkuRef,
     );
-    expect(mergeCatalogSkuVoidReadback(rows, requestedSkuRef, complete)[0]).toMatchObject({status: 'VOIDED', version: 4});
+    expect(mergeCatalogSkuVoidReadback(rows, requestedSkuRef, complete)[0]).toMatchObject({
+      status: 'VOIDED',
+      version: 4,
+    });
     for (const invalid of [
       [],
       [{...complete, skuRef: testUuid('sku-void-other')}],

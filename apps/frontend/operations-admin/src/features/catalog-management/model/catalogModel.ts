@@ -556,7 +556,10 @@ export function mergeCatalogSkuVoidReadback(
         canVoid: readback.canVoid,
         blockingReferences: readback.blockingReferences.map(entry => ({...entry})),
         dependentFacts: readback.dependentFacts.map(entry => ({...entry})),
-        blockingReasons: readback.blockingReasons.map(entry => ({...entry, relatedItemNames: [...entry.relatedItemNames]})),
+        blockingReasons: readback.blockingReasons.map(entry => ({
+          ...entry,
+          relatedItemNames: [...entry.relatedItemNames],
+        })),
       },
     };
   });
@@ -1383,7 +1386,8 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
     Object.keys(decodedGovernanceExternalIdentity).length > 0
       ? decodedGovernanceExternalIdentity
       : itemExternalIdentity;
-  const voidFacts = action.voidAvailability === undefined ? undefined : decodeCatalogVoidAvailability(action.voidAvailability);
+  const voidFacts =
+    action.voidAvailability === undefined ? undefined : decodeCatalogVoidAvailability(action.voidAvailability);
   return {
     item: {
       itemRef: readUuid(item.itemRef),
