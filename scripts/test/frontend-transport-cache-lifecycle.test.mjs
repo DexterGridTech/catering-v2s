@@ -168,10 +168,8 @@ test('catalog-inventory content refresh reaches every open read model without ov
   for (const operationId of [
     'createOperationsCatalogAttributeDefinition',
     'updateOperationsCatalogAttributeDefinition',
-    'deleteOperationsCatalogAttributeDefinition',
     'createOperationsCatalogOrderOptionDefinition',
     'updateOperationsCatalogOrderOptionDefinition',
-    'deleteOperationsCatalogOrderOptionDefinition',
   ]) {
     const operation = catalogTagPolicy.operations.find(candidate => candidate.operationId === operationId);
     assert.ok(

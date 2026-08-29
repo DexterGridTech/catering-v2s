@@ -80,7 +80,7 @@ export const catalogTestIds = {
     viewEdit: 'catalog-item-view-edit',
     statusEnable: 'catalog-item-status-enable',
     statusDisable: 'catalog-item-status-disable',
-    statusArchive: 'catalog-item-status-archive',
+    statusVoid: 'catalog-item-status-void',
     lifecycleConfirmYes: 'catalog-lifecycle-confirm-yes',
     lifecycleConfirmNo: 'catalog-lifecycle-confirm-no',
     dirtyRestore: 'catalog-item-dirty-restore',

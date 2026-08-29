@@ -3,7 +3,7 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public record OwnerBindingCreateRequest(
     String providerCode,
-    tools.jackson.databind.JsonNode capabilityClass,
+    String capabilityClass,
     String nodeType,
     java.util.UUID nodeRef,
     tools.jackson.databind.JsonNode bindingDisplayName,

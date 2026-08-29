@@ -36,8 +36,9 @@ import {WorkspaceAccountActionModal} from './WorkspaceAccountActionModal';
 import {WorkspaceAccountDetailDrawer, type WorkspaceAccountAction} from './WorkspaceAccountDetailDrawer';
 import {PlatformAuditHistoryModal, type PlatformAuditTarget} from '../../audit-history';
 import {PlatformInvitationPanel} from './PlatformInvitationPanel';
+import {canManageWorkspaceIam, workspaceIamLifecycleLabels} from '../model/workspaceIamLifecycle';
 
-const accountStatusLabel = (status: WorkspaceAccount['status']) => (status === 'ENABLED' ? '启用' : '停用');
+const accountStatusLabel = (status: WorkspaceAccount['status']) => workspaceIamLifecycleLabels[status];
 const nodeLabels: Record<ServiceNodeType, string> = {
   GROUP: '集团',
   REGION: '大区',
@@ -265,6 +266,7 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
   };
   const requestDetailAction = (nextAction: WorkspaceAccountAction) => {
     if (!detail.target) return;
+    if (!canManageWorkspaceIam(detail.target.status)) return;
     setProblem(undefined);
     const next = {action: nextAction, account: detail.target};
     pendingActionRef.current = next;
@@ -287,7 +289,7 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
   });
   const candidateOptions = organizationCandidateItems
     .filter(candidate => candidate.serviceNodeType === organizationType)
-    .map(candidate => ({value: candidate.organizationRef, label: <NameCodePathText value={candidate.path} />}));
+    .map(candidate => ({value: candidate.organizationRef, label: <NameCodePathText nodes={candidate.pathNodes} />}));
   const roleOptions = roleCandidateItems.map(role => ({value: role.id, label: role.name}));
   const columns = useMemo<ProColumns<WorkspaceAccount>[]>(
     () => [
@@ -317,7 +319,9 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
         title: '状态',
         dataIndex: 'status',
         valueType: 'select',
-        valueEnum: {ENABLED: {text: '启用'}, DISABLED: {text: '停用'}},
+        valueEnum: Object.fromEntries(
+          Object.entries(workspaceIamLifecycleLabels).map(([value, label]) => [value, {text: label}]),
+        ),
         fieldProps: {...testId('workspace-account-query-status'), allowClear: true},
         render: (_, row) => <Tag>{accountStatusLabel(row.status)}</Tag>,
       },
@@ -383,7 +387,7 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
               <Space key={assignment.id} size={8} wrap>
                 <span>
                   <Tag>{nodeLabels[assignment.serviceNodeType]}</Tag>
-                  {<NameCodePathText value={assignment.organizationPath} />}
+                  {<NameCodePathText nodes={assignment.organizationPathNodes} />}
                 </span>
                 <Typography.Text type="secondary">{assignment.roleName}</Typography.Text>
               </Space>

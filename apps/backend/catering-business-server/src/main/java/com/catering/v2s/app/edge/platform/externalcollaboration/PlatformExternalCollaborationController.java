@@ -18,13 +18,7 @@ import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationCatalogSource;
 import com.catering.v2s.collaboration.api.CollaborationCommandApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
-import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
-import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,7 +42,6 @@ public final class PlatformExternalCollaborationController {
     private final CollaborationBindingReadApi bindings;
     private final CollaborationCommandApi commands;
     private final ExternalCollaborationBusinessChannelCoordinator coordinator;
-    private final OrganizationTaskPathLookup taskPaths;
 
     public PlatformExternalCollaborationController(
             PlatformSessionResolver sessions,
@@ -57,8 +50,7 @@ public final class PlatformExternalCollaborationController {
             CollaborationCatalogSource catalogSource,
             CollaborationBindingReadApi bindings,
             CollaborationCommandApi commands,
-            ExternalCollaborationBusinessChannelCoordinator coordinator,
-            OrganizationTaskPathLookup taskPaths) {
+            ExternalCollaborationBusinessChannelCoordinator coordinator) {
         this.sessions = sessions;
         this.workspaces = workspaces;
         this.catalog = catalog;
@@ -66,7 +58,6 @@ public final class PlatformExternalCollaborationController {
         this.bindings = bindings;
         this.commands = commands;
         this.coordinator = coordinator;
-        this.taskPaths = taskPaths;
     }
 
     @GetMapping("/group-workspaces/{groupWorkspaceKey}/external-collaboration")
@@ -267,8 +258,6 @@ public final class PlatformExternalCollaborationController {
     private OwnerBindingPage bindingPage(
             PlatformSessionResolver.EnabledSelectedWorkspaceFact workspace,
             CollaborationReadback.OwnerBindingPage page) {
-        Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> resolved =
-                displayPaths(workspace, page.items());
         return new OwnerBindingPage(
                 new com.catering.v2s.app.edge.generated.wire.OwnerBindingPageMetadata(
                         ExternalCollaborationWireMapper.text(page.metadata().bindingName()),
@@ -279,7 +268,7 @@ public final class PlatformExternalCollaborationController {
                         (long) page.metadata().pageSize(),
                         page.metadata().total()),
                 page.items().stream()
-                        .map(value -> ExternalCollaborationWireMapper.binding(value, displayPath(resolved, value)))
+                        .map(ExternalCollaborationWireMapper::binding)
                         .toList());
     }
 
@@ -290,46 +279,7 @@ public final class PlatformExternalCollaborationController {
 
     private OwnerBindingView binding(
             UUID workspaceUuid, String groupWorkspaceKey, CollaborationReadback.OwnerBinding value) {
-        return ExternalCollaborationWireMapper.binding(
-                value, displayPath(displayPaths(workspaceUuid, groupWorkspaceKey, List.of(value)), value));
-    }
-
-    private Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> displayPaths(
-            PlatformSessionResolver.EnabledSelectedWorkspaceFact workspace,
-            Collection<CollaborationReadback.OwnerBinding> values) {
-        return displayPaths(workspace.workspaceUuid(), workspace.groupWorkspaceKey(), values);
-    }
-
-    private Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> displayPaths(
-            UUID workspaceUuid, String groupWorkspaceKey, Collection<CollaborationReadback.OwnerBinding> values) {
-        LinkedHashSet<OrganizationTaskPathLookup.TaskPathRef> refs = new LinkedHashSet<>();
-        for (CollaborationReadback.OwnerBinding value : values) {
-            refs.add(new OrganizationTaskPathLookup.TaskPathRef(
-                    organizationNodeType(value.nodeType()), nodeRef(value.nodeRef())));
-        }
-        return refs.isEmpty()
-                ? Map.of()
-                : taskPaths.describePersistedTaskPaths(workspaceUuid, groupWorkspaceKey, List.copyOf(refs));
-    }
-
-    private static String displayPath(
-            Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths,
-            CollaborationReadback.OwnerBinding value) {
-        OrganizationTaskPathLookup.TaskPath path = paths.get(new OrganizationTaskPathLookup.TaskPathRef(
-                organizationNodeType(value.nodeType()), nodeRef(value.nodeRef())));
-        return path == null ? null : path.displayPath();
-    }
-
-    private static String organizationNodeType(String nodeType) {
-        return "COMMERCIAL_GROUP".equals(nodeType) ? ServiceNodeTypes.GROUP : nodeType;
-    }
-
-    private static UUID nodeRef(String value) {
-        try {
-            return UUID.fromString(value);
-        } catch (RuntimeException failure) {
-            throw new IllegalStateException("nodeRef is not a UUID in owner readback", failure);
-        }
+        return ExternalCollaborationWireMapper.binding(value);
     }
 
     private static String requireIdempotencyKey(String value) {

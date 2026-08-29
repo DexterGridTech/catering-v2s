@@ -16,6 +16,7 @@ import {
   type SortDirection,
   type WorkspaceRole,
   type WorkspaceRoleSortKey,
+  type WorkspaceRoleStatus,
 } from '../../../app/api/generated/platform-edge';
 import {PLATFORM_ADMIN_OPERATION_IDS} from '../../../app/api/generated/platform-edge';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
@@ -33,6 +34,7 @@ import {RoleEditDrawer} from './RoleEditDrawer';
 import {RoleStatusModal} from './RoleStatusModal';
 import {serviceNodeTypeLabel} from './RolePermissionFields';
 import {PlatformAuditHistoryModal, type PlatformAuditTarget} from '../../audit-history';
+import {canManageWorkspaceIam, workspaceIamLifecycleLabels} from '../model/workspaceIamLifecycle';
 const rolesPage = adminCatalog.platformPages.find(page => page.pageDesignKey === platformPageDesignKeys.PlatformRoles);
 if (!rolesPage) throw new Error('Missing generated roles page');
 const rolesPageTitle = rolesPage.title;
@@ -42,6 +44,8 @@ export function RolesPage() {
 }
 
 function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
+  type PendingAction =
+    {kind: 'edit'; role: WorkspaceRole} | {kind: 'status'; role: WorkspaceRole; targetStatus: WorkspaceRoleStatus};
   const [sort, setSort] = useState<WorkspaceRoleSortKey>('NAME');
   const [direction, setDirection] = useState<SortDirection>('ASC');
   const [filters, setFilters] = useState<{
@@ -63,9 +67,9 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
   const {page, pageSize} = pagination;
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<WorkspaceRole>();
-  const [statusRole, setStatusRole] = useState<WorkspaceRole>();
+  const [statusRole, setStatusRole] = useState<Extract<PendingAction, {kind: 'status'}>>();
   const [auditTarget, setAuditTarget] = useState<PlatformAuditTarget>();
-  const [pendingAction, setPendingAction] = useState<{kind: 'edit' | 'status'; role: WorkspaceRole}>();
+  const [pendingAction, setPendingAction] = useState<PendingAction>();
   const [commandProblem, setProblem] = useState<PlatformApiProblem>();
   const [busy, setBusy] = useState(false);
   const detail = useDetailDrawer<WorkspaceRole>();
@@ -112,14 +116,15 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
   }, [contentTabRefreshVersion, detail.isOpen, detail.target?.id, loadDetail]);
   const submitStatus = async (idempotencyKey: string) => {
     if (!statusRole) return;
-    const role = statusRole;
+    const role = statusRole.role;
+    const targetStatus = statusRole.targetStatus;
     setBusy(true);
     setProblem(undefined);
     try {
       await platformClient.transitionWorkspaceRoleStatus(
         {groupWorkspaceKey, roleId: role.id},
         {
-          body: {targetStatus: role.status === 'ENABLED' ? 'DISABLED' : 'ENABLED', expectedVersion: role.revision},
+          body: {targetStatus, expectedVersion: role.revision},
           headers: {'Idempotency-Key': idempotencyKey},
         },
       );
@@ -131,9 +136,10 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
       await loadDetail(role.id, {preserveProblem: true});
     }
   };
-  const requestDetailAction = (kind: 'edit' | 'status') => {
+  const requestDetailAction = (action: PendingAction) => {
     if (!detail.target) return;
-    const next = {kind, role: detail.target};
+    if (!canManageWorkspaceIam(detail.target.status)) return;
+    const next = {...action, role: detail.target};
     pendingActionRef.current = next;
     setPendingAction(next);
     closeDetail();
@@ -142,7 +148,7 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
     const pending = pendingActionRef.current;
     if (open || !pending) return;
     if (pending.kind === 'edit') setEditing(pending.role);
-    else setStatusRole(pending.role);
+    else setStatusRole(pending);
     pendingActionRef.current = undefined;
     setPendingAction(undefined);
   };
@@ -254,9 +260,11 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
               title: '状态',
               dataIndex: 'status',
               valueType: 'select',
-              valueEnum: {ENABLED: {text: '启用'}, DISABLED: {text: '停用'}},
+              valueEnum: Object.fromEntries(
+                Object.entries(workspaceIamLifecycleLabels).map(([value, label]) => [value, {text: label}]),
+              ),
               fieldProps: {...testId('workspace-role-filter-status'), allowClear: true},
-              render: (_, row) => <Tag>{row.status === 'ENABLED' ? '启用' : '停用'}</Tag>,
+              render: (_, row) => <Tag>{workspaceIamLifecycleLabels[row.status]}</Tag>,
             },
             {title: '说明', dataIndex: 'description', search: false, render: value => value || '—'},
             {
@@ -301,8 +309,8 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
         catalog={result}
         onClose={closeDetail}
         onAfterOpenChange={openPendingActionAfterDetailClosed}
-        onEdit={() => requestDetailAction('edit')}
-        onChangeStatus={() => requestDetailAction('status')}
+        onEdit={() => requestDetailAction({kind: 'edit', role: detail.target!})}
+        onChangeStatus={targetStatus => requestDetailAction({kind: 'status', role: detail.target!, targetStatus})}
         onAudit={() =>
           detail.target &&
           setAuditTarget({entityType: 'WORKSPACE_ROLE', entityId: detail.target.id, displayName: detail.target.name})
@@ -316,8 +324,9 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
         onUpdated={role => void loadDetail(role.id)}
       />
       <RoleStatusModal
-        key={statusRole ? `${statusRole.id}:${statusRole.status}` : 'closed'}
-        role={statusRole}
+        key={statusRole ? `${statusRole.role.id}:${statusRole.role.status}:${statusRole.targetStatus}` : 'closed'}
+        role={statusRole?.role}
+        targetStatus={statusRole?.targetStatus}
         busy={busy}
         onClose={() => setStatusRole(undefined)}
         onConfirm={submitStatus}

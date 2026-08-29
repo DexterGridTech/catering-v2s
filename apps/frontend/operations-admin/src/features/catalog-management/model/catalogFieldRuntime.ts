@@ -9,6 +9,7 @@ import {
   type CatalogInventoryOperationId,
   type CatalogDictionaryView,
   type CatalogCategoryCandidatePage,
+  type CatalogItemSkuPage,
   type CatalogShapeManifestView,
   type InventoryTargetPage,
   type ProductionTagPage,
@@ -26,6 +27,7 @@ export const CATALOG_OPTION_OPERATION_IDS = [
   CATALOG_INVENTORY_OPERATION_IDS.getOperationsProductionTags,
   CATALOG_INVENTORY_OPERATION_IDS.listOperationsCatalogAttributeDefinitions,
   CATALOG_INVENTORY_OPERATION_IDS.listOperationsCatalogOrderOptionDefinitions,
+  CATALOG_INVENTORY_OPERATION_IDS.getOperationsCatalogItemSkus,
 ] as const satisfies readonly CatalogInventoryOperationId[];
 
 export type CatalogOptionOperationId = (typeof CATALOG_OPTION_OPERATION_IDS)[number];
@@ -309,13 +311,56 @@ async function executeCatalogEndpoint(source: EndpointSource, context: CatalogFi
     case CATALOG_INVENTORY_OPERATION_IDS.listOperationsCatalogAttributeDefinitions:
       return catalogInventoryClient.listOperationsCatalogAttributeDefinitions(
         {},
-        {query: {dataNodeRef: context.scope.dataNodeRef}, headers},
+        {
+          query: {
+            dataNodeRef: context.scope.dataNodeRef,
+            ...(query.candidateUsage ? {candidateUsage: String(query.candidateUsage) as 'ITEM_ASSIGNMENT'} : {}),
+          },
+          headers,
+        },
       );
     case CATALOG_INVENTORY_OPERATION_IDS.listOperationsCatalogOrderOptionDefinitions:
       return catalogInventoryClient.listOperationsCatalogOrderOptionDefinitions(
         {},
-        {query: {dataNodeRef: context.scope.dataNodeRef}, headers},
+        {
+          query: {
+            dataNodeRef: context.scope.dataNodeRef,
+            ...(query.candidateUsage ? {candidateUsage: String(query.candidateUsage) as 'ITEM_ASSIGNMENT'} : {}),
+          },
+          headers,
+        },
       );
+    case CATALOG_INVENTORY_OPERATION_IDS.getOperationsCatalogItemSkus: {
+      const itemCode = String(path.itemCode ?? '').trim();
+      if (!itemCode) throw new Error('CATALOG_SKU_CANDIDATE_ITEM_CODE_REQUIRED');
+      const readPage = (cursor?: string, pageSize = CURSOR_OPTION_PAGE_SIZE) =>
+        catalogInventoryClient.getOperationsCatalogItemSkus(
+          {itemCode},
+          {
+            query: {
+              dataNodeRef: context.scope.dataNodeRef,
+              ...(query.candidateUsage ? {candidateUsage: String(query.candidateUsage) as 'COMPOSITE_COMPONENT'} : {}),
+              ...(cursor ? {cursor} : {}),
+              pageSize,
+            },
+            headers,
+          },
+        );
+      const firstResponse = await readPage();
+      if (!query.candidateUsage) return firstResponse;
+      return collectCatalogCursorResponse<CatalogItemSkuPage, CatalogItemSkuPage['data']['items'][number]>({
+        firstResponse,
+        readPage,
+        getItems: response => response.data.items,
+        getCursor: response => response.data.nextCursor,
+        getTotal: response => response.data.total,
+        replace: (response, items, total) => ({
+          ...response,
+          data: {...response.data, items, cursor: null, nextCursor: null, total},
+        }),
+        keyOf: item => String(item.productSkuRef),
+      });
+    }
     default:
       return assertNeverCatalogOperation(source.operationId);
   }

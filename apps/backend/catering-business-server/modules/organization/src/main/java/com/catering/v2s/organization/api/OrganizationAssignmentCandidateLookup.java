@@ -35,7 +35,20 @@ public interface OrganizationAssignmentCandidateLookup {
         throw new UnsupportedOperationException("enabled invitation target is unavailable");
     }
 
-    record AssignmentCandidate(String serviceNodeType, UUID organizationRef, String path) {}
+    record AssignmentCandidate(
+            String serviceNodeType,
+            UUID organizationRef,
+            String path,
+            List<OrganizationTaskPathLookup.TaskPathNode> pathNodes) {
+        public AssignmentCandidate {
+            pathNodes = List.copyOf(pathNodes);
+        }
+
+        /** Legacy callers keep the old display projection until their consumer is migrated. */
+        public AssignmentCandidate(String serviceNodeType, UUID organizationRef, String path) {
+            this(serviceNodeType, organizationRef, path, List.of());
+        }
+    }
 
     enum InvitationTargetType {
         GROUP,

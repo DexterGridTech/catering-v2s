@@ -482,6 +482,9 @@
       "AuditChange": {
         "$ref": "./components/common/common.schemas.json#/components/schemas/AuditChange"
       },
+      "OrganizationPathNode": {
+        "$ref": "./components/common/common.schemas.json#/components/schemas/OrganizationPathNode"
+      },
       "Brand": {
         "$ref": "./components/organization/business-entity.schemas.json#/components/schemas/Brand"
       },
@@ -598,6 +601,9 @@
       },
       "ExtensionEntityType": {
         "$ref": "./components/extension/extension.schemas.json#/components/schemas/ExtensionEntityType"
+      },
+      "ExtensionDefinitionBlocker": {
+        "$ref": "./components/extension/extension.schemas.json#/components/schemas/ExtensionDefinitionBlocker"
       },
       "GroupWorkspaceCreateRequest": {
         "$ref": "./components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceCreateRequest"
@@ -803,6 +809,9 @@
       "PublicInvitationCredentialRequest": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.json#/components/schemas/PublicInvitationCredentialRequest"
       },
+      "AccountPresenceStatus": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.json#/components/schemas/AccountPresenceStatus"
+      },
       "PublicInvitationCredentialResponse": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.json#/components/schemas/PublicInvitationCredentialResponse"
       },
@@ -947,6 +956,9 @@
       "WorkspaceRoleStatus": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceRoleStatus"
       },
+      "InvitationRouteFacts": {
+        "$ref": "./components/workspace-iam/workspace-access.schemas.json#/components/schemas/InvitationRouteFacts"
+      },
       "WorkspaceRoleAuthorizationReplaceRequest": {
         "$ref": "./components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceRoleAuthorizationReplaceRequest"
       },
@@ -994,9 +1006,6 @@
       },
       "ExternalCapability": {
         "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/ExternalCapability"
-      },
-      "ExternalCapabilityAttributeDescriptor": {
-        "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/ExternalCapabilityAttributeDescriptor"
       },
       "ExternalSystemView": {
         "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/ExternalSystemView"

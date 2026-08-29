@@ -7,7 +7,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateCapabilityInvariants } from "../../tools/capability-invariants/cli.mjs";
 import { projectEdgeCatalog } from "./edge-operation-projections.mjs";
-import { buildBudgetProjectionSubset, readCp05CalibrationReport } from "./backend-performance-budget.mjs";
+import {
+  buildBudgetProjectionSubset,
+  buildCp05CalibrationIdentityProjection,
+  isCp05CalibrationBootstrapMode,
+  readCp05CalibrationReport,
+} from "./backend-performance-budget.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const catalogPath = "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json";
@@ -194,8 +199,12 @@ function load(base = root) {
   const expectedOperationCount = catalog.denominator?.operations;
   if (!Number.isInteger(expectedOperationCount) || catalog.operations.length !== expectedOperationCount || report.operations.length !== expectedOperationCount) fail("R5_EDGE_CODEGEN_OPERATION_COUNT");
   assertCanonicalOperationIdentity(catalog);
-  const calibration = readCp05CalibrationReport({root: base});
-  const budgetProjection = buildBudgetProjectionSubset({operations: catalog.operations, calibrationReport: calibration.report});
+  const budgetProjection = isCp05CalibrationBootstrapMode()
+    ? buildCp05CalibrationIdentityProjection({operations: catalog.operations})
+    : buildBudgetProjectionSubset({
+      operations: catalog.operations,
+      calibrationReport: readCp05CalibrationReport({root: base}).report,
+    });
   const budgetsByOperationId = new Map(budgetProjection.operations.map(operation => [operation.operationId, operation.databaseOperationBudget]));
   const byId = new Map(catalog.operations.map((operation) => [operation.operationId, operation]));
   for (const row of report.operations) {
@@ -204,10 +213,13 @@ function load(base = root) {
   }
   const reportById = new Map(report.operations.map((operation) => [operation.operationId, operation]));
   const operations = catalog.operations
-    .map((operation) => ({
-      ...openApiOperation(base, operation, reportById.get(operation.operationId)),
-      databaseOperationBudget: budgetsByOperationId.get(operation.operationId),
-    }))
+    .map((operation) => {
+      const projected = openApiOperation(base, operation, reportById.get(operation.operationId));
+      const databaseOperationBudget = budgetsByOperationId.get(operation.operationId);
+      return databaseOperationBudget === undefined
+        ? projected
+        : {...projected, databaseOperationBudget};
+    })
     .sort((left, right) => left.operationId.localeCompare(right.operationId));
   assertRootOpenApiRouteRegistryExactSet(base, operations);
   const faceCounts = Object.fromEntries(["platform-admin", "operations-admin", "public"].map((face) => [face, operations.filter((operation) => operation.face === face).length]));
@@ -437,7 +449,46 @@ function referenceName(reference) {
   return reference.slice(offset + marker.length);
 }
 function pascal(value) { return String(value).split(/[^A-Za-z0-9]+/).filter(Boolean).map((part) => part[0].toUpperCase() + part.slice(1)).join("") || "Value"; }
-function javaType(schema, components, inlineName) {
+// Response closed sets are generated as Java enums as well as TypeScript
+// unions.  Request DTOs intentionally remain string-shaped because their
+// controllers pass the owner command values through unchanged; only these
+// response/read-model fields participate in the closed-code presentation
+// contract for base-1.
+const RESPONSE_INLINE_ENUM_FIELDS = new Set([
+  "ExternalCapability.capabilityClass",
+  "ExternalCapabilityAttributeValues.groupBuyMappingDirection",
+  "ExternalCapabilityAttributeValues.menuCollaborationDirection",
+  "ExternalSystemView.catalogStatus",
+  "ExternalSystemView.enablementStatus",
+  "ProviderProfileView.businessScope",
+  "ProviderProfileView.bindableNodeTypes",
+  "ProviderProfileView.authenticationKind",
+  "ProviderProfileView.unbindKind",
+  "ProviderProfileView.catalogStatus",
+  "ProviderProfileView.enablementStatus",
+  "OwnerBindingView.capabilityClass",
+  "OwnerBindingView.businessScope",
+  "OwnerBindingView.nodeType",
+  "OwnerBindingView.status",
+  "BusinessChannelTemplateView.accessKind",
+  "BusinessChannelTemplateView.operatorKind",
+  "BusinessChannelTemplateView.orderKind",
+  "BusinessChannelTemplateView.dineInForm",
+  "BusinessChannelTemplateView.status",
+  "BusinessChannelView.ownerNodeType",
+  "BusinessChannelView.status",
+  "BusinessChannelView.bindingStatus",
+  "BusinessChannelView.selfStatus",
+  "BusinessChannelViewStatusDimensionsItem.type",
+  "BusinessChannelViewStatusDimensionsItem.status",
+  "BusinessChannelViewBlockersItem.type",
+  "BusinessChannelViewBlockersItem.status",
+  "BusinessChannelTemplateViewStatusDimensionsItem.type",
+  "BusinessChannelTemplateViewStatusDimensionsItem.status",
+  "BusinessChannelTemplateViewBlockersItem.type",
+  "BusinessChannelTemplateViewBlockersItem.status",
+]);
+function javaType(schema, components, inlineName, inlineTypes, generateInlineEnum = false) {
   if (!schema || typeof schema !== "object") return "tools.jackson.databind.JsonNode";
   if (schema.format === "uuid") return "java.util.UUID";
   if (typeof schema.$ref === "string") {
@@ -449,11 +500,20 @@ function javaType(schema, components, inlineName) {
     if (target?.type === "string" && !Array.isArray(target.enum)) return target.format === "uuid" ? "java.util.UUID" : "String";
     return name;
   }
-  if (schema.type === "array") return `java.util.List<${javaType(schema.items, components, `${inlineName}Item`)}>`;
+  if (schema.type === "array") return `java.util.List<${javaType(schema.items, components, `${inlineName}Item`, inlineTypes, generateInlineEnum)}>`;
   if (schema.type === "integer") return "Long";
   if (schema.type === "number") return "java.math.BigDecimal";
   if (schema.type === "boolean") return "Boolean";
-  if (schema.type === "string" || Array.isArray(schema.enum)) return "String";
+  if (Array.isArray(schema.enum)) {
+    if (generateInlineEnum) {
+      const values = schema.enum.filter((value) => value !== null);
+      if (values.length === 0) return "String";
+      inlineTypes.set(inlineName, { type: "string", enum: values });
+      return inlineName;
+    }
+    return "String";
+  }
+  if (schema.type === "string") return "String";
   if (schema.type === "object" && schema.properties) return inlineName;
   if (schema.type === "object") return "tools.jackson.databind.JsonNode";
   return "tools.jackson.databind.JsonNode";
@@ -483,7 +543,11 @@ function resolvedSchema(schema, components, seen = new Set()) {
 function javaWireType(name, schema, components, inlineTypes = new Map()) {
   schema = resolvedSchema(schema, components, new Set([name]));
   if (Array.isArray(schema.enum)) {
-    return { name, source: `// Generated from accepted R5 OpenAPI components; do not edit.\npackage com.catering.v2s.app.edge.generated.wire;\n\npublic enum ${name} {\n${schema.enum.map((value) => `    ${value}`).join(",\n")};\n\n    public String wire() { return name(); }\n}\n` };
+    const values = schema.enum.filter((value) => value !== null);
+    if (values.length === 0 || values.some((value) => typeof value !== "string" || !/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(value))) {
+      fail("R5_EDGE_WIRE_ENUM_VALUE_INVALID", name);
+    }
+    return { name, source: `// Generated from accepted R5 OpenAPI components; do not edit.\npackage com.catering.v2s.app.edge.generated.wire;\n\npublic enum ${name} {\n${values.map((value) => `    ${value}`).join(",\n")};\n\n    public String wire() { return name(); }\n}\n` };
   }
   const properties = Object.entries(schema.properties || {});
   for (const [property, propertySchema] of properties) {
@@ -496,7 +560,13 @@ function javaWireType(name, schema, components, inlineTypes = new Map()) {
   const fields = properties.map(([property, propertySchema]) => {
     const field = javaIdentifier(property);
     const resolved = resolvedSchema(propertySchema, components, new Set([name]));
-    const type = javaType(resolved, components, `${name}${pascal(property)}`);
+    const type = javaType(
+      resolved,
+      components,
+      `${name}${pascal(property)}`,
+      inlineTypes,
+      RESPONSE_INLINE_ENUM_FIELDS.has(`${name}.${property}`),
+    );
     return field === property
       ? `    ${type} ${field}`
       : `    @com.fasterxml.jackson.annotation.JsonProperty("${property}") ${type} ${field}`;

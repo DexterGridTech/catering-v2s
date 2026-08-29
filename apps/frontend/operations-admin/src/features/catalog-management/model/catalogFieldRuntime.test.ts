@@ -51,6 +51,7 @@ describe('catalog descriptor field runtime', () => {
       'getOperationsProductionTags',
       'listOperationsCatalogAttributeDefinitions',
       'listOperationsCatalogOrderOptionDefinitions',
+      'getOperationsCatalogItemSkus',
     ]);
     const first = catalogFieldFingerprint(source, context('TASTE'));
     expect(catalogFieldFingerprint(source, context('SIZE'))).not.toBe(first);

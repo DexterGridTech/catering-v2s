@@ -1,6 +1,8 @@
 package com.catering.v2s.app.edge.publicentry.invitation;
 
 import com.catering.v2s.app.edge.diagnostic.PublicSecurityOperation;
+import com.catering.v2s.app.edge.generated.wire.AccountPresenceStatus;
+import com.catering.v2s.app.edge.generated.wire.OrganizationPathNode;
 import com.catering.v2s.app.edge.generated.wire.PublicInvitationAcceptIntent;
 import com.catering.v2s.app.edge.generated.wire.PublicInvitationCompletion;
 import com.catering.v2s.app.edge.generated.wire.PublicInvitationCredentialRequest;
@@ -124,14 +126,25 @@ public final class PublicInvitationController {
                 value.groupWorkspaceKey(),
                 workspace.operationsTitle(),
                 value.targetOrganizationType(),
-                value.targetOrganizationPath(),
                 value.roleNames(),
                 value.maskedMobile(),
                 invitationStatus(value.status()),
                 value.expiresAt(),
                 workspace.name(),
                 value.nextStep(),
-                logoUrl(workspace.logoAssetRef()));
+                logoUrl(workspace.logoAssetRef()),
+                value.targetOrganizationPathNodes().stream()
+                        .map(PublicInvitationController::node)
+                        .toList());
+    }
+
+    private static OrganizationPathNode node(
+            com.catering.v2s.organization.api.OrganizationTaskPathLookup.TaskPathNode value) {
+        return new OrganizationPathNode(
+                value.ref(),
+                value.code(),
+                value.name(),
+                com.catering.v2s.app.edge.generated.wire.ServiceNodeType.valueOf(value.nodeType()));
     }
 
     private static PublicInvitationCompletion completion(WorkspaceInvitationService.PublicCompletion value) {
@@ -142,7 +155,7 @@ public final class PublicInvitationController {
     private static PublicInvitationReadiness readiness(WorkspaceInvitationService.PublicReadiness value) {
         return new PublicInvitationReadiness(
                 value.verificationGrant(),
-                value.accountExists(),
+                accountPresenceStatus(value.accountExists()),
                 value.userNameReady(),
                 value.loginNameReady(),
                 value.passwordReady(),
@@ -153,7 +166,7 @@ public final class PublicInvitationController {
             WorkspaceInvitationService.PublicReadiness value) {
         return new PublicInvitationCredentialResponse(
                 value.verificationGrant(),
-                value.accountExists(),
+                accountPresenceStatus(value.accountExists()),
                 value.userNameReady(),
                 value.loginNameReady(),
                 value.passwordReady(),
@@ -168,6 +181,10 @@ public final class PublicInvitationController {
                         : "EXPIRED".equals(value)
                                 ? WorkspaceInvitationStatus.EXPIRED
                                 : WorkspaceInvitationStatus.ACTIVE;
+    }
+
+    private static AccountPresenceStatus accountPresenceStatus(String value) {
+        return AccountPresenceStatus.valueOf(value);
     }
 
     private static void requiredIdempotencyKey(String value) {

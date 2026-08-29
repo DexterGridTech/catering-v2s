@@ -23,6 +23,7 @@ import {
 } from './InventoryActionModal';
 import {
   envelopeData,
+  inventoryConversionLabel,
   inventoryAuthorityLabel,
   inventoryUnitLabel,
   shouldRequestInventoryDiagnostics,
@@ -258,7 +259,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                   children: currentView?.target.countingUnitSnapshot ? (
                     <>
                       {inventoryUnitLabel(currentView.target.countingUnitSnapshot)}（
-                      {currentView.target.conversionSummary ?? '—'}）
+                      {inventoryConversionLabel(currentView.target.conversionFacts)}）
                     </>
                   ) : (
                     '未配置'

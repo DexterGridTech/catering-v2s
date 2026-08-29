@@ -102,7 +102,7 @@ export function ContractEditDrawer({
   useEffect(() => {
     if (contract) {
       form.setFieldsValue({
-        phaseName: contract.phaseName,
+        phaseName: contract.phaseName ?? undefined,
         effectiveFrom: contract.effectiveFrom,
         effectiveTo: contract.effectiveTo ?? undefined,
         note: contract.note ?? undefined,

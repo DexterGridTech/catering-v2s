@@ -456,7 +456,6 @@
             "NOT_FOUND",
             "OWNER_REFERENCE_LEAK",
             "PRODUCTION_TAG_NOT_BINDABLE",
-            "REFERENCE_BLOCKS_DELETE",
             "REFERENCE_BLOCKS_VOID",
             "REFERENCE_MAPPING_UNRESOLVED",
             "RESULT_UNKNOWN",

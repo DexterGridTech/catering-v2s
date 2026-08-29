@@ -6,6 +6,10 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
+import {
+  OPERATION_COUNT_SOURCE_PATH,
+  readBackendPerformanceOperationCounts,
+} from "../policy/backend-performance-operation-counts.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const BINDINGS_PATH = "contracts/registry/operation-handler-bindings.json";
@@ -16,14 +20,17 @@ const ROUTE_REGISTRIES = Object.freeze({
 const OUTPUT_ROOT = "contracts/registry/generated/operation-handler-bindings";
 const JAVA_OUTPUT_ROOT = `${OUTPUT_ROOT}/java`;
 const JAVA_PACKAGE_ROOT = "com.catering.v2s.generated.operationbindings";
-const EXPECTED_COUNTS = Object.freeze({
-  operations: 239,
-  reads: 102,
-  commands: 137,
-  operationsAdminCommands: 94,
-  platformAdminCommands: 34,
-  publicCommands: 9,
-});
+function expectedCounts(root = ROOT) {
+  const operationCounts = readBackendPerformanceOperationCounts({root});
+  return Object.freeze({
+    operations: operationCounts.operations,
+    reads: operationCounts.reads,
+    commands: operationCounts.commands,
+    operationsAdminCommands: operationCounts.commandsByFace.operationsAdmin,
+    platformAdminCommands: operationCounts.commandsByFace.platformAdmin,
+    publicCommands: operationCounts.commandsByFace.public,
+  });
+}
 const CONTEXT_KINDS = new Set([
   "READ_CONTEXT",
   "WORKSPACE_EXECUTION_CONTEXT",
@@ -67,9 +74,6 @@ const OPERATIONS_ADAPTER_OPERATION_IDS = new Set([
   "createOperationsCatalogCategory",
   "createOperationsCatalogDictionaryEntry",
   "createOperationsCatalogItem",
-  "deleteOperationsCatalogCategory",
-  "deleteOperationsCatalogAttributeDefinition",
-  "deleteOperationsCatalogOrderOptionDefinition",
   "executeOperationsBrandCatalogCopy",
   "executeOperationsLocalCatalogCopy",
   "executeOperationsTemporaryCatalogItemPromotion",
@@ -86,8 +90,10 @@ const OPERATIONS_ADAPTER_OPERATION_IDS = new Set([
   "updateOperationsCatalogOrderOptionDefinition",
   "createOperationsCatalogUnit",
   "updateOperationsCatalogUnit",
-  "disableOperationsCatalogUnit",
-  "deleteOperationsCatalogUnit",
+  "transitionOperationsCatalogAttributeDefinitionStatus",
+  "transitionOperationsCatalogOrderOptionDefinitionStatus",
+  "transitionOperationsCatalogUnitStatus",
+  "transitionOperationsCatalogCategoryStatus",
   "updateOperationsCatalogDictionaryEntry",
   "createOperationsProductionTag",
   "transitionOperationsProductionTagStatus",
@@ -302,10 +308,6 @@ function routeOperations(root) {
   }
   const ids = operations.map(({ operationId }) => operationId);
   if (new Set(ids).size !== ids.length) fail("BP_U02_ROUTE_OPERATION_DUPLICATE", ids.find((id, index) => ids.indexOf(id) !== index));
-  const registryCounts = Object.fromEntries(Object.keys(ROUTE_REGISTRIES).map((registry) => [registry, operations.filter((operation) => operation.routeRegistry === registry).length]));
-  if (registryCounts["catalog-inventory"] !== 59 || registryCounts["edge-face"] !== 180) {
-    fail("BP_U02_ROUTE_REGISTRY_COUNT_DRIFT", JSON.stringify(registryCounts));
-  }
   return operations;
 }
 
@@ -325,6 +327,7 @@ function expectedCommandBoundary(operationId, mode) {
 }
 
 function validateBindingContract(root, binding, routes = routeOperations(root)) {
+  const countsSource = expectedCounts(root);
   if (binding?.schemaVersion !== 1 || binding?.kind !== "operation-handler-bindings" || binding?.status !== "ACTIVE") {
     fail("BP_U02_BINDING_ENVELOPE_INVALID");
   }
@@ -403,8 +406,8 @@ function validateBindingContract(root, binding, routes = routeOperations(root)) 
   }
   const routeIds = routes.map(({ operationId }) => operationId);
   if (!sameSet(routeIds, [...seenOperationIds])) fail("BP_U02_BINDING_EXACT_SET_DRIFT", `routes=${routeIds.length}:bindings=${seenOperationIds.size}`);
-  if (rows.length !== EXPECTED_COUNTS.operations || binding.operationCount !== EXPECTED_COUNTS.operations
-    || binding.readCount !== EXPECTED_COUNTS.reads || binding.commandCount !== EXPECTED_COUNTS.commands) {
+  if (rows.length !== countsSource.operations || binding.operationCount !== countsSource.operations
+    || binding.readCount !== countsSource.reads || binding.commandCount !== countsSource.commands) {
     fail("BP_U02_BINDING_COUNT_DRIFT", `${rows.length}/${binding.operationCount}/${binding.readCount}/${binding.commandCount}`);
   }
   const counts = {
@@ -412,7 +415,7 @@ function validateBindingContract(root, binding, routes = routeOperations(root)) 
     platformAdminCommands: rows.filter((row) => row.face === "platform-admin" && row.mode === "COMMAND").length,
     publicCommands: rows.filter((row) => row.face === "public" && row.mode === "COMMAND").length,
   };
-  if (counts.operationsAdminCommands !== EXPECTED_COUNTS.operationsAdminCommands || counts.platformAdminCommands !== EXPECTED_COUNTS.platformAdminCommands || counts.publicCommands !== EXPECTED_COUNTS.publicCommands) {
+  if (counts.operationsAdminCommands !== countsSource.operationsAdminCommands || counts.platformAdminCommands !== countsSource.platformAdminCommands || counts.publicCommands !== countsSource.publicCommands) {
     fail("BP_U02_COMMAND_FACE_DENOMINATOR_DRIFT", JSON.stringify(counts));
   }
   if (JSON.stringify(binding.contextCounts) !== JSON.stringify(Object.fromEntries([...CONTEXT_KINDS].sort().map((kind) => [kind, rows.filter((row) => row.contextKind === kind).length])))) {
@@ -657,15 +660,18 @@ const CATALOG_UNIT_WIRE_TYPES = Object.freeze({
   listOperationsCatalogUnits: ["CatalogUnitListQuery", "CatalogUnitList"],
   createOperationsCatalogUnit: ["CatalogUnitCreateRequest", "CatalogUnitReadback"],
   updateOperationsCatalogUnit: ["CatalogUnitUpdateRequest", "CatalogUnitReadback"],
-  disableOperationsCatalogUnit: ["CatalogUnitDisableRequest", "CatalogUnitReadback"],
-  deleteOperationsCatalogUnit: ["CatalogUnitDeleteRequest", "CatalogUnitDeleteReadback"],
+  transitionOperationsCatalogAttributeDefinitionStatus: ["CatalogAttributeDefinitionStatusTransitionRequest", "CatalogAttributeDefinitionReadback"],
+  transitionOperationsCatalogOrderOptionDefinitionStatus: ["CatalogOrderOptionDefinitionStatusTransitionRequest", "CatalogOrderOptionDefinitionReadback"],
+  transitionOperationsCatalogUnitStatus: ["CatalogUnitStatusTransitionRequest", "CatalogUnitReadback"],
+  transitionOperationsCatalogCategoryStatus: ["CatalogCategoryStatusTransitionRequest", "CatalogCategoryReadback"],
   getOperationsInventoryConsumptionTargetCandidates: ["InventoryConsumptionTargetCandidateQuery", "InventoryConsumptionTargetCandidatePage"],
   getOperationsCatalogCategoryCandidates: ["CatalogCategoryCandidateQuery", "CatalogCategoryCandidatePage"],
   getOperationsCatalogItemSkus: ["CatalogItemSkusQuery", "CatalogItemSkuPage"],
 });
 function expandGeneratedCatalogUnitRows(binding, root) {
   const routes = routeOperations(root);
-  const rows = [...binding.operations];
+  const routeById = new Map(routes.map((route) => [route.operationId, route]));
+  const rows = binding.operations.filter((row) => routeById.has(row.operationId));
   const present = new Set(rows.map((row) => row.operationId));
   for (const route of routes.filter((candidate) => !present.has(candidate.operationId))) {
     const wire = CATALOG_UNIT_WIRE_TYPES[route.operationId];
@@ -843,7 +849,7 @@ function mutateAndExpect(root, mutate, expectedCode, checker = expected) {
     // Self-test copies only the three immutable inputs. Copying the repository
     // root would traverse node_modules/.gradle and turn this minute-scale gate
     // into an unbounded filesystem operation.
-    for (const relative of [BINDINGS_PATH, ...Object.values(ROUTE_REGISTRIES)]) {
+    for (const relative of [BINDINGS_PATH, OPERATION_COUNT_SOURCE_PATH, ...Object.values(ROUTE_REGISTRIES)]) {
       const source = path.join(root, relative);
       const target = path.join(scratch, relative);
       fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -864,9 +870,89 @@ function mutateAndExpect(root, mutate, expectedCode, checker = expected) {
   }
 }
 
+function mutateCountSource(root, mutate) {
+  const sourcePath = path.join(root, OPERATION_COUNT_SOURCE_PATH);
+  const value = readJson(root, OPERATION_COUNT_SOURCE_PATH);
+  mutate(value);
+  fs.writeFileSync(sourcePath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
 function selfTest(root = ROOT) {
   const binding = readJson(root, BINDINGS_PATH);
   validateBindingContract(root, binding);
+  for (const field of ["operations", "reads"]) {
+    mutateAndExpect(root, (scratch) => {
+      mutateCountSource(scratch, (value) => {
+        value[field] -= 1;
+      });
+    }, "BP_U02_BINDING_COUNT_DRIFT");
+  }
+  mutateAndExpect(root, (scratch) => {
+    mutateCountSource(scratch, (value) => {
+      value.commands -= 1;
+      value.commandsByFace.operationsAdmin -= 1;
+    });
+  }, "BP_U02_BINDING_COUNT_DRIFT");
+  for (const [decrement, increment] of [
+    ["operationsAdmin", "platformAdmin"],
+    ["platformAdmin", "public"],
+    ["public", "operationsAdmin"],
+  ]) {
+    mutateAndExpect(root, (scratch) => {
+      mutateCountSource(scratch, (value) => {
+        value.commandsByFace[decrement] -= 1;
+        value.commandsByFace[increment] += 1;
+      });
+    }, "BP_U02_COMMAND_FACE_DENOMINATOR_DRIFT");
+  }
+  mutateAndExpect(root, (scratch) => {
+    mutateCountSource(scratch, (value) => {
+      value.decisionRef = "NOT_ALLOWED";
+    });
+  }, "OPERATION_COUNT_SOURCE_FIELD_UNKNOWN");
+  mutateAndExpect(root, (scratch) => {
+    mutateCountSource(scratch, (value) => {
+      value.commandsByFace.digest = "NOT_ALLOWED";
+    });
+  }, "OPERATION_COUNT_SOURCE_FACE_FIELD_UNKNOWN");
+  const staleDeletionScratch = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-bp-u02-"));
+  try {
+    for (const relative of [BINDINGS_PATH, OPERATION_COUNT_SOURCE_PATH, ...Object.values(ROUTE_REGISTRIES)]) {
+      const source = path.join(root, relative);
+      const target = path.join(staleDeletionScratch, relative);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.copyFileSync(source, target);
+    }
+    const wireSource = path.join(root, "contracts/openapi/components");
+    const wireTarget = path.join(staleDeletionScratch, "contracts/openapi/components");
+    fs.cpSync(wireSource, wireTarget, { recursive: true });
+    const removedOperationId = "transitionOperationsCatalogUnitStatus";
+    const routePath = ROUTE_REGISTRIES["catalog-inventory"];
+    const routeRegistry = readJson(staleDeletionScratch, routePath);
+    routeRegistry.operations = routeRegistry.operations.filter((row) => row.operationId !== removedOperationId);
+    fs.writeFileSync(path.join(staleDeletionScratch, routePath), `${JSON.stringify(routeRegistry, null, 2)}\n`);
+    mutateCountSource(staleDeletionScratch, (value) => {
+      value.operations -= 1;
+      value.commands -= 1;
+      value.commandsByFace.operationsAdmin -= 1;
+    });
+    const result = writeOutputs(staleDeletionScratch);
+    const refreshedBinding = readJson(staleDeletionScratch, BINDINGS_PATH);
+    if (refreshedBinding.operations.some((row) => row.operationId === removedOperationId)) {
+      fail("BP_U02_RETIRED_ROUTE_BINDING_ROW_RETAINED", removedOperationId);
+    }
+    validateBindingContract(staleDeletionScratch, refreshedBinding);
+    if (result.json !== 14 || result.java !== 14) fail("BP_U02_RETIRED_ROUTE_OUTPUT_SHAPE_DRIFT");
+  } finally {
+    fs.rmSync(staleDeletionScratch, { recursive: true, force: true });
+  }
+  for (const field of ["operationsAdmin", "platformAdmin", "public"]) {
+    mutateAndExpect(root, (scratch) => {
+      mutateCountSource(scratch, (value) => {
+        value.commandsByFace[field] -= 1;
+      });
+    }, "OPERATION_COUNT_SOURCE_FACE_SUM_INVALID");
+  }
   mutateAndExpect(root, (scratch) => {
     const routePath = ROUTE_REGISTRIES["catalog-inventory"];
     const value = readJson(scratch, routePath);
@@ -938,7 +1024,7 @@ function selfTest(root = ROOT) {
     const stalePath = path.join(scratch, `${OUTPUT_ROOT}/stale-owner.json`);
     fs.writeFileSync(stalePath, "{}\n");
   }, "BP_U02_GENERATED_OUTPUT_SET_DRIFT", checkOutputs);
-  process.stdout.write("BP_U02_BINDING_SELF_TEST=PASS\nRED=BP_U02_ROUTE_SOURCE_DIGEST_DRIFT,BP_U02_BINDING_EXACT_SET_DRIFT,BP_U02_BINDING_OWNER_DRIFT,BP_U02_BINDING_ADAPTER_IDENTITY_DRIFT,BP_U02_BINDING_PLATFORM_CONTEXT_DRIFT,BP_U02_BINDING_OPERATION_CONTEXT_DRIFT,BP_U02_BINDING_COMMAND_BOUNDARY_DRIFT,BP_U02_BINDING_PATH_DRIFT,BP_U02_BINDING_FACE_DRIFT,BP_U02_WIRE_TYPE_UNKNOWN,BP_U02_BINDING_COPY_ROLE_DRIFT,BP_U02_MULTIPART_ADAPTER_REQUIRED,BP_U02_GENERATED_OUTPUT_SET_DRIFT\n");
+  process.stdout.write("BP_U02_BINDING_SELF_TEST=PASS\nRED=BP_U02_BINDING_COUNT_DRIFT,OPERATION_COUNT_SOURCE_FIELD_UNKNOWN,OPERATION_COUNT_SOURCE_FACE_FIELD_UNKNOWN,OPERATION_COUNT_SOURCE_FACE_SUM_INVALID,BP_U02_COMMAND_FACE_DENOMINATOR_DRIFT,BP_U02_ROUTE_SOURCE_DIGEST_DRIFT,BP_U02_BINDING_EXACT_SET_DRIFT,BP_U02_BINDING_OWNER_DRIFT,BP_U02_BINDING_ADAPTER_IDENTITY_DRIFT,BP_U02_BINDING_PLATFORM_CONTEXT_DRIFT,BP_U02_BINDING_OPERATION_CONTEXT_DRIFT,BP_U02_BINDING_COMMAND_BOUNDARY_DRIFT,BP_U02_BINDING_PATH_DRIFT,BP_U02_BINDING_FACE_DRIFT,BP_U02_WIRE_TYPE_UNKNOWN,BP_U02_BINDING_COPY_ROLE_DRIFT,BP_U02_MULTIPART_ADAPTER_REQUIRED,BP_U02_GENERATED_OUTPUT_SET_DRIFT\n");
 }
 
 const isDirectInvocation = path.resolve(process.argv[1] || "") === fileURLToPath(import.meta.url);

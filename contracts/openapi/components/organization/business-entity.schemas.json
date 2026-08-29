@@ -211,7 +211,8 @@
         "type": "string",
         "enum": [
           "ENABLED",
-          "DISABLED"
+          "DISABLED",
+          "VOIDED"
         ]
       },
       "BusinessEntityStatusRequest": {

@@ -210,27 +210,32 @@
         {"key": "region-west", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "005", "name": "华中大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
         {"key": "region-southeast", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "006", "name": "华东大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
         {"key": "region-south", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "007", "name": "华南大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
-        {"key": "region-head-office", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "008", "name": "总部直管", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}}
+        {"key": "region-head-office", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "008", "name": "总部直管", "status": "DISABLED", "extensionValues": {"regionGrade": "历史大区"}},
+        {"key": "region-voided", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "009", "name": "作废大区", "status": "VOIDED", "extensionValues": {"regionGrade": "历史大区"}}
       ],
       "projects": [
         {"key": "project-river", "parent": "region-east", "code": "00201", "name": "太原万象城", "status": "ENABLED", "phases": ["一期", "二期"], "extensionValues": {"projectCategory": "滨水商业"}},
         {"key": "project-hill", "parent": "region-east", "code": "00202", "name": "北京清河万象汇", "status": "ENABLED", "phases": ["首开区"], "extensionValues": {"projectCategory": "社区商业"}},
-        {"key": "project-lake", "parent": "region-west", "code": "00501", "name": "长沙万象城", "status": "DISABLED", "phases": ["滨水游憩区", "湖畔餐饮区"], "extensionValues": {"projectCategory": "文旅商业"}}
+        {"key": "project-lake", "parent": "region-west", "code": "00501", "name": "长沙万象城", "status": "DISABLED", "phases": ["滨水游憩区", "湖畔餐饮区"], "extensionValues": {"projectCategory": "文旅商业"}},
+        {"key": "project-voided", "parent": "region-east", "code": "00203", "name": "作废示范项目", "status": "VOIDED", "phases": ["历史项目"], "extensionValues": {"projectCategory": "历史项目"}}
       ],
       "brands": [
         {"key": "brand-tea", "code": "TEA", "name": "茶里", "status": "ENABLED", "extensionValues": {"brandLevel": "核心品牌", "brandOrigin": "直营"}},
         {"key": "brand-bake", "code": "BAKE", "name": "麦香", "status": "ENABLED", "extensionValues": {"brandLevel": "成长品牌", "brandOrigin": "联营"}},
-        {"key": "brand-disabled", "code": "OLD", "name": "旧品牌", "status": "DISABLED", "extensionValues": {"brandLevel": "历史品牌", "brandOrigin": "直营"}}
+        {"key": "brand-disabled", "code": "OLD", "name": "旧品牌", "status": "DISABLED", "extensionValues": {"brandLevel": "历史品牌", "brandOrigin": "直营"}},
+        {"key": "brand-voided", "code": "VOID", "name": "作废品牌", "status": "VOIDED", "extensionValues": {"brandLevel": "历史品牌", "brandOrigin": "直营"}}
       ],
       "tenants": [
         {"key": "tenant-a", "code": "TEN-A", "name": "极光餐饮一号", "status": "ENABLED", "extensionValues": {"industryCode": "餐饮服务"}},
         {"key": "tenant-b", "code": "TEN-B", "name": "极光餐饮二号", "status": "ENABLED", "extensionValues": {"industryCode": "烘焙零售"}},
-        {"key": "tenant-disabled", "code": "TEN-X", "name": "停用经营主体", "status": "DISABLED", "extensionValues": {"industryCode": "历史经营"}}
+        {"key": "tenant-disabled", "code": "TEN-X", "name": "停用经营主体", "status": "DISABLED", "extensionValues": {"industryCode": "历史经营"}},
+        {"key": "tenant-voided", "code": "TEN-V", "name": "作废经营主体", "status": "VOIDED", "extensionValues": {"industryCode": "历史经营"}}
       ],
       "headCompanies": [
         {"key": "hc-a", "code": "HC-A", "name": "极光餐饮总公司", "status": "ENABLED", "extensionValues": {"registrationRegion": "上海"}},
         {"key": "hc-b", "code": "HC-B", "name": "北辰餐饮总公司", "status": "ENABLED", "extensionValues": {"registrationRegion": "北京"}},
-        {"key": "hc-disabled", "code": "HC-X", "name": "停用总公司", "status": "DISABLED", "extensionValues": {"registrationRegion": "杭州"}}
+        {"key": "hc-disabled", "code": "HC-X", "name": "停用总公司", "status": "DISABLED", "extensionValues": {"registrationRegion": "杭州"}},
+        {"key": "hc-voided", "code": "HC-V", "name": "作废总公司", "status": "VOIDED", "extensionValues": {"registrationRegion": "历史"}}
       ],
       "brandAuthorizations": [
         {"headCompany": "hc-a", "brand": "brand-tea"},
@@ -243,18 +248,20 @@
         {"key": "store-preparing", "code": "S-PRE", "name": "河畔麦香筹备店", "project": "project-river", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-a", "status": "ENABLED", "extensionValues": {"floorLabel": "二层", "openingHours": "09:00-21:00"}},
         {"key": "store-not-operating", "code": "S-NO", "name": "山景无合同店", "project": "project-hill", "tenant": "tenant-a", "brand": "brand-tea", "headCompany": "hc-a", "status": "ENABLED", "extensionValues": {"floorLabel": "地下一层", "openingHours": "10:00-20:00"}},
         {"key": "store-disabled", "code": "S-DIS", "name": "山景停用店", "project": "project-hill", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-a", "status": "DISABLED", "extensionValues": {"floorLabel": "三层", "openingHours": "10:00-20:00"}},
-        {"key": "store-history", "code": "S-HIS", "name": "河畔历史合同店", "project": "project-river", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-b", "status": "ENABLED", "extensionValues": {"floorLabel": "一层", "openingHours": "07:30-21:30"}}
+        {"key": "store-history", "code": "S-HIS", "name": "河畔历史合同店", "project": "project-river", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-b", "status": "ENABLED", "extensionValues": {"floorLabel": "一层", "openingHours": "07:30-21:30"}},
+        {"key": "store-voided", "code": "S-VOID", "name": "作废示范店", "project": "project-hill", "tenant": "tenant-a", "brand": "brand-tea", "headCompany": "hc-a", "status": "VOIDED", "extensionValues": {"floorLabel": "历史楼层", "openingHours": "不营业"}}
       ]
     },
     "workspaceIam": {
       "roles": [
-        {"key": "role-group", "name": "集团运营管理员", "serviceNodeType": "GROUP", "pageAccessKeys": ["PG-IAM-GROUP-USERS"], "actionCapabilityKeys": ["BC-CONTRACT-CREATE", "BC-CONTRACT-INVALIDATE", "BC-IAM-GROUP-ROLE-REVOKE", "BC-IAM-GROUP-INVITE", "BC-ORG-BRAND-CREATE", "BC-ORG-BRAND-STATUS", "BC-ORG-HEAD-COMPANY-BRAND", "BC-ORG-HEAD-COMPANY-CREATE", "BC-ORG-HEAD-COMPANY-STATUS", "BC-ORG-PROJECT-CREATE", "BC-ORG-PROJECT-STATUS", "BC-ORG-REGION-CREATE", "BC-ORG-STORE-CREATE", "BC-ORG-STORE-STATUS", "BC-ORG-TENANT-CREATE", "BC-ORG-TENANT-STATUS"], "visibleDataNodePolicy": "GROUP_SUBTREE"},
-        {"key": "role-region", "name": "大区运营负责人", "serviceNodeType": "REGION", "pageAccessKeys": ["PG-IAM-REGION-USERS"], "actionCapabilityKeys": ["BC-IAM-REGION-ROLE-REVOKE", "BC-IAM-REGION-INVITE"], "visibleDataNodePolicy": "REGION_SUBTREE"},
-        {"key": "role-project", "name": "项目运营负责人", "serviceNodeType": "PROJECT", "pageAccessKeys": ["PG-IAM-PROJECT-USERS"], "actionCapabilityKeys": ["BC-IAM-PROJECT-ROLE-REVOKE", "BC-IAM-PROJECT-INVITE"], "visibleDataNodePolicy": "PROJECT"},
-        {"key": "role-head-company", "name": "总公司商品管理员", "serviceNodeType": "HEAD_COMPANY", "pageAccessKeys": ["PG-IAM-HEAD-COMPANY-USERS", "PG-CATALOG-BRAND-ITEMS"], "actionCapabilityKeys": ["BC-IAM-HEAD-COMPANY-ROLE-REVOKE", "BC-IAM-HEAD-COMPANY-INVITE", "EDIT_HEAD_COMPANY_CATALOG"], "visibleDataNodePolicy": "HEAD_COMPANY"},
-        {"key": "role-store", "name": "门店商品管理员", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-IAM-STORE-USERS", "PG-CATALOG-STORE-ITEMS"], "actionCapabilityKeys": ["BC-IAM-STORE-ROLE-REVOKE", "BC-IAM-STORE-INVITE", "EDIT_STORE_CATALOG"], "visibleDataNodePolicy": "STORE"},
-        {"key": "role-store-inventory", "name": "门店库存管理员", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"},
-        {"key": "role-store-manager", "name": "门店经营主管", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-IAM-STORE-USERS", "PG-CATALOG-STORE-ITEMS", "PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["BC-IAM-STORE-ROLE-REVOKE", "BC-IAM-STORE-INVITE", "EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"}
+        {"key": "role-group", "name": "集团运营管理员", "status": "ENABLED", "serviceNodeType": "GROUP", "pageAccessKeys": ["PG-IAM-GROUP-USERS"], "actionCapabilityKeys": ["BC-CONTRACT-CREATE", "BC-CONTRACT-INVALIDATE", "BC-IAM-GROUP-ROLE-REVOKE", "BC-IAM-GROUP-INVITE", "BC-ORG-BRAND-CREATE", "BC-ORG-BRAND-STATUS", "BC-ORG-HEAD-COMPANY-BRAND", "BC-ORG-HEAD-COMPANY-CREATE", "BC-ORG-HEAD-COMPANY-STATUS", "BC-ORG-PROJECT-CREATE", "BC-ORG-PROJECT-STATUS", "BC-ORG-REGION-CREATE", "BC-ORG-STORE-CREATE", "BC-ORG-STORE-STATUS", "BC-ORG-TENANT-CREATE", "BC-ORG-TENANT-STATUS"], "visibleDataNodePolicy": "GROUP_SUBTREE"},
+        {"key": "role-region", "name": "大区运营负责人", "status": "ENABLED", "serviceNodeType": "REGION", "pageAccessKeys": ["PG-IAM-REGION-USERS"], "actionCapabilityKeys": ["BC-IAM-REGION-ROLE-REVOKE", "BC-IAM-REGION-INVITE"], "visibleDataNodePolicy": "REGION_SUBTREE"},
+        {"key": "role-project", "name": "项目运营负责人", "status": "ENABLED", "serviceNodeType": "PROJECT", "pageAccessKeys": ["PG-IAM-PROJECT-USERS"], "actionCapabilityKeys": ["BC-IAM-PROJECT-ROLE-REVOKE", "BC-IAM-PROJECT-INVITE"], "visibleDataNodePolicy": "PROJECT"},
+        {"key": "role-head-company", "name": "总公司商品管理员", "status": "ENABLED", "serviceNodeType": "HEAD_COMPANY", "pageAccessKeys": ["PG-IAM-HEAD-COMPANY-USERS", "PG-CATALOG-BRAND-ITEMS"], "actionCapabilityKeys": ["BC-IAM-HEAD-COMPANY-ROLE-REVOKE", "BC-IAM-HEAD-COMPANY-INVITE", "EDIT_HEAD_COMPANY_CATALOG"], "visibleDataNodePolicy": "HEAD_COMPANY"},
+        {"key": "role-store", "name": "门店商品管理员", "status": "ENABLED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-IAM-STORE-USERS", "PG-CATALOG-STORE-ITEMS"], "actionCapabilityKeys": ["BC-IAM-STORE-ROLE-REVOKE", "BC-IAM-STORE-INVITE", "EDIT_STORE_CATALOG"], "visibleDataNodePolicy": "STORE"},
+        {"key": "role-store-inventory", "name": "门店库存管理员", "status": "DISABLED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"},
+        {"key": "role-store-manager", "name": "门店经营主管", "status": "ENABLED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-IAM-STORE-USERS", "PG-CATALOG-STORE-ITEMS", "PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["BC-IAM-STORE-ROLE-REVOKE", "BC-IAM-STORE-INVITE", "EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"},
+        {"key": "role-voided", "name": "作废门店库存管理员", "status": "VOIDED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"}
       ],
       "accounts": [
         {"key": "account-single-role", "displayName": "门店商品专员", "mobile": "13800000001", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"},
@@ -262,7 +269,8 @@
         {"key": "account-no-role", "displayName": "无角色体验用户", "mobile": "13800000003", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"},
         {"key": "account-disabled", "displayName": "停用体验用户", "mobile": "13800000004", "status": "DISABLED", "credentialSource": "V2S_SEED_OPERATIONS_DISABLED_PASSWORD"},
         {"key": "account-reset", "displayName": "密码重置体验用户", "mobile": "13800000005", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"},
-        {"key": "account-invite-existing", "displayName": "总公司商品专员", "mobile": "13800000006", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"}
+        {"key": "account-invite-existing", "displayName": "总公司商品专员", "mobile": "13800000006", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"},
+        {"key": "account-voided", "displayName": "作废身份体验用户", "mobile": "13800000014", "status": "VOIDED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"}
       ],
       "assignments": [
         {"key": "asg-single-store", "account": "account-single-role", "role": "role-store", "node": "store-operating", "visibleDataNode": "store-operating", "sourceInvitation": "inv-completed-single"},
@@ -273,7 +281,8 @@
         {"key": "asg-multi-manager", "account": "account-multi-role", "role": "role-store-manager", "node": "store-preparing", "visibleDataNode": "store-preparing", "sourceInvitation": "inv-completed-multi-e"},
         {"key": "asg-disabled-store", "account": "account-reset", "role": "role-store", "node": "store-disabled", "visibleDataNode": "store-disabled", "sourceInvitation": "inv-completed-disabled-store"},
         {"key": "asg-head-company", "account": "account-invite-existing", "role": "role-head-company", "node": "hc-a", "visibleDataNode": "hc-a", "sourceInvitation": "inv-completed-existing"},
-        {"key": "asg-revoked", "account": "account-invite-existing", "role": "role-region", "node": "region-west", "visibleDataNode": "region-west", "sourceInvitation": "inv-completed-revoked", "status": "REVOKED"}
+        {"key": "asg-revoked", "account": "account-invite-existing", "role": "role-region", "node": "region-west", "visibleDataNode": "region-west", "sourceInvitation": "inv-completed-revoked", "status": "REVOKED"},
+        {"key": "asg-voided-account", "account": "account-voided", "role": "role-group", "node": "cg-aurora", "visibleDataNode": "cg-aurora", "sourceInvitation": "inv-completed-voided-account"}
       ],
       "invitationStates": [
         {"key": "inv-pending-store", "status": "PENDING", "fixturePurpose": "STORE_INVITATION_LIST_PREREQUISITE"},
@@ -292,6 +301,7 @@
         {"key": "inv-completed-revoked", "status": "COMPLETED"},
         {"key": "inv-completed-no-role", "status": "COMPLETED", "fixturePurpose": "ACCOUNT_RETAINED_AFTER_ASSIGNMENT_REVOCATION"},
         {"key": "inv-completed-disabled-account", "status": "COMPLETED", "fixturePurpose": "ACCOUNT_THAT_IS_SUBSEQUENTLY_DISABLED"},
+        {"key": "inv-completed-voided-account", "status": "COMPLETED", "fixturePurpose": "ACCOUNT_THAT_IS_SUBSEQUENTLY_VOIDED"},
         {"key": "inv-cancelled", "status": "CANCELLED"},
         {"key": "inv-expired", "status": "EXPIRED"},
         {"key": "inv-reissued", "status": "PENDING", "supersedes": "inv-cancelled"}
@@ -315,18 +325,18 @@
     "stagedOrCleanupAssets": 2,
     "extensionDefinitions": 8,
     "commercialGroups": 2,
-    "regions": 8,
-    "projects": 3,
-    "projectPhases": 5,
-    "brands": 3,
-    "tenants": 3,
-    "headCompanies": 3,
+    "regions": 9,
+    "projects": 4,
+    "projectPhases": 6,
+    "brands": 4,
+    "tenants": 4,
+    "headCompanies": 4,
     "brandAuthorizations": 4,
-    "stores": 5,
-    "roles": 7,
-    "accounts": 6,
-    "assignments": 9,
-    "invitationStateFixtures": 19,
+    "stores": 6,
+    "roles": 8,
+    "accounts": 7,
+    "assignments": 10,
+    "invitationStateFixtures": 20,
     "passwordResetStateFixtures": 1,
     "contracts": 5
   },
@@ -335,7 +345,7 @@
     {"id": "platform", "channel": "REAL_PLATFORM_COMMANDS", "idempotencyKeyPrefix": "r5-v1-platform", "readback": ["platformAdmins", "groupWorkspaces", "assets"]},
     {"id": "extension", "channel": "REAL_PLATFORM_COMMANDS", "idempotencyKeyPrefix": "r5-v1-extension", "readback": ["eight definitions", "administrator-defined stable field keys", "display labels"]},
     {"id": "organization", "channel": "REAL_OPERATIONS_COMMANDS", "idempotencyKeyPrefix": "r5-v1-organization", "readback": ["hierarchy", "entities", "stores", "all declared extension values"]},
-    {"id": "access", "channel": "REAL_INVITATION_PUBLIC_CHAIN_PLUS_DEV_FIXED_OTP_ISSUER", "idempotencyKeyPrefix": "r5-v1-access", "readback": ["roles with independent page/action/data dimensions", "accounts", "19 invitations", "9 assignments"]},
+    {"id": "access", "channel": "REAL_INVITATION_PUBLIC_CHAIN_PLUS_DEV_FIXED_OTP_ISSUER", "idempotencyKeyPrefix": "r5-v1-access", "readback": ["roles with independent page/action/data dimensions", "accounts", "20 invitations", "10 assignments", "ENABLED/DISABLED/VOIDED status coverage"]},
     {"id": "contract", "channel": "REAL_OPERATIONS_COMMANDS", "idempotencyKeyPrefix": "r5-v1-contract", "readback": ["five contracts", "all declared extension values", "OPERATING", "PREPARING", "NOT_OPERATING"]},
     {"id": "negatives", "channel": "REAL_COMMANDS_OR_TERMINAL_FIXTURE", "idempotencyKeyPrefix": "r5-v1-negative", "readback": ["disabled", "stale", "denied", "cancelled", "expired", "revoked"]}
   ],
@@ -400,6 +410,7 @@
       {"invitationKey": "inv-completed-revoked", "accountKey": "account-invite-existing", "roleKey": "role-region", "nodeKey": "region-west"},
       {"invitationKey": "inv-completed-no-role", "accountKey": "account-no-role", "roleKey": "role-group", "nodeKey": "cg-aurora"},
       {"invitationKey": "inv-completed-disabled-account", "accountKey": "account-disabled", "roleKey": "role-group", "nodeKey": "cg-aurora"},
+      {"invitationKey": "inv-completed-voided-account", "accountKey": "account-voided", "roleKey": "role-group", "nodeKey": "cg-aurora"},
       {"invitationKey": "inv-cancelled", "roleKey": "role-group", "nodeKey": "cg-aurora", "mobile": "13800000012"},
       {"invitationKey": "inv-expired", "roleKey": "role-group", "nodeKey": "cg-aurora", "mobile": "13800000013"},
       {"invitationKey": "inv-reissued", "roleKey": "role-group", "nodeKey": "cg-aurora", "mobile": "13800000012"}

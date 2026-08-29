@@ -20,6 +20,7 @@ import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceRoleService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
@@ -106,6 +107,83 @@ class BackendAcceptanceTest {
     static final RouteIdentity OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATION_CANDIDATES = new RouteIdentity(
             "getOperationsWorkspaceHeadCompanyInvitationCandidates",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/candidates");
+    static final RouteIdentity OPERATIONS_WORKSPACE_GROUP_INVITATION_CREATE = new RouteIdentity(
+            "createOperationsWorkspaceGroupInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations");
+    static final RouteIdentity OPERATIONS_WORKSPACE_GROUP_INVITATION_CANCEL = new RouteIdentity(
+            "cancelOperationsWorkspaceGroupInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/"
+                    + "{invitationId}/cancel");
+    static final RouteIdentity OPERATIONS_WORKSPACE_GROUP_INVITATION_REISSUE = new RouteIdentity(
+            "reissueOperationsWorkspaceGroupInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/"
+                    + "{invitationId}/reissue");
+    static final RouteIdentity OPERATIONS_WORKSPACE_REGION_INVITATIONS = new RouteIdentity(
+            "getOperationsWorkspaceRegionInvitations",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations");
+    static final RouteIdentity OPERATIONS_WORKSPACE_REGION_INVITATION_CREATE = new RouteIdentity(
+            "createOperationsWorkspaceRegionInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations");
+    static final RouteIdentity OPERATIONS_WORKSPACE_REGION_INVITATION_CANCEL = new RouteIdentity(
+            "cancelOperationsWorkspaceRegionInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/"
+                    + "{invitationId}/cancel");
+    static final RouteIdentity OPERATIONS_WORKSPACE_REGION_INVITATION_REISSUE = new RouteIdentity(
+            "reissueOperationsWorkspaceRegionInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/"
+                    + "{invitationId}/reissue");
+    static final RouteIdentity OPERATIONS_WORKSPACE_PROJECT_INVITATIONS = new RouteIdentity(
+            "getOperationsWorkspaceProjectInvitations",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations");
+    static final RouteIdentity OPERATIONS_WORKSPACE_PROJECT_INVITATION_CREATE = new RouteIdentity(
+            "createOperationsWorkspaceProjectInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations");
+    static final RouteIdentity OPERATIONS_WORKSPACE_PROJECT_INVITATION_CANCEL = new RouteIdentity(
+            "cancelOperationsWorkspaceProjectInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/"
+                    + "{invitationId}/cancel");
+    static final RouteIdentity OPERATIONS_WORKSPACE_PROJECT_INVITATION_REISSUE = new RouteIdentity(
+            "reissueOperationsWorkspaceProjectInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/"
+                    + "{invitationId}/reissue");
+    static final RouteIdentity OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATIONS = new RouteIdentity(
+            "getOperationsWorkspaceHeadCompanyInvitations",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations");
+    static final RouteIdentity OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATION_CREATE = new RouteIdentity(
+            "createOperationsWorkspaceHeadCompanyInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations");
+    static final RouteIdentity OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATION_CANCEL = new RouteIdentity(
+            "cancelOperationsWorkspaceHeadCompanyInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/"
+                    + "{invitationId}/cancel");
+    static final RouteIdentity OPERATIONS_WORKSPACE_HEAD_COMPANY_INVITATION_REISSUE = new RouteIdentity(
+            "reissueOperationsWorkspaceHeadCompanyInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/"
+                    + "{invitationId}/reissue");
+    static final RouteIdentity OPERATIONS_WORKSPACE_STORE_INVITATIONS = new RouteIdentity(
+            "getOperationsWorkspaceStoreInvitations",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations");
+    static final RouteIdentity OPERATIONS_WORKSPACE_STORE_INVITATION_CREATE = new RouteIdentity(
+            "createOperationsWorkspaceStoreInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations");
+    static final RouteIdentity OPERATIONS_WORKSPACE_STORE_INVITATION_CANCEL = new RouteIdentity(
+            "cancelOperationsWorkspaceStoreInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel");
+    static final RouteIdentity OPERATIONS_WORKSPACE_STORE_INVITATION_REISSUE = new RouteIdentity(
+            "reissueOperationsWorkspaceStoreInvitation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue");
+    static final RouteIdentity OPERATIONS_WORKSPACE_GROUP_INVITATION_CANDIDATES = new RouteIdentity(
+            "getOperationsWorkspaceGroupInvitationCandidates",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates");
+    static final RouteIdentity OPERATIONS_WORKSPACE_REGION_INVITATION_CANDIDATES = new RouteIdentity(
+            "getOperationsWorkspaceRegionInvitationCandidates",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/candidates");
+    static final RouteIdentity OPERATIONS_WORKSPACE_PROJECT_INVITATION_CANDIDATES = new RouteIdentity(
+            "getOperationsWorkspaceProjectInvitationCandidates",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/candidates");
+    static final RouteIdentity OPERATIONS_WORKSPACE_STORE_INVITATION_CANDIDATES = new RouteIdentity(
+            "getOperationsWorkspaceStoreInvitationCandidates",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/candidates");
     static final RouteIdentity OPERATIONS_WORKSPACE_GROUP_INVITATIONS = new RouteIdentity(
             "getOperationsWorkspaceGroupInvitations",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations");
@@ -115,6 +193,45 @@ class BackendAcceptanceTest {
     static final RouteIdentity OPERATIONS_WORKSPACE_STORE_USER = new RouteIdentity(
             "getOperationsWorkspaceStoreUser",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user");
+    static final RouteIdentity OPERATIONS_WORKSPACE_GROUP_USER_ACCOUNT = new RouteIdentity(
+            "getOperationsWorkspaceGroupUserAccount",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}");
+    static final RouteIdentity OPERATIONS_WORKSPACE_GROUP_USER_REVOKE = new RouteIdentity(
+            "revokeOperationsWorkspaceGroupUserAssignment",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke");
+    static final RouteIdentity OPERATIONS_WORKSPACE_REGION_USER = new RouteIdentity(
+            "getOperationsWorkspaceRegionUser",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user");
+    static final RouteIdentity OPERATIONS_WORKSPACE_REGION_USER_ACCOUNT = new RouteIdentity(
+            "getOperationsWorkspaceRegionUserAccount",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}");
+    static final RouteIdentity OPERATIONS_WORKSPACE_REGION_USER_REVOKE = new RouteIdentity(
+            "revokeOperationsWorkspaceRegionUserAssignment",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke");
+    static final RouteIdentity OPERATIONS_WORKSPACE_PROJECT_USER = new RouteIdentity(
+            "getOperationsWorkspaceProjectUser",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user");
+    static final RouteIdentity OPERATIONS_WORKSPACE_PROJECT_USER_ACCOUNT = new RouteIdentity(
+            "getOperationsWorkspaceProjectUserAccount",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}");
+    static final RouteIdentity OPERATIONS_WORKSPACE_PROJECT_USER_REVOKE = new RouteIdentity(
+            "revokeOperationsWorkspaceProjectUserAssignment",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke");
+    static final RouteIdentity OPERATIONS_WORKSPACE_HEAD_COMPANY_USER = new RouteIdentity(
+            "getOperationsWorkspaceHeadCompanyUser",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user");
+    static final RouteIdentity OPERATIONS_WORKSPACE_HEAD_COMPANY_USER_ACCOUNT = new RouteIdentity(
+            "getOperationsWorkspaceHeadCompanyUserAccount",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}");
+    static final RouteIdentity OPERATIONS_WORKSPACE_HEAD_COMPANY_USER_REVOKE = new RouteIdentity(
+            "revokeOperationsWorkspaceHeadCompanyUserAssignment",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke");
+    static final RouteIdentity OPERATIONS_WORKSPACE_STORE_USER_ACCOUNT = new RouteIdentity(
+            "getOperationsWorkspaceStoreUserAccount",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/accounts/{accountId}");
+    static final RouteIdentity OPERATIONS_WORKSPACE_STORE_USER_REVOKE = new RouteIdentity(
+            "revokeOperationsWorkspaceStoreUserAssignment",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke");
     static final RouteIdentity OPERATIONS_ORGANIZATION_REGION_CREATE = new RouteIdentity(
             "createOperationsOrganizationRegion",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions");
@@ -239,8 +356,6 @@ class BackendAcceptanceTest {
             "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}/status");
     static final RouteIdentity OPERATIONS_CATALOG_CATEGORY_CREATE =
             new RouteIdentity("createOperationsCatalogCategory", "/api/operations/catalog-inventory/categories");
-    static final RouteIdentity OPERATIONS_CATALOG_CATEGORY_DELETE = new RouteIdentity(
-            "deleteOperationsCatalogCategory", "/api/operations/catalog-inventory/categories/{categoryRef}");
     static final RouteIdentity OPERATIONS_CATALOG_LOCAL_COPY_PREFLIGHT = new RouteIdentity(
             "preflightOperationsLocalCatalogCopy", "/api/operations/catalog-inventory/copy/local/preflight");
     static final RouteIdentity OPERATIONS_CATALOG_LOCAL_COPY_EXECUTE = new RouteIdentity(
@@ -289,6 +404,21 @@ class BackendAcceptanceTest {
             "/api/platform/group-workspaces/{groupWorkspaceKey}/invitation-candidates");
     static final RouteIdentity PLATFORM_WORKSPACE_ACCOUNTS =
             new RouteIdentity("getWorkspaceAccounts", "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts");
+    static final RouteIdentity PLATFORM_WORKSPACE_ACCOUNT = new RouteIdentity(
+            "getWorkspaceAccount", "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}");
+    static final RouteIdentity PLATFORM_WORKSPACE_ACCOUNT_STATUS = new RouteIdentity(
+            "transitionWorkspaceAccountStatus",
+            "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status");
+    static final RouteIdentity PLATFORM_WORKSPACE_INVITATION = new RouteIdentity(
+            "getWorkspaceInvitation", "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}");
+    static final RouteIdentity PLATFORM_WORKSPACE_INVITATION_CREATE = new RouteIdentity(
+            "createWorkspaceInvitation", "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations");
+    static final RouteIdentity PLATFORM_WORKSPACE_INVITATION_CANCEL = new RouteIdentity(
+            "cancelWorkspaceInvitation",
+            "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel");
+    static final RouteIdentity PLATFORM_WORKSPACE_INVITATION_REISSUE = new RouteIdentity(
+            "reissueWorkspaceInvitation",
+            "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue");
     static final RouteIdentity PLATFORM_WORKSPACE_ROLES =
             new RouteIdentity("getWorkspaceRoles", "/api/platform/group-workspaces/{groupWorkspaceKey}/roles");
     static final RouteIdentity PLATFORM_COMMERCIAL_GROUP_INITIALIZE = new RouteIdentity(
@@ -1031,6 +1161,14 @@ class BackendAcceptanceTest {
         return jdbc.queryForObject(sql, Long.class, args);
     }
 
+    String text(String sql, Object... args) {
+        return jdbc.queryForObject(sql, String.class, args);
+    }
+
+    int update(String sql, Object... args) {
+        return jdbc.update(sql, args);
+    }
+
     void insertInventoryBomFixture(
             UUID dataNodeRef,
             UUID brandRef,
@@ -1113,7 +1251,7 @@ class BackendAcceptanceTest {
         jdbc.update(
                 "INSERT INTO catalog.catalog_item (item_ref,data_node_ref,brand_ref,code,name,shape_key,status,"
                         + "sections,version,created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,"
-                        + "'STANDARD_SALE_COUNTED','DRAFT','{\"source\":\"TEMPORARY\"}'::jsonb,1,?,?)",
+                        + "'STANDARD_SALE_COUNTED','DISABLED','{\"source\":\"TEMPORARY\"}'::jsonb,1,?,?)",
                 itemRef,
                 fixture.storeId().toString(),
                 fixture.brandId().toString(),
@@ -1517,6 +1655,23 @@ class BackendAcceptanceTest {
             if (code.isBlank()) code = json.path("errorCode").asText("");
             return code;
         }
+    }
+
+    /**
+     * Reads a required business-field pointer without Jackson's path() coercions. A missing node, null node, or wrong
+     * JSON type must remain visible to the hand-written BUSINESS oracle instead of becoming a default value.
+     */
+    static JsonNode requiredJsonNode(JsonNode root, String pointer, JsonNodeType expectedType, String message) {
+        assertNotNull(root, message + ": response JSON is present");
+        JsonNode actual = root.at(pointer);
+        assertFalse(actual.isMissingNode(), message + ": missing pointer " + pointer);
+        assertEquals(expectedType, actual.getNodeType(), message + ": pointer " + pointer + " has wrong JSON type");
+        return actual;
+    }
+
+    static void assertJsonNodeEquals(JsonNode root, String pointer, JsonNode expected, String message) {
+        JsonNode actual = requiredJsonNode(root, pointer, expected.getNodeType(), message);
+        assertEquals(expected, actual, message + ": pointer " + pointer + " differs");
     }
 
     private static String encode(String value) {

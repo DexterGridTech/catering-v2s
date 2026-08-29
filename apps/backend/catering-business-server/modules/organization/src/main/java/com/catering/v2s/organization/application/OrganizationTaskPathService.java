@@ -6,6 +6,7 @@ import com.catering.v2s.organization.api.OrganizationNodeTypes;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import java.sql.Array;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -44,7 +45,9 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                             ServiceNodeTypes.GROUP,
                             result.getObject(1, UUID.class),
                             List.of(result.getObject(1, UUID.class)),
-                            code + " " + name);
+                            code + " " + name,
+                            List.of(new TaskPathNode(
+                                    result.getObject(1, UUID.class), code, name, ServiceNodeTypes.GROUP)));
                 });
     }
 
@@ -94,6 +97,10 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                         + " store_fact.project_id, store_fact.tenant_id, store_fact.brand_id, store_fact.code,"
                         + " ancestry.target_id, max(ancestry.node_type) FILTER (WHERE ancestry.depth=0) AS target_type,"
                         + " array_agg(ancestry.id ORDER BY ancestry.depth DESC) AS ancestor_ids,"
+                        + " array_agg(ancestry.id ORDER BY ancestry.depth DESC) AS path_node_refs,"
+                        + " array_agg(ancestry.code ORDER BY ancestry.depth DESC) AS path_node_codes,"
+                        + " array_agg(ancestry.name ORDER BY ancestry.depth DESC) AS path_node_names,"
+                        + " array_agg(ancestry.node_type ORDER BY ancestry.depth DESC) AS path_node_types,"
                         + " string_agg(ancestry.code"
                         + " || ' ' || ancestry.name, ' / ' ORDER BY ancestry.depth DESC) AS display_path,"
                         + " store_fact.group_id FROM store_fact JOIN ancestry ON"
@@ -127,7 +134,8 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                                     ServiceNodeTypes.PROJECT,
                                     result.getObject("target_id", UUID.class),
                                     ancestors,
-                                    result.getString("display_path")));
+                                    result.getString("display_path"),
+                                    pathNodes(result)));
                 });
     }
 
@@ -171,6 +179,10 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                         + " parent.group_workspace_key=params.group_workspace_key AND parent.status='ENABLED') SELECT"
                         + " ancestry.target_id, max(ancestry.node_type) FILTER (WHERE ancestry.depth=0) AS target_type,"
                         + " array_agg(ancestry.id ORDER BY ancestry.depth DESC) AS ancestor_ids,"
+                        + " array_agg(ancestry.id ORDER BY ancestry.depth DESC) AS path_node_refs,"
+                        + " array_agg(ancestry.code ORDER BY ancestry.depth DESC) AS path_node_codes,"
+                        + " array_agg(ancestry.name ORDER BY ancestry.depth DESC) AS path_node_names,"
+                        + " array_agg(ancestry.node_type ORDER BY ancestry.depth DESC) AS path_node_types,"
                         + " string_agg(ancestry.code"
                         + " || ' ' || ancestry.name, ' / ' ORDER BY ancestry.depth DESC) AS display_path,"
                         + " params.group_id"
@@ -193,7 +205,8 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                             ServiceNodeTypes.PROJECT,
                             result.getObject("target_id", UUID.class),
                             ancestors,
-                            result.getString("display_path"));
+                            result.getString("display_path"),
+                            pathNodes(result));
                 });
     }
 
@@ -250,13 +263,15 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                         Object[] values = (Object[]) array.getArray();
                         List<UUID> ancestors = new ArrayList<>(values.length);
                         for (Object value : values) ancestors.add((UUID) value);
+                        List<TaskPathNode> nodes = pathNodes(rows);
                         if (paths.put(
                                         target,
                                         new TaskPath(
                                                 target.targetType(),
                                                 target.targetId(),
                                                 ancestors,
-                                                rows.getString("display_path")))
+                                                rows.getString("display_path"),
+                                                nodes))
                                 != null) {
                             throw new TaskPathNotFoundException();
                         }
@@ -267,6 +282,28 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                 || result.size() != requested.size()
                 || !result.keySet().equals(requested)) throw new TaskPathNotFoundException();
         return result;
+    }
+
+    private static List<TaskPathNode> pathNodes(java.sql.ResultSet rows) throws SQLException {
+        Object[] refs = (Object[]) rows.getArray("path_node_refs").getArray();
+        Object[] codes = (Object[]) rows.getArray("path_node_codes").getArray();
+        Object[] names = (Object[]) rows.getArray("path_node_names").getArray();
+        Object[] types = (Object[]) rows.getArray("path_node_types").getArray();
+        if (refs.length != codes.length || refs.length != names.length || refs.length != types.length) {
+            throw new TaskPathNotFoundException();
+        }
+        List<TaskPathNode> nodes = new ArrayList<>(refs.length);
+        for (int index = 0; index < refs.length; index++) {
+            nodes.add(new TaskPathNode(
+                    (UUID) refs[index], (String) codes[index], (String) names[index], (String) types[index]));
+        }
+        return List.copyOf(nodes);
+    }
+
+    private static List<TaskPathNode> appendNode(List<TaskPathNode> nodes, TaskPathNode node) {
+        List<TaskPathNode> result = new ArrayList<>(nodes);
+        result.add(node);
+        return List.copyOf(result);
     }
 
     /**
@@ -309,7 +346,8 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                                     ServiceNodeTypes.GROUP,
                                     groupId,
                                     List.of(groupId),
-                                    groups.describeCommercialGroup(workspaceUuid, key, groupId)));
+                                    groups.describeCommercialGroup(workspaceUuid, key, groupId),
+                                    requireGroupTaskPath(workspaceUuid, key).nodes()));
                 }
                 case ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT -> {
                     NodePath node = nodes.get(target.targetId());
@@ -324,7 +362,12 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                                     ServiceNodeTypes.HEAD_COMPANY,
                                     headCompany.id(),
                                     List.of(groupId, headCompany.id()),
-                                    headCompany.code() + " " + headCompany.name()));
+                                    headCompany.code() + " " + headCompany.name(),
+                                    List.of(new TaskPathNode(
+                                            headCompany.id(),
+                                            headCompany.code(),
+                                            headCompany.name(),
+                                            ServiceNodeTypes.HEAD_COMPANY))));
                 }
                 case ServiceNodeTypes.STORE -> {
                     Store store = stores.get(target.targetId());
@@ -339,7 +382,11 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                                     ServiceNodeTypes.STORE,
                                     store.id(),
                                     ancestors,
-                                    project.taskPath().displayPath() + " / " + store.code() + " " + store.name()));
+                                    project.taskPath().displayPath() + " / " + store.code() + " " + store.name(),
+                                    appendNode(
+                                            project.taskPath().nodes(),
+                                            new TaskPathNode(
+                                                    store.id(), store.code(), store.name(), ServiceNodeTypes.STORE))));
                 }
                 default -> throw new TaskPathNotFoundException();
             }
@@ -369,22 +416,27 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                 + "head_company.group_workspace_key=? "
                 + "LEFT JOIN organization.store store ON requested.target_type='STORE' AND "
                 + "store.id=requested.target_id AND store.workspace_uuid=? AND store.group_workspace_key=?"
-                + "), node_seeds AS ("
-                + "SELECT target_type, target_id, node.id, node.parent_id, node.code, node.name FROM target_rows JOIN "
+                + "), node_seeds(target_type, target_id, id, parent_id, code, name, node_type) AS ("
+                + "SELECT target_type, target_id, node.id, node.parent_id, node.code, node.name, node.node_type "
+                + "FROM target_rows JOIN "
                 + "organization.organization_node node ON node.id=target_rows.node_id "
                 + "UNION ALL SELECT target_rows.target_type, target_rows.target_id, project.id, project.parent_id, "
-                + "project.code, project.name FROM target_rows JOIN organization.organization_node project ON "
+                + "project.code, project.name, project.node_type FROM target_rows "
+                + "JOIN organization.organization_node project ON "
                 + "project.id=target_rows.project_id AND project.workspace_uuid=? AND project.group_workspace_key=?"
-                + "), ancestry AS ("
-                + "SELECT target_type, target_id, id, parent_id, code, name, 0 AS depth FROM node_seeds "
+                + "), ancestry(target_type, target_id, id, parent_id, code, name, node_type, depth) AS ("
+                + "SELECT target_type, target_id, id, parent_id, code, name, node_type, 0 AS depth FROM node_seeds "
                 + "UNION ALL SELECT ancestry.target_type, ancestry.target_id, parent.id, parent.parent_id, "
-                + "parent.code, parent.name, ancestry.depth + 1 FROM organization.organization_node parent JOIN "
+                + "parent.code, parent.name, parent.node_type, ancestry.depth + 1 "
+                + "FROM organization.organization_node parent JOIN "
                 + "ancestry ON ancestry.parent_id=parent.id WHERE parent.workspace_uuid=? AND "
                 + "parent.group_workspace_key=?"
                 + "), node_paths AS ("
-                + "SELECT target_type, target_id, array_agg(id ORDER BY depth DESC) AS ancestor_ids, string_agg(code "
-                + "|| ' ' || name, ' / ' ORDER BY depth DESC) AS display_path FROM ancestry GROUP BY target_type, "
-                + "target_id"
+                + "SELECT target_type, target_id, array_agg(id ORDER BY depth DESC) AS ancestor_ids, "
+                + "array_agg(id ORDER BY depth DESC) AS path_node_refs, array_agg(code ORDER BY depth DESC) AS "
+                + "path_node_codes, array_agg(name ORDER BY depth DESC) AS path_node_names, array_agg(node_type "
+                + "ORDER BY depth DESC) AS path_node_types, string_agg(code || ' ' || name, ' / ' ORDER BY depth "
+                + "DESC) AS display_path FROM ancestry GROUP BY target_type, target_id"
                 + ") SELECT target_rows.target_type, target_rows.target_id, "
                 + "CASE WHEN target_rows.target_type='GROUP' AND target_rows.target_id=target_rows.group_id THEN "
                 + "ARRAY[target_rows.group_id] "
@@ -395,6 +447,39 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                 + "WHEN target_rows.target_type='STORE' AND target_rows.store_id IS NOT NULL AND node_paths.target_id "
                 + "IS NOT NULL THEN array_append(array_prepend(target_rows.group_id, node_paths.ancestor_ids), "
                 + "target_rows.store_id) END AS ancestor_ids, "
+                + "CASE WHEN target_rows.target_type='GROUP' AND target_rows.target_id=target_rows.group_id THEN "
+                + "ARRAY[target_rows.group_id] "
+                + "WHEN target_rows.target_type IN ('REGION','PROJECT') AND node_paths.target_id IS NOT NULL THEN "
+                + "node_paths.path_node_refs "
+                + "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN "
+                + "ARRAY[target_rows.head_company_id] "
+                + "WHEN target_rows.target_type='STORE' AND target_rows.store_id IS NOT NULL AND node_paths.target_id "
+                + "IS NOT NULL THEN array_append(node_paths.path_node_refs, target_rows.store_id) END AS "
+                + "path_node_refs, "
+                + "CASE WHEN target_rows.target_type='GROUP' AND target_rows.target_id=target_rows.group_id THEN "
+                + "ARRAY[commercial_group.commercial_group_code] "
+                + "WHEN target_rows.target_type IN ('REGION','PROJECT') AND node_paths.target_id IS NOT NULL THEN "
+                + "node_paths.path_node_codes "
+                + "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN "
+                + "ARRAY[head_company.code] "
+                + "WHEN target_rows.target_type='STORE' AND target_rows.store_id IS NOT NULL AND node_paths.target_id "
+                + "IS NOT NULL THEN array_append(node_paths.path_node_codes, store.code) END AS path_node_codes, "
+                + "CASE WHEN target_rows.target_type='GROUP' AND target_rows.target_id=target_rows.group_id THEN "
+                + "ARRAY[commercial_group.commercial_group_name] "
+                + "WHEN target_rows.target_type IN ('REGION','PROJECT') AND node_paths.target_id IS NOT NULL THEN "
+                + "node_paths.path_node_names "
+                + "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN "
+                + "ARRAY[head_company.name] "
+                + "WHEN target_rows.target_type='STORE' AND target_rows.store_id IS NOT NULL AND node_paths.target_id "
+                + "IS NOT NULL THEN array_append(node_paths.path_node_names, store.name) END AS path_node_names, "
+                + "CASE WHEN target_rows.target_type='GROUP' AND target_rows.target_id=target_rows.group_id THEN "
+                + "ARRAY['GROUP'] "
+                + "WHEN target_rows.target_type IN ('REGION','PROJECT') AND node_paths.target_id IS NOT NULL THEN "
+                + "node_paths.path_node_types "
+                + "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN "
+                + "ARRAY['HEAD_COMPANY'] "
+                + "WHEN target_rows.target_type='STORE' AND target_rows.store_id IS NOT NULL AND node_paths.target_id "
+                + "IS NOT NULL THEN array_append(node_paths.path_node_types, 'STORE') END AS path_node_types, "
                 + "CASE WHEN target_rows.target_type='GROUP' AND target_rows.target_id=target_rows.group_id THEN "
                 + "commercial_group.commercial_group_name || '（' || commercial_group.commercial_group_code || '）' "
                 + "WHEN target_rows.target_type IN ('REGION','PROJECT') AND node_paths.target_id IS NOT NULL THEN "
@@ -687,12 +772,9 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     }
 
     private TaskPath groupPath(UUID workspaceUuid, String key, UUID groupId, UUID targetId) {
-        if (!groupId.equals(targetId)) throw new TaskPathNotFoundException();
-        return new TaskPath(
-                ServiceNodeTypes.GROUP,
-                groupId,
-                List.of(groupId),
-                groups.describeCommercialGroup(workspaceUuid, key, groupId));
+        TaskPath group = requireGroupTaskPath(workspaceUuid, key);
+        if (!groupId.equals(targetId) || !groupId.equals(group.targetId())) throw new TaskPathNotFoundException();
+        return group;
     }
 
     private TaskPath nodePath(UUID workspaceUuid, String key, UUID groupId, UUID targetId, String expectedType) {
@@ -702,14 +784,18 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                     ServiceNodeTypes.REGION,
                     target.id(),
                     List.of(groupId, target.id()),
-                    target.code() + " " + target.name());
+                    target.code() + " " + target.name(),
+                    List.of(new TaskPathNode(target.id(), target.code(), target.name(), target.type())));
         }
         Node region = node(workspaceUuid, key, target.parentId(), ServiceNodeTypes.REGION);
         return new TaskPath(
                 ServiceNodeTypes.PROJECT,
                 target.id(),
                 List.of(groupId, region.id(), target.id()),
-                region.code() + " " + region.name() + " / " + target.code() + " " + target.name());
+                region.code() + " " + region.name() + " / " + target.code() + " " + target.name(),
+                List.of(
+                        new TaskPathNode(region.id(), region.code(), region.name(), region.type()),
+                        new TaskPathNode(target.id(), target.code(), target.name(), target.type())));
     }
 
     private TaskPath headCompanyPath(UUID workspaceUuid, String key, UUID groupId, UUID targetId) {
@@ -718,7 +804,8 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                 ServiceNodeTypes.HEAD_COMPANY,
                 target.id(),
                 List.of(groupId, target.id()),
-                target.code() + " " + target.name());
+                target.code() + " " + target.name(),
+                List.of(new TaskPathNode(target.id(), target.code(), target.name(), ServiceNodeTypes.HEAD_COMPANY)));
     }
 
     private CatalogCommandScopeFacts headCompanyCatalogCommandScopeFacts(
@@ -761,7 +848,12 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                                     ServiceNodeTypes.HEAD_COMPANY,
                                     companyRef,
                                     List.of(groupRef, companyRef),
-                                    rows.getString(3) + " " + rows.getString(4)),
+                                    rows.getString(3) + " " + rows.getString(4),
+                                    List.of(new TaskPathNode(
+                                            companyRef,
+                                            rows.getString(3),
+                                            rows.getString(4),
+                                            ServiceNodeTypes.HEAD_COMPANY))),
                             new CatalogScopeLookup.CatalogBrandJudgment(
                                     brandRef.toString(),
                                     "HEAD_COMPANY_BRAND_AUTHORIZATION",
@@ -803,7 +895,16 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                 List.of(groupId, target.regionId(), target.projectId(), target.id()),
                 target.regionCode() + " " + target.regionName() + " / " + target.projectCode() + " "
                         + target.projectName() + " / "
-                        + target.code() + " " + target.name());
+                        + target.code() + " " + target.name(),
+                List.of(
+                        new TaskPathNode(
+                                target.regionId(), target.regionCode(), target.regionName(), ServiceNodeTypes.REGION),
+                        new TaskPathNode(
+                                target.projectId(),
+                                target.projectCode(),
+                                target.projectName(),
+                                ServiceNodeTypes.PROJECT),
+                        new TaskPathNode(target.id(), target.code(), target.name(), ServiceNodeTypes.STORE)));
     }
 
     private CatalogCommandScopeFacts storeCatalogCommandScopeFacts(
@@ -857,7 +958,23 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                                             + " / "
                                             + rows.getString(4)
                                             + " "
-                                            + rows.getString(5)),
+                                            + rows.getString(5),
+                                    List.of(
+                                            new TaskPathNode(
+                                                    rows.getObject(6, UUID.class),
+                                                    rows.getString(9),
+                                                    rows.getString(10),
+                                                    ServiceNodeTypes.REGION),
+                                            new TaskPathNode(
+                                                    rows.getObject(3, UUID.class),
+                                                    rows.getString(7),
+                                                    rows.getString(8),
+                                                    ServiceNodeTypes.PROJECT),
+                                            new TaskPathNode(
+                                                    storeRef,
+                                                    rows.getString(4),
+                                                    rows.getString(5),
+                                                    ServiceNodeTypes.STORE))),
                             new CatalogScopeLookup.CatalogBrandJudgment(
                                     brandRef.toString(), "STORE_PERSISTED_BRAND", "STORE_VERSION:" + rows.getLong(12)));
                 });
@@ -907,8 +1024,11 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                         + "WHERE parent.workspace_uuid=? AND parent.group_workspace_key=?"
                         + enabledOnly("parent", includeDisabledFacts)
                         + ") SELECT target_id, max(node_type) FILTER (WHERE depth=0) AS target_type, array_agg(id "
-                        + "ORDER BY depth DESC) AS ancestor_ids, string_agg(code || ' ' || name, ' / ' ORDER BY "
-                        + "depth DESC) AS display_path FROM ancestry GROUP BY target_id",
+                        + "ORDER BY depth DESC) AS ancestor_ids, array_agg(id ORDER BY depth DESC) AS path_node_refs, "
+                        + "array_agg(code ORDER BY depth DESC) AS path_node_codes, "
+                        + "array_agg(name ORDER BY depth DESC) AS path_node_names, "
+                        + "array_agg(node_type ORDER BY depth DESC) AS path_node_types, string_agg(code "
+                        + "|| ' ' || name, ' / ' ORDER BY depth DESC) AS display_path FROM ancestry GROUP BY target_id",
                 statement -> bind(statement, workspaceUuid, key, ids, workspaceUuid, key),
                 result -> {
                     LinkedHashMap<UUID, NodePath> paths = new LinkedHashMap<>();
@@ -927,7 +1047,8 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                                                 result.getString("target_type"),
                                                 targetId,
                                                 ancestors,
-                                                result.getString("display_path"))));
+                                                result.getString("display_path"),
+                                                pathNodes(result))));
                     }
                     return paths;
                 });

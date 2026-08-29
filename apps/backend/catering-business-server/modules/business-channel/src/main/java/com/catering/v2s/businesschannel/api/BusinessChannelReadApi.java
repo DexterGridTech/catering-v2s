@@ -37,6 +37,14 @@ public interface BusinessChannelReadApi {
 
     BusinessChannelReadback.Channel readChannel(UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef);
 
+    /** Reads only the server-owned target relation needed before an operations template command. */
+    BusinessChannelReadback.TemplateCommandContext readTemplateCommandContext(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef);
+
+    /** Reads only server-owned channel/template command facts; the owner command still performs the locked readback. */
+    BusinessChannelReadback.ChannelCommandContext readChannelCommandContext(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef);
+
     /** Reads a channel and its template provider in one owner query for the external binding command edge. */
     BusinessChannelReadback.ChannelWithTemplateProvider readChannelWithTemplateProvider(
             UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef);
@@ -44,8 +52,4 @@ public interface BusinessChannelReadApi {
     /** Returns channels currently attached to a collaboration binding for an owner-side cascade. */
     List<BusinessChannelReadback.Channel> findChannelsForBinding(
             UUID workspaceUuid, String groupWorkspaceKey, UUID bindingRef);
-
-    /** Returns channels whose owner template uses a provider for an external stop cascade. */
-    List<BusinessChannelReadback.Channel> findChannelsForProvider(
-            UUID workspaceUuid, String groupWorkspaceKey, String providerCode);
 }

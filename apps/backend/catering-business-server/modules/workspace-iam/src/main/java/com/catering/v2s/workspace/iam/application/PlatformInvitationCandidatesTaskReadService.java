@@ -50,7 +50,7 @@ public class PlatformInvitationCandidatesTaskReadService {
                 new PlatformInvitationCandidateQuery(targetType, text, page, pageSize)));
         List<WorkspaceUserService.CandidateOrganization> items = result.items().stream()
                 .map(value -> new WorkspaceUserService.CandidateOrganization(
-                        value.serviceNodeType(), value.organizationRef(), value.path()))
+                        value.serviceNodeType(), value.organizationRef(), value.path(), value.pathNodes()))
                 .toList();
         return new WorkspaceUserService.CandidatePage(
                 new WorkspaceUserService.CandidateQueryMetadata(

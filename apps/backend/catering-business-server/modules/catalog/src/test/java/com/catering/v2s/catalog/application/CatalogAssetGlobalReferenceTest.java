@@ -204,7 +204,7 @@ class CatalogAssetGlobalReferenceTest {
                         + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,sections,version,cre"
                         + "ated"
                         + "_at_epoch_millis,updated_at_epoch_millis) VALUES (?,?, 'brand-1', ?, ?, "
-                        + "'STANDARD_SALE_COUNTED', 'DRAFT', CAST(? AS JSONB), 1, 1, 1)",
+                        + "'STANDARD_SALE_COUNTED', 'DISABLED', CAST(? AS JSONB), 1, 1, 1)",
                 itemRef,
                 scope,
                 code,

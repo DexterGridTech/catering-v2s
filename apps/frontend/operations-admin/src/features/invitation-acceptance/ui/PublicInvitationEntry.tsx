@@ -231,7 +231,7 @@ export function PublicInvitationEntry({
                 {
                   key: 'target',
                   label: '受邀加入的组织',
-                  children: <NameCodePathText value={view.targetOrganizationPath} />,
+                  children: <NameCodePathText nodes={view.targetOrganizationPathNodes} />,
                 },
                 {key: 'roles', label: '业务角色', children: view.roleNames.map(role => <Tag key={role}>{role}</Tag>)},
                 {key: 'mobile', label: '受邀手机号', children: view.maskedMobile},

@@ -31,8 +31,16 @@ function detailTitle(pageTitle: string) {
 
 function assignmentSummary(user?: WorkspaceUser) {
   const assignments = user?.assignments ?? [];
+  const organizations = Array.from(
+    new Map(
+      assignments.map(assignment => [
+        assignment.organizationPathNodes.map(node => node.ref).join('|'),
+        assignment.organizationPathNodes,
+      ]),
+    ).values(),
+  );
   return {
-    organizations: Array.from(new Set(assignments.map(assignment => assignment.organizationPath))),
+    organizations,
     roles: Array.from(new Set(assignments.map(assignment => assignment.roleName))),
     joinedAt: assignments.reduce<number | undefined>(
       (earliest, assignment) =>
@@ -106,9 +114,9 @@ export function WorkspaceUserDetailDrawer({
                 children:
                   summary.organizations.length > 0 ? (
                     <Space size={[4, 4]} wrap>
-                      {summary.organizations.map(value => (
-                        <Tag key={value}>
-                          <NameCodePathText value={value} />
+                      {summary.organizations.map((nodes, index) => (
+                        <Tag key={nodes.map(node => node.ref).join('|') || `organization-${index}`}>
+                          <NameCodePathText nodes={nodes} />
                         </Tag>
                       ))}
                     </Space>
@@ -139,7 +147,7 @@ export function WorkspaceUserDetailDrawer({
               <Space key={assignment.id} wrap style={{justifyContent: 'space-between', width: '100%'}}>
                 <Space size={[4, 4]} wrap>
                   <Tag>
-                    <NameCodePathText value={assignment.organizationPath} />
+                    <NameCodePathText nodes={assignment.organizationPathNodes} />
                   </Tag>
                   <Tag>{assignment.roleName}</Tag>
                   <Tag color={assignment.status === 'ACTIVE' ? 'success' : 'default'}>

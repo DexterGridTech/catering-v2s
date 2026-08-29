@@ -26,7 +26,6 @@ public final class CheckedInCollaborationCatalogSource implements CollaborationC
     private static final Set<String> CATALOG_STATUSES = Set.of("PLANNED", "AVAILABLE");
     private static final Set<String> AUTHENTICATION_KINDS = Set.of("EXTERNAL_GRANT", "INTERNAL_MAPPING", "NO_MAPPING");
     private static final Set<String> UNBIND_KINDS = Set.of("LOCAL_ONLY", "REQUIRES_ADAPTER_UNBIND");
-    private static final Set<String> CONTROL_KINDS = Set.of("readonlySummary", "readonlyPreview");
     private static final Set<String> CAPABILITY_CLASSES = Set.of(
             "MASTER_DATA_SYNC",
             "MEMBER_BENEFIT",
@@ -97,21 +96,6 @@ public final class CheckedInCollaborationCatalogSource implements CollaborationC
             if (result.containsKey(code)) throw invalid("duplicate external system code: " + code);
             String status = text(value, "catalogStatus");
             requireOneOf(status, CATALOG_STATUSES, "catalogStatus");
-            List<AttributeDefinition> attributes = new ArrayList<>();
-            JsonNode attributeValues = value.path("attributeDictionary");
-            requireArray(attributeValues, "attributeDictionary");
-            for (JsonNode attribute : attributeValues) {
-                JsonNode optionSourceRef = attribute.path("optionSourceRef");
-                if (!optionSourceRef.isObject()) throw invalid("attribute optionSourceRef must be an object");
-                String controlKind = text(attribute, "controlKind");
-                requireOneOf(controlKind, CONTROL_KINDS, "controlKind");
-                attributes.add(new AttributeDefinition(
-                        text(attribute, "fieldKey"),
-                        text(attribute, "label"),
-                        text(attribute, "helpText"),
-                        controlKind,
-                        optionSourceRef.deepCopy()));
-            }
             List<CapabilityDefinition> capabilities = new ArrayList<>();
             Set<String> capabilityCodes = new java.util.HashSet<>();
             JsonNode capabilityValues = value.path("capabilities");
@@ -124,29 +108,10 @@ public final class CheckedInCollaborationCatalogSource implements CollaborationC
                 }
                 JsonNode attributeData = capability.path("attributeValues");
                 if (!attributeData.isObject()) throw invalid("capability attributeValues must be an object");
-                Map<String, String> attributeValueLabels = textMap(capability, "attributeValueLabels");
-                var attributeNames = attributeData.fieldNames();
-                while (attributeNames.hasNext()) {
-                    String attributeName = attributeNames.next();
-                    if (!attributeValueLabels.containsKey(attributeName)) {
-                        throw invalid("capability attributeValueLabels must cover attributeValues: " + capabilityClass);
-                    }
-                }
                 capabilities.add(new CapabilityDefinition(
-                        capabilityClass,
-                        text(capability, "displayName"),
-                        attributeData.deepCopy(),
-                        attributeValueLabels));
+                        capabilityClass, text(capability, "displayName"), attributeData.deepCopy()));
             }
-            result.put(
-                    code,
-                    new ExternalSystemDefinition(
-                            code,
-                            text(value, "displayName"),
-                            status,
-                            text(value, "catalogStatusDisplayName"),
-                            attributes,
-                            capabilities));
+            result.put(code, new ExternalSystemDefinition(code, text(value, "displayName"), status, capabilities));
         }
         return result;
     }
@@ -163,10 +128,6 @@ public final class CheckedInCollaborationCatalogSource implements CollaborationC
             ExternalSystemDefinition system = systems.get(externalSystemCode);
             if (system == null) throw invalid("provider references unknown external system: " + externalSystemCode);
             List<String> businessScope = texts(value, "businessScope", true);
-            List<String> businessScopeDisplayNames = texts(value, "businessScopeDisplayNames", true);
-            if (businessScope.size() != businessScopeDisplayNames.size()) {
-                throw invalid("businessScopeDisplayNames must align with businessScope: " + providerCode);
-            }
             Set<String> systemCapabilities = system.capabilities().stream()
                     .map(CapabilityDefinition::capabilityClass)
                     .collect(java.util.stream.Collectors.toSet());
@@ -174,10 +135,6 @@ public final class CheckedInCollaborationCatalogSource implements CollaborationC
                 throw invalid("provider businessScope exceeds external system capabilities: " + providerCode);
             }
             List<String> bindableNodeTypes = texts(value, "bindableNodeTypes", true);
-            List<String> bindableNodeTypeDisplayNames = texts(value, "bindableNodeTypeDisplayNames", true);
-            if (bindableNodeTypes.size() != bindableNodeTypeDisplayNames.size()) {
-                throw invalid("bindableNodeTypeDisplayNames must align with bindableNodeTypes: " + providerCode);
-            }
             bindableNodeTypes.forEach(nodeType -> requireOneOf(nodeType, NODE_TYPES, "bindableNodeTypes"));
             String authenticationKind = text(value, "authenticationKind");
             requireOneOf(authenticationKind, AUTHENTICATION_KINDS, "authenticationKind");
@@ -190,15 +147,10 @@ public final class CheckedInCollaborationCatalogSource implements CollaborationC
                     text(value, "displayName"),
                     externalSystemCode,
                     businessScope,
-                    businessScopeDisplayNames,
                     bindableNodeTypes,
-                    bindableNodeTypeDisplayNames,
                     authenticationKind,
-                    text(value, "authenticationKindDisplayName"),
                     unbindKind,
-                    text(value, "unbindKindDisplayName"),
-                    catalogStatus,
-                    text(value, "catalogStatusDisplayName")));
+                    catalogStatus));
         }
         return List.copyOf(result);
     }
@@ -216,19 +168,6 @@ public final class CheckedInCollaborationCatalogSource implements CollaborationC
             result.add(value.asText());
         }
         return List.copyOf(result);
-    }
-
-    private static Map<String, String> textMap(JsonNode parent, String field) {
-        JsonNode values = parent.path(field);
-        if (!values.isObject()) throw invalid(field + " must be an object");
-        Map<String, String> result = new LinkedHashMap<>();
-        values.fields().forEachRemaining(entry -> result.put(entry.getKey(), textValue(entry.getValue(), field)));
-        return Map.copyOf(result);
-    }
-
-    private static String textValue(JsonNode value, String field) {
-        if (!value.isTextual() || value.asText().isBlank()) throw invalid(field + " must contain non-empty text");
-        return value.asText();
     }
 
     private static String text(JsonNode parent, String field) {

@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.catering.v2s.audit.contract.AuditActor;
-import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import java.util.UUID;
 import org.flywaydb.core.Flyway;
@@ -66,12 +66,12 @@ class WorkspaceAccountPlatformReceiptTest {
                 NOW,
                 NOW);
         TimeProvider time = () -> NOW;
-        WorkspaceStatusLookup workspaces = (id, key) -> Boolean.TRUE.equals(jdbc.queryForObject(
-                "SELECT status='ENABLED' FROM platform_workspace.group_workspace WHERE workspace_uuid=? AND "
+        WorkspaceStatusLookup workspaces = (id, key) -> jdbc.queryForObject(
+                "SELECT status FROM platform_workspace.group_workspace WHERE workspace_uuid=? AND "
                         + "group_workspace_key=?",
-                Boolean.class,
+                String.class,
                 id,
-                key));
+                key);
         PlatformGovernanceAuthorization authorization = actor -> {};
         accounts = new WorkspaceAccountService(
                 jdbc,

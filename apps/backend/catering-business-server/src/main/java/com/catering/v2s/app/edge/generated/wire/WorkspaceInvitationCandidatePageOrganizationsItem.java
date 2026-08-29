@@ -4,5 +4,6 @@ package com.catering.v2s.app.edge.generated.wire;
 public record WorkspaceInvitationCandidatePageOrganizationsItem(
     String serviceNodeType,
     java.util.UUID organizationRef,
-    String path
+    String path,
+    java.util.List<OrganizationPathNode> pathNodes
 ) {}

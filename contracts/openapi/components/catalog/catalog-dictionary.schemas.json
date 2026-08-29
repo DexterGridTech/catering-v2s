@@ -398,6 +398,41 @@
         }
       }
     },
+    "CatalogCategoryStatusTransitionRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "categoryRef",
+        "expectedVersion",
+        "targetStatus",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "categoryRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "category reference"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "expected version"
+        },
+        "targetStatus": {
+          "type": "string",
+          "enum": [
+            "ENABLED",
+            "DISABLED",
+            "VOIDED"
+          ],
+          "description": "target lifecycle status"
+        }
+      }
+    },
     "CatalogAttributeDefinitionListQuery": {
       "type": "object",
       "additionalProperties": false,
@@ -407,6 +442,13 @@
           "type": "string",
           "format": "uuid",
           "description": "selected data node"
+        },
+        "candidateUsage": {
+          "type": "string",
+          "enum": [
+            "ITEM_ASSIGNMENT"
+          ],
+          "description": "owner-defined candidate usage; only enabled definitions are returned"
         }
       }
     },
@@ -444,6 +486,7 @@
                   "definitionRef",
                   "code",
                   "name",
+                  "status",
                   "valueType",
                   "options",
                   "version"
@@ -461,6 +504,15 @@
                   "name": {
                     "type": "string",
                     "description": "attribute name"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "description": "attribute lifecycle status"
                   },
                   "valueType": {
                     "type": "string",
@@ -641,12 +693,13 @@
         }
       }
     },
-    "CatalogAttributeDefinitionDeleteRequest": {
+    "CatalogAttributeDefinitionStatusTransitionRequest": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "definitionRef",
         "expectedVersion",
+        "targetStatus",
         "dataNodeRef"
       ],
       "properties": {
@@ -663,6 +716,15 @@
         "expectedVersion": {
           "type": "integer",
           "description": "expected version"
+        },
+        "targetStatus": {
+          "type": "string",
+          "enum": [
+            "ENABLED",
+            "DISABLED",
+            "VOIDED"
+          ],
+          "description": "target lifecycle status"
         }
       }
     },
@@ -697,6 +759,7 @@
                 "definitionRef",
                 "code",
                 "name",
+                "status",
                 "valueType",
                 "options",
                 "version"
@@ -714,6 +777,15 @@
                 "name": {
                   "type": "string",
                   "description": "attribute name"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ENABLED",
+                    "DISABLED",
+                    "VOIDED"
+                  ],
+                  "description": "attribute lifecycle status"
                 },
                 "valueType": {
                   "type": "string",
@@ -766,48 +838,6 @@
         }
       }
     },
-    "CatalogAttributeDefinitionDeleteReadback": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "revision",
-        "requestId",
-        "result"
-      ],
-      "properties": {
-        "revision": {
-          "type": "string",
-          "description": "contract revision"
-        },
-        "requestId": {
-          "type": "string",
-          "description": "request correlation"
-        },
-        "result": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "definitionRef",
-            "deletedAssignmentCount"
-          ],
-          "properties": {
-            "definitionRef": {
-              "type": "string",
-              "format": "uuid",
-              "description": "deleted attribute definition reference"
-            },
-            "deletedAssignmentCount": {
-              "type": "integer",
-              "description": "product attribute assignments removed by the cascade"
-            }
-          }
-        },
-        "version": {
-          "type": "integer",
-          "description": "delete receipt version"
-        }
-      }
-    },
     "CatalogOrderOptionDefinitionListQuery": {
       "type": "object",
       "additionalProperties": false,
@@ -817,6 +847,13 @@
           "type": "string",
           "format": "uuid",
           "description": "selected data node"
+        },
+        "candidateUsage": {
+          "type": "string",
+          "enum": [
+            "ITEM_ASSIGNMENT"
+          ],
+          "description": "owner-defined candidate usage; only enabled definitions are returned"
         }
       }
     },
@@ -854,6 +891,7 @@
                   "definitionRef",
                   "code",
                   "name",
+                  "status",
                   "selectionMode",
                   "values",
                   "version"
@@ -871,6 +909,15 @@
                   "name": {
                     "type": "string",
                     "description": "ordering option name"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "description": "ordering option lifecycle status"
                   },
                   "selectionMode": {
                     "type": "string",
@@ -1190,12 +1237,13 @@
         }
       }
     },
-    "CatalogOrderOptionDefinitionDeleteRequest": {
+    "CatalogOrderOptionDefinitionStatusTransitionRequest": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "definitionRef",
         "expectedVersion",
+        "targetStatus",
         "dataNodeRef"
       ],
       "properties": {
@@ -1212,6 +1260,15 @@
         "expectedVersion": {
           "type": "integer",
           "description": "expected version"
+        },
+        "targetStatus": {
+          "type": "string",
+          "enum": [
+            "ENABLED",
+            "DISABLED",
+            "VOIDED"
+          ],
+          "description": "target lifecycle status"
         }
       }
     },
@@ -1247,6 +1304,7 @@
                 "definitionRef",
                 "code",
                 "name",
+                "status",
                 "selectionMode",
                 "values",
                 "version"
@@ -1264,6 +1322,15 @@
                 "name": {
                   "type": "string",
                   "description": "ordering option name"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ENABLED",
+                    "DISABLED",
+                    "VOIDED"
+                  ],
+                  "description": "ordering option lifecycle status"
                 },
                 "selectionMode": {
                   "type": "string",
@@ -1408,58 +1475,6 @@
         }
       }
     },
-    "CatalogOrderOptionDefinitionDeleteReadback": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "revision",
-        "requestId",
-        "result"
-      ],
-      "properties": {
-        "revision": {
-          "type": "string",
-          "description": "contract revision"
-        },
-        "requestId": {
-          "type": "string",
-          "description": "request correlation"
-        },
-        "result": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "definitionRef",
-            "deletedDefinitionValueRefs",
-            "deletedItemConfigCount"
-          ],
-          "properties": {
-            "definitionRef": {
-              "type": "string",
-              "format": "uuid",
-              "description": "deleted ordering option definition reference"
-            },
-            "deletedDefinitionValueRefs": {
-              "type": "array",
-              "description": "deleted option value references",
-              "items": {
-                "type": "string",
-                "format": "uuid",
-                "description": "deleted option value reference"
-              }
-            },
-            "deletedItemConfigCount": {
-              "type": "integer",
-              "description": "product ordering option configurations removed by the cascade"
-            }
-          }
-        },
-        "version": {
-          "type": "integer",
-          "description": "delete receipt version"
-        }
-      }
-    },
     "CatalogUnitListQuery": {
       "type": "object",
       "additionalProperties": false,
@@ -1486,7 +1501,8 @@
           "type": "string",
           "enum": [
             "ENABLED",
-            "DISABLED"
+            "DISABLED",
+            "VOIDED"
           ],
           "description": "optional unit lifecycle status filter"
         }
@@ -1566,7 +1582,8 @@
                     "type": "string",
                     "enum": [
                       "ENABLED",
-                      "DISABLED"
+                      "DISABLED",
+                      "VOIDED"
                     ],
                     "description": "whether the unit can be selected for new configurations"
                   },
@@ -1663,12 +1680,13 @@
         }
       }
     },
-    "CatalogUnitDisableRequest": {
+    "CatalogUnitStatusTransitionRequest": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "unitRef",
         "expectedVersion",
+        "targetStatus",
         "dataNodeRef"
       ],
       "properties": {
@@ -1685,31 +1703,15 @@
         "expectedVersion": {
           "type": "integer",
           "description": "expected version"
-        }
-      }
-    },
-    "CatalogUnitDeleteRequest": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "unitRef",
-        "expectedVersion",
-        "dataNodeRef"
-      ],
-      "properties": {
-        "dataNodeRef": {
-          "type": "string",
-          "format": "uuid",
-          "description": "selected data node"
         },
-        "unitRef": {
+        "targetStatus": {
           "type": "string",
-          "format": "uuid",
-          "description": "unit reference"
-        },
-        "expectedVersion": {
-          "type": "integer",
-          "description": "expected version"
+          "enum": [
+            "ENABLED",
+            "DISABLED",
+            "VOIDED"
+          ],
+          "description": "target lifecycle status"
         }
       }
     },
@@ -1783,7 +1785,8 @@
                   "type": "string",
                   "enum": [
                     "ENABLED",
-                    "DISABLED"
+                    "DISABLED",
+                    "VOIDED"
                   ],
                   "description": "whether the unit can be selected for new configurations"
                 },
@@ -1798,43 +1801,6 @@
         "version": {
           "type": "integer",
           "description": "unit definition version"
-        }
-      }
-    },
-    "CatalogUnitDeleteReadback": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "revision",
-        "requestId",
-        "result"
-      ],
-      "properties": {
-        "revision": {
-          "type": "string",
-          "description": "contract revision"
-        },
-        "requestId": {
-          "type": "string",
-          "description": "request correlation"
-        },
-        "result": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "unitRef"
-          ],
-          "properties": {
-            "unitRef": {
-              "type": "string",
-              "format": "uuid",
-              "description": "deleted unit definition reference"
-            }
-          }
-        },
-        "version": {
-          "type": "integer",
-          "description": "delete receipt version"
         }
       }
     },
@@ -1895,6 +1861,7 @@
             "categoryRef",
             "code",
             "name",
+            "status",
             "parentCategoryRef",
             "version",
             "displayOrder",
@@ -1913,6 +1880,15 @@
             "name": {
               "type": "string",
               "description": "category name"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "ENABLED",
+                "DISABLED",
+                "VOIDED"
+              ],
+              "description": "category lifecycle status"
             },
             "parentCategoryRef": {
               "type": [
@@ -1937,7 +1913,7 @@
                 "canDelete",
                 "subtreeSize",
                 "blockingReferenceCount",
-                "blockingReferenceLabels"
+                "blockingReferences"
               ],
               "properties": {
                 "canDelete": {
@@ -1952,11 +1928,60 @@
                   "type": "integer",
                   "description": "blocking product reference count"
                 },
-                "blockingReferenceLabels": {
-                  "type": "array",
-                  "description": "safe blocking product labels",
-                  "items": {
-                    "type": "string"
+                "blockingReferences": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "count",
+                    "references"
+                  ],
+                  "properties": {
+                    "count": {
+                      "type": "integer",
+                      "description": "number of blocking references"
+                    },
+                    "references": {
+                      "type": "array",
+                      "description": "typed blocking references",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "referenceKind",
+                          "referenceRef",
+                          "code",
+                          "name",
+                          "direction"
+                        ],
+                        "properties": {
+                          "referenceKind": {
+                            "type": "string",
+                            "description": "business reference kind"
+                          },
+                          "referenceRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "business reference opaque reference"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "referenced business code"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "referenced business name"
+                          },
+                          "direction": {
+                            "type": "string",
+                            "enum": [
+                              "INBOUND",
+                              "OUTBOUND"
+                            ],
+                            "description": "reference direction"
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -2039,81 +2064,6 @@
           ],
           "description": "design-bound field",
           "format": "uuid"
-        }
-      }
-    },
-    "CatalogCategoryDeleteRequest": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "dataNodeRef",
-        "categoryRef",
-        "expectedVersion"
-      ],
-      "properties": {
-        "dataNodeRef": {
-          "type": "string",
-          "description": "design-bound field",
-          "format": "uuid"
-        },
-        "categoryRef": {
-          "type": "string",
-          "description": "design-bound field",
-          "format": "uuid"
-        },
-        "expectedVersion": {
-          "type": "integer",
-          "description": "design-bound field"
-        }
-      }
-    },
-    "CatalogCategoryDeleteReadback": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "revision",
-        "requestId",
-        "result"
-      ],
-      "properties": {
-        "revision": {
-          "type": "string",
-          "description": "contract revision"
-        },
-        "requestId": {
-          "type": "string",
-          "description": "request correlation"
-        },
-        "result": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "categoryRef",
-            "deletedSubtreeSize",
-            "deletedCategoryCodes"
-          ],
-          "properties": {
-            "categoryRef": {
-              "type": "string",
-              "format": "uuid",
-              "description": "deleted category opaque ref"
-            },
-            "deletedSubtreeSize": {
-              "type": "integer",
-              "description": "deleted category subtree size"
-            },
-            "deletedCategoryCodes": {
-              "type": "array",
-              "description": "deleted category business codes",
-              "items": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "version": {
-          "type": "integer",
-          "description": "version"
         }
       }
     },

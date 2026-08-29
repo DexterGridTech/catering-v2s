@@ -47,6 +47,7 @@ export function WorkspaceScopeProvider({children}: {children: ReactNode}) {
     pageSize: 100,
     keyOf: item => item.groupWorkspaceKey,
   });
+  const {acceptPage} = candidates;
   const confirmedRefreshVersion = useRef(refreshVersion);
   const selectedGroupWorkspaceKeyRef = useRef(selectedGroupWorkspaceKey);
   selectedGroupWorkspaceKeyRef.current = selectedGroupWorkspaceKey;
@@ -78,7 +79,7 @@ export function WorkspaceScopeProvider({children}: {children: ReactNode}) {
       )
       .then(value => {
         if (!generation.isCurrent(request)) return;
-        candidates.acceptPage(value.items, {pageSize: value.pageSize, total: value.total});
+        acceptPage(value.items, {pageSize: value.pageSize, total: value.total});
         setLatestPage(value);
         if (
           shouldReconcileSelection &&
@@ -94,7 +95,7 @@ export function WorkspaceScopeProvider({children}: {children: ReactNode}) {
         if (generation.isCurrent(request)) setLoading(false);
       });
   }, [
-    candidates.acceptPage,
+    acceptPage,
     candidates.debouncedQueryText,
     candidates.page,
     candidates.pageSize,

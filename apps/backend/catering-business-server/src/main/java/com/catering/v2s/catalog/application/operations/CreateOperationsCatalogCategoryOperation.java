@@ -50,6 +50,20 @@ public class CreateOperationsCatalogCategoryOperation {
             String idempotencyKey) {}
 
     static CatalogCategoryReadback response(String requestId, CatalogOwnerApi.CategoryReadback value) {
+        CatalogOwnerApi.CategoryDeletionAvailability availability = value.deletionAvailability();
+        CatalogCategoryReadback.Result.DeletionAvailability.BlockingReferences blockingReferences =
+                new CatalogCategoryReadback.Result.DeletionAvailability.BlockingReferences(
+                        availability.blockingReferenceCount(),
+                        availability.blockingReferences().stream()
+                                .map(reference ->
+                                        new CatalogCategoryReadback.Result.DeletionAvailability.BlockingReferences
+                                                .ReferencesItem(
+                                                reference.referenceKind(),
+                                                reference.referenceRef(),
+                                                reference.code(),
+                                                reference.name(),
+                                                reference.direction()))
+                                .toList());
         return new CatalogCategoryReadback(
                 REVISION,
                 requestId,
@@ -57,6 +71,7 @@ public class CreateOperationsCatalogCategoryOperation {
                         value.categoryRef(),
                         value.code(),
                         value.name(),
+                        value.status(),
                         value.parentCategoryRef(),
                         value.version(),
                         value.displayOrder(),
@@ -64,7 +79,7 @@ public class CreateOperationsCatalogCategoryOperation {
                                 value.deletionAvailability().canDelete(),
                                 value.deletionAvailability().subtreeSize(),
                                 value.deletionAvailability().blockingReferenceCount(),
-                                value.deletionAvailability().blockingReferenceLabels())),
+                                blockingReferences)),
                 value.version());
     }
 

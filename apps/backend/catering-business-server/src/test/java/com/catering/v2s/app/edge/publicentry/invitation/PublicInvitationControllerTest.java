@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
@@ -24,7 +25,13 @@ class PublicInvitationControllerTest {
                         UUID.randomUUID(),
                         "workspace",
                         "STORE",
-                        "华东/门店",
+                        List.of(
+                                // spotless:off
+                                new OrganizationTaskPathLookup.TaskPathNode(
+                                        UUID.randomUUID(), "east", "华东", "REGION"),
+                                new OrganizationTaskPathLookup.TaskPathNode(
+                                        UUID.randomUUID(), "store", "门店", "STORE")),
+                                // spotless:on
                         List.of("店长"),
                         "138****0000",
                         "ACTIVE",

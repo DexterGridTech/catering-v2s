@@ -207,8 +207,8 @@ public final class OperationsBusinessChannelController {
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
         if (body == null || body.expectedVersion() == null)
             throw new InvalidEdgeRequestException("expectedVersion is required");
-        BusinessChannelReadback.Template initial =
-                businessChannels.readTemplate(session.workspaceUuid(), session.groupWorkspaceKey(), templateRef);
+        BusinessChannelReadback.TemplateCommandContext target = businessChannels.readTemplateCommandContext(
+                session.workspaceUuid(), session.groupWorkspaceKey(), templateRef);
         return BusinessChannelWireMapper.template(commandBindings.bindUpdateOperationsBusinessChannelTemplate(
                 new BusinessChannelCommandApi.UpdateTemplateCommand(
                         session.workspaceUuid(),
@@ -219,7 +219,7 @@ public final class OperationsBusinessChannelController {
                         session.contextVersion(),
                         idempotencyKey(idempotencyKey),
                         sessions.actor(session),
-                        grant(session, REQ_UPDATE_TEMPLATE, ServiceNodeTypes.PROJECT, initial.projectRef()))));
+                        grant(session, REQ_UPDATE_TEMPLATE, ServiceNodeTypes.PROJECT, target.projectRef()))));
     }
 
     @PostMapping("/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/status")
@@ -232,8 +232,8 @@ public final class OperationsBusinessChannelController {
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
         if (body == null || body.expectedVersion() == null)
             throw new InvalidEdgeRequestException("expectedVersion is required");
-        BusinessChannelReadback.Template initial =
-                businessChannels.readTemplate(session.workspaceUuid(), session.groupWorkspaceKey(), templateRef);
+        BusinessChannelReadback.TemplateCommandContext target = businessChannels.readTemplateCommandContext(
+                session.workspaceUuid(), session.groupWorkspaceKey(), templateRef);
         return BusinessChannelWireMapper.template(commandBindings.bindTransitionOperationsBusinessChannelTemplateStatus(
                 new BusinessChannelCommandApi.TransitionTemplateStatusCommand(
                         session.workspaceUuid(),
@@ -244,7 +244,7 @@ public final class OperationsBusinessChannelController {
                         session.contextVersion(),
                         idempotencyKey(idempotencyKey),
                         sessions.actor(session),
-                        grant(session, REQ_TRANSITION_TEMPLATE, ServiceNodeTypes.PROJECT, initial.projectRef()))));
+                        grant(session, REQ_TRANSITION_TEMPLATE, ServiceNodeTypes.PROJECT, target.projectRef()))));
     }
 
     @PostMapping("/group-workspaces/{groupWorkspaceKey}/business-channels")
@@ -289,7 +289,8 @@ public final class OperationsBusinessChannelController {
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
         if (body == null || body.expectedVersion() == null)
             throw new InvalidEdgeRequestException("expectedVersion is required");
-        BusinessChannelReadback.Channel initial = readChannel(session, channelRef);
+        BusinessChannelReadback.ChannelCommandContext target = businessChannels.readChannelCommandContext(
+                session.workspaceUuid(), session.groupWorkspaceKey(), channelRef);
         return BusinessChannelWireMapper.channel(
                 commandBindings.bindUpdateOperationsBusinessChannel(new BusinessChannelCommandApi.UpdateChannelCommand(
                         session.workspaceUuid(),
@@ -304,8 +305,8 @@ public final class OperationsBusinessChannelController {
                         grant(
                                 session,
                                 REQ_UPDATE_CHANNEL,
-                                ownerNodeType(initial.ownerNodeType()),
-                                ownerNodeId(initial.ownerNodeRef())))));
+                                ownerNodeType(target.ownerNodeType()),
+                                ownerNodeId(target.ownerNodeRef())))));
     }
 
     @PostMapping("/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}")
@@ -318,7 +319,8 @@ public final class OperationsBusinessChannelController {
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
         if (body == null || body.expectedVersion() == null)
             throw new InvalidEdgeRequestException("expectedVersion is required");
-        BusinessChannelReadback.Channel initial = readChannel(session, channelRef);
+        BusinessChannelReadback.ChannelCommandContext target = businessChannels.readChannelCommandContext(
+                session.workspaceUuid(), session.groupWorkspaceKey(), channelRef);
         return BusinessChannelWireMapper.channel(commandBindings.bindTransitionOperationsBusinessChannelStatus(
                 new BusinessChannelCommandApi.TransitionChannelStatusCommand(
                         session.workspaceUuid(),
@@ -332,8 +334,8 @@ public final class OperationsBusinessChannelController {
                         grant(
                                 session,
                                 REQ_TRANSITION_CHANNEL,
-                                ownerNodeType(initial.ownerNodeType()),
-                                ownerNodeId(initial.ownerNodeRef())))));
+                                ownerNodeType(target.ownerNodeType()),
+                                ownerNodeId(target.ownerNodeRef())))));
     }
 
     @PostMapping("/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding")
@@ -369,7 +371,8 @@ public final class OperationsBusinessChannelController {
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
         if (body == null || body.expectedVersion() == null)
             throw new InvalidEdgeRequestException("expectedVersion is required");
-        BusinessChannelReadback.Channel channel = readChannel(session, channelRef);
+        BusinessChannelReadback.ChannelCommandContext channel = businessChannels.readChannelCommandContext(
+                session.workspaceUuid(), session.groupWorkspaceKey(), channelRef);
         UUID bindingRef = requireBindingRef(channel);
         String nodeType = ownerNodeType(channel.ownerNodeType());
         return ExternalCollaborationWireMapper.binding(coordinator.deleteOperationsBinding(
@@ -382,7 +385,7 @@ public final class OperationsBusinessChannelController {
                         idempotencyKey(idempotencyKey),
                         sessions.actor(session),
                         grant(session, REQ_BINDING_DELETE, nodeType, ownerNodeId(channel.ownerNodeRef()))),
-                channelRef));
+                channel));
     }
 
     private BusinessChannelPage channels(
@@ -487,7 +490,7 @@ public final class OperationsBusinessChannelController {
         }
     }
 
-    private static UUID requireBindingRef(BusinessChannelReadback.Channel channel) {
+    private static UUID requireBindingRef(BusinessChannelReadback.ChannelCommandContext channel) {
         if (channel.bindingRef() == null) throw new InvalidEdgeRequestException("business channel has no binding");
         return channel.bindingRef();
     }

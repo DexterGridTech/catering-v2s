@@ -4,8 +4,8 @@ import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
-import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.catering.v2s.workspace.iam.api.WorkspaceAccountReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog.UserManagementAction;
@@ -94,7 +94,7 @@ public class WorkspaceAccountService {
     @Transactional
     public WorkspaceAccountReadback transitionStatus(
             UUID workspaceUuid, String key, UUID accountId, String status, long expectedVersion, AuditActor actor) {
-        if (!Set.of("ENABLED", "DISABLED").contains(status)) {
+        if (!Set.of("ENABLED", "DISABLED", "VOIDED").contains(status)) {
             // Preserve the historical not-found-before-invalid-status ordering without making the normal command
             // path read the account twice.
             require(workspaceUuid, key, accountId);
@@ -105,7 +105,8 @@ public class WorkspaceAccountService {
                         + "workspace_uuid=? AND group_workspace_key=? FOR UPDATE), updated AS (UPDATE "
                         + "workspace_iam.workspace_account SET status=?, version=version+1, "
                         + "updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND group_workspace_key=? "
-                        + "AND version=? RETURNING id, workspace_uuid, group_workspace_key, mobile_normalized, "
+                        + "AND version=? AND status <> 'VOIDED' RETURNING id, workspace_uuid, "
+                        + "group_workspace_key, mobile_normalized, "
                         + "login_name_normalized, display_name, status, version) SELECT updated.*, current.status "
                         + "AS previous_status, current.id AS existing_id FROM (SELECT 1) sentinel LEFT JOIN current "
                         + "ON true LEFT JOIN updated ON true",
@@ -127,8 +128,9 @@ public class WorkspaceAccountService {
                                 result.getString("previous_status"))
                         : null);
         if (transition == null || transition.existingId() == null) throw new AccountNotFoundException();
+        if ("VOIDED".equals(transition.previousStatus())) throw new AccountConflictException();
         if (transition.updated() == null) throw new AccountConflictException();
-        if ("DISABLED".equals(status))
+        if (!"ENABLED".equals(status))
             jdbc.update(
                     "UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=? WHERE "
                             + "account_id=? AND status='ACTIVE'",

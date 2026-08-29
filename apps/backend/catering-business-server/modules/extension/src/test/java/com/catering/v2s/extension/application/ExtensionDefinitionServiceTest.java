@@ -5,9 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.api.ExtensionHostTypes;
+import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
@@ -57,8 +61,18 @@ class ExtensionDefinitionServiceTest {
                 now,
                 now,
                 now);
+        WorkspaceStatusLookup workspaceStatuses = (id, key) -> jdbc.queryForObject(
+                "SELECT status FROM platform_workspace.group_workspace "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=?",
+                String.class,
+                id,
+                key);
         service = new ExtensionDefinitionService(
-                jdbc, (TimeProvider) () -> now, new ExtensionCommandReceiptService(jdbc, () -> now), actor -> {});
+                jdbc,
+                (TimeProvider) () -> now,
+                new ExtensionCommandReceiptService(jdbc, () -> now),
+                actor -> {},
+                workspaceStatuses);
     }
 
     @Test
@@ -71,6 +85,8 @@ class ExtensionDefinitionServiceTest {
                 List.of(new ExtensionDefinitionService.Field(
                         "floorArea", "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null)));
         assertEquals(1, first.version());
+        assertEquals("ENABLED", first.workspaceStatus());
+        assertTrue(first.blockers().isEmpty());
         assertThrows(
                 ExtensionDefinitionService.DefinitionVersionConflictException.class,
                 () -> service.replace(workspaceId, "extension-test", "STORE", 0, List.of()));
@@ -202,6 +218,58 @@ class ExtensionDefinitionServiceTest {
     }
 
     @Test
+    void workspaceStatusIsReturnedAsIndependentDimensionAndDoesNotBlockDefinitionGovernance() {
+        UUID disabledWorkspace = UUID.randomUUID();
+        jdbc.update(
+                "INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, "
+                        + "name_normalized, operations_title, status, revision, version, created_at_epoch_millis, "
+                        + "updated_at_epoch_millis, status_changed_at_epoch_millis) VALUES (?, 'extension-disabled', "
+                        + "'Extension disabled', 'extension disabled', 'Extension disabled', 'ENABLED', 1, 1, ?, ?, ?)",
+                disabledWorkspace,
+                1_785_000_000_000L,
+                1_785_000_000_000L,
+                1_785_000_000_000L);
+        var created = service.replace(
+                disabledWorkspace,
+                "extension-disabled",
+                "STORE",
+                0,
+                List.of(new ExtensionDefinitionService.Field(
+                        "capacity", "Capacity", "NUMBER", false, List.of(), "ENABLED", 0, null)));
+        jdbc.update(
+                "UPDATE platform_workspace.group_workspace SET status='DISABLED' WHERE workspace_uuid=?",
+                disabledWorkspace);
+
+        var disabled = service.managementDefinition(disabledWorkspace, "extension-disabled", "STORE");
+        assertEquals("DISABLED", disabled.workspaceStatus());
+        assertEquals(List.of(new ExtensionDefinitionReadback.Blocker("WORKSPACE", "DISABLED")), disabled.blockers());
+        assertEquals(created.fields(), disabled.fields());
+
+        var edited = service.replace(
+                disabledWorkspace,
+                "extension-disabled",
+                "STORE",
+                disabled.version(),
+                List.of(new ExtensionDefinitionService.Field(
+                        "capacity", "Capacity updated", "NUMBER", false, List.of(), "DISABLED", 0, null)));
+        assertEquals("DISABLED", edited.workspaceStatus());
+        assertEquals("DISABLED", edited.fields().getFirst().status());
+    }
+
+    @Test
+    void missingOrNullFieldStatusIsRejectedInsteadOfDefaultingToEnabled() {
+        assertThrows(
+                ExtensionDefinitionService.DefinitionInvalidException.class,
+                () -> service.replace(
+                        workspaceId,
+                        "extension-test",
+                        "REGION",
+                        0,
+                        List.of(new ExtensionDefinitionService.Field(
+                                "missingStatus", "Missing status", "TEXT", false, List.of(), null, 0, null))));
+    }
+
+    @Test
     void platformTaskReadBoundariesPreserveManagementSemantics() {
         assertEquals(
                 8,
@@ -235,6 +303,34 @@ class ExtensionDefinitionServiceTest {
     }
 
     @Test
+    void downstreamValueMergeRejectsDisabledWorkspaceEvenWhenFieldIsEnabled() {
+        ExtensionDefinitionReadback definition = new ExtensionDefinitionReadback(
+                "extension-disabled-consumer",
+                "STORE",
+                1,
+                1,
+                List.of(new ExtensionDefinitionReadback.Field(
+                        "capacity", "Capacity", "NUMBER", false, List.of(), "ENABLED", 0, null)),
+                "DISABLED",
+                List.of(new ExtensionDefinitionReadback.Blocker("WORKSPACE", "DISABLED")));
+
+        assertThrows(
+                ExtensionDefinitionService.DefinitionInvalidException.class,
+                () -> ExtensionDefinitionService.mergeValues(definition, "{}", java.util.Map.of("capacity", "1")));
+        assertThrows(
+                ExtensionDefinitionService.DefinitionInvalidException.class,
+                () -> ExtensionDefinitionService.mergeValues(
+                        definition,
+                        "{}",
+                        new ExtensionSubmission(List.of(new ExtensionSubmission.ExtensionFieldValue(
+                                "capacity", "1", ExtensionSubmission.Mode.SET)))));
+        assertEquals(
+                java.util.Map.of("capacity", "2"),
+                ExtensionDefinitionService.readValues(
+                        ExtensionDefinitionService.mergeValues(definition, "{\"capacity\":2}", Map.of())));
+    }
+
+    @Test
     void disabledPlatformActorIsRejectedBeforeReceiptDefinitionOrAuditMutation() {
         ExtensionDefinitionService denied = new ExtensionDefinitionService(
                 jdbc,
@@ -242,7 +338,13 @@ class ExtensionDefinitionServiceTest {
                 new ExtensionCommandReceiptService(jdbc, () -> 1_785_000_000_000L),
                 actor -> {
                     throw new IllegalStateException("platform administrator disabled");
-                });
+                },
+                (WorkspaceStatusLookup) (id, key) -> jdbc.queryForObject(
+                        "SELECT status FROM platform_workspace.group_workspace "
+                                + "WHERE workspace_uuid=? AND group_workspace_key=?",
+                        String.class,
+                        id,
+                        key));
 
         assertThrows(
                 IllegalStateException.class,

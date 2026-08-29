@@ -7,7 +7,7 @@ public record WorkspaceUserAssignmentsItem(
     String roleId,
     String roleName,
     ServiceNodeType serviceNodeType,
-    String organizationPath,
+    java.util.List<OrganizationPathNode> organizationPathNodes,
     String status,
     String source,
     Long revision,

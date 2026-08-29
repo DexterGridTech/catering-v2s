@@ -5,7 +5,7 @@
   "sourceBindings": {
     "operationDesignContract": {
       "path": "doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json",
-      "sha256": "e19c309669fe348e28ec3c1ea2e0e842fefe9a453ca47c0eb0fff20a436c5548"
+      "sha256": "be304126ef29e22cccd69f736a14407ea9ea36cc69660bd34b4525999aa8254e"
     },
     "categoryRemediationDesign": {
       "path": "doc/plans/platform/2026-08-08-v2s-catalog-reference-model-category-remediation-design-codex.md",
@@ -26,7 +26,7 @@
       "path": "contracts/policy/catalog-inventory-l2-scenarios.json"
     }
   },
-  "count": 59,
+  "count": 58,
   "iaIdCount": 89,
   "operations": [
     {
@@ -166,20 +166,6 @@
             "owner": "workspace-iam",
             "readCount": 0,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -410,20 +396,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-IA-NAV-001",
@@ -581,20 +553,6 @@
             "owner": "inventory",
             "readCount": 1,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 20,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -902,20 +860,6 @@
             "owner": "fulfillment-production",
             "readCount": 1,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 25,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 25,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -1234,20 +1178,6 @@
             "owner": "asset",
             "readCount": 2,
             "writeCount": 1
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -1589,20 +1519,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 41,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 41,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-06",
@@ -1799,20 +1715,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-IA-CAT-LIFECYCLE-001",
@@ -1997,20 +1899,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-IA-CAT-CATEGORY-001",
@@ -2178,20 +2066,6 @@
             "owner": "catalog",
             "readCount": 2,
             "writeCount": 2
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -2376,204 +2250,11 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-10",
           "iaIds": [],
           "verifiedBusinessBehavior": "moveOperationsCatalogCategory：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
-          "primaryVerifier": "API",
-          "scenarioIds": [
-            "CI-API-006"
-          ]
-        }
-      ]
-    },
-    {
-      "operationId": "deleteOperationsCatalogCategory",
-      "face": "operations-admin",
-      "initiatingOwner": "catalog",
-      "coordinatedOwners": [],
-      "pageKeys": [
-        "PG-CATALOG-STORE-ITEMS",
-        "PG-CATALOG-BRAND-ITEMS"
-      ],
-      "capabilityKeys": [
-        "EDIT_HEAD_COMPANY_CATALOG",
-        "EDIT_STORE_CATALOG"
-      ],
-      "mutation": true,
-      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_CATEGORY",
-      "capabilityByDataNodeType": {
-        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
-        "STORE": "EDIT_STORE_CATALOG"
-      },
-      "allowedDataNodeTypes": [
-        "HEAD_COMPANY",
-        "STORE"
-      ],
-      "request": {
-        "component": "CatalogCategoryDeleteRequest",
-        "method": "DELETE",
-        "path": "/operations/catalog-inventory/categories/{categoryRef}"
-      },
-      "response": {
-        "component": "CatalogCategoryDeleteReadback"
-      },
-      "problemCodes": [
-        "VALIDATION_ERROR",
-        "SCOPE_FORBIDDEN",
-        "NOT_FOUND",
-        "VERSION_CONFLICT",
-        "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN",
-        "REFERENCE_BLOCKS_DELETE"
-      ],
-      "logicSteps": [
-        {
-          "order": 1,
-          "stepId": "VALIDATE_TRUSTED_INPUT",
-          "action": "Validate typed category-deletion input, trusted context, page/capability and owner scope."
-        },
-        {
-          "order": 2,
-          "stepId": "LOAD_DECIDE_EXECUTE",
-          "action": "Lock the requested subtree, compare root version, verify zero product references, delete atomically, audit and return typed readback."
-        },
-        {
-          "order": 3,
-          "stepId": "COMPLETE_READBACK",
-          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
-        }
-      ],
-      "callChain": [
-        {
-          "order": 1,
-          "kind": "EDGE",
-          "target": "operations-edge",
-          "purpose": "typed mapping only"
-        },
-        {
-          "order": 2,
-          "kind": "SECURITY_CONTEXT",
-          "target": "workspace-iam trusted context",
-          "purpose": "request-scoped authorization facts"
-        },
-        {
-          "order": 3,
-          "kind": "INITIATING_OWNER",
-          "target": "catalog.api",
-          "owner": "catalog",
-          "purpose": "own decision and final readback"
-        }
-      ],
-      "conditionToProblem": [
-        {
-          "precedence": 1,
-          "problemCode": "VALIDATION_ERROR",
-          "conditions": [
-            "Typed request, closed enum, cursor, header or required field is invalid."
-          ]
-        },
-        {
-          "precedence": 2,
-          "problemCode": "SCOPE_FORBIDDEN",
-          "conditions": [
-            "Trusted context lacks page/capability or requested owner scope is outside the session."
-          ]
-        },
-        {
-          "precedence": 3,
-          "problemCode": "NOT_FOUND",
-          "conditions": [
-            "Scoped target or unique source does not exist after concealment."
-          ]
-        },
-        {
-          "precedence": 4,
-          "problemCode": "VERSION_CONFLICT",
-          "conditions": [
-            "A non-preflight expected version differs from the current owner version."
-          ]
-        },
-        {
-          "precedence": 5,
-          "problemCode": "IDEMPOTENCY_MISMATCH",
-          "conditions": [
-            "Idempotency key exists with a different canonical request hash."
-          ]
-        },
-        {
-          "precedence": 6,
-          "problemCode": "RESULT_UNKNOWN",
-          "conditions": [
-            "Idempotency receipt is indeterminate."
-          ]
-        },
-        {
-          "precedence": 7,
-          "problemCode": "REFERENCE_BLOCKS_DELETE",
-          "conditions": [
-            "One or more categories in the requested subtree are referenced by a product."
-          ]
-        }
-      ],
-      "normalPathDbOperations": {
-        "expectedCount": 7,
-        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
-        "assumptions": [
-          "Includes request-scoped trusted-context DB work.",
-          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
-          "Count binds the smallest legal normal fixture."
-        ],
-        "verificationScenarioIds": [
-          "CI-API-006"
-        ],
-        "breakdown": [
-          {
-            "owner": "request-context",
-            "readCount": 1,
-            "writeCount": 0
-          },
-          {
-            "owner": "catalog",
-            "readCount": 3,
-            "writeCount": 3
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
-      "assertions": [
-        {
-          "assertionId": "ASSERT-OPERATION-11",
-          "iaIds": [],
-          "verifiedBusinessBehavior": "deleteOperationsCatalogCategory：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
           "primaryVerifier": "API",
           "scenarioIds": [
             "CI-API-006"
@@ -2685,20 +2366,6 @@
             "owner": "catalog",
             "readCount": 2,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -2902,20 +2569,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-13",
@@ -3081,20 +2734,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-14",
@@ -3257,20 +2896,6 @@
             "owner": "catalog",
             "readCount": 3,
             "writeCount": 2
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -3455,20 +3080,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-16",
@@ -3585,20 +3196,6 @@
             "owner": "fulfillment-production",
             "readCount": 2,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -3766,20 +3363,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-18",
@@ -3942,20 +3525,6 @@
             "owner": "fulfillment-production",
             "readCount": 2,
             "writeCount": 2
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -4154,20 +3723,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-20",
@@ -4296,20 +3851,6 @@
             "owner": "inventory",
             "readCount": 1,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -4459,20 +4000,6 @@
             "owner": "inventory",
             "readCount": 1,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -4712,20 +4239,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 31,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 31,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-23",
@@ -4857,20 +4370,6 @@
             "owner": "catalog",
             "readCount": 2,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -5082,20 +4581,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 66,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 66,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-25",
@@ -5225,20 +4710,6 @@
             "owner": "organization",
             "readCount": 1,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -5439,20 +4910,6 @@
             "owner": "fulfillment-production",
             "readCount": 1,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 21,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 21,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -5838,20 +5295,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 48,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 48,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-28",
@@ -5982,20 +5425,6 @@
             "owner": "catalog",
             "readCount": 1,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -6135,20 +5564,6 @@
             "owner": "catalog",
             "readCount": 1,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -6315,20 +5730,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-31",
@@ -6443,20 +5844,6 @@
             "owner": "inventory",
             "readCount": 1,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -6591,20 +5978,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 17,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 17,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-33",
@@ -6719,20 +6092,6 @@
             "owner": "inventory",
             "readCount": 1,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -6858,20 +6217,6 @@
             "owner": "inventory",
             "readCount": 1,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -7026,20 +6371,6 @@
             "owner": "inventory",
             "readCount": 4,
             "writeCount": 3
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -7209,20 +6540,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-IA-INV-ACTION-INCREASE-001",
@@ -7383,20 +6700,6 @@
             "owner": "inventory",
             "readCount": 4,
             "writeCount": 3
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -7563,20 +6866,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 18,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 18,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-IA-INV-ACTION-CONFIG-001",
@@ -7725,20 +7014,6 @@
             "owner": "asset",
             "readCount": 3,
             "writeCount": 2
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 18,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 18,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -7937,20 +7212,6 @@
           }
         ]
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-41",
@@ -8067,20 +7328,6 @@
             "owner": "catalog",
             "readCount": 0,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "current managed acceptance program maximum"
           }
         ]
       },
@@ -8401,9 +7648,9 @@
         "expectedCount": 5,
         "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
         "assumptions": [
-          "Includes request-scoped trusted-context DB work.",
-          "The smallest normal fixture is one in-scope item transitioning to ARCHIVED; VOIDED-only inventory judgment is not counted.",
-          "The batch uses one receipt read and one receipt write; item execution writes only status and version."
+          "This retained representative breakdown is explanatory metadata, not the active request-cardinality budget.",
+          "The current collection request accepts 1–100 ordered items and its VOIDED path set-loads catalog, inventory, inbound-reference and identifier blocker facts before per-item execution.",
+          "The active request-cardinality budget is generated from current performance.normal-path events and is materialized separately as databaseOperationBudget."
         ],
         "verificationScenarioIds": [
           "CI-API-008"
@@ -8423,22 +7670,6 @@
             "owner": "inventory",
             "readCount": 0,
             "writeCount": 0
-          }
-        ]
-      },
-      "databaseOperationBudget": {
-        "kind": "LINEAR_REQUEST_CARDINALITY",
-        "base": 15,
-        "perItem": 5,
-        "cardinalityPath": "$.items",
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "CP-05 calibrated linear shape"
           }
         ]
       },
@@ -8554,20 +7785,6 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
       },
       "assertions": [
         {
@@ -8720,20 +7937,6 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-45",
@@ -8885,190 +8088,11 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 10,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 10,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-46",
           "iaIds": [],
           "verifiedBusinessBehavior": "updateOperationsCatalogAttributeDefinition：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
-          "primaryVerifier": "API",
-          "scenarioIds": [
-            "CI-API-001"
-          ]
-        }
-      ]
-    },
-    {
-      "operationId": "deleteOperationsCatalogAttributeDefinition",
-      "face": "operations-admin",
-      "initiatingOwner": "catalog",
-      "coordinatedOwners": [],
-      "pageKeys": [
-        "PG-CATALOG-STORE-ITEMS",
-        "PG-CATALOG-BRAND-ITEMS"
-      ],
-      "capabilityKeys": [
-        "EDIT_HEAD_COMPANY_CATALOG",
-        "EDIT_STORE_CATALOG"
-      ],
-      "mutation": true,
-      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
-      "capabilityByDataNodeType": {
-        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
-        "STORE": "EDIT_STORE_CATALOG"
-      },
-      "allowedDataNodeTypes": [
-        "HEAD_COMPANY",
-        "STORE"
-      ],
-      "request": {
-        "component": "CatalogAttributeDefinitionDeleteRequest",
-        "method": "DELETE",
-        "path": "/operations/catalog-inventory/attribute-definitions/{definitionRef}"
-      },
-      "response": {
-        "component": "CatalogAttributeDefinitionDeleteReadback"
-      },
-      "problemCodes": [
-        "VALIDATION_ERROR",
-        "SCOPE_FORBIDDEN",
-        "NOT_FOUND",
-        "DUPLICATE_CODE",
-        "VERSION_CONFLICT",
-        "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
-      ],
-      "logicSteps": [
-        {
-          "order": 1,
-          "stepId": "VALIDATE_TRUSTED_INPUT",
-          "action": "Validate typed input, trusted context and scoped owner facts."
-        },
-        {
-          "order": 2,
-          "stepId": "LOAD_DECIDE_EXECUTE",
-          "action": "Recheck grant and change the catalog-owned aggregate."
-        },
-        {
-          "order": 3,
-          "stepId": "COMPLETE_READBACK",
-          "action": "Return the typed owner readback without per-item calls."
-        }
-      ],
-      "callChain": [
-        {
-          "order": 1,
-          "kind": "EDGE",
-          "target": "operations-edge",
-          "purpose": "typed mapping only"
-        },
-        {
-          "order": 2,
-          "kind": "SECURITY_CONTEXT",
-          "target": "workspace-iam trusted context",
-          "purpose": "request-scoped authorization facts"
-        },
-        {
-          "order": 3,
-          "kind": "INITIATING_OWNER",
-          "target": "catalog.api",
-          "owner": "catalog",
-          "purpose": "own decision and final readback"
-        }
-      ],
-      "conditionToProblem": [
-        {
-          "precedence": 1,
-          "problemCode": "VALIDATION_ERROR",
-          "conditions": [
-            "Owner emits the declared typed VALIDATION_ERROR condition."
-          ]
-        },
-        {
-          "precedence": 2,
-          "problemCode": "SCOPE_FORBIDDEN",
-          "conditions": [
-            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
-          ]
-        },
-        {
-          "precedence": 3,
-          "problemCode": "NOT_FOUND",
-          "conditions": [
-            "Owner emits the declared typed NOT_FOUND condition."
-          ]
-        },
-        {
-          "precedence": 4,
-          "problemCode": "DUPLICATE_CODE",
-          "conditions": [
-            "Owner emits the declared typed DUPLICATE_CODE condition."
-          ]
-        },
-        {
-          "precedence": 5,
-          "problemCode": "VERSION_CONFLICT",
-          "conditions": [
-            "Owner emits the declared typed VERSION_CONFLICT condition."
-          ]
-        },
-        {
-          "precedence": 6,
-          "problemCode": "IDEMPOTENCY_MISMATCH",
-          "conditions": [
-            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
-          ]
-        },
-        {
-          "precedence": 7,
-          "problemCode": "RESULT_UNKNOWN",
-          "conditions": [
-            "Owner emits the declared typed RESULT_UNKNOWN condition."
-          ]
-        }
-      ],
-      "normalPathDbOperations": {
-        "expectedCount": null,
-        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
-        "assumptions": [
-          "Includes request-scoped trusted-context work.",
-          "The list is scoped and bounded; mutation keeps owner authorization and readback."
-        ],
-        "verificationScenarioIds": [],
-        "breakdown": []
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
-      "assertions": [
-        {
-          "assertionId": "ASSERT-OPERATION-47",
-          "iaIds": [],
-          "verifiedBusinessBehavior": "deleteOperationsCatalogAttributeDefinition：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
           "primaryVerifier": "API",
           "scenarioIds": [
             "CI-API-001"
@@ -9176,20 +8200,6 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 10,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 10,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
       },
       "assertions": [
         {
@@ -9361,20 +8371,6 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 17,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 17,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
       },
       "assertions": [
         {
@@ -9548,210 +8544,11 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 20,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-50",
           "iaIds": [],
           "verifiedBusinessBehavior": "updateOperationsCatalogOrderOptionDefinition：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
-          "primaryVerifier": "API",
-          "scenarioIds": [
-            "CI-API-001"
-          ]
-        }
-      ]
-    },
-    {
-      "operationId": "deleteOperationsCatalogOrderOptionDefinition",
-      "face": "operations-admin",
-      "initiatingOwner": "catalog",
-      "coordinatedOwners": [
-        "inventory"
-      ],
-      "pageKeys": [
-        "PG-CATALOG-STORE-ITEMS",
-        "PG-CATALOG-BRAND-ITEMS"
-      ],
-      "capabilityKeys": [
-        "EDIT_HEAD_COMPANY_CATALOG",
-        "EDIT_STORE_CATALOG"
-      ],
-      "mutation": true,
-      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
-      "capabilityByDataNodeType": {
-        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
-        "STORE": "EDIT_STORE_CATALOG"
-      },
-      "allowedDataNodeTypes": [
-        "HEAD_COMPANY",
-        "STORE"
-      ],
-      "coordinatedInventoryDefinitionCommands": [
-        "deleteCatalogOptionValueBoms"
-      ],
-      "request": {
-        "component": "CatalogOrderOptionDefinitionDeleteRequest",
-        "method": "DELETE",
-        "path": "/operations/catalog-inventory/order-option-definitions/{definitionRef}"
-      },
-      "response": {
-        "component": "CatalogOrderOptionDefinitionDeleteReadback"
-      },
-      "problemCodes": [
-        "VALIDATION_ERROR",
-        "SCOPE_FORBIDDEN",
-        "NOT_FOUND",
-        "DUPLICATE_CODE",
-        "VERSION_CONFLICT",
-        "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN",
-        "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL"
-      ],
-      "logicSteps": [
-        {
-          "order": 1,
-          "stepId": "VALIDATE_TRUSTED_INPUT",
-          "action": "Validate typed input, trusted context and scoped owner facts."
-        },
-        {
-          "order": 2,
-          "stepId": "LOAD_DECIDE_EXECUTE",
-          "action": "Recheck grant and change the catalog-owned aggregate."
-        },
-        {
-          "order": 3,
-          "stepId": "COMPLETE_READBACK",
-          "action": "Return the typed owner readback without per-item calls."
-        }
-      ],
-      "callChain": [
-        {
-          "order": 1,
-          "kind": "EDGE",
-          "target": "operations-edge",
-          "purpose": "typed mapping only"
-        },
-        {
-          "order": 2,
-          "kind": "SECURITY_CONTEXT",
-          "target": "workspace-iam trusted context",
-          "purpose": "request-scoped authorization facts"
-        },
-        {
-          "order": 3,
-          "kind": "INITIATING_OWNER",
-          "target": "catalog.api",
-          "owner": "catalog",
-          "purpose": "own decision and final readback"
-        },
-        {
-          "order": 4,
-          "kind": "COORDINATED_OWNER",
-          "target": "inventory.api",
-          "owner": "inventory",
-          "purpose": "declared owner judgment or command"
-        }
-      ],
-      "conditionToProblem": [
-        {
-          "precedence": 1,
-          "problemCode": "VALIDATION_ERROR",
-          "conditions": [
-            "Owner emits the declared typed VALIDATION_ERROR condition."
-          ]
-        },
-        {
-          "precedence": 2,
-          "problemCode": "SCOPE_FORBIDDEN",
-          "conditions": [
-            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
-          ]
-        },
-        {
-          "precedence": 3,
-          "problemCode": "NOT_FOUND",
-          "conditions": [
-            "Owner emits the declared typed NOT_FOUND condition."
-          ]
-        },
-        {
-          "precedence": 4,
-          "problemCode": "DUPLICATE_CODE",
-          "conditions": [
-            "Owner emits the declared typed DUPLICATE_CODE condition."
-          ]
-        },
-        {
-          "precedence": 5,
-          "problemCode": "VERSION_CONFLICT",
-          "conditions": [
-            "Owner emits the declared typed VERSION_CONFLICT condition."
-          ]
-        },
-        {
-          "precedence": 6,
-          "problemCode": "IDEMPOTENCY_MISMATCH",
-          "conditions": [
-            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
-          ]
-        },
-        {
-          "precedence": 7,
-          "problemCode": "RESULT_UNKNOWN",
-          "conditions": [
-            "Owner emits the declared typed RESULT_UNKNOWN condition."
-          ]
-        },
-        {
-          "precedence": 8,
-          "problemCode": "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL",
-          "conditions": [
-            "Owner emits the declared typed INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL condition."
-          ]
-        }
-      ],
-      "normalPathDbOperations": {
-        "expectedCount": null,
-        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
-        "assumptions": [
-          "Includes request-scoped trusted-context work.",
-          "The list is scoped and bounded; mutation keeps owner authorization and readback."
-        ],
-        "verificationScenarioIds": [],
-        "breakdown": []
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 16,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 16,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
-      "assertions": [
-        {
-          "assertionId": "ASSERT-OPERATION-51",
-          "iaIds": [],
-          "verifiedBusinessBehavior": "deleteOperationsCatalogOrderOptionDefinition：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
           "primaryVerifier": "API",
           "scenarioIds": [
             "CI-API-001"
@@ -9787,7 +8584,7 @@
       "problemCodes": [
         "VALIDATION_ERROR",
         "SCOPE_FORBIDDEN",
-        "CATALOG_DEFINITION_LIMIT_EXCEEDED"
+        "CATALOG_UNIT_LIMIT_EXCEEDED"
       ],
       "logicSteps": [
         {
@@ -9844,9 +8641,9 @@
         },
         {
           "precedence": 3,
-          "problemCode": "CATALOG_DEFINITION_LIMIT_EXCEEDED",
+          "problemCode": "CATALOG_UNIT_LIMIT_EXCEEDED",
           "conditions": [
-            "Owner emits the declared typed CATALOG_DEFINITION_LIMIT_EXCEEDED condition."
+            "Owner emits the declared typed CATALOG_UNIT_LIMIT_EXCEEDED condition."
           ]
         }
       ],
@@ -9859,20 +8656,6 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
       },
       "assertions": [
         {
@@ -10040,20 +8823,6 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
       },
       "assertions": [
         {
@@ -10234,20 +9003,6 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-54",
@@ -10261,12 +9016,10 @@
       ]
     },
     {
-      "operationId": "disableOperationsCatalogUnit",
+      "operationId": "transitionOperationsCatalogAttributeDefinitionStatus",
       "face": "operations-admin",
       "initiatingOwner": "catalog",
-      "coordinatedOwners": [
-        "inventory"
-      ],
+      "coordinatedOwners": [],
       "pageKeys": [
         "PG-CATALOG-STORE-ITEMS",
         "PG-CATALOG-BRAND-ITEMS"
@@ -10276,7 +9029,7 @@
         "EDIT_STORE_CATALOG"
       ],
       "mutation": true,
-      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_DISABLE_OPERATIONS_CATALOG_UNIT",
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_STATUS",
       "capabilityByDataNodeType": {
         "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
         "STORE": "EDIT_STORE_CATALOG"
@@ -10285,25 +9038,21 @@
         "HEAD_COMPANY",
         "STORE"
       ],
-      "coordinatedInventoryDefinitionCommands": [
-        "validateCatalogUnitLifecycle"
-      ],
       "request": {
-        "component": "CatalogUnitDisableRequest",
+        "component": "CatalogAttributeDefinitionStatusTransitionRequest",
         "method": "POST",
-        "path": "/operations/catalog-inventory/units/{unitRef}/disable"
+        "path": "/operations/catalog-inventory/attribute-definitions/{definitionRef}/status"
       },
       "response": {
-        "component": "CatalogUnitReadback"
+        "component": "CatalogAttributeDefinitionReadback"
       },
       "problemCodes": [
         "VALIDATION_ERROR",
         "SCOPE_FORBIDDEN",
         "NOT_FOUND",
-        "DUPLICATE_CODE",
         "VERSION_CONFLICT",
-        "CATALOG_UNIT_IN_USE",
-        "CATALOG_UNIT_LIMIT_EXCEEDED",
+        "VOIDED_RECORD_IMMUTABLE",
+        "REFERENCE_BLOCKS_VOID",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN"
       ],
@@ -10343,13 +9092,6 @@
           "target": "catalog.api",
           "owner": "catalog",
           "purpose": "own decision and final readback"
-        },
-        {
-          "order": 4,
-          "kind": "COORDINATED_OWNER",
-          "target": "inventory.api",
-          "owner": "inventory",
-          "purpose": "declared owner judgment or command"
         }
       ],
       "conditionToProblem": [
@@ -10376,41 +9118,34 @@
         },
         {
           "precedence": 4,
-          "problemCode": "DUPLICATE_CODE",
-          "conditions": [
-            "Owner emits the declared typed DUPLICATE_CODE condition."
-          ]
-        },
-        {
-          "precedence": 5,
           "problemCode": "VERSION_CONFLICT",
           "conditions": [
             "Owner emits the declared typed VERSION_CONFLICT condition."
           ]
         },
         {
-          "precedence": 6,
-          "problemCode": "CATALOG_UNIT_IN_USE",
+          "precedence": 5,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
           "conditions": [
-            "Owner emits the declared typed CATALOG_UNIT_IN_USE condition."
+            "Owner emits the declared typed VOIDED_RECORD_IMMUTABLE condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "REFERENCE_BLOCKS_VOID",
+          "conditions": [
+            "Owner emits the declared typed REFERENCE_BLOCKS_VOID condition."
           ]
         },
         {
           "precedence": 7,
-          "problemCode": "CATALOG_UNIT_LIMIT_EXCEEDED",
-          "conditions": [
-            "Owner emits the declared typed CATALOG_UNIT_LIMIT_EXCEEDED condition."
-          ]
-        },
-        {
-          "precedence": 8,
           "problemCode": "IDEMPOTENCY_MISMATCH",
           "conditions": [
             "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
           ]
         },
         {
-          "precedence": 9,
+          "precedence": 8,
           "problemCode": "RESULT_UNKNOWN",
           "conditions": [
             "Owner emits the declared typed RESULT_UNKNOWN condition."
@@ -10427,25 +9162,11 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
-          "assertionId": "ASSERT-OPERATION-55",
+          "assertionId": "ASSERT-OPERATION-60",
           "iaIds": [],
-          "verifiedBusinessBehavior": "disableOperationsCatalogUnit：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "verifiedBusinessBehavior": "transitionOperationsCatalogAttributeDefinitionStatus：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
           "primaryVerifier": "API",
           "scenarioIds": [
             "CI-API-001"
@@ -10454,7 +9175,166 @@
       ]
     },
     {
-      "operationId": "deleteOperationsCatalogUnit",
+      "operationId": "transitionOperationsCatalogOrderOptionDefinitionStatus",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_STATUS",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "request": {
+        "component": "CatalogOrderOptionDefinitionStatusTransitionRequest",
+        "method": "POST",
+        "path": "/operations/catalog-inventory/order-option-definitions/{definitionRef}/status"
+      },
+      "response": {
+        "component": "CatalogOrderOptionDefinitionReadback"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "VOIDED_RECORD_IMMUTABLE",
+        "REFERENCE_BLOCKS_VOID",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Recheck grant and change the catalog-owned aggregate."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Owner emits the declared typed NOT_FOUND condition."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "Owner emits the declared typed VERSION_CONFLICT condition."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "Owner emits the declared typed VOIDED_RECORD_IMMUTABLE condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "REFERENCE_BLOCKS_VOID",
+          "conditions": [
+            "Owner emits the declared typed REFERENCE_BLOCKS_VOID condition."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Owner emits the declared typed RESULT_UNKNOWN condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-61",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "transitionOperationsCatalogOrderOptionDefinitionStatus：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "transitionOperationsCatalogUnitStatus",
       "face": "operations-admin",
       "initiatingOwner": "catalog",
       "coordinatedOwners": [
@@ -10469,7 +9349,7 @@
         "EDIT_STORE_CATALOG"
       ],
       "mutation": true,
-      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_UNIT",
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_UNIT_STATUS",
       "capabilityByDataNodeType": {
         "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
         "STORE": "EDIT_STORE_CATALOG"
@@ -10482,23 +9362,23 @@
         "validateCatalogUnitLifecycle"
       ],
       "request": {
-        "component": "CatalogUnitDeleteRequest",
-        "method": "DELETE",
-        "path": "/operations/catalog-inventory/units/{unitRef}"
+        "component": "CatalogUnitStatusTransitionRequest",
+        "method": "POST",
+        "path": "/operations/catalog-inventory/units/{unitRef}/status"
       },
       "response": {
-        "component": "CatalogUnitDeleteReadback"
+        "component": "CatalogUnitReadback"
       },
       "problemCodes": [
         "VALIDATION_ERROR",
         "SCOPE_FORBIDDEN",
         "NOT_FOUND",
-        "DUPLICATE_CODE",
         "VERSION_CONFLICT",
-        "CATALOG_UNIT_IN_USE",
-        "CATALOG_UNIT_LIMIT_EXCEEDED",
+        "VOIDED_RECORD_IMMUTABLE",
+        "REFERENCE_BLOCKS_VOID",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "CATALOG_UNIT_IN_USE"
       ],
       "logicSteps": [
         {
@@ -10569,41 +9449,200 @@
         },
         {
           "precedence": 4,
-          "problemCode": "DUPLICATE_CODE",
-          "conditions": [
-            "Owner emits the declared typed DUPLICATE_CODE condition."
-          ]
-        },
-        {
-          "precedence": 5,
           "problemCode": "VERSION_CONFLICT",
           "conditions": [
             "Owner emits the declared typed VERSION_CONFLICT condition."
           ]
         },
         {
-          "precedence": 6,
-          "problemCode": "CATALOG_UNIT_IN_USE",
+          "precedence": 5,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
           "conditions": [
-            "Owner emits the declared typed CATALOG_UNIT_IN_USE condition."
+            "Owner emits the declared typed VOIDED_RECORD_IMMUTABLE condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "REFERENCE_BLOCKS_VOID",
+          "conditions": [
+            "Owner emits the declared typed REFERENCE_BLOCKS_VOID condition."
           ]
         },
         {
           "precedence": 7,
-          "problemCode": "CATALOG_UNIT_LIMIT_EXCEEDED",
-          "conditions": [
-            "Owner emits the declared typed CATALOG_UNIT_LIMIT_EXCEEDED condition."
-          ]
-        },
-        {
-          "precedence": 8,
           "problemCode": "IDEMPOTENCY_MISMATCH",
           "conditions": [
             "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
           ]
         },
         {
+          "precedence": 8,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Owner emits the declared typed RESULT_UNKNOWN condition."
+          ]
+        },
+        {
           "precedence": 9,
+          "problemCode": "CATALOG_UNIT_IN_USE",
+          "conditions": [
+            "Owner emits the declared typed CATALOG_UNIT_IN_USE condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-62",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "transitionOperationsCatalogUnitStatus：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "transitionOperationsCatalogCategoryStatus",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_CATEGORY_STATUS",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "request": {
+        "component": "CatalogCategoryStatusTransitionRequest",
+        "method": "POST",
+        "path": "/operations/catalog-inventory/categories/{categoryRef}/status"
+      },
+      "response": {
+        "component": "CatalogCategoryReadback"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "VOIDED_RECORD_IMMUTABLE",
+        "REFERENCE_BLOCKS_VOID",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Recheck grant and change the catalog-owned aggregate."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Owner emits the declared typed NOT_FOUND condition."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "Owner emits the declared typed VERSION_CONFLICT condition."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "Owner emits the declared typed VOIDED_RECORD_IMMUTABLE condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "REFERENCE_BLOCKS_VOID",
+          "conditions": [
+            "Owner emits the declared typed REFERENCE_BLOCKS_VOID condition."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
+          ]
+        },
+        {
+          "precedence": 8,
           "problemCode": "RESULT_UNKNOWN",
           "conditions": [
             "Owner emits the declared typed RESULT_UNKNOWN condition."
@@ -10620,25 +9659,11 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
-          "assertionId": "ASSERT-OPERATION-56",
+          "assertionId": "ASSERT-OPERATION-63",
           "iaIds": [],
-          "verifiedBusinessBehavior": "deleteOperationsCatalogUnit：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "verifiedBusinessBehavior": "transitionOperationsCatalogCategoryStatus：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
           "primaryVerifier": "API",
           "scenarioIds": [
             "CI-API-001"
@@ -10738,20 +9763,6 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
       },
       "assertions": [
         {
@@ -10866,20 +9877,6 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-58",
@@ -10992,20 +9989,6 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
-      },
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
       },
       "assertions": [
         {

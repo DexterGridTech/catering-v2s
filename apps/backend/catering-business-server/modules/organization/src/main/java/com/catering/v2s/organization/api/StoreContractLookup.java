@@ -6,6 +6,14 @@ import java.util.UUID;
 public interface StoreContractLookup {
     StoreContractContext requireStoreContractContext(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId);
 
+    StoreContractContext requireStoreContractContextForCreate(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeId);
+
     record StoreContractContext(
-            UUID storeId, UUID tenantId, UUID projectId, String storeStatus, List<String> projectPhaseNames) {}
+            UUID storeId,
+            UUID tenantId,
+            UUID projectId,
+            String storeStatus,
+            String tenantStatus,
+            List<String> projectPhaseNames) {}
 }

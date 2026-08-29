@@ -6,12 +6,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 final class ExtensionAcceptanceScenarios {
     private static final List<String> HOST_TYPES =
@@ -75,6 +80,7 @@ final class ExtensionAcceptanceScenarios {
                     Set.of(200));
             assertDefinition(
                     created.json(),
+                    "replaceExtensionDefinition",
                     hostType,
                     "initial",
                     "BUSINESS: complete definition replace returns the full aggregate");
@@ -103,7 +109,11 @@ final class ExtensionAcceptanceScenarios {
                 updated.json().path("revision").asLong(),
                 "BUSINESS: whole-definition replacement advances revision");
         assertDefinition(
-                updated.json(), "PROJECT", "updated", "BUSINESS: replacement reads back the complete new aggregate");
+                updated.json(),
+                "replaceExtensionDefinition",
+                "PROJECT",
+                "updated",
+                "BUSINESS: replacement reads back the complete new aggregate");
 
         Response stale = context.put(
                 PLATFORM_REPLACE_EXTENSION_DEFINITION,
@@ -120,6 +130,7 @@ final class ExtensionAcceptanceScenarios {
                 context.get(PLATFORM_EXTENSION_DEFINITION, base + "PROJECT", platform.cookie(), Set.of(200));
         assertDefinition(
                 platformDetail.json(),
+                "getExtensionDefinition",
                 "PROJECT",
                 "updated",
                 "BUSINESS: detail read returns the complete current aggregate after stale rejection");
@@ -128,6 +139,64 @@ final class ExtensionAcceptanceScenarios {
                         || platformDetail.json().has("pageSize")
                         || platformDetail.json().has("total"),
                 "BUSINESS: whole-definition detail does not pretend to be a paginated list");
+
+        long workspaceVersion = context.get(
+                        PLATFORM_GROUP_WORKSPACE_DETAIL,
+                        "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey(),
+                        platform.cookie(),
+                        Set.of(200))
+                .json()
+                .path("version")
+                .asLong();
+        RouteIdentity workspaceStatus = new RouteIdentity(
+                "transitionPlatformGroupWorkspaceStatus", "/api/platform/group-workspaces/{groupWorkspaceKey}/status");
+        String disableKey = "extension-workspace-disable-" + UUID.randomUUID();
+        context.post(
+                workspaceStatus,
+                "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey() + "/status",
+                platform.cookie(),
+                Map.of("targetStatus", "DISABLED", "expectedVersion", workspaceVersion, "idempotencyKey", disableKey),
+                Map.of("Idempotency-Key", disableKey),
+                Set.of(200));
+        Response disabledDetail =
+                context.get(PLATFORM_EXTENSION_DEFINITION, base + "PROJECT", platform.cookie(), Set.of(200));
+        assertDisabledDefinition(
+                disabledDetail.json(),
+                "getExtensionDefinition",
+                "PROJECT",
+                "updated",
+                "BUSINESS: disabled workspace returns exact workspace blocker and field facts");
+
+        long disabledWorkspaceVersion = context.get(
+                        PLATFORM_GROUP_WORKSPACE_DETAIL,
+                        "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey(),
+                        platform.cookie(),
+                        Set.of(200))
+                .json()
+                .path("version")
+                .asLong();
+        String enableKey = "extension-workspace-enable-" + UUID.randomUUID();
+        context.post(
+                workspaceStatus,
+                "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey() + "/status",
+                platform.cookie(),
+                Map.of(
+                        "targetStatus",
+                        "ENABLED",
+                        "expectedVersion",
+                        disabledWorkspaceVersion,
+                        "idempotencyKey",
+                        enableKey),
+                Map.of("Idempotency-Key", enableKey),
+                Set.of(200));
+        Response restoredDetail =
+                context.get(PLATFORM_EXTENSION_DEFINITION, base + "PROJECT", platform.cookie(), Set.of(200));
+        assertDefinition(
+                restoredDetail.json(),
+                "getExtensionDefinition",
+                "PROJECT",
+                "updated",
+                "BUSINESS: restoring workspace exposes unchanged field facts");
 
         host.completeInvitation(context, fixture);
         BackendAcceptanceTest.Session operations = host.login(context, fixture);
@@ -140,6 +209,7 @@ final class ExtensionAcceptanceScenarios {
                                 operations.cookie(),
                                 Set.of(200))
                         .json(),
+                "getOperationsOrganizationStoreExtensionDefinition",
                 "STORE",
                 "initial",
                 "BUSINESS: store detail reads the complete owner aggregate");
@@ -155,6 +225,7 @@ final class ExtensionAcceptanceScenarios {
                                     operations.cookie(),
                                     Set.of(200))
                             .json(),
+                    "getOperationsOrganizationBusinessEntityExtensionDefinition",
                     hostType,
                     "initial",
                     "BUSINESS: business-entity detail reads the complete owner aggregate");
@@ -171,6 +242,7 @@ final class ExtensionAcceptanceScenarios {
                                     operations.cookie(),
                                     Set.of(200))
                             .json(),
+                    "getOperationsOrganizationHierarchyExtensionDefinition",
                     hostType,
                     hostType.equals("PROJECT") ? "updated" : "initial",
                     "BUSINESS: hierarchy detail reads the complete owner aggregate");
@@ -183,6 +255,7 @@ final class ExtensionAcceptanceScenarios {
                                 operations.cookie(),
                                 Set.of(200))
                         .json(),
+                "getOperationsContractExtensionDefinition",
                 "CONTRACT",
                 "initial",
                 "BUSINESS: contract detail reads the complete owner aggregate");
@@ -194,38 +267,158 @@ final class ExtensionAcceptanceScenarios {
 
     private static List<Map<String, Object>> fields(String hostType, String suffix) {
         List<Map<String, Object>> fields = new ArrayList<>();
-        fields.add(field(hostType.toLowerCase() + "Area", "面积-" + suffix, "NUMBER", List.of(), 0));
+        fields.add(field(hostType.toLowerCase() + "Area", "面积-" + suffix, "NUMBER", List.of(), 0, "ENABLED"));
         String kindKey = hostType.toLowerCase() + "Kind";
         String kindLabel = "类型-" + suffix;
         List<String> kindOptions = List.of("PRIMARY", "SECONDARY");
-        fields.add(field(kindKey, kindLabel, "SELECT", kindOptions, 1));
+        fields.add(field(kindKey, kindLabel, "SELECT", kindOptions, 1, "DISABLED"));
         return fields;
     }
 
     private static Map<String, Object> field(
-            String key, String label, String type, List<String> options, int displayOrder) {
+            String key, String label, String type, List<String> options, int displayOrder, String status) {
         Map<String, Object> value = new LinkedHashMap<>();
         value.put("key", key);
         value.put("label", label);
         value.put("type", type);
         value.put("required", true);
         value.put("options", options);
-        value.put("status", "ENABLED");
+        value.put("status", status);
         value.put("displayOrder", displayOrder);
         return value;
     }
 
-    private static void assertDefinition(JsonNode json, String hostType, String suffix, String message) {
-        assertEquals(hostType, json.path("entityType").asText(), message + ": host type");
-        assertEquals(2, json.path("definitions").size(), message + ": complete field set");
+    private static void assertDefinition(
+            JsonNode json, String operationId, String hostType, String suffix, String message) {
         assertEquals(
+                hostType,
+                oracle(json, operationId, "/entityType", JsonNodeType.STRING, message)
+                        .asText(),
+                message + ": host type");
+        assertEquals(
+                expectedDefinitions(hostType, suffix),
+                oracle(json, operationId, "/definitions", JsonNodeType.ARRAY, message),
+                message + ": complete ordered field facts");
+        assertTrue(
+                oracle(json, operationId, "/revision", JsonNodeType.NUMBER, message)
+                                .asLong()
+                        >= 1,
+                message + ": revision is present");
+        assertOracleEquals(
+                json,
+                operationId,
+                "/workspaceStatus",
+                JsonNodeFactory.instance.textNode("ENABLED"),
+                JsonNodeType.STRING,
+                message + ": workspace status");
+        assertOracleEquals(
+                json,
+                operationId,
+                "/definitions/0/status",
+                JsonNodeFactory.instance.textNode("ENABLED"),
+                JsonNodeType.STRING,
+                message + ": first field status");
+        assertOracleEquals(
+                json,
+                operationId,
+                "/definitions/1/status",
+                JsonNodeFactory.instance.textNode("DISABLED"),
+                JsonNodeType.STRING,
+                message + ": second field status");
+        assertEquals(
+                JsonNodeFactory.instance.arrayNode(),
+                oracle(json, operationId, "/blockers", JsonNodeType.ARRAY, message),
+                message + ": workspace blockers empty");
+    }
+
+    private static void assertDisabledDefinition(
+            JsonNode json, String operationId, String hostType, String suffix, String message) {
+        assertEquals(
+                hostType,
+                oracle(json, operationId, "/entityType", JsonNodeType.STRING, message)
+                        .asText(),
+                message + ": host type");
+        assertEquals(
+                expectedDefinitions(hostType, suffix),
+                oracle(json, operationId, "/definitions", JsonNodeType.ARRAY, message),
+                message + ": disabled workspace preserves ordered field facts");
+        assertOracleEquals(
+                json,
+                operationId,
+                "/workspaceStatus",
+                JsonNodeFactory.instance.textNode("DISABLED"),
+                JsonNodeType.STRING,
+                message + ": workspace status");
+        assertOracleEquals(
+                json,
+                operationId,
+                "/definitions/0/status",
+                JsonNodeFactory.instance.textNode("ENABLED"),
+                JsonNodeType.STRING,
+                message + ": first field status");
+        assertOracleEquals(
+                json,
+                operationId,
+                "/definitions/1/status",
+                JsonNodeFactory.instance.textNode("DISABLED"),
+                JsonNodeType.STRING,
+                message + ": second field status");
+        ArrayNode expectedBlockers = JsonNodeFactory.instance.arrayNode();
+        ObjectNode blocker = expectedBlockers.addObject();
+        blocker.put("type", "WORKSPACE");
+        blocker.put("status", "DISABLED");
+        assertEquals(
+                expectedBlockers,
+                oracle(json, operationId, "/blockers", JsonNodeType.ARRAY, message),
+                message + ": workspace blocker");
+    }
+
+    private static JsonNode oracle(
+            JsonNode json, String operationId, String pointer, JsonNodeType type, String message) {
+        JsonNode value = json.at(pointer);
+        assertFalse(value.isMissingNode(), message + ": missing pointer " + pointer);
+        assertEquals(type, value.getNodeType(), message + ": wrong JSON type at " + pointer);
+        return value;
+    }
+
+    private static void assertOracleEquals(
+            JsonNode json, String operationId, String pointer, JsonNode expected, JsonNodeType type, String message) {
+        assertEquals(expected, oracle(json, operationId, pointer, type, message), message + ": exact value");
+    }
+
+    private static ArrayNode expectedDefinitions(String hostType, String suffix) {
+        ArrayNode result = JsonNodeFactory.instance.arrayNode();
+        result.add(expectedField(
+                hostType.toLowerCase() + "Area", "面积-" + suffix, "NUMBER", true, List.of(), "ENABLED", 0));
+        result.add(expectedField(
+                hostType.toLowerCase() + "Kind",
                 "类型-" + suffix,
-                json.path("definitions").get(1).path("label").asText(),
-                message + ": selected field label");
-        assertEquals(
-                2,
-                json.path("definitions").get(1).path("options").size(),
-                message + ": SELECT options remain part of the aggregate");
-        assertTrue(json.path("revision").asLong() >= 1, message + ": revision is present");
+                "SELECT",
+                true,
+                List.of("PRIMARY", "SECONDARY"),
+                "DISABLED",
+                1));
+        return result;
+    }
+
+    private static ObjectNode expectedField(
+            String key,
+            String label,
+            String type,
+            boolean required,
+            List<String> options,
+            String status,
+            int displayOrder) {
+        ObjectNode result = JsonNodeFactory.instance.objectNode();
+        result.put("key", key);
+        result.put("label", label);
+        result.put("type", type);
+        result.put("required", required);
+        ArrayNode optionValues = result.putArray("options");
+        options.forEach(optionValues::add);
+        result.put("status", status);
+        result.put("displayOrder", displayOrder);
+        result.putNull("displaySuffix");
+        return result;
     }
 }

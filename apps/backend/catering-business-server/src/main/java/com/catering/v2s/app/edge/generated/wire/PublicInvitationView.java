@@ -6,12 +6,12 @@ public record PublicInvitationView(
     String groupWorkspaceKey,
     String operationsTitle,
     String targetOrganizationType,
-    String targetOrganizationPath,
     java.util.List<String> roleNames,
     String maskedMobile,
     WorkspaceInvitationStatus status,
     Long expiresAt,
     String workspaceName,
     String nextStep,
-    String logoUrl
+    String logoUrl,
+    java.util.List<OrganizationPathNode> targetOrganizationPathNodes
 ) {}

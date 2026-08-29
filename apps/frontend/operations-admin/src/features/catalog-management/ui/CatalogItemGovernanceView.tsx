@@ -7,6 +7,10 @@ import {catalogTestIds} from '../catalogTestIds';
 import {CatalogFactSectionView} from './CatalogFactSectionBoundary';
 import {CatalogLifecycleStatusTag} from './CatalogLifecycleStatusTag';
 
+function referenceGroupLabel(direction: string): string {
+  return direction === 'INBOUND' ? '被其他商品引用' : '引用其他商品';
+}
+
 export function CatalogItemGovernanceView({
   detail,
   manifest,
@@ -22,10 +26,10 @@ export function CatalogItemGovernanceView({
     <Space direction="vertical" size={10} style={{display: 'flex'}}>
       {[
         ...new Map(
-          detail.references.map(entry => [
-            entry.relationLabel,
-            detail.references.filter(row => row.relationLabel === entry.relationLabel),
-          ]),
+          detail.references.map(entry => {
+            const label = referenceGroupLabel(entry.direction);
+            return [label, detail.references.filter(row => referenceGroupLabel(row.direction) === label)] as const;
+          }),
         ).entries(),
       ].map(([location, entries]) => (
         <div key={location}>

@@ -99,8 +99,8 @@ export function useCatalogBatchActionController({
     setRefreshProblem(undefined);
     const dataNodeRef = requireOperationsScopeRef(queryContext);
     try {
-      if (action === 'STATUS' || action === 'ARCHIVE') {
-        const targetStatus: CatalogBatchStatus = action === 'ARCHIVE' ? 'ARCHIVED' : status;
+      if (action === 'STATUS') {
+        const targetStatus: CatalogBatchStatus = status;
         const body = buildCatalogBatchStatusRequest(dataNodeRef, targetStatus, selectedRows);
         const idempotencyKey = await createContentIdempotencyKey(
           CATALOG_INVENTORY_OPERATION_IDS.batchTransitionOperationsCatalogItemStatus,

@@ -1,5 +1,5 @@
 import {ProTable} from '@ant-design/pro-components';
-import {Alert, Button, Card, Descriptions, Empty, Input, Spin, Tabs, Tag, Tree} from 'antd';
+import {Alert, Button, Card, Descriptions, Empty, Input, Space, Spin, Tabs, Tag, Tree} from 'antd';
 import {
   adminHierarchyCollator,
   adminListState,
@@ -1010,7 +1010,12 @@ function PlatformReadForWorkspace({
                 search: false,
                 render: (_, row) => <NameCodeText name={row.storeRef.name} code={row.storeRef.code} />,
               },
-              {title: '分期', dataIndex: 'phaseName', search: false},
+              {
+                title: '分期',
+                dataIndex: 'phaseName',
+                search: false,
+                render: (_, row) => row.phaseName || '未设置',
+              },
               {
                 title: '经营租户',
                 dataIndex: 'tenantRef',
@@ -1026,9 +1031,18 @@ function PlatformReadForWorkspace({
               },
               {
                 title: '货号',
-                dataIndex: 'itemSummary',
+                dataIndex: 'items',
                 search: false,
-                render: (_, row) => row.itemSummary || row.items.map(item => item.code).join('、') || '—',
+                render: (_, row) =>
+                  row.items.length ? (
+                    <Space direction="vertical" size={2}>
+                      {row.items.map(item => (
+                        <NameCodeText key={item.code} name={item.name} code={item.code} />
+                      ))}
+                    </Space>
+                  ) : (
+                    '—'
+                  ),
               },
               {
                 title: '货号数量',

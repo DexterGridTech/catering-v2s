@@ -32,27 +32,25 @@ const SAVE_INVENTORY_DEFINITION_COMMANDS = ["replaceCatalogInventoryRules"];
 const CATALOG_ORDER_OPTION_DEFINITION_COMMANDS = Object.freeze({
   createOperationsCatalogOrderOptionDefinition: ["resolveCatalogOrderOptionMaterialTarget"],
   updateOperationsCatalogOrderOptionDefinition: ["resolveCatalogOrderOptionMaterialTarget", "deleteCatalogOrderOptionValueBoms"],
-  deleteOperationsCatalogOrderOptionDefinition: ["deleteCatalogOptionValueBoms"],
 });
 const CATALOG_UNIT_DEFINITION_COMMANDS = Object.freeze({
   updateOperationsCatalogUnit: ["validateCatalogUnitLifecycle"],
-  disableOperationsCatalogUnit: ["validateCatalogUnitLifecycle"],
-  deleteOperationsCatalogUnit: ["validateCatalogUnitLifecycle"],
+  transitionOperationsCatalogUnitStatus: ["validateCatalogUnitLifecycle"],
 });
 const CATALOG_LIBRARY_OPERATION_IDS = new Set([
   "listOperationsCatalogAttributeDefinitions",
   "createOperationsCatalogAttributeDefinition",
   "updateOperationsCatalogAttributeDefinition",
-  "deleteOperationsCatalogAttributeDefinition",
+  "transitionOperationsCatalogAttributeDefinitionStatus",
   "listOperationsCatalogOrderOptionDefinitions",
   "createOperationsCatalogOrderOptionDefinition",
   "updateOperationsCatalogOrderOptionDefinition",
-  "deleteOperationsCatalogOrderOptionDefinition",
+  "transitionOperationsCatalogOrderOptionDefinitionStatus",
   "listOperationsCatalogUnits",
   "createOperationsCatalogUnit",
   "updateOperationsCatalogUnit",
-  "disableOperationsCatalogUnit",
-  "deleteOperationsCatalogUnit",
+  "transitionOperationsCatalogUnitStatus",
+  "transitionOperationsCatalogCategoryStatus",
   "getOperationsInventoryConsumptionTargetCandidates",
   "getOperationsCatalogCategoryCandidates",
   "getOperationsCatalogItemSkus",
@@ -253,17 +251,16 @@ function validateOpaqueReferencePaths(openapi, policy, matrix) {
   expect(itemPageQuery?.properties?.tagRef?.format === "uuid" && !itemPageQuery.required?.includes("tagRef"), "P1_TAG_PAGE_QUERY_OPTIONAL_REF");
   const categoryCreate = openapi.components?.schemas?.CatalogCategoryCreateRequest?.properties || {};
   const categoryMove = openapi.components?.schemas?.CatalogCategoryMoveRequest?.properties || {};
-  const categoryDelete = openapi.components?.schemas?.CatalogCategoryDeleteRequest?.properties || {};
-  expect(categoryCreate.parentCategoryRef?.format === "uuid" && categoryMove.categoryRef?.format === "uuid" && JSON.stringify(categoryMove.action?.enum) === JSON.stringify(["REPARENT", "UP", "DOWN"]) && categoryDelete.categoryRef?.format === "uuid", "P1_CATEGORY_COMMAND_REF_MATRIX");
+  expect(categoryCreate.parentCategoryRef?.format === "uuid" && categoryMove.categoryRef?.format === "uuid" && JSON.stringify(categoryMove.action?.enum) === JSON.stringify(["REPARENT", "UP", "DOWN"]), "P1_CATEGORY_COMMAND_REF_MATRIX");
 }
 
 function validateOperationAuthorizationPolicy(edge, openapi) {
   const writes = edge.operations.filter((operation) => operation.mutation);
   const reads = edge.operations.filter((operation) => !operation.mutation);
-  expect(writes.length === 37 && reads.length === 22, "P1_OPERATION_AUTHORIZATION_CARDINALITY");
+  expect(writes.length === 36 && reads.length === 22, "P1_OPERATION_AUTHORIZATION_CARDINALITY");
   expect(reads.every((operation) => operation.authorizationRequirementId === null && operation.capabilityKeys.length === 0 && Object.keys(operation.capabilityByDataNodeType || {}).length === 0), "P1_GET_ACTION_CAPABILITY_FORBIDDEN");
   expect(writes.every((operation) => typeof operation.authorizationRequirementId === "string" && operation.authorizationRequirementId.startsWith("CATALOG_INVENTORY_OPERATION_") && operation.capabilityKeys.length > 0), "P1_MUTATION_AUTHORIZATION_REQUIREMENT");
-  expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 2).length === 29 && writes.filter((operation) => operation.allowedDataNodeTypes.length === 1).length === 8, "P1_MUTATION_SCOPE_POLICY_CARDINALITY");
+  expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 2).length === 28 && writes.filter((operation) => operation.allowedDataNodeTypes.length === 1).length === 8, "P1_MUTATION_SCOPE_POLICY_CARDINALITY");
   expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 2).every((operation) => exact(operation.allowedDataNodeTypes, ["HEAD_COMPANY", "STORE"]) && operation.capabilityByDataNodeType.HEAD_COMPANY === "EDIT_HEAD_COMPANY_CATALOG" && operation.capabilityByDataNodeType.STORE === "EDIT_STORE_CATALOG"), "P1_DUAL_TARGET_CAPABILITY_MAPPING");
   expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 1 && operation.operationId.includes("Inventory")).every((operation) => exact(operation.allowedDataNodeTypes, ["STORE"]) && operation.capabilityByDataNodeType.STORE === "EDIT_STORE_INVENTORY"), "P1_INVENTORY_CAPABILITY_MAPPING");
   expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 1 && !operation.operationId.includes("Inventory")).every((operation) => exact(operation.allowedDataNodeTypes, ["STORE"]) && operation.capabilityByDataNodeType.STORE === "EDIT_STORE_CATALOG"), "P1_STORE_CATALOG_CAPABILITY_MAPPING");
@@ -532,7 +529,7 @@ function validate(root = ROOT) {
   expect(shape.shapes.every((entry) => !entry.usageCapabilities.includes("PRODUCIBLE")), "P1_PRODUCIBLE_MUST_NOT_DERIVE");
   expect(exact(shape.shapeAdmission.visibleButDisabled.map((entry) => entry.shapeKey), ["BENEFIT_SHELL"]), "P1_BENEFIT_VISIBLE_DISABLED");
   expect(shape.shapeAdmission.visibleButDisabled[0].reason === "权益域尚未开放", "P1_BENEFIT_DISABLED_REASON");
-  expect(shape.hasSkuRule.positiveStatuses.includes("DISABLED") && shape.hasSkuRule.excludedStatuses.includes("ARCHIVED"), "P1_HAS_SKU_RULE");
+  expect(shape.hasSkuRule.positiveStatuses.includes("DISABLED") && shape.hasSkuRule.excludedStatuses.includes("VOIDED"), "P1_HAS_SKU_RULE");
   expect(exact(shape.modeRules.map((entry) => entry.nodeType + "|" + String(entry.condition)), expectedModeRuleKeys), "P1_MODE_RULE_EXACT_SET");
   const catalogHasSku = shape.modeRules.find((entry) => entry.nodeType === "CATALOG_ITEM" && entry.condition === "HAS_SKU");
   const catalogNoSku = shape.modeRules.find((entry) => entry.nodeType === "CATALOG_ITEM" && entry.condition === "NO_SKU");
@@ -570,15 +567,15 @@ function validate(root = ROOT) {
   expect(generatedTs.includes(shape.manifestDigest) && generatedTs.includes("shapeKeys") && generatedTs.includes("modeRules"), "P1_GENERATED_TS_DRIFT");
   const generatedEdgeJava = fs.readFileSync(abs(GENERATED_EDGE_JAVA), "utf8");
   const generatedEdgeTs = fs.readFileSync(abs(GENERATED_EDGE_TS), "utf8");
-  expect(generatedEdgeJava.includes("OPERATION_COUNT = 59") && generatedEdgeJava.includes("record Operation") && generatedEdgeJava.includes("OPERATIONS") && generatedEdgeJava.includes("List<String> coordinatedInventoryDefinitionCommands") && generatedEdgeJava.includes("replaceCatalogInventoryRules"), "P1_GENERATED_EDGE_JAVA_DRIFT");
+  expect(generatedEdgeJava.includes(`OPERATION_COUNT = ${edge.operationCount}`) && generatedEdgeJava.includes("record Operation") && generatedEdgeJava.includes("OPERATIONS") && generatedEdgeJava.includes("List<String> coordinatedInventoryDefinitionCommands") && generatedEdgeJava.includes("replaceCatalogInventoryRules"), "P1_GENERATED_EDGE_JAVA_DRIFT");
   expect(generatedEdgeTs.includes("operationCount") && generatedEdgeTs.includes("coordinatedInventoryDefinitionCommands") && generatedEdgeTs.includes("replaceCatalogInventoryRules"), "P1_GENERATED_EDGE_TS_DRIFT");
 
-  expect(edge.revision === REVISION && edge.operationCount === 59 && edge.operations.length === 59, "P1_EDGE_OPERATION_COUNT");
+  expect(edge.revision === REVISION && edge.operationCount === edge.operations.length, "P1_EDGE_OPERATION_COUNT");
   expect(edge.contractDigest === digest(edge, "contractDigest"), "P1_EDGE_DIGEST");
   expect(catalogRouteRegistry.schemaVersion === 1 && catalogRouteRegistry.kind === "catalog-inventory-edge-route-registry" && catalogRouteRegistry.revision === REVISION && catalogRouteRegistry.generatedFrom === EDGE_PATH && catalogRouteRegistry.contractDigest === edge.contractDigest, "P1_CATALOG_ROUTE_REGISTRY_BINDING");
   const expectedCatalogRoutes = edge.operations.map((entry) => ({operationId: entry.operationId, method: entry.method, path: entry.path, owner: entry.initiatingOwner, consumerFaces: entry.consumerFaces, databaseOperationBudget: entry.databaseOperationBudget}));
   expect(JSON.stringify(catalogRouteRegistry.operations) === JSON.stringify(expectedCatalogRoutes), "P1_CATALOG_ROUTE_REGISTRY_EXACT_PROJECTION");
-  expect(!catalogRouteRegistry.operations.some((entry) => entry.operationId === "transitionOperationsCatalogCategoryStatus" || entry.path.includes("{categoryCode}")), "P1_CATALOG_ROUTE_REGISTRY_RETIRED_CATEGORY_OPERATION");
+  expect(!catalogRouteRegistry.operations.some((entry) => entry.path.includes("{categoryCode}")), "P1_CATALOG_ROUTE_REGISTRY_NO_LEGACY_CATEGORY_CODE");
   expect(placement.placementDigest === digest(placement, "placementDigest"), "P1_PLACEMENT_DIGEST");
   const legacyOperationIds = operationDesign.operations.map((entry) => entry.operationId);
   const libraryOperationIds = edge.operations.filter((entry) => !legacyOperationIds.includes(entry.operationId)).map((entry) => entry.operationId);
@@ -593,7 +590,7 @@ function validate(root = ROOT) {
   for (const [route, pathItem] of Object.entries(openapi.paths || {})) {
     for (const [method, operation] of Object.entries(pathItem)) if (["get", "post", "patch", "put", "delete"].includes(method)) rootOperations.push(operation.operationId);
   }
-  expect(exact(rootOperations, edge.operations.map((entry) => entry.operationId)) && rootOperations.length === 59, "P1_OPENAPI_OPERATION_REACHABILITY");
+  expect(exact(rootOperations, edge.operations.map((entry) => entry.operationId)) && rootOperations.length === edge.operations.length, "P1_OPENAPI_OPERATION_REACHABILITY");
   const assetStageSchema = openapi.components?.schemas?.CatalogAssetStageRequest;
   expect(assetStageSchema?.properties?.content?.type === "string" && assetStageSchema.properties.content.format === "binary" && assetStageSchema.required?.includes("dataNodeRef") && !Object.prototype.hasOwnProperty.call(assetStageSchema.properties, "assetRef"), "P1_ASSET_UPLOAD_BINARY_SCHEMA");
   const assetStageOperation = Object.values(openapi.paths || {}).flatMap((pathItem) => Object.values(pathItem)).find((operation) => operation?.operationId === "stageOperationsCatalogAsset");
@@ -609,7 +606,7 @@ function validate(root = ROOT) {
     const shardData = readJson("contracts/openapi/" + shard);
     for (const [route, pathItem] of Object.entries(shardData.paths || {})) for (const [method, operation] of Object.entries(pathItem)) if (["get", "post", "patch", "put", "delete"].includes(method)) shardOperations.push(operation.operationId);
   }
-  expect(exact(shardOperations, edge.operations.map((entry) => entry.operationId)) && shardOperations.length === 59, "P1_OPENAPI_SHARD_OPERATION_REACHABILITY");
+  expect(exact(shardOperations, edge.operations.map((entry) => entry.operationId)) && shardOperations.length === edge.operations.length, "P1_OPENAPI_SHARD_OPERATION_REACHABILITY");
 
   expect(readModels.sixInventoryDetailZones.length === 6 && exact(readModels.sixInventoryDetailZones, expectedZones), "P1_SIX_INVENTORY_ZONES");
   for (const modelName of shape.readModelNames) expect(readModels.models.some((entry) => entry.name === modelName), "P1_READ_MODEL_MISSING:" + modelName);
@@ -691,7 +688,7 @@ function validate(root = ROOT) {
     if (scenario.layer === "L2") expect(noForbiddenLocatorFields(scenario), "P1_L2_LOCATOR_FIELD:" + scenario.scenarioId);
   }
 
-  expect(assertions.count === 59 && assertions.operations.length === 59, "P1_ASSERTION_OPERATION_COUNT");
+  expect(assertions.count === edge.operations.length && assertions.operations.length === edge.operations.length, "P1_ASSERTION_OPERATION_COUNT");
   const operationIds = [...operationDesign.operations.map((entry) => entry.operationId), ...CATALOG_LIBRARY_OPERATION_IDS];
   expect(exact(assertions.operations.map((entry) => entry.operationId), operationIds), "P1_ASSERTION_OPERATION_EXACT_SET");
   const saveAssertion = assertions.operations.find((entry) => entry.operationId === SAVE_OPERATION_ID);

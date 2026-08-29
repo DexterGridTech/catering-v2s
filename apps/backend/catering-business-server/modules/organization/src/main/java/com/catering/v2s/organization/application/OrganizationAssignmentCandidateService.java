@@ -31,8 +31,8 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
         return switch (type) {
             case ServiceNodeTypes.GROUP -> {
                 UUID id = groups.requireCommercialGroupRef(workspaceUuid, key);
-                yield List.of(
-                        new AssignmentCandidate(type, id, groups.describeCommercialGroup(workspaceUuid, key, id)));
+                OrganizationTaskPathLookup.TaskPath path = taskPaths.requireTaskPath(workspaceUuid, key, type, id);
+                yield List.of(new AssignmentCandidate(type, id, path.displayPath(), path.nodes()));
             }
             case ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT -> candidates(
                     workspaceUuid,
@@ -78,12 +78,7 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
                 workspaceUuid, key, query.targetType(), query.queryText(), query.page(), query.pageSize(), null, null);
         long total = rows.isEmpty() ? 0L : rows.getFirst().total();
         return new PlatformInvitationCandidatePage(
-                rows.stream()
-                        .map(row -> new AssignmentCandidate(row.type().name(), row.id(), row.path()))
-                        .toList(),
-                total,
-                query.page(),
-                query.pageSize());
+                assignmentCandidates(workspaceUuid, key, rows), total, query.page(), query.pageSize());
     }
 
     @Override
@@ -104,12 +99,7 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
                 query.effectiveCandidateScopeId());
         long total = rows.isEmpty() ? 0L : rows.getFirst().total();
         return new OperationsInvitationCandidatePage(
-                rows.stream()
-                        .map(row -> new AssignmentCandidate(row.type().name(), row.id(), row.path()))
-                        .toList(),
-                total,
-                query.page(),
-                query.pageSize());
+                assignmentCandidates(workspaceUuid, key, rows), total, query.page(), query.pageSize());
     }
 
     /**
@@ -284,9 +274,27 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
         for (UUID id : ids) {
             OrganizationTaskPathLookup.TaskPath path = paths.get(new OrganizationTaskPathLookup.TaskPathRef(type, id));
             if (path == null) throw new OrganizationTaskPathService.TaskPathNotFoundException();
-            result.add(new AssignmentCandidate(type, id, path.displayPath()));
+            result.add(new AssignmentCandidate(type, id, path.displayPath(), path.nodes()));
         }
         return List.copyOf(result);
+    }
+
+    private List<AssignmentCandidate> assignmentCandidates(UUID workspaceUuid, String key, List<CandidateRow> rows) {
+        if (rows.isEmpty()) return List.of();
+        List<OrganizationTaskPathLookup.TaskPathRef> refs = rows.stream()
+                .map(row ->
+                        new OrganizationTaskPathLookup.TaskPathRef(row.type().name(), row.id()))
+                .toList();
+        Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths =
+                taskPaths.requireTaskPaths(workspaceUuid, key, refs);
+        return rows.stream()
+                .map(row -> {
+                    OrganizationTaskPathLookup.TaskPath path = paths.get(new OrganizationTaskPathLookup.TaskPathRef(
+                            row.type().name(), row.id()));
+                    if (path == null) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+                    return new AssignmentCandidate(row.type().name(), row.id(), row.path(), path.nodes());
+                })
+                .toList();
     }
 
     private record CandidateRow(InvitationTargetType type, UUID id, String path, long total) {}

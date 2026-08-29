@@ -87,176 +87,7 @@ export const PUBLIC_OPERATIONS = [
   }
 ] as const;
 
-export const PUBLIC_DATABASE_OPERATION_BUDGETS = {
-  "acceptPublicInvitation": {
-    "kind": "FIXED",
-    "max": 6,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 6,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "completeOperationsPasswordRecovery": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "completePublicInvitation": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getPublicAssetContent": {
-    "kind": "FIXED",
-    "max": 4,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 4,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getPublicInvitationCompletion": {
-    "kind": "FIXED",
-    "max": 5,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 5,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getPublicInvitationView": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "savePublicInvitationCredentials": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "sendOperationsPasswordRecoveryOtp": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "sendPublicInvitationOtp": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "startOperationsPasswordRecovery": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "verifyOperationsPasswordRecoveryOtp": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "verifyPublicInvitationOtp": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  }
-} as const;
+export const PUBLIC_DATABASE_OPERATION_BUDGETS = {} as const;
 
 export const PUBLIC_OPERATION_IDS = {
   "acceptPublicInvitation": "acceptPublicInvitation",
@@ -274,6 +105,7 @@ export const PUBLIC_OPERATION_IDS = {
 } as const;
 
 export const EDGE_PROBLEM_CODES = [
+  "ACCOUNT_NOT_BINDABLE",
   "PLATFORM_ASSET_NOT_ACTIVE",
   "PLATFORM_ASSET_NOT_FOUND",
   "PLATFORM_ASSET_USAGE_DENIED",
@@ -295,6 +127,8 @@ export type PublicOperationId = (typeof PUBLIC_OPERATIONS)[number]["operationId"
 
 
 export type Uuid = string & { readonly __uuid: "Uuid" };
+
+export type AccountPresenceStatus = "ABSENT" | "ENABLED" | "DISABLED" | "VOIDED";
 
 export type EpochMillis = number;
 
@@ -335,6 +169,13 @@ export type OperationsPasswordRecoveryVerification = {
   status: "VERIFIED";
 };
 
+export type OrganizationPathNode = {
+  ref: string & { readonly __uuid: "Uuid" };
+  code: string;
+  name: string;
+  nodeType: ServiceNodeType;
+};
+
 export type Problem = {
   type: string;
   title: string;
@@ -371,7 +212,7 @@ export type PublicInvitationCredentialRequest = {
 
 export type PublicInvitationCredentialResponse = {
   verificationGrant: string;
-  accountExists: boolean;
+  accountExists: AccountPresenceStatus;
   userNameReady: boolean;
   loginNameReady: boolean;
   passwordReady: boolean;
@@ -395,7 +236,7 @@ export type PublicInvitationOtpVerifyRequest = {
 
 export type PublicInvitationReadiness = {
   verificationGrant: string;
-  accountExists: boolean;
+  accountExists: AccountPresenceStatus;
   userNameReady: boolean;
   loginNameReady: boolean;
   passwordReady: boolean;
@@ -407,7 +248,6 @@ export type PublicInvitationView = {
   groupWorkspaceKey: string;
   operationsTitle: string;
   targetOrganizationType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
-  targetOrganizationPath: string;
   roleNames: Array<string>;
   maskedMobile: string;
   status: WorkspaceInvitationStatus;
@@ -415,7 +255,10 @@ export type PublicInvitationView = {
   workspaceName: string;
   nextStep: "ACCEPT" | "VERIFY_MOBILE" | "FINALIZE" | "TERMINAL";
   logoUrl?: (string) | null;
+  targetOrganizationPathNodes: Array<OrganizationPathNode>;
 };
+
+export type ServiceNodeType = "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
 
 export type WorkspaceInvitationStatus = "ACTIVE" | "CANCELLED" | "EXPIRED" | "COMPLETED";
 

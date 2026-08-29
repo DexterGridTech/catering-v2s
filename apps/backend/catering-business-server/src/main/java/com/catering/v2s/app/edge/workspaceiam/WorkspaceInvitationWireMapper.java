@@ -1,5 +1,7 @@
 package com.catering.v2s.app.edge.workspaceiam;
 
+import com.catering.v2s.app.edge.generated.wire.InvitationRouteFacts;
+import com.catering.v2s.app.edge.generated.wire.OrganizationPathNode;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceInvitation;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceInvitationStatus;
 import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
@@ -14,7 +16,6 @@ public final class WorkspaceInvitationWireMapper {
                 value.groupWorkspaceKey(),
                 value.maskedMobile(),
                 value.targetOrganizationType(),
-                value.targetOrganizationPath(),
                 value.roleNames(),
                 status(value.status()),
                 value.generation(),
@@ -24,7 +25,23 @@ public final class WorkspaceInvitationWireMapper {
                 value.consentedAt(),
                 value.completedAt(),
                 value.cancelledAt(),
-                value.invitationPageUrl());
+                value.targetOrganizationPathNodes().stream()
+                        .map(WorkspaceInvitationWireMapper::node)
+                        .toList(),
+                value.invitationRouteFacts() == null
+                        ? null
+                        : new InvitationRouteFacts(
+                                value.invitationRouteFacts().groupWorkspaceKey(),
+                                value.invitationRouteFacts().invitationToken()));
+    }
+
+    private static OrganizationPathNode node(
+            com.catering.v2s.organization.api.OrganizationTaskPathLookup.TaskPathNode value) {
+        return new OrganizationPathNode(
+                value.ref(),
+                value.code(),
+                value.name(),
+                com.catering.v2s.app.edge.generated.wire.ServiceNodeType.valueOf(value.nodeType()));
     }
 
     private static WorkspaceInvitationStatus status(String value) {

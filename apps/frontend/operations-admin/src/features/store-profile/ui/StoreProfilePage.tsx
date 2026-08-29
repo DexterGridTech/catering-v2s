@@ -273,7 +273,11 @@ export function StoreProfilePage({queryContext}: OperationsPageProps) {
                               </Button>
                             ),
                           },
-                          {title: '项目分期', dataIndex: 'phaseName'},
+                          {
+                            title: '项目分期',
+                            dataIndex: 'phaseName',
+                            render: (_, contract) => contract.phaseName || '未设置',
+                          },
                           {
                             title: '经营租户',
                             render: (_, contract) => (

@@ -133,6 +133,7 @@
     {"code": "PLATFORM_COMMON_RESULT_UNKNOWN", "origin": "R5_COMMON_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "PLATFORM_IAM_CREDENTIAL_LOCKED", "origin": "R5_PLATFORM_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "PLATFORM_IAM_RESULT_UNKNOWN", "origin": "R5_PLATFORM_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "ACCOUNT_NOT_BINDABLE", "origin": "BASE1_D19_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "WORKSPACE_IAM_ASSIGNMENT_CONFLICT", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "WORKSPACE_IAM_CREDENTIAL_LOCKED", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "WORKSPACE_IAM_CREDENTIAL_NOT_READY", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
@@ -161,7 +162,8 @@
     {"code": "NODE_TYPE_NOT_BINDABLE", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "ORDER_KIND_MISMATCH", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "PROVIDER_NOT_ENABLED", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "VERSION_CONFLICT", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"}
+    {"code": "VERSION_CONFLICT", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "VOIDED_RECORD_IMMUTABLE", "origin": "BASE1_THREE_STATE_LIFECYCLE_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"}
   ],
   "closure": {
     "heritageSourceCodeCount": 83,
@@ -169,11 +171,11 @@
     "heritageSourceCodesOwnedByR3Compatibility": 1,
     "r3SourceCodeCount": 6,
     "r3DispositionCount": 6,
-    "v2sNativeCodeCount": 38,
+    "v2sNativeCodeCount": 40,
     "crossRegistryDuplicateCodeCount": 0,
     "heritageR3ActiveTargetCount": 78,
-    "v2sNativeActiveTargetCount": 38,
-    "totalActiveTargetCount": 116,
+    "v2sNativeActiveTargetCount": 40,
+    "totalActiveTargetCount": 118,
     "allowedDispositions": [
       "RETAIN",
       "RETAIN_R3_WIRE_COMPATIBILITY",

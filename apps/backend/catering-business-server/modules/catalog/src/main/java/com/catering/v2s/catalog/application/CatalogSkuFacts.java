@@ -41,8 +41,8 @@ final class CatalogSkuFacts {
     }
 
     /**
-     * Reads the authoritative SKU facts needed by the item lifecycle guard. SKU rows are relational owner facts;
-     * the catalog item JSON deliberately does not persist the hydrated {@code skus} projection.
+     * Reads the authoritative SKU facts needed by the item lifecycle guard. SKU rows are relational owner facts; the
+     * catalog item JSON deliberately does not persist the hydrated {@code skus} projection.
      */
     ActivationFacts activationFacts(UUID itemRef) {
         return jdbc.queryForObject(
@@ -57,7 +57,7 @@ final class CatalogSkuFacts {
      * preparation profile. Carry that owner-local column in the existing SKU set read rather than opening a second
      * page-wide lookup for the same SKU rows.
      */
-    Map<UUID, ArrayNode> readByItemRefsForPreparationSummary(Collection<UUID> itemRefs) {
+    Map<UUID, ArrayNode> readByItemRefsForList(Collection<UUID> itemRefs) {
         return readByItemRefs(itemRefs, true);
     }
 
@@ -207,7 +207,7 @@ final class CatalogSkuFacts {
         int changed = jdbc.update(
                 "UPDATE catalog.catalog_sku SET status='VOIDED',version=version+1,updated_at_epoch_millis=? "
                         + "WHERE item_ref=? AND "
-                        + "product_sku_ref=? AND version=? AND status NOT IN ('ARCHIVED','VOIDED')",
+                        + "product_sku_ref=? AND version=? AND status <> 'VOIDED'",
                 time.currentEpochMillis(),
                 itemRef,
                 skuRef,
@@ -224,7 +224,7 @@ final class CatalogSkuFacts {
                     .map(skuRef -> new Object[] {time.currentEpochMillis(), itemRef, skuRef})
                     .toList();
             jdbc.batchUpdate(
-                    "UPDATE catalog.catalog_sku SET status='ARCHIVED',version=version+1,"
+                    "UPDATE catalog.catalog_sku SET status='VOIDED',version=version+1,"
                             + "updated_at_epoch_millis=? WHERE item_ref=? AND "
                             + "product_sku_ref=? AND status <> 'VOIDED'",
                     archivedRows);

@@ -4,10 +4,8 @@ import {catalogEnumLabel} from '../model/catalogManifestLabels';
 type LifecycleKind = 'ITEM' | 'SKU';
 
 const lifecycleColors: Record<string, 'default' | 'success' | 'warning' | 'processing' | 'error'> = {
-  DRAFT: 'default',
   ENABLED: 'success',
   DISABLED: 'warning',
-  ARCHIVED: 'processing',
   VOIDED: 'error',
 };
 

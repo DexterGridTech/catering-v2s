@@ -27,6 +27,7 @@ import {
   serializeOrganizationExtensionValues,
   type OrganizationExtensionFormValues,
 } from '../../organization-structure/model/organizationExtensionValues';
+import {canManageBusinessEntity} from './businessEntityLifecycle';
 
 type BusinessEntityFormValues = {
   code: string;
@@ -152,7 +153,7 @@ export function BusinessEntityEditDrawer({
   }, [entity, form, kind, lifecycle]);
 
   const submit = async (value: BusinessEntityFormValues) => {
-    if (!entity || lifecycle.submitting || !definitionQuery.data) return;
+    if (!entity || !canManageBusinessEntity(entity.status) || lifecycle.submitting || !definitionQuery.data) return;
     lifecycle.setSubmitting(true);
     setCommandProblem(undefined);
     try {
@@ -221,6 +222,7 @@ export function BusinessEntityEditDrawer({
   const entityLabel = kind === 'BRAND' ? '品牌' : kind === 'TENANT' ? '经营租户' : '总公司';
   const problem = commandProblem ?? (definitionQuery.error ? '扩展字段加载失败，请关闭后重新进入。' : undefined);
   const definitionReady = Boolean(definitionQuery.data) && !definitionQuery.isFetching;
+  const entityManageable = Boolean(entity && canManageBusinessEntity(entity.status));
   return (
     <Drawer
       title={entity ? `${editLabel}：${entity.name}` : editLabel}
@@ -241,7 +243,7 @@ export function BusinessEntityEditDrawer({
           <Button
             type="primary"
             loading={lifecycle.submitting}
-            disabled={!definitionReady}
+            disabled={!definitionReady || !entityManageable}
             onClick={() => form.submit()}
             {...testId(`operations-business-entity-edit-submit-${kind.toLowerCase()}`)}
           >
@@ -262,7 +264,7 @@ export function BusinessEntityEditDrawer({
       <Form
         form={form}
         layout="vertical"
-        disabled={lifecycle.submitting || !definitionReady}
+        disabled={lifecycle.submitting || !definitionReady || !entityManageable}
         onFinish={value => void submit(value)}
         onValuesChange={() => {
           lifecycle.setDirty(true);

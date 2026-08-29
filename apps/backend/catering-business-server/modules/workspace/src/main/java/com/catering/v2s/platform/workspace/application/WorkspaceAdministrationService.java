@@ -2,9 +2,9 @@ package com.catering.v2s.platform.workspace.application;
 
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChangeJson;
-import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.platform.asset.api.WorkspaceLogoAssetCommand;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationPage;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationPageRequest;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
@@ -176,16 +176,18 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
 
     @Override
     @Transactional(readOnly = true)
-    public boolean isEnabled(UUID workspaceUuid, String groupWorkspaceKey) {
-        Boolean enabled = jdbc.query(
-                "SELECT status='ENABLED' FROM platform_workspace.group_workspace WHERE workspace_uuid=? AND "
+    public String requireStatus(UUID workspaceUuid, String groupWorkspaceKey) {
+        return jdbc.query(
+                "SELECT status FROM platform_workspace.group_workspace WHERE workspace_uuid=? AND "
                         + "group_workspace_key=?",
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, groupWorkspaceKey);
                 },
-                result -> result.next() && result.getBoolean(1));
-        return Boolean.TRUE.equals(enabled);
+                result -> {
+                    if (!result.next()) throw new WorkspaceNotFoundException();
+                    return result.getString(1);
+                });
     }
 
     @Transactional

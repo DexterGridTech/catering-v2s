@@ -7,7 +7,7 @@ function detailWithVoidReasons(
   blockingReasons: Array<{label: string; count: number; relatedItemNames: string[]}>,
 ): CatalogDetail {
   return {
-    item: {shapeKey: 'SKU_MANAGED', lifecycle: {status: 'DRAFT'}},
+    item: {shapeKey: 'SKU_MANAGED', lifecycle: {status: 'DISABLED'}},
     references: [],
     actionAvailability: {
       voidAvailability: {canVoid: false, blockingReferences: [], dependentFacts: [], blockingReasons},
@@ -30,7 +30,7 @@ describe('CatalogItemGovernanceView', () => {
 
   it('does not turn a missing owner availability fact into a false void prohibition', () => {
     const detail = {
-      item: {shapeKey: 'STANDARD_SALE', lifecycle: {status: 'DRAFT'}},
+      item: {shapeKey: 'STANDARD_SALE', lifecycle: {status: 'DISABLED'}},
       references: [],
       actionAvailability: {},
     } as unknown as CatalogDetail;
@@ -43,12 +43,12 @@ describe('CatalogItemGovernanceView', () => {
 
   it('groups references by business location with a name-first, secondary-code identity', () => {
     const detail = {
-      item: {shapeKey: 'STANDARD_SALE', lifecycle: {status: 'DRAFT'}},
+      item: {shapeKey: 'STANDARD_SALE', lifecycle: {status: 'DISABLED'}},
       references: [
         {
           referenceRef: 'reference-1',
           direction: 'INBOUND',
-          relationLabel: '套餐内容',
+          referenceKind: 'COMPOSITE_COMPONENT',
           code: 'MAIN-STEAK-001',
           name: '西冷牛排',
         },
@@ -59,7 +59,7 @@ describe('CatalogItemGovernanceView', () => {
       <CatalogItemGovernanceView detail={detail} onOpenReferencedItem={() => undefined} />,
     );
 
-    expect(markup).toContain('套餐内容');
+    expect(markup).toContain('被其他商品引用');
     expect(markup).toContain('西冷牛排');
     expect(markup).toContain('MAIN-STEAK-001');
   });

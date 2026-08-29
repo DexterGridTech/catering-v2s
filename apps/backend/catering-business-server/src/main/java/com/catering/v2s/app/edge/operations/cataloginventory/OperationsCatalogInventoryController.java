@@ -10,16 +10,14 @@ import com.catering.v2s.app.edge.generated.wire.CatalogAssetReleaseReadback;
 import com.catering.v2s.app.edge.generated.wire.CatalogAssetReleaseRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogAssetStageRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogAttributeDefinitionCreateRequest;
-import com.catering.v2s.app.edge.generated.wire.CatalogAttributeDefinitionDeleteReadback;
-import com.catering.v2s.app.edge.generated.wire.CatalogAttributeDefinitionDeleteRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogAttributeDefinitionList;
 import com.catering.v2s.app.edge.generated.wire.CatalogAttributeDefinitionReadback;
+import com.catering.v2s.app.edge.generated.wire.CatalogAttributeDefinitionStatusTransitionRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogAttributeDefinitionUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogCategoryCreateRequest;
-import com.catering.v2s.app.edge.generated.wire.CatalogCategoryDeleteReadback;
-import com.catering.v2s.app.edge.generated.wire.CatalogCategoryDeleteRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogCategoryMoveRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogCategoryReadback;
+import com.catering.v2s.app.edge.generated.wire.CatalogCategoryStatusTransitionRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogCategoryUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogDictionaryEntryCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogDictionaryEntryReadback;
@@ -35,17 +33,14 @@ import com.catering.v2s.app.edge.generated.wire.CatalogItemSaveReadback;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemSaveRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemTransitionRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogOrderOptionDefinitionCreateRequest;
-import com.catering.v2s.app.edge.generated.wire.CatalogOrderOptionDefinitionDeleteReadback;
-import com.catering.v2s.app.edge.generated.wire.CatalogOrderOptionDefinitionDeleteRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogOrderOptionDefinitionList;
 import com.catering.v2s.app.edge.generated.wire.CatalogOrderOptionDefinitionReadback;
+import com.catering.v2s.app.edge.generated.wire.CatalogOrderOptionDefinitionStatusTransitionRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogOrderOptionDefinitionUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogUnitCreateRequest;
-import com.catering.v2s.app.edge.generated.wire.CatalogUnitDeleteReadback;
-import com.catering.v2s.app.edge.generated.wire.CatalogUnitDeleteRequest;
-import com.catering.v2s.app.edge.generated.wire.CatalogUnitDisableRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogUnitList;
 import com.catering.v2s.app.edge.generated.wire.CatalogUnitReadback;
+import com.catering.v2s.app.edge.generated.wire.CatalogUnitStatusTransitionRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogUnitUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.InventoryAdjustmentRequest;
 import com.catering.v2s.app.edge.generated.wire.InventoryCountRequest;
@@ -85,7 +80,6 @@ import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -361,7 +355,9 @@ public final class OperationsCatalogInventoryController {
             @PathVariable Map<String, String> path) {
         ReadRequest read = readRequest(context, query, path, CATALOG_SCOPE);
         return ResponseEntity.ok(attributeDefinitionList(
-                read.requestId(), application.listAttributeDefinitions(read.dataNodeRef(), read.brandRef())));
+                read.requestId(),
+                application.listAttributeDefinitions(
+                        read.dataNodeRef(), read.brandRef(), optionalCatalogCandidateUsage(read.request()))));
     }
 
     @GetMapping("/units")
@@ -403,7 +399,9 @@ public final class OperationsCatalogInventoryController {
             @PathVariable Map<String, String> path) {
         ReadRequest read = readRequest(context, query, path, CATALOG_SCOPE);
         return ResponseEntity.ok(orderOptionDefinitionList(
-                read.requestId(), application.listOrderOptionDefinitions(read.dataNodeRef(), read.brandRef())));
+                read.requestId(),
+                application.listOrderOptionDefinitions(
+                        read.dataNodeRef(), read.brandRef(), optionalCatalogCandidateUsage(read.request()))));
     }
 
     @PostMapping("/items")
@@ -752,6 +750,23 @@ public final class OperationsCatalogInventoryController {
                 idempotencyKey));
     }
 
+    @PostMapping("/attribute-definitions/{definitionRef}/status")
+    public ResponseEntity<CatalogAttributeDefinitionReadback> transitionAttributeDefinitionStatus(
+            EdgeRequestContext context,
+            @RequestBody CatalogAttributeDefinitionStatusTransitionRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @PathVariable String definitionRef) {
+        requireIdempotencyKey(idempotencyKey);
+        return ResponseEntity.ok(m1Bindings.bindTransitionOperationsCatalogAttributeDefinitionStatus(
+                request,
+                sessions.token(context),
+                context.requestedBrandRef(),
+                context.correlationId(),
+                context.requestId(),
+                definitionRef,
+                idempotencyKey));
+    }
+
     @PatchMapping("/order-option-definitions/{definitionRef}")
     public ResponseEntity<CatalogOrderOptionDefinitionReadback> updateOrderOptionDefinition(
             EdgeRequestContext context,
@@ -760,6 +775,23 @@ public final class OperationsCatalogInventoryController {
             @PathVariable String definitionRef) {
         requireIdempotencyKey(idempotencyKey);
         return ResponseEntity.ok(m1Bindings.bindUpdateOperationsCatalogOrderOptionDefinition(
+                request,
+                sessions.token(context),
+                context.requestedBrandRef(),
+                context.correlationId(),
+                context.requestId(),
+                definitionRef,
+                idempotencyKey));
+    }
+
+    @PostMapping("/order-option-definitions/{definitionRef}/status")
+    public ResponseEntity<CatalogOrderOptionDefinitionReadback> transitionOrderOptionDefinitionStatus(
+            EdgeRequestContext context,
+            @RequestBody CatalogOrderOptionDefinitionStatusTransitionRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @PathVariable String definitionRef) {
+        requireIdempotencyKey(idempotencyKey);
+        return ResponseEntity.ok(m1Bindings.bindTransitionOperationsCatalogOrderOptionDefinitionStatus(
                 request,
                 sessions.token(context),
                 context.requestedBrandRef(),
@@ -786,14 +818,14 @@ public final class OperationsCatalogInventoryController {
                 idempotencyKey));
     }
 
-    @PostMapping("/units/{unitRef}/disable")
-    public ResponseEntity<CatalogUnitReadback> disableCatalogUnit(
+    @PostMapping("/units/{unitRef}/status")
+    public ResponseEntity<CatalogUnitReadback> transitionCatalogUnitStatus(
             EdgeRequestContext context,
-            @RequestBody CatalogUnitDisableRequest request,
+            @RequestBody CatalogUnitStatusTransitionRequest request,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @PathVariable String unitRef) {
         requireIdempotencyKey(idempotencyKey);
-        return ResponseEntity.ok(m1Bindings.bindDisableOperationsCatalogUnit(
+        return ResponseEntity.ok(m1Bindings.bindTransitionOperationsCatalogUnitStatus(
                 request,
                 sessions.token(context),
                 context.requestedBrandRef(),
@@ -811,6 +843,17 @@ public final class OperationsCatalogInventoryController {
             @PathVariable String categoryRef) {
         requireIdempotencyKey(k);
         return ResponseEntity.ok(m1Bindings.bindUpdateOperationsCatalogCategory(
+                r, sessions.token(c), c.requestedBrandRef(), c.correlationId(), c.requestId(), categoryRef, k));
+    }
+
+    @PostMapping("/categories/{categoryRef}/status")
+    public ResponseEntity<CatalogCategoryReadback> transitionCatalogCategoryStatus(
+            EdgeRequestContext c,
+            @RequestBody CatalogCategoryStatusTransitionRequest r,
+            @RequestHeader(value = "Idempotency-Key", required = false) String k,
+            @PathVariable String categoryRef) {
+        requireIdempotencyKey(k);
+        return ResponseEntity.ok(m1Bindings.bindTransitionOperationsCatalogCategoryStatus(
                 r, sessions.token(c), c.requestedBrandRef(), c.correlationId(), c.requestId(), categoryRef, k));
     }
 
@@ -867,68 +910,6 @@ public final class OperationsCatalogInventoryController {
                 idempotencyKey));
     }
 
-    @DeleteMapping("/categories/{categoryRef}")
-    public ResponseEntity<CatalogCategoryDeleteReadback> deleteCatalogCategory(
-            EdgeRequestContext c,
-            @RequestBody CatalogCategoryDeleteRequest r,
-            @RequestHeader(value = "Idempotency-Key", required = false) String k,
-            @PathVariable String categoryRef) {
-        requireIdempotencyKey(k);
-        return ResponseEntity.ok(m1Bindings.bindDeleteOperationsCatalogCategory(
-                r, sessions.token(c), c.requestedBrandRef(), c.correlationId(), c.requestId(), categoryRef, k));
-    }
-
-    @DeleteMapping("/attribute-definitions/{definitionRef}")
-    public ResponseEntity<CatalogAttributeDefinitionDeleteReadback> deleteAttributeDefinition(
-            EdgeRequestContext context,
-            @RequestBody CatalogAttributeDefinitionDeleteRequest request,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
-            @PathVariable String definitionRef) {
-        requireIdempotencyKey(idempotencyKey);
-        return ResponseEntity.ok(m1Bindings.bindDeleteOperationsCatalogAttributeDefinition(
-                request,
-                sessions.token(context),
-                context.requestedBrandRef(),
-                context.correlationId(),
-                context.requestId(),
-                definitionRef,
-                idempotencyKey));
-    }
-
-    @DeleteMapping("/order-option-definitions/{definitionRef}")
-    public ResponseEntity<CatalogOrderOptionDefinitionDeleteReadback> deleteOrderOptionDefinition(
-            EdgeRequestContext context,
-            @RequestBody CatalogOrderOptionDefinitionDeleteRequest request,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
-            @PathVariable String definitionRef) {
-        requireIdempotencyKey(idempotencyKey);
-        return ResponseEntity.ok(m1Bindings.bindDeleteOperationsCatalogOrderOptionDefinition(
-                request,
-                sessions.token(context),
-                context.requestedBrandRef(),
-                context.correlationId(),
-                context.requestId(),
-                definitionRef,
-                idempotencyKey));
-    }
-
-    @DeleteMapping("/units/{unitRef}")
-    public ResponseEntity<CatalogUnitDeleteReadback> deleteCatalogUnit(
-            EdgeRequestContext context,
-            @RequestBody CatalogUnitDeleteRequest request,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
-            @PathVariable String unitRef) {
-        requireIdempotencyKey(idempotencyKey);
-        return ResponseEntity.ok(m1Bindings.bindDeleteOperationsCatalogUnit(
-                request,
-                sessions.token(context),
-                context.requestedBrandRef(),
-                context.correlationId(),
-                context.requestId(),
-                unitRef,
-                idempotencyKey));
-    }
-
     @PostMapping("/assets/{assetRef}/release")
     public ResponseEntity<CatalogAssetReleaseReadback> releaseCatalogAsset(
             EdgeRequestContext context,
@@ -961,6 +942,7 @@ public final class OperationsCatalogInventoryController {
                                 definition.definitionRef(),
                                 definition.code(),
                                 definition.name(),
+                                definition.status(),
                                 definition.valueType(),
                                 definition.options().stream()
                                         .map(option ->
@@ -997,6 +979,7 @@ public final class OperationsCatalogInventoryController {
                         definition.definitionRef(),
                         definition.code(),
                         definition.name(),
+                        definition.status(),
                         definition.selectionMode(),
                         orderOptionValues(definition.values()),
                         definition.version()))
@@ -1239,7 +1222,7 @@ public final class OperationsCatalogInventoryController {
 
     private static String optionalUnitStatus(String value) {
         if (value == null || value.isBlank()) return null;
-        if ("ENABLED".equals(value) || "DISABLED".equals(value)) return value;
+        if ("ENABLED".equals(value) || "DISABLED".equals(value) || "VOIDED".equals(value)) return value;
         throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "unit status is not supported");
     }
 
@@ -1247,5 +1230,13 @@ public final class OperationsCatalogInventoryController {
         if (!request.has(field) || request.path(field).isNull()) return null;
         String value = request.path(field).asText();
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static String optionalCatalogCandidateUsage(ObjectNode request) {
+        String value = optionalText(request, "candidateUsage");
+        if (value == null) return null;
+        if (!"ITEM_ASSIGNMENT".equals(value))
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "candidateUsage is not supported");
+        return value;
     }
 }

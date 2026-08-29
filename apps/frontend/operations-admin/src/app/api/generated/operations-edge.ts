@@ -752,1506 +752,7 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
   }
 ] as const;
 
-export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
-  "addOperationsOrganizationHeadCompanyBrandAuthorization": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceGroupInvitation": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceHeadCompanyInvitation": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceProjectInvitation": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceRegionInvitation": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceStoreInvitation": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "changeCurrentWorkspacePassword": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsBusinessChannel": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsBusinessChannelTemplate": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsContract": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsOrganizationBrand": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsOrganizationHeadCompany": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsOrganizationProject": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsOrganizationRegion": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsOrganizationStore": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsOrganizationTenant": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsOwnerBinding": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsWorkspaceGroupInvitation": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsWorkspaceHeadCompanyInvitation": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsWorkspaceProjectInvitation": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsWorkspaceRegionInvitation": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsWorkspaceStoreInvitation": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "deleteOperationsOwnerBinding": {
-    "kind": "FIXED",
-    "max": 31,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 31,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsBusinessChannelDetail": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsBusinessChannelTemplates": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsContract": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsContractCandidates": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsContractExtensionDefinition": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsContracts": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsEntityAuditHistory": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsExternalCapabilityDictionary": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsExternalProviderCandidates": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsFixedStoreContracts": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationBrand": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationBrands": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationBusinessEntityExtensionDefinition": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationCandidates": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationHeadCompanies": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationHeadCompany": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationHierarchy": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationHierarchyExtensionDefinition": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationStore": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationStoreExtensionDefinition": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationStores": {
-    "kind": "FIXED",
-    "max": 14,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 14,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationTenant": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationTenants": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOwnerBindingDetail": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsProjectBusinessChannels": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsStoreBusinessChannels": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsStoreBusinessChannelTemplateCandidates": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsStoreProfile": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupInvitations": {
-    "kind": "FIXED",
-    "max": 15,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 15,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupUser": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupUserAccount": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceHeadCompanyInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceHeadCompanyInvitations": {
-    "kind": "FIXED",
-    "max": 15,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 15,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceHeadCompanyUser": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceHeadCompanyUserAccount": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceLoginEntry": {
-    "kind": "FIXED",
-    "max": 4,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 4,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceProjectInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceProjectInvitations": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceProjectUser": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceProjectUserAccount": {
-    "kind": "FIXED",
-    "max": 16,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 16,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceRegionInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceRegionInvitations": {
-    "kind": "FIXED",
-    "max": 14,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 14,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceRegionUser": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceRegionUserAccount": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceSessionEntry": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceStoreInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceStoreInvitations": {
-    "kind": "FIXED",
-    "max": 14,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 14,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceStoreUser": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceStoreUserAccount": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "invalidateOperationsContract": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "operationsWorkspaceLogout": {
-    "kind": "FIXED",
-    "max": 4,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 4,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "operationsWorkspacePasswordLogin": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceGroupInvitation": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 28,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceHeadCompanyInvitation": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 28,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceProjectInvitation": {
-    "kind": "FIXED",
-    "max": 27,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 27,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceRegionInvitation": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 28,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceStoreInvitation": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 28,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "removeOperationsOrganizationHeadCompanyBrandAuthorization": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceGroupUserAssignment": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 28,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceHeadCompanyUserAssignment": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 28,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceProjectUserAssignment": {
-    "kind": "FIXED",
-    "max": 26,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 26,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceRegionUserAssignment": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 28,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceStoreUserAssignment": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 28,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "selectOperationsWorkspaceSessionContext": {
-    "kind": "FIXED",
-    "max": 16,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 16,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "selectOperationsWorkspaceSessionDataNode": {
-    "kind": "FIXED",
-    "max": 15,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 15,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "sendOperationsWorkspaceOtp": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "transitionOperationsBusinessChannelStatus": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "transitionOperationsBusinessChannelTemplateStatus": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationBrandStatus": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationHeadCompanyStatus": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationNodeStatus": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationStoreStatus": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationTenantStatus": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsBusinessChannel": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsBusinessChannelTemplate": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsCommercialGroup": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsContract": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsOrganizationBrand": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsOrganizationHeadCompany": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsOrganizationNode": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsOrganizationStore": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsOrganizationTenant": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "verifyOperationsWorkspaceOtp": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  }
-} as const;
+export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {} as const;
 
 export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "addOperationsOrganizationHeadCompanyBrandAuthorization": "addOperationsOrganizationHeadCompanyBrandAuthorization",
@@ -2379,7 +880,6 @@ export const EDGE_PROBLEM_CODES = [
   "DELETE_NOT_ALLOWED",
   "DINE_IN_FORM_MISMATCH",
   "DINE_IN_MUST_BE_INTERNAL",
-  "DISABLED_OBJECT_NOT_EDITABLE",
   "DUPLICATE_CODE",
   "EXTERNAL_OWNER_ID_MISMATCH",
   "IMMUTABLE_FIELD",
@@ -2420,6 +920,7 @@ export const EDGE_PROBLEM_CODES = [
   "PLATFORM_COMMON_VERSION_CONFLICT",
   "PROVIDER_NOT_ENABLED",
   "VERSION_CONFLICT",
+  "VOIDED_RECORD_IMMUTABLE",
   "WORKSPACE_IAM_ACCOUNT_DISABLED",
   "WORKSPACE_IAM_CREDENTIAL_LOCKED",
   "WORKSPACE_IAM_INVALID_CREDENTIALS",
@@ -2522,7 +1023,7 @@ export type BusinessChannelPage = {
 export type BusinessChannelSortKey = "CHANNEL_NAME" | "CHANNEL_CODE" | "TEMPLATE_NAME" | "STATUS" | "BINDING_STATUS";
 
 export type BusinessChannelStatusRequest = {
-  status: "DRAFT" | "EFFECTIVE" | "DISABLED";
+  status: "DISABLED" | "ENABLED" | "VOIDED";
   expectedVersion: number;
 };
 
@@ -2550,7 +1051,7 @@ export type BusinessChannelTemplatePage = {
 export type BusinessChannelTemplateSortKey = "TEMPLATE_NAME" | "TEMPLATE_CODE" | "ACCESS_KIND" | "OPERATOR_KIND" | "ORDER_KIND" | "STATUS";
 
 export type BusinessChannelTemplateStatusRequest = {
-  status: "ENABLED" | "DISABLED";
+  status: "ENABLED" | "DISABLED" | "VOIDED";
   expectedVersion: number;
 };
 
@@ -2564,17 +1065,22 @@ export type BusinessChannelTemplateView = {
   projectRef: string & { readonly __uuid: "Uuid" };
   templateName: string;
   templateCode?: string | null;
-  accessKind: string;
-  accessKindDisplayName: string;
-  operatorKind: string;
-  operatorKindDisplayName: string;
-  orderKind: string;
-  orderKindDisplayName: string;
-  dineInForm?: string | null;
-  dineInFormDisplayName: string | null;
+  accessKind: "INTERNAL" | "EXTERNAL";
+  operatorKind: "PROJECT" | "STORE";
+  orderKind: "DINE_IN" | "TAKEAWAY" | "GROUP_BUY";
+  dineInForm?: "POS" | "QR" | "KIOSK" | null | null;
   providerCode?: string | null;
-  status: "ENABLED" | "DISABLED";
-  statusDisplayName: string;
+  status: "ENABLED" | "DISABLED" | "VOIDED";
+  statusDimensions: Array<{
+  type: "BUSINESS_CHANNEL_TEMPLATE" | "GROUP_WORKSPACE" | "ORGANIZATION_GROUP" | "ORGANIZATION_REGION" | "ORGANIZATION_PROJECT" | "ORGANIZATION_STORE" | "ORGANIZATION_TENANT" | "ORGANIZATION_BRAND" | "COLLABORATION_EXTERNAL_SYSTEM" | "COLLABORATION_PROVIDER_PROFILE" | "COLLABORATION_BINDING";
+  ref: string;
+  status: "ENABLED" | "DISABLED" | "VOIDED";
+}>;
+  blockers: Array<{
+  type: "BUSINESS_CHANNEL_TEMPLATE" | "GROUP_WORKSPACE" | "ORGANIZATION_GROUP" | "ORGANIZATION_REGION" | "ORGANIZATION_PROJECT" | "ORGANIZATION_STORE" | "ORGANIZATION_TENANT" | "ORGANIZATION_BRAND" | "COLLABORATION_EXTERNAL_SYSTEM" | "COLLABORATION_PROVIDER_PROFILE" | "COLLABORATION_BINDING";
+  ref: string;
+  status: "ENABLED" | "DISABLED" | "VOIDED";
+}>;
   version: number;
 };
 
@@ -2587,26 +1093,32 @@ export type BusinessChannelUpdateRequest = {
 export type BusinessChannelView = {
   channelRef: string & { readonly __uuid: "Uuid" };
   templateRef: string & { readonly __uuid: "Uuid" };
-  ownerNodeType: string;
-  ownerNodeTypeDisplayName: string;
+  ownerNodeType: "PROJECT" | "STORE";
   ownerNodeRef: string & { readonly __uuid: "Uuid" };
   channelCode?: string | null;
   channelName: string;
   bindingRef?: string & { readonly __uuid: "Uuid" } | null;
-  status: "DRAFT" | "EFFECTIVE" | "DISABLED";
-  statusDisplayName: string;
-  stopReasons: Array<"CASCADE_TEMPLATE" | "CASCADE_EXTERNAL" | "MANUAL">;
-  stopReasonDisplayNames: Array<string>;
-  version: number;
+  status: "DISABLED" | "ENABLED" | "VOIDED";
   bindingStatus: "NOT_REQUIRED" | "UNBOUND" | "BOUND";
-  bindingStatusDisplayName: string;
+  selfStatus: "ENABLED" | "DISABLED" | "VOIDED";
+  statusDimensions: Array<{
+  type: "BUSINESS_CHANNEL_TEMPLATE" | "GROUP_WORKSPACE" | "ORGANIZATION_GROUP" | "ORGANIZATION_REGION" | "ORGANIZATION_PROJECT" | "ORGANIZATION_STORE" | "ORGANIZATION_TENANT" | "ORGANIZATION_BRAND" | "COLLABORATION_EXTERNAL_SYSTEM" | "COLLABORATION_PROVIDER_PROFILE" | "COLLABORATION_BINDING";
+  ref: string;
+  status: "ENABLED" | "DISABLED" | "VOIDED" | "PENDING_AUTHORIZATION" | "EFFECTIVE" | "INVALID" | "DELETED";
+}>;
+  blockers: Array<{
+  type: "BUSINESS_CHANNEL_TEMPLATE" | "GROUP_WORKSPACE" | "ORGANIZATION_GROUP" | "ORGANIZATION_REGION" | "ORGANIZATION_PROJECT" | "ORGANIZATION_STORE" | "ORGANIZATION_TENANT" | "ORGANIZATION_BRAND" | "COLLABORATION_EXTERNAL_SYSTEM" | "COLLABORATION_PROVIDER_PROFILE";
+  ref: string;
+  status: "ENABLED" | "DISABLED" | "VOIDED";
+}>;
+  version: number;
 };
 
 export type BusinessEntitySortDirection = "ASC" | "DESC";
 
 export type BusinessEntitySortKey = "NAME" | "CODE" | "UPDATED_AT";
 
-export type BusinessEntityStatus = "ENABLED" | "DISABLED";
+export type BusinessEntityStatus = "ENABLED" | "DISABLED" | "VOIDED";
 
 export type BusinessEntityStatusRequest = {
   targetStatus: BusinessEntityStatus;
@@ -2648,12 +1160,19 @@ export type ExtensionDefinition = {
   type: "TEXT" | "NUMBER" | "DATE" | "BOOLEAN" | "SELECT";
   required: boolean;
   options: Array<string>;
-  status?: "ENABLED" | "DISABLED";
+  status: "ENABLED" | "DISABLED";
   displayOrder?: number;
-  displaySuffix?: string;
+  displaySuffix?: (string) | null;
 }>;
   revision: number;
   updatedAt: EpochMillis;
+  workspaceStatus: GroupWorkspaceStatus;
+  blockers: Array<ExtensionDefinitionBlocker>;
+};
+
+export type ExtensionDefinitionBlocker = {
+  type: "WORKSPACE";
+  status: GroupWorkspaceStatus;
 };
 
 export type ExtensionEntityType = "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "CONTRACT" | "COMMERCIAL_GROUP" | "REGION" | "PROJECT";
@@ -2661,16 +1180,10 @@ export type ExtensionEntityType = "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" 
 export type ExternalCapability = {
   capabilityClass: "MASTER_DATA_SYNC" | "MEMBER_BENEFIT" | "GROUP_BUY" | "TAKEAWAY" | "INVENTORY_SYNC" | "TAKEAWAY_DELIVERY" | "ORDER_SYNC";
   displayName: string;
-  attributeValueLabels: Record<string, string>;
-  attributeValues: Record<string, JsonValue>;
+  attributeValues: {
+  groupBuyMappingDirection?: "EXTERNAL_TO_INTERNAL" | "INTERNAL_TO_EXTERNAL";
+  menuCollaborationDirection?: "PULL_ONLY";
 };
-
-export type ExternalCapabilityAttributeDescriptor = {
-  fieldKey: string;
-  label: string;
-  helpText: string;
-  controlKind: "readonlySummary" | "readonlyPreview";
-  optionSourceRef: Record<string, JsonValue>;
 };
 
 export type ExternalProviderCandidatePage = {
@@ -2683,8 +1196,6 @@ export type ExternalSystemView = {
   externalSystemCode: string;
   displayName: string;
   catalogStatus: "PLANNED" | "AVAILABLE";
-  catalogStatusDisplayName: string;
-  attributeDictionary: Array<ExternalCapabilityAttributeDescriptor>;
   capabilities: Array<ExternalCapability>;
   enablementStatus: "ENABLED" | "DISABLED";
   version: number;
@@ -2743,6 +1254,11 @@ export type HeadCompanyPage = {
 export type HeadCompanyUpdateRequest = (HeadCompanyCreateRequest) & ({
   expectedVersion: number;
 });
+
+export type InvitationRouteFacts = {
+  groupWorkspaceKey: string;
+  invitationToken: string;
+};
 
 export type NoBody = Record<string, never>;
 
@@ -2817,6 +1333,13 @@ export type OrganizationNodeUpdateRequest = {
   notes?: (string) | null;
   expectedVersion: number;
   extensionValues?: (Record<string, JsonValue>) | null;
+};
+
+export type OrganizationPathNode = {
+  ref: string & { readonly __uuid: "Uuid" };
+  code: string;
+  name: string;
+  nodeType: ServiceNodeType;
 };
 
 export type OrganizationProjectCreateRequest = (OrganizationNodeCreateRequest) & ({
@@ -2913,7 +1436,7 @@ export type OrganizationStoreUpdateRequest = {
 
 export type OwnerBindingCreateRequest = {
   providerCode: string;
-  capabilityClass?: string | null;
+  capabilityClass?: "MASTER_DATA_SYNC" | "MEMBER_BENEFIT" | "GROUP_BUY" | "TAKEAWAY" | "INVENTORY_SYNC" | "TAKEAWAY_DELIVERY" | "ORDER_SYNC" | null | null;
   nodeType: string;
   nodeRef: string & { readonly __uuid: "Uuid" };
   bindingDisplayName?: string | null;
@@ -2930,19 +1453,16 @@ export type OwnerBindingView = {
   bindingRef: string & { readonly __uuid: "Uuid" };
   providerCode: string;
   providerDisplayName: string;
-  capabilityClass?: string | null;
-  capabilityClassDisplayName: string | null;
-  businessScopeDisplayNames: Array<string>;
-  nodeType: string;
-  nodeTypeDisplayName: string;
+  capabilityClass?: "MASTER_DATA_SYNC" | "MEMBER_BENEFIT" | "GROUP_BUY" | "TAKEAWAY" | "INVENTORY_SYNC" | "TAKEAWAY_DELIVERY" | "ORDER_SYNC" | null | null;
+  businessScope: Array<"TAKEAWAY" | "GROUP_BUY" | "ORDER_SYNC" | "MEMBER_BENEFIT">;
+  nodeType: "COMMERCIAL_GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   nodeRef: string & { readonly __uuid: "Uuid" };
-  nodeDisplayPath?: string | null;
+  nodePath: Array<OrganizationPathNode>;
   bindingDisplayName?: string | null;
   externalOwnerId?: string | null;
   boundAt: number;
   statusChangedAt: number;
   status: "PENDING_AUTHORIZATION" | "EFFECTIVE" | "INVALID" | "DELETED";
-  statusDisplayName: string;
   version: number;
 };
 
@@ -2961,16 +1481,11 @@ export type ProviderProfileView = {
   displayName: string;
   externalSystemCode: string;
   externalSystemDisplayName: string;
-  businessScope: Array<string>;
-  businessScopeDisplayNames: Array<string>;
-  bindableNodeTypes: Array<string>;
-  bindableNodeTypeDisplayNames: Array<string>;
+  businessScope: Array<"TAKEAWAY" | "GROUP_BUY" | "ORDER_SYNC" | "MEMBER_BENEFIT">;
+  bindableNodeTypes: Array<"COMMERCIAL_GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE">;
   authenticationKind: "EXTERNAL_GRANT" | "INTERNAL_MAPPING" | "NO_MAPPING";
-  authenticationKindDisplayName: string;
   unbindKind: "LOCAL_ONLY" | "REQUIRES_ADAPTER_UNBIND";
-  unbindKindDisplayName: string;
   catalogStatus: "PLANNED" | "AVAILABLE";
-  catalogStatusDisplayName: string;
   enablementStatus: "ENABLED" | "DISABLED";
   version: number;
 };
@@ -2997,7 +1512,7 @@ export type StoreContract = {
   code: string;
   name: string;
 };
-  phaseName: string;
+  phaseName: (string) | null;
   contractNo: string;
   effectiveFrom: string;
   effectiveTo: (string) | null;
@@ -3142,7 +1657,7 @@ export type TenantUpdateRequest = (TenantCreateRequest) & ({
   expectedVersion: number;
 });
 
-export type WorkspaceAccountStatus = "ENABLED" | "DISABLED";
+export type WorkspaceAccountStatus = "ENABLED" | "DISABLED" | "VOIDED";
 
 export type WorkspaceCurrentPasswordChangeRequest = {
   currentPassword: string;
@@ -3161,7 +1676,6 @@ export type WorkspaceInvitation = {
   groupWorkspaceKey: string;
   maskedMobile: string;
   targetOrganizationType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
-  targetOrganizationPath: string;
   roleNames: Array<string>;
   status: WorkspaceInvitationStatus;
   generation: number;
@@ -3171,7 +1685,8 @@ export type WorkspaceInvitation = {
   consentedAt?: (EpochMillis) | null;
   completedAt?: (EpochMillis) | null;
   cancelledAt?: (EpochMillis) | null;
-  invitationPageUrl: string;
+  targetOrganizationPathNodes: Array<OrganizationPathNode>;
+  invitationRouteFacts: (InvitationRouteFacts) | null;
 };
 
 export type WorkspaceInvitationCandidatePage = {
@@ -3179,6 +1694,7 @@ export type WorkspaceInvitationCandidatePage = {
   serviceNodeType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
   organizationRef: string & { readonly __uuid: "Uuid" };
   path: string;
+  pathNodes: Array<OrganizationPathNode>;
 }>;
   roles: Array<WorkspaceRole>;
   metadata: ({
@@ -3268,7 +1784,7 @@ export type WorkspaceRole = {
   updatedAt: EpochMillis;
 };
 
-export type WorkspaceRoleStatus = "ENABLED" | "DISABLED";
+export type WorkspaceRoleStatus = "ENABLED" | "DISABLED" | "VOIDED";
 
 export type WorkspaceScopeContext = {
   region: (WorkspaceScopeNode) | null;
@@ -3371,7 +1887,7 @@ export type WorkspaceUser = {
   roleId: string;
   roleName: string;
   serviceNodeType: ServiceNodeType;
-  organizationPath: string;
+  organizationPathNodes: Array<OrganizationPathNode>;
   status: "ACTIVE" | "REVOKED";
   source: "INVITATION" | "ADMINISTRATION";
   revision: number;

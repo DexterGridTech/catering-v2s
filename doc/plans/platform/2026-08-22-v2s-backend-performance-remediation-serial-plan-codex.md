@@ -12,18 +12,18 @@
 
 ### 0.1 · 2026-08-26 current-tree 性能计量补充
 
-**Dexter current-program-result 覆盖裁定**：本次 CP-05 不再等待三次 CALIBRATION。以最近一份完整受管 ACCEPTANCE 的 archive HTTP completion 最大值生成唯一 report；report 必须标记 `CURRENT_MANAGED_ACCEPTANCE_RESULT`、`runCount=1`、`CURRENT_MANAGED_ACCEPTANCE_RUN_MAX;AVERAGE_NOT_USED` 和 `DEXTER-2026-08-26-CURRENT_PROGRAM_RESULT_BUDGET`，仍要求 239 exact-set、normal sample、test execution PASS、archive 双 hash 与 cleanup PASS。若该 run 的唯一 FAIL 是旧预算超限，报告要保留该首败；不得把它写成生成后动态全绿证据。
+**Dexter current-program-result 覆盖裁定**：本次 CP-05 不再等待三次 CALIBRATION。以最近一份完整受管 ACCEPTANCE 的 archive HTTP completion 最大值生成唯一 report；report 必须标记 `CURRENT_MANAGED_ACCEPTANCE_RESULT`、`runCount=1`、`CURRENT_MANAGED_ACCEPTANCE_RUN_MAX;AVERAGE_NOT_USED` 和 `DEXTER-2026-08-26-CURRENT_PROGRAM_RESULT_BUDGET`，仍要求当前 **238 exact-set**、normal sample、test execution PASS、archive 双 hash 与 cleanup PASS。若该 run 的唯一 FAIL 是旧预算超限，报告要保留该首败；不得把它写成生成后动态全绿证据。
 
-`238=181 edge+57 catalog`、`108` route gap 与对应 P0--P5 分类只代表 2026-08-21 的历史输入快照；实施时不得把它们当成当前分母。当前两条 canonical generator 的去重 union 是 `239=180 edge+59 catalog`；这是退役无合法成功路径的 `updateOperationsOwnerBinding` 后的 current tree，必须由 CP-00 重新计算；任何非 `239` 的值都是红夹具。80 条 `@AcceptanceScenario` 是业务场景上限，不是 239 个 operation 的性能测量分母。
+`238=181 edge+57 catalog`、`108` route gap 与对应 P0--P5 分类只代表 2026-08-21 的历史输入快照；`239=180 edge+59 catalog` 是 base-1 CP-B0 之前的历史基线。CP-00/CP-F3 后当前两条 canonical generator 的去重 union 是 **`238=180 edge+58 catalog`**，当前任何非 `238` 的值都是红夹具。80 条 `@AcceptanceScenario` 是业务场景上限，不是 operation 的性能测量分母。
 
-每个受管 HTTP completion 必须携带受 backend-acceptance credential 保护的 `measurementScenarioId`：`performance.normal-path` 或 `performance.coverage-only`。budget metadata 只允许前者，interceptor、parser 与生成期 validator 均拒绝第三值。exact-set 消费全部 completion，预算/连接门只消费生成 metadata 明示允许的 `performance.normal-path` 成功 completion；覆盖探针的 4xx 仅证明 route reachability，绝不能成为正常预算样本。完整 exact-set run 必须由 runner 同时强制启用现有 P2 normal recipes 与 coverage fixture；任一 239 operation 缺正常成功样本即 fail closed。fixed budget 上调默认拒绝；仅限同一 CP-05 report 中具有精确 decisionRef、实测 max、事实保全与共享机制复用证据、被拒绝更小优化及成本比较的受控例外，其他上调（含裸 decisionRef）一律红。
+每个受管 HTTP completion 必须携带受 backend-acceptance credential 保护的 `measurementScenarioId`：`performance.normal-path` 或 `performance.coverage-only`。budget metadata 只允许前者，interceptor、parser 与生成期 validator 均拒绝第三值。exact-set 消费全部 completion，预算/连接门只消费生成 metadata 明示允许的 `performance.normal-path` 成功 completion；覆盖探针的 4xx 仅证明 route reachability，绝不能成为正常预算样本。完整 exact-set run 必须由 runner 同时强制启用现有 P2 normal recipes 与 coverage fixture；任一当前 238 operation 缺正常成功样本即 fail closed。fixed budget 上调默认拒绝；仅限同一 CP-05 report 中具有精确 decisionRef、实测 max、事实保全与共享机制复用证据、被拒绝更小优化及成本比较的受控例外，其他上调（含裸 decisionRef）一律红。
 
 ## 1 · CP-00 · 当前树与分母重建
 
 **RECALL**：requirements §2/§4/§9、intake、foundation charter §3/§4/§5、两条 generator owning source。
 
 1. 从 `edge-codegen.mjs` 和 `catalog-inventory-p1.mjs` 的 canonical operation metadata 重新导出 operationId/method/path/face/owner/request schema。
-2. 断言两 registry unique union；历史基线是 181+57=238，当前树必须以 CP-00 重新取得的值为准（当前为 180+59=239），GET/write 也随当前 exact-set 复算。
+2. 断言两 registry unique union；历史基线是 181+57=238，base-1 CP-B0 历史中间树为 180+59=239，当前 CP-F3 树必须以 CP-00 重新取得的值为准（当前为 180+58=238），GET/write 也随当前 exact-set 复算。
 3. 递归扫描 request schema 数组；输出完整 exact-set 和“数组元素独立写”判定。设计基线为 24/1，唯一成员 batch status。
 4. 对 §9b 每个锚点执行目标文件内 exact count=1。
 
@@ -83,7 +83,7 @@
 **RECALL**：requirements P0/P1–P5、当前 seed/acceptance scenario、managed runtime skill（只有获得运行授权后才读并执行）。
 
 1. 从既有 route registry 生成 identity-only `operationId -> method/path/owner/face` expected set，并以两值 measurement-ID 闭集识别 normal sample；CALIBRATION 不读取 active `databaseOperationBudget`，仅 `performance.normal-path` 可作为预算/连接样本。
-2. 先复用现有 acceptance 与 P2 workload；计算 239 current exact-set 的 normal sample 差集，不能用 seed 或 4xx 覆盖冒充。
+2. 先复用现有 acceptance 与 P2 workload；计算当前 238 exact-set 的 normal sample 差集，不能用 seed 或 4xx 覆盖冒充。
 3. 对差集在既有 route-gap fixture 内添加最小真实 HTTP fixture recipe；每个 recipe 有身份、fixture、request、真实业务 readback/side effect，不以状态码为 oracle，并生成 `operationId -> normal provider -> coverage provider` 矩阵。
 4. 同侧环境运行三次规范 workload，join current exact-set 的 normal completion；任何 missing/extra/duplicate/无法触发即停。
 5. 按当前测量重算 P0–P5；历史 94/4/57/36/9/38 只用于差异说明。

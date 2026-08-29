@@ -2,19 +2,35 @@ package com.catering.v2s.app.edge.platform.externalcollaboration;
 
 import com.catering.v2s.app.edge.generated.wire.CapabilityDictionary;
 import com.catering.v2s.app.edge.generated.wire.ExternalCapability;
-import com.catering.v2s.app.edge.generated.wire.ExternalCapabilityAttributeDescriptor;
+import com.catering.v2s.app.edge.generated.wire.ExternalCapabilityAttributeValues;
+import com.catering.v2s.app.edge.generated.wire.ExternalCapabilityAttributeValuesGroupBuyMappingDirection;
+import com.catering.v2s.app.edge.generated.wire.ExternalCapabilityAttributeValuesMenuCollaborationDirection;
+import com.catering.v2s.app.edge.generated.wire.ExternalCapabilityCapabilityClass;
 import com.catering.v2s.app.edge.generated.wire.ExternalCollaborationTree;
 import com.catering.v2s.app.edge.generated.wire.ExternalProviderCandidatePage;
 import com.catering.v2s.app.edge.generated.wire.ExternalSystemView;
+import com.catering.v2s.app.edge.generated.wire.ExternalSystemViewCatalogStatus;
+import com.catering.v2s.app.edge.generated.wire.ExternalSystemViewEnablementStatus;
+import com.catering.v2s.app.edge.generated.wire.OrganizationPathNode;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingPage;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingPageMetadata;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingView;
+import com.catering.v2s.app.edge.generated.wire.OwnerBindingViewBusinessScopeItem;
+import com.catering.v2s.app.edge.generated.wire.OwnerBindingViewCapabilityClass;
+import com.catering.v2s.app.edge.generated.wire.OwnerBindingViewNodeType;
+import com.catering.v2s.app.edge.generated.wire.OwnerBindingViewStatus;
 import com.catering.v2s.app.edge.generated.wire.ProviderProfileView;
+import com.catering.v2s.app.edge.generated.wire.ProviderProfileViewAuthenticationKind;
+import com.catering.v2s.app.edge.generated.wire.ProviderProfileViewBindableNodeTypesItem;
+import com.catering.v2s.app.edge.generated.wire.ProviderProfileViewBusinessScopeItem;
+import com.catering.v2s.app.edge.generated.wire.ProviderProfileViewCatalogStatus;
+import com.catering.v2s.app.edge.generated.wire.ProviderProfileViewEnablementStatus;
+import com.catering.v2s.app.edge.generated.wire.ProviderProfileViewUnbindKind;
+import com.catering.v2s.app.edge.generated.wire.ServiceNodeType;
 import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.collaboration.api.CollaborationCatalogSource;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import tools.jackson.databind.JsonNode;
@@ -68,15 +84,11 @@ public final class ExternalCollaborationWireMapper {
         return new ExternalSystemView(
                 value.externalSystemCode(),
                 value.displayName(),
-                value.catalogStatus(),
-                value.catalogStatusDisplayName(),
-                value.attributeDictionary().stream()
-                        .map(ExternalCollaborationWireMapper::attribute)
-                        .toList(),
+                enumValue(ExternalSystemViewCatalogStatus.class, value.catalogStatus(), "catalogStatus"),
                 value.capabilities().stream()
                         .map(ExternalCollaborationWireMapper::capability)
                         .toList(),
-                value.enablementStatus(),
+                enumValue(ExternalSystemViewEnablementStatus.class, value.enablementStatus(), "enablementStatus"),
                 value.version());
     }
 
@@ -84,19 +96,17 @@ public final class ExternalCollaborationWireMapper {
         return new ExternalSystemView(
                 value.externalSystemCode(),
                 value.displayName(),
-                value.catalogStatus(),
-                value.catalogStatusDisplayName(),
-                value.attributeDictionary().stream()
-                        .map(ExternalCollaborationWireMapper::attribute)
-                        .toList(),
+                enumValue(ExternalSystemViewCatalogStatus.class, value.catalogStatus(), "catalogStatus"),
                 value.capabilities().stream()
                         .map(capability -> new ExternalCapability(
-                                capability.capabilityClass(),
+                                enumValue(
+                                        ExternalCapabilityCapabilityClass.class,
+                                        capability.capabilityClass(),
+                                        "capabilityClass"),
                                 capability.displayName(),
-                                json(capability.attributeValueLabels()),
-                                json(capability.attributeValues())))
+                                attributeValues(capability.attributeValues())))
                         .toList(),
-                CATALOG_ONLY_ENABLEMENT,
+                enumValue(ExternalSystemViewEnablementStatus.class, CATALOG_ONLY_ENABLEMENT, "enablementStatus"),
                 0L);
     }
 
@@ -106,17 +116,14 @@ public final class ExternalCollaborationWireMapper {
                 value.displayName(),
                 value.externalSystemCode(),
                 value.externalSystemDisplayName(),
-                value.businessScope(),
-                value.businessScopeDisplayNames(),
-                value.bindableNodeTypes(),
-                value.bindableNodeTypeDisplayNames(),
-                value.authenticationKind(),
-                value.authenticationKindDisplayName(),
-                value.unbindKind(),
-                value.unbindKindDisplayName(),
-                value.catalogStatus(),
-                value.catalogStatusDisplayName(),
-                value.enablementStatus(),
+                enumValues(ProviderProfileViewBusinessScopeItem.class, value.businessScope(), "businessScope"),
+                enumValues(
+                        ProviderProfileViewBindableNodeTypesItem.class, value.bindableNodeTypes(), "bindableNodeTypes"),
+                enumValue(
+                        ProviderProfileViewAuthenticationKind.class, value.authenticationKind(), "authenticationKind"),
+                enumValue(ProviderProfileViewUnbindKind.class, value.unbindKind(), "unbindKind"),
+                enumValue(ProviderProfileViewCatalogStatus.class, value.catalogStatus(), "catalogStatus"),
+                enumValue(ProviderProfileViewEnablementStatus.class, value.enablementStatus(), "enablementStatus"),
                 value.version());
     }
 
@@ -127,17 +134,14 @@ public final class ExternalCollaborationWireMapper {
                 value.displayName(),
                 value.externalSystemCode(),
                 externalSystemDisplayName,
-                value.businessScope(),
-                value.businessScopeDisplayNames(),
-                value.bindableNodeTypes(),
-                value.bindableNodeTypeDisplayNames(),
-                value.authenticationKind(),
-                value.authenticationKindDisplayName(),
-                value.unbindKind(),
-                value.unbindKindDisplayName(),
-                value.catalogStatus(),
-                value.catalogStatusDisplayName(),
-                CATALOG_ONLY_ENABLEMENT,
+                enumValues(ProviderProfileViewBusinessScopeItem.class, value.businessScope(), "businessScope"),
+                enumValues(
+                        ProviderProfileViewBindableNodeTypesItem.class, value.bindableNodeTypes(), "bindableNodeTypes"),
+                enumValue(
+                        ProviderProfileViewAuthenticationKind.class, value.authenticationKind(), "authenticationKind"),
+                enumValue(ProviderProfileViewUnbindKind.class, value.unbindKind(), "unbindKind"),
+                enumValue(ProviderProfileViewCatalogStatus.class, value.catalogStatus(), "catalogStatus"),
+                enumValue(ProviderProfileViewEnablementStatus.class, CATALOG_ONLY_ENABLEMENT, "enablementStatus"),
                 0L);
     }
 
@@ -157,27 +161,22 @@ public final class ExternalCollaborationWireMapper {
     }
 
     public static OwnerBindingView binding(CollaborationReadback.OwnerBinding value) {
-        return binding(value, null);
-    }
-
-    public static OwnerBindingView binding(CollaborationReadback.OwnerBinding value, String nodeDisplayPath) {
         return new OwnerBindingView(
                 value.bindingRef(),
                 value.providerCode(),
                 value.providerDisplayName(),
-                text(value.capabilityClass()),
-                text(value.capabilityClassDisplayName()),
-                value.businessScopeDisplayNames(),
-                value.nodeType(),
-                value.nodeTypeDisplayName(),
+                enumValue(OwnerBindingViewCapabilityClass.class, value.capabilityClass(), "capabilityClass"),
+                enumValues(OwnerBindingViewBusinessScopeItem.class, value.businessScope(), "businessScope"),
+                enumValue(OwnerBindingViewNodeType.class, value.nodeType(), "nodeType"),
                 uuid(value.nodeRef(), "nodeRef"),
-                text(nodeDisplayPath),
+                value.nodePath().stream()
+                        .map(ExternalCollaborationWireMapper::nodePath)
+                        .toList(),
                 text(value.bindingDisplayName()),
                 text(value.externalOwnerId()),
                 value.boundAt(),
                 value.statusChangedAt(),
-                value.status(),
-                value.statusDisplayName(),
+                enumValue(OwnerBindingViewStatus.class, value.status(), "status"),
                 value.version());
     }
 
@@ -206,18 +205,61 @@ public final class ExternalCollaborationWireMapper {
         return value.asText();
     }
 
-    private static ExternalCapabilityAttributeDescriptor attribute(
-            CollaborationCatalogSource.AttributeDefinition value) {
-        return new ExternalCapabilityAttributeDescriptor(
-                value.fieldKey(), value.label(), value.helpText(), value.controlKind(), json(value.optionSourceRef()));
+    public static String optionalText(String value, String field) {
+        return value;
     }
 
     private static ExternalCapability capability(CollaborationReadback.Capability value) {
         return new ExternalCapability(
-                value.capabilityClass(),
+                enumValue(ExternalCapabilityCapabilityClass.class, value.capabilityClass(), "capabilityClass"),
                 value.displayName(),
-                json(value.attributeValueLabels()),
-                json(value.attributeValues()));
+                attributeValues(value.attributeValues()));
+    }
+
+    private static ExternalCapabilityAttributeValues attributeValues(com.fasterxml.jackson.databind.JsonNode value) {
+        if (value == null || value.isNull()) return new ExternalCapabilityAttributeValues(null, null);
+        return new ExternalCapabilityAttributeValues(
+                enumValue(
+                        ExternalCapabilityAttributeValuesGroupBuyMappingDirection.class,
+                        textValue(value, "groupBuyMappingDirection"),
+                        "groupBuyMappingDirection"),
+                enumValue(
+                        ExternalCapabilityAttributeValuesMenuCollaborationDirection.class,
+                        textValue(value, "menuCollaborationDirection"),
+                        "menuCollaborationDirection"));
+    }
+
+    private static <E extends Enum<E>> E enumValue(Class<E> type, String value, String field) {
+        if (value == null) return null;
+        try {
+            return Enum.valueOf(type, value);
+        } catch (IllegalArgumentException failure) {
+            throw new IllegalStateException(field + " is not a supported closed value: " + value, failure);
+        }
+    }
+
+    private static <E extends Enum<E>> List<E> enumValues(Class<E> type, List<String> values, String field) {
+        return values.stream().map(value -> enumValue(type, value, field)).toList();
+    }
+
+    private static String textValue(com.fasterxml.jackson.databind.JsonNode value, String field) {
+        com.fasterxml.jackson.databind.JsonNode child = value.get(field);
+        return child == null || child.isNull() ? null : child.asText();
+    }
+
+    private static OrganizationPathNode nodePath(CollaborationReadback.OrganizationPathNode value) {
+        return new OrganizationPathNode(value.ref(), value.code(), value.name(), serviceNodeType(value.nodeType()));
+    }
+
+    private static ServiceNodeType serviceNodeType(String value) {
+        return switch (value) {
+            case "COMMERCIAL_GROUP", "GROUP" -> ServiceNodeType.GROUP;
+            case "REGION" -> ServiceNodeType.REGION;
+            case "PROJECT" -> ServiceNodeType.PROJECT;
+            case "HEAD_COMPANY" -> ServiceNodeType.HEAD_COMPANY;
+            case "STORE" -> ServiceNodeType.STORE;
+            default -> throw new IllegalStateException("unsupported collaboration path node type: " + value);
+        };
     }
 
     static JsonNode text(String value) {
@@ -231,18 +273,5 @@ public final class ExternalCollaborationWireMapper {
         } catch (IllegalArgumentException failure) {
             throw new IllegalStateException(field + " is not a UUID in owner readback", failure);
         }
-    }
-
-    private static JsonNode json(com.fasterxml.jackson.databind.JsonNode value) {
-        if (value == null || value.isNull()) return null;
-        try {
-            return JSON.readTree(value.toString());
-        } catch (Exception failure) {
-            throw new IllegalStateException("collaboration owner JSON cannot be mapped", failure);
-        }
-    }
-
-    private static JsonNode json(Map<String, String> value) {
-        return value == null ? null : JSON.valueToTree(value);
     }
 }

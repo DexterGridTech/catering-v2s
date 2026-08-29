@@ -396,7 +396,7 @@ test(
     assert.match(invitationPanel, /ellipsis: \{showTitle: false\}/);
     assert.match(
       invitationPanel,
-      /EllipsisTooltip\s+title=\{<NameCodePathText\s+value=\{value\.targetOrganizationPath\}\s*\/>\}/,
+      /EllipsisTooltip\s+title=\{<NameCodePathText\s+nodes=\{value\.targetOrganizationPathNodes\}\s*\/>\}/,
     );
     assert.doesNotMatch(invitationPanel, /ACTION_CAPABILITIES/);
     for (const target of ['Group', 'Region', 'Project', 'HeadCompany', 'Store']) {

@@ -31,8 +31,11 @@ class BusinessEntityStoreContractQueryTest {
         assertEquals(storeId, context.storeId());
         assertEquals(tenantId, context.tenantId());
         assertEquals(projectId, context.projectId());
+        assertEquals("ENABLED", context.storeStatus());
+        assertEquals("ENABLED", context.tenantStatus());
         assertEquals(List.of("phase-1", "phase-2"), context.projectPhaseNames());
         assertEquals(1, jdbc.queryCount);
+        assertTrue(jdbc.sql.contains("JOIN organization.tenant"));
         assertTrue(jdbc.sql.contains("LEFT JOIN organization.project_phase_name"));
     }
 
@@ -59,6 +62,7 @@ class BusinessEntityStoreContractQueryTest {
                 when(result.getObject("tenant_id", UUID.class)).thenReturn(tenantId);
                 when(result.getObject("project_id", UUID.class)).thenReturn(projectId);
                 when(result.getString("status")).thenReturn("ENABLED");
+                when(result.getString("tenant_status")).thenReturn("ENABLED");
                 when(result.getString("phase_name")).thenReturn("phase-1", "phase-2");
                 return extractor.extractData(result);
             } catch (Exception exception) {

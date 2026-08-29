@@ -59,7 +59,7 @@ export function extensionValuesForGeneratedRequest(values: ExtensionSubmissionFi
   return values as unknown as Record<string, JsonValue>;
 }
 
-function extensionValue(value: JsonValue | undefined, suffix?: string) {
+function extensionValue(value: JsonValue | undefined, suffix?: string | null) {
   if (value === undefined || value === null || value === '') return '—';
   const display = typeof value === 'boolean' ? (value ? '是' : '否') : String(value);
   return suffix ? `${display}${suffix}` : display;

@@ -1,5 +1,13 @@
 import {Alert, Button, Drawer, Form, Input, Select, Space} from 'antd';
-import {adminDrawerSurfaceProps, NameCodeText, testId, useDrawerFormLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {
+  adminDrawerSurfaceProps,
+  closedCodeLabel,
+  isKnownClosedCode,
+  NameCodePathText,
+  NameCodeText,
+  testId,
+  useDrawerFormLifecycle,
+} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import {
   PLATFORM_ADMIN_OPERATION_IDS,
@@ -10,19 +18,13 @@ import {
 } from '../../../app/api/generated/platform-edge';
 import {platformClient, platformProblemOf, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
 import {usePlatformOrganizationCandidates} from '../../../app/queries/usePlatformOrganizationCandidates';
+import {authenticationKindLabels, organizationNodeTypeLabels} from '../model/collaborationCodeLabels';
 
 type Values = {
   nodeType?: OwnerBindingCreateRequest['nodeType'];
   nodeRef?: OwnerBindingCreateRequest['nodeRef'];
   bindingDisplayName?: string;
   externalOwnerId?: string;
-};
-const nodeLabels: Record<string, string> = {
-  COMMERCIAL_GROUP: '集团',
-  REGION: '大区',
-  PROJECT: '项目',
-  HEAD_COMPANY: '总公司',
-  STORE: '门店',
 };
 type CandidateSubjectType = Extract<
   OrganizationCandidateQuerySubjectType,
@@ -35,7 +37,8 @@ const isCandidateSubjectType = (value: string | undefined): value is CandidateSu
   value === 'HEAD_COMPANY' ||
   value === 'STORE';
 const canEdit = (authenticationKind: ProviderProfileView['authenticationKind']) =>
-  authenticationKind === 'INTERNAL_MAPPING' || authenticationKind === 'NO_MAPPING';
+  isKnownClosedCode(authenticationKindLabels, authenticationKind) &&
+  (authenticationKind === 'INTERNAL_MAPPING' || authenticationKind === 'NO_MAPPING');
 
 export function OwnerBindingFormDrawer({
   open,
@@ -79,6 +82,7 @@ export function OwnerBindingFormDrawer({
     [candidate.items],
   );
   const bindableNodeTypes = Array.isArray(profile.bindableNodeTypes) ? profile.bindableNodeTypes : [];
+  const authenticationKindKnown = isKnownClosedCode(authenticationKindLabels, profile.authenticationKind);
 
   useEffect(() => {
     if (!open) return;
@@ -97,6 +101,10 @@ export function OwnerBindingFormDrawer({
 
   const save = async (values: Values) => {
     if (lifecycle.submitting) return;
+    if (!authenticationKindKnown) {
+      setProblem(platformProblemOf(new Error('当前认证方式无法识别，不能保存绑定。')));
+      return;
+    }
     if (editing && !canEdit(profile.authenticationKind)) return;
     if (!editing && (!values.nodeType || !values.nodeRef)) return;
     lifecycle.setSubmitting(true);
@@ -157,6 +165,7 @@ export function OwnerBindingFormDrawer({
           <Button
             type="primary"
             loading={lifecycle.submitting}
+            disabled={!authenticationKindKnown}
             onClick={() => form.submit()}
             {...testId('platform-owner-binding-submit')}
           >
@@ -176,6 +185,9 @@ export function OwnerBindingFormDrawer({
           {...testId('platform-owner-binding-form-error')}
         />
       )}
+      {!authenticationKindKnown && (
+        <Alert type="error" showIcon title="当前认证方式无法识别，已停止绑定操作。" style={{marginBottom: 16}} />
+      )}
       <Form
         form={form}
         layout="vertical"
@@ -192,10 +204,12 @@ export function OwnerBindingFormDrawer({
         {editing ? (
           <>
             <Form.Item label="绑定节点类型">
-              <Input value={nodeLabels[editing.nodeType] ?? '业务节点'} disabled />
+              <Input value={closedCodeLabel(organizationNodeTypeLabels, editing.nodeType)} disabled />
             </Form.Item>
             <Form.Item label="绑定节点">
-              <Input value={editing.nodeDisplayPath || '业务节点名称暂不可用'} disabled />
+              <div {...testId('platform-owner-binding-node')}>
+                {editing.nodePath.length > 0 ? <NameCodePathText nodes={editing.nodePath} /> : '未绑定组织节点'}
+              </div>
             </Form.Item>
           </>
         ) : (
@@ -204,7 +218,7 @@ export function OwnerBindingFormDrawer({
               <Select
                 options={bindableNodeTypes
                   .filter(value => isCandidateSubjectType(value))
-                  .map(value => ({value, label: nodeLabels[value] ?? '业务节点'}))}
+                  .map(value => ({value, label: closedCodeLabel(organizationNodeTypeLabels, value)}))}
                 onChange={() => form.setFieldValue('nodeRef', undefined)}
                 {...testId('platform-owner-binding-node-type')}
               />

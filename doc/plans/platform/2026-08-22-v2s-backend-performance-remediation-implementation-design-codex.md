@@ -16,11 +16,11 @@ IMPLEMENTATION_AUTHORIZATION=DEXTER_DESIGN_GO_CP00_CP13_20260822
 
 ### 1.0 · 2026-08-26 current-tree denominator addendum
 
-**Dexter current-program-result budget decision**：本次交付不再以追加三次校准或逐首败调参作为前置；使用最近一次**完整受管 ACCEPTANCE** 的归档 HTTP completion current maximum 作为唯一初始预算输入。报告必须明确标记 `CURRENT_MANAGED_ACCEPTANCE_RESULT`、`runCount=1`、`CURRENT_MANAGED_ACCEPTANCE_RUN_MAX;AVERAGE_NOT_USED` 与 `DEXTER-2026-08-26-CURRENT_PROGRAM_RESULT_BUDGET`，并仍经 archive 双 hash、239 exact-set、成功 normal sample、Testcontainers test execution PASS 与 cleanup PASS 验证。外层 run 若只因旧预算而 FAIL，必须逐字保留该首败，不能冒充整体 ACCEPTANCE PASS。
+**Dexter current-program-result budget decision**：本次交付不再以追加三次校准或逐首败调参作为前置；使用最近一次**完整受管 ACCEPTANCE** 的归档 HTTP completion current maximum 作为唯一初始预算输入。报告必须明确标记 `CURRENT_MANAGED_ACCEPTANCE_RESULT`、`runCount=1`、`CURRENT_MANAGED_ACCEPTANCE_RUN_MAX;AVERAGE_NOT_USED` 与 `DEXTER-2026-08-26-CURRENT_PROGRAM_RESULT_BUDGET`，并仍经 archive 双 hash、238 exact-set、成功 normal sample、Testcontainers test execution PASS 与 cleanup PASS 验证。外层 run 若只因旧预算而 FAIL，必须逐字保留该首败，不能冒充整体 ACCEPTANCE PASS。
 
 该裁定只替换本次 CP-05 的测量次数与初值来源，不放松业务事实：不得删除 owner 复核、事务、锁、幂等、receipt、审计或 authoritative readback。受控预算例外仍只在同时证明业务事实未削弱，以及现有通用机制已经复用、没有可消除重复/N+1 时成立；本次 current-result 初值不是针对单 operation 的例外表。
 
-本详设中所有 `238=181+57`、`57` catalog route、`238/238` 仅作为 2026-08-21 evidence 的历史快照，不得继续用作实施或验收分母。当前两条 owning generator 的唯一 exact set 为 **239=180+59**；这是退役无合法成功路径的 `updateOperationsOwnerBinding` 后的 current tree。原 P0--P5 的 `94/4/57/36/9/38` 也仅是历史重分类输入。实施须先重新生成并比较 current tree，任何非 `239` 的值都是 exact-set 红夹具，任何差异先更新本详设及其 serial plan，不得静默沿用旧清单。
+本详设中所有 `238=181+57`、`57` catalog route、`238/238` 仅作为 2026-08-21 evidence 的历史快照，不得继续用作实施或验收分母。`239=180+59` 是 base-1 CP-B0 之前的历史基线，不是当前 active denominator；base-1 CP-F3 后两条 owning generator 的当前唯一 exact set 为 **238=180+58**。原 P0--P5 的 `94/4/57/36/9/38` 也仅是历史重分类输入。实施须先重新生成并比较 current tree，当前任何非 `238` 的值都是 exact-set 红夹具，任何差异先更新本详设及其 serial plan，不得静默沿用旧清单。
 
 预算的 `measurementScenarioIds` 表达受 credential 保护的正常性能样本，不是 route coverage 的别名：completion event 必须写入明确 sample ID；exact-set 读全量 event，预算/连接只读 `outcome=SUCCEEDED` 且该 ID 已由该 operation budget 声明的 normal-path event。coverage-only 4xx 只证明 route reachability；缺 normal sample 必须 fail closed，不可调高预算或以 4xx 补洞。本批仅允许两个闭集 ID：budget metadata 只能声明 `performance.normal-path`，coverage event 只能使用 `performance.coverage-only`；interceptor、parser 与生成期 validator 都拒绝第三值。二者从现有 scenario/P2/coverage fixture 注入，绝不成为产品 HTTP contract。完整 exact-set run 由受管 runner 强制启用现有 P2 normal recipes 与 coverage-only fixture，不能由调用方环境变量任选其一。
 
@@ -130,7 +130,7 @@ CP-01 与 CP-03/04 的非门控观测可并行；CP-05 使用它们取得 curren
 
 ### CP-05 · P0 与初始预算
 
-- 从两条生成源导出 current exact-set 的 `measurementScenarioIds`；managed calibration 先跑现有 acceptance/P2 workload，再运行缺失 operation 的 fixture recipe，最终 normal event join 后 missing/extra 均为空，并把 registry 与真实成功 completion 生成 239-row `normal-sample-matrix.json`。该 artifact 不保留 fixture/body/身份资料，也不另存 operation registry；合法请求与 readback 继续以 owning scenario/P2/coverage recipe 为唯一真相。
+- 从两条生成源导出 current exact-set 的 `measurementScenarioIds`；managed calibration 先跑现有 acceptance/P2 workload，再运行缺失 operation 的 fixture recipe，最终 normal event join 后 missing/extra 均为空，并把 registry 与真实成功 completion 生成 238-row `normal-sample-matrix.json`。该 artifact 不保留 fixture/body/身份资料，也不另存 operation registry；合法请求与 readback 继续以 owning scenario/P2/coverage recipe 为唯一真相。
 - recipe 是测试/测量输入，不是第三套业务契约；每条仍经真实 HTTP、真实 authorization、真实 owner。无法触发即 `P0_OPERATION_NOT_MEASURED:<operationId>` 停机，不登记豁免放行。
 - 固定预算初值取**整改后同一规范 fixture 三次运行的最大整数 DB count**，默认不得高于其分类阈值；高于说明整改未完成，不通过抬预算解决。唯一例外是 CP-05 report-bound 的完整双准入记录：它逐 operation 证明业务事实未削弱、通用机制已复用且无可消除重复/N+1，并具备精确 decisionRef、history、实测 max、替代方案与成本比较。P2 的 before/after 只使用同 workload 的 current report，不以历史成员强制当前改动；P3 ≤20；P1 使用 operation-specific ceiling；P5 用三次最大值。
 - 三次结果不一致时保留 max 与三次样本；如果由 fixture cardinality 变化导致，先固定 fixture，禁止加随机余量。
@@ -254,7 +254,7 @@ CP-01 与 CP-03/04 的非门控观测可并行；CP-05 使用它们取得 curren
 | 文件 | 唯一锚点 | 目标 |
 |---|---|---|
 | `scripts/generate/edge-codegen.mjs` | `const targets = {` | CP-00 fresh edge 180-operation exact-subset budget projection/self-test |
-| `scripts/generate/catalog-inventory-p1.mjs` | `const catalogRouteRegistryPath =` | current catalog 59-operation projection及全部239-operation L2 timing budget消费；禁止静态 exception/edge catalog 旁路 |
+| `scripts/generate/catalog-inventory-p1.mjs` | `const catalogRouteRegistryPath =` | current catalog 58-operation projection及全部238-operation L2 timing budget消费；禁止静态 exception/edge catalog 旁路 |
 | `apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/persistence/DatabaseOperationTracker.java` | `private static Section defaultSection(String kind, String callSite) {` | 统一 layer classification、transactionBeginCount |
 | `apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptor.java` | `public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {` | managed classification options 与 event 字段 |
 | `apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceTest.java` | `final class ScenarioContext {` | credential-protected normal/coverage measurement header 注入 |
@@ -361,7 +361,7 @@ Round 2 N-01 已按辩证 intake 处置：IA 尾注由 `PENDING_AUTHOR_DESIGN` �
 | §7 机制行 | budget、计数、section、collection、授权、refresh、error、log、identity、no-audit 齐全 |
 | IA 对账 | `Bounded 1–100`、`SUCCEEDED\|FAILED`、严格同序、只刷 list/navigation、B-06 无审计逐字一致 |
 | seed | 2 executor + 1 owning seed source 全集；新功能/旧功能两栏齐全 |
-| 计数 | registry=CP-00 current exact-set（当前180+59=239）；HTTP method=CP-00 current GET/write；数组 schema=24、独立逐项写=1 |
+| 计数 | registry=CP-00 current exact-set（当前180+58=238）；HTTP method=CP-00 current GET/write；数组 schema=24、独立逐项写=1 |
 | 证据档位 | 文档只设计；未把静态读写成 test/DEV/L2/UAT proof |
 
 `DESIGN_STATUS=INDEPENDENT_REVIEW_GO_M0_S0_N1_RESOLVED`；`IMPLEMENTATION_STATUS=IN_PROGRESS_CP00_CP13`。

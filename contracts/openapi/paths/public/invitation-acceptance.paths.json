@@ -16,6 +16,7 @@
         "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
         "x-idempotency-policy": "FORBIDDEN",
         "x-error-codes": [
+          "ACCOUNT_NOT_BINDABLE",
           "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
@@ -98,6 +99,7 @@
         "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
         "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
+          "ACCOUNT_NOT_BINDABLE",
           "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
@@ -193,6 +195,7 @@
         "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
         "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
+          "ACCOUNT_NOT_BINDABLE",
           "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
@@ -298,6 +301,7 @@
         "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
         "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
+          "ACCOUNT_NOT_BINDABLE",
           "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
@@ -403,6 +407,7 @@
         "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
         "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
+          "ACCOUNT_NOT_BINDABLE",
           "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
@@ -508,6 +513,7 @@
         "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
         "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
+          "ACCOUNT_NOT_BINDABLE",
           "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
@@ -603,6 +609,7 @@
         "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
         "x-idempotency-policy": "FORBIDDEN",
         "x-error-codes": [
+          "ACCOUNT_NOT_BINDABLE",
           "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",

@@ -2,6 +2,7 @@ import {Alert, Button, Card, Space} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
 import {
   adminListState,
+  closedCodeLabel,
   createRefreshSignal,
   testId,
   useAsyncGenerationGuard,
@@ -26,6 +27,7 @@ import {BusinessChannelCreateDrawer} from './BusinessChannelCreateDrawer';
 import {BusinessChannelDetailDrawer} from './BusinessChannelDetailDrawer';
 import {BusinessChannelEditDrawer} from './BusinessChannelEditDrawer';
 import {BusinessChannelList} from './BusinessChannelList';
+import {accessKindLabels, orderKindLabels} from '../model/businessChannelCodeLabels';
 
 type ProSortOrder = 'ascend' | 'descend';
 
@@ -135,7 +137,8 @@ export function StoreBusinessChannelPage({queryContext}: OperationsPageProps) {
         key: 'accessKind',
         sorter: true,
         sortOrder: templateSort.sortKey === 'ACCESS_KIND' ? proSortOrder(templateSort.sortDirection) : undefined,
-        render: (_value: unknown, row: BusinessChannelTemplateView) => row.accessKindDisplayName,
+        render: (_value: unknown, row: BusinessChannelTemplateView) =>
+          closedCodeLabel(accessKindLabels, row.accessKind),
       },
       {
         title: '订单类型',
@@ -143,7 +146,7 @@ export function StoreBusinessChannelPage({queryContext}: OperationsPageProps) {
         key: 'orderKind',
         sorter: true,
         sortOrder: templateSort.sortKey === 'ORDER_KIND' ? proSortOrder(templateSort.sortDirection) : undefined,
-        render: (_value: unknown, row: BusinessChannelTemplateView) => row.orderKindDisplayName,
+        render: (_value: unknown, row: BusinessChannelTemplateView) => closedCodeLabel(orderKindLabels, row.orderKind),
       },
     ],
     [templateSort.sortDirection, templateSort.sortKey],

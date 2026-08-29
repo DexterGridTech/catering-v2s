@@ -34,7 +34,7 @@
 * 优先选择长期可维护的方案，而不是只能临时运行的解决方案。
 * 代码应该服务于业务目标，而不是为了展示技术复杂度
 * 如果简单方案已经满足需求，不要主动升级为复杂方案。
-* **业务准确性优先于 DB 效率与预算数字**：不得为降低 SQL/DB 操作数而删除、合并或弱化业务事实、owner 复核、事务、幂等回放、并发锁、typed problem、审计或权威 readback；当逐事件证明现有闭包正确、优化收益小于安全改造成本时，可由 Dexter 以精确 decisionRef 放宽单一 operation 的预算。该例外有且仅有双重准入：一是不削弱任何业务事实；二是证明通用能力和既有可复用能力已实际复用，不存在以重复实现、遗漏抽象或可消除 owner fan-out 换取的计数。记录必须写明这两项证明、事实、替代方案、成本与适用边界，并保留未经明确裁决的上调 red mutation；DB 门不得成为正确业务无法交付的阻断借口。
+* **业务准确性优先于 DB 效率与预算数字**：不得为降低 SQL/DB 操作数而删除、合并或弱化业务事实、owner 复核、事务、幂等回放、并发锁、typed problem、审计或权威 readback；当逐事件证明现有闭包正确、优化收益小于安全改造成本时，可由 Dexter，或由 Dexter 在当前实施授权与详设中明确委托的实施 agent，以精确 operation-scoped `decisionRef` 放宽单一 operation 的预算。该例外有且仅有双重准入：一是不削弱任何业务事实；二是证明通用能力和既有可复用能力已实际复用，不存在以重复实现、遗漏抽象或可消除 owner fan-out 换取的计数。实施 agent 自主记录必须声明 `authority=IMPLEMENTATION_AGENT`，历史 Dexter grouped 记录声明 `authority=DEXTER`；机器门拒绝实施 agent authority 的多 operation scope。记录必须写明这两项证明、事实、替代方案、成本与适用边界，并保留未经明确裁决的上调 red mutation；不得用于线性批量预算、operation 身份/数量、契约/模型或未决产品语义；DB 门不得成为正确业务无法交付的阻断借口。
 
 ## 不可突破的红线
 
@@ -78,7 +78,7 @@
 
 **日志、诊断与验收（硬约束）**：所有脚本、业务代码与支撑代码必须在实际运行边界具备统一、结构化、脱敏且可关联的必要日志/诊断能力，用于问题追踪、执行阶段和效率判断；禁止以 audit、异常 response、exit code、测试名称或临时输出替代。受管执行必须有阶段、受控 process identity、log path 和 cleanup 结果；测试/动态验证必须实际读取日志，判定 first failure、last known good、broken boundary、business 与 cleanup。无新日志是诊断信号，不得以等待、延长 timeout 或盲目重试掩盖。安全敏感路径不得记录 password/hash、OTP、token、cookie、Authorization、手机号、登录名、原始 IP 或 raw payload。已发现的范围外日志缺口必须在当前工作中补齐，无需另向 Dexter 申请日志授权；仍须遵守 owner、隐私和适用详设。规范原文见 `doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md`。
 
-**后台统一测试能力（当前止损范围）**：唯一业务机器标识是 `backend-acceptance`；它在真实 HTTP 与真实容器中，以手写 fixture、请求和非 `response.ok` 的业务断言输出分离的 `CONTRACT`、`BUSINESS` 与场景信息性 `DB_OPERATIONS`。新增业务场景前必须先读主动规范 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md`，并只在对应的 `*AcceptanceScenarios.java` 中扩展；**总数不设上限**（Dexter 2026-08-27 裁定去除原 80 条约束），不能把业务断言堆回入口类。原 196 provider/旧 scenario performanceCriterion、accepted-baseline、lane/并行等继续退役。Dexter 2026-08-22 单独恢复 generated 239-operation budget 与 run-level verifier；它复用 production HTTP completion events，但不新增或替代业务 scenario、不参与单场景 `CONTRACT`/`BUSINESS`、不复活旧 provider/registry 控制面，性能 business 与资源 cleanup 另行报告。
+**后台统一测试能力（当前止损范围）**：唯一业务机器标识是 `backend-acceptance`；它在真实 HTTP 与真实容器中，以手写 fixture、请求和非 `response.ok` 的业务断言输出分离的 `CONTRACT`、`BUSINESS` 与场景信息性 `DB_OPERATIONS`。新增业务场景前必须先读主动规范 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md`，并只在对应的 `*AcceptanceScenarios.java` 中扩展；**总数不设上限**（Dexter 2026-08-27 裁定去除原 80 条约束），不能把业务断言堆回入口类。原 196 provider/旧 scenario performanceCriterion、accepted-baseline、lane/并行等继续退役。Dexter 2026-08-22 单独恢复 generated 238-operation budget 与 run-level verifier；239 是 base-1 CP-B0 的历史基线，不是当前 active denominator。该 verifier 复用 production HTTP completion events，但不新增或替代业务 scenario、不参与单场景 `CONTRACT`/`BUSINESS`、不复活旧 provider/registry 控制面，性能 business 与资源 cleanup 另行报告。
 
 ## 协作进度与结束闸门
 

@@ -2,6 +2,7 @@ import {Alert, Button, Card, Space, Tag} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
 import {
   adminListState,
+  closedCodeLabel,
   createRefreshSignal,
   testId,
   useAsyncGenerationGuard,
@@ -28,6 +29,12 @@ import {BusinessChannelEditDrawer} from './BusinessChannelEditDrawer';
 import {BusinessChannelList} from './BusinessChannelList';
 import {BusinessChannelTemplateDetailDrawer} from './BusinessChannelTemplateDetailDrawer';
 import {BusinessChannelTemplateDrawer} from './BusinessChannelTemplateDrawer';
+import {
+  accessKindLabels,
+  lifecycleStatusLabels,
+  operatorKindLabels,
+  orderKindLabels,
+} from '../model/businessChannelCodeLabels';
 
 type ProSortOrder = 'ascend' | 'descend';
 
@@ -149,7 +156,8 @@ export function ProjectBusinessChannelPage({queryContext}: OperationsPageProps) 
         key: 'accessKind',
         sorter: true,
         sortOrder: templateSort.sortKey === 'ACCESS_KIND' ? proSortOrder(templateSort.sortDirection) : undefined,
-        render: (_value: unknown, row: BusinessChannelTemplateView) => row.accessKindDisplayName,
+        render: (_value: unknown, row: BusinessChannelTemplateView) =>
+          closedCodeLabel(accessKindLabels, row.accessKind),
       },
       {
         title: '经营主体',
@@ -157,7 +165,8 @@ export function ProjectBusinessChannelPage({queryContext}: OperationsPageProps) 
         key: 'operatorKind',
         sorter: true,
         sortOrder: templateSort.sortKey === 'OPERATOR_KIND' ? proSortOrder(templateSort.sortDirection) : undefined,
-        render: (_value: unknown, row: BusinessChannelTemplateView) => row.operatorKindDisplayName,
+        render: (_value: unknown, row: BusinessChannelTemplateView) =>
+          closedCodeLabel(operatorKindLabels, row.operatorKind),
       },
       {
         title: '订单类型',
@@ -165,7 +174,7 @@ export function ProjectBusinessChannelPage({queryContext}: OperationsPageProps) 
         key: 'orderKind',
         sorter: true,
         sortOrder: templateSort.sortKey === 'ORDER_KIND' ? proSortOrder(templateSort.sortDirection) : undefined,
-        render: (_value: unknown, row: BusinessChannelTemplateView) => row.orderKindDisplayName,
+        render: (_value: unknown, row: BusinessChannelTemplateView) => closedCodeLabel(orderKindLabels, row.orderKind),
       },
       {
         title: '状态',
@@ -173,7 +182,9 @@ export function ProjectBusinessChannelPage({queryContext}: OperationsPageProps) 
         key: 'status',
         sorter: true,
         sortOrder: templateSort.sortKey === 'STATUS' ? proSortOrder(templateSort.sortDirection) : undefined,
-        render: (_value: unknown, row: BusinessChannelTemplateView) => <Tag>{row.statusDisplayName}</Tag>,
+        render: (_value: unknown, row: BusinessChannelTemplateView) => (
+          <Tag>{closedCodeLabel(lifecycleStatusLabels, row.status)}</Tag>
+        ),
       },
     ],
     [templateSort.sortDirection, templateSort.sortKey],

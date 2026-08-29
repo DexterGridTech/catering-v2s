@@ -272,7 +272,7 @@ public class WorkspaceUserService {
                                 safeSize));
                 List<CandidateOrganization> visible = result.items().stream()
                         .map(value -> new CandidateOrganization(
-                                value.serviceNodeType(), value.organizationRef(), value.path()))
+                                value.serviceNodeType(), value.organizationRef(), value.path(), value.pathNodes()))
                         .toList();
                 yield new CandidatePage(
                         new CandidateQueryMetadata(
@@ -745,7 +745,7 @@ public class WorkspaceUserService {
                 value.roleId(),
                 value.roleName(),
                 value.serviceNodeType(),
-                path.displayPath(),
+                path.nodes(),
                 value.status(),
                 value.sourceInvitationId() == null ? "ADMINISTRATION" : "INVITATION",
                 value.revision(),
@@ -974,7 +974,8 @@ public class WorkspaceUserService {
                     || groupWorkspaceKey.isBlank()
                     || page < 1
                     || pageSize < 1
-                    || (status != null && !Set.of("ENABLED", "DISABLED").contains(status)))
+                    || (status != null
+                            && !Set.of("ENABLED", "DISABLED", "VOIDED").contains(status)))
                 throw new WorkspaceAccountService.AccountNotFoundException();
             if (operationsSession != null
                     && (targetType == null || targetType.isBlank() || loginName != null || organizationRef != null))
@@ -1055,13 +1056,17 @@ public class WorkspaceUserService {
             UUID roleId,
             String roleName,
             String serviceNodeType,
-            String organizationPath,
+            List<OrganizationTaskPathLookup.TaskPathNode> organizationPathNodes,
             String status,
             String source,
             long revision,
             long createdAt,
             long updatedAt,
-            UUID serviceNodeId) {}
+            UUID serviceNodeId) {
+        public Assignment {
+            organizationPathNodes = List.copyOf(organizationPathNodes);
+        }
+    }
 
     public record Invitation(UUID invitationId, String status, int generation, long expiresAt) {}
 
@@ -1073,7 +1078,20 @@ public class WorkspaceUserService {
     public record CandidateQueryMetadata(
             String subjectType, String queryText, int page, int pageSize, long total, UUID selectedOrganizationRef) {}
 
-    public record CandidateOrganization(String serviceNodeType, UUID organizationRef, String path) {}
+    public record CandidateOrganization(
+            String serviceNodeType,
+            UUID organizationRef,
+            String path,
+            List<OrganizationTaskPathLookup.TaskPathNode> pathNodes) {
+        public CandidateOrganization {
+            pathNodes = List.copyOf(pathNodes);
+        }
+
+        /** Legacy owner projections keep compiling until their wire consumer is migrated. */
+        public CandidateOrganization(String serviceNodeType, UUID organizationRef, String path) {
+            this(serviceNodeType, organizationRef, path, List.of());
+        }
+    }
 
     public record CandidateQuery(
             UUID workspaceUuid,

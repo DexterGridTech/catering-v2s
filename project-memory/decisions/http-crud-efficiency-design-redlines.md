@@ -8,8 +8,8 @@ consumerFaces: ["all"]
 owners: ["backend", "platform", "contract", "frontend-platform", "product"]
 impacts: ["architecture", "database", "contract", "evidence"]
 triggers: ["task-start", "implementation", "review"]
-assertions: ["HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM", "SET_BASED_COLLECTION_READS", "OWNER_LOCAL_EFFICIENCY_REPAIR", "EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY", "COMMAND_CORRECTNESS_COST_PRESERVED", "TASK_READ_BUDGET_REQUIRES_EXPLANATION", "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT", "CONTRACT_ROUTE_CLOSURE", "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS", "DIAGNOSTIC_SECRET_FLOW_EXPLICIT", "EXECUTION_EVIDENCE_TAXONOMY", "BACKEND_NA_SPLIT_PACKAGE_SCOPE", "BACKEND_PUBLIC_INVITATION_CONTRACT_GENERATED_CLOSURE", "BACKEND_SOURCE_HASH_CHAIN_CLOSURE", "BACKEND_FORMATTING_GATE_SCOPE", "PERFORMANCE_IS_TWO_MULTIPLIERS", "MEASUREMENT_BASIS_BEFORE_MEASUREMENT_CLAIM", "BUDGET_CALIBRATED_AFTER_REPAIR_NOT_BEFORE", "OPTIMIZATION_CLOSURE_NEEDS_BEFORE_AFTER_NUMBERS"]
-sourceRefs: ["PLATFORM-BLUEPRINT.md", "doc/decisions/2026-08-10-v2s-m1-extension-submission-and-command-readback-decision.md", "doc/decisions/2026-08-12-v2s-public-invitation-resumption-state-machine.md", "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md", "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md", "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "doc/plans/platform/2026-08-22-v2s-backend-performance-remediation-implementation-design-codex.md", "doc/platform/backend-coding-standard.md", "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md", "doc/review/platform/2026-08-22-v2s-backend-performance-remediation-design-review-claude.md", "doc/review/platform/2026-08-22-v2s-backend-performance-root-cause-analysis-claude.md"]
+assertions: ["HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM", "SET_BASED_COLLECTION_READS", "OWNER_LOCAL_EFFICIENCY_REPAIR", "EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY", "COMMAND_CORRECTNESS_COST_PRESERVED", "BUSINESS_CORRECTNESS_PRECEDES_DB_EFFICIENCY", "TASK_READ_BUDGET_REQUIRES_EXPLANATION", "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT", "CONTRACT_ROUTE_CLOSURE", "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS", "DIAGNOSTIC_SECRET_FLOW_EXPLICIT", "EXECUTION_EVIDENCE_TAXONOMY", "BACKEND_NA_SPLIT_PACKAGE_SCOPE", "BACKEND_PUBLIC_INVITATION_CONTRACT_GENERATED_CLOSURE", "BACKEND_SOURCE_HASH_CHAIN_CLOSURE", "BACKEND_FORMATTING_GATE_SCOPE", "PERFORMANCE_IS_TWO_MULTIPLIERS", "MEASUREMENT_BASIS_BEFORE_MEASUREMENT_CLAIM", "BUDGET_CALIBRATED_AFTER_REPAIR_NOT_BEFORE", "IMPLEMENTATION_AGENT_CONTROLLED_BUDGET_EXCEPTION", "OPTIMIZATION_CLOSURE_NEEDS_BEFORE_AFTER_NUMBERS"]
+sourceRefs: ["PLATFORM-BLUEPRINT.md", "doc/decisions/2026-08-10-v2s-m1-extension-submission-and-command-readback-decision.md", "doc/decisions/2026-08-12-v2s-public-invitation-resumption-state-machine.md", "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md", "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md", "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "doc/plans/platform/2026-08-22-v2s-backend-performance-remediation-implementation-design-codex.md", "doc/platform/backend-coding-standard.md", "doc/platform/implementation-task-template.md", "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md", "doc/review/platform/2026-08-22-v2s-backend-performance-remediation-design-review-claude.md", "doc/review/platform/2026-08-22-v2s-backend-performance-root-cause-analysis-claude.md"]
 ---
 
 # HTTP CRUD efficiency design redlines
@@ -52,22 +52,51 @@ is operation-specific, not a global performance threshold.
   implementation, never from the current state. Take the maximum integer count across three runs of
   one fixed fixture, and require it to be at or below the class threshold; a value above the
   threshold means the repair is incomplete and must not be resolved by raising the budget. Budgets
-  move down freely and up only with an explicit Dexter decisionRef plus a red fixture proving an
-  undecided raise fails. Non-determinism across the three runs is fixed at the fixture, never by
-  adding random headroom. Source:
+  move down freely. An increase is allowed only through the controlled exception below, with a
+  source-controlled operation scope and a red fixture proving an unapproved raise fails.
+  Non-determinism across the three runs is fixed at the fixture, never by adding random headroom.
+  Source:
   `doc/plans/platform/2026-08-22-v2s-backend-performance-remediation-implementation-design-codex.md`, CP-02/CP-05.
 
 - `BUSINESS_CORRECTNESS_PRECEDES_DB_EFFICIENCY`: DB count is a diagnostic constraint, never permission
   to delete or weaken business facts, owner rechecks, required transactions, idempotent replay,
   concurrency locking, typed problems, audit or authoritative readback. After an event-level proof
   shows that an operation's remaining DB closure is correctness-preserving and that a consolidation
-  would cost more safety/review surface than it returns, Dexter may authorize one exact budget increase
-  with a named `decisionRef`. The exception has exactly two admission criteria: (1) it weakens no
-  business fact; and (2) the source proof shows that applicable shared/general mechanisms have already
-  been reused, leaving neither duplicate implementation nor avoidable owner fan-out/N+1. The record must
-  state both proofs, the measured closure, rejected alternative, cost and narrow operation boundary; the
-  generic undecided-increase red mutation remains mandatory. This is not a blanket performance exemption.
-  Source: Dexter decision, 2026-08-26.
+  would cost more safety/review surface than it returns, Dexter may authorize one exact budget increase,
+  or an implementation agent may make that same decision when the current Dexter authorization and
+  implementation design explicitly delegate it. The exception has exactly two admission criteria:
+  (1) it weakens no business fact; and (2) the source proof shows that applicable shared/general
+  mechanisms have already been reused, leaving neither duplicate implementation nor avoidable owner
+  fan-out/N+1. The record must state both proofs, the measured closure, rejected alternative, cost and
+  narrow operation boundary; the generic undecided-increase red mutation remains mandatory. This is
+  not a blanket performance exemption.
+  Source: Dexter decision, 2026-08-26; implementation-agent delegation, 2026-08-28.
+
+- `IMPLEMENTATION_AGENT_CONTROLLED_BUDGET_EXCEPTION`: an explicitly authorized implementation batch
+  may delegate a narrow **fixed, single-operation** budget decision to its implementation agent; the
+  agent does not need another Dexter round-trip once every admission fact is proven. Before release,
+  the agent must (a) reopen the operation's owner, edge, SQL and same-root siblings; (b) prove that
+  success, replay, stale, denied and relevant security paths preserve owner rechecks, transactions,
+  idempotency, locks, typed problems, audit and authoritative readback; (c) prove that all applicable
+  shared mechanisms are actually reused and that no safe consolidation, duplicate implementation,
+  avoidable owner fan-out or N+1 remains; (d) measure the same fixed fixture three times and record
+  `from`, `to`, `measuredMax`, the report header and DB-event evidence; and (e) record the rejected
+  alternative, safety/review-surface cost and the exact operation boundary. The exception must use an
+  operation-scoped `decisionRef` registered in the unique generator source and the existing controlled
+  exception record; it may not be a free-form or blanket ref. The record must declare `authority=DEXTER`
+  for a historical approval or `authority=IMPLEMENTATION_AGENT` for the explicitly delegated decision;
+  the validator rejects an implementation-agent record whose resolver scope contains multiple operations.
+  Existing Dexter-approved refs whose resolver scope contains multiple operations are historical grouped
+  approvals and cannot be reused for a delegated self-decision; a self-decided exception needs a newly
+  registered one-to-one ref.
+  The agent must label the result
+  `SELF_DECIDED_IMPLEMENTATION_EXCEPTION` and retain the red mutation proving an undecided increase
+  fails. This delegation does **not** cover `LINEAR_REQUEST_CARDINALITY` budgets, operation count or
+  identity changes, contract/schema/business-semantic changes, unresolved product/Journey/permission
+  decisions, or any operation whose optimization proof is incomplete. If any admission fact is
+  unknown, the agent must not release the exception and must return the precise gap to Dexter. This
+  rule changes who may make the already-defined implementation decision; it does not weaken the
+  two admission criteria, the machine validator, the independent reconciliation, or the final review.
 
 - `OPTIMIZATION_CLOSURE_NEEDS_BEFORE_AFTER_NUMBERS`: an efficiency round is not closed without
   same-workload before/after numbers in the closure document. Two prior rounds (2026-08-08 refactor,

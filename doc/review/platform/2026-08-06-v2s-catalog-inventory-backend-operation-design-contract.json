@@ -1276,133 +1276,6 @@
       }
     },
     {
-      "operationId": "deleteOperationsCatalogCategory",
-      "initiatingOwner": "catalog",
-      "coordinatedOwners": [],
-      "problemCodes": [
-        "VALIDATION_ERROR",
-        "SCOPE_FORBIDDEN",
-        "NOT_FOUND",
-        "VERSION_CONFLICT",
-        "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN",
-        "REFERENCE_BLOCKS_DELETE"
-      ],
-      "logicSteps": [
-        {
-          "order": 1,
-          "stepId": "VALIDATE_TRUSTED_INPUT",
-          "action": "Validate typed category-deletion input, trusted context, page/capability and owner scope."
-        },
-        {
-          "order": 2,
-          "stepId": "LOAD_DECIDE_EXECUTE",
-          "action": "Lock the requested subtree, compare root version, verify zero product references, delete atomically, audit and return typed readback."
-        },
-        {
-          "order": 3,
-          "stepId": "COMPLETE_READBACK",
-          "action": "Complete audit/idempotency only after all judgments pass and return typed readback."
-        }
-      ],
-      "callChain": [
-        {
-          "order": 1,
-          "kind": "EDGE",
-          "target": "operations-edge",
-          "purpose": "typed mapping only"
-        },
-        {
-          "order": 2,
-          "kind": "SECURITY_CONTEXT",
-          "target": "workspace-iam trusted context",
-          "purpose": "request-scoped authorization facts"
-        },
-        {
-          "order": 3,
-          "kind": "INITIATING_OWNER",
-          "target": "catalog.api",
-          "owner": "catalog",
-          "purpose": "own decision and final readback"
-        }
-      ],
-      "conditionToProblem": [
-        {
-          "precedence": 1,
-          "problemCode": "VALIDATION_ERROR",
-          "conditions": [
-            "Typed request, closed enum, cursor, header or required field is invalid."
-          ]
-        },
-        {
-          "precedence": 2,
-          "problemCode": "SCOPE_FORBIDDEN",
-          "conditions": [
-            "Trusted context lacks page/capability or requested owner scope is outside the session."
-          ]
-        },
-        {
-          "precedence": 3,
-          "problemCode": "NOT_FOUND",
-          "conditions": [
-            "Scoped target or unique source does not exist after concealment."
-          ]
-        },
-        {
-          "precedence": 4,
-          "problemCode": "VERSION_CONFLICT",
-          "conditions": [
-            "A non-preflight expected version differs from the current owner version."
-          ]
-        },
-        {
-          "precedence": 5,
-          "problemCode": "IDEMPOTENCY_MISMATCH",
-          "conditions": [
-            "Idempotency key exists with a different canonical request hash."
-          ]
-        },
-        {
-          "precedence": 6,
-          "problemCode": "RESULT_UNKNOWN",
-          "conditions": [
-            "Idempotency receipt is indeterminate."
-          ]
-        },
-        {
-          "precedence": 7,
-          "problemCode": "REFERENCE_BLOCKS_DELETE",
-          "conditions": [
-            "One or more categories in the requested subtree are referenced by a product."
-          ]
-        }
-      ],
-      "normalPathDbOperations": {
-        "expectedCount": 7,
-        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
-        "assumptions": [
-          "Includes request-scoped trusted-context DB work.",
-          "Collection facts use set-based/batch operations; pure judgments and object storage are excluded.",
-          "Count binds the smallest legal normal fixture."
-        ],
-        "verificationScenarioIds": [
-          "CI-API-006"
-        ],
-        "breakdown": [
-          {
-            "owner": "request-context",
-            "readCount": 1,
-            "writeCount": 0
-          },
-          {
-            "owner": "catalog",
-            "readCount": 3,
-            "writeCount": 3
-          }
-        ]
-      }
-    },
-    {
       "operationId": "getOperationsCatalogDictionary",
       "initiatingOwner": "catalog",
       "coordinatedOwners": [],
@@ -5210,9 +5083,9 @@
         "expectedCount": 5,
         "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
         "assumptions": [
-          "Includes request-scoped trusted-context DB work.",
-          "The smallest normal fixture is one in-scope item transitioning to ARCHIVED; VOIDED-only inventory judgment is not counted.",
-          "The batch uses one receipt read and one receipt write; item execution writes only status and version."
+          "This retained representative breakdown is explanatory metadata, not the active request-cardinality budget.",
+          "The current collection request accepts 1–100 ordered items and its VOIDED path set-loads catalog, inventory, inbound-reference and identifier blocker facts before per-item execution.",
+          "The active request-cardinality budget is generated from current performance.normal-path events and is materialized separately as databaseOperationBudget."
         ],
         "verificationScenarioIds": [
           "CI-API-008"

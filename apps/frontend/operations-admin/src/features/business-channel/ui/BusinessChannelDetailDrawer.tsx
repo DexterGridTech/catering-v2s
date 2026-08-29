@@ -1,7 +1,8 @@
-import {Alert, Button, Descriptions, Drawer, Space, Tag} from 'antd';
+import {Alert, Button, Descriptions, Drawer, Space, Tag, Typography} from 'antd';
 import {
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  closedCodeLabel,
   testId,
   useDetailDrawer,
   useOverlayLock,
@@ -24,6 +25,24 @@ import {
 import {readBusinessChannelTemplates, readExternalProviderCandidates} from '../application/queries';
 import {BusinessChannelBindingDrawer} from './BusinessChannelBindingDrawer';
 import {ownerBindingBusinessDisplay, ownerBindingExternalOwnerDisplay} from './ownerBindingPresentation';
+import {
+  bindingStatusLabels,
+  lifecycleStatusLabels,
+  ownerNodeTypeLabels,
+  statusDimensionTypeLabels,
+} from '../model/businessChannelCodeLabels';
+import {accessKindLabels, dineInFormLabels, orderKindLabels} from '../model/businessChannelCodeLabels';
+import {
+  businessChannelActionAvailability,
+  canTransitionBusinessChannelStatus,
+} from '../model/businessChannelActionPolicy';
+
+function dimensionStatusLabel(status: string) {
+  if (status === 'ENABLED') return lifecycleStatusLabels.ENABLED;
+  if (status === 'DISABLED') return lifecycleStatusLabels.DISABLED;
+  if (status === 'VOIDED') return lifecycleStatusLabels.VOIDED;
+  return '当前状态无法识别';
+}
 
 export function BusinessChannelDetailDrawer({
   open,
@@ -95,6 +114,7 @@ export function BusinessChannelDetailDrawer({
   ]);
 
   const channel = target;
+  const channelActions = channel ? businessChannelActionAvailability(channel.status) : undefined;
   const closeThen = (next: () => void) => {
     if (!channel) return;
     closeDetail();
@@ -103,6 +123,10 @@ export function BusinessChannelDetailDrawer({
   };
   const transition = async (status: BusinessChannelView['status']) => {
     if (!channel) return;
+    if (!canTransitionBusinessChannelStatus(channel.status, status)) {
+      setProblem('当前渠道状态不允许执行该操作。');
+      return;
+    }
     try {
       await operationsClient.transitionOperationsBusinessChannelStatus(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey, channelRef: channel.channelRef},
@@ -135,32 +159,24 @@ export function BusinessChannelDetailDrawer({
         extra={
           channel && (
             <Space>
-              {onEdit && channel.status !== 'DISABLED' && (
+              {onEdit && channelActions?.canEdit && (
                 <Button onClick={() => closeThen(() => onEdit(channel))} {...testId('business-channel-edit-open')}>
                   编辑
                 </Button>
               )}
-              <Button
-                disabled={channel.status === 'DISABLED'}
-                title={channel.status === 'DISABLED' ? '已停用渠道不可维护绑定' : undefined}
-                onClick={() => setBindingOpen(true)}
-                {...testId('business-channel-binding')}
-              >
-                维护绑定
-              </Button>
-              {channel.status !== 'DISABLED' && (
+              {channelActions?.canMaintainBinding && (
+                <Button onClick={() => setBindingOpen(true)} {...testId('business-channel-binding')}>
+                  维护绑定
+                </Button>
+              )}
+              {channelActions?.canDisable && (
                 <Button danger onClick={() => void transition('DISABLED')} {...testId('business-channel-status')}>
                   停用
                 </Button>
               )}
-              {channel.status === 'DISABLED' && (
-                <Button
-                  disabled={(channel.stopReasons?.length ?? 0) > 0}
-                  title={channel.stopReasons?.length ? '停用原因未清除，暂不可恢复草稿' : undefined}
-                  onClick={() => void transition('DRAFT')}
-                  {...testId('business-channel-status')}
-                >
-                  恢复草稿
+              {channelActions?.canEnable && (
+                <Button onClick={() => void transition('ENABLED')} {...testId('business-channel-status')}>
+                  恢复启用
                 </Button>
               )}
             </Space>
@@ -176,10 +192,26 @@ export function BusinessChannelDetailDrawer({
                 {key: 'code', label: '渠道编码', children: channel.channelCode || '—'},
                 {key: 'name', label: '渠道名称', children: channel.channelName},
                 {key: 'template', label: '来源模板', children: template?.templateName || '—'},
-                {key: 'operator', label: '经营主体', children: channel.ownerNodeTypeDisplayName || '—'},
-                {key: 'order', label: '订单类型', children: template?.orderKindDisplayName || '—'},
-                {key: 'access', label: '接入类型', children: template?.accessKindDisplayName || '—'},
-                {key: 'dineInForm', label: '到店点餐形式', children: template?.dineInFormDisplayName || '—'},
+                {
+                  key: 'operator',
+                  label: '经营主体',
+                  children: closedCodeLabel(ownerNodeTypeLabels, channel.ownerNodeType),
+                },
+                {
+                  key: 'order',
+                  label: '订单类型',
+                  children: template ? closedCodeLabel(orderKindLabels, template.orderKind) : '—',
+                },
+                {
+                  key: 'access',
+                  label: '接入类型',
+                  children: template ? closedCodeLabel(accessKindLabels, template.accessKind) : '—',
+                },
+                {
+                  key: 'dineInForm',
+                  label: '到店点餐形式',
+                  children: template?.dineInForm ? closedCodeLabel(dineInFormLabels, template.dineInForm) : '未配置',
+                },
                 {
                   key: 'business',
                   label: '绑定业务',
@@ -193,11 +225,52 @@ export function BusinessChannelDetailDrawer({
                       ? '—'
                       : ownerBindingExternalOwnerDisplay(binding, provider?.authenticationKind),
                 },
-                {key: 'status', label: '状态', children: <Tag>{channel.statusDisplayName || '—'}</Tag>},
                 {
-                  key: 'stop',
-                  label: '停用原因',
-                  children: channel.stopReasonDisplayNames?.join('、') || '—',
+                  key: 'status',
+                  label: '状态',
+                  children: <Tag>{closedCodeLabel(lifecycleStatusLabels, channel.status)}</Tag>,
+                },
+                {
+                  key: 'statusDimensions',
+                  label: '状态维度',
+                  children: (
+                    <Space direction="vertical" size={4} {...testId('business-channel-status-dimensions')}>
+                      {channel.statusDimensions.length > 0 ? (
+                        channel.statusDimensions.map(dimension => (
+                          <Typography.Text
+                            key={`${dimension.type}-${dimension.ref}`}
+                            {...testId(`business-channel-status-dimension-${dimension.type}-${dimension.ref}`)}
+                          >
+                            {closedCodeLabel(statusDimensionTypeLabels, dimension.type)}：
+                            {dimensionStatusLabel(dimension.status)}
+                          </Typography.Text>
+                        ))
+                      ) : (
+                        <Typography.Text>暂无上游状态维度</Typography.Text>
+                      )}
+                    </Space>
+                  ),
+                },
+                {
+                  key: 'blockers',
+                  label: '上游阻断',
+                  children: (
+                    <Space direction="vertical" size={4} {...testId('business-channel-blockers')}>
+                      {channel.blockers.length > 0 ? (
+                        channel.blockers.map(blocker => (
+                          <Typography.Text
+                            key={`${blocker.type}-${blocker.ref}`}
+                            {...testId(`business-channel-blocker-${blocker.type}-${blocker.ref}`)}
+                          >
+                            {closedCodeLabel(statusDimensionTypeLabels, blocker.type)}：
+                            {dimensionStatusLabel(blocker.status)}
+                          </Typography.Text>
+                        ))
+                      ) : (
+                        <Typography.Text>当前没有上游阻断</Typography.Text>
+                      )}
+                    </Space>
+                  ),
                 },
                 {
                   key: 'binding',
@@ -205,7 +278,7 @@ export function BusinessChannelDetailDrawer({
                   children:
                     channel.bindingStatus === 'NOT_REQUIRED'
                       ? '—'
-                      : binding?.statusDisplayName || channel.bindingStatusDisplayName || '—',
+                      : closedCodeLabel(bindingStatusLabels, channel.bindingStatus),
                 },
               ]}
             />

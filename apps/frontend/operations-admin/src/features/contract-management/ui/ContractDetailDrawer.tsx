@@ -150,7 +150,7 @@ export function ContractDetailDrawer({
                 label: '门店',
                 children: <NameCodeText name={selected.store.name} code={selected.store.code} />,
               },
-              {key: 'phase', label: '项目分期', children: selected.phaseName},
+              {key: 'phase', label: '项目分期', children: selected.phaseName || '未设置'},
               {
                 key: 'tenant',
                 label: '经营租户',

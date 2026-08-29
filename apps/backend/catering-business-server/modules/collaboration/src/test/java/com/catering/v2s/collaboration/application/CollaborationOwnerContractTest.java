@@ -80,15 +80,10 @@ class CollaborationOwnerContractTest {
                         "Test provider",
                         "TEST_SYSTEM",
                         List.of("TAKEAWAY"),
-                        List.of("TAKEAWAY"),
-                        List.of("PROJECT"),
                         List.of("PROJECT"),
                         "EXTERNAL_GRANT",
-                        "External grant",
                         "LOCAL_ONLY",
-                        "Local only",
-                        "AVAILABLE",
-                        "Available"));
+                        "AVAILABLE"));
         CollaborationOwnerService service = new CollaborationOwnerService(
                 mock(JdbcTemplate.class),
                 mock(TimeProvider.class),
@@ -166,13 +161,14 @@ class CollaborationOwnerContractTest {
         assertTrue(sql.getValue().contains("COUNT(*) OVER() AS total"));
         assertTrue(sql.getValue().contains("binding_display_name"));
         assertTrue(sql.getValue().contains("node_ref"));
-        assertTrue(sql.getValue().contains("owner_node_display"));
+        assertTrue(sql.getValue().contains("owner_node_path"));
         assertTrue(sql.getValue().contains("WITH RECURSIVE"));
         assertTrue(sql.getValue().contains("node_paths"));
         assertTrue(sql.getValue().contains("organization.organization_node"));
-        assertTrue(sql.getValue().contains("node_display_name"));
-        assertTrue(sql.getValue().contains("node_display_path"));
-        assertTrue(sql.getValue().contains("string_agg"));
+        assertTrue(sql.getValue().contains("node_path"));
+        assertFalse(sql.getValue().contains("node_display_name"));
+        assertFalse(sql.getValue().contains("node_display_path"));
+        assertFalse(sql.getValue().contains("string_agg"));
         assertTrue(sql.getValue().contains("LIMIT ? OFFSET ?"));
         assertFalse(sql.getValue().contains("binding_ref > ?"));
 

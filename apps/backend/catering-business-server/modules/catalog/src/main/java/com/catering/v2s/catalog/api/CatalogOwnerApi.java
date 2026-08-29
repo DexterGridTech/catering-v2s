@@ -87,21 +87,26 @@ public interface CatalogOwnerApi {
     record CategoryMoveCommand(
             UUID categoryRef, long expectedVersion, CategoryMoveAction action, UUID parentCategoryRef) {}
 
-    record CategoryDeleteCommand(UUID categoryRef, long expectedVersion) {}
+    record CategoryStatusTransitionCommand(UUID categoryRef, long expectedVersion, String targetStatus) {}
+
+    record CategoryBlockingReference(
+            String referenceKind, UUID referenceRef, String code, String name, String direction) {}
 
     record CategoryDeletionAvailability(
-            boolean canDelete, long subtreeSize, long blockingReferenceCount, List<String> blockingReferenceLabels) {}
+            boolean canDelete,
+            long subtreeSize,
+            long blockingReferenceCount,
+            List<CategoryBlockingReference> blockingReferences) {}
 
     record CategoryReadback(
             UUID categoryRef,
             String code,
             String name,
+            String status,
             UUID parentCategoryRef,
             long version,
             long displayOrder,
             CategoryDeletionAvailability deletionAvailability) {}
-
-    record CategoryDeleteReadback(UUID categoryRef, long deletedSubtreeSize, List<String> deletedCategoryCodes) {}
 
     record DictionaryEntryCreateCommand(String dictionaryKind, String code, String name, UUID parentEntryRef) {}
 
@@ -162,15 +167,14 @@ public interface CatalogOwnerApi {
             UUID definitionRef,
             String code,
             String name,
+            String status,
             String valueType,
             List<AttributeDefinitionOption> options,
             long version) {}
 
     record AttributeDefinitionListReadback(List<AttributeDefinitionReadback> definitions) {}
 
-    record AttributeDefinitionDeleteReadback(UUID definitionRef, long deletedAssignmentCount) {}
-
-    record AttributeDefinitionDeleteCommand(UUID definitionRef, long expectedVersion) {}
+    record AttributeDefinitionStatusTransitionCommand(UUID definitionRef, long expectedVersion, String targetStatus) {}
 
     /** Catalog-owned unit definitions are a bounded library, not a dictionary/tag projection. */
     enum UnitDimension {
@@ -191,9 +195,7 @@ public interface CatalogOwnerApi {
             UnitDimension unitDimension,
             Integer precision) {}
 
-    record UnitDefinitionDisableCommand(UUID unitRef, long expectedVersion) {}
-
-    record UnitDefinitionDeleteCommand(UUID unitRef, long expectedVersion) {}
+    record UnitDefinitionStatusTransitionCommand(UUID unitRef, long expectedVersion, String targetStatus) {}
 
     record UnitDefinitionReadback(
             UUID unitRef,
@@ -247,6 +249,7 @@ public interface CatalogOwnerApi {
             UUID definitionRef,
             String code,
             String name,
+            String status,
             String selectionMode,
             List<OrderOptionValueReadback> values,
             long version) {}
@@ -256,12 +259,10 @@ public interface CatalogOwnerApi {
     record OrderOptionDefinitionMutationReadback(
             OrderOptionDefinitionReadback definition, List<UUID> deletedDefinitionValueRefs) {}
 
-    record OrderOptionDefinitionDeleteReadback(
-            UUID definitionRef, List<UUID> deletedDefinitionValueRefs, long deletedItemConfigCount) {}
+    record OrderOptionDefinitionStatusTransitionCommand(
+            UUID definitionRef, long expectedVersion, String targetStatus) {}
 
-    record OrderOptionDefinitionDeleteCommand(UUID definitionRef, long expectedVersion) {}
-
-    /** First-step identity is atomic: item is DRAFT and categoryRef is either one opaque ref or null. */
+    /** First-step identity is atomic: item is DISABLED and categoryRef is either one opaque ref or null. */
     record CatalogItemCreateCommand(String name, String code, String shapeKey, UUID categoryRef) {}
 
     record CatalogItemStatusTransitionCommand(String itemCode, long expectedVersion, String targetStatus) {}
@@ -379,9 +380,9 @@ public interface CatalogOwnerApi {
             CategoryMoveCommand command,
             String idempotencyKey);
 
-    CategoryDeleteReadback deleteCategory(
+    CategoryReadback transitionCategoryStatus(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
-            CategoryDeleteCommand command,
+            CategoryStatusTransitionCommand command,
             String idempotencyKey);
 
     DictionaryCommandReadback createDictionaryEntry(
@@ -409,7 +410,8 @@ public interface CatalogOwnerApi {
             CatalogItemCreateCommand command,
             String idempotencyKey);
 
-    AttributeDefinitionListReadback listAttributeDefinitions(String dataNodeRef, String brandRef);
+    AttributeDefinitionListReadback listAttributeDefinitions(
+            String dataNodeRef, String brandRef, String candidateUsage);
 
     AttributeDefinitionReadback createAttributeDefinition(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
@@ -421,9 +423,9 @@ public interface CatalogOwnerApi {
             AttributeDefinitionUpdateCommand command,
             String idempotencyKey);
 
-    AttributeDefinitionDeleteReadback deleteAttributeDefinition(
+    AttributeDefinitionReadback transitionAttributeDefinitionStatus(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
-            AttributeDefinitionDeleteCommand command,
+            AttributeDefinitionStatusTransitionCommand command,
             String idempotencyKey);
 
     UnitDefinitionListReadback listUnitDefinitions(
@@ -444,17 +446,13 @@ public interface CatalogOwnerApi {
             UnitDefinitionUpdateCommand command,
             String idempotencyKey);
 
-    UnitDefinitionReadback disableUnitDefinition(
+    UnitDefinitionReadback transitionUnitStatus(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
-            UnitDefinitionDisableCommand command,
+            UnitDefinitionStatusTransitionCommand command,
             String idempotencyKey);
 
-    void deleteUnitDefinition(
-            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
-            UnitDefinitionDeleteCommand command,
-            String idempotencyKey);
-
-    OrderOptionDefinitionListReadback listOrderOptionDefinitions(String dataNodeRef, String brandRef);
+    OrderOptionDefinitionListReadback listOrderOptionDefinitions(
+            String dataNodeRef, String brandRef, String candidateUsage);
 
     OrderOptionDefinitionReadback createOrderOptionDefinition(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
@@ -466,9 +464,9 @@ public interface CatalogOwnerApi {
             OrderOptionDefinitionUpdateCommand command,
             String idempotencyKey);
 
-    OrderOptionDefinitionDeleteReadback deleteOrderOptionDefinition(
+    OrderOptionDefinitionReadback transitionOrderOptionDefinitionStatus(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
-            OrderOptionDefinitionDeleteCommand command,
+            OrderOptionDefinitionStatusTransitionCommand command,
             String idempotencyKey);
 
     CatalogItemCommandReadback transitionCatalogItemStatus(

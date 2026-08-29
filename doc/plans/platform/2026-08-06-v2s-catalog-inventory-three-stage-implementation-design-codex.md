@@ -149,7 +149,7 @@ generated outputs不得手改：root OpenAPI、route/capability registry、Java 
 generated client/RTK client，以及由形态 manifest 生成的 Java/TS typed manifest。platform-admin slice
 保持无本期 operation。
 
-### 3.3 operation exact-set（43）
+### 3.3 operation exact-set（42）
 
 所有写操作使用 `Idempotency-Key`，命令只接收 trusted context 派生后的业务输入与 expected version；
 不接收客户端 owner/project/`itemKind`/`measureMode`/`usageCapabilities`/`skuMode`。
@@ -157,7 +157,7 @@ generated client/RTK client，以及由形态 manifest 生成的 Java/TS typed m
 | 编号 | operation exact-set |
 |---|---|
 | 01—07 | `getOperationsCatalogWorkbenchContext`, `getOperationsCatalogNavigation`, `getOperationsCatalogItems`, `getOperationsCatalogItem`, `createOperationsCatalogItem`, `saveOperationsCatalogItem`, `transitionOperationsCatalogItemStatus` |
-| 08—11 | `createOperationsCatalogCategory`, `updateOperationsCatalogCategory`, `moveOperationsCatalogCategory`, `deleteOperationsCatalogCategory` |
+| 08—10 | `createOperationsCatalogCategory`, `updateOperationsCatalogCategory`, `moveOperationsCatalogCategory` |
 | 12—16 | `getOperationsCatalogDictionary`, `createOperationsCatalogDictionaryEntry`, `updateOperationsCatalogDictionaryEntry`, `reorderOperationsCatalogDictionaryEntry`, `transitionOperationsCatalogDictionaryEntryStatus` |
 | 17—20 | `getOperationsProductionTags`, `createOperationsProductionTag`, `updateOperationsProductionTag`, `transitionOperationsProductionTagStatus` |
 | 21—23 | `getOperationsLocalCatalogCopyCandidates`, `preflightOperationsLocalCatalogCopy`, `executeOperationsLocalCatalogCopy` |
@@ -214,7 +214,6 @@ P1 实际规范源不是本表的 prose，而是新增
 | 8 | `createOperationsCatalogCategory` | catalog / none | EW | `CatalogCategoryCreateRequest` → `CatalogCategoryReadback` | E-W | API-006 |
 | 9 | `updateOperationsCatalogCategory` | catalog / none | EW | `CatalogCategoryUpdateRequest` → `CatalogCategoryReadback` | E-W | API-006 |
 | 10 | `moveOperationsCatalogCategory` | catalog / none | EW | `CatalogCategoryMoveRequest` → `CatalogCategoryReadback` | E-W | API-006 |
-| 11 | `deleteOperationsCatalogCategory` | catalog / catalog reference judgment | EW | `CatalogCategoryDeleteRequest` → `CatalogCategoryDeleteReadback` | E-W | API-006 |
 | 12 | `getOperationsCatalogDictionary` | catalog / none | PR | `CatalogDictionaryQuery` → `CatalogDictionaryView` | E-R | API-005,006 |
 | 13 | `createOperationsCatalogDictionaryEntry` | catalog / none | EW | `CatalogDictionaryEntryCreateRequest` → `CatalogDictionaryEntryReadback` | E-W | API-006 |
 | 14 | `updateOperationsCatalogDictionaryEntry` | catalog / none | EW | `CatalogDictionaryEntryUpdateRequest` → `CatalogDictionaryEntryReadback` | E-W | API-006 |

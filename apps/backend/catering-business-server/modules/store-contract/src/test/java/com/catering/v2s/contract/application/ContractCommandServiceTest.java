@@ -10,6 +10,7 @@ import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationHierarchyService;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +66,13 @@ class ContractCommandServiceTest {
                 now,
                 now,
                 now);
-        ExtensionDefinitionService definitions = new ExtensionDefinitionService(jdbc, time);
+        WorkspaceStatusLookup workspaceStatuses = (id, key) -> jdbc.queryForObject(
+                "SELECT status FROM platform_workspace.group_workspace "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=?",
+                String.class,
+                id,
+                key);
+        ExtensionDefinitionService definitions = new ExtensionDefinitionService(jdbc, time, workspaceStatuses);
         OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, time);
         BusinessEntityService entities = new BusinessEntityService(jdbc, time, definitions, hierarchy);
         var region = hierarchy.create(workspaceId, "contract-test", "REGION", null, "region", "Region");
@@ -147,6 +154,8 @@ class ContractCommandServiceTest {
 
     @AfterEach
     void isolateSharedFixtureRows() {
+        jdbc().update("UPDATE organization.store SET status='ENABLED' WHERE id=?", storeId);
+        jdbc().update("UPDATE organization.tenant SET status='ENABLED' WHERE id=?", tenantId);
         jdbc().update("DELETE FROM contract.store_contract WHERE workspace_uuid=?", workspaceId);
         jdbc().update("DELETE FROM contract.store_contract WHERE workspace_uuid=?", secondWorkspaceId);
         jdbc().update("DELETE FROM organization.store WHERE workspace_uuid=? AND id<>?", workspaceId, storeId);
@@ -154,6 +163,52 @@ class ContractCommandServiceTest {
                         "DELETE FROM organization.store WHERE workspace_uuid=? AND id<>?",
                         secondWorkspaceId,
                         secondStoreId);
+    }
+
+    @Test
+    void createRejectsDisabledStoreOrTenantBeforeContractWrite() {
+        UUID projectId =
+                jdbc().queryForObject("SELECT project_id FROM organization.store WHERE id=?", UUID.class, storeId);
+        jdbc().update("UPDATE organization.store SET status='DISABLED' WHERE id=?", storeId);
+        assertThrows(
+                ContractCommandService.ContractValidationException.class,
+                () -> contracts.create(
+                        workspaceId,
+                        "contract-test",
+                        "CT-disabled-store",
+                        storeId,
+                        projectId,
+                        LocalDate.of(2026, 8, 1),
+                        null,
+                        "筹备",
+                        List.of(new ContractCommandService.ItemInput("tea-disabled-store", "茶")),
+                        Map.of()));
+        assertEquals(
+                0,
+                jdbc().queryForObject(
+                                "SELECT COUNT(*) FROM contract.store_contract WHERE contract_no='CT-disabled-store'",
+                                Integer.class));
+
+        jdbc().update("UPDATE organization.store SET status='ENABLED' WHERE id=?", storeId);
+        jdbc().update("UPDATE organization.tenant SET status='DISABLED' WHERE id=?", tenantId);
+        assertThrows(
+                ContractCommandService.ContractValidationException.class,
+                () -> contracts.create(
+                        workspaceId,
+                        "contract-test",
+                        "CT-disabled-tenant",
+                        storeId,
+                        projectId,
+                        LocalDate.of(2026, 8, 1),
+                        null,
+                        "筹备",
+                        List.of(new ContractCommandService.ItemInput("tea-disabled-tenant", "茶")),
+                        Map.of()));
+        assertEquals(
+                0,
+                jdbc().queryForObject(
+                                "SELECT COUNT(*) FROM contract.store_contract WHERE contract_no='CT-disabled-tenant'",
+                                Integer.class));
     }
 
     @Test

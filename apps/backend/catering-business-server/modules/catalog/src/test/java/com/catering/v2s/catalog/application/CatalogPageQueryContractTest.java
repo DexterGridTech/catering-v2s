@@ -55,8 +55,7 @@ class CatalogPageQueryContractTest {
 
     @Test
     void acceptsExactlyTheSmartViewsPublishedByTheManifest() {
-        for (String supported :
-                List.of("ALL", "EXTERNAL_ORDER_TEMP", "INACTIVE", "ARCHIVED", "RECENTLY_UPDATED", "AUTO_SYNC")) {
+        for (String supported : List.of("ALL", "EXTERNAL_ORDER_TEMP", "INACTIVE", "RECENTLY_UPDATED", "AUTO_SYNC")) {
             assertDoesNotThrow(
                     () -> CatalogOwnerService.validateItemPageQuery(
                             mapper.createObjectNode().put("smartViewKey", supported)),

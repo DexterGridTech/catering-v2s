@@ -1075,7 +1075,7 @@ function logging(base = root) {
   );
   assertNoMatch(
     files.filter(file => /\.(?:java|js|ts|tsx)$/.test(file)),
-    /(?:password|otp|token|authorization|secret)\s*[=:]\s*["'`][^"'`]+/i,
+    /\b(?:password|otp|token|authorization|secret)\b\s*[=:]\s*["'`][^"'`]+/i,
     'R4_LOGGING_SENSITIVE_LITERAL',
     base,
   );

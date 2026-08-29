@@ -164,6 +164,34 @@ body {
   line-height: 20px;
 }
 
+.catalog-batch-task-modal--outcome {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+}
+
+.catalog-batch-outcome {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.catalog-batch-outcome__failures {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.catalog-batch-outcome__failure-table {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
 .operations-scope-trigger-type,
 .operations-scope-trigger-value {
   display: block;

@@ -122,19 +122,24 @@ function unitDimensionLabel(value?: FormValues['unitDimension']) {
   return unitDimensionOptions.find(option => option.value === value)?.label ?? value ?? '—';
 }
 
-export function catalogUnitDeleteControlState({
+export function catalogUnitVoidControlState({
   canWrite,
   isReferenced,
-  isDeleting,
+  isTransitioning,
 }: {
   canWrite: boolean;
   isReferenced: boolean | undefined;
-  isDeleting: boolean;
+  isTransitioning: boolean;
 }): {disabled: boolean; reason?: string} {
   if (!canWrite) return {disabled: true, reason: '当前账号只有查看商品库的权限，不能修改字典。'};
-  if (isReferenced) return {disabled: true, reason: '该计量单位正在使用，不能删除；可以停用。'};
-  if (isDeleting) return {disabled: true, reason: '正在删除，请稍候。'};
+  if (isReferenced) return {disabled: true, reason: '该计量单位正在使用，不能作废；可以停用。'};
+  if (isTransitioning) return {disabled: true, reason: '正在更新状态，请稍候。'};
   return {disabled: false};
+}
+
+export function catalogUnitStatusQuery(status?: string): {status?: 'ENABLED' | 'DISABLED' | 'VOIDED'} {
+  if (status === 'ENABLED' || status === 'DISABLED' || status === 'VOIDED') return {status};
+  return {};
 }
 
 /**
@@ -321,9 +326,7 @@ export function CatalogDictionaryDrawerState({
             dataNodeRef: wireUuid(queryContext.scopeRef ?? ''),
             includeInactive: true,
             ...(simpleLibraryFilter.appliedKeyword ? {query: simpleLibraryFilter.appliedKeyword} : {}),
-            ...(simpleLibraryFilter.status === 'ENABLED' || simpleLibraryFilter.status === 'DISABLED'
-              ? {status: simpleLibraryFilter.status}
-              : {}),
+            ...catalogUnitStatusQuery(simpleLibraryFilter.status),
           },
           headers,
         },
@@ -385,8 +388,7 @@ export function CatalogDictionaryDrawerState({
   const [transitionTag, transitionTagState] = operationsRtk.useTransitionOperationsProductionTagStatusMutation();
   const [createUnit, createUnitState] = operationsRtk.useCreateOperationsCatalogUnitMutation();
   const [updateUnit, updateUnitState] = operationsRtk.useUpdateOperationsCatalogUnitMutation();
-  const [disableUnit, disableUnitState] = operationsRtk.useDisableOperationsCatalogUnitMutation();
-  const [deleteUnit, deleteUnitState] = operationsRtk.useDeleteOperationsCatalogUnitMutation();
+  const [transitionUnit, transitionUnitState] = operationsRtk.useTransitionOperationsCatalogUnitStatusMutation();
   const dictionaryData = dictionaryQuery.currentData?.data;
   const attributeValuesData = attributeValuesQuery.currentData?.data;
   const productionData = productionQuery.currentData?.data;
@@ -1035,29 +1037,30 @@ export function CatalogDictionaryDrawerState({
     }
   };
   const openStatusChange = (row: DictionaryRow, dictionaryKind: DictionaryKind = kind) => {
-    if (row.status === 'VOIDED' || (dictionaryKind === 'UNIT' && row.status !== 'ENABLED')) return;
+    if (row.status === 'VOIDED') return;
     setProblem(undefined);
     setStatusChange({row, dictionaryKind});
   };
   const changeStatus = async () => {
     if (!statusChange) return;
     const {row, dictionaryKind} = statusChange;
-    const targetStatus = row.status === 'ENABLED' ? 'DISABLED' : 'ENABLED';
+    const targetStatus: 'ENABLED' | 'DISABLED' = row.status === 'ENABLED' ? 'DISABLED' : 'ENABLED';
     try {
       setProblem(undefined);
       const dataNodeRef = requireOperationsScopeRef(queryContext);
       if (dictionaryKind === 'UNIT') {
-        if (row.status !== 'ENABLED') {
-          setStatusChange(undefined);
-          return;
-        }
-        const body = {dataNodeRef, unitRef: wireUuid(row.entryRef), expectedVersion: row.version};
+        const body = {
+          dataNodeRef,
+          unitRef: wireUuid(row.entryRef),
+          expectedVersion: row.version,
+          targetStatus,
+        };
         const idempotencyKey = await createContentIdempotencyKey(
-          CATALOG_INVENTORY_OPERATION_IDS.disableOperationsCatalogUnit,
+          CATALOG_INVENTORY_OPERATION_IDS.transitionOperationsCatalogUnitStatus,
           body,
         );
-        await disableUnit(
-          catalogInventoryRtkRequest.disableOperationsCatalogUnit(
+        await transitionUnit(
+          catalogInventoryRtkRequest.transitionOperationsCatalogUnitStatus(
             {unitRef: wireUuid(row.entryRef)},
             {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
           ),
@@ -1093,17 +1096,35 @@ export function CatalogDictionaryDrawerState({
     }
   };
   const voidAndPrepareRebuild = (row: DictionaryRow, dictionaryKind: DictionaryKind = kind) => {
-    if (!row.voidAvailability?.canVoid) return;
+    const canVoid = dictionaryKind === 'UNIT' ? !row.isReferenced : row.voidAvailability?.canVoid;
+    if (!canVoid) return;
     modal.confirm({
       title: `作废并重建“${row.name}”`,
-      content: '将先把旧记录置为作废并永久保留原编码，然后用新编码创建一条记录。旧编码不会释放。',
+      content: '将先把旧记录置为作废；历史记录会保留，作废后原编码可在当前作用域中复用，再创建一条新记录。',
       okText: '作废并继续重建',
       cancelText: '取消',
       onOk: async () => {
         try {
           setProblem(undefined);
           const dataNodeRef = requireOperationsScopeRef(queryContext);
-          if (dictionaryKind === 'PRODUCTION_TAG') {
+          if (dictionaryKind === 'UNIT') {
+            const body = {
+              dataNodeRef,
+              unitRef: wireUuid(row.entryRef),
+              expectedVersion: row.version,
+              targetStatus: 'VOIDED' as const,
+            };
+            const idempotencyKey = await createContentIdempotencyKey(
+              CATALOG_INVENTORY_OPERATION_IDS.transitionOperationsCatalogUnitStatus,
+              body,
+            );
+            await transitionUnit(
+              catalogInventoryRtkRequest.transitionOperationsCatalogUnitStatus(
+                {unitRef: wireUuid(row.entryRef)},
+                {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
+              ),
+            ).unwrap();
+          } else if (dictionaryKind === 'PRODUCTION_TAG') {
             const body = {
               dataNodeRef,
               tagCode: row.code,
@@ -1143,40 +1164,6 @@ export function CatalogDictionaryDrawerState({
           setCreatingKind(dictionaryKind);
         } catch (error) {
           setProblem(catalogUiProblemFeedback(error, '作废未完成，请重试。').message);
-          throw error;
-        }
-      },
-    });
-  };
-  const deleteUnitRow = (row: DictionaryRow) => {
-    modal.confirm({
-      title: `删除“${row.name}”`,
-      content: '只有从未被商品、规格、库存或历史事实引用的计量单位才能删除；已引用单位不能删除。',
-      okText: '删除',
-      okButtonProps: {danger: true},
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          const dataNodeRef = requireOperationsScopeRef(queryContext);
-          const body = {dataNodeRef, unitRef: wireUuid(row.entryRef), expectedVersion: row.version};
-          const idempotencyKey = await createContentIdempotencyKey(
-            CATALOG_INVENTORY_OPERATION_IDS.deleteOperationsCatalogUnit,
-            body,
-          );
-          await deleteUnit(
-            catalogInventoryRtkRequest.deleteOperationsCatalogUnit(
-              {unitRef: wireUuid(row.entryRef)},
-              {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
-            ),
-          ).unwrap();
-          setProblem(undefined);
-        } catch (error) {
-          const feedback = operationsProblemOf(error);
-          setProblem(
-            feedback.errorCode === 'CATALOG_UNIT_IN_USE' || feedback.errorCode === 'REFERENCE_BLOCKS_DELETE'
-              ? '该计量单位正在使用，不能删除。'
-              : catalogUiProblemFeedback(error, '计量单位删除未完成，请重试。').message,
-          );
           throw error;
         }
       },
@@ -1511,52 +1498,54 @@ export function CatalogDictionaryDrawerState({
           renderActions={simpleRow => {
             const row = simpleRow as DictionaryRow;
             if (isUnit) {
-              const control = catalogUnitDeleteControlState({
+              const control = catalogUnitVoidControlState({
                 canWrite,
                 isReferenced: row.isReferenced,
-                isDeleting: deleteUnitState.isLoading,
+                isTransitioning: transitionUnitState.isLoading,
               });
               return (
                 <>
-                  {withMutationReason(
-                    <Button
-                      type="link"
-                      disabled={!canWrite}
-                      onClick={() => (row.isReferenced ? openNameEdit(row) : openUnitEdit(row))}
-                      {...testId(catalogTestIdControls.config.action('UNIT', row.code, 'edit'))}
-                    >
-                      {row.isReferenced ? '编辑名称' : '编辑单位'}
-                    </Button>,
-                    !canWrite,
-                    readOnlyReason,
-                  )}
-                  {row.status === 'ENABLED' &&
+                  {row.status !== 'VOIDED' &&
                     withMutationReason(
                       <Button
                         type="link"
-                        danger
                         disabled={!canWrite}
-                        onClick={() => openStatusChange(row)}
-                        {...testId(catalogTestIdControls.config.action('UNIT', row.code, 'disable'))}
+                        onClick={() => (row.isReferenced ? openNameEdit(row) : openUnitEdit(row))}
+                        {...testId(catalogTestIdControls.config.action('UNIT', row.code, 'edit'))}
                       >
-                        停用
+                        {row.isReferenced ? '编辑名称' : '编辑单位'}
                       </Button>,
                       !canWrite,
                       readOnlyReason,
                     )}
-                  {withMutationReason(
-                    <Button
-                      type="link"
-                      danger
-                      disabled={control.disabled}
-                      onClick={() => deleteUnitRow(row)}
-                      {...testId(catalogTestIdControls.config.action('UNIT', row.code, 'delete'))}
-                    >
-                      删除
-                    </Button>,
-                    control.disabled,
-                    control.reason,
-                  )}
+                  {row.status !== 'VOIDED' &&
+                    withMutationReason(
+                      <Button
+                        type="link"
+                        danger={row.status === 'ENABLED'}
+                        disabled={!canWrite}
+                        onClick={() => openStatusChange(row)}
+                        {...testId(catalogTestIdControls.config.action('UNIT', row.code, 'change-status'))}
+                      >
+                        {row.status === 'ENABLED' ? '停用' : '启用'}
+                      </Button>,
+                      !canWrite,
+                      readOnlyReason,
+                    )}
+                  {row.status !== 'VOIDED' &&
+                    withMutationReason(
+                      <Button
+                        type="link"
+                        danger
+                        disabled={control.disabled}
+                        onClick={() => voidAndPrepareRebuild(row)}
+                        {...testId(catalogTestIdControls.config.action('UNIT', row.code, 'void-rebuild'))}
+                      >
+                        作废并重建
+                      </Button>,
+                      control.disabled,
+                      control.reason,
+                    )}
                 </>
               );
             }
@@ -1658,7 +1647,9 @@ export function CatalogDictionaryDrawerState({
           setEditingUnit(undefined);
         }}
         statusChange={statusChange}
-        statusSaveLoading={transitionEntryState.isLoading || transitionTagState.isLoading || disableUnitState.isLoading}
+        statusSaveLoading={
+          transitionEntryState.isLoading || transitionTagState.isLoading || transitionUnitState.isLoading
+        }
         onChangeStatus={() => void changeStatus()}
         onCancelStatus={() => {
           setProblem(undefined);

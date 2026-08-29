@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {canCreateOwnerBinding} from './OwnerBindingList';
+import {canCreateOwnerBinding} from './ownerBindingPresentation';
 
 describe('owner binding create presentation rules', () => {
   it('allows creation only for enabled non-external-mapping profiles', () => {

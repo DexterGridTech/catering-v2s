@@ -85,16 +85,16 @@ const candidateOptions = (
 ): CandidateOption[] =>
   (values?.organizations ?? [])
     .filter(candidate => candidate.serviceNodeType === type)
-    .map(candidate => ({value: candidate.organizationRef, label: <NameCodePathText value={candidate.path} />}));
+    .map(candidate => ({value: candidate.organizationRef, label: <NameCodePathText nodes={candidate.pathNodes} />}));
 
-function operationsInvitationUrl(invitationPageUrl: string | null | undefined) {
-  if (!invitationPageUrl) return undefined;
+function operationsInvitationUrl(invitationPath: string | null | undefined) {
+  if (!invitationPath) return undefined;
   const configuredOrigin = import.meta.env.VITE_OPERATIONS_ADMIN_ORIGIN?.replace(/\/$/, '');
   const localHost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
   const fallbackOrigin = localHost
     ? `${window.location.protocol}//${window.location.hostname}:5175`
     : window.location.origin;
-  return `${configuredOrigin || fallbackOrigin}${invitationPageUrl}`;
+  return `${configuredOrigin || fallbackOrigin}${invitationPath}`;
 }
 
 export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
@@ -330,9 +330,9 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
       },
       {
         title: '任职机构',
-        dataIndex: 'targetOrganizationPath',
+        dataIndex: 'targetOrganizationPathNodes',
         search: false,
-        render: (_, row) => <NameCodePathText value={row.targetOrganizationPath} />,
+        render: (_, row) => <NameCodePathText nodes={row.targetOrganizationPathNodes} />,
       },
       {
         title: '业务角色',
@@ -348,7 +348,7 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
       },
       {
         title: '邀请链接',
-        key: 'invitationPageUrl',
+        key: 'invitationRouteFacts',
         search: false,
         render: (_, row) => {
           const href = operationsInvitationUrl(activeInvitationPageUrl(row));
@@ -643,7 +643,7 @@ function PlatformInvitationDetailDrawer({
             {
               key: 'target',
               label: '任职机构',
-              children: <NameCodePathText value={invitation.targetOrganizationPath} />,
+              children: <NameCodePathText nodes={invitation.targetOrganizationPathNodes} />,
             },
             {key: 'roles', label: '业务角色', children: invitation.roleNames.join('、')},
             {key: 'status', label: '状态', children: statusLabels[invitation.status]},

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -62,6 +63,7 @@ public class CatalogInventoryCoordinator {
     private final CatalogScopeLookup catalogScopes;
     private final CommandExecutionContextResolver commandContexts;
     private final CatalogTaskReadService catalogReads;
+    private final CatalogTemporaryPromotionOwner temporaryPromotionOwner;
 
     public CatalogInventoryCoordinator(
             CatalogOwnerApi catalog,
@@ -71,7 +73,19 @@ public class CatalogInventoryCoordinator {
             ObjectMapper mapper,
             TimeProvider time,
             CatalogScopeLookup catalogScopes) {
-        this(catalog, inventory, production, assets, mapper, time, catalogScopes, null);
+        this(catalog, inventory, production, assets, mapper, time, catalogScopes, null, null);
+    }
+
+    public CatalogInventoryCoordinator(
+            CatalogOwnerApi catalog,
+            InventoryOwnerApi inventory,
+            ProductionTagOwnerApi production,
+            PlatformAssetService assets,
+            ObjectMapper mapper,
+            TimeProvider time,
+            CatalogScopeLookup catalogScopes,
+            CommandExecutionContextResolver commandContexts) {
+        this(catalog, inventory, production, assets, mapper, time, catalogScopes, commandContexts, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -83,7 +97,8 @@ public class CatalogInventoryCoordinator {
             ObjectMapper mapper,
             TimeProvider time,
             CatalogScopeLookup catalogScopes,
-            CommandExecutionContextResolver commandContexts) {
+            CommandExecutionContextResolver commandContexts,
+            CatalogTemporaryPromotionOwner temporaryPromotionOwner) {
         this.catalog = catalog;
         this.inventory = inventory;
         this.production = production;
@@ -94,6 +109,7 @@ public class CatalogInventoryCoordinator {
         this.catalogScopes = catalogScopes;
         this.commandContexts = commandContexts;
         this.catalogReads = new CatalogTaskReadService(catalog);
+        this.temporaryPromotionOwner = temporaryPromotionOwner;
     }
 
     public JsonNode readCatalogWorkbenchContext(
@@ -166,8 +182,8 @@ public class CatalogInventoryCoordinator {
 
     /** Bounded library reads stay in the catalog owner; the edge must not reconstruct either definition aggregate. */
     public CatalogOwnerApi.AttributeDefinitionListReadback listAttributeDefinitions(
-            String dataNodeRef, String brandRef) {
-        return catalog.listAttributeDefinitions(dataNodeRef, brandRef);
+            String dataNodeRef, String brandRef, String candidateUsage) {
+        return catalog.listAttributeDefinitions(dataNodeRef, brandRef, candidateUsage);
     }
 
     /** Unit-library filtering is a catalog owner read; the coordinator does not derive its membership. */
@@ -184,8 +200,8 @@ public class CatalogInventoryCoordinator {
 
     /** Bounded library reads stay in the catalog owner; the edge must not reconstruct either definition aggregate. */
     public CatalogOwnerApi.OrderOptionDefinitionListReadback listOrderOptionDefinitions(
-            String dataNodeRef, String brandRef) {
-        return catalog.listOrderOptionDefinitions(dataNodeRef, brandRef);
+            String dataNodeRef, String brandRef, String candidateUsage) {
+        return catalog.listOrderOptionDefinitions(dataNodeRef, brandRef, candidateUsage);
     }
 
     /**
@@ -214,182 +230,199 @@ public class CatalogInventoryCoordinator {
         return result;
     }
 
-    /** Whole-group deletion cascades current config facts and only matching option-value BOM rows. */
-    @Transactional
-    public CatalogOwnerApi.OrderOptionDefinitionDeleteReadback deleteOrderOptionDefinition(
-            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
-            CatalogOwnerApi.OrderOptionDefinitionDeleteCommand command,
-            String idempotencyKey) {
-        CatalogOwnerApi.OrderOptionDefinitionDeleteReadback result =
-                catalog.deleteOrderOptionDefinition(context, command, idempotencyKey);
-        deleteOptionValueBoms(context, result.deletedDefinitionValueRefs(), idempotencyKey);
-        return result;
-    }
-
     /**
      * A temporary item promoted under a new code receives a new item identity. Catalog copies its relational definition
-     * facts, then inventory clones only the matching option-value BOM owners in this REQUIRED transaction.
+     * facts, then inventory clones the DIRECT targets in one owner-local batch and the option-value BOM owners in this
+     * REQUIRED transaction.
      */
     @Transactional
     public CatalogOwnerApi.CatalogItemCommandReadback executeTemporaryCatalogItemPromotion(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.TemporaryPromotionExecuteCommand command,
             String idempotencyKey) {
-        CatalogAuthorizationScope scope = context.ownerScope();
-        JsonNode sourceDetail = catalog.readItem(
-                scope.dataNodeId().toString(), scope.brandRef(), command.itemCode(), context.requestId());
-        UUID sourceItemRef = requiredUuid(sourceDetail.path("data").path("item").path("itemRef"), "临时商品引用");
-        CatalogOwnerApi.CatalogItemCommandReadback result =
-                catalog.executeTemporaryCatalogItemPromotion(context, command, idempotencyKey);
+        CatalogTemporaryPromotionExecution execution = requireTemporaryPromotionOwner()
+                .executeTemporaryCatalogItemPromotionWithProjection(context, command, idempotencyKey);
+        CatalogOwnerApi.CatalogItemCommandReadback result = execution.readback();
+        CatalogTemporaryPromotionProjection projection = execution.projection();
         if (command.itemCode().equals(command.formalCode())) return result;
-        JsonNode detail = catalog.readItem(
-                scope.dataNodeId().toString(), scope.brandRef(), command.formalCode(), context.requestId());
-        copyPromotedInventoryTargets(
-                context,
-                sourceItemRef,
-                sourceDetail.path("data").path("item"),
-                requiredUuid(result.resourceRef(), "转正商品引用"),
-                detail.path("data").path("item"),
-                idempotencyKey);
-        List<UUID> valueRefs =
-                definitionValueRefs(detail.path("data").path("item").path("orderOptionConfigs"));
+        copyPromotedInventoryTargets(context, projection, idempotencyKey);
+        List<UUID> valueRefs = projection.optionValueRefs();
         if (!valueRefs.isEmpty()) {
             inventory.copyCatalogOptionValueBoms(
                     context,
                     new InventoryOwnerApi.CatalogOptionValueBomCopyCommand(
-                            sourceItemRef,
-                            requiredUuid(result.resourceRef(), "转正商品引用"),
-                            command.formalCode(),
+                            projection.sourceItemRef(),
+                            projection.targetItemRef(),
+                            projection.targetItemCode(),
                             valueRefs),
                     idempotencyKey + ":temporary-promotion-option-value-boms");
         }
         return result;
     }
 
+    private CatalogTemporaryPromotionOwner requireTemporaryPromotionOwner() {
+        if (temporaryPromotionOwner == null)
+            throw new CatalogOwnerApi.Problem(
+                    "RESULT_UNKNOWN", 500, "temporary promotion projection owner is unavailable");
+        return temporaryPromotionOwner;
+    }
+
+    // spotless:off
     private void copyPromotedInventoryTargets(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
-            UUID sourceItemRef,
-            JsonNode sourceItem,
-            UUID targetItemRef,
-            JsonNode targetItem,
+            CatalogTemporaryPromotionProjection projection,
             String idempotencyKey) {
         JsonNode definition = inventory.readCatalogInventoryDefinition(
                 context.ownerScope().dataNodeId().toString(),
                 context.ownerScope().brandRef(),
-                sourceItemRef.toString(),
+                projection.sourceItemRef().toString(),
                 context.requestId());
         JsonNode sourceNodes = definition.path("data").path("inventoryRules").path("nodes");
-        if (!sourceNodes.isArray()) return;
-        String measureMode = sourceItem.path("measureMode").asText("");
-        if (measureMode.isBlank())
+        ObjectNode request = buildTemporaryPromotionInventoryRulesCommand(projection, sourceNodes);
+        if (request.path("nodes").isEmpty()) return;
+        InventoryOwnerApi.CatalogItemSaveReadback inventoryReadback = inventory.replaceCatalogInventoryRules(
+                context,
+                new InventoryOwnerApi.CatalogInventoryRulesReplaceCommand(canonicalLocalJson(request)),
+                idempotencyKey + ":temporary-promotion-inventory-rules");
+        validateTemporaryPromotionInventoryReadback(inventoryReadback, request);
+    }
+
+    /** Builds the existing inventory-owner whole-save shape without leaking source target identities to the target. */
+    private ObjectNode buildTemporaryPromotionInventoryRulesCommand(
+            CatalogTemporaryPromotionProjection projection, JsonNode sourceNodes) {
+        if (sourceNodes == null || !sourceNodes.isArray())
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "临时商品库存规则无法读取");
+        String measureMode = projection.sourceMeasureMode();
+        if (measureMode == null || measureMode.isBlank())
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "临时商品缺少 measureMode");
+        ObjectNode request = mapper.createObjectNode()
+                .put("itemRef", projection.targetItemRef().toString())
+                .put("itemCode", projection.targetItemCode())
+                .put("measureMode", measureMode);
+        ArrayNode targetNodes = request.putArray("nodes");
+        for (JsonNode sourceNode : sourceNodes)
+            appendTemporaryPromotionDirectTarget(targetNodes, sourceNode, projection);
+        return request;
+    }
+
+    private void appendTemporaryPromotionDirectTarget(
+            ArrayNode targetNodes, JsonNode sourceNode, CatalogTemporaryPromotionProjection projection) {
+        String mode = sourceNode.path("mode").asText("");
+        if (mode.isBlank())
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "临时商品库存对象缺少 inventory mode");
+        if (!"DIRECT".equals(mode)) return;
+
+        String skuCode = sourceNode.path("skuCode").asText("");
+        CatalogTemporaryPromotionSkuFact targetSku =
+                skuCode.isBlank() ? null : projection.targetSkus().get(skuCode);
+        if (!skuCode.isBlank() && (targetSku == null || targetSku.productSkuRef() == null))
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "转正商品缺少源 SKU");
+        InventoryOwnerApi.UnitSnapshot consumption = skuCode.isBlank()
+                ? projection.targetBaseMeasureUnit()
+                : targetSku.baseMeasureUnit();
+        if (consumption == null)
             throw new CatalogOwnerApi.Problem(
-                    "RESULT_UNKNOWN",
-                    500,
-                    /* format-wrap */
-                    "临时商品缺少 measureMode");
-        for (JsonNode sourceNode : sourceNodes) {
-            String mode = sourceNode.path("mode").asText("");
-            if (mode.isBlank())
-                throw new CatalogOwnerApi.Problem(
-                        "RESULT_UNKNOWN",
-                        500,
-                        /* format-wrap */
-                        "临时商品库存对象缺少 inventory mode");
-            if (!"DIRECT".equals(mode)) continue;
-            String skuCode = sourceNode.path("skuCode").asText("");
-            JsonNode targetSku = skuCode.isBlank() ? null : findSku(targetItem.path("skus"), skuCode);
-            String productSkuRef =
-                    targetSku == null ? null : requiredOpaqueTaskRef(targetSku, "productSkuRef", "转正商品 SKU");
-            JsonNode consumption =
-                    skuCode.isBlank() ? targetItem.path("baseMeasureUnit") : targetSku.path("baseMeasureUnit");
-            if (!consumption.isObject())
-                throw new CatalogOwnerApi.Problem(
-                        "BASE_MEASURE_UNIT_REQUIRED",
-                        422,
-                        /* format-wrap */
-                        "转正商品库存对象缺少基础计量单位");
-            ObjectNode request = mapper.createObjectNode()
-                    .put("itemRef", targetItemRef.toString())
-                    .put("itemCode", targetItem.path("code").asText())
-                    .put("mode", mode)
-                    .put("measureMode", measureMode)
-                    .set("consumptionUnitSnapshot", consumption.deepCopy());
-            if (productSkuRef == null) request.putNull("productSkuRef");
-            else request.put("productSkuRef", productSkuRef);
-            if (skuCode.isBlank()) request.putNull("skuCode");
-            else request.put("skuCode", skuCode);
-            ObjectNode configuration = sourceNode.path("configuration").isObject()
-                    ? ((ObjectNode) sourceNode.path("configuration")).deepCopy()
-                    : mapper.createObjectNode();
-            JsonNode counting = configuration.path("countingUnitSnapshot");
-            if (counting.isObject() && counting.hasNonNull("unitRef"))
-                configuration.put("countingUnitRef", counting.path("unitRef").asText());
-            request.set("configuration", configuration);
-            inventory.ensureCatalogItemSaveTarget(
-                    context,
-                    new InventoryOwnerApi.CatalogItemSaveEnsureTargetCommand(canonicalLocalJson(request)),
-                    idempotencyKey + ":temporary-promotion-target:" + (skuCode.isBlank() ? "ITEM" : skuCode));
+                    "BASE_MEASURE_UNIT_REQUIRED", 422, "转正商品库存对象缺少基础计量单位");
+        JsonNode sourceConfiguration = sourceNode.path("directConfiguration");
+        if (!sourceConfiguration.isObject())
+            throw new CatalogOwnerApi.Problem(
+                    "RESULT_UNKNOWN", 500, "临时商品库存对象缺少 directConfiguration");
+
+        ObjectNode node = targetNodes.addObject();
+        ObjectNode owner = node.putObject("owner")
+                .put("ownerType", skuCode.isBlank() ? "ITEM" : "SKU")
+                .put("itemRef", projection.targetItemRef().toString());
+        if (targetSku == null) owner.putNull("productSkuRef");
+        else owner.put("productSkuRef", targetSku.productSkuRef().toString());
+        owner.putNull("optionValueRef").put("itemCode", projection.targetItemCode());
+        if (skuCode.isBlank()) owner.putNull("skuCode");
+        else owner.put("skuCode", skuCode);
+        owner.putNull("optionValueCode");
+
+        node.put("itemCode", projection.targetItemCode())
+                .put("mode", mode)
+                .put("componentEligible", sourceNode.path("componentEligible").asBoolean(false));
+        node.set("consumptionUnitSnapshot", mapper.valueToTree(consumption));
+        node.putNull("expectedTargetVersion").putNull("expectedBomVersion");
+        ObjectNode directConfiguration = ((ObjectNode) sourceConfiguration).deepCopy();
+        directConfiguration.remove("targetRef");
+        directConfiguration.remove("version");
+        directConfiguration.remove("consumptionUnitSnapshot");
+        JsonNode countingUnitSnapshot = directConfiguration.path("countingUnitSnapshot");
+        if (!directConfiguration.hasNonNull("countingUnitRef") && countingUnitSnapshot.isObject()) {
+            String countingUnitRef = countingUnitSnapshot.path("unitRef").asText("");
+            if (!countingUnitRef.isBlank()) directConfiguration.put("countingUnitRef", countingUnitRef);
         }
+        node.set("directConfiguration", directConfiguration);
+        node.putNull("bom");
+        if (skuCode.isBlank()) node.putNull("skuCode");
+        else node.put("skuCode", skuCode);
+        node.putNull("optionValueCode");
     }
 
-    private static JsonNode findSku(JsonNode skus, String skuCode) {
-        if (skus.isArray())
-            for (JsonNode sku : skus) if (skuCode.equals(sku.path("skuCode").asText())) return sku;
-        throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "转正商品缺少源 SKU");
-    }
-
-    private static List<UUID> definitionValueRefs(JsonNode configs) {
-        if (!configs.isArray()) return List.of();
-        java.util.LinkedHashSet<UUID> refs = new java.util.LinkedHashSet<>();
-        for (JsonNode config : configs)
-            if (config.path("values").isArray())
-                for (JsonNode value : config.path("values"))
-                    refs.add(requiredUuid(value.path("definitionValueRef"), "点单选项库值引用"));
-        return List.copyOf(refs);
-    }
-
-    private static UUID requiredUuid(JsonNode value, String field) {
-        if (!value.isTextual())
-            throw new CatalogOwnerApi.Problem(
-                    "RESULT_UNKNOWN",
-                    500,
-                    field +
-                            /* format-wrap */
-                            "缺失，无法复制转正后的扣料事实");
+    /**
+     * The batch owner command returns the complete inventory definition. Reject a partial or mixed-owner readback so a
+     * successful catalog promotion can never hide one target's authoritative facts.
+     */
+    private void validateTemporaryPromotionInventoryReadback(
+            InventoryOwnerApi.CatalogItemSaveReadback readback, ObjectNode request) {
+        if (readback == null || readback.canonicalJson() == null || readback.canonicalJson().isBlank())
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "临时商品库存规则保存后无法读取");
         try {
-            return UUID.fromString(value.asText());
-        } catch (IllegalArgumentException invalid) {
+            JsonNode envelope = mapper.readTree(readback.canonicalJson());
+            JsonNode data = envelope.path("data");
+            if (!request.path("itemRef").asText().equals(data.path("itemRef").asText()))
+                throw new CatalogOwnerApi.Problem(
+                        "RESULT_UNKNOWN", 500, "临时商品库存规则 readback 商品不一致");
+            JsonNode actualNodes = data.path("inventoryRules").path("nodes");
+            if (!actualNodes.isArray())
+                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "临时商品库存规则 readback 不完整");
+
+            Set<String> expectedOwners = new LinkedHashSet<>();
+            for (JsonNode node : request.path("nodes")) expectedOwners.add(temporaryPromotionOwnerKey(node));
+            Set<String> actualOwners = new LinkedHashSet<>();
+            for (JsonNode node : actualNodes) {
+                String ownerKey = temporaryPromotionOwnerKey(node);
+                if (!actualOwners.add(ownerKey))
+                    throw new CatalogOwnerApi.Problem(
+                            "RESULT_UNKNOWN", 500, "临时商品库存规则 readback 包含重复 owner");
+                JsonNode direct = node.path("directConfiguration");
+                if (!"DIRECT".equals(node.path("mode").asText(""))
+                        || !direct.isObject()
+                        || !direct.path("targetRef").isTextual()
+                        || direct.path("targetRef").asText().isBlank()
+                        || !direct.path("version").canConvertToLong()
+                        || !direct.path("consumptionUnitSnapshot").isObject())
+                    throw new CatalogOwnerApi.Problem(
+                            "RESULT_UNKNOWN", 500, "临时商品库存规则 readback 缺少 owner 事实");
+            }
+            if (!expectedOwners.equals(actualOwners))
+                throw new CatalogOwnerApi.Problem(
+                        "RESULT_UNKNOWN", 500, "临时商品库存规则 readback 丢失 owner 事实");
+        } catch (CatalogOwnerApi.Problem failure) {
+            throw failure;
+        } catch (Exception failure) {
             throw new CatalogOwnerApi.Problem(
-                    "RESULT_UNKNOWN",
-                    500,
-                    field +
-                            /* format-wrap */
-                            "无效，无法复制转正后的扣料事实",
-                    invalid);
+                    "RESULT_UNKNOWN", 500, "临时商品库存规则 readback 无效", failure);
         }
     }
 
-    private static UUID requiredUuid(String value, String field) {
-        if (value == null || value.isBlank())
+    private String temporaryPromotionOwnerKey(JsonNode node) {
+        JsonNode owner = node == null ? null : node.path("owner");
+        String ownerType = owner.path("ownerType").asText("");
+        String itemRef = owner.path("itemRef").asText("");
+        if (!Set.of("ITEM", "SKU").contains(ownerType) || itemRef.isBlank())
             throw new CatalogOwnerApi.Problem(
-                    "RESULT_UNKNOWN",
-                    500,
-                    field +
-                            /* format-wrap */
-                            "缺失，无法复制转正后的扣料事实");
-        try {
-            return UUID.fromString(value);
-        } catch (IllegalArgumentException invalid) {
+                    "RESULT_UNKNOWN", 500, "临时商品库存规则 readback owner 身份无效");
+        if ("ITEM".equals(ownerType)) return ownerType + ":" + itemRef;
+        String productSkuRef = owner.path("productSkuRef").asText("");
+        if (productSkuRef.isBlank())
             throw new CatalogOwnerApi.Problem(
-                    "RESULT_UNKNOWN",
-                    500,
-                    field +
-                            /* format-wrap */
-                            "无效，无法复制转正后的扣料事实",
-                    invalid);
-        }
+                    "RESULT_UNKNOWN", 500, "临时商品库存规则 readback SKU 身份缺失");
+        return ownerType + ":" + itemRef + ":" + productSkuRef;
     }
 
+    // spotless:on
     public JsonNode readInventoryTargets(
             String dataNodeRef, String brandRef, ObjectNode request, String requestId, String dataNodeType) {
         // Catalog name/code/category predicates are part of the explicit inventory
@@ -1971,8 +2004,10 @@ public class CatalogInventoryCoordinator {
                 String targetRef = row.path("targetRef").asText();
                 String factKind = row.path("factKind").asText("");
                 String reasonLabel = row.path("reasonLabel").asText("");
+                // spotless:off
                 if (factKind.isBlank())
                     throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存作废限制事实缺少类型");
+                // spotless:on
                 if (!reasonLabel.isBlank())
                     targetRefsByReason
                             .computeIfAbsent(reasonLabel, ignored -> new java.util.LinkedHashSet<>())
@@ -2019,10 +2054,14 @@ public class CatalogInventoryCoordinator {
             if (targetRef.isBlank()) return;
             String factKind = node.path("factKind").asText("");
             String reasonLabel = node.path("reasonLabel").asText("");
+            // spotless:off
             if (factKind.isBlank())
                 throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存作废限制事实缺少类型");
+            // spotless:on
             if (!reasonLabel.isBlank())
-                targetRefsByReason.computeIfAbsent(reasonLabel, ignored -> new java.util.LinkedHashSet<>()).add(targetRef);
+                targetRefsByReason
+                        .computeIfAbsent(reasonLabel, ignored -> new java.util.LinkedHashSet<>())
+                        .add(targetRef);
             boolean known = false;
             for (JsonNode reference : references) {
                 if (targetRef.equals(reference.path("referenceRef").asText(""))) {
@@ -2039,9 +2078,9 @@ public class CatalogInventoryCoordinator {
     }
 
     /**
-     * Direct stock targets and BOM consumption are different user-visible blocking facts.  Both item and SKU
-     * detail projections consume this single helper so inventory cannot disable a void action without preserving
-     * the business reason that the inventory definition supplied.
+     * Direct stock targets and BOM consumption are different user-visible blocking facts. Both item and SKU detail
+     * projections consume this single helper so inventory cannot disable a void action without preserving the business
+     * reason that the inventory definition supplied.
      */
     private static void appendInventoryVoidBlockingReasons(
             ArrayNode reasons, java.util.Map<String, java.util.Set<String>> targetRefsByReason) {
@@ -2054,7 +2093,10 @@ public class CatalogInventoryCoordinator {
                 }
             }
             if (!present)
-                reasons.addObject().put("label", label).put("count", targetRefs.size()).putArray("relatedItemNames");
+                reasons.addObject()
+                        .put("label", label)
+                        .put("count", targetRefs.size())
+                        .putArray("relatedItemNames");
         });
     }
 
@@ -2456,3 +2498,30 @@ public class CatalogInventoryCoordinator {
         }
     }
 }
+
+/** Package-local owner capability for the temporary-promotion coordinator projection. */
+interface CatalogTemporaryPromotionOwner {
+    CatalogTemporaryPromotionExecution executeTemporaryCatalogItemPromotionWithProjection(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            CatalogOwnerApi.TemporaryPromotionExecuteCommand command,
+            String idempotencyKey);
+}
+
+record CatalogTemporaryPromotionExecution(
+        CatalogOwnerApi.CatalogItemCommandReadback readback, CatalogTemporaryPromotionProjection projection) {}
+
+record CatalogTemporaryPromotionProjection(
+        UUID sourceItemRef,
+        String sourceMeasureMode,
+        UUID targetItemRef,
+        String targetItemCode,
+        InventoryOwnerApi.UnitSnapshot targetBaseMeasureUnit,
+        Map<String, CatalogTemporaryPromotionSkuFact> targetSkus,
+        List<UUID> optionValueRefs) {
+    CatalogTemporaryPromotionProjection {
+        targetSkus = targetSkus == null ? Map.of() : Map.copyOf(targetSkus);
+        optionValueRefs = optionValueRefs == null ? List.of() : List.copyOf(optionValueRefs);
+    }
+}
+
+record CatalogTemporaryPromotionSkuFact(UUID productSkuRef, InventoryOwnerApi.UnitSnapshot baseMeasureUnit) {}

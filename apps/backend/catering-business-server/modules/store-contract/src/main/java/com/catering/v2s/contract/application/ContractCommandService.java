@@ -17,7 +17,6 @@ import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +74,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
     @Override
     @Transactional
     public StoreContractReadback create(CreateCommand command) {
-        var context = stores.requireStoreContractContext(
+        var context = stores.requireStoreContractContextForCreate(
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.storeId());
         if (!context.projectId().equals(command.projectId())) throw new ContractValidationException();
         requireProjectGrant(
@@ -142,6 +141,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
 
     private StoreContractReadback createSubmission(
             CreateCommand command, StoreContractLookup.StoreContractContext context) {
+        requireCreateStoreAndTenantEnabled(context);
         if (!context.projectId().equals(command.projectId())) throw new ContractValidationException();
         List<ItemInput> items = itemInputs(command.items());
         validateContract(
@@ -340,7 +340,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             List<ItemInput> items,
             Map<String, String> extensionValues,
             AuditActor actor) {
-        var context = stores.requireStoreContractContext(workspaceUuid, key, storeId);
+        var context = stores.requireStoreContractContextForCreate(workspaceUuid, key, storeId);
         return create(
                 workspaceUuid,
                 key,
@@ -371,6 +371,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             Map<String, String> extensionValues,
             AuditActor actor,
             StoreContractLookup.StoreContractContext context) {
+        requireCreateStoreAndTenantEnabled(context);
         if (!context.projectId().equals(projectId)) throw new ContractValidationException();
         validateContract(from, to, phaseName, context.projectPhaseNames(), items);
         validateValues(workspaceUuid, key, extensionValues);
@@ -499,7 +500,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             String idempotencyKey,
             AuditActor actor,
             OperationsOwnerScopeGrant ownerScopeGrant) {
-        var context = stores.requireStoreContractContext(workspaceUuid, key, storeId);
+        var context = stores.requireStoreContractContextForCreate(workspaceUuid, key, storeId);
         if (!context.projectId().equals(projectId)) throw new ContractValidationException();
         requireProjectGrant(workspaceUuid, key, context.projectId(), ownerScopeGrant);
         return receipts.execute(
@@ -958,6 +959,12 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                         != items.size()) throw new ContractValidationException();
     }
 
+    private static void requireCreateStoreAndTenantEnabled(StoreContractLookup.StoreContractContext context) {
+        if (!"ENABLED".equals(context.storeStatus()) || !"ENABLED".equals(context.tenantStatus())) {
+            throw new ContractValidationException();
+        }
+    }
+
     private static void requireProjectGrant(
             UUID workspaceUuid, String key, UUID projectId, OperationsOwnerScopeGrant ownerScopeGrant) {
         if (ownerScopeGrant == null
@@ -997,6 +1004,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
         try {
             ExtensionDefinitionReadback definition =
                     definitions.requireDefinition(workspaceUuid, key, ExtensionHostTypes.CONTRACT);
+            if (!actual.isEmpty()) ExtensionDefinitionService.requireConsumableDefinition(definition);
             Map<String, ExtensionDefinitionReadback.Field> fields = definition.fields().stream()
                     .collect(java.util.stream.Collectors.toMap(
                             ExtensionDefinitionReadback.Field::fieldKey, field -> field));
@@ -1009,6 +1017,8 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                 throw new ContractValidationException();
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (!actual.isEmpty()) throw new ContractValidationException(absent);
+        } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
+            throw new ContractValidationException(invalid);
         }
     }
 
@@ -1065,57 +1075,40 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                     if (!result.next()) throw new ContractNotFoundException();
                     return result.getString(1);
                 });
-        ObjectNode merged;
-        try {
-            JsonNode parsed = JSON.readTree(current);
-            if (!parsed.isObject()) throw new ContractValidationException();
-            merged = (ObjectNode) parsed;
-        } catch (java.io.IOException failure) {
-            throw new ContractValidationException(failure);
-        }
         ExtensionDefinitionReadback definition;
         try {
             definition = definitions.requireDefinition(workspaceUuid, key, ExtensionHostTypes.CONTRACT);
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (values != null && !values.isEmpty()) throw new ContractValidationException(absent);
+            validateExistingExtensionValues(current);
             jdbc.update(
                     "UPDATE contract.store_contract SET extension_values=CAST(? AS JSONB), extension_rule_revision=? "
                             + "WHERE id=?",
-                    merged.toString(),
+                    current,
                     0L,
                     id);
             return;
         }
-        Map<String, ExtensionDefinitionReadback.Field> fields = definition.fields().stream()
-                .collect(
-                        java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, field -> field));
-        if (values != null)
-            for (var value : values.entrySet()) {
-                ExtensionDefinitionReadback.Field field = fields.get(value.getKey());
-                if (field == null) throw new ContractValidationException();
-                if ("DISABLED".equals(field.status())) continue;
-                if (isJsonNull(value.getValue())) {
-                    merged.remove(value.getKey());
-                    continue;
-                }
-                if (!validJsonValue(field, value.getValue())) throw new ContractValidationException();
-                try {
-                    merged.set(value.getKey(), JSON.readTree(value.getValue()));
-                } catch (java.io.IOException failure) {
-                    throw new ContractValidationException(failure);
-                }
-            }
-        if (fields.values().stream()
-                .filter(field -> "ENABLED".equals(field.status()) && field.required())
-                .anyMatch(field -> !merged.hasNonNull(field.fieldKey())
-                        || !validJsonValue(field, merged.get(field.fieldKey()).toString())))
-            throw new ContractValidationException();
+        final String merged;
+        try {
+            merged = ExtensionDefinitionService.mergeValues(definition, current, values);
+        } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
+            throw new ContractValidationException(invalid);
+        }
         jdbc.update(
                 "UPDATE contract.store_contract SET extension_values=CAST(? AS JSONB), extension_rule_revision=? WHERE "
                         + "id=?",
                 merged.toString(),
                 definition.version(),
                 id);
+    }
+
+    private static void validateExistingExtensionValues(String current) {
+        try {
+            ExtensionDefinitionService.readValues(current);
+        } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
+            throw new ContractValidationException(invalid);
+        }
     }
 
     private void replaceValues(UUID id, UUID workspaceUuid, String key, ExtensionSubmission submission) {

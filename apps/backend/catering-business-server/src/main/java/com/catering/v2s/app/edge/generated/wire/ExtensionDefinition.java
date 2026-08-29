@@ -6,5 +6,7 @@ public record ExtensionDefinition(
     ExtensionEntityType entityType,
     java.util.List<ExtensionDefinitionDefinitionsItem> definitions,
     Long revision,
-    Long updatedAt
+    Long updatedAt,
+    GroupWorkspaceStatus workspaceStatus,
+    java.util.List<ExtensionDefinitionBlocker> blockers
 ) {}

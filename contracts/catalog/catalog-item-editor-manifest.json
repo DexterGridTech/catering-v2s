@@ -24,16 +24,13 @@
   ],
   "enumLabels": {
     "catalogItemStatus": {
-      "DRAFT": "草稿",
       "ENABLED": "启用",
       "DISABLED": "停用",
-      "ARCHIVED": "已归档",
       "VOIDED": "已作废"
     },
     "skuStatus": {
       "ENABLED": "启用",
       "DISABLED": "停用",
-      "ARCHIVED": "已归档",
       "VOIDED": "已作废"
     },
     "dictionaryEntryStatus": {
@@ -45,7 +42,6 @@
       "ALL": "全部商品",
       "EXTERNAL_ORDER_TEMP": "外部订单临时商品",
       "INACTIVE": "未启用商品",
-      "ARCHIVED": "已归档商品",
       "RECENTLY_UPDATED": "最近更新",
       "AUTO_SYNC": "自动同步商品"
     },
@@ -154,10 +150,9 @@
       "DISABLED"
     ],
     "excludedStatuses": [
-      "ARCHIVED",
       "VOIDED"
     ],
-    "description": "存在至少一个未归档、未作废的规格即视为按规格管理。"
+    "description": "存在至少一个未作废的规格即视为按规格管理。"
   },
   "shapeAdmission": {
     "source": "shapeKey",
@@ -259,7 +254,8 @@
         "query": {
           "dataNodeRef": {
             "context": "scope.dataNodeRef"
-          }
+          },
+          "candidateUsage": "ITEM_ASSIGNMENT"
         },
         "headers": {},
         "itemsPath": "data.definitions",
@@ -286,7 +282,8 @@
         "query": {
           "dataNodeRef": {
             "context": "scope.dataNodeRef"
-          }
+          },
+          "candidateUsage": "ITEM_ASSIGNMENT"
         },
         "headers": {},
         "itemsPath": "data.definitions",
@@ -439,15 +436,20 @@
       "helpText": "选择已选组件商品中的规格。",
       "optionSourceRef": {
         "kind": "endpoint",
-        "operationId": "getOperationsCatalogItem",
+        "operationId": "getOperationsCatalogItemSkus",
         "path": {
           "itemCode": {
             "context": "compositeGroups[].components[].itemCode"
           }
         },
-        "query": {},
+        "query": {
+          "dataNodeRef": {
+            "context": "scope.dataNodeRef"
+          },
+          "candidateUsage": "COMPOSITE_COMPONENT"
+        },
         "headers": {},
-        "itemsPath": "data.item.skus",
+        "itemsPath": "data.items",
         "valueField": "productSkuRef",
         "labelParts": [
           "skuName"
@@ -2809,7 +2811,7 @@
         "DISABLED"
       ],
       "excludedStatuses": [
-        "ARCHIVED"
+        "VOIDED"
       ]
     },
     "mediaLimits": {
@@ -3306,5 +3308,5 @@
       "data"
     ]
   },
-  "manifestDigest": "9378d635bd8e7648cad0a6d44e0d7d57d4bc138fb09108feb6520f528b3cdabf"
+  "manifestDigest": "fa563828651978a17e40d91f2d0b1c797a81088e6757d00d2a8331498ec3acdc"
 }

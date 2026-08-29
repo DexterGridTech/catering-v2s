@@ -19,6 +19,7 @@ import com.catering.v2s.app.edge.operations.session.OperationsSessionCookie;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.workspace.iam.api.WorkspaceInvitationReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceOperationsCommandApi;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
@@ -150,7 +151,11 @@ class OperationsWorkspaceInvitationServerScopeTest {
                         "13800000000",
                         "平台管理员",
                         "STORE",
-                        "group/store",
+                        List.of(
+                                new OrganizationTaskPathLookup.TaskPathNode(
+                                        UUID.randomUUID(), "group", "Group", "GROUP"),
+                                new OrganizationTaskPathLookup.TaskPathNode(
+                                        UUID.randomUUID(), "store", "Store", "STORE")),
                         List.of("Store manager"),
                         "PENDING",
                         1L,
@@ -255,7 +260,11 @@ class OperationsWorkspaceInvitationServerScopeTest {
                         "13800000000",
                         "平台管理员",
                         "PROJECT",
-                        "group/project",
+                        List.of(
+                                new OrganizationTaskPathLookup.TaskPathNode(
+                                        UUID.randomUUID(), "group", "Group", "GROUP"),
+                                new OrganizationTaskPathLookup.TaskPathNode(
+                                        UUID.randomUUID(), "project", "Project", "PROJECT")),
                         List.of("Project manager"),
                         "CANCELLED",
                         2L,
@@ -311,7 +320,11 @@ class OperationsWorkspaceInvitationServerScopeTest {
                         "13800000000",
                         "平台管理员",
                         "PROJECT",
-                        "group/project",
+                        List.of(
+                                new OrganizationTaskPathLookup.TaskPathNode(
+                                        UUID.randomUUID(), "group", "Group", "GROUP"),
+                                new OrganizationTaskPathLookup.TaskPathNode(
+                                        UUID.randomUUID(), "project", "Project", "PROJECT")),
                         List.of("Project manager"),
                         "ACTIVE",
                         2L,

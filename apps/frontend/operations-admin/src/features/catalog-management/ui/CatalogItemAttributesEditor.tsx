@@ -42,8 +42,20 @@ export function CatalogItemAttributesEditor({
       ),
     [headers, scopeRef],
   );
+  const candidateRequest = useMemo(
+    () =>
+      catalogInventoryRtkRequest.listOperationsCatalogAttributeDefinitions(
+        {},
+        {query: {dataNodeRef: wireUuid(scopeRef ?? ''), candidateUsage: 'ITEM_ASSIGNMENT'}, headers},
+      ),
+    [headers, scopeRef],
+  );
   const query = operationsRtk.useListOperationsCatalogAttributeDefinitionsQuery(request, {skip: !scopeRef || locked});
+  const candidateQuery = operationsRtk.useListOperationsCatalogAttributeDefinitionsQuery(candidateRequest, {
+    skip: !scopeRef || locked,
+  });
   const definitions = query.currentData?.data.definitions ?? [];
+  const candidateDefinitions = candidateQuery.currentData?.data.definitions ?? [];
   if (locked)
     return (
       <Space direction="vertical" style={{display: 'flex'}}>
@@ -51,7 +63,7 @@ export function CatalogItemAttributesEditor({
         <AttributeAssignmentsReadOnly values={readOnlyValues} />
       </Space>
     );
-  const availableDefinitions = definitions.filter(
+  const availableDefinitions = candidateDefinitions.filter(
     definition => !values.some(value => value.definitionRef === definition.definitionRef),
   );
   const commit = (next: CatalogAttributeAssignment[]) => {
@@ -60,7 +72,7 @@ export function CatalogItemAttributesEditor({
   };
   const addDefinitions = () => {
     const selected = new Set(pendingDefinitionRefs);
-    const additions = definitions
+    const additions = candidateDefinitions
       .filter(
         definition =>
           selected.has(definition.definitionRef) &&
@@ -93,7 +105,7 @@ export function CatalogItemAttributesEditor({
           setAddOpen(true);
         }}
         disabled={!availableDefinitions.length}
-        loading={query.isFetching}
+        loading={query.isFetching || candidateQuery.isFetching}
         {...testId(catalogTestIds.static.itemAttributeLibraryAdd)}
       >
         添加商品属性

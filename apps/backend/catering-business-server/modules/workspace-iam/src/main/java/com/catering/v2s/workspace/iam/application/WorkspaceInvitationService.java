@@ -17,7 +17,6 @@ import com.catering.v2s.platform.foundation.seed.DevFixedOtpIssuer;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog.UserManagementAction;
 import com.catering.v2s.workspace.iam.api.WorkspaceInvitationReadback;
-import com.catering.v2s.workspace.iam.api.WorkspaceRoleReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -229,9 +228,25 @@ public class WorkspaceInvitationService {
         singleTargetType(intents);
         singleTargetId(intents);
         String normalizedMobile = normalizedMobile(mobile);
+        AccountPresence accountPresence = accountPresence(workspaceUuid, groupWorkspaceKey, normalizedMobile);
+        requireBindableAccount(accountPresence);
+        Map<UUID, InvitationRoleFact> rolesById = requireEnabledInvitationRoles(
+                workspaceUuid,
+                groupWorkspaceKey,
+                intents.stream().map(AssignmentIntent::roleId).toList());
         String raw = randomToken();
         UUID invitationId = UUID.randomUUID();
         long now = time.currentEpochMillis();
+        Invitation pending = new Invitation(
+                invitationId, workspaceUuid, groupWorkspaceKey, normalizedMobile, "PENDING", expiresAtEpochMillis, 1);
+        for (AssignmentIntent intent : intents) {
+            InvitationRoleFact role = rolesById.get(intent.roleId());
+            if (role == null) throw new InvitationValidationException();
+            if (!role.serviceNodeType().equals(intent.serviceNodeType())) throw new InvitationValidationException();
+        }
+        // A create command admits exactly one service-node target. Its enterability is a command fact, not a
+        // per-role fact; validating it once preserves the same guard without multiplying organization reads.
+        requireEnterable(pending, intents.getFirst());
         jdbc.update(
                 "INSERT INTO workspace_iam.invitation (id, workspace_uuid, group_workspace_key, token_hash, "
                         + "invitation_token, mobile_normalized, issuer_display_name_snapshot, status, "
@@ -246,20 +261,6 @@ public class WorkspaceInvitationService {
                 actor.displaySnapshot(),
                 expiresAtEpochMillis,
                 now);
-        Map<UUID, WorkspaceRoleReadback> rolesById = roles.requireAll(
-                workspaceUuid,
-                groupWorkspaceKey,
-                intents.stream().map(AssignmentIntent::roleId).toList());
-        Invitation pending = new Invitation(
-                invitationId, workspaceUuid, groupWorkspaceKey, normalizedMobile, "PENDING", expiresAtEpochMillis, 1);
-        for (AssignmentIntent intent : intents) {
-            WorkspaceRoleReadback role = rolesById.get(intent.roleId());
-            if (role == null) throw new InvitationValidationException();
-            if (!role.serviceNodeType().equals(intent.serviceNodeType())) throw new InvitationValidationException();
-        }
-        // A create command admits exactly one service-node target. Its enterability is a command fact, not a
-        // per-role fact; validating it once preserves the same guard without multiplying organization reads.
-        requireEnterable(pending, intents.getFirst());
         for (AssignmentIntent intent : intents) {
             jdbc.update(
                     "INSERT INTO workspace_iam.invitation_assignment_intent (invitation_id, role_id, "
@@ -284,7 +285,7 @@ public class WorkspaceInvitationService {
                 null,
                 raw);
         List<String> roleNames = rolesById.values().stream()
-                .map(WorkspaceRoleReadback::name)
+                .map(InvitationRoleFact::name)
                 .sorted()
                 .toList();
         return new CreatedInvitation(readback, roleNames);
@@ -428,8 +429,6 @@ public class WorkspaceInvitationService {
     private ManagementInvitationView createdManagementView(
             CreatedInvitation created, OrganizationTaskPathLookup.TaskPath target, String issuerDisplayName) {
         WorkspaceInvitationReadback invitation = created.readback();
-        String invitationPageUrl =
-                "/operations/invitations/" + invitation.groupWorkspaceKey() + "/" + invitation.rawInvitationToken();
         return new ManagementInvitationView(
                 invitation.id(),
                 invitation.groupWorkspaceKey(),
@@ -437,7 +436,7 @@ public class WorkspaceInvitationService {
                 invitation.mobileNormalized(),
                 issuerDisplayName,
                 target.targetType(),
-                target.displayPath(),
+                target.nodes(),
                 created.roleNames(),
                 invitation.status(),
                 1L,
@@ -447,7 +446,7 @@ public class WorkspaceInvitationService {
                 invitation.consentedAtEpochMillis(),
                 invitation.completedAtEpochMillis(),
                 invitation.cancelledAtEpochMillis(),
-                invitationPageUrl);
+                invitationRouteFacts(invitation));
     }
 
     /** Owner read used by the platform detail before a CAS command; it is scoped to one workspace. */
@@ -495,11 +494,8 @@ public class WorkspaceInvitationService {
         if (intents.stream().anyMatch(intent -> !type.equals(intent.serviceNodeType()))) {
             throw new InvitationStateException();
         }
-        String targetPath = targetPath(owner(invitation), intents, paths);
-        String rawInvitationToken = invitation.rawInvitationToken();
-        String invitationPageUrl = rawInvitationToken == null
-                ? null
-                : "/operations/invitations/" + invitation.groupWorkspaceKey() + "/" + rawInvitationToken;
+        List<OrganizationTaskPathLookup.TaskPathNode> targetPathNodes =
+                targetPathNodes(owner(invitation), intents, paths);
         return new ManagementInvitationView(
                 invitation.id(),
                 invitation.groupWorkspaceKey(),
@@ -507,7 +503,7 @@ public class WorkspaceInvitationService {
                 invitation.mobileNormalized(),
                 issuerDisplayName,
                 type,
-                targetPath,
+                targetPathNodes,
                 roleNames,
                 invitation.status(),
                 1L,
@@ -517,7 +513,7 @@ public class WorkspaceInvitationService {
                 invitation.consentedAtEpochMillis(),
                 invitation.completedAtEpochMillis(),
                 invitation.cancelledAtEpochMillis(),
-                invitationPageUrl);
+                invitationRouteFacts(invitation));
     }
 
     @Transactional
@@ -744,13 +740,13 @@ public class WorkspaceInvitationService {
         String type = intents.getFirst().serviceNodeType();
         if (intents.stream().anyMatch(intent -> !type.equals(intent.serviceNodeType())))
             throw new InvitationStateException();
-        String path = targetPath(invitation, intents, paths(invitation, intents));
-        if (path.length() > 240) throw new InvitationStateException();
+        List<OrganizationTaskPathLookup.TaskPathNode> pathNodes =
+                targetPathNodes(invitation, intents, paths(invitation, intents));
         return new PublicInvitationView(
                 invitation.id(),
                 invitation.groupWorkspaceKey(),
                 type,
-                path,
+                pathNodes,
                 roleNames,
                 maskMobile(invitation.mobile()),
                 invitation.status(),
@@ -1061,15 +1057,9 @@ public class WorkspaceInvitationService {
             roles.require(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), intent.roleId());
             requireEnterable(invitation, intent);
         }
-        UUID accountId = jdbc.query(
-                "SELECT id FROM workspace_iam.workspace_account WHERE workspace_uuid=? AND group_workspace_key=? AND "
-                        + "mobile_normalized=?",
-                statement -> {
-                    statement.setObject(1, invitation.workspaceUuid());
-                    statement.setString(2, invitation.groupWorkspaceKey());
-                    statement.setString(3, invitation.mobile());
-                },
-                result -> result.next() ? result.getObject(1, UUID.class) : null);
+        AccountPresence accountPresence = accountPresence(invitation);
+        requireBindableAccount(accountPresence);
+        UUID accountId = accountPresence.accountId();
         long now = time.currentEpochMillis();
         if (accountId == null) {
             accountId = UUID.randomUUID();
@@ -1187,21 +1177,27 @@ public class WorkspaceInvitationService {
         return taskPaths.describePersistedTaskPaths(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), refs);
     }
 
-    private String targetPath(
+    private List<OrganizationTaskPathLookup.TaskPathNode> targetPathNodes(
             Invitation invitation,
             List<AssignmentIntent> intents,
             Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths) {
-        return intents.stream()
+        List<OrganizationTaskPathLookup.TaskPath> distinct = intents.stream()
                 .map(intent -> {
-                    if (taskPaths == null) return path(invitation, intent);
-                    OrganizationTaskPathLookup.TaskPath value = paths.get(new OrganizationTaskPathLookup.TaskPathRef(
+                    if (taskPaths == null) return null;
+                    return paths.get(new OrganizationTaskPathLookup.TaskPathRef(
                             intent.serviceNodeType(), intent.serviceNodeId()));
-                    if (value == null) throw new InvitationStateException();
-                    return value.displayPath();
                 })
                 .distinct()
-                .reduce((first, second) -> first + " ; " + second)
-                .orElseThrow(InvitationStateException::new);
+                .toList();
+        if (taskPaths == null) return List.of();
+        if (distinct.size() != 1 || distinct.getFirst() == null) throw new InvitationStateException();
+        return distinct.getFirst().nodes();
+    }
+
+    private static InvitationRouteFacts invitationRouteFacts(WorkspaceInvitationReadback invitation) {
+        return invitation.rawInvitationToken() == null
+                ? null
+                : new InvitationRouteFacts(invitation.groupWorkspaceKey(), invitation.rawInvitationToken());
     }
 
     private static Invitation owner(WorkspaceInvitationReadback invitation) {
@@ -1320,15 +1316,72 @@ public class WorkspaceInvitationService {
         return AuditChangeJson.write(changes);
     }
 
-    private boolean accountExists(Invitation invitation) {
-        return jdbc.queryForObject(
-                        "SELECT COUNT(*) FROM workspace_iam.workspace_account WHERE workspace_uuid=? AND "
-                                + "group_workspace_key=? AND mobile_normalized=?",
-                        Integer.class,
-                        invitation.workspaceUuid(),
-                        invitation.groupWorkspaceKey(),
-                        invitation.mobile())
-                > 0;
+    private String accountExists(Invitation invitation) {
+        return accountPresence(invitation).status().name();
+    }
+
+    private AccountPresence accountPresence(Invitation invitation) {
+        return accountPresence(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), invitation.mobile());
+    }
+
+    private AccountPresence accountPresence(UUID workspaceUuid, String groupWorkspaceKey, String mobileNormalized) {
+        return jdbc.query(
+                "SELECT id, status FROM workspace_iam.workspace_account WHERE workspace_uuid=? AND "
+                        + "group_workspace_key=? AND mobile_normalized=?",
+                statement -> {
+                    statement.setObject(1, workspaceUuid);
+                    statement.setString(2, groupWorkspaceKey);
+                    statement.setString(3, mobileNormalized);
+                },
+                result -> {
+                    if (!result.next()) return new AccountPresence(null, AccountPresenceStatus.ABSENT);
+                    return new AccountPresence(
+                            result.getObject(1, UUID.class), accountPresenceStatus(result.getString(2)));
+                });
+    }
+
+    private static AccountPresenceStatus accountPresenceStatus(String status) {
+        return switch (status) {
+            case "ENABLED" -> AccountPresenceStatus.ENABLED;
+            case "DISABLED" -> AccountPresenceStatus.DISABLED;
+            case "VOIDED" -> AccountPresenceStatus.VOIDED;
+            default -> throw new InvitationStateException();
+        };
+    }
+
+    private static void requireBindableAccount(AccountPresence presence) {
+        if (presence.status() == AccountPresenceStatus.DISABLED || presence.status() == AccountPresenceStatus.VOIDED) {
+            throw new AccountNotBindableException();
+        }
+    }
+
+    private Map<UUID, InvitationRoleFact> requireEnabledInvitationRoles(
+            UUID workspaceUuid, String groupWorkspaceKey, List<UUID> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) return Map.of();
+        java.util.LinkedHashSet<UUID> requested = new java.util.LinkedHashSet<>(roleIds);
+        if (requested.contains(null)) throw new WorkspaceRoleService.RoleNotFoundException();
+        List<UUID> ids = new ArrayList<>(requested);
+        String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
+        List<InvitationRoleFact> roles = jdbc.query(
+                "SELECT id, name, service_node_type, status FROM workspace_iam.workspace_role WHERE workspace_uuid=? "
+                        + "AND group_workspace_key=? AND id IN ("
+                        + placeholders
+                        + ") FOR UPDATE",
+                statement -> {
+                    statement.setObject(1, workspaceUuid);
+                    statement.setString(2, groupWorkspaceKey);
+                    for (int index = 0; index < ids.size(); index++) statement.setObject(index + 3, ids.get(index));
+                },
+                (row, index) -> new InvitationRoleFact(
+                        row.getObject(1, UUID.class), row.getString(2), row.getString(3), row.getString(4)));
+        if (roles.size() != ids.size()) throw new WorkspaceRoleService.RoleNotFoundException();
+        Map<UUID, InvitationRoleFact> rolesById = new LinkedHashMap<>();
+        roles.forEach(role -> rolesById.put(role.id(), role));
+        for (UUID roleId : roleIds) {
+            InvitationRoleFact role = rolesById.get(roleId);
+            if (role == null || !"ENABLED".equals(role.status())) throw new InvitationValidationException();
+        }
+        return Map.copyOf(rolesById);
     }
 
     private boolean validGrant(UUID invitationId, String rawGrant) {
@@ -1477,7 +1530,7 @@ public class WorkspaceInvitationService {
 
     public record PublicReadiness(
             String verificationGrant,
-            boolean accountExists,
+            String accountExists,
             boolean userNameReady,
             boolean loginNameReady,
             boolean passwordReady,
@@ -1489,7 +1542,7 @@ public class WorkspaceInvitationService {
             UUID invitationId,
             String groupWorkspaceKey,
             String targetOrganizationType,
-            String targetOrganizationPath,
+            List<OrganizationTaskPathLookup.TaskPathNode> targetOrganizationPathNodes,
             List<String> roleNames,
             String maskedMobile,
             String status,
@@ -1505,7 +1558,7 @@ public class WorkspaceInvitationService {
             String mobile,
             String issuerDisplayName,
             String targetOrganizationType,
-            String targetOrganizationPath,
+            List<OrganizationTaskPathLookup.TaskPathNode> targetOrganizationPathNodes,
             List<String> roleNames,
             String status,
             long generation,
@@ -1515,7 +1568,9 @@ public class WorkspaceInvitationService {
             Long consentedAt,
             Long completedAt,
             Long cancelledAt,
-            String invitationPageUrl) {}
+            InvitationRouteFacts invitationRouteFacts) {}
+
+    public record InvitationRouteFacts(String groupWorkspaceKey, String invitationToken) {}
 
     public record ManagementInvitationPageRequest(
             String mobile,
@@ -1594,6 +1649,10 @@ public class WorkspaceInvitationService {
 
     private record Progress(String loginName, String displayName, String passwordHash, UUID accountId) {}
 
+    private record AccountPresence(UUID accountId, AccountPresenceStatus status) {}
+
+    private record InvitationRoleFact(UUID id, String name, String serviceNodeType, String status) {}
+
     public static final class InvitationNotFoundException extends RuntimeException {}
 
     public static final class InvitationStateException extends RuntimeException {
@@ -1605,4 +1664,13 @@ public class WorkspaceInvitationService {
     }
 
     public static final class InvitationValidationException extends RuntimeException {}
+
+    public static final class AccountNotBindableException extends RuntimeException {}
+
+    public enum AccountPresenceStatus {
+        ABSENT,
+        ENABLED,
+        DISABLED,
+        VOIDED
+    }
 }

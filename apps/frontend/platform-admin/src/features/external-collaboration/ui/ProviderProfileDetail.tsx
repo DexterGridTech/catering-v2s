@@ -1,6 +1,12 @@
 import {ReloadOutlined} from '@ant-design/icons';
 import {Alert, Button, Card, Descriptions, Modal, Space, Tabs, Tag} from 'antd';
-import {testId, useRefreshVersion, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {
+  closedCodeLabel,
+  isKnownClosedCode,
+  testId,
+  useRefreshVersion,
+  useSubmissionLifecycle,
+} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {
@@ -11,6 +17,15 @@ import {
   type PlatformApiProblem,
 } from '../../../app/api/PlatformTransport';
 import {OwnerBindingList} from './OwnerBindingList';
+import {
+  authenticationKindLabels,
+  catalogStatusLabels,
+  organizationNodeTypeLabels,
+  providerBusinessScopeLabels,
+  unbindKindLabels,
+} from '../model/collaborationCodeLabels';
+
+const enablementStatusLabels = {ENABLED: '已启用', DISABLED: '已停用'} as const;
 
 export function ProviderProfileDetail({
   groupWorkspaceKey,
@@ -34,6 +49,7 @@ export function ProviderProfileDetail({
   const submission = useSubmissionLifecycle();
   const queryProblem = query.error ? platformProblemOf(query.error) : undefined;
   const readProblem = readbackProblem ?? queryProblem;
+  const enablementStatusKnown = profile ? isKnownClosedCode(enablementStatusLabels, profile.enablementStatus) : false;
 
   useEffect(() => {
     if (contentTabRefreshVersion > 0) void refetch();
@@ -125,7 +141,7 @@ export function ProviderProfileDetail({
             <Button
               type={profile.enablementStatus === 'ENABLED' ? 'primary' : 'default'}
               loading={pendingStatus === 'ENABLED'}
-              disabled={profile.enablementStatus === 'ENABLED' || Boolean(pendingStatus)}
+              disabled={!enablementStatusKnown || profile.enablementStatus === 'ENABLED' || Boolean(pendingStatus)}
               onClick={() =>
                 Modal.confirm({
                   title: '启用接入档案',
@@ -143,7 +159,7 @@ export function ProviderProfileDetail({
               danger
               type={profile.enablementStatus === 'DISABLED' ? 'primary' : 'default'}
               loading={pendingStatus === 'DISABLED'}
-              disabled={profile.enablementStatus === 'DISABLED' || Boolean(pendingStatus)}
+              disabled={!enablementStatusKnown || profile.enablementStatus === 'DISABLED' || Boolean(pendingStatus)}
               onClick={() =>
                 Modal.confirm({
                   title: '停用接入档案',
@@ -182,20 +198,42 @@ export function ProviderProfileDetail({
                       {
                         key: 'scope',
                         label: '支持的业务',
-                        children: profile.businessScopeDisplayNames?.join('、') || '—',
+                        children:
+                          profile.businessScope.length > 0
+                            ? profile.businessScope
+                                .map(value => closedCodeLabel(providerBusinessScopeLabels, value))
+                                .join('、')
+                            : '—',
                       },
                       {
                         key: 'nodes',
                         label: '可绑定的业务节点',
-                        children: profile.bindableNodeTypeDisplayNames?.join('、') || '—',
+                        children:
+                          profile.bindableNodeTypes.length > 0
+                            ? profile.bindableNodeTypes
+                                .map(value => closedCodeLabel(organizationNodeTypeLabels, value))
+                                .join('、')
+                            : '—',
                       },
-                      {key: 'auth', label: '认证方式', children: profile.authenticationKindDisplayName || '—'},
-                      {key: 'unbind', label: '解绑方式', children: profile.unbindKindDisplayName || '—'},
-                      {key: 'catalog', label: '目录标记', children: profile.catalogStatusDisplayName || '—'},
+                      {
+                        key: 'auth',
+                        label: '认证方式',
+                        children: closedCodeLabel(authenticationKindLabels, profile.authenticationKind),
+                      },
+                      {
+                        key: 'unbind',
+                        label: '解绑方式',
+                        children: closedCodeLabel(unbindKindLabels, profile.unbindKind),
+                      },
+                      {
+                        key: 'catalog',
+                        label: '目录标记',
+                        children: closedCodeLabel(catalogStatusLabels, profile.catalogStatus),
+                      },
                       {
                         key: 'status',
                         label: '当前空间状态',
-                        children: <Tag>{profile.enablementStatus === 'ENABLED' ? '已启用' : '已停用'}</Tag>,
+                        children: <Tag>{closedCodeLabel(enablementStatusLabels, profile.enablementStatus)}</Tag>,
                       },
                     ]}
                   />

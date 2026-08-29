@@ -94,12 +94,12 @@ FK 图只能抓到显式外键。**`template_ref` 与跨模块的 collaboration 
 
 按契约 `properties` 名去重实测 33 个(按 schema 出现次数计为 41;**口径差异是此前计数不一致的原因,以去重数为准**)。四类:
 
-1. **代码定义的闭集 → 前端建字典**:12 个(business-channel 7、collaboration 5,契约里有 `enum` 定义)
+1. **代码定义的闭集 → 前端建字典**:13 个(business-channel 7、collaboration 6；包含 `nodeTypeDisplayName`，契约响应 enum 与 owner 代码共同背书)
 2. **实体名字 → 后端返实体,不是病**:`bindingDisplayName`、`externalSystemDisplayName`、`providerDisplayName`、`productionDisplayName` 等
 3. **装配产物 → 按机制删装配**:`categoryPathLabels`、`blockingReferenceLabels`、`relationLabel`、`actionGroupLabel`、`businessScopeDisplayNames`、`stopReasonDisplayNames`、`itemSummary`
 4. **时点快照 / 结构化聚合 → 保留**:`actorDisplayName`、`auditSummary`(§0.1 例外);`skuSummary`、`inventoryDeductionSummary`、`changeSummary`、`conversionSummary`(§1.3 owner 拥有的结构化事实)
 
-⚠️ **第 2、3 类是按字段名启发式分的,实施前必须逐个打开确认。** 第 1 类有契约 `enum` 背书,可靠。
+⚠️ **第 2、3 类是按字段名启发式分的,实施前必须逐个打开确认。** 第 1 类按 owner 代码定义的闭集与契约响应 enum 逐项背书,以 exact matrix 为准。
 
 ### 2.6 接口数量 consumer(对应裁定 17)
 

@@ -3,7 +3,8 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public enum WorkspaceRoleStatus {
     ENABLED,
-    DISABLED;
+    DISABLED,
+    VOIDED;
 
     public String wire() { return name(); }
 }

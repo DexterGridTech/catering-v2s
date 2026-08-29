@@ -14,7 +14,6 @@ import com.catering.v2s.organization.api.OperationsCommercialGroupCommandApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationProblem;
 import com.catering.v2s.organization.api.UpdateCommercialGroupCommand;
-import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.platform.access.PlatformExecutionContext;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
@@ -24,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -40,13 +40,27 @@ public class OrganizationCommandService
     private final ExtensionDefinitionLookup definitions;
     private final CommercialGroupCommandReceiptService receipts;
 
-    public OrganizationCommandService(JdbcTemplate jdbcTemplate, WorkspaceStatusLookup workspaces, TimeProvider time) {
+    public OrganizationCommandService(JdbcTemplate jdbcTemplate, Object workspaces, TimeProvider time) {
+        this(jdbcTemplate, time, null, new CommercialGroupCommandReceiptService(jdbcTemplate, time));
+    }
+
+    /** Compatibility constructor for owner tests that inject a workspace-presence predicate. */
+    public OrganizationCommandService(JdbcTemplate jdbcTemplate, BiPredicate<UUID, String> workspaces, TimeProvider time) {
         this(jdbcTemplate, time, null, new CommercialGroupCommandReceiptService(jdbcTemplate, time));
     }
 
     public OrganizationCommandService(
             JdbcTemplate jdbcTemplate,
-            WorkspaceStatusLookup workspaces,
+            Object workspaces,
+            TimeProvider time,
+            ExtensionDefinitionLookup definitions) {
+        this(jdbcTemplate, time, definitions, new CommercialGroupCommandReceiptService(jdbcTemplate, time));
+    }
+
+    /** Compatibility constructor for owner tests that inject a workspace-presence predicate. */
+    public OrganizationCommandService(
+            JdbcTemplate jdbcTemplate,
+            BiPredicate<UUID, String> workspaces,
             TimeProvider time,
             ExtensionDefinitionLookup definitions) {
         this(jdbcTemplate, time, definitions, new CommercialGroupCommandReceiptService(jdbcTemplate, time));
@@ -328,45 +342,15 @@ public class OrganizationCommandService
             CommercialGroupReadback current) {
         ExtensionValues extensions =
                 extensionValues(workspaceUuid, groupWorkspaceKey, valuesJson(current.extensionValues()), requested);
-        long now = time.currentEpochMillis();
-        if (current.revision() != expectedVersion
-                || jdbcTemplate.update(
-                                "UPDATE organization.commercial_group SET commercial_group_code=?, "
-                                        + "commercial_group_name=?, extension_values=CAST(? AS JSONB), "
-                                        + "extension_rule_revision=?, version=version+1, updated_at_epoch_millis=? "
-                                        + "WHERE "
-                                        + "commercial_group_uuid=? AND group_workspace_key=? AND version=?",
-                                code,
-                                name,
-                                extensions.json(),
-                                extensions.revision(),
-                                now,
-                                current.id(),
-                                groupWorkspaceKey,
-                                expectedVersion)
-                        != 1) {
-            throw new OrganizationHierarchyService.OrganizationConflictException();
-        }
-        CommercialGroupReadback updated = requireCommercialGroup(groupWorkspaceKey);
-        jdbcTemplate.update(
-                "INSERT INTO organization.audit_event (id, workspace_uuid, group_workspace_key, entity_type, "
-                        + "entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, "
-                        + "occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'COMMERCIAL_GROUP', ?, ?, ?, ?, "
-                        + "'COMMERCIAL_GROUP_UPDATED', ?, CAST(? AS JSONB))",
-                UUID.randomUUID(),
+        return updateOnce(
                 workspaceUuid,
                 groupWorkspaceKey,
-                updated.id().toString(),
-                actor.actorType(),
-                actor.actorId(),
-                actor.displaySnapshot(),
-                now,
-                AuditChangeJson.write(java.util.List.of(
-                        new com.catering.v2s.audit.contract.AuditChange(
-                                "commercialGroupCode", current.commercialGroupCode(), updated.commercialGroupCode()),
-                        new com.catering.v2s.audit.contract.AuditChange(
-                                "commercialGroupName", current.commercialGroupName(), updated.commercialGroupName()))));
-        return updated;
+                code,
+                name,
+                expectedVersion,
+                extensions,
+                actor,
+                current);
     }
 
     private CommercialGroupReadback updateOnce(
@@ -380,26 +364,63 @@ public class OrganizationCommandService
             CommercialGroupReadback current) {
         ExtensionValues extensions =
                 extensionValues(workspaceUuid, groupWorkspaceKey, valuesJson(current.extensionValues()), submission);
+        return updateOnce(
+                workspaceUuid,
+                groupWorkspaceKey,
+                code,
+                name,
+                expectedVersion,
+                extensions,
+                actor,
+                current);
+    }
+
+    /** The owner write returns the complete row so its authoritative readback does not reread the group. */
+    private CommercialGroupReadback updateOnce(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String code,
+            String name,
+            long expectedVersion,
+            ExtensionValues extensions,
+            AuditActor actor,
+            CommercialGroupReadback current) {
         long now = time.currentEpochMillis();
-        if (current.revision() != expectedVersion
-                || jdbcTemplate.update(
-                                "UPDATE organization.commercial_group SET commercial_group_code=?, "
-                                        + "commercial_group_name=?, extension_values=CAST(? AS JSONB), "
-                                        + "extension_rule_revision=?, version=version+1, updated_at_epoch_millis=? "
-                                        + "WHERE "
-                                        + "commercial_group_uuid=? AND group_workspace_key=? AND version=?",
-                                code,
-                                name,
-                                extensions.json(),
-                                extensions.revision(),
-                                now,
-                                current.id(),
-                                groupWorkspaceKey,
-                                expectedVersion)
-                        != 1) {
+        if (current.revision() != expectedVersion) {
             throw new OrganizationHierarchyService.OrganizationConflictException();
         }
-        CommercialGroupReadback updated = requireCommercialGroup(groupWorkspaceKey);
+        CommercialGroupReadback updated = OwnerOperationDiagnostics.readback(() -> jdbcTemplate.query(
+                "UPDATE organization.commercial_group SET commercial_group_code=?, "
+                        + "commercial_group_name=?, extension_values=CAST(? AS JSONB), "
+                        + "extension_rule_revision=?, version=version+1, updated_at_epoch_millis=? WHERE "
+                        + "commercial_group_uuid=? AND group_workspace_key=? AND version=? RETURNING "
+                        + "commercial_group_uuid, group_workspace_key, commercial_group_code, commercial_group_name, "
+                        + "version, created_by_platform_subject, created_at_epoch_millis, "
+                        + "updated_at_epoch_millis, extension_values::text, extension_rule_revision",
+                statement -> {
+                    statement.setString(1, code);
+                    statement.setString(2, name);
+                    statement.setString(3, extensions.json());
+                    statement.setLong(4, extensions.revision());
+                    statement.setLong(5, now);
+                    statement.setObject(6, current.id());
+                    statement.setString(7, groupWorkspaceKey);
+                    statement.setLong(8, expectedVersion);
+                },
+                result -> {
+                    if (!result.next()) throw new OrganizationHierarchyService.OrganizationConflictException();
+                    return new CommercialGroupReadback(
+                            result.getObject("commercial_group_uuid", UUID.class),
+                            result.getString("group_workspace_key"),
+                            result.getString("commercial_group_code"),
+                            result.getString("commercial_group_name"),
+                            result.getLong("version"),
+                            result.getString("created_by_platform_subject"),
+                            result.getLong("created_at_epoch_millis"),
+                            result.getLong("updated_at_epoch_millis"),
+                            ExtensionDefinitionService.readValues(result.getString("extension_values")),
+                            result.getLong("extension_rule_revision"));
+                }));
         jdbcTemplate.update(
                 "INSERT INTO organization.audit_event (id, workspace_uuid, group_workspace_key, entity_type, "
                         + "entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, "

@@ -1,6 +1,7 @@
 import {Alert, Button, Drawer, Form, Input, Space} from 'antd';
 import {
   adminDrawerSurfaceProps,
+  isKnownClosedCode,
   useDrawerFormLifecycle,
   useOverlayLock,
   useSubmissionLifecycle,
@@ -11,8 +12,13 @@ import type {OperationsPageContext} from '../../../app/routing/model';
 import {useEffect, useState} from 'react';
 import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import {wireUuid} from '../../../app/api/wireUuid';
+import {lifecycleStatusLabels} from '../model/businessChannelCodeLabels';
 
 type Values = {channelName: string};
+
+export function canSubmitBusinessChannelEdit(channel?: BusinessChannelView): boolean {
+  return Boolean(channel) && isKnownClosedCode(lifecycleStatusLabels, channel?.status) && channel?.status !== 'VOIDED';
+}
 
 export function BusinessChannelEditDrawer({
   open,
@@ -39,6 +45,8 @@ export function BusinessChannelEditDrawer({
   });
   const submission = useSubmissionLifecycle();
   useOverlayLock(open);
+  const channelStatusKnown = channel ? isKnownClosedCode(lifecycleStatusLabels, channel.status) : false;
+  const channelEditable = canSubmitBusinessChannelEdit(channel);
 
   useEffect(() => {
     if (!open) return;
@@ -48,7 +56,10 @@ export function BusinessChannelEditDrawer({
   }, [channel, form, lifecycle, open]);
 
   const save = async (values: Values) => {
-    if (!channel) return;
+    if (!channel || !channelEditable) {
+      if (channel && !channelStatusKnown) setProblem('当前渠道状态无法识别，已停止该操作。');
+      return;
+    }
     setProblem(undefined);
     lifecycle.setSubmitting(true);
     try {
@@ -98,7 +109,7 @@ export function BusinessChannelEditDrawer({
           <Button
             type="primary"
             loading={lifecycle.submitting}
-            disabled={lifecycle.submitting}
+            disabled={lifecycle.submitting || !channelEditable}
             onClick={() => form.submit()}
             {...testId('business-channel-edit-submit')}
           >
@@ -108,10 +119,14 @@ export function BusinessChannelEditDrawer({
       }
     >
       {problem && <Alert type="error" showIcon title="经营渠道编辑未完成" description={problem} />}
+      {channel && !channelStatusKnown && <Alert type="error" showIcon title="当前渠道状态无法识别，已停止编辑。" />}
+      {channelStatusKnown && channel?.status === 'VOIDED' && (
+        <Alert type="info" showIcon title="该业务渠道已标记删除，不能继续编辑。" />
+      )}
       <Form
         form={form}
         layout="vertical"
-        disabled={lifecycle.submitting}
+        disabled={lifecycle.submitting || !channelEditable}
         onFinish={values => void save(values)}
         onValuesChange={() => lifecycle.markBusinessIntentChanged()}
       >

@@ -37,7 +37,7 @@ public final class PlatformExtensionDefinitionController {
 
     @GetMapping
     ExtensionEntityCatalogPage list(EdgeRequestContext request, @PathVariable String groupWorkspaceKey) {
-        var workspace = sessions.requireRead(request).requireEnabledSelectedWorkspace(workspaces, groupWorkspaceKey);
+        var workspace = sessions.requireRead(request).requireSelectedWorkspace(workspaces, groupWorkspaceKey);
         return new ExtensionEntityCatalogPage(
                 definitions.platformManagementDefinitions(workspace.workspaceUuid(), groupWorkspaceKey).stream()
                         .map(value -> {
@@ -56,7 +56,7 @@ public final class PlatformExtensionDefinitionController {
             EdgeRequestContext request,
             @PathVariable String groupWorkspaceKey,
             @PathVariable("entityType") String hostType) {
-        var workspace = sessions.requireRead(request).requireEnabledSelectedWorkspace(workspaces, groupWorkspaceKey);
+        var workspace = sessions.requireRead(request).requireSelectedWorkspace(workspaces, groupWorkspaceKey);
         return ExtensionDefinitionWireMapper.wire(
                 definitions.platformManagementDefinition(workspace.workspaceUuid(), groupWorkspaceKey, hostType));
     }
@@ -69,7 +69,7 @@ public final class PlatformExtensionDefinitionController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody ExtensionDefinitionUpdateRequest body) {
         var actor = sessions.requireActor(request);
-        var workspace = workspaces.requireEnabled(groupWorkspaceKey);
+        var workspace = workspaces.require(groupWorkspaceKey);
         if (body == null || body.expectedVersion() == null || body.expectedVersion() < 0 || body.definitions() == null)
             throw new ExtensionDefinitionService.DefinitionInvalidException();
         return ExtensionDefinitionWireMapper.wire(definitions.replaceDraft(
@@ -89,7 +89,8 @@ public final class PlatformExtensionDefinitionController {
                 || value.label() == null
                 || value.type() == null
                 || value.required() == null
-                || value.options() == null) {
+                || value.options() == null
+                || value.status() == null) {
             throw new ExtensionDefinitionService.DefinitionInvalidException();
         }
         try {

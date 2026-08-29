@@ -14,6 +14,9 @@ import {
 import {
   catalogPriceLabel,
   isCatalogBatchRowSelectable,
+  type CatalogPreparationFacts,
+  type CatalogSpecificationFact,
+  type CatalogTagFact,
   type CatalogItemSummary,
   type CatalogSkuListRow,
 } from '../model/catalogModel';
@@ -185,7 +188,7 @@ function inventorySummaryLines(row: CatalogItemSummary | CatalogSkuListRow): str
 }
 
 function skuSpecificationLines(row: CatalogSkuListRow): string[] {
-  return row.attributeValueRefs.map(value => `${value.attributeName}：${value.valueLabel}`);
+  return row.attributeFacts.map(value => `${value.attributeName}：${value.valueLabel}`);
 }
 
 function formattedUpdateTime(value: number): ReactNode {
@@ -201,7 +204,40 @@ function formattedUpdateTime(value: number): ReactNode {
 }
 
 function itemCategoryLine(item: CatalogItemSummary): string {
-  return item.categoryPathLabels.join(' / ') || '未分类';
+  return item.categoryPath.map(node => node.name).join(' / ') || '未分类';
+}
+
+function specificationFactLines(facts: CatalogSpecificationFact[]): string[] {
+  return facts.flatMap(fact => fact.values.map(value => `${fact.attributeName}：${value.valueLabel}`));
+}
+
+function orderOptionFactLines(item: CatalogItemSummary): string[] {
+  return item.orderOptionFacts.flatMap(fact => {
+    const values = fact.values.map(value => value.name).filter(Boolean);
+    return values.length ? [`${fact.name}：${values.join('、')}`] : [fact.name];
+  });
+}
+
+function attributeFactLines(
+  facts: CatalogItemSummary['attributeFacts'] | CatalogSkuListRow['attributeFacts'],
+): string[] {
+  return facts.map(fact => {
+    if ('attributeValueRef' in fact) return `${fact.attributeName}：${fact.valueLabel}`;
+    if (fact.textValue) return `${fact.name}：${fact.textValue}`;
+    if (fact.optionRefs.length > 0) return `${fact.name}：已设置（${fact.optionRefs.length}项）`;
+    return `${fact.name}：未设置`;
+  });
+}
+
+function preparationFactLines(facts: CatalogPreparationFacts): string[] {
+  const lines: string[] = [];
+  if (facts.productionTag) lines.push(`生产标签：${facts.productionTag.name}`);
+  if (facts.profile?.productionDisplayName) lines.push(facts.profile.productionDisplayName);
+  if (facts.profile?.estimatedPreparationSeconds !== null && facts.profile?.estimatedPreparationSeconds !== undefined) {
+    lines.push(`预计制作：${facts.profile.estimatedPreparationSeconds}秒`);
+  }
+  if (facts.skuVariation.varies) lines.push('规格制作信息有差异');
+  return lines;
 }
 
 /**
@@ -229,22 +265,23 @@ function skuLifecycleStatusCell(
   );
 }
 
-export function catalogItemTagLine(tagSummary: string[]): ReactNode {
-  if (!tagSummary.length) {
+export function catalogItemTagLine(tags: CatalogTagFact[]): ReactNode {
+  const tagNames = tags.map(tag => tag.name);
+  if (!tagNames.length) {
     return (
       <Typography.Text type="secondary" style={{...cellLineStyle, fontSize: 12}}>
         未设置
       </Typography.Text>
     );
   }
-  const visibleTags = tagSummary.slice(0, 2);
-  const remaining = tagSummary.length - visibleTags.length;
+  const visibleTags = tagNames.slice(0, 2);
+  const remaining = tagNames.length - visibleTags.length;
   const hasSingleShortTag = visibleTags.length === 1 && Array.from(visibleTags[0]).length <= 8;
   return (
     <EllipsisTooltip
       title={
         <div>
-          {tagSummary.map(tag => (
+          {tagNames.map(tag => (
             <div key={tag}>{tag}</div>
           ))}
         </div>
@@ -409,7 +446,7 @@ function itemCell(
             {itemCategoryLine(item)}
           </Typography.Text>
         </EllipsisTooltip>
-        {catalogItemTagLine(item.tagSummary)}
+        {catalogItemTagLine(item.tags)}
       </div>
     </Space>
   );
@@ -581,7 +618,10 @@ export function CatalogItemListTable({
         render: (_: unknown, row: CatalogTableRow) =>
           forItemOrSku(
             row,
-            item => businessLines(item.specificationOrOptionSummary, 4, {preserveVisibleFacts: true}),
+            item =>
+              businessLines([...specificationFactLines(item.specificationFacts), ...orderOptionFactLines(item)], 4, {
+                preserveVisibleFacts: true,
+              }),
             sku => businessLines(skuSpecificationLines(sku), 4, {preserveVisibleFacts: true}),
           ),
       },
@@ -593,12 +633,12 @@ export function CatalogItemListTable({
           forItemOrSku(
             row,
             item =>
-              item.attributeSummary.length ? (
-                businessLines(item.attributeSummary)
+              item.attributeFacts?.length ? (
+                businessLines(attributeFactLines(item.attributeFacts))
               ) : (
                 <Typography.Text type="secondary">未设置</Typography.Text>
               ),
-            sku => businessLines(sku.attributeSummary.length ? sku.attributeSummary : ['同商品']),
+            sku => businessLines(sku.attributeFacts?.length ? attributeFactLines(sku.attributeFacts) : ['同商品']),
           ),
       },
       {
@@ -609,12 +649,12 @@ export function CatalogItemListTable({
           forItemOrSku(
             row,
             item =>
-              item.preparationSummary.length ? (
-                businessLines(item.preparationSummary)
+              item.preparationFacts && preparationFactLines(item.preparationFacts).length ? (
+                businessLines(preparationFactLines(item.preparationFacts))
               ) : (
                 <Typography.Text type="secondary">未设置</Typography.Text>
               ),
-            sku => businessLines(sku.preparationSummary),
+            sku => businessLines(preparationFactLines(sku.preparationFacts)),
           ),
       },
       {

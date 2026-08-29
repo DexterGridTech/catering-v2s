@@ -19,12 +19,10 @@ import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationCatalogSource;
 import com.catering.v2s.collaboration.api.CollaborationCommandApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
-import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
@@ -61,17 +59,15 @@ class PlatformExternalCollaborationControllerTest {
                         "PROVIDER-A",
                         "Provider A",
                         "TAKEAWAY",
-                        "Takeaway",
-                        List.of("Takeaway"),
+                        List.of("TAKEAWAY"),
                         "STORE",
-                        "Store",
                         STORE_REF.toString(),
+                        List.of(),
                         "Store binding",
                         null,
                         101L,
                         102L,
                         "PENDING_AUTHORIZATION",
-                        "Pending authorization",
                         3L));
 
         var result = fixture.controller.createBinding(
@@ -80,7 +76,7 @@ class PlatformExternalCollaborationControllerTest {
                 "platform-collaboration-idempotency",
                 new OwnerBindingCreateRequest(
                         "PROVIDER-A",
-                        JSON.valueToTree("TAKEAWAY"),
+                        "TAKEAWAY",
                         "STORE",
                         STORE_REF,
                         JSON.valueToTree("Store binding"),
@@ -111,17 +107,15 @@ class PlatformExternalCollaborationControllerTest {
                         "PROVIDER-A",
                         "Provider A",
                         null,
-                        null,
-                        List.of(),
+                        List.of("TAKEAWAY"),
                         "STORE",
-                        "Store",
                         STORE_REF.toString(),
+                        List.of(),
                         "Updated",
                         "owner-1",
                         201L,
                         202L,
                         "EFFECTIVE",
-                        "Effective",
                         4L));
 
         var result = fixture.controller.updateBinding(
@@ -149,25 +143,18 @@ class PlatformExternalCollaborationControllerTest {
                         "SYSTEM-A",
                         "System A",
                         "AVAILABLE",
-                        "Available",
-                        List.of(),
                         List.of(new CollaborationCatalogSource.CapabilityDefinition(
-                                "TAKEAWAY", "Takeaway", OWNER_JSON.createObjectNode(), Map.of())));
+                                "TAKEAWAY", "Takeaway", OWNER_JSON.createObjectNode())));
         CollaborationCatalogSource.ProviderProfileDefinition provider =
                 new CollaborationCatalogSource.ProviderProfileDefinition(
                         "PROVIDER-A",
                         "Provider A",
                         "SYSTEM-A",
                         List.of("TAKEAWAY"),
-                        List.of("TAKEAWAY"),
-                        List.of("STORE"),
                         List.of("STORE"),
                         "EXTERNAL_GRANT",
-                        "External grant",
                         "LOCAL_ONLY",
-                        "Local only",
-                        "AVAILABLE",
-                        "Available");
+                        "AVAILABLE");
         when(fixture.catalogSource.externalSystems()).thenReturn(List.of(system));
         when(fixture.catalogSource.providerProfiles()).thenReturn(List.of(provider));
 
@@ -194,7 +181,6 @@ class PlatformExternalCollaborationControllerTest {
         CollaborationCommandApi commands = mock(CollaborationCommandApi.class);
         ExternalCollaborationBusinessChannelCoordinator coordinator =
                 mock(ExternalCollaborationBusinessChannelCoordinator.class);
-        OrganizationTaskPathLookup taskPaths = mock(OrganizationTaskPathLookup.class);
         EdgeRequestContext request = mock(EdgeRequestContext.class);
         PlatformSessionReadback session = new PlatformSessionReadback(
                 UUID.randomUUID(), 1L, UUID.randomUUID(), "Platform tester", Long.MAX_VALUE);
@@ -207,10 +193,9 @@ class PlatformExternalCollaborationControllerTest {
         when(workspace.workspaceUuid()).thenReturn(WORKSPACE);
         when(workspace.groupWorkspaceKey()).thenReturn(KEY);
         when(sessions.actor(session)).thenReturn(actor);
-        when(taskPaths.describePersistedTaskPaths(any(), any(), any())).thenReturn(Map.of());
         return new Fixture(
                 new PlatformExternalCollaborationController(
-                        sessions, workspaces, catalog, catalogSource, bindings, commands, coordinator, taskPaths),
+                        sessions, workspaces, catalog, catalogSource, bindings, commands, coordinator),
                 sessions,
                 facts,
                 workspaces,
@@ -228,15 +213,10 @@ class PlatformExternalCollaborationControllerTest {
                 "SYSTEM-A",
                 "System A",
                 List.of("TAKEAWAY"),
-                List.of("TAKEAWAY"),
-                List.of("STORE"),
                 List.of("STORE"),
                 "EXTERNAL_GRANT",
-                "External grant",
                 "LOCAL_ONLY",
-                "Local only",
                 "AVAILABLE",
-                "Available",
                 enablementStatus,
                 1L);
     }

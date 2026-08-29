@@ -6,11 +6,11 @@ import com.catering.v2s.organization.api.OrganizationNodeLookup;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.api.OrganizationVisibilityLookup;
 import com.catering.v2s.organization.api.StoreAssignmentLookup;
-import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog;
 import com.catering.v2s.workspace.iam.api.WorkspaceRoleReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
@@ -69,7 +69,7 @@ public class WorkspaceAuthenticationService {
                 legacyGroups(nodes),
                 new WorkspaceLoginRateLimitService(jdbc, time),
                 new WorkspaceOtpRateLimitService(jdbc, time),
-                (workspaceUuid, groupWorkspaceKey) -> true,
+                (workspaceUuid, groupWorkspaceKey) -> "ENABLED",
                 (workspaceUuid, groupWorkspaceKey, assignmentNodeType, assignmentNodeId, visibleNodeId) -> true,
                 new WorkspaceSessionRequestCache(false),
                 null,

@@ -9,6 +9,7 @@ import com.catering.v2s.organization.api.OrganizationVisibilityLookup;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationHierarchyService;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
 import java.util.List;
 import java.util.Set;
@@ -34,6 +35,11 @@ class WorkspaceAuthenticationContextVersionTest {
     private static UUID workspaceId;
     private static OrganizationHierarchyService hierarchy;
     private static WorkspaceRoleService roles;
+    private static final WorkspaceStatusLookup WORKSPACE_STATUSES = (id, key) -> jdbc.queryForObject(
+            "SELECT status FROM platform_workspace.group_workspace WHERE workspace_uuid=? AND group_workspace_key=?",
+            String.class,
+            id,
+            key);
 
     @BeforeAll
     static void setup() {
@@ -246,8 +252,8 @@ class WorkspaceAuthenticationContextVersionTest {
 
     private static WorkspaceAuthenticationService authentication(UUID visibleNodeId) {
         TimeProvider time = () -> NOW;
-        BusinessEntityService entities =
-                new BusinessEntityService(jdbc, time, new ExtensionDefinitionService(jdbc, time), hierarchy);
+        BusinessEntityService entities = new BusinessEntityService(
+                jdbc, time, new ExtensionDefinitionService(jdbc, time, WORKSPACE_STATUSES), hierarchy);
         CommercialGroupLookup groups = new CommercialGroupLookup() {
             @Override
             public UUID requireCommercialGroupRef(UUID workspaceUuid, String groupWorkspaceKey) {
@@ -302,7 +308,7 @@ class WorkspaceAuthenticationContextVersionTest {
                 groups,
                 new WorkspaceLoginRateLimitService(jdbc, time),
                 new WorkspaceOtpRateLimitService(jdbc, time),
-                (workspaceUuid, groupWorkspaceKey) -> true,
+                (workspaceUuid, groupWorkspaceKey) -> "ENABLED",
                 visibility,
                 new WorkspaceSessionRequestCache(false),
                 null);

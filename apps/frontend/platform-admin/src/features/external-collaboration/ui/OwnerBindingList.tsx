@@ -9,6 +9,7 @@ import {
   useAsyncGenerationGuard,
   usePageQuery,
   useRefreshVersion,
+  NameCodePathText,
 } from '@catering-v2s/admin-ui-foundation';
 import {
   PLATFORM_ADMIN_OPERATION_IDS,
@@ -24,7 +25,13 @@ import {useEffect, useMemo, useState} from 'react';
 import {readPlatformOwnerBindings, type PlatformOwnerBindingPageQuery} from '../application/queries';
 import {OwnerBindingDetailDrawer} from './OwnerBindingDetailDrawer';
 import {OwnerBindingFormDrawer} from './OwnerBindingFormDrawer';
-import {ownerBindingBusinessDisplay, ownerBindingExternalOwnerDisplay} from './ownerBindingPresentation';
+import {
+  ownerBindingBusinessDisplay,
+  canCreateOwnerBinding,
+  ownerBindingExternalOwnerDisplay,
+  ownerBindingNodeTypeDisplay,
+  ownerBindingStatusDisplay,
+} from './ownerBindingPresentation';
 
 type BindingSortKey = NonNullable<PlatformOwnerBindingPageQuery['sortKey']>;
 type SortDirection = NonNullable<PlatformOwnerBindingPageQuery['sortDirection']>;
@@ -49,12 +56,6 @@ function readBindingSort(nextSorter: unknown): {sortKey?: BindingSortKey; sortDi
   };
   const sortKey = sortKeys[columnKey];
   return sortKey ? {sortKey, sortDirection: order === 'ascend' ? 'ASC' : 'DESC'} : {};
-}
-
-export function canCreateOwnerBinding(profile: Pick<ProviderProfileView, 'authenticationKind' | 'enablementStatus'>) {
-  return (
-    profile.enablementStatus === 'ENABLED' && ['INTERNAL_MAPPING', 'NO_MAPPING'].includes(profile.authenticationKind)
-  );
 }
 
 export function OwnerBindingList({
@@ -150,8 +151,10 @@ export function OwnerBindingList({
       fieldProps: {...testId('platform-owner-binding-node-filter'), allowClear: true},
       render: (_, row) => (
         <Space direction="vertical" size={0}>
-          <Typography.Text>{row.nodeDisplayPath || '业务节点名称暂不可用'}</Typography.Text>
-          <Typography.Text type="secondary">{row.nodeTypeDisplayName}</Typography.Text>
+          <Typography.Text>
+            {row.nodePath.length > 0 ? <NameCodePathText nodes={row.nodePath} /> : '未绑定组织节点'}
+          </Typography.Text>
+          <Typography.Text type="secondary">{ownerBindingNodeTypeDisplay(row)}</Typography.Text>
         </Space>
       ),
     },
@@ -177,7 +180,7 @@ export function OwnerBindingList({
       dataIndex: 'status',
       sorter: true,
       search: false,
-      render: (_, row) => <Tag>{row.statusDisplayName}</Tag>,
+      render: (_, row) => <Tag>{ownerBindingStatusDisplay(row)}</Tag>,
     },
   ];
 

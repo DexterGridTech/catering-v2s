@@ -5,20 +5,25 @@ import {operationsClient, operationsProblemOf} from '../../../app/api/Operations
 import type {BusinessEntityStatus} from '../../../app/api/generated/operations-edge';
 import type {OperationsPageContext} from '../../../app/routing/model';
 import type {BusinessEntity, BusinessEntityKind} from './BusinessEntityDetailDrawer';
+import {toggleBusinessEntityStatus} from './businessEntityLifecycle';
 
 type Props = {
   entity?: BusinessEntity;
+  targetStatus?: BusinessEntityStatus;
   kind: BusinessEntityKind;
   queryContext: OperationsPageContext;
   onClose: () => void;
   onUpdated: (entity: BusinessEntity) => void;
 };
 
-function nextStatus(status: BusinessEntityStatus): BusinessEntityStatus {
-  return status === 'ENABLED' ? 'DISABLED' : 'ENABLED';
-}
-
-export function BusinessEntityStatusModal({entity, kind, queryContext, onClose, onUpdated}: Props) {
+export function BusinessEntityStatusModal({
+  entity,
+  targetStatus: requestedStatus,
+  kind,
+  queryContext,
+  onClose,
+  onUpdated,
+}: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [problem, setProblem] = useState<string>();
   const {getIdempotencyKey, reset} = useSubmissionLifecycle();
@@ -28,10 +33,10 @@ export function BusinessEntityStatusModal({entity, kind, queryContext, onClose, 
     reset();
     setSubmitting(false);
     setProblem(undefined);
-  }, [entity, reset]);
+  }, [entity, requestedStatus, reset]);
 
-  const targetStatus = entity ? nextStatus(entity.status) : undefined;
-  const actionLabel = targetStatus === 'DISABLED' ? '停用' : '启用';
+  const targetStatus = requestedStatus ?? (entity ? toggleBusinessEntityStatus(entity.status) : undefined);
+  const actionLabel = targetStatus === 'VOIDED' ? '标记删除' : targetStatus === 'DISABLED' ? '停用' : '启用';
   const submit = async () => {
     if (!entity || !targetStatus || submitting) return;
     setSubmitting(true);
@@ -95,6 +100,9 @@ export function BusinessEntityStatusModal({entity, kind, queryContext, onClose, 
       {...testId('operations-business-entity-status-modal')}
     >
       {problem && <Alert type="error" showIcon title="状态操作未完成" description={problem} />}
+      {targetStatus === 'VOIDED'
+        ? '标记删除后将保留经营实体历史事实；该实体不可恢复，也不能继续维护。'
+        : `将经营实体状态变更为“${actionLabel}”。`}
     </Modal>
   );
 }

@@ -1,16 +1,22 @@
 package com.catering.v2s.app.edge.platform.workspaceiam;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.app.edge.generated.wire.ServiceNodeType;
 import com.catering.v2s.app.edge.generated.wire.SortDirection;
+import com.catering.v2s.app.edge.generated.wire.WorkspaceAccountStatus;
+import com.catering.v2s.app.edge.generated.wire.WorkspaceAccountStatusTransitionRequest;
 import com.catering.v2s.app.edge.generated.wire.WorkspacePlatformAccountSortKey;
 import com.catering.v2s.app.edge.platform.session.PlatformSessionCookie;
 import com.catering.v2s.app.edge.platform.session.PlatformSessionResolver;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
+import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
 import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
@@ -91,6 +97,88 @@ class PlatformWorkspaceAccountControllerSortTest {
                         && query.direction() == null));
     }
 
+    @Test
+    void platformAccountStatusUsesCombinedOwnerTransitionAndFullReadback() {
+        Fixture fixture = fixture();
+        UUID accountId = UUID.randomUUID();
+        String idempotencyKey = "platform-account-status-001";
+        UUID assignmentId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+        UUID invitationId = UUID.randomUUID();
+        UUID authenticationId = UUID.randomUUID();
+        OrganizationTaskPathLookup.TaskPathNode store =
+                new OrganizationTaskPathLookup.TaskPathNode(storeId, "store-1", "Store one", "STORE");
+        WorkspaceUserService.User readback = new WorkspaceUserService.User(
+                accountId,
+                "Updated user",
+                "13800000071",
+                "138****0071",
+                "updated-user",
+                "DISABLED",
+                "CHANGE_REQUIRED",
+                1,
+                List.of(new WorkspaceUserService.Assignment(
+                        assignmentId,
+                        accountId,
+                        UUID.randomUUID(),
+                        "Store manager",
+                        "STORE",
+                        List.of(store),
+                        "ACTIVE",
+                        "INVITATION",
+                        3L,
+                        4L,
+                        5L,
+                        storeId)),
+                List.of(new WorkspaceUserService.Invitation(invitationId, "ACTIVE", 2, 8L)),
+                7L,
+                List.of(new WorkspaceUserService.AuthenticationHistory(authenticationId, 6L)),
+                1L,
+                2L,
+                2L);
+        when(fixture.reads.transitionStatusAndReadback(
+                        eq(fixture.workspace.workspaceUuid()),
+                        eq(KEY),
+                        eq(accountId),
+                        eq("DISABLED"),
+                        eq(1L),
+                        eq(idempotencyKey),
+                        any(AuditActor.class)))
+                .thenReturn(readback);
+
+        var result = fixture.controller.status(
+                fixture.request,
+                KEY,
+                accountId,
+                idempotencyKey,
+                new WorkspaceAccountStatusTransitionRequest(WorkspaceAccountStatus.DISABLED, 1L));
+
+        assertEquals(accountId.toString(), result.id());
+        assertEquals(WorkspaceAccountStatus.DISABLED, result.status());
+        assertEquals("Updated user", result.displayName());
+        assertEquals("CHANGE_REQUIRED", result.credentialStatus());
+        assertEquals(1L, result.activeAssignmentCount());
+        assertEquals(
+                "Store one",
+                result.assignments()
+                        .getFirst()
+                        .organizationPathNodes()
+                        .getFirst()
+                        .name());
+        assertEquals(
+                invitationId.toString(), result.invitationHistory().getFirst().invitationId());
+        assertEquals(6L, result.authenticationHistory().getFirst().authenticatedAt());
+        verify(fixture.reads)
+                .transitionStatusAndReadback(
+                        eq(fixture.workspace.workspaceUuid()),
+                        eq(KEY),
+                        eq(accountId),
+                        eq("DISABLED"),
+                        eq(1L),
+                        eq(idempotencyKey),
+                        any(AuditActor.class));
+    }
+
     private static Fixture fixture() {
         UUID workspaceUuid = UUID.randomUUID();
         PlatformAuthenticationService authentication = mock(PlatformAuthenticationService.class);
@@ -101,14 +189,12 @@ class PlatformWorkspaceAccountControllerSortTest {
         WorkspaceAdministrationReadback workspace = new WorkspaceAdministrationReadback(
                 workspaceUuid, KEY, "Test workspace", "Operations", null, null, "ENABLED", 1L, 1L, 1L, 1L, true);
         when(workspaces.requireEnabled(KEY)).thenReturn(workspace);
-        WorkspaceUserService user = mock(WorkspaceUserService.class);
         PlatformWorkspaceAccountTaskReadService reads = mock(PlatformWorkspaceAccountTaskReadService.class);
         PlatformWorkspaceAccountController controller = new PlatformWorkspaceAccountController(
                 new PlatformSessionResolver(authentication),
                 workspaces,
                 mock(WorkspaceAccountService.class),
                 mock(WorkspacePasswordResetService.class),
-                user,
                 reads);
         EdgeRequestContext request = new EdgeRequestContext(
                 "test-fingerprint",

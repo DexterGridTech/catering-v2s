@@ -227,16 +227,16 @@
         },
         {
           "caseId": "CI-L2-007-02",
-          "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU",
-          "journey": "仅归档 SKU 的商品",
+          "fixtureRef": "FIXTURE-VOIDED-ONLY-SKU",
+          "journey": "仅作废 SKU 的商品",
           "controlKeys": ["CATALOG_ITEM_DRAWER", "CATALOG_SKU_TAB", "CATALOG_SKU_MATRIX"],
           "steps": [
-            "打开只剩归档 SKU 的商品",
+            "打开只剩作废 SKU 的商品",
             "进入 SKU 规格页签",
             "读取 HAS_SKU 派生事实",
-            "确认归档 SKU 不提供可写矩阵"
+            "确认作废 SKU 不提供可写矩阵"
           ],
-          "businessOracle": ["HAS_SKU 不把归档 SKU 当作有效 SKU", "归档事实可读且不可误编辑"]
+          "businessOracle": ["HAS_SKU 不把作废 SKU 当作有效 SKU", "作废事实可读且不可误编辑"]
         },
         {
           "caseId": "CI-L2-007-03",
@@ -355,9 +355,9 @@
             "打开品牌复制 surface",
             "读取闭包与引用预览",
             "关闭复制后读取商品生命周期动作",
-            "确认作废/归档不物理删除引用事实"
+            "确认作废不物理删除引用事实"
           ],
-          "businessOracle": ["品牌复制不重用本地复制的来源推导", "被引用对象只允许受控停用/归档"]
+          "businessOracle": ["品牌复制不重用本地复制的来源推导", "被引用对象只允许受控停用或作废"]
         }
       ]
     },
@@ -954,7 +954,7 @@
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-GOVERNANCE",
           "journey": "治理成功",
           "controlKeys": ["CATALOG_ITEM_VIEW_DRAWER", "CATALOG_ITEM_STATUS_ACTION", "CATALOG_LIFECYCLE_CONFIRM"],
-          "steps": ["打开商品生命周期动作", "读取影响摘要", "确认停用或归档", "读取最新状态"],
+          "steps": ["打开商品生命周期动作", "读取影响摘要", "确认停用或作废", "读取最新状态"],
           "businessOracle": ["动作来自 owner actionAvailability", "成功后状态和版本 readback 一致"]
         },
         {

@@ -1,5 +1,6 @@
 package com.catering.v2s.app.edge.platform.workspaceiam;
 
+import com.catering.v2s.app.edge.generated.wire.OrganizationPathNode;
 import com.catering.v2s.app.edge.generated.wire.ServiceNodeType;
 import com.catering.v2s.app.edge.generated.wire.SortDirection;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceAccount;
@@ -40,7 +41,6 @@ public final class PlatformWorkspaceAccountController {
     private final WorkspaceAdministrationService workspaces;
     private final WorkspaceAccountService accounts;
     private final WorkspacePasswordResetService passwordResets;
-    private final WorkspaceUserService user;
     private final PlatformWorkspaceAccountTaskReadService reads;
 
     public PlatformWorkspaceAccountController(
@@ -48,13 +48,11 @@ public final class PlatformWorkspaceAccountController {
             WorkspaceAdministrationService workspaces,
             WorkspaceAccountService accounts,
             WorkspacePasswordResetService passwordResets,
-            WorkspaceUserService user,
             PlatformWorkspaceAccountTaskReadService reads) {
         this.sessions = sessions;
         this.workspaces = workspaces;
         this.accounts = accounts;
         this.passwordResets = passwordResets;
-        this.user = user;
         this.reads = reads;
     }
 
@@ -121,17 +119,15 @@ public final class PlatformWorkspaceAccountController {
         key(idempotencyKey);
         if (body.targetStatus() == null || body.expectedVersion() == null)
             throw new InvalidEdgeRequestException("status and expected version required");
-        var result = accounts.transitionStatusForPlatform(
-                workspace.workspaceUuid(),
-                groupWorkspaceKey,
-                accountId,
-                body.targetStatus().wire(),
-                body.expectedVersion(),
-                idempotencyKey,
-                sessions.actor(session));
         return wire(
-                user.detail(WorkspaceUserService.AccountDetailQuery.forPlatform(
-                        result.workspaceUuid(), groupWorkspaceKey, accountId)),
+                reads.transitionStatusAndReadback(
+                        workspace.workspaceUuid(),
+                        groupWorkspaceKey,
+                        accountId,
+                        body.targetStatus().wire(),
+                        body.expectedVersion(),
+                        idempotencyKey,
+                        sessions.actor(session)),
                 groupWorkspaceKey);
     }
 
@@ -218,11 +214,19 @@ public final class PlatformWorkspaceAccountController {
         return new WorkspaceAccountAssignmentsItem(
                 value.id().toString(),
                 ServiceNodeType.valueOf(value.serviceNodeType()),
-                value.organizationPath(),
+                value.organizationPathNodes().stream()
+                        .map(PlatformWorkspaceAccountController::pathNode)
+                        .toList(),
                 value.roleName(),
                 value.status(),
                 value.source(),
                 value.revision());
+    }
+
+    private static OrganizationPathNode pathNode(
+            com.catering.v2s.organization.api.OrganizationTaskPathLookup.TaskPathNode value) {
+        return new OrganizationPathNode(
+                value.ref(), value.code(), value.name(), ServiceNodeType.valueOf(value.nodeType()));
     }
 
     private static WorkspaceAccountInvitationHistoryItem invitation(WorkspaceUserService.Invitation value) {

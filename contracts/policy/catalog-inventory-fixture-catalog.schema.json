@@ -181,6 +181,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "experienceLifecycle",
         "categoryDefinitions",
         "tagDefinitions",
         "productionTagDefinitions",
@@ -192,6 +193,34 @@
         "sourceItemAssignments"
       ],
       "properties": {
+        "experienceLifecycle": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "targetStatus",
+            "activateSourceShapeKeys"
+          ],
+          "properties": {
+            "targetStatus": {
+              "const": "ENABLED"
+            },
+            "activateSourceShapeKeys": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "STANDARD_SALE_COUNTED",
+                  "SKU_VARIANT_SALE_COUNTED",
+                  "STANDARD_SALE_WEIGHED",
+                  "MATERIAL",
+                  "COMPOSITE",
+                  "SERVICE",
+                  "BENEFIT_SHELL"
+                ]
+              }
+            }
+          }
+        },
         "categoryDefinitions": {
           "type": "array",
           "minItems": 1,
@@ -1208,6 +1237,20 @@
           "type": "string",
           "description": "object status"
         },
+        "includedStatuses": {
+          "type": "array",
+          "description": "smart-view included lifecycle statuses",
+          "items": {
+            "type": "string"
+          }
+        },
+        "excludedStatuses": {
+          "type": "array",
+          "description": "smart-view excluded lifecycle statuses",
+          "items": {
+            "type": "string"
+          }
+        },
         "version": {
           "type": "integer",
           "description": "object version"
@@ -1750,6 +1793,27 @@
               "description": "smart view keys",
               "items": {
                 "type": "string"
+              }
+            },
+            "inactiveMembership": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [],
+              "properties": {
+                "includedStatuses": {
+                  "type": "array",
+                  "description": "smart-view included lifecycle statuses",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "excludedStatuses": {
+                  "type": "array",
+                  "description": "smart-view excluded lifecycle statuses",
+                  "items": {
+                    "type": "string"
+                  }
+                }
               }
             },
             "needsAttentionExcludedFromStockState": {

@@ -52,20 +52,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 8,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 8,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -121,20 +107,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 12,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 12,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -201,20 +173,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 20,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 20,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -268,7 +226,6 @@
                 "ALL",
                 "EXTERNAL_ORDER_TEMP",
                 "INACTIVE",
-                "ARCHIVED",
                 "RECENTLY_UPDATED",
                 "AUTO_SYNC"
               ]
@@ -422,20 +379,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ITEM",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ITEM",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 13,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 13,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -502,20 +445,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 25,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 25,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -590,20 +519,6 @@
         ],
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_SAVE_OPERATIONS_CATALOG_ITEM",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 41,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 41,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -686,20 +601,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 9,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 9,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -783,20 +684,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 13,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 13,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -879,20 +766,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 7,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 7,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -957,20 +830,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 8,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 8,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1104,20 +963,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 14,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 14,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1196,20 +1041,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 23,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 23,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1288,20 +1119,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 66,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 66,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1380,20 +1197,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_STAGE_OPERATIONS_CATALOG_ASSET",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_STAGE_OPERATIONS_CATALOG_ASSET",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 18,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 18,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1466,20 +1269,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_RELEASE_OPERATIONS_CATALOG_STAGED_ASSET",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_RELEASE_OPERATIONS_CATALOG_STAGED_ASSET",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 12,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 12,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1561,22 +1350,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_BATCH_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_BATCH_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "LINEAR_REQUEST_CARDINALITY",
-          "base": 15,
-          "perItem": 5,
-          "cardinalityPath": "$.items",
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 20,
-              "reason": "CP-05 calibrated linear shape"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1640,20 +1413,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 11,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 11,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1693,6 +1452,18 @@
               "type": "string",
               "format": "uuid",
               "description": "selected data node"
+            }
+          },
+          {
+            "name": "candidateUsage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "COMPOSITE_COMPONENT"
+              ],
+              "description": "owner-defined candidate usage; only enabled SKUs are returned"
             }
           },
           {
@@ -1744,20 +1515,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_CATEGORY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_CATEGORY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 15,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 15,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1828,20 +1585,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_CATEGORY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_CATEGORY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 6,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 6,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1893,97 +1636,6 @@
             }
           }
         }
-      },
-      "delete": {
-        "operationId": "deleteOperationsCatalogCategory",
-        "tags": [
-          "Catalog"
-        ],
-        "x-consumer-faces": [
-          "operations-admin"
-        ],
-        "x-owner-module": "catalog",
-        "x-coordinated-owners": [],
-        "x-capability-keys": [
-          "EDIT_HEAD_COMPANY_CATALOG",
-          "EDIT_STORE_CATALOG"
-        ],
-        "x-capability-by-data-node-type": {
-          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
-          "STORE": "EDIT_STORE_CATALOG"
-        },
-        "x-allowed-data-node-types": [
-          "HEAD_COMPANY",
-          "STORE"
-        ],
-        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_CATEGORY",
-        "x-required-capability": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_CATEGORY",
-        "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 13,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 13,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
-        "responses": {
-          "200": {
-            "description": "Typed readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CatalogCategoryDeleteReadback"
-                }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Typed problem",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TypedProblem"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "categoryRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CatalogCategoryDeleteRequest"
-              }
-            }
-          }
-        }
       }
     },
     "/operations/catalog-inventory/categories/{categoryRef}/move": {
@@ -2012,20 +1664,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_MOVE_OPERATIONS_CATALOG_CATEGORY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_MOVE_OPERATIONS_CATALOG_CATEGORY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 6,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 6,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -2098,20 +1736,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 9,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 9,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -2236,20 +1860,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 12,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 12,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -2328,20 +1938,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 13,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 13,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -2428,20 +2024,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_REORDER_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_REORDER_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 14,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 14,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -2520,20 +2102,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 15,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 15,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -2613,20 +2181,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 8,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 8,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -2659,6 +2213,18 @@
               "format": "uuid",
               "description": "selected data node"
             }
+          },
+          {
+            "name": "candidateUsage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ITEM_ASSIGNMENT"
+              ],
+              "description": "owner-defined candidate usage; only enabled definitions are returned"
+            }
           }
         ]
       },
@@ -2687,20 +2253,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 11,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 11,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -2771,20 +2323,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 10,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 10,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -2836,97 +2374,6 @@
             }
           }
         }
-      },
-      "delete": {
-        "operationId": "deleteOperationsCatalogAttributeDefinition",
-        "tags": [
-          "Catalog"
-        ],
-        "x-consumer-faces": [
-          "operations-admin"
-        ],
-        "x-owner-module": "catalog",
-        "x-coordinated-owners": [],
-        "x-capability-keys": [
-          "EDIT_HEAD_COMPANY_CATALOG",
-          "EDIT_STORE_CATALOG"
-        ],
-        "x-capability-by-data-node-type": {
-          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
-          "STORE": "EDIT_STORE_CATALOG"
-        },
-        "x-allowed-data-node-types": [
-          "HEAD_COMPANY",
-          "STORE"
-        ],
-        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
-        "x-required-capability": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
-        "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 11,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 11,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
-        "responses": {
-          "200": {
-            "description": "Typed readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CatalogAttributeDefinitionDeleteReadback"
-                }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Typed problem",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TypedProblem"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "definitionRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CatalogAttributeDefinitionDeleteRequest"
-              }
-            }
-          }
-        }
       }
     },
     "/operations/catalog-inventory/order-option-definitions": {
@@ -2948,20 +2395,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 10,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 10,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -2993,6 +2426,18 @@
               "type": "string",
               "format": "uuid",
               "description": "selected data node"
+            }
+          },
+          {
+            "name": "candidateUsage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ITEM_ASSIGNMENT"
+              ],
+              "description": "owner-defined candidate usage; only enabled definitions are returned"
             }
           }
         ]
@@ -3027,20 +2472,6 @@
         ],
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 17,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 17,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -3117,20 +2548,6 @@
         ],
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 20,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 20,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -3182,102 +2599,6 @@
             }
           }
         }
-      },
-      "delete": {
-        "operationId": "deleteOperationsCatalogOrderOptionDefinition",
-        "tags": [
-          "Catalog"
-        ],
-        "x-consumer-faces": [
-          "operations-admin"
-        ],
-        "x-owner-module": "catalog",
-        "x-coordinated-owners": [
-          "inventory"
-        ],
-        "x-capability-keys": [
-          "EDIT_HEAD_COMPANY_CATALOG",
-          "EDIT_STORE_CATALOG"
-        ],
-        "x-capability-by-data-node-type": {
-          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
-          "STORE": "EDIT_STORE_CATALOG"
-        },
-        "x-allowed-data-node-types": [
-          "HEAD_COMPANY",
-          "STORE"
-        ],
-        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
-        "x-coordinated-inventory-definition-commands": [
-          "deleteCatalogOptionValueBoms"
-        ],
-        "x-required-capability": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
-        "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 16,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 16,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
-        "responses": {
-          "200": {
-            "description": "Typed readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CatalogOrderOptionDefinitionDeleteReadback"
-                }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Typed problem",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TypedProblem"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "definitionRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CatalogOrderOptionDefinitionDeleteRequest"
-              }
-            }
-          }
-        }
       }
     },
     "/operations/catalog-inventory/units": {
@@ -3299,20 +2620,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 9,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 9,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -3381,7 +2688,8 @@
               "type": "string",
               "enum": [
                 "ENABLED",
-                "DISABLED"
+                "DISABLED",
+                "VOIDED"
               ],
               "description": "optional unit lifecycle status filter"
             }
@@ -3413,20 +2721,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_UNIT",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_UNIT",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 9,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 9,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -3502,20 +2796,6 @@
         ],
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_UNIT",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 15,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 15,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -3567,9 +2847,11 @@
             }
           }
         }
-      },
-      "delete": {
-        "operationId": "deleteOperationsCatalogUnit",
+      }
+    },
+    "/operations/catalog-inventory/attribute-definitions/{definitionRef}/status": {
+      "post": {
+        "operationId": "transitionOperationsCatalogAttributeDefinitionStatus",
         "tags": [
           "Catalog"
         ],
@@ -3577,9 +2859,7 @@
           "operations-admin"
         ],
         "x-owner-module": "catalog",
-        "x-coordinated-owners": [
-          "inventory"
-        ],
+        "x-coordinated-owners": [],
         "x-capability-keys": [
           "EDIT_HEAD_COMPANY_CATALOG",
           "EDIT_STORE_CATALOG"
@@ -3592,33 +2872,16 @@
           "HEAD_COMPANY",
           "STORE"
         ],
-        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_UNIT",
-        "x-coordinated-inventory-definition-commands": [
-          "validateCatalogUnitLifecycle"
-        ],
-        "x-required-capability": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_UNIT",
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_STATUS",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_STATUS",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 13,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 13,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogUnitDeleteReadback"
+                  "$ref": "#/components/schemas/CatalogAttributeDefinitionReadback"
                 }
               }
             }
@@ -3636,7 +2899,7 @@
         },
         "parameters": [
           {
-            "name": "unitRef",
+            "name": "definitionRef",
             "in": "path",
             "required": true,
             "schema": {
@@ -3658,16 +2921,95 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CatalogUnitDeleteRequest"
+                "$ref": "#/components/schemas/CatalogAttributeDefinitionStatusTransitionRequest"
               }
             }
           }
         }
       }
     },
-    "/operations/catalog-inventory/units/{unitRef}/disable": {
+    "/operations/catalog-inventory/order-option-definitions/{definitionRef}/status": {
       "post": {
-        "operationId": "disableOperationsCatalogUnit",
+        "operationId": "transitionOperationsCatalogOrderOptionDefinitionStatus",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
+        ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_STATUS",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_STATUS",
+        "x-mutation": true,
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogOrderOptionDefinitionReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "definitionRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogOrderOptionDefinitionStatusTransitionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/units/{unitRef}/status": {
+      "post": {
+        "operationId": "transitionOperationsCatalogUnitStatus",
         "tags": [
           "Catalog"
         ],
@@ -3690,26 +3032,12 @@
           "HEAD_COMPANY",
           "STORE"
         ],
-        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_DISABLE_OPERATIONS_CATALOG_UNIT",
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_UNIT_STATUS",
         "x-coordinated-inventory-definition-commands": [
           "validateCatalogUnitLifecycle"
         ],
-        "x-required-capability": "CATALOG_INVENTORY_OPERATION_DISABLE_OPERATIONS_CATALOG_UNIT",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_UNIT_STATUS",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 13,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 13,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -3756,7 +3084,86 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CatalogUnitDisableRequest"
+                "$ref": "#/components/schemas/CatalogUnitStatusTransitionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/categories/{categoryRef}/status": {
+      "post": {
+        "operationId": "transitionOperationsCatalogCategoryStatus",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
+        ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_CATEGORY_STATUS",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_CATEGORY_STATUS",
+        "x-mutation": true,
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogCategoryReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "categoryRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogCategoryStatusTransitionRequest"
               }
             }
           }
@@ -3788,20 +3195,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 14,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 14,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -3871,20 +3264,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_LOCAL_CATALOG_COPY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_LOCAL_CATALOG_COPY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 31,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 31,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -3956,20 +3335,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_BRAND_CATALOG_COPY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_BRAND_CATALOG_COPY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 21,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 21,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -4041,20 +3406,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_BRAND_CATALOG_COPY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_BRAND_CATALOG_COPY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 48,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 48,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -4119,20 +3470,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 13,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 13,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -4243,20 +3580,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 11,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 11,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -4310,20 +3633,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 9,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 9,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -4386,20 +3695,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 9,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 9,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -4473,20 +3768,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 17,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 17,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -4558,20 +3839,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 9,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 9,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -4643,20 +3910,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 7,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 7,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -4711,20 +3964,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 8,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 8,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -4813,20 +4052,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_COUNT_OPERATIONS_INVENTORY_TARGET",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_COUNT_OPERATIONS_INVENTORY_TARGET",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 12,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 12,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -4903,20 +4128,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_INCREASE_OPERATIONS_INVENTORY_TARGET",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_INCREASE_OPERATIONS_INVENTORY_TARGET",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 12,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 12,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -4993,20 +4204,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_ADJUST_OPERATIONS_INVENTORY_TARGET",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_ADJUST_OPERATIONS_INVENTORY_TARGET",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 12,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 12,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -5083,20 +4280,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_INVENTORY_TARGET_CONFIGURATION",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_INVENTORY_TARGET_CONFIGURATION",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 18,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 18,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -5169,20 +4352,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 8,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 8,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -5299,20 +4468,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_PRODUCTION_TAG",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_PRODUCTION_TAG",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 6,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 6,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -5383,20 +4538,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_PRODUCTION_TAG",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_PRODUCTION_TAG",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 6,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 6,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -5477,20 +4618,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 6,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 6,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -6000,7 +5127,6 @@
               "NOT_FOUND",
               "OWNER_REFERENCE_LEAK",
               "PRODUCTION_TAG_NOT_BINDABLE",
-              "REFERENCE_BLOCKS_DELETE",
               "REFERENCE_BLOCKS_VOID",
               "REFERENCE_MAPPING_UNRESOLVED",
               "RESULT_UNKNOWN",
@@ -6249,11 +5375,60 @@
                           "type": "integer",
                           "description": "design-bound field"
                         },
-                        "blockingReferenceLabels": {
-                          "type": "array",
-                          "description": "design-bound field",
-                          "items": {
-                            "type": "string"
+                        "blockingReferences": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "count",
+                            "references"
+                          ],
+                          "properties": {
+                            "count": {
+                              "type": "integer",
+                              "description": "number of blocking references"
+                            },
+                            "references": {
+                              "type": "array",
+                              "description": "typed blocking references",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "referenceKind",
+                                  "referenceRef",
+                                  "code",
+                                  "name",
+                                  "direction"
+                                ],
+                                "properties": {
+                                  "referenceKind": {
+                                    "type": "string",
+                                    "description": "business reference kind"
+                                  },
+                                  "referenceRef": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "description": "business reference opaque reference"
+                                  },
+                                  "code": {
+                                    "type": "string",
+                                    "description": "referenced business code"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "referenced business name"
+                                  },
+                                  "direction": {
+                                    "type": "string",
+                                    "enum": [
+                                      "INBOUND",
+                                      "OUTBOUND"
+                                    ],
+                                    "description": "reference direction"
+                                  }
+                                }
+                              }
+                            }
                           }
                         }
                       },
@@ -6261,7 +5436,7 @@
                         "canDelete",
                         "subtreeSize",
                         "blockingReferenceCount",
-                        "blockingReferenceLabels"
+                        "blockingReferences"
                       ]
                     }
                   },
@@ -6526,13 +5701,6 @@
                       "type": "integer",
                       "description": "design-bound field"
                     },
-                    "skuDimensionSummary": {
-                      "type": "array",
-                      "description": "design-bound field",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
                     "standardSalePrice": {
                       "type": [
                         "integer",
@@ -6590,49 +5758,9 @@
                       "description": "design-bound field",
                       "format": "epoch-millis"
                     },
-                    "categoryPathLabels": {
-                      "type": "array",
-                      "description": "owner-provided category path labels for cross-category results",
-                      "items": {
-                        "type": "string",
-                        "description": "category path label"
-                      }
-                    },
-                    "tagSummary": {
-                      "type": "array",
-                      "description": "business-ordered catalog tag names for list rendering",
-                      "items": {
-                        "type": "string",
-                        "description": "catalog tag name"
-                      }
-                    },
                     "hasSkuChildren": {
                       "type": "boolean",
                       "description": "whether the parent row has SKU child rows"
-                    },
-                    "specificationOrOptionSummary": {
-                      "type": "array",
-                      "description": "business-ordered specification or ordering-option display lines",
-                      "items": {
-                        "type": "string",
-                        "description": "specification or option display line"
-                      }
-                    },
-                    "attributeSummary": {
-                      "type": "array",
-                      "description": "business-ordered product attribute display lines",
-                      "items": {
-                        "type": "string",
-                        "description": "product attribute display line"
-                      }
-                    },
-                    "preparationSummary": {
-                      "type": "array",
-                      "description": "business-ordered production information display lines",
-                      "items": {
-                        "type": "string",
-                        "description": "production information display line"
-                      }
                     },
                     "salesUnit": {
                       "type": [
@@ -6674,7 +5802,8 @@
                           "type": "string",
                           "enum": [
                             "ENABLED",
-                            "DISABLED"
+                            "DISABLED",
+                            "VOIDED"
                           ],
                           "description": "unit lifecycle status"
                         },
@@ -6737,7 +5866,8 @@
                           "type": "string",
                           "enum": [
                             "ENABLED",
-                            "DISABLED"
+                            "DISABLED",
+                            "VOIDED"
                           ],
                           "description": "unit lifecycle status"
                         },
@@ -6845,6 +5975,435 @@
                           "description": "component line count when deduction mode is BOM"
                         }
                       }
+                    },
+                    "categoryPath": {
+                      "type": "array",
+                      "description": "owner-provided category path facts for cross-category results",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "categoryRef",
+                          "code",
+                          "name"
+                        ],
+                        "properties": {
+                          "categoryRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "category reference in the full path"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "category business code"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "category name"
+                          }
+                        }
+                      }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "description": "typed catalog tag facts for list rendering",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "tagRef",
+                          "code",
+                          "name"
+                        ],
+                        "properties": {
+                          "tagRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "catalog tag reference"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "catalog tag business code"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "catalog tag name"
+                          }
+                        }
+                      }
+                    },
+                    "specificationFacts": {
+                      "type": "array",
+                      "description": "typed SKU specification definition and value facts",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "attributeRef",
+                          "attributeCode",
+                          "attributeName",
+                          "values"
+                        ],
+                        "properties": {
+                          "attributeRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "specification definition reference"
+                          },
+                          "attributeCode": {
+                            "type": "string",
+                            "description": "specification definition code"
+                          },
+                          "attributeName": {
+                            "type": "string",
+                            "description": "specification definition name"
+                          },
+                          "values": {
+                            "type": "array",
+                            "description": "specification values",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "valueRef",
+                                "valueCode",
+                                "valueLabel",
+                                "displayOrder",
+                                "status"
+                              ],
+                              "properties": {
+                                "valueRef": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "description": "specification value reference"
+                                },
+                                "valueCode": {
+                                  "type": "string",
+                                  "description": "specification value code"
+                                },
+                                "valueLabel": {
+                                  "type": "string",
+                                  "description": "specification value name"
+                                },
+                                "displayOrder": {
+                                  "type": "integer",
+                                  "description": "specification value display order"
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "description": "specification value status"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "orderOptionFacts": {
+                      "type": "array",
+                      "description": "typed ordering option definition and value facts",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "definitionRef",
+                          "name",
+                          "selectionMode",
+                          "displayOrder",
+                          "required",
+                          "minSelectionCount",
+                          "maxSelectionCount",
+                          "values"
+                        ],
+                        "properties": {
+                          "definitionRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "ordering option definition reference"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "ordering option name"
+                          },
+                          "selectionMode": {
+                            "type": "string",
+                            "enum": [
+                              "SINGLE",
+                              "MULTIPLE"
+                            ],
+                            "description": "customer selection mode"
+                          },
+                          "displayOrder": {
+                            "type": "integer",
+                            "description": "option group business display order"
+                          },
+                          "required": {
+                            "type": "boolean",
+                            "description": "whether a customer must choose"
+                          },
+                          "minSelectionCount": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "description": "minimum selections for a multiple-choice option"
+                          },
+                          "maxSelectionCount": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "description": "maximum selections for a multiple-choice option"
+                          },
+                          "values": {
+                            "type": "array",
+                            "description": "settings for library option values",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "definitionValueRef",
+                                "name",
+                                "displayOrder",
+                                "defaultValue",
+                                "extraPrice",
+                                "bomVersion",
+                                "preparationEffect"
+                              ],
+                              "properties": {
+                                "definitionValueRef": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "description": "ordering option value reference"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "customer option name"
+                                },
+                                "displayOrder": {
+                                  "type": "integer",
+                                  "description": "customer display order"
+                                },
+                                "defaultValue": {
+                                  "type": "boolean",
+                                  "description": "default selected value"
+                                },
+                                "extraPrice": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ],
+                                  "description": "extra price"
+                                },
+                                "bomVersion": {
+                                  "type": [
+                                    "integer",
+                                    "null"
+                                  ],
+                                  "minimum": 0,
+                                  "description": "inventory BOM version for the option value"
+                                },
+                                "preparationEffect": {
+                                  "type": [
+                                    "object",
+                                    "null"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "definitionValueRef": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "description": "option value reference"
+                                    },
+                                    "optionGroupDisplayOrder": {
+                                      "type": "integer",
+                                      "description": "option group business display order"
+                                    },
+                                    "optionValueDisplayOrder": {
+                                      "type": "integer",
+                                      "description": "option value business display order"
+                                    },
+                                    "instruction": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ],
+                                      "maxLength": 1000,
+                                      "description": "optional additional preparation instruction"
+                                    },
+                                    "preparationSecondsDelta": {
+                                      "type": [
+                                        "integer",
+                                        "null"
+                                      ],
+                                      "minimum": 0,
+                                      "description": "optional non-negative added preparation seconds"
+                                    }
+                                  },
+                                  "required": [
+                                    "definitionValueRef",
+                                    "optionGroupDisplayOrder",
+                                    "optionValueDisplayOrder"
+                                  ],
+                                  "description": "optional additive preparation change readback"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "attributeFacts": {
+                      "type": "array",
+                      "description": "typed product attribute assignment facts",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "definitionRef",
+                          "code",
+                          "name",
+                          "valueType",
+                          "textValue",
+                          "optionRefs"
+                        ],
+                        "properties": {
+                          "definitionRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "attribute definition reference"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "attribute code"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "attribute name"
+                          },
+                          "valueType": {
+                            "type": "string",
+                            "enum": [
+                              "TEXT",
+                              "SINGLE_SELECT",
+                              "MULTI_SELECT"
+                            ],
+                            "description": "attribute value type"
+                          },
+                          "textValue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "text value for a text attribute"
+                          },
+                          "optionRefs": {
+                            "type": "array",
+                            "description": "selected attribute choices",
+                            "items": {
+                              "type": "string",
+                              "format": "uuid",
+                              "description": "attribute option reference"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "preparationFacts": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "productionTag",
+                        "profile",
+                        "skuVariation"
+                      ],
+                      "properties": {
+                        "productionTag": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "tagRef": {
+                              "type": "string",
+                              "format": "uuid",
+                              "description": "production tag reference"
+                            },
+                            "code": {
+                              "type": "string",
+                              "description": "production tag code"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "production tag name"
+                            },
+                            "status": {
+                              "type": "string",
+                              "description": "production tag status"
+                            },
+                            "owner": {
+                              "type": "string",
+                              "description": "production tag owner"
+                            }
+                          },
+                          "required": [
+                            "tagRef",
+                            "code",
+                            "name",
+                            "status",
+                            "owner"
+                          ]
+                        },
+                        "profile": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "productionDisplayName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 120,
+                              "description": "optional display name for a production ticket"
+                            },
+                            "estimatedPreparationSeconds": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "minimum": 0,
+                              "description": "optional non-negative estimated preparation seconds"
+                            },
+                            "preparationNotes": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 1000,
+                              "description": "optional preparation notes"
+                            }
+                          },
+                          "required": [],
+                          "description": "null means no effective preparation profile is configured"
+                        },
+                        "skuVariation": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "varies"
+                          ],
+                          "properties": {
+                            "varies": {
+                              "type": "boolean",
+                              "description": "whether SKU preparation differs from the item default"
+                            }
+                          }
+                        }
+                      }
                     }
                   },
                   "required": [
@@ -6861,7 +6420,6 @@
                     "skuEnabledCount",
                     "skuNonArchivedCount",
                     "skuTotalCount",
-                    "skuDimensionSummary",
                     "standardSalePrice",
                     "standardSalePriceMin",
                     "standardSalePriceMax",
@@ -6870,15 +6428,16 @@
                     "priceGranularity",
                     "version",
                     "updatedAt",
-                    "categoryPathLabels",
-                    "tagSummary",
                     "hasSkuChildren",
-                    "specificationOrOptionSummary",
-                    "attributeSummary",
-                    "preparationSummary",
                     "salesUnit",
                     "baseMeasureUnit",
-                    "inventoryDeductionSummary"
+                    "inventoryDeductionSummary",
+                    "categoryPath",
+                    "tags",
+                    "specificationFacts",
+                    "orderOptionFacts",
+                    "attributeFacts",
+                    "preparationFacts"
                   ]
                 }
               },
@@ -7091,7 +6650,6 @@
               "ALL",
               "EXTERNAL_ORDER_TEMP",
               "INACTIVE",
-              "ARCHIVED",
               "RECENTLY_UPDATED",
               "AUTO_SYNC"
             ]
@@ -7572,7 +7130,8 @@
                               "type": "string",
                               "enum": [
                                 "ENABLED",
-                                "DISABLED"
+                                "DISABLED",
+                                "VOIDED"
                               ],
                               "description": "unit lifecycle status"
                             },
@@ -7635,7 +7194,8 @@
                               "type": "string",
                               "enum": [
                                 "ENABLED",
-                                "DISABLED"
+                                "DISABLED",
+                                "VOIDED"
                               ],
                               "description": "unit lifecycle status"
                             },
@@ -7919,7 +7479,8 @@
                         "type": "string",
                         "enum": [
                           "ENABLED",
-                          "DISABLED"
+                          "DISABLED",
+                          "VOIDED"
                         ],
                         "description": "unit lifecycle status"
                       },
@@ -7982,7 +7543,8 @@
                         "type": "string",
                         "enum": [
                           "ENABLED",
-                          "DISABLED"
+                          "DISABLED",
+                          "VOIDED"
                         ],
                         "description": "unit lifecycle status"
                       },
@@ -8619,14 +8181,6 @@
                       }
                     }
                   },
-                  "categoryPathLabels": {
-                    "type": "array",
-                    "description": "owner-provided complete category path for the item detail",
-                    "items": {
-                      "type": "string",
-                      "description": "category path label"
-                    }
-                  },
                   "preparationProfile": {
                     "type": [
                       "object",
@@ -8661,6 +8215,407 @@
                     },
                     "required": [],
                     "description": "null means no effective preparation profile is configured"
+                  },
+                  "categoryPath": {
+                    "type": "array",
+                    "description": "owner-provided complete category path facts for the item detail",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "categoryRef",
+                        "code",
+                        "name"
+                      ],
+                      "properties": {
+                        "categoryRef": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "category reference in the full path"
+                        },
+                        "code": {
+                          "type": "string",
+                          "description": "category business code"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "category name"
+                        }
+                      }
+                    }
+                  },
+                  "specificationFacts": {
+                    "type": "array",
+                    "description": "typed SKU specification definition and value facts",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "attributeRef",
+                        "attributeCode",
+                        "attributeName",
+                        "values"
+                      ],
+                      "properties": {
+                        "attributeRef": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "specification definition reference"
+                        },
+                        "attributeCode": {
+                          "type": "string",
+                          "description": "specification definition code"
+                        },
+                        "attributeName": {
+                          "type": "string",
+                          "description": "specification definition name"
+                        },
+                        "values": {
+                          "type": "array",
+                          "description": "specification values",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "valueRef",
+                              "valueCode",
+                              "valueLabel",
+                              "displayOrder",
+                              "status"
+                            ],
+                            "properties": {
+                              "valueRef": {
+                                "type": "string",
+                                "format": "uuid",
+                                "description": "specification value reference"
+                              },
+                              "valueCode": {
+                                "type": "string",
+                                "description": "specification value code"
+                              },
+                              "valueLabel": {
+                                "type": "string",
+                                "description": "specification value name"
+                              },
+                              "displayOrder": {
+                                "type": "integer",
+                                "description": "specification value display order"
+                              },
+                              "status": {
+                                "type": "string",
+                                "description": "specification value status"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "orderOptionFacts": {
+                    "type": "array",
+                    "description": "typed ordering option definition and value facts",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "definitionRef",
+                        "name",
+                        "selectionMode",
+                        "displayOrder",
+                        "required",
+                        "minSelectionCount",
+                        "maxSelectionCount",
+                        "values"
+                      ],
+                      "properties": {
+                        "definitionRef": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "ordering option definition reference"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "ordering option name"
+                        },
+                        "selectionMode": {
+                          "type": "string",
+                          "enum": [
+                            "SINGLE",
+                            "MULTIPLE"
+                          ],
+                          "description": "customer selection mode"
+                        },
+                        "displayOrder": {
+                          "type": "integer",
+                          "description": "option group business display order"
+                        },
+                        "required": {
+                          "type": "boolean",
+                          "description": "whether a customer must choose"
+                        },
+                        "minSelectionCount": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "description": "minimum selections for a multiple-choice option"
+                        },
+                        "maxSelectionCount": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "description": "maximum selections for a multiple-choice option"
+                        },
+                        "values": {
+                          "type": "array",
+                          "description": "settings for library option values",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "definitionValueRef",
+                              "name",
+                              "displayOrder",
+                              "defaultValue",
+                              "extraPrice",
+                              "bomVersion",
+                              "preparationEffect"
+                            ],
+                            "properties": {
+                              "definitionValueRef": {
+                                "type": "string",
+                                "format": "uuid",
+                                "description": "ordering option value reference"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "customer option name"
+                              },
+                              "displayOrder": {
+                                "type": "integer",
+                                "description": "customer display order"
+                              },
+                              "defaultValue": {
+                                "type": "boolean",
+                                "description": "default selected value"
+                              },
+                              "extraPrice": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ],
+                                "description": "extra price"
+                              },
+                              "bomVersion": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 0,
+                                "description": "inventory BOM version for the option value"
+                              },
+                              "preparationEffect": {
+                                "type": [
+                                  "object",
+                                  "null"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "definitionValueRef": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "description": "option value reference"
+                                  },
+                                  "optionGroupDisplayOrder": {
+                                    "type": "integer",
+                                    "description": "option group business display order"
+                                  },
+                                  "optionValueDisplayOrder": {
+                                    "type": "integer",
+                                    "description": "option value business display order"
+                                  },
+                                  "instruction": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ],
+                                    "maxLength": 1000,
+                                    "description": "optional additional preparation instruction"
+                                  },
+                                  "preparationSecondsDelta": {
+                                    "type": [
+                                      "integer",
+                                      "null"
+                                    ],
+                                    "minimum": 0,
+                                    "description": "optional non-negative added preparation seconds"
+                                  }
+                                },
+                                "required": [
+                                  "definitionValueRef",
+                                  "optionGroupDisplayOrder",
+                                  "optionValueDisplayOrder"
+                                ],
+                                "description": "optional additive preparation change readback"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "attributeFacts": {
+                    "type": "array",
+                    "description": "typed product attribute assignment facts",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "definitionRef",
+                        "code",
+                        "name",
+                        "valueType",
+                        "textValue",
+                        "optionRefs"
+                      ],
+                      "properties": {
+                        "definitionRef": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "attribute definition reference"
+                        },
+                        "code": {
+                          "type": "string",
+                          "description": "attribute code"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "attribute name"
+                        },
+                        "valueType": {
+                          "type": "string",
+                          "enum": [
+                            "TEXT",
+                            "SINGLE_SELECT",
+                            "MULTI_SELECT"
+                          ],
+                          "description": "attribute value type"
+                        },
+                        "textValue": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "text value for a text attribute"
+                        },
+                        "optionRefs": {
+                          "type": "array",
+                          "description": "selected attribute choices",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "attribute option reference"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "preparationFacts": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "productionTag",
+                      "profile",
+                      "skuVariation"
+                    ],
+                    "properties": {
+                      "productionTag": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "tagRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "production tag reference"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "production tag code"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "production tag name"
+                          },
+                          "status": {
+                            "type": "string",
+                            "description": "production tag status"
+                          },
+                          "owner": {
+                            "type": "string",
+                            "description": "production tag owner"
+                          }
+                        },
+                        "required": [
+                          "tagRef",
+                          "code",
+                          "name",
+                          "status",
+                          "owner"
+                        ]
+                      },
+                      "profile": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "productionDisplayName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 120,
+                            "description": "optional display name for a production ticket"
+                          },
+                          "estimatedPreparationSeconds": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 0,
+                            "description": "optional non-negative estimated preparation seconds"
+                          },
+                          "preparationNotes": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 1000,
+                            "description": "optional preparation notes"
+                          }
+                        },
+                        "required": [],
+                        "description": "null means no effective preparation profile is configured"
+                      },
+                      "skuVariation": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "varies"
+                        ],
+                        "properties": {
+                          "varies": {
+                            "type": "boolean",
+                            "description": "whether SKU preparation differs from the item default"
+                          }
+                        }
+                      }
+                    }
                   }
                 },
                 "required": [
@@ -8696,8 +8651,12 @@
                   "categoryRef",
                   "attributeAssignments",
                   "orderOptionConfigs",
-                  "categoryPathLabels",
-                  "preparationProfile"
+                  "preparationProfile",
+                  "categoryPath",
+                  "specificationFacts",
+                  "orderOptionFacts",
+                  "attributeFacts",
+                  "preparationFacts"
                 ]
               },
               "tabs": {
@@ -8762,10 +8721,6 @@
                     "name": {
                       "type": "string",
                       "description": "referenced catalog item name"
-                    },
-                    "relationLabel": {
-                      "type": "string",
-                      "description": "user-visible relationship label"
                     }
                   },
                   "required": [
@@ -8773,8 +8728,7 @@
                     "referenceRef",
                     "code",
                     "direction",
-                    "name",
-                    "relationLabel"
+                    "name"
                   ]
                 }
               },
@@ -10322,8 +10276,8 @@
                     "status",
                     "primaryImageAssetRef",
                     "inventoryDeductionSummary",
-                    "attributeSummary",
-                    "preparationSummary",
+                    "attributeFacts",
+                    "preparationFacts",
                     "updatedAt"
                   ],
                   "properties": {
@@ -10442,7 +10396,8 @@
                           "type": "string",
                           "enum": [
                             "ENABLED",
-                            "DISABLED"
+                            "DISABLED",
+                            "VOIDED"
                           ],
                           "description": "unit lifecycle status"
                         },
@@ -10505,7 +10460,8 @@
                           "type": "string",
                           "enum": [
                             "ENABLED",
-                            "DISABLED"
+                            "DISABLED",
+                            "VOIDED"
                           ],
                           "description": "unit lifecycle status"
                         },
@@ -10630,18 +10586,154 @@
                         }
                       }
                     },
-                    "attributeSummary": {
+                    "attributeFacts": {
                       "type": "array",
-                      "description": "SKU-specific product attribute display lines; empty means inherit the parent product",
+                      "description": "typed SKU attribute value facts",
                       "items": {
-                        "type": "string"
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "attributeRef",
+                          "attributeCode",
+                          "attributeName",
+                          "attributeValueRef",
+                          "valueCode",
+                          "valueLabel",
+                          "displayOrder",
+                          "status"
+                        ],
+                        "properties": {
+                          "attributeRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "specification definition reference"
+                          },
+                          "attributeCode": {
+                            "type": "string",
+                            "description": "specification definition code"
+                          },
+                          "attributeName": {
+                            "type": "string",
+                            "description": "specification definition name"
+                          },
+                          "attributeValueRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "specification value reference"
+                          },
+                          "valueCode": {
+                            "type": "string",
+                            "description": "specification value code"
+                          },
+                          "valueLabel": {
+                            "type": "string",
+                            "description": "specification value name"
+                          },
+                          "displayOrder": {
+                            "type": "integer",
+                            "description": "specification value display order"
+                          },
+                          "status": {
+                            "type": "string",
+                            "description": "specification value status"
+                          }
+                        }
                       }
                     },
-                    "preparationSummary": {
-                      "type": "array",
-                      "description": "effective SKU production information display lines",
-                      "items": {
-                        "type": "string"
+                    "preparationFacts": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "productionTag",
+                        "profile",
+                        "skuVariation"
+                      ],
+                      "properties": {
+                        "productionTag": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "tagRef": {
+                              "type": "string",
+                              "format": "uuid",
+                              "description": "production tag reference"
+                            },
+                            "code": {
+                              "type": "string",
+                              "description": "production tag code"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "production tag name"
+                            },
+                            "status": {
+                              "type": "string",
+                              "description": "production tag status"
+                            },
+                            "owner": {
+                              "type": "string",
+                              "description": "production tag owner"
+                            }
+                          },
+                          "required": [
+                            "tagRef",
+                            "code",
+                            "name",
+                            "status",
+                            "owner"
+                          ]
+                        },
+                        "profile": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "productionDisplayName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 120,
+                              "description": "optional display name for a production ticket"
+                            },
+                            "estimatedPreparationSeconds": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "minimum": 0,
+                              "description": "optional non-negative estimated preparation seconds"
+                            },
+                            "preparationNotes": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 1000,
+                              "description": "optional preparation notes"
+                            }
+                          },
+                          "required": [],
+                          "description": "null means no effective preparation profile is configured"
+                        },
+                        "skuVariation": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "varies"
+                          ],
+                          "properties": {
+                            "varies": {
+                              "type": "boolean",
+                              "description": "whether SKU preparation differs from the item default"
+                            }
+                          }
+                        }
                       }
                     },
                     "updatedAt": {
@@ -12609,6 +12701,7 @@
                     "definitionRef",
                     "code",
                     "name",
+                    "status",
                     "valueType",
                     "options",
                     "version"
@@ -12626,6 +12719,15 @@
                     "name": {
                       "type": "string",
                       "description": "attribute name"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ENABLED",
+                        "DISABLED",
+                        "VOIDED"
+                      ],
+                      "description": "attribute lifecycle status"
                     },
                     "valueType": {
                       "type": "string",
@@ -12709,6 +12811,7 @@
                     "definitionRef",
                     "code",
                     "name",
+                    "status",
                     "selectionMode",
                     "values",
                     "version"
@@ -12726,6 +12829,15 @@
                     "name": {
                       "type": "string",
                       "description": "ordering option name"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ENABLED",
+                        "DISABLED",
+                        "VOIDED"
+                      ],
+                      "description": "ordering option lifecycle status"
                     },
                     "selectionMode": {
                       "type": "string",
@@ -12932,7 +13044,8 @@
                       "type": "string",
                       "enum": [
                         "ENABLED",
-                        "DISABLED"
+                        "DISABLED",
+                        "VOIDED"
                       ],
                       "description": "whether the unit can be selected for new configurations"
                     },
@@ -14128,7 +14241,8 @@
                         "type": "string",
                         "enum": [
                           "ENABLED",
-                          "DISABLED"
+                          "DISABLED",
+                          "VOIDED"
                         ],
                         "description": "unit lifecycle status"
                       },
@@ -14191,7 +14305,8 @@
                         "type": "string",
                         "enum": [
                           "ENABLED",
-                          "DISABLED"
+                          "DISABLED",
+                          "VOIDED"
                         ],
                         "description": "unit lifecycle status"
                       },
@@ -15174,10 +15289,8 @@
           "targetStatus": {
             "type": "string",
             "enum": [
-              "DRAFT",
               "ENABLED",
               "DISABLED",
-              "ARCHIVED",
               "VOIDED"
             ],
             "description": "one lifecycle status applied to every item in this batch"
@@ -15300,7 +15413,6 @@
                     "NOT_FOUND",
                     "OWNER_REFERENCE_LEAK",
                     "PRODUCTION_TAG_NOT_BINDABLE",
-                    "REFERENCE_BLOCKS_DELETE",
                     "REFERENCE_BLOCKS_VOID",
                     "REFERENCE_MAPPING_UNRESOLVED",
                     "RESULT_UNKNOWN",
@@ -15353,6 +15465,11 @@
           },
           "targetStatus": {
             "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
             "description": "target lifecycle status"
           },
           "dataNodeRef": {
@@ -15377,6 +15494,13 @@
           "itemCode": {
             "type": "string",
             "description": "parent catalog item code"
+          },
+          "candidateUsage": {
+            "type": "string",
+            "enum": [
+              "COMPOSITE_COMPONENT"
+            ],
+            "description": "owner-defined candidate usage; only enabled SKUs are returned"
           },
           "cursor": {
             "type": "string",
@@ -15604,6 +15728,41 @@
           }
         }
       },
+      "CatalogCategoryStatusTransitionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "categoryRef",
+          "expectedVersion",
+          "targetStatus",
+          "dataNodeRef"
+        ],
+        "properties": {
+          "dataNodeRef": {
+            "type": "string",
+            "format": "uuid",
+            "description": "selected data node"
+          },
+          "categoryRef": {
+            "type": "string",
+            "format": "uuid",
+            "description": "category reference"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "description": "expected version"
+          },
+          "targetStatus": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "description": "target lifecycle status"
+          }
+        }
+      },
       "CatalogAttributeDefinitionListQuery": {
         "type": "object",
         "additionalProperties": false,
@@ -15613,6 +15772,13 @@
             "type": "string",
             "format": "uuid",
             "description": "selected data node"
+          },
+          "candidateUsage": {
+            "type": "string",
+            "enum": [
+              "ITEM_ASSIGNMENT"
+            ],
+            "description": "owner-defined candidate usage; only enabled definitions are returned"
           }
         }
       },
@@ -15747,12 +15913,13 @@
           }
         }
       },
-      "CatalogAttributeDefinitionDeleteRequest": {
+      "CatalogAttributeDefinitionStatusTransitionRequest": {
         "type": "object",
         "additionalProperties": false,
         "required": [
           "definitionRef",
           "expectedVersion",
+          "targetStatus",
           "dataNodeRef"
         ],
         "properties": {
@@ -15769,6 +15936,15 @@
           "expectedVersion": {
             "type": "integer",
             "description": "expected version"
+          },
+          "targetStatus": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "description": "target lifecycle status"
           }
         }
       },
@@ -15803,6 +15979,7 @@
                   "definitionRef",
                   "code",
                   "name",
+                  "status",
                   "valueType",
                   "options",
                   "version"
@@ -15820,6 +15997,15 @@
                   "name": {
                     "type": "string",
                     "description": "attribute name"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "description": "attribute lifecycle status"
                   },
                   "valueType": {
                     "type": "string",
@@ -15872,48 +16058,6 @@
           }
         }
       },
-      "CatalogAttributeDefinitionDeleteReadback": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "revision",
-          "requestId",
-          "result"
-        ],
-        "properties": {
-          "revision": {
-            "type": "string",
-            "description": "contract revision"
-          },
-          "requestId": {
-            "type": "string",
-            "description": "request correlation"
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "definitionRef",
-              "deletedAssignmentCount"
-            ],
-            "properties": {
-              "definitionRef": {
-                "type": "string",
-                "format": "uuid",
-                "description": "deleted attribute definition reference"
-              },
-              "deletedAssignmentCount": {
-                "type": "integer",
-                "description": "product attribute assignments removed by the cascade"
-              }
-            }
-          },
-          "version": {
-            "type": "integer",
-            "description": "delete receipt version"
-          }
-        }
-      },
       "CatalogOrderOptionDefinitionListQuery": {
         "type": "object",
         "additionalProperties": false,
@@ -15923,6 +16067,13 @@
             "type": "string",
             "format": "uuid",
             "description": "selected data node"
+          },
+          "candidateUsage": {
+            "type": "string",
+            "enum": [
+              "ITEM_ASSIGNMENT"
+            ],
+            "description": "owner-defined candidate usage; only enabled definitions are returned"
           }
         }
       },
@@ -16113,12 +16264,13 @@
           }
         }
       },
-      "CatalogOrderOptionDefinitionDeleteRequest": {
+      "CatalogOrderOptionDefinitionStatusTransitionRequest": {
         "type": "object",
         "additionalProperties": false,
         "required": [
           "definitionRef",
           "expectedVersion",
+          "targetStatus",
           "dataNodeRef"
         ],
         "properties": {
@@ -16135,6 +16287,15 @@
           "expectedVersion": {
             "type": "integer",
             "description": "expected version"
+          },
+          "targetStatus": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "description": "target lifecycle status"
           }
         }
       },
@@ -16170,6 +16331,7 @@
                   "definitionRef",
                   "code",
                   "name",
+                  "status",
                   "selectionMode",
                   "values",
                   "version"
@@ -16187,6 +16349,15 @@
                   "name": {
                     "type": "string",
                     "description": "ordering option name"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "description": "ordering option lifecycle status"
                   },
                   "selectionMode": {
                     "type": "string",
@@ -16331,58 +16502,6 @@
           }
         }
       },
-      "CatalogOrderOptionDefinitionDeleteReadback": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "revision",
-          "requestId",
-          "result"
-        ],
-        "properties": {
-          "revision": {
-            "type": "string",
-            "description": "contract revision"
-          },
-          "requestId": {
-            "type": "string",
-            "description": "request correlation"
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "definitionRef",
-              "deletedDefinitionValueRefs",
-              "deletedItemConfigCount"
-            ],
-            "properties": {
-              "definitionRef": {
-                "type": "string",
-                "format": "uuid",
-                "description": "deleted ordering option definition reference"
-              },
-              "deletedDefinitionValueRefs": {
-                "type": "array",
-                "description": "deleted option value references",
-                "items": {
-                  "type": "string",
-                  "format": "uuid",
-                  "description": "deleted option value reference"
-                }
-              },
-              "deletedItemConfigCount": {
-                "type": "integer",
-                "description": "product ordering option configurations removed by the cascade"
-              }
-            }
-          },
-          "version": {
-            "type": "integer",
-            "description": "delete receipt version"
-          }
-        }
-      },
       "CatalogUnitListQuery": {
         "type": "object",
         "additionalProperties": false,
@@ -16409,7 +16528,8 @@
             "type": "string",
             "enum": [
               "ENABLED",
-              "DISABLED"
+              "DISABLED",
+              "VOIDED"
             ],
             "description": "optional unit lifecycle status filter"
           }
@@ -16493,12 +16613,13 @@
           }
         }
       },
-      "CatalogUnitDisableRequest": {
+      "CatalogUnitStatusTransitionRequest": {
         "type": "object",
         "additionalProperties": false,
         "required": [
           "unitRef",
           "expectedVersion",
+          "targetStatus",
           "dataNodeRef"
         ],
         "properties": {
@@ -16515,31 +16636,15 @@
           "expectedVersion": {
             "type": "integer",
             "description": "expected version"
-          }
-        }
-      },
-      "CatalogUnitDeleteRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "unitRef",
-          "expectedVersion",
-          "dataNodeRef"
-        ],
-        "properties": {
-          "dataNodeRef": {
-            "type": "string",
-            "format": "uuid",
-            "description": "selected data node"
           },
-          "unitRef": {
+          "targetStatus": {
             "type": "string",
-            "format": "uuid",
-            "description": "unit reference"
-          },
-          "expectedVersion": {
-            "type": "integer",
-            "description": "expected version"
+            "enum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "description": "target lifecycle status"
           }
         }
       },
@@ -16613,7 +16718,8 @@
                     "type": "string",
                     "enum": [
                       "ENABLED",
-                      "DISABLED"
+                      "DISABLED",
+                      "VOIDED"
                     ],
                     "description": "whether the unit can be selected for new configurations"
                   },
@@ -16628,43 +16734,6 @@
           "version": {
             "type": "integer",
             "description": "unit definition version"
-          }
-        }
-      },
-      "CatalogUnitDeleteReadback": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "revision",
-          "requestId",
-          "result"
-        ],
-        "properties": {
-          "revision": {
-            "type": "string",
-            "description": "contract revision"
-          },
-          "requestId": {
-            "type": "string",
-            "description": "request correlation"
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "unitRef"
-            ],
-            "properties": {
-              "unitRef": {
-                "type": "string",
-                "format": "uuid",
-                "description": "deleted unit definition reference"
-              }
-            }
-          },
-          "version": {
-            "type": "integer",
-            "description": "delete receipt version"
           }
         }
       },
@@ -16725,6 +16794,7 @@
               "categoryRef",
               "code",
               "name",
+              "status",
               "parentCategoryRef",
               "version",
               "displayOrder",
@@ -16743,6 +16813,15 @@
               "name": {
                 "type": "string",
                 "description": "category name"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ENABLED",
+                  "DISABLED",
+                  "VOIDED"
+                ],
+                "description": "category lifecycle status"
               },
               "parentCategoryRef": {
                 "type": [
@@ -16767,7 +16846,7 @@
                   "canDelete",
                   "subtreeSize",
                   "blockingReferenceCount",
-                  "blockingReferenceLabels"
+                  "blockingReferences"
                 ],
                 "properties": {
                   "canDelete": {
@@ -16782,11 +16861,60 @@
                     "type": "integer",
                     "description": "blocking product reference count"
                   },
-                  "blockingReferenceLabels": {
-                    "type": "array",
-                    "description": "safe blocking product labels",
-                    "items": {
-                      "type": "string"
+                  "blockingReferences": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "count",
+                      "references"
+                    ],
+                    "properties": {
+                      "count": {
+                        "type": "integer",
+                        "description": "number of blocking references"
+                      },
+                      "references": {
+                        "type": "array",
+                        "description": "typed blocking references",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "referenceKind",
+                            "referenceRef",
+                            "code",
+                            "name",
+                            "direction"
+                          ],
+                          "properties": {
+                            "referenceKind": {
+                              "type": "string",
+                              "description": "business reference kind"
+                            },
+                            "referenceRef": {
+                              "type": "string",
+                              "format": "uuid",
+                              "description": "business reference opaque reference"
+                            },
+                            "code": {
+                              "type": "string",
+                              "description": "referenced business code"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "referenced business name"
+                            },
+                            "direction": {
+                              "type": "string",
+                              "enum": [
+                                "INBOUND",
+                                "OUTBOUND"
+                              ],
+                              "description": "reference direction"
+                            }
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -16869,81 +16997,6 @@
             ],
             "description": "design-bound field",
             "format": "uuid"
-          }
-        }
-      },
-      "CatalogCategoryDeleteRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "dataNodeRef",
-          "categoryRef",
-          "expectedVersion"
-        ],
-        "properties": {
-          "dataNodeRef": {
-            "type": "string",
-            "description": "design-bound field",
-            "format": "uuid"
-          },
-          "categoryRef": {
-            "type": "string",
-            "description": "design-bound field",
-            "format": "uuid"
-          },
-          "expectedVersion": {
-            "type": "integer",
-            "description": "design-bound field"
-          }
-        }
-      },
-      "CatalogCategoryDeleteReadback": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "revision",
-          "requestId",
-          "result"
-        ],
-        "properties": {
-          "revision": {
-            "type": "string",
-            "description": "contract revision"
-          },
-          "requestId": {
-            "type": "string",
-            "description": "request correlation"
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "categoryRef",
-              "deletedSubtreeSize",
-              "deletedCategoryCodes"
-            ],
-            "properties": {
-              "categoryRef": {
-                "type": "string",
-                "format": "uuid",
-                "description": "deleted category opaque ref"
-              },
-              "deletedSubtreeSize": {
-                "type": "integer",
-                "description": "deleted category subtree size"
-              },
-              "deletedCategoryCodes": {
-                "type": "array",
-                "description": "deleted category business codes",
-                "items": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "version": {
-            "type": "integer",
-            "description": "version"
           }
         }
       },
@@ -17634,6 +17687,109 @@
                       "enum": [
                         "INTERNAL"
                       ]
+                    },
+                    "conversionFacts": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "countingUnitSnapshot",
+                        "consumptionUnitSnapshot",
+                        "conversionFactor"
+                      ],
+                      "properties": {
+                        "countingUnitSnapshot": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "unitRef": {
+                              "type": "string",
+                              "format": "uuid",
+                              "description": "unit definition reference"
+                            },
+                            "code": {
+                              "type": "string",
+                              "description": "unit code"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "unit name"
+                            },
+                            "unitDimension": {
+                              "type": "string",
+                              "enum": [
+                                "COUNT",
+                                "WEIGHT",
+                                "VOLUME",
+                                "SERVICE_DURATION",
+                                "PACKAGE"
+                              ],
+                              "description": "unit category"
+                            },
+                            "precision": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "description": "decimal places; zero means whole numbers"
+                            }
+                          },
+                          "required": [
+                            "unitRef",
+                            "code",
+                            "name",
+                            "unitDimension",
+                            "precision"
+                          ]
+                        },
+                        "consumptionUnitSnapshot": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "unitRef",
+                            "code",
+                            "name",
+                            "unitDimension",
+                            "precision"
+                          ],
+                          "properties": {
+                            "unitRef": {
+                              "type": "string",
+                              "format": "uuid",
+                              "description": "unit definition reference"
+                            },
+                            "code": {
+                              "type": "string",
+                              "description": "unit code"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "unit name"
+                            },
+                            "unitDimension": {
+                              "type": "string",
+                              "enum": [
+                                "COUNT",
+                                "WEIGHT",
+                                "VOLUME",
+                                "SERVICE_DURATION",
+                                "PACKAGE"
+                              ],
+                              "description": "unit category"
+                            },
+                            "precision": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "description": "decimal places; zero means whole numbers"
+                            }
+                          }
+                        },
+                        "conversionFactor": {
+                          "type": "string",
+                          "format": "decimal",
+                          "description": "counting-to-consumption factor"
+                        }
+                      }
                     }
                   },
                   "required": [
@@ -17661,7 +17817,8 @@
                     "change30d",
                     "lastChangeSource",
                     "lastChangeAt",
-                    "authorityType"
+                    "authorityType",
+                    "conversionFacts"
                   ]
                 }
               },
@@ -17905,6 +18062,109 @@
                 "enum": [
                   "INTERNAL"
                 ]
+              },
+              "conversionFacts": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "countingUnitSnapshot",
+                  "consumptionUnitSnapshot",
+                  "conversionFactor"
+                ],
+                "properties": {
+                  "countingUnitSnapshot": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "unitRef": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "unit definition reference"
+                      },
+                      "code": {
+                        "type": "string",
+                        "description": "unit code"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "unit name"
+                      },
+                      "unitDimension": {
+                        "type": "string",
+                        "enum": [
+                          "COUNT",
+                          "WEIGHT",
+                          "VOLUME",
+                          "SERVICE_DURATION",
+                          "PACKAGE"
+                        ],
+                        "description": "unit category"
+                      },
+                      "precision": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "decimal places; zero means whole numbers"
+                      }
+                    },
+                    "required": [
+                      "unitRef",
+                      "code",
+                      "name",
+                      "unitDimension",
+                      "precision"
+                    ]
+                  },
+                  "consumptionUnitSnapshot": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "unitRef",
+                      "code",
+                      "name",
+                      "unitDimension",
+                      "precision"
+                    ],
+                    "properties": {
+                      "unitRef": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "unit definition reference"
+                      },
+                      "code": {
+                        "type": "string",
+                        "description": "unit code"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "unit name"
+                      },
+                      "unitDimension": {
+                        "type": "string",
+                        "enum": [
+                          "COUNT",
+                          "WEIGHT",
+                          "VOLUME",
+                          "SERVICE_DURATION",
+                          "PACKAGE"
+                        ],
+                        "description": "unit category"
+                      },
+                      "precision": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "decimal places; zero means whole numbers"
+                      }
+                    }
+                  },
+                  "conversionFactor": {
+                    "type": "string",
+                    "format": "decimal",
+                    "description": "counting-to-consumption factor"
+                  }
+                }
               }
             },
             "required": [
@@ -17920,7 +18180,8 @@
               "consumptionUnitSnapshot",
               "countingUnitSnapshot",
               "conversionSummary",
-              "authorityType"
+              "authorityType",
+              "conversionFacts"
             ]
           },
           "balance": {

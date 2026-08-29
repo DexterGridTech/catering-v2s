@@ -113,7 +113,7 @@ class CatalogBatchStatusTransitionIntegrationTest {
         assertEquals("RESULT_UNKNOWN", failure.code());
         assertEquals("ENABLED", status(committedRef));
         assertEquals(2L, version(committedRef));
-        assertEquals("DRAFT", status(brokenRef));
+        assertEquals("DISABLED", status(brokenRef));
         assertEquals(1L, version(brokenRef));
         assertEquals(
                 0L,
@@ -136,7 +136,7 @@ class CatalogBatchStatusTransitionIntegrationTest {
 
         CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback readback = batch(
                 BRAND,
-                "ARCHIVED",
+                "VOIDED",
                 List.of(
                         new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(firstRef, 1L),
                         new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(secondRef, 1L)),
@@ -161,8 +161,8 @@ class CatalogBatchStatusTransitionIntegrationTest {
         assertEquals("VERSION_CONFLICT", readback.results().get(1).problemCode());
         assertFalse(readback.results().get(1).reason().isBlank());
         assertEquals(null, readback.results().get(1).version());
-        assertEquals("ARCHIVED", status(firstRef));
-        assertEquals("DRAFT", status(secondRef));
+        assertEquals("VOIDED", status(firstRef));
+        assertEquals("DISABLED", status(secondRef));
         assertEquals(
                 "keep",
                 jdbc.queryForObject(
@@ -172,9 +172,9 @@ class CatalogBatchStatusTransitionIntegrationTest {
     }
 
     @Test
-    void archivedTransitionDoesNotApplyVoidedReferenceGuard() {
-        JsonNode target = create(BRAND, "BATCH-ARCHIVED-REFERENCED");
-        JsonNode owner = create(BRAND, "BATCH-ARCHIVED-OWNER");
+    void disabledTransitionDoesNotApplyVoidedReferenceGuard() {
+        JsonNode target = create(BRAND, "BATCH-DISABLED-REFERENCED");
+        JsonNode owner = create(BRAND, "BATCH-DISABLED-OWNER");
         UUID targetRef = UUID.fromString(target.path("resourceRef").asText());
         UUID ownerRef = UUID.fromString(owner.path("resourceRef").asText());
         UUID groupRef = UUID.randomUUID();
@@ -210,14 +210,14 @@ class CatalogBatchStatusTransitionIntegrationTest {
 
         CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback readback = batch(
                 BRAND,
-                "ARCHIVED",
+                "DISABLED",
                 List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(targetRef, 1L)),
-                "batch-archive-reference-key");
+                "batch-disabled-reference-key");
 
         assertEquals(
                 CatalogOwnerApi.CatalogItemBatchStatusTransitionOutcome.SUCCEEDED,
                 readback.results().get(0).outcome());
-        assertEquals("ARCHIVED", status(targetRef));
+        assertEquals("DISABLED", status(targetRef));
     }
 
     @Test
@@ -227,7 +227,7 @@ class CatalogBatchStatusTransitionIntegrationTest {
 
         CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback readback = batch(
                 BRAND,
-                "ARCHIVED",
+                "VOIDED",
                 List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(foreignRef, 1L)),
                 "batch-scope-key");
 
@@ -238,13 +238,13 @@ class CatalogBatchStatusTransitionIntegrationTest {
         assertEquals("SCOPE_FORBIDDEN", readback.results().get(0).problemCode());
         assertFalse(readback.results().get(0).reason().isBlank());
         assertEquals(null, readback.results().get(0).version());
-        assertEquals("DRAFT", status(foreignRef));
+        assertEquals("DISABLED", status(foreignRef));
     }
 
     @Test
     void batchValidationRejectsEmptyDuplicateAndOverLimitBeforeHashing() {
-        CatalogOwnerApi.Problem empty = assertThrows(
-                CatalogOwnerApi.Problem.class, () -> batch(BRAND, "ARCHIVED", List.of(), "batch-empty-key"));
+        CatalogOwnerApi.Problem empty =
+                assertThrows(CatalogOwnerApi.Problem.class, () -> batch(BRAND, "VOIDED", List.of(), "batch-empty-key"));
         assertEquals("VALIDATION_ERROR", empty.code());
         assertEquals(400, empty.status());
 
@@ -253,7 +253,7 @@ class CatalogBatchStatusTransitionIntegrationTest {
                 CatalogOwnerApi.Problem.class,
                 () -> batch(
                         BRAND,
-                        "ARCHIVED",
+                        "VOIDED",
                         List.of(
                                 new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(duplicate, 1L),
                                 new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(duplicate, 1L)),
@@ -264,7 +264,7 @@ class CatalogBatchStatusTransitionIntegrationTest {
         for (int index = 0; index < 101; index++)
             tooMany.add(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(UUID.randomUUID(), 1L));
         CatalogOwnerApi.Problem oversized =
-                assertThrows(CatalogOwnerApi.Problem.class, () -> batch(BRAND, "ARCHIVED", tooMany, "batch-limit-key"));
+                assertThrows(CatalogOwnerApi.Problem.class, () -> batch(BRAND, "VOIDED", tooMany, "batch-limit-key"));
         assertEquals("VALIDATION_ERROR", oversized.code());
     }
 
@@ -275,11 +275,11 @@ class CatalogBatchStatusTransitionIntegrationTest {
         List<CatalogOwnerApi.CatalogItemBatchStatusTransitionItem> items =
                 List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(itemRef, 1L));
         CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback first =
-                batch(BRAND, "ARCHIVED", items, "batch-replay-key");
+                batch(BRAND, "VOIDED", items, "batch-replay-key");
         jdbc.update("UPDATE catalog.catalog_item SET status='DISABLED', version=version+1 WHERE item_ref=?", itemRef);
 
         CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback replay =
-                batch(BRAND, "ARCHIVED", items, "batch-replay-key");
+                batch(BRAND, "VOIDED", items, "batch-replay-key");
 
         assertEquals(first.results(), replay.results());
         assertEquals("DISABLED", status(itemRef));
@@ -296,7 +296,7 @@ class CatalogBatchStatusTransitionIntegrationTest {
 
         batch(
                 BRAND,
-                "ARCHIVED",
+                "VOIDED",
                 List.of(
                         new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(firstRef, 1L),
                         new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(secondRef, 1L)),
@@ -306,7 +306,7 @@ class CatalogBatchStatusTransitionIntegrationTest {
                 CatalogOwnerApi.Problem.class,
                 () -> batch(
                         BRAND,
-                        "ARCHIVED",
+                        "VOIDED",
                         List.of(
                                 new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(secondRef, 1L),
                                 new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(firstRef, 1L)),
@@ -320,7 +320,7 @@ class CatalogBatchStatusTransitionIntegrationTest {
         UUID itemRef = UUID.fromString(item.path("resourceRef").asText());
         CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback readback = batch(
                 BRAND,
-                "DRAFT",
+                "DISABLED",
                 List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(itemRef, 1L)),
                 "batch-noop-key");
 

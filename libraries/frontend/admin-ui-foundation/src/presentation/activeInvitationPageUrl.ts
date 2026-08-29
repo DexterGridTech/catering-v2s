@@ -1,7 +1,19 @@
+export type InvitationRouteFacts = Readonly<{
+  groupWorkspaceKey: string;
+  invitationToken: string;
+}>;
+
 export type InvitationPageLinkSource = {
   status: string;
-  invitationPageUrl?: string | null;
+  routeFacts?: InvitationRouteFacts | null;
 };
+
+function invitationRoutePath(routeFacts: InvitationRouteFacts): string | undefined {
+  const groupWorkspaceKey = routeFacts.groupWorkspaceKey.trim();
+  const invitationToken = routeFacts.invitationToken.trim();
+  if (!groupWorkspaceKey || !invitationToken) return undefined;
+  return `/operations/invitations/${encodeURIComponent(groupWorkspaceKey)}/${encodeURIComponent(invitationToken)}`;
+}
 
 /**
  * Invitation validity belongs to the workspace-IAM owner. Consumers must not
@@ -9,6 +21,7 @@ export type InvitationPageLinkSource = {
  * its public invitation entry.
  */
 export function activeInvitationPageUrl(invitation: InvitationPageLinkSource): string | undefined {
-  const invitationPageUrl = invitation.invitationPageUrl?.trim();
-  return invitation.status === 'ACTIVE' && invitationPageUrl ? invitationPageUrl : undefined;
+  if (invitation.status !== 'ACTIVE') return undefined;
+  if (!invitation.routeFacts) return undefined;
+  return invitationRoutePath(invitation.routeFacts);
 }

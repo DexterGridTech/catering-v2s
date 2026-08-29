@@ -77,6 +77,7 @@ public class CreateOperationsCatalogAttributeDefinitionOperation {
                         value.definitionRef(),
                         value.code(),
                         value.name(),
+                        value.status(),
                         value.valueType(),
                         value.options().stream()
                                 .map(option -> new CatalogAttributeDefinitionReadback.Result.Definition.OptionsItem(

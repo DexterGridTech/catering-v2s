@@ -2,6 +2,7 @@ import {Alert, Button, Card, Tag} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
 import {
   adminListState,
+  closedCodeLabel,
   testId,
   useAsyncGenerationGuard,
   useRefreshVersion,
@@ -16,6 +17,7 @@ import type {OperationsPageContext} from '../../../app/routing/model';
 import {operationsContentTabRefreshSignal, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import {useEffect, useMemo, useState} from 'react';
 import {readProjectBusinessChannels, readStoreBusinessChannels} from '../application/queries';
+import {bindingStatusLabels, lifecycleStatusLabels} from '../model/businessChannelCodeLabels';
 
 type ProSortOrder = 'ascend' | 'descend';
 
@@ -139,7 +141,9 @@ export function BusinessChannelList({
         key: 'status',
         sorter: true,
         sortOrder: sort.sortKey === 'STATUS' ? proSortOrder(sort.sortDirection) : undefined,
-        render: (_value: unknown, row: BusinessChannelView) => <Tag>{row.statusDisplayName}</Tag>,
+        render: (_value: unknown, row: BusinessChannelView) => (
+          <Tag>{closedCodeLabel(lifecycleStatusLabels, row.status)}</Tag>
+        ),
       },
       {
         title: '绑定状态',
@@ -151,7 +155,9 @@ export function BusinessChannelList({
           row.bindingStatus === 'NOT_REQUIRED' ? (
             '—'
           ) : (
-            <Tag color={row.bindingStatus === 'BOUND' ? 'green' : 'default'}>{row.bindingStatusDisplayName || '—'}</Tag>
+            <Tag color={row.bindingStatus === 'BOUND' ? 'green' : 'default'}>
+              {closedCodeLabel(bindingStatusLabels, row.bindingStatus)}
+            </Tag>
           ),
       },
     ],

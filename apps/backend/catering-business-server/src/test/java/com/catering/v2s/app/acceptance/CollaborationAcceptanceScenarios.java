@@ -5,6 +5,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -58,6 +62,17 @@ final class CollaborationAcceptanceScenarios {
             "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding");
     private static final RouteIdentity CAPABILITY_DICTIONARY = new RouteIdentity(
             "getPlatformExternalCapabilityDictionary", "/api/platform/external-capability-dictionary");
+    private static final RouteIdentity OPERATIONS_CAPABILITY_DICTIONARY = new RouteIdentity(
+            "getOperationsExternalCapabilityDictionary", "/api/operations/external-capability-dictionary");
+    private static final RouteIdentity OPERATIONS_PROVIDER_CANDIDATES = new RouteIdentity(
+            "getOperationsExternalProviderCandidates",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/external-provider-candidates");
+    private static final RouteIdentity OPERATIONS_BINDING_DETAIL = new RouteIdentity(
+            "getOperationsOwnerBindingDetail",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding");
+    private static final RouteIdentity OPERATIONS_BINDING_DELETE = new RouteIdentity(
+            "deleteOperationsOwnerBinding",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding");
 
     private final BackendAcceptanceTest host;
 
@@ -74,6 +89,30 @@ final class CollaborationAcceptanceScenarios {
 
         BackendAcceptanceTest.Response tree =
                 context.get(TREE, prefix + "/external-collaboration", session.cookie(), Set.of(200));
+        ArrayNode expectedProviderScope = arrayText("TAKEAWAY");
+        ArrayNode expectedBindableNodeTypes =
+                arrayText("COMMERCIAL_GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE");
+        oracleEquals(
+                tree.json(),
+                "getPlatformExternalCollaborationTree",
+                "/externalSystems/0/externalSystemCode",
+                text("MEITUAN"),
+                JsonNodeType.STRING,
+                "BUSINESS: tree keeps the checked-in external-system code");
+        oracleEquals(
+                tree.json(),
+                "getPlatformExternalCollaborationTree",
+                "/providerProfiles/0/businessScope",
+                expectedProviderScope,
+                JsonNodeType.ARRAY,
+                "BUSINESS: tree keeps provider business-scope order");
+        oracleEquals(
+                tree.json(),
+                "getPlatformExternalCollaborationTree",
+                "/providerProfiles/0/bindableNodeTypes",
+                expectedBindableNodeTypes,
+                JsonNodeType.ARRAY,
+                "BUSINESS: tree keeps the complete bindable-node set");
         JsonNode meituan = find(tree.json().path("externalSystems"), "externalSystemCode", "MEITUAN");
         JsonNode provider = find(tree.json().path("providerProfiles"), "providerCode", "MEITUAN_ISV_A");
         assertEquals("美团", meituan.path("displayName").asText(), "BUSINESS: system display name is read back");
@@ -89,31 +128,152 @@ final class CollaborationAcceptanceScenarios {
                 "EXTERNAL_GRANT",
                 provider.path("authenticationKind").asText(),
                 "BUSINESS: provider auth kind is read back");
-        assertTrue(
-                provider.path("bindableNodeTypes").toString().contains("STORE"),
-                "BUSINESS: provider exposes store binding capability");
-        assertTrue(
-                meituan.path("attributeDictionary").toString().contains("groupBuyMappingDirection"),
-                "BUSINESS: descriptor key is read back");
+        JsonNode groupBuyCapability = find(meituan.path("capabilities"), "capabilityClass", "GROUP_BUY");
+        assertEquals(
+                "EXTERNAL_TO_INTERNAL",
+                groupBuyCapability
+                        .path("attributeValues")
+                        .path("groupBuyMappingDirection")
+                        .asText(),
+                "BUSINESS: typed capability attribute fact is read back");
+        assertFalse(meituan.has("attributeDictionary"), "BUSINESS: descriptor presentation payload is retired");
+        assertFalse(groupBuyCapability.has("attributeValueLabels"), "BUSINESS: attribute label projection is retired");
         assertFalse(
                 tree.raw().contains("authorizationRef"), "BUSINESS: technical authorization reference is not exposed");
         assertFalse(tree.raw().contains("token"), "BUSINESS: token material is not exposed");
 
         BackendAcceptanceTest.Response detail =
                 context.get(SYSTEM_DETAIL, prefix + "/external-systems/MEITUAN", session.cookie(), Set.of(200));
-        assertEquals(
-                "MEITUAN",
-                detail.json().path("externalSystemCode").asText(),
-                "BUSINESS: detail identity is owner readback");
-        assertEquals(
-                meituan.path("capabilities").toString(),
-                detail.json().path("capabilities").toString(),
-                "BUSINESS: detail preserves capability literals");
+        oracleEquals(
+                detail.json(),
+                "getPlatformExternalSystemDetail",
+                "/externalSystemCode",
+                text("MEITUAN"),
+                JsonNodeType.STRING,
+                "BUSINESS: system detail identity is owner readback");
+        oracleEquals(
+                detail.json(),
+                "getPlatformExternalSystemDetail",
+                "/capabilities/0/capabilityClass",
+                text("GROUP_BUY"),
+                JsonNodeType.STRING,
+                "BUSINESS: system detail keeps capability identity");
+        oracleEquals(
+                detail.json(),
+                "getPlatformExternalSystemDetail",
+                "/capabilities/0/attributeValues/groupBuyMappingDirection",
+                text("EXTERNAL_TO_INTERNAL"),
+                JsonNodeType.STRING,
+                "BUSINESS: system detail keeps typed capability direction");
+        BackendAcceptanceTest.Response providerDetail = context.get(
+                PROVIDER_DETAIL, prefix + "/provider-profiles/MEITUAN_ISV_A", session.cookie(), Set.of(200));
+        oracleEquals(
+                providerDetail.json(),
+                "getPlatformProviderProfileDetail",
+                "/providerCode",
+                text("MEITUAN_ISV_A"),
+                JsonNodeType.STRING,
+                "BUSINESS: provider detail identity is owner readback");
+        oracleEquals(
+                providerDetail.json(),
+                "getPlatformProviderProfileDetail",
+                "/businessScope",
+                expectedProviderScope,
+                JsonNodeType.ARRAY,
+                "BUSINESS: provider detail keeps business-scope order");
+        oracleEquals(
+                providerDetail.json(),
+                "getPlatformProviderProfileDetail",
+                "/bindableNodeTypes",
+                expectedBindableNodeTypes,
+                JsonNodeType.ARRAY,
+                "BUSINESS: provider detail keeps the complete bindable-node set");
+        oracleEquals(
+                providerDetail.json(),
+                "getPlatformProviderProfileDetail",
+                "/authenticationKind",
+                text("EXTERNAL_GRANT"),
+                JsonNodeType.STRING,
+                "BUSINESS: provider detail keeps authentication policy");
         BackendAcceptanceTest.Response dictionary = context.get(
                 CAPABILITY_DICTIONARY, "/api/platform/external-capability-dictionary", session.cookie(), Set.of(200));
-        assertTrue(
-                dictionary.json().path("providerProfiles").toString().contains("MEITUAN_ISV_A"),
-                "BUSINESS: dictionary contains the checked-in provider");
+        oracleEquals(
+                dictionary.json(),
+                "getPlatformExternalCapabilityDictionary",
+                "/externalSystems/0/externalSystemCode",
+                text("MEITUAN"),
+                JsonNodeType.STRING,
+                "BUSINESS: platform dictionary keeps the first system code");
+        oracleEquals(
+                dictionary.json(),
+                "getPlatformExternalCapabilityDictionary",
+                "/externalSystems/0/capabilities/0/capabilityClass",
+                text("GROUP_BUY"),
+                JsonNodeType.STRING,
+                "BUSINESS: platform dictionary keeps the first capability code");
+        oracleEquals(
+                dictionary.json(),
+                "getPlatformExternalCapabilityDictionary",
+                "/providerProfiles/0/businessScope",
+                expectedProviderScope,
+                JsonNodeType.ARRAY,
+                "BUSINESS: platform dictionary keeps provider scope order");
+
+        enableProvider(context, fixture, "MEITUAN_ISV_A");
+        host.completeInvitation(context, fixture);
+        BackendAcceptanceTest.Session operations = host.login(context, fixture);
+        BackendAcceptanceTest.Response operationsDictionary = context.get(
+                OPERATIONS_CAPABILITY_DICTIONARY,
+                "/api/operations/external-capability-dictionary",
+                operations.cookie(),
+                Set.of(200));
+        oracleEquals(
+                operationsDictionary.json(),
+                "getOperationsExternalCapabilityDictionary",
+                "/externalSystems/0/externalSystemCode",
+                text("MEITUAN"),
+                JsonNodeType.STRING,
+                "BUSINESS: operations dictionary keeps the first system code");
+        oracleEquals(
+                operationsDictionary.json(),
+                "getOperationsExternalCapabilityDictionary",
+                "/providerProfiles/0/businessScope",
+                expectedProviderScope,
+                JsonNodeType.ARRAY,
+                "BUSINESS: operations dictionary keeps provider scope order");
+        oracleEquals(
+                operationsDictionary.json(),
+                "getOperationsExternalCapabilityDictionary",
+                "/providerProfiles/0/bindableNodeTypes",
+                expectedBindableNodeTypes,
+                JsonNodeType.ARRAY,
+                "BUSINESS: operations dictionary keeps bindable node order");
+        BackendAcceptanceTest.Response candidates = context.get(
+                OPERATIONS_PROVIDER_CANDIDATES,
+                "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/external-provider-candidates",
+                operations.cookie(),
+                Set.of(200));
+        oracleEquals(
+                candidates.json(),
+                "getOperationsExternalProviderCandidates",
+                "/items/0/providerCode",
+                text("MEITUAN_ISV_A"),
+                JsonNodeType.STRING,
+                "BUSINESS: enabled provider candidate keeps provider identity");
+        oracleEquals(
+                candidates.json(),
+                "getOperationsExternalProviderCandidates",
+                "/items/0/businessScope",
+                expectedProviderScope,
+                JsonNodeType.ARRAY,
+                "BUSINESS: enabled provider candidate keeps scope order");
+        oracleEquals(
+                candidates.json(),
+                "getOperationsExternalProviderCandidates",
+                "/items/0/bindableNodeTypes",
+                expectedBindableNodeTypes,
+                JsonNodeType.ARRAY,
+                "BUSINESS: enabled provider candidate keeps bindable-node order");
     }
 
     @AcceptanceScenario(
@@ -206,12 +366,84 @@ final class CollaborationAcceptanceScenarios {
                 "STORE",
                 fixture.fixture().storeId(),
                 null);
-        String displayPath = binding.json().path("nodeDisplayPath").asText();
-        assertFalse(displayPath.isBlank(), "BUSINESS: owner binding readback has a task node display path");
-        String[] pathSegments = displayPath.split(" / ");
-        assertTrue(pathSegments.length >= 2, "BUSINESS: store display path includes an ancestor and leaf");
-        String ancestorPathSegment = pathSegments[0].trim();
-        String leafPathSegment = pathSegments[pathSegments.length - 1].trim();
+        ArrayNode expectedNodePath = path(
+                pathNode(fixture.fixture().regionId(), "acceptance-region", "Acceptance Region", "REGION"),
+                pathNode(fixture.fixture().projectId(), "acceptance-project", "Acceptance Project", "PROJECT"),
+                pathNode(fixture.fixture().storeId(), "acceptance-store", "Acceptance Store", "STORE"));
+        ArrayNode expectedBusinessScope = arrayText("MEMBER_BENEFIT");
+        oracleEquals(
+                binding.json(),
+                "createPlatformOwnerBinding",
+                "/nodePath",
+                expectedNodePath,
+                JsonNodeType.ARRAY,
+                "BUSINESS: platform create returns the exact ordered store path");
+        oracleEquals(
+                binding.json(),
+                "createPlatformOwnerBinding",
+                "/status",
+                text("EFFECTIVE"),
+                JsonNodeType.STRING,
+                "BUSINESS: platform create returns effective binding status");
+        oracleEquals(
+                binding.json(),
+                "createPlatformOwnerBinding",
+                "/businessScope",
+                expectedBusinessScope,
+                JsonNodeType.ARRAY,
+                "BUSINESS: platform create returns provider scope codes");
+        oracleNull(
+                binding.json(),
+                "createPlatformOwnerBinding",
+                "/capabilityClass",
+                "BUSINESS: NO_MAPPING platform create returns an exact null capability");
+        UUID bindingRef = UUID.fromString(binding.json().path("bindingRef").asText());
+        BackendAcceptanceTest.Response detail = context.get(
+                BINDING_DETAIL,
+                bindingPath(fixture.fixture(), bindingRef),
+                fixture.session().cookie(),
+                Set.of(200));
+        oracleEquals(
+                detail.json(),
+                "getPlatformOwnerBindingDetail",
+                "/nodePath",
+                expectedNodePath,
+                JsonNodeType.ARRAY,
+                "BUSINESS: platform detail returns the exact ordered store path");
+        oracleEquals(
+                detail.json(),
+                "getPlatformOwnerBindingDetail",
+                "/status",
+                text("EFFECTIVE"),
+                JsonNodeType.STRING,
+                "BUSINESS: platform detail returns effective binding status");
+        oracleEquals(
+                detail.json(),
+                "getPlatformOwnerBindingDetail",
+                "/businessScope",
+                expectedBusinessScope,
+                JsonNodeType.ARRAY,
+                "BUSINESS: platform detail returns provider scope codes");
+        oracleNull(
+                detail.json(),
+                "getPlatformOwnerBindingDetail",
+                "/capabilityClass",
+                "BUSINESS: NO_MAPPING platform detail returns an exact null capability");
+        JsonNode nodePath = requiredJsonNode(
+                binding.json(), "/nodePath", JsonNodeType.ARRAY, "BUSINESS: owner binding structured node path");
+        assertTrue(nodePath.size() >= 2, "BUSINESS: store node path includes an ancestor and leaf");
+        assertJsonNodeEquals(
+                binding.json(),
+                "/nodePath",
+                path(
+                        pathNode(fixture.fixture().regionId(), "acceptance-region", "Acceptance Region", "REGION"),
+                        pathNode(fixture.fixture().projectId(), "acceptance-project", "Acceptance Project", "PROJECT"),
+                        pathNode(fixture.fixture().storeId(), "acceptance-store", "Acceptance Store", "STORE")),
+                "BUSINESS: owner binding returns the exact ordered organization path facts");
+        String ancestorPathSegment = nodePath.get(0).path("name").asText();
+        String leafPathSegment = nodePath.get(nodePath.size() - 1).path("name").asText();
+        assertFalse(ancestorPathSegment.isBlank(), "BUSINESS: ancestor path node has a name");
+        assertFalse(leafPathSegment.isBlank(), "BUSINESS: leaf path node has a name");
         assertFalse(
                 ancestorPathSegment.equals(leafPathSegment),
                 "BUSINESS: ancestor path search is distinct from the leaf-name search");
@@ -229,6 +461,32 @@ final class CollaborationAcceptanceScenarios {
                 "BUSINESS: unfiltered provider binding page contains the created binding; items="
                         + bindingRefs(unfilteredPage.json().path("items"))
                         + ", metadata=" + unfilteredPage.json().path("metadata"));
+        oracleEquals(
+                unfilteredPage.json(),
+                "getPlatformProviderProfileBindings",
+                "/items/0/nodePath",
+                expectedNodePath,
+                JsonNodeType.ARRAY,
+                "BUSINESS: provider page returns the exact ordered store path");
+        oracleEquals(
+                unfilteredPage.json(),
+                "getPlatformProviderProfileBindings",
+                "/items/0/status",
+                text("EFFECTIVE"),
+                JsonNodeType.STRING,
+                "BUSINESS: provider page returns effective binding status");
+        oracleEquals(
+                unfilteredPage.json(),
+                "getPlatformProviderProfileBindings",
+                "/items/0/businessScope",
+                expectedBusinessScope,
+                JsonNodeType.ARRAY,
+                "BUSINESS: provider page returns provider scope codes");
+        oracleNull(
+                unfilteredPage.json(),
+                "getPlatformProviderProfileBindings",
+                "/items/0/capabilityClass",
+                "BUSINESS: provider page preserves the exact null capability");
         BackendAcceptanceTest.Response page = context.get(
                 PROVIDER_BINDINGS,
                 "/api/platform/group-workspaces/" + fixture.fixture().groupWorkspaceKey()
@@ -344,8 +602,8 @@ final class CollaborationAcceptanceScenarios {
                         || internal.json().path("capabilityClass").isNull(),
                 "BUSINESS: INTERNAL_MAPPING does not persist a capability class");
         assertTrue(
-                internal.json().path("businessScopeDisplayNames").toString().contains("订单同步"),
-                "BUSINESS: INTERNAL_MAPPING exposes provider business scope display names");
+                internal.json().path("businessScope").toString().contains("ORDER_SYNC"),
+                "BUSINESS: INTERNAL_MAPPING exposes provider business scope codes");
         BackendAcceptanceTest.Response noMapping = createBinding(
                 context,
                 fixture,
@@ -367,8 +625,8 @@ final class CollaborationAcceptanceScenarios {
                         || noMapping.json().path("capabilityClass").isNull(),
                 "BUSINESS: NO_MAPPING does not persist a capability class");
         assertTrue(
-                noMapping.json().path("businessScopeDisplayNames").toString().contains("用户与权益"),
-                "BUSINESS: NO_MAPPING exposes provider business scope display names");
+                noMapping.json().path("businessScope").toString().contains("MEMBER_BENEFIT"),
+                "BUSINESS: NO_MAPPING exposes provider business scope codes");
 
         BackendAcceptanceTest.Response internalMissingOwner = createBinding(
                 context,
@@ -427,6 +685,35 @@ final class CollaborationAcceptanceScenarios {
                         binding.json().path("version").asLong()),
                 headers(),
                 Set.of(200));
+        ArrayNode expectedNodePath =
+                path(pathNode(fixture.fixture().groupId(), "ACCEPTANCE-ROOT", "Acceptance root", "GROUP"));
+        ArrayNode expectedBusinessScope = arrayText("ORDER_SYNC");
+        oracleEquals(
+                updated.json(),
+                "updatePlatformOwnerBinding",
+                "/nodePath",
+                expectedNodePath,
+                JsonNodeType.ARRAY,
+                "BUSINESS: platform update preserves the exact ordered store path");
+        oracleEquals(
+                updated.json(),
+                "updatePlatformOwnerBinding",
+                "/status",
+                text("EFFECTIVE"),
+                JsonNodeType.STRING,
+                "BUSINESS: platform update preserves effective binding status");
+        oracleEquals(
+                updated.json(),
+                "updatePlatformOwnerBinding",
+                "/businessScope",
+                expectedBusinessScope,
+                JsonNodeType.ARRAY,
+                "BUSINESS: platform update preserves provider scope codes");
+        oracleNull(
+                updated.json(),
+                "updatePlatformOwnerBinding",
+                "/capabilityClass",
+                "BUSINESS: INTERNAL_MAPPING platform update keeps capability null");
         assertEquals(
                 "edited internal mapping",
                 updated.json().path("bindingDisplayName").asText(),
@@ -468,6 +755,32 @@ final class CollaborationAcceptanceScenarios {
                 fixture.session().cookie(),
                 Map.of("expectedVersion", binding.json().path("version").asLong()),
                 Set.of(200));
+        ArrayNode expectedNodePath = path(
+                pathNode(fixture.fixture().regionId(), "acceptance-region", "Acceptance Region", "REGION"),
+                pathNode(fixture.fixture().projectId(), "acceptance-project", "Acceptance Project", "PROJECT"),
+                pathNode(fixture.fixture().storeId(), "acceptance-store", "Acceptance Store", "STORE"));
+        ArrayNode expectedBusinessScope = arrayText("MEMBER_BENEFIT");
+        oracleEquals(
+                deleted.json(),
+                "deletePlatformOwnerBinding",
+                "/nodePath",
+                expectedNodePath,
+                JsonNodeType.ARRAY,
+                "BUSINESS: platform delete preserves the exact ordered organization path");
+        oracleEquals(
+                deleted.json(),
+                "deletePlatformOwnerBinding",
+                "/status",
+                text("DELETED"),
+                JsonNodeType.STRING,
+                "BUSINESS: platform delete returns the terminal binding status");
+        oracleEquals(
+                deleted.json(),
+                "deletePlatformOwnerBinding",
+                "/businessScope",
+                expectedBusinessScope,
+                JsonNodeType.ARRAY,
+                "BUSINESS: platform delete preserves provider scope codes");
         assertEquals(
                 "DELETED",
                 deleted.json().path("status").asText(),
@@ -689,6 +1002,56 @@ final class CollaborationAcceptanceScenarios {
         List<String> refs = new ArrayList<>();
         values.forEach(value -> refs.add(value.path("bindingRef").asText("<missing>")));
         return refs;
+    }
+
+    private static ArrayNode path(ObjectNode... values) {
+        ArrayNode result = JsonNodeFactory.instance.arrayNode();
+        for (ObjectNode value : values) result.add(value);
+        return result;
+    }
+
+    private static ArrayNode arrayText(String... values) {
+        ArrayNode result = JsonNodeFactory.instance.arrayNode();
+        for (String value : values) result.add(value);
+        return result;
+    }
+
+    private static JsonNode text(String value) {
+        return JsonNodeFactory.instance.textNode(value);
+    }
+
+    private static JsonNode oracle(
+            JsonNode json, String operationId, String pointer, JsonNodeType expectedType, String message) {
+        JsonNode value = json.at(pointer);
+        assertFalse(value.isMissingNode(), message + ": operation=" + operationId + ", missing pointer=" + pointer);
+        assertEquals(
+                expectedType,
+                value.getNodeType(),
+                message + ": operation=" + operationId + ", wrong JSON type at=" + pointer);
+        return value;
+    }
+
+    private static void oracleEquals(
+            JsonNode json,
+            String operationId,
+            String pointer,
+            JsonNode expected,
+            JsonNodeType expectedType,
+            String message) {
+        assertEquals(expected, oracle(json, operationId, pointer, expectedType, message), message + ": exact value");
+    }
+
+    private static void oracleNull(JsonNode json, String operationId, String pointer, String message) {
+        oracle(json, operationId, pointer, JsonNodeType.NULL, message);
+    }
+
+    private static ObjectNode pathNode(UUID ref, String code, String name, String nodeType) {
+        ObjectNode result = JsonNodeFactory.instance.objectNode();
+        result.put("ref", ref.toString());
+        result.put("code", code);
+        result.put("name", name);
+        result.put("nodeType", nodeType);
+        return result;
     }
 
     private static String checkedInCatalogStatus(String collection, String key, String expected) throws Exception {

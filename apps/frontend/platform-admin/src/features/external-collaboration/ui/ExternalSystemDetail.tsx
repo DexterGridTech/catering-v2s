@@ -1,6 +1,12 @@
 import {ReloadOutlined} from '@ant-design/icons';
 import {Alert, Button, Card, Descriptions, Divider, Modal, Space, Table, Tag, Typography} from 'antd';
-import {testId, useRefreshVersion, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {
+  closedCodeLabel,
+  isKnownClosedCode,
+  testId,
+  useRefreshVersion,
+  useSubmissionLifecycle,
+} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import type {ExternalSystemView} from '../../../app/api/generated/platform-edge';
@@ -11,6 +17,14 @@ import {
   platformRtk,
   type PlatformApiProblem,
 } from '../../../app/api/PlatformTransport';
+import {
+  capabilityClassLabels,
+  collaborationAttributeValueLabel,
+  collaborationAttributePresentation,
+  catalogStatusLabels,
+} from '../model/collaborationCodeLabels';
+
+const enablementStatusLabels = {ENABLED: '已启用', DISABLED: '已停用'} as const;
 
 /**
  * The OpenAPI additionalProperties=true generator shape is not stable across
@@ -28,9 +42,9 @@ function attributeLabelOf(
   capability: ExternalSystemView['capabilities'][number],
   fieldKey: string,
 ): string | undefined {
-  return attributeValueOf(capability.attributeValues, fieldKey) === undefined
-    ? undefined
-    : capability.attributeValueLabels?.[fieldKey];
+  const value = attributeValueOf(capability.attributeValues, fieldKey);
+  if (value === undefined) return undefined;
+  return collaborationAttributeValueLabel(fieldKey, value) ?? '当前值无法识别';
 }
 
 function hasAttribute(capability: ExternalSystemView['capabilities'][number], fieldKey: string): boolean {
@@ -51,12 +65,19 @@ type CapabilityAttributeRow = {
 };
 
 function CapabilityAttributes({system}: {system: ExternalSystemView}) {
-  const descriptors = system.attributeDictionary ?? [];
+  const descriptors = Object.entries(collaborationAttributePresentation).map(([fieldKey, presentation]) => ({
+    fieldKey,
+    ...presentation,
+  }));
   if (!descriptors.length) return <Typography.Text type="secondary">暂无能力属性</Typography.Text>;
   return (
     <Space direction="vertical" size={14} style={{display: 'flex'}}>
       {system.capabilities.map(capability => (
-        <Card key={capability.capabilityClass} size="small" title={capability.displayName}>
+        <Card
+          key={capability.capabilityClass}
+          size="small"
+          title={closedCodeLabel(capabilityClassLabels, capability.capabilityClass)}
+        >
           {(() => {
             const capabilityDescriptors = descriptors.filter(descriptor =>
               hasAttribute(capability, descriptor.fieldKey),
@@ -110,6 +131,7 @@ export function ExternalSystemDetail({
   const [problem, setProblem] = useState<PlatformApiProblem>();
   const queryProblem = query.error ? platformProblemOf(query.error) : undefined;
   const readProblem = readbackProblem ?? queryProblem;
+  const enablementStatusKnown = system ? isKnownClosedCode(enablementStatusLabels, system.enablementStatus) : false;
   useEffect(() => {
     if (contentTabRefreshVersion > 0) void refetch();
   }, [contentTabRefreshVersion, refetch]);
@@ -181,7 +203,7 @@ export function ExternalSystemDetail({
           <Button
             type={system.enablementStatus === 'ENABLED' ? 'primary' : 'default'}
             loading={pendingStatus === 'ENABLED'}
-            disabled={system.enablementStatus === 'ENABLED' || Boolean(pendingStatus)}
+            disabled={!enablementStatusKnown || system.enablementStatus === 'ENABLED' || Boolean(pendingStatus)}
             onClick={() =>
               Modal.confirm({
                 title: '启用外部系统',
@@ -199,7 +221,7 @@ export function ExternalSystemDetail({
             danger
             type={system.enablementStatus === 'DISABLED' ? 'primary' : 'default'}
             loading={pendingStatus === 'DISABLED'}
-            disabled={system.enablementStatus === 'DISABLED' || Boolean(pendingStatus)}
+            disabled={!enablementStatusKnown || system.enablementStatus === 'DISABLED' || Boolean(pendingStatus)}
             onClick={() =>
               Modal.confirm({
                 title: '停用外部系统',
@@ -249,11 +271,11 @@ export function ExternalSystemDetail({
         items={[
           {key: 'name', label: '系统名称', children: system.displayName},
           {key: 'code', label: '系统编码', children: system.externalSystemCode},
-          {key: 'catalog', label: '目录标记', children: system.catalogStatusDisplayName || '—'},
+          {key: 'catalog', label: '目录标记', children: closedCodeLabel(catalogStatusLabels, system.catalogStatus)},
           {
             key: 'status',
             label: '当前空间状态',
-            children: <Tag>{system.enablementStatus === 'ENABLED' ? '已启用' : '已停用'}</Tag>,
+            children: <Tag>{closedCodeLabel(enablementStatusLabels, system.enablementStatus)}</Tag>,
           },
         ]}
       />

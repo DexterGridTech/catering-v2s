@@ -56,19 +56,17 @@ public final class OperationBindingTypes {
     public record CatalogAssetReleaseRequest() {}
     public record CatalogAssetStageRequest() {}
     public record CatalogAttributeDefinitionCreateRequest() {}
-    public record CatalogAttributeDefinitionDeleteReadback() {}
-    public record CatalogAttributeDefinitionDeleteRequest() {}
     public record CatalogAttributeDefinitionList() {}
     public record CatalogAttributeDefinitionListQuery() {}
     public record CatalogAttributeDefinitionReadback() {}
+    public record CatalogAttributeDefinitionStatusTransitionRequest() {}
     public record CatalogAttributeDefinitionUpdateRequest() {}
     public record CatalogCategoryCandidatePage() {}
     public record CatalogCategoryCandidateQuery() {}
     public record CatalogCategoryCreateRequest() {}
-    public record CatalogCategoryDeleteReadback() {}
-    public record CatalogCategoryDeleteRequest() {}
     public record CatalogCategoryMoveRequest() {}
     public record CatalogCategoryReadback() {}
+    public record CatalogCategoryStatusTransitionRequest() {}
     public record CatalogCategoryUpdateRequest() {}
     public record CatalogContextQuery() {}
     public record CatalogDictionaryEntryCreateRequest() {}
@@ -94,21 +92,18 @@ public final class OperationBindingTypes {
     public record CatalogNavigationQuery() {}
     public record CatalogNavigationView() {}
     public record CatalogOrderOptionDefinitionCreateRequest() {}
-    public record CatalogOrderOptionDefinitionDeleteReadback() {}
-    public record CatalogOrderOptionDefinitionDeleteRequest() {}
     public record CatalogOrderOptionDefinitionList() {}
     public record CatalogOrderOptionDefinitionListQuery() {}
     public record CatalogOrderOptionDefinitionReadback() {}
+    public record CatalogOrderOptionDefinitionStatusTransitionRequest() {}
     public record CatalogOrderOptionDefinitionUpdateRequest() {}
     public record CatalogShapeManifestQuery() {}
     public record CatalogShapeManifestView() {}
     public record CatalogUnitCreateRequest() {}
-    public record CatalogUnitDeleteReadback() {}
-    public record CatalogUnitDeleteRequest() {}
-    public record CatalogUnitDisableRequest() {}
     public record CatalogUnitList() {}
     public record CatalogUnitListQuery() {}
     public record CatalogUnitReadback() {}
+    public record CatalogUnitStatusTransitionRequest() {}
     public record CatalogUnitUpdateRequest() {}
     public record CatalogWorkbenchContext() {}
     public record CommercialGroupInitializeRequest() {}

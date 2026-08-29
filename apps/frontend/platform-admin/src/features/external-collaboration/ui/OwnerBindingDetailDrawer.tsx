@@ -1,7 +1,10 @@
+import {ReloadOutlined} from '@ant-design/icons';
 import {Alert, Button, Descriptions, Drawer, Spin, Space, Tag} from 'antd';
 import {
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  isKnownClosedCode,
+  NameCodePathText,
   testId,
   useAsyncGenerationGuard,
   useOverlayLock,
@@ -15,13 +18,30 @@ import {
   platformProblemOf,
   type PlatformApiProblem,
 } from '../../../app/api/PlatformTransport';
-import {useEffect, useState} from 'react';
-import {ownerBindingBusinessDisplay, ownerBindingExternalOwnerDisplay} from './ownerBindingPresentation';
+import {useCallback, useEffect, useState} from 'react';
+import {
+  ownerBindingBusinessDisplay,
+  ownerBindingExternalOwnerDisplay,
+  ownerBindingNodeTypeDisplay,
+  ownerBindingStatusDisplay,
+} from './ownerBindingPresentation';
+import {
+  authenticationKindLabels,
+  collaborationBindingStatusLabels,
+  unbindKindLabels,
+} from '../model/collaborationCodeLabels';
 
 type DetailDrawerState = {target?: OwnerBindingView; isOpen: boolean; close: () => void};
 
 export function formatOwnerBindingTimestamp(value: number): string {
   return new Intl.DateTimeFormat('zh-CN', {dateStyle: 'medium', timeStyle: 'medium'}).format(value);
+}
+
+export function retainOwnerBindingOnRefresh(
+  current: OwnerBindingView | undefined,
+  bindingRef: string | undefined,
+): OwnerBindingView | undefined {
+  return current?.bindingRef === bindingRef ? current : undefined;
 }
 
 export function canEditOwnerBinding(
@@ -30,8 +50,21 @@ export function canEditOwnerBinding(
 ) {
   return (
     profile.enablementStatus === 'ENABLED' &&
+    Object.hasOwn(authenticationKindLabels, profile.authenticationKind) &&
+    Object.hasOwn(collaborationBindingStatusLabels, status) &&
     status !== 'DELETED' &&
     ['INTERNAL_MAPPING', 'NO_MAPPING'].includes(profile.authenticationKind)
+  );
+}
+
+export function canDeleteOwnerBinding(
+  profile: Pick<ProviderProfileView, 'unbindKind'>,
+  status: OwnerBindingView['status'],
+): boolean {
+  return (
+    isKnownClosedCode(unbindKindLabels, profile.unbindKind) &&
+    isKnownClosedCode(collaborationBindingStatusLabels, status) &&
+    status !== 'DELETED'
   );
 }
 
@@ -42,6 +75,7 @@ export function ownerBindingAuthorizationExplanation(
     return '外部授权状态由回调管理，当前状态由 owner 回读；本地不可编辑。';
   }
   if (authenticationKind === 'INTERNAL_MAPPING') return '当前绑定由平台管理员维护外部主体映射。';
+  if (!isKnownClosedCode(authenticationKindLabels, authenticationKind)) return '当前认证方式无法识别。';
   return '此接入档案无需外部主体映射。';
 }
 
@@ -69,16 +103,13 @@ export function OwnerBindingDetailDrawer({
   const contentTabRefreshVersion = useRefreshVersion(platformContentTabRefreshSignal);
   useOverlayLock(detail.isOpen);
 
-  useEffect(() => {
-    if (!detail.isOpen || !bindingRef) {
-      generation.invalidate();
-      setBinding(undefined);
-      setLoading(false);
-      setProblem(undefined);
-      return;
-    }
+  const loadBinding = useCallback(() => {
+    if (!detail.isOpen || !bindingRef) return;
     const requestGeneration = generation.begin();
-    setBinding(undefined);
+    // A refresh of the same detail keeps the last authoritative readback
+    // visible. Switching to another binding clears the old surface before the
+    // new request resolves, so stale facts never appear under a new identity.
+    setBinding(current => retainOwnerBindingOnRefresh(current, bindingRef));
     setLoading(true);
     setProblem(undefined);
     void platformClient
@@ -92,7 +123,18 @@ export function OwnerBindingDetailDrawer({
       .finally(() => {
         if (generation.isCurrent(requestGeneration)) setLoading(false);
       });
-  }, [bindingRef, contentTabRefreshVersion, detail.isOpen, generation, groupWorkspaceKey]);
+  }, [bindingRef, detail.isOpen, generation, groupWorkspaceKey]);
+
+  useEffect(() => {
+    if (!detail.isOpen || !bindingRef) {
+      generation.invalidate();
+      setBinding(undefined);
+      setLoading(false);
+      setProblem(undefined);
+      return;
+    }
+    loadBinding();
+  }, [bindingRef, contentTabRefreshVersion, detail.isOpen, generation, loadBinding]);
 
   const remove = async () => {
     if (!binding || removing) return;
@@ -138,11 +180,15 @@ export function OwnerBindingDetailDrawer({
             <Button
               danger
               loading={removing}
-              disabled={current.status === 'DELETED'}
+              disabled={!canDeleteOwnerBinding(profile, current.status)}
               onClick={() => void remove()}
               {...testId('platform-owner-binding-delete')}
             >
-              {profile.unbindKind === 'REQUIRES_ADAPTER_UNBIND' ? '申请解除授权' : '删除绑定'}
+              {!isKnownClosedCode(unbindKindLabels, profile.unbindKind)
+                ? '当前状态无法识别'
+                : profile.unbindKind === 'REQUIRES_ADAPTER_UNBIND'
+                  ? '申请解除授权'
+                  : '删除绑定'}
             </Button>
           </Space>
         ) : undefined
@@ -157,8 +203,22 @@ export function OwnerBindingDetailDrawer({
           showIcon
           title="绑定详情操作失败"
           description={problem.detail}
+          action={
+            <Button icon={<ReloadOutlined />} onClick={loadBinding} disabled={loading}>
+              重试
+            </Button>
+          }
           style={{marginBottom: 16}}
           {...testId('platform-owner-binding-detail-error')}
+        />
+      )}
+      {current && !isKnownClosedCode(unbindKindLabels, profile.unbindKind) && (
+        <Alert
+          type="error"
+          showIcon
+          title="当前解绑方式无法识别，已停止解除绑定操作。"
+          style={{marginBottom: 16}}
+          {...testId('platform-owner-binding-unknown-unbind-kind')}
         />
       )}
       {current && (
@@ -170,12 +230,13 @@ export function OwnerBindingDetailDrawer({
               {
                 key: 'nodeType',
                 label: '绑定节点类型',
-                children: current.nodeTypeDisplayName,
+                children: ownerBindingNodeTypeDisplay(current),
               },
               {
                 key: 'node',
                 label: '绑定节点',
-                children: current.nodeDisplayPath || '业务节点名称暂不可用',
+                children:
+                  current.nodePath.length > 0 ? <NameCodePathText nodes={current.nodePath} /> : '未绑定组织节点',
               },
               {key: 'business', label: '业务', children: ownerBindingBusinessDisplay(current)},
               {
@@ -189,7 +250,7 @@ export function OwnerBindingDetailDrawer({
                 label: '状态更新时间',
                 children: formatOwnerBindingTimestamp(current.statusChangedAt),
               },
-              {key: 'status', label: '状态', children: <Tag>{current.statusDisplayName}</Tag>},
+              {key: 'status', label: '状态', children: <Tag>{ownerBindingStatusDisplay(current)}</Tag>},
               {
                 key: 'auth',
                 label: '授权状态说明',

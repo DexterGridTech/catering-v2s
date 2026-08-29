@@ -9,7 +9,9 @@
           "entityType",
           "definitions",
           "revision",
-          "updatedAt"
+          "updatedAt",
+          "workspaceStatus",
+          "blockers"
         ],
         "properties": {
           "groupWorkspaceKey": {
@@ -30,7 +32,8 @@
                 "label",
                 "type",
                 "required",
-                "options"
+                "options",
+                "status"
               ],
               "properties": {
                 "key": {
@@ -77,6 +80,7 @@
                 },
                 "displaySuffix": {
                   "type": "string",
+                  "nullable": true,
                   "minLength": 1,
                   "maxLength": 20
                 }
@@ -90,6 +94,16 @@
           },
           "updatedAt": {
             "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+          },
+          "workspaceStatus": {
+            "$ref": "../platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceStatus"
+          },
+          "blockers": {
+            "type": "array",
+            "maxItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ExtensionDefinitionBlocker"
+            }
           }
         }
       },
@@ -110,7 +124,8 @@
                 "label",
                 "type",
                 "required",
-                "options"
+                "options",
+                "status"
               ],
               "properties": {
                 "key": {
@@ -157,6 +172,7 @@
                 },
                 "displaySuffix": {
                   "type": "string",
+                  "nullable": true,
                   "minLength": 1,
                   "maxLength": 20
                 }
@@ -221,6 +237,25 @@
           "REGION",
           "PROJECT"
         ]
+      },
+      "ExtensionDefinitionBlocker": {
+        "required": [
+          "type",
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "WORKSPACE"
+            ]
+          },
+          "status": {
+            "$ref": "../platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceStatus"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
       }
     }
   }

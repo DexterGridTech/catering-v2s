@@ -54,10 +54,10 @@ final class CatalogAcceptanceScenarios {
             new BackendAcceptanceTest.RouteIdentity(
                     "updateOperationsCatalogAttributeDefinition",
                     "/api/operations/catalog-inventory/attribute-definitions/{definitionRef}");
-    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_DELETE =
+    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_STATUS =
             new BackendAcceptanceTest.RouteIdentity(
-                    "deleteOperationsCatalogAttributeDefinition",
-                    "/api/operations/catalog-inventory/attribute-definitions/{definitionRef}");
+                    "transitionOperationsCatalogAttributeDefinitionStatus",
+                    "/api/operations/catalog-inventory/attribute-definitions/{definitionRef}/status");
     private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_ORDER_OPTION_DEFINITIONS =
             new BackendAcceptanceTest.RouteIdentity(
                     "listOperationsCatalogOrderOptionDefinitions",
@@ -70,10 +70,10 @@ final class CatalogAcceptanceScenarios {
             new BackendAcceptanceTest.RouteIdentity(
                     "updateOperationsCatalogOrderOptionDefinition",
                     "/api/operations/catalog-inventory/order-option-definitions/{definitionRef}");
-    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_DELETE =
+    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_STATUS =
             new BackendAcceptanceTest.RouteIdentity(
-                    "deleteOperationsCatalogOrderOptionDefinition",
-                    "/api/operations/catalog-inventory/order-option-definitions/{definitionRef}");
+                    "transitionOperationsCatalogOrderOptionDefinitionStatus",
+                    "/api/operations/catalog-inventory/order-option-definitions/{definitionRef}/status");
     private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_BRAND_COPY_PREFLIGHT =
             new BackendAcceptanceTest.RouteIdentity(
                     "preflightOperationsBrandCatalogCopy", "/api/operations/catalog-inventory/copy/brand/preflight");
@@ -86,6 +86,12 @@ final class CatalogAcceptanceScenarios {
     private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_ITEMS =
             new BackendAcceptanceTest.RouteIdentity(
                     "getOperationsCatalogItems", "/api/operations/catalog-inventory/items");
+    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_CATEGORY_UPDATE =
+            new BackendAcceptanceTest.RouteIdentity(
+                    "updateOperationsCatalogCategory", "/api/operations/catalog-inventory/categories/{categoryRef}");
+    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_CATEGORY_MOVE =
+            new BackendAcceptanceTest.RouteIdentity(
+                    "moveOperationsCatalogCategory", "/api/operations/catalog-inventory/categories/{categoryRef}/move");
     private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_CATEGORY_CANDIDATES =
             new BackendAcceptanceTest.RouteIdentity(
                     "getOperationsCatalogCategoryCandidates", "/api/operations/catalog-inventory/category-candidates");
@@ -98,9 +104,26 @@ final class CatalogAcceptanceScenarios {
     private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_UNIT_LIST =
             new BackendAcceptanceTest.RouteIdentity(
                     "listOperationsCatalogUnits", "/api/operations/catalog-inventory/units");
-    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_UNIT_DISABLE =
+    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_UNIT_STATUS =
             new BackendAcceptanceTest.RouteIdentity(
-                    "disableOperationsCatalogUnit", "/api/operations/catalog-inventory/units/{unitRef}/disable");
+                    "transitionOperationsCatalogUnitStatus",
+                    "/api/operations/catalog-inventory/units/{unitRef}/status");
+    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_CATEGORY_STATUS =
+            new BackendAcceptanceTest.RouteIdentity(
+                    "transitionOperationsCatalogCategoryStatus",
+                    "/api/operations/catalog-inventory/categories/{categoryRef}/status");
+    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_INVENTORY_TARGET_INCREASE =
+            new BackendAcceptanceTest.RouteIdentity(
+                    "increaseOperationsInventoryTarget",
+                    "/api/operations/catalog-inventory/inventory-targets/{targetRef}/increase");
+    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_INVENTORY_TARGET_ADJUST =
+            new BackendAcceptanceTest.RouteIdentity(
+                    "adjustOperationsInventoryTarget",
+                    "/api/operations/catalog-inventory/inventory-targets/{targetRef}/adjust");
+    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_INVENTORY_TARGET_CONFIGURATION =
+            new BackendAcceptanceTest.RouteIdentity(
+                    "updateOperationsInventoryTargetConfiguration",
+                    "/api/operations/catalog-inventory/inventory-targets/{targetRef}/configuration");
 
     CatalogAcceptanceScenarios(BackendAcceptanceTest host) {
         this.host = host;
@@ -916,9 +939,11 @@ final class CatalogAcceptanceScenarios {
         assertEquals(101, firstData.path("total").asInt(), "BUSINESS: candidate total is the complete 101-row set");
         assertEquals(100, firstData.path("items").size(), "BUSINESS: first candidate page is bounded at 100");
         JsonNode firstCandidate = StreamSupport.stream(firstData.path("items").spliterator(), false)
-                .filter(candidate -> componentTargetRef.equals(candidate.path("targetRef").asText()))
+                .filter(candidate ->
+                        componentTargetRef.equals(candidate.path("targetRef").asText()))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("BUSINESS: first material remains present in the candidate page"));
+                .orElseThrow(
+                        () -> new AssertionError("BUSINESS: first material remains present in the candidate page"));
         assertEquals(
                 firstMaterial.path("name").asText(),
                 firstCandidate.path("itemName").asText(),
@@ -1250,9 +1275,14 @@ final class CatalogAcceptanceScenarios {
                 decimalCountRequest,
                 idempotencyHeaders("component-decimal-count"),
                 Set.of(200));
-        assertEquals(
+        assertInventoryMutationOperationOracle(
+                decimalCount.json(),
+                "countOperationsInventoryTarget",
+                decimalTarget,
+                "0",
                 "2.5",
-                decimalCount.json().path("result").path("after").asText(),
+                "2.5",
+                "OK",
                 "BUSINESS: no counting unit falls back to consumption precision");
 
         long gramsVersion = grams.path("result").path("unit").path("version").asLong();
@@ -1286,13 +1316,18 @@ final class CatalogAcceptanceScenarios {
                 .findFirst()
                 .orElseThrow();
         context.post(
-                OPERATIONS_CATALOG_UNIT_DISABLE,
-                "/api/operations/catalog-inventory/units/" + gramsRef + "/disable",
+                OPERATIONS_CATALOG_UNIT_STATUS,
+                "/api/operations/catalog-inventory/units/" + gramsRef + "/status",
                 session.cookie(),
                 Map.of(
-                        "dataNodeRef", fixture.storeId().toString(),
-                        "unitRef", gramsRef,
-                        "expectedVersion", renamed.path("version").asLong()),
+                        "dataNodeRef",
+                        fixture.storeId().toString(),
+                        "unitRef",
+                        gramsRef,
+                        "expectedVersion",
+                        renamed.path("version").asLong(),
+                        "targetStatus",
+                        "DISABLED"),
                 idempotencyHeaders("component-unit-disable"),
                 Set.of(200));
         JsonNode decimalTargetAfter = context.get(
@@ -1460,10 +1495,18 @@ final class CatalogAcceptanceScenarios {
                 "BUSINESS: unit search is owner-filtered by the requested business code, not only the loaded page");
 
         Response disabled = context.post(
-                OPERATIONS_CATALOG_UNIT_DISABLE,
-                "/api/operations/catalog-inventory/units/" + unitRef + "/disable",
+                OPERATIONS_CATALOG_UNIT_STATUS,
+                "/api/operations/catalog-inventory/units/" + unitRef + "/status",
                 session.cookie(),
-                Map.of("dataNodeRef", fixture.storeId().toString(), "unitRef", unitRef, "expectedVersion", version),
+                Map.of(
+                        "dataNodeRef",
+                        fixture.storeId().toString(),
+                        "unitRef",
+                        unitRef,
+                        "expectedVersion",
+                        version,
+                        "targetStatus",
+                        "DISABLED"),
                 idempotencyHeaders("unit-list-disable"),
                 Set.of(200));
         assertEquals(
@@ -2328,7 +2371,7 @@ final class CatalogAcceptanceScenarios {
                 "BUSINESS: the generated shape field set includes both sales and base measurement unit fields");
     }
 
-    /** Creates twenty real catalog facts and proves the ordered per-item outcome contract. */
+    /** Creates a bounded real batch (default twenty) and proves the ordered per-item outcome contract. */
     @AcceptanceScenario(
             id = "catalog.batch-status-partial-outcome",
             module = "CATALOG",
@@ -2338,6 +2381,7 @@ final class CatalogAcceptanceScenarios {
         host.completeInvitation(context, fixture);
         Session session = host.login(context, fixture);
         String suffix = UUID.randomUUID().toString().substring(0, 8);
+        int batchSize = batchStatusCalibrationCardinality();
 
         Response staged = context.multipartAsset(
                 OPERATIONS_ASSET_STAGE,
@@ -2353,16 +2397,36 @@ final class CatalogAcceptanceScenarios {
                 () -> UUID.fromString(assetRef), "BUSINESS: batch fixture has an opaque UUID asset reference");
         assertFalse(bindGrant.isBlank(), "BUSINESS: batch fixture has a real staged catalog bind proof");
 
+        // The request contract permits up to 100 items while the fixture's owner-local unit library permits 99
+        // definitions.  Create one real unit and reuse it so the N=100 calibration measures the batch command rather
+        // than failing while manufacturing one unrelated unit per item.
+        JsonNode sharedUnit = createAcceptanceUnitAtDataNode(
+                context,
+                fixture,
+                session,
+                fixture.storeId().toString(),
+                "ACC-UNIT-BATCH-" + suffix,
+                "个",
+                "COUNT",
+                0,
+                Map.of());
+        String sharedBaseUnitRef = sharedUnit.path("result").path("unit").path("unitRef").asText();
+        assertFalse(sharedBaseUnitRef.isBlank(), "BUSINESS: batch fixture obtains one reusable base unit");
+
         List<BatchItem> items = new ArrayList<>();
-        for (int index = 0; index < 20; index++) {
+        for (int index = 0; index < batchSize; index++) {
             String code = "ACC-BATCH-" + suffix + "-" + String.format("%02d", index);
-            CreatedItem created = createItemWithAttributes(
+            CreatedItem created = createItemWithShape(
                     context,
                     fixture,
                     session,
+                    fixture.storeId().toString(),
                     code,
                     "Batch item " + index,
-                    Map.of("description", "batch-description-" + index));
+                    Map.of(),
+                    Map.of(),
+                    "STANDARD_SALE_COUNTED",
+                    sharedBaseUnitRef);
             long savedVersion = saveImage(
                     context, fixture, session, code, created.version(), assetRef, index == 0 ? bindGrant : null);
             JsonNode before = readItem(context, fixture, session, code);
@@ -2380,18 +2444,21 @@ final class CatalogAcceptanceScenarios {
                     before.path("attributeAssignments").deepCopy()));
         }
 
-        // Make exactly the thirteenth request item's expected version stale.
-        BatchItem staleItem = items.get(12);
-        context.post(
-                OPERATIONS_CATALOG_ITEM_STATUS,
-                itemPath(staleItem.code()) + "/status",
-                staleItem.session().cookie(),
-                Map.of(
-                        "dataNodeRef", staleItem.fixture().storeId().toString(),
-                        "itemCode", staleItem.code(),
-                        "expectedVersion", staleItem.expectedVersion(),
-                        "targetStatus", "DISABLED"),
-                Set.of(200));
+        // Make exactly the thirteenth request item's expected version stale when the selected
+        // calibration cardinality includes that item. N=1 remains a clean all-success boundary.
+        if (batchSize > 12) {
+            BatchItem staleItem = items.get(12);
+            context.post(
+                    OPERATIONS_CATALOG_ITEM_STATUS,
+                    itemPath(staleItem.code()) + "/status",
+                    staleItem.session().cookie(),
+                    Map.of(
+                            "dataNodeRef", staleItem.fixture().storeId().toString(),
+                            "itemCode", staleItem.code(),
+                            "expectedVersion", staleItem.expectedVersion(),
+                            "targetStatus", "DISABLED"),
+                    Set.of(200));
+        }
 
         List<Map<String, Object>> requestItems = items.stream()
                 .map(item -> Map.<String, Object>of(
@@ -2401,11 +2468,11 @@ final class CatalogAcceptanceScenarios {
                 OPERATIONS_CATALOG_BATCH_STATUS,
                 "/api/operations/catalog-inventory/items/status",
                 session.cookie(),
-                Map.of("dataNodeRef", fixture.storeId().toString(), "targetStatus", "ARCHIVED", "items", requestItems),
+                Map.of("dataNodeRef", fixture.storeId().toString(), "targetStatus", "VOIDED", "items", requestItems),
                 Set.of(200));
         JsonNode results = batch.json().path("results");
         assertEquals(
-                20, results.size(), "BUSINESS: batch readback contains one ordered result for every submitted item");
+                batchSize, results.size(), "BUSINESS: batch readback contains one ordered result for every submitted item");
 
         int failures = 0;
         for (int index = 0; index < items.size(); index++) {
@@ -2417,7 +2484,7 @@ final class CatalogAcceptanceScenarios {
                     "BUSINESS: batch result order matches request order");
             assertEquals(
                     item.code(), result.path("itemCode").asText(), "BUSINESS: owner returns authoritative item code");
-            boolean expectedFailure = index == 12;
+            boolean expectedFailure = batchSize > 12 && index == 12;
             if (expectedFailure) {
                 failures++;
                 assertEquals("FAILED", result.path("outcome").asText(), "BUSINESS: stale item is a failed outcome");
@@ -2436,7 +2503,7 @@ final class CatalogAcceptanceScenarios {
                 assertTrue(result.path("reason").isNull(), "BUSINESS: success has no failure reason");
                 assertTrue(result.path("version").isIntegralNumber(), "BUSINESS: success returns the new version");
                 assertEquals(
-                        "ARCHIVED",
+                        "VOIDED",
                         readItem(context, item.fixture(), item.session(), item.code())
                                 .path("lifecycle")
                                 .path("status")
@@ -2467,7 +2534,23 @@ final class CatalogAcceptanceScenarios {
                     after.path("attributeAssignments"),
                     "BUSINESS: batch status migration does not alter product attribute assignments");
         }
-        assertEquals(1, failures, "BUSINESS: exactly one item fails while nineteen commit");
+        assertEquals(
+                batchSize > 12 ? 1 : 0,
+                failures,
+                "BUSINESS: only the deliberately stale item fails when the selected cardinality includes it");
+    }
+
+    private int batchStatusCalibrationCardinality() {
+        String configured = System.getenv("V2S_BACKEND_ACCEPTANCE_BATCH_CARDINALITY");
+        if (configured == null || configured.isBlank()) return 20;
+        try {
+            int cardinality = Integer.parseInt(configured);
+            if (cardinality < 1 || cardinality > 100) throw new NumberFormatException("out of range");
+            return cardinality;
+        } catch (NumberFormatException failure) {
+            throw new IllegalArgumentException(
+                    "V2S_BACKEND_ACCEPTANCE_BATCH_CARDINALITY must be an integer from 1 through 100", failure);
+        }
     }
 
     @AcceptanceScenario(
@@ -2576,41 +2659,41 @@ final class CatalogAcceptanceScenarios {
         long replacementVersion = createItem(context, fixture, session, voidedCode, "replacement after void");
         assertTrue(replacementVersion > 0, "BUSINESS: a voided item releases its code for a new catalog fact");
 
-        String archivedCode = "ACC-ARCHIVED-" + suffix;
-        long archivedVersion = createItem(context, fixture, session, archivedCode, "archived source");
-        Response archived = context.post(
+        String disabledCode = "ACC-DISABLED-" + suffix;
+        long disabledVersion = createItem(context, fixture, session, disabledCode, "disabled source");
+        Response disabled = context.post(
                 OPERATIONS_CATALOG_ITEM_STATUS,
-                itemPath(archivedCode) + "/status",
+                itemPath(disabledCode) + "/status",
                 session.cookie(),
                 Map.of(
                         "dataNodeRef",
                         fixture.storeId().toString(),
                         "itemCode",
-                        archivedCode,
+                        disabledCode,
                         "expectedVersion",
-                        archivedVersion,
+                        disabledVersion,
                         "targetStatus",
-                        "ARCHIVED"),
+                        "DISABLED"),
                 Set.of(200));
         assertEquals(
-                "ARCHIVED",
-                archived.json().path("result").path("status").asText(),
-                "BUSINESS: lifecycle command persists the archived state");
+                "DISABLED",
+                disabled.json().path("result").path("status").asText(),
+                "BUSINESS: lifecycle command persists the disabled state");
         Response duplicate = context.post(
                 OPERATIONS_CATALOG_ITEM_CREATE,
                 "/api/operations/catalog-inventory/items",
                 session.cookie(),
                 itemCreateBody(
                         fixture.storeId().toString(),
-                        archivedCode,
-                        "must not reuse archived code",
+                        disabledCode,
+                        "must not reuse disabled code",
                         "STANDARD_SALE_COUNTED",
                         null),
                 Set.of(409, 422));
         assertEquals(
                 "DUPLICATE_CODE",
                 duplicate.problemCode(),
-                "BUSINESS: archive retains code reservation instead of releasing an active historical identity");
+                "BUSINESS: disabled item retains code reservation while it remains an active business identity");
     }
 
     /**
@@ -2621,7 +2704,7 @@ final class CatalogAcceptanceScenarios {
     @AcceptanceScenario(
             id = "catalog.category-relation-integrity",
             module = "CATALOG",
-            operation = "deleteOperationsCatalogCategory")
+            operation = "transitionOperationsCatalogCategoryStatus")
     void categoryRelationIntegrity(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG"));
         host.completeInvitation(context, fixture);
@@ -2640,16 +2723,83 @@ final class CatalogAcceptanceScenarios {
                 Set.of(200));
         String categoryRef = category.json().path("result").path("categoryRef").asText();
         long categoryVersion = category.json().path("result").path("version").asLong();
+        assertCatalogOperationOracle(
+                category.json(),
+                "createOperationsCatalogCategory",
+                "/result/categoryRef",
+                host.mapper.valueToTree(categoryRef),
+                "BUSINESS: category create returns the exact opaque category reference");
+        assertCatalogOperationOracle(
+                category.json(),
+                "createOperationsCatalogCategory",
+                "/result/name",
+                host.mapper.valueToTree(categoryBody.get("name")),
+                "BUSINESS: category create returns the exact requested category name");
         assertTrue(
                 categoryRef.matches("[0-9a-f-]{36}") && categoryVersion > 0,
                 "BUSINESS: category create returns an opaque, versioned category identity");
 
+        JsonNode parent = createAcceptanceCategory(
+                context, fixture, session, "ACC-CATEGORY-PARENT-" + suffix, "Acceptance parent " + suffix, null);
+        String parentRef = parent.path("result").path("categoryRef").asText();
+        String updatedCategoryName = "Acceptance category updated " + suffix;
+        Response updated = context.patch(
+                OPERATIONS_CATALOG_CATEGORY_UPDATE,
+                "/api/operations/catalog-inventory/categories/" + categoryRef,
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef", fixture.storeId().toString(),
+                        "categoryRef", categoryRef,
+                        "expectedVersion", categoryVersion,
+                        "name", updatedCategoryName),
+                idempotencyHeaders("category-update-" + suffix),
+                Set.of(200));
+        assertCatalogOperationOracle(
+                updated.json(),
+                "updateOperationsCatalogCategory",
+                "/result/categoryRef",
+                host.mapper.valueToTree(categoryRef),
+                "BUSINESS: category update preserves the category identity");
+        assertCatalogOperationOracle(
+                updated.json(),
+                "updateOperationsCatalogCategory",
+                "/result/name",
+                host.mapper.valueToTree(updatedCategoryName),
+                "BUSINESS: category update returns the exact renamed value");
+        categoryVersion = updated.json().path("result").path("version").asLong();
+
+        Response moved = context.post(
+                OPERATIONS_CATALOG_CATEGORY_MOVE,
+                "/api/operations/catalog-inventory/categories/" + categoryRef + "/move",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef", fixture.storeId().toString(),
+                        "categoryRef", categoryRef,
+                        "expectedVersion", categoryVersion,
+                        "action", "REPARENT",
+                        "parentCategoryRef", parentRef),
+                idempotencyHeaders("category-move-" + suffix),
+                Set.of(200));
+        assertCatalogOperationOracle(
+                moved.json(),
+                "moveOperationsCatalogCategory",
+                "/result/categoryRef",
+                host.mapper.valueToTree(categoryRef),
+                "BUSINESS: category move preserves the category identity");
+        assertCatalogOperationOracle(
+                moved.json(),
+                "moveOperationsCatalogCategory",
+                "/result/name",
+                host.mapper.valueToTree(updatedCategoryName),
+                "BUSINESS: category move keeps the exact renamed value");
+        categoryVersion = moved.json().path("result").path("version").asLong();
+
         String itemCode = "ACC-CATEGORY-ITEM-" + suffix;
         long createdVersion = createItem(context, fixture, session, itemCode, "category relation item");
         long boundVersion = saveCategoryRef(context, fixture, session, itemCode, createdVersion, categoryRef);
-        Response blocked = context.delete(
-                OPERATIONS_CATALOG_CATEGORY_DELETE,
-                "/api/operations/catalog-inventory/categories/" + categoryRef,
+        Response blocked = context.post(
+                OPERATIONS_CATALOG_CATEGORY_STATUS,
+                "/api/operations/catalog-inventory/categories/" + categoryRef + "/status",
                 session.cookie(),
                 Map.of(
                         "dataNodeRef",
@@ -2657,12 +2807,14 @@ final class CatalogAcceptanceScenarios {
                         "categoryRef",
                         categoryRef,
                         "expectedVersion",
-                        categoryVersion),
+                        categoryVersion,
+                        "targetStatus",
+                        "VOIDED"),
                 Set.of(422));
         assertEquals(
-                "REFERENCE_BLOCKS_DELETE",
+                "REFERENCE_BLOCKS_VOID",
                 blocked.problemCode(),
-                "BUSINESS: category deletion is blocked while an item relation still exists");
+                "BUSINESS: category void is blocked while an item relation still exists");
         assertEquals(
                 categoryRef,
                 readItem(context, fixture, session, itemCode)
@@ -2673,9 +2825,9 @@ final class CatalogAcceptanceScenarios {
         long unboundVersion = saveCategoryRef(context, fixture, session, itemCode, boundVersion, null);
         assertTrue(
                 unboundVersion > boundVersion, "BUSINESS: the catalog owner versions removal of one category relation");
-        Response deleted = context.delete(
-                OPERATIONS_CATALOG_CATEGORY_DELETE,
-                "/api/operations/catalog-inventory/categories/" + categoryRef,
+        Response voided = context.post(
+                OPERATIONS_CATALOG_CATEGORY_STATUS,
+                "/api/operations/catalog-inventory/categories/" + categoryRef + "/status",
                 session.cookie(),
                 Map.of(
                         "dataNodeRef",
@@ -2683,12 +2835,30 @@ final class CatalogAcceptanceScenarios {
                         "categoryRef",
                         categoryRef,
                         "expectedVersion",
-                        categoryVersion),
+                        categoryVersion,
+                        "targetStatus",
+                        "VOIDED"),
                 Set.of(200));
         assertEquals(
                 categoryRef,
-                deleted.json().path("result").path("categoryRef").asText(),
-                "BUSINESS: removing the item relation makes the category deletable");
+                voided.json().path("result").path("categoryRef").asText(),
+                "BUSINESS: removing the item relation makes the category voidable");
+        assertEquals(
+                "VOIDED",
+                voided.json().path("result").path("status").asText(),
+                "BUSINESS: category transition returns the terminal lifecycle state");
+        assertCatalogOperationOracle(
+                voided.json(),
+                "transitionOperationsCatalogCategoryStatus",
+                "/result/categoryRef",
+                host.mapper.valueToTree(categoryRef),
+                "BUSINESS: category transition returns the exact category identity");
+        assertCatalogOperationOracle(
+                voided.json(),
+                "transitionOperationsCatalogCategoryStatus",
+                "/result/status",
+                host.mapper.valueToTree("VOIDED"),
+                "BUSINESS: category transition returns the exact terminal status");
     }
 
     @AcceptanceScenario(id = "catalog.tag-navigation", module = "CATALOG", operation = "getOperationsCatalogNavigation")
@@ -2783,12 +2953,20 @@ final class CatalogAcceptanceScenarios {
                 "ACC-NAV-BRANCH-" + suffix,
                 "导航中间分类",
                 categoryRoot.path("result").path("categoryRef").asText());
-        createAcceptanceCategory(
+        JsonNode categoryLeaf = createAcceptanceCategory(
                 context,
                 fixture,
                 session,
                 "ACC-NAV-LEAF-" + suffix,
                 "导航叶分类",
+                categoryBranch.path("result").path("categoryRef").asText());
+        JsonNode taggedItemReadback = readItem(context, fixture, session, taggedItemCode);
+        long taggedWithCategoryVersion = saveCategoryRef(
+                context,
+                fixture,
+                session,
+                taggedItemCode,
+                taggedItemReadback.path("version").asLong(),
                 categoryBranch.path("result").path("categoryRef").asText());
 
         if (readNavigation) {
@@ -2797,6 +2975,66 @@ final class CatalogAcceptanceScenarios {
                     "/api/operations/catalog-inventory/navigation?dataNodeRef=" + fixture.storeId(),
                     session.cookie(),
                     Set.of(200));
+            assertCatalogOperationOracle(
+                    navigation.json(),
+                    "getOperationsCatalogNavigation",
+                    "/data/tree",
+                    host.mapper.valueToTree(List.of(
+                            catalogNavigationCategoryFact(
+                                    categoryRoot,
+                                    null,
+                                    0,
+                                    3,
+                                    false,
+                                    taggedItemReadback.path("itemRef").asText(),
+                                    taggedItemReadback.path("code").asText(),
+                                    taggedItemReadback.path("name").asText()),
+                            catalogNavigationCategoryFact(
+                                    categoryBranch,
+                                    categoryRoot
+                                            .path("result")
+                                            .path("categoryRef")
+                                            .asText(),
+                                    1,
+                                    2,
+                                    false,
+                                    taggedItemReadback.path("itemRef").asText(),
+                                    taggedItemReadback.path("code").asText(),
+                                    taggedItemReadback.path("name").asText()),
+                            catalogNavigationCategoryFact(
+                                    categoryLeaf,
+                                    categoryBranch
+                                            .path("result")
+                                            .path("categoryRef")
+                                            .asText(),
+                                    0,
+                                    1,
+                                    true,
+                                    null,
+                                    null,
+                                    null))),
+                    "BUSINESS: navigation returns the exact ordered category tree facts");
+            assertCatalogOperationOracle(
+                    navigation.json(),
+                    "getOperationsCatalogNavigation",
+                    "/data/tags",
+                    host.mapper.valueToTree(List.of(
+                            catalogTagFact(
+                                    selectedTag.path("entryRef").asText(),
+                                    selectedTag.path("code").asText(),
+                                    selectedTag.path("name").asText(),
+                                    1),
+                            catalogTagFact(
+                                    laterTag.path("entryRef").asText(),
+                                    laterTag.path("code").asText(),
+                                    laterTag.path("name").asText(),
+                                    1),
+                            catalogTagFact(
+                                    unusedTag.path("entryRef").asText(),
+                                    unusedTag.path("code").asText(),
+                                    unusedTag.path("name").asText(),
+                                    0))),
+                    "BUSINESS: navigation returns the exact enabled tag facts in owner order");
             JsonNode selectedNavigationTag = findByCode(
                     navigation.json().path("data").path("tags"),
                     selectedTag.path("code").asText());
@@ -2861,6 +3099,60 @@ final class CatalogAcceptanceScenarios {
                             + "&pageSize=20",
                     session.cookie(),
                     Set.of(200));
+            JsonNode expectedCategoryPath = host.mapper.valueToTree(List.of(
+                    catalogCategoryFact(
+                            categoryRoot.path("result").path("categoryRef").asText(),
+                            categoryRoot.path("result").path("code").asText(),
+                            categoryRoot.path("result").path("name").asText()),
+                    catalogCategoryFact(
+                            categoryBranch.path("result").path("categoryRef").asText(),
+                            categoryBranch.path("result").path("code").asText(),
+                            categoryBranch.path("result").path("name").asText())));
+            assertCatalogOperationOracle(
+                    filtered.json(),
+                    "getOperationsCatalogItems",
+                    "/data/items/0/categoryPath",
+                    expectedCategoryPath,
+                    "BUSINESS: item list returns the exact ordered category path");
+            assertCatalogOperationOracle(
+                    filtered.json(),
+                    "getOperationsCatalogItems",
+                    "/data/items/0/tags",
+                    host.mapper.valueToTree(List.of(
+                            catalogTagFact(
+                                    selectedTag.path("entryRef").asText(),
+                                    selectedTag.path("code").asText(),
+                                    selectedTag.path("name").asText()),
+                            catalogTagFact(
+                                    laterTag.path("entryRef").asText(),
+                                    laterTag.path("code").asText(),
+                                    laterTag.path("name").asText()))),
+                    "BUSINESS: item list returns exact ordered tag facts");
+            assertCatalogAbsent(
+                    filtered.json(),
+                    "/data/items/0/categoryPathLabels",
+                    "BUSINESS: item list does not retain the retired category-label field");
+            Response itemDetail = context.get(
+                    OPERATIONS_CATALOG_ITEM_READ,
+                    itemPath(taggedItemCode) + "?dataNodeRef=" + fixture.storeId(),
+                    session.cookie(),
+                    Set.of(200));
+            assertCatalogOperationOracle(
+                    itemDetail.json(),
+                    "getOperationsCatalogItem",
+                    "/data/item/categoryPath",
+                    expectedCategoryPath,
+                    "BUSINESS: item detail returns the same exact ordered category path");
+            assertCatalogOperationOracle(
+                    itemDetail.json(),
+                    "getOperationsCatalogItem",
+                    "/data/references",
+                    host.mapper.createArrayNode(),
+                    "BUSINESS: item detail returns an exact empty reference collection for this fixture");
+            assertCatalogAbsent(
+                    itemDetail.json(),
+                    "/data/item/categoryPathLabels",
+                    "BUSINESS: item detail does not retain the retired category-label field");
             List<String> filteredCodes = array(filtered.json().path("data").path("items")).stream()
                     .map(item -> item.path("code").asText())
                     .toList();
@@ -2877,8 +3169,8 @@ final class CatalogAcceptanceScenarios {
                     List.of(
                             selectedTag.path("name").asText(),
                             laterTag.path("name").asText()),
-                    array(filtered.json().path("data").path("items").get(0).path("tagSummary")).stream()
-                            .map(JsonNode::asText)
+                    array(filtered.json().path("data").path("items").get(0).path("tags")).stream()
+                            .map(tag -> tag.path("name").asText())
                             .toList(),
                     "BUSINESS: item page projects catalog-tag business labels in dictionary display order,"
                             + " not submitted ref order");
@@ -2907,20 +3199,27 @@ final class CatalogAcceptanceScenarios {
                     List.of(
                             selectedTag.path("name").asText(),
                             laterTag.path("name").asText()),
-                    array(productionRows.getFirst().path("tagSummary")).stream()
-                            .map(JsonNode::asText)
+                    array(productionRows.getFirst().path("tags")).stream()
+                            .map(tag -> tag.path("name").asText())
                             .toList(),
                     "BUSINESS: production-tag filtering remains independent while the parent row retains "
                             + "its catalog-tag business labels");
-            assertTrue(
-                    array(productionRows.getFirst().path("preparationSummary")).stream()
-                            .map(JsonNode::asText)
-                            .anyMatch(("生产标签：Selected production tag " + suffix)::equals),
+            assertEquals(
+                    ("Selected production tag " + suffix),
+                    productionRows
+                            .getFirst()
+                            .path("preparationFacts")
+                            .path("productionTag")
+                            .path("name")
+                            .asText(),
                     "BUSINESS: parent row projects the bound production tag business name rather than a "
                             + "generic configured marker");
             assertTrue(
                     taggedWithProductionTagVersion > taggedItemVersion,
                     "BUSINESS: production-tag binding is versioned by the catalog owner");
+            assertTrue(
+                    taggedWithCategoryVersion > taggedWithProductionTagVersion,
+                    "BUSINESS: category binding is versioned by the catalog owner");
             Response disabledProductionFiltered = context.get(
                     OPERATIONS_CATALOG_ITEMS,
                     "/api/operations/catalog-inventory/items?dataNodeRef="
@@ -3059,9 +3358,10 @@ final class CatalogAcceptanceScenarios {
                         && skuManagedParentInventory.path("bomLineCount").isNull(),
                 "BUSINESS: the parent list never presents its edit-only ITEM/NONE zero state as an inventory mode;"
                         + " each SKU owns its deduction setting");
-        JsonNode firstData = context.get(OPERATIONS_CATALOG_ITEM_SKUS, basePath, session.cookie(), Set.of(200))
-                .json()
-                .path("data");
+        Response firstSkuPageResponse =
+                context.get(OPERATIONS_CATALOG_ITEM_SKUS, basePath, session.cookie(), Set.of(200));
+        JsonNode firstSkuPageJson = firstSkuPageResponse.json();
+        JsonNode firstData = firstSkuPageJson.path("data");
         assertEquals(4, firstData.path("total").asInt(), "BUSINESS: SKU task read reports the complete parent total");
         assertEquals(3, firstData.path("items").size(), "BUSINESS: SKU task read respects the requested page size");
         assertTrue(firstData.path("cursor").isNull(), "BUSINESS: the first SKU page has no echoed cursor");
@@ -3080,29 +3380,18 @@ final class CatalogAcceptanceScenarios {
                     row.path("attributeValueRefs"),
                     "BUSINESS: SKU page preserves the exact owner specification facts, including the business label, "
                             + "status and display order");
-            assertTrue(row.path("attributeSummary").isArray(), "BUSINESS: SKU page exposes the attribute summary");
+            assertTrue(row.path("attributeFacts").isArray(), "BUSINESS: SKU page exposes structured attribute facts");
             assertEquals(
-                    array(row.path("attributeValueRefs")).stream()
-                            .map(value -> value.path("attributeName").asText() + "："
-                                    + value.path("valueLabel").asText())
-                            .toList(),
-                    array(row.path("attributeSummary")).stream()
-                            .map(JsonNode::asText)
-                            .toList(),
-                    "BUSINESS: SKU page uses owner-ordered specification names and values rather than an "
-                            + "empty or generic summary");
-            assertFalse(
-                    array(row.path("attributeSummary")).stream()
-                            .map(JsonNode::asText)
-                            .anyMatch("已设置"::equals),
-                    "BUSINESS: SKU page never substitutes a generic selected-attribute placeholder");
-            assertTrue(row.path("preparationSummary").isArray(), "BUSINESS: SKU page exposes the production summary");
-            assertTrue(
-                    array(row.path("preparationSummary")).stream()
-                            .map(JsonNode::asText)
-                            .anyMatch(("生产标签：Page production tag " + suffix)::equals),
-                    "BUSINESS: SKU page projects the bound production tag business name rather than a "
-                            + "generic configured marker");
+                    row.path("attributeValueRefs"),
+                    row.path("attributeFacts"),
+                    "BUSINESS: SKU page preserves structured specification facts exactly");
+            assertEquals(
+                    "Page production tag " + suffix,
+                    row.path("preparationFacts")
+                            .path("productionTag")
+                            .path("name")
+                            .asText(),
+                    "BUSINESS: SKU page projects the bound production tag business name as a typed fact");
             assertTrue(
                     row.path("inventoryDeductionSummary").isObject(), "BUSINESS: SKU page exposes inventory summary");
             assertEquals(
@@ -3115,15 +3404,32 @@ final class CatalogAcceptanceScenarios {
                     firstRefs.add(row.path("productSkuRef").asText()),
                     "BUSINESS: first SKU page has no duplicate identity");
         });
+        for (int index = 0; index < firstData.path("items").size(); index++) {
+            JsonNode row = firstData.path("items").get(index);
+            JsonNode detailSkuFacts =
+                    savedSkuFactsByRef.get(row.path("productSkuRef").asText());
+            assertCatalogOperationOracle(
+                    firstSkuPageJson,
+                    "getOperationsCatalogItemSkus",
+                    "/data/items/" + index + "/attributeFacts",
+                    detailSkuFacts.path("attributeValueRefs"),
+                    "BUSINESS: SKU page returns the exact ordered typed attribute facts from the owner readback");
+        }
+        assertCatalogSkuItemsOracle(
+                firstSkuPageJson,
+                "getOperationsCatalogItemSkus",
+                savedSkuFactsByRef,
+                3,
+                "Page production tag " + suffix,
+                "BUSINESS: SKU page returns the complete ordered structured item projection");
 
-        JsonNode secondData = context.get(
-                        OPERATIONS_CATALOG_ITEM_SKUS,
-                        basePath + "&cursor="
-                                + java.net.URLEncoder.encode(nextCursor, java.nio.charset.StandardCharsets.UTF_8),
-                        session.cookie(),
-                        Set.of(200))
-                .json()
-                .path("data");
+        Response secondSkuPageResponse = context.get(
+                OPERATIONS_CATALOG_ITEM_SKUS,
+                basePath + "&cursor=" + java.net.URLEncoder.encode(nextCursor, java.nio.charset.StandardCharsets.UTF_8),
+                session.cookie(),
+                Set.of(200));
+        JsonNode secondSkuPageJson = secondSkuPageResponse.json();
+        JsonNode secondData = secondSkuPageJson.path("data");
         assertEquals(
                 nextCursor,
                 secondData.path("cursor").asText(),
@@ -3139,20 +3445,17 @@ final class CatalogAcceptanceScenarios {
                     row.path("attributeValueRefs").isArray(),
                     "BUSINESS: the second page keeps the SKU specification shape");
             assertEquals(
-                    array(row.path("attributeValueRefs")).stream()
-                            .map(value -> value.path("attributeName").asText() + "："
-                                    + value.path("valueLabel").asText())
-                            .toList(),
-                    array(row.path("attributeSummary")).stream()
-                            .map(JsonNode::asText)
-                            .toList(),
-                    "BUSINESS: every SKU page keeps the owner-ordered specification summary");
-            assertFalse(
-                    array(row.path("attributeSummary")).stream()
-                            .map(JsonNode::asText)
-                            .anyMatch("已设置"::equals),
-                    "BUSINESS: continuation SKU page never substitutes a generic selected-attribute placeholder");
+                    row.path("attributeValueRefs"),
+                    row.path("attributeFacts"),
+                    "BUSINESS: every SKU page keeps the structured specification facts");
         });
+        JsonNode secondSku = secondData.path("items").get(0);
+        assertCatalogOperationOracle(
+                secondSkuPageJson,
+                "getOperationsCatalogItemSkus",
+                "/data/items/0/attributeFacts",
+                savedSkuFactsByRef.get(secondSku.path("productSkuRef").asText()).path("attributeValueRefs"),
+                "BUSINESS: continuation SKU page returns the exact ordered typed attribute facts");
         assertEquals(4, firstRefs.size(), "BUSINESS: SKU pages have no omission");
         assertTrue(secondData.path("nextCursor").isNull(), "BUSINESS: the final SKU page has no further cursor");
         int afterSkuPageTotal = context.get(
@@ -3555,8 +3858,7 @@ final class CatalogAcceptanceScenarios {
                 "该规格存在库存记录或用料，暂不能作废",
                 rejectionDetail,
                 "BUSINESS: rejection names the inventory-or-BOM business blocker without a generic fallback");
-        assertFalse(
-                rejectionDetail.contains(skuRef), "BUSINESS: rejection does not expose the opaque SKU identity");
+        assertFalse(rejectionDetail.contains(skuRef), "BUSINESS: rejection does not expose the opaque SKU identity");
         assertFalse(
                 rejectionDetail.contains("stock_target") || rejectionDetail.contains("product_sku_ref"),
                 "BUSINESS: rejection does not expose inventory schema names");
@@ -3591,6 +3893,28 @@ final class CatalogAcceptanceScenarios {
                 .path("skus")
                 .get(0);
         String compositeSkuRef = compositeSku.path("productSkuRef").asText();
+        JsonNode compositeBlockedReadback = readItem(context, fixture, session, compositeBlockedCode);
+        Response enabledCompositeItem = context.post(
+                OPERATIONS_CATALOG_ITEM_STATUS,
+                itemPath(compositeBlockedCode) + "/status",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef",
+                        fixture.storeId().toString(),
+                        "itemCode",
+                        compositeBlockedCode,
+                        "expectedVersion",
+                        compositeBlockedReadback.path("version").asLong(),
+                        "targetStatus",
+                        "ENABLED"),
+                Set.of(200));
+        assertEquals(
+                "ENABLED",
+                enabledCompositeItem.json().path("result").path("status").asText(),
+                "BUSINESS: a newly referenced composite component is enabled before the relation is created");
+        compositeVersion = readItem(context, fixture, session, compositeBlockedCode)
+                .path("version")
+                .asLong();
         String compositeOwnerCode =
                 "ACC-SKU-COMPOSITE-OWNER-" + UUID.randomUUID().toString().substring(0, 8);
         CreatedItem compositeOwner = createItemWithAttributes(
@@ -3646,6 +3970,7 @@ final class CatalogAcceptanceScenarios {
         String bomSkuRef = bomSku.path("productSkuRef").asText();
         bomVersion =
                 saveSkuBom(context, fixture, session, bomBlockedCode, bomVersion, bomSkuRef, bomComponentTargetRef);
+        // spotless:off
         assertSkuRemovalBlocked(
                 context,
                 fixture,
@@ -3654,6 +3979,7 @@ final class CatalogAcceptanceScenarios {
                 bomVersion,
                 bomSkuRef,
                 "该规格存在库存记录或用料，暂不能作废");
+        // spotless:on
     }
 
     private void assertSkuRemovalBlocked(
@@ -3990,6 +4316,18 @@ final class CatalogAcceptanceScenarios {
                 "/api/operations/catalog-inventory/inventory-targets" + pageQuery,
                 session.cookie(),
                 Set.of(200));
+        assertCatalogOperationOracle(
+                firstPage.json(),
+                "getOperationsInventoryTargets",
+                "/data/items/0/productName",
+                host.mapper.valueToTree(firstName),
+                "BUSINESS: inventory list returns the exact catalog-owned product name");
+        assertCatalogOperationOracle(
+                firstPage.json(),
+                "getOperationsInventoryTargets",
+                "/data/items/0/targetRef",
+                host.mapper.valueToTree(firstTargetRef),
+                "BUSINESS: inventory list returns the exact opaque target reference");
         JsonNode firstPageData = firstPage.json().path("data");
         assertEquals(
                 2, firstPageData.path("total").asInt(), "BUSINESS: inventory page total matches both scoped targets");
@@ -4010,7 +4348,8 @@ final class CatalogAcceptanceScenarios {
                 secondPageData.path("items").get(0).path("targetRef").asText(),
                 "BUSINESS: cursor paging does not repeat the first target");
         Map<String, String> expectedNames = Map.of(firstCode, firstName, secondCode, secondName);
-        for (JsonNode pageItem : List.of(firstPageData.path("items").get(0), secondPageData.path("items").get(0))) {
+        for (JsonNode pageItem : List.of(
+                firstPageData.path("items").get(0), secondPageData.path("items").get(0))) {
             String code = pageItem.path("productCode").asText();
             assertEquals(
                     expectedNames.get(code),
@@ -4029,7 +4368,26 @@ final class CatalogAcceptanceScenarios {
                     targetRef,
                     detail.json().path("target").path("targetRef").asText(),
                     "BUSINESS: detail readback returns the requested opaque target");
-            String productCode = detail.json().path("target").path("productCode").asText();
+            assertCatalogOperationOracle(
+                    detail.json(),
+                    "getOperationsInventoryTarget",
+                    "/target/targetRef",
+                    host.mapper.valueToTree(targetRef),
+                    "BUSINESS: inventory detail returns the exact opaque target reference");
+            String productCode =
+                    detail.json().path("target").path("productCode").asText();
+            assertCatalogOperationOracle(
+                    detail.json(),
+                    "getOperationsInventoryTarget",
+                    "/target/productName",
+                    host.mapper.valueToTree(expectedNames.get(productCode)),
+                    "BUSINESS: inventory detail returns the exact catalog-owned product name");
+            assertCatalogOperationOracle(
+                    detail.json(),
+                    "getOperationsInventoryTarget",
+                    "/changeSummary",
+                    host.mapper.valueToTree(emptyInventoryChangeSummary()),
+                    "BUSINESS: inventory detail returns the exact empty current-zone change summary");
             assertEquals(
                     expectedNames.get(productCode),
                     detail.json().path("target").path("productName").asText(),
@@ -4074,6 +4432,12 @@ final class CatalogAcceptanceScenarios {
                 session.cookie(),
                 Set.of(200));
         JsonNode currentJson = current.json();
+        assertCatalogOperationOracle(
+                currentJson,
+                "getOperationsInventoryTarget",
+                "/changeSummary",
+                host.mapper.valueToTree(emptyInventoryChangeSummary()),
+                "BUSINESS: current readback returns exact empty change windows before any mutation");
         assertTrue(
                 currentJson.path("changeSummary").isObject()
                         && currentJson.path("recentChanges").isArray(),
@@ -4091,9 +4455,7 @@ final class CatalogAcceptanceScenarios {
                 .asText("");
         assertFalse(countingUnitRef.isBlank(), "BUSINESS: current target exposes its counting-unit reference");
         Response updated = context.patch(
-                new RouteIdentity(
-                        "updateOperationsInventoryTargetConfiguration",
-                        "/api/operations/catalog-inventory/inventory-targets/{targetRef}/configuration"),
+                OPERATIONS_INVENTORY_TARGET_CONFIGURATION,
                 path + "/configuration",
                 session.cookie(),
                 Map.of(
@@ -4115,11 +4477,90 @@ final class CatalogAcceptanceScenarios {
                                 "1")),
                 Map.of("Idempotency-Key", "acceptance-current-readback-" + UUID.randomUUID()),
                 Set.of(200));
+        Map<String, Object> expectedConfiguration = new LinkedHashMap<>();
+        expectedConfiguration.put("allowNegative", false);
+        expectedConfiguration.put("lowStockThreshold", "0");
+        expectedConfiguration.put("countingUnitSnapshot", currentJson.at("/configuration/countingUnitSnapshot"));
+        expectedConfiguration.put("conversionFactor", "1");
+        assertCatalogOperationOracle(
+                updated.json(),
+                "updateOperationsInventoryTargetConfiguration",
+                "/configuration",
+                host.mapper.valueToTree(expectedConfiguration),
+                "BUSINESS: configuration readback returns exact typed unit and conversion facts");
+        assertCatalogOperationOracle(
+                updated.json(),
+                "updateOperationsInventoryTargetConfiguration",
+                "/changeSummary",
+                host.mapper.valueToTree(emptyInventoryChangeSummary()),
+                "BUSINESS: configuration readback returns exact unchanged change windows");
         assertTrue(
                 updated.json().path("changeSummary").isObject()
                         && updated.json().path("references").isMissingNode()
                         && updated.json().path("ledger").isMissingNode(),
                 "BUSINESS: configuration command readback follows the same lazy-zone contract");
+
+        Response increased = context.post(
+                OPERATIONS_INVENTORY_TARGET_INCREASE,
+                path + "/increase",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef",
+                        fixture.storeId().toString(),
+                        "targetRef",
+                        targetRef,
+                        "expectedVersion",
+                        updated.json().path("version").asLong(),
+                        "quantity",
+                        "1",
+                        "countingUnitRef",
+                        countingUnitRef,
+                        "note",
+                        "A-2 increase"),
+                idempotencyHeaders("current-readback-increase"),
+                Set.of(200));
+        assertInventoryMutationOperationOracle(
+                increased.json(),
+                "increaseOperationsInventoryTarget",
+                targetRef,
+                "0",
+                "1",
+                "1",
+                "OK",
+                "BUSINESS: increase readback is an exact typed result");
+
+        Response adjusted = context.post(
+                OPERATIONS_INVENTORY_TARGET_ADJUST,
+                path + "/adjust",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef",
+                        fixture.storeId().toString(),
+                        "targetRef",
+                        targetRef,
+                        "expectedVersion",
+                        increased.json().path("version").asLong(),
+                        "direction",
+                        "DECREASE",
+                        "quantity",
+                        "1",
+                        "countingUnitRef",
+                        countingUnitRef,
+                        "reasonCode",
+                        "CORRECTION",
+                        "note",
+                        "A-2 adjust"),
+                idempotencyHeaders("current-readback-adjust"),
+                Set.of(200));
+        assertInventoryMutationOperationOracle(
+                adjusted.json(),
+                "adjustOperationsInventoryTarget",
+                targetRef,
+                "1",
+                "-1",
+                "0",
+                "OUT",
+                "BUSINESS: adjust readback is an exact typed result");
     }
 
     /**
@@ -5010,7 +5451,7 @@ final class CatalogAcceptanceScenarios {
     @AcceptanceScenario(
             id = "catalog.attribute-definition-delete-cascade",
             module = "CATALOG",
-            operation = "deleteOperationsCatalogAttributeDefinition")
+            operation = "transitionOperationsCatalogAttributeDefinitionStatus")
     void attributeDefinitionDeleteCascade(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG"));
         host.completeInvitation(context, fixture);
@@ -5051,42 +5492,85 @@ final class CatalogAcceptanceScenarios {
                 .filter(item -> firstCode.equals(item.path("code").asText()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("BUSINESS: item page returns the saved attribute fixture"));
+        JsonNode listedAttributeFact = array(listedFirst.path("attributeFacts")).stream()
+                .filter(fact -> definition
+                        .path("definitionRef")
+                        .asText()
+                        .equals(fact.path("definitionRef").asText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("BUSINESS: item page returns the saved attribute fact"));
         assertEquals(
-                List.of("保存说明：三个月、半年"),
-                array(listedFirst.path("attributeSummary")).stream()
+                Set.of(
+                        definition.path("options").get(0).path("optionRef").asText(),
+                        definition.path("options").get(1).path("optionRef").asText()),
+                new LinkedHashSet<>(array(listedAttributeFact.path("optionRefs")).stream()
                         .map(JsonNode::asText)
-                        .toList(),
-                "BUSINESS: item page resolves selected attribute labels in the definition display order, "
-                        + "not request order");
-        assertFalse(
-                array(listedFirst.path("attributeSummary")).stream()
-                        .map(JsonNode::asText)
-                        .anyMatch("保存说明：已设置"::equals),
-                "BUSINESS: item page never substitutes a generic selected-attribute placeholder");
-        Response deleted = context.delete(
-                OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_DELETE,
+                        .toList()),
+                "BUSINESS: item page returns selected attribute references as structured facts");
+        Response blocked = context.post(
+                OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_STATUS,
                 "/api/operations/catalog-inventory/attribute-definitions/"
-                        + definition.path("definitionRef").asText(),
+                        + definition.path("definitionRef").asText()
+                        + "/status",
                 session.cookie(),
                 Map.of(
                         "dataNodeRef", fixture.storeId().toString(),
                         "definitionRef", definition.path("definitionRef").asText(),
-                        "expectedVersion", definition.path("version").asLong()),
+                        "expectedVersion", definition.path("version").asLong(),
+                        "targetStatus", "VOIDED"),
+                Set.of(422));
+        assertEquals(
+                "REFERENCE_BLOCKS_VOID",
+                blocked.problemCode(),
+                "BUSINESS: a referenced attribute definition cannot be voided");
+        long firstUnboundVersion = saveTypedItemFacts(
+                context,
+                fixture,
+                session,
+                firstCode,
+                readItem(context, fixture, session, firstCode).path("version").asLong(),
+                List.of(),
+                List.of());
+        long secondUnboundVersion = saveTypedItemFacts(
+                context,
+                fixture,
+                session,
+                secondCode,
+                readItem(context, fixture, session, secondCode).path("version").asLong(),
+                List.of(),
+                List.of());
+        assertTrue(
+                firstUnboundVersion > firstVersion,
+                "BUSINESS: clearing the first assignment advances its item version");
+        assertTrue(
+                secondUnboundVersion > secondVersion,
+                "BUSINESS: clearing the second assignment advances its item version");
+        Response voided = context.post(
+                OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_STATUS,
+                "/api/operations/catalog-inventory/attribute-definitions/"
+                        + definition.path("definitionRef").asText()
+                        + "/status",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef", fixture.storeId().toString(),
+                        "definitionRef", definition.path("definitionRef").asText(),
+                        "expectedVersion", definition.path("version").asLong(),
+                        "targetStatus", "VOIDED"),
                 Set.of(200));
         assertEquals(
-                2,
-                deleted.json().path("result").path("deletedAssignmentCount").asInt(),
-                "BUSINESS: delete receipt identifies both removed product assignments");
+                "VOIDED",
+                voided.json().path("result").path("definition").path("status").asText(),
+                "BUSINESS: the definition transition returns the terminal lifecycle state");
         assertTrue(
                 readItem(context, fixture, session, firstCode)
                         .path("attributeAssignments")
                         .isEmpty(),
-                "BUSINESS: deleting a definition removes assignment values but keeps the first product");
+                "BUSINESS: clearing references leaves the first product readable");
         assertTrue(
                 readItem(context, fixture, session, secondCode)
                         .path("attributeAssignments")
                         .isEmpty(),
-                "BUSINESS: deleting a definition removes assignment values but keeps the second product");
+                "BUSINESS: clearing references leaves the second product readable");
     }
 
     @AcceptanceScenario(
@@ -5442,7 +5926,7 @@ final class CatalogAcceptanceScenarios {
     @AcceptanceScenario(
             id = "catalog.order-option-definition-delete-cascade",
             module = "CATALOG",
-            operation = "deleteOperationsCatalogOrderOptionDefinition")
+            operation = "transitionOperationsCatalogOrderOptionDefinitionStatus")
     void orderOptionDefinitionDeleteCascade(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
         host.completeInvitation(context, fixture);
@@ -5489,10 +5973,11 @@ final class CatalogAcceptanceScenarios {
                                         template.path("materialRef").asText(),
                                         "actualQuantity",
                                         5)))))));
-        Response deleted = context.delete(
-                OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_DELETE,
+        Response blocked = context.post(
+                OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_STATUS,
                 "/api/operations/catalog-inventory/order-option-definitions/"
-                        + definition.path("definitionRef").asText(),
+                        + definition.path("definitionRef").asText()
+                        + "/status",
                 session.cookie(),
                 Map.of(
                         "dataNodeRef",
@@ -5500,24 +5985,50 @@ final class CatalogAcceptanceScenarios {
                         "definitionRef",
                         definition.path("definitionRef").asText(),
                         "expectedVersion",
-                        definition.path("version").asLong()),
+                        definition.path("version").asLong(),
+                        "targetStatus",
+                        "VOIDED"),
+                Set.of(422));
+        assertEquals(
+                "REFERENCE_BLOCKS_VOID",
+                blocked.problemCode(),
+                "BUSINESS: a referenced order-option definition cannot be voided");
+        itemVersion = saveTypedItemFacts(
+                context,
+                fixture,
+                session,
+                itemCode,
+                readItem(context, fixture, session, itemCode).path("version").asLong(),
+                List.of(),
+                List.of());
+        Response voided = context.post(
+                OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_STATUS,
+                "/api/operations/catalog-inventory/order-option-definitions/"
+                        + definition.path("definitionRef").asText()
+                        + "/status",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef", fixture.storeId().toString(),
+                        "definitionRef", definition.path("definitionRef").asText(),
+                        "expectedVersion", definition.path("version").asLong(),
+                        "targetStatus", "VOIDED"),
                 Set.of(200));
         assertEquals(
-                1,
-                deleted.json().path("result").path("deletedItemConfigCount").asInt(),
-                "BUSINESS: group delete reports the product configuration removed by its cascade");
+                "VOIDED",
+                voided.json().path("result").path("definition").path("status").asText(),
+                "BUSINESS: the definition transition returns the terminal lifecycle state");
         assertTrue(
                 readItem(context, fixture, session, itemCode)
                         .path("orderOptionConfigs")
                         .isEmpty(),
-                "BUSINESS: group deletion removes the product configuration while keeping the product");
+                "BUSINESS: clearing references leaves the product configuration empty");
         assertEquals(
                 material.path("itemRef").asText(),
                 readItem(context, fixture, session, "ACC-OPTION-MATERIAL-delete-" + suffix)
                         .path("itemRef")
                         .asText(),
-                "BUSINESS: group deletion preserves the material product and its inventory target");
-        assertTrue(itemVersion > 0, "BUSINESS: product configuration existed before the definition delete command");
+                "BUSINESS: voiding the definition preserves the material product and its inventory target");
+        assertTrue(itemVersion > 0, "BUSINESS: product configuration was cleared through the item owner");
     }
 
     @AcceptanceScenario(
@@ -5747,7 +6258,7 @@ final class CatalogAcceptanceScenarios {
                 categoryBody,
                 Set.of(200));
         String categoryRef = category.json().path("result").path("categoryRef").asText();
-        String itemCode = "ACC-DRAFT-" + suffix;
+        String itemCode = "ACC-DISABLED-" + suffix;
         String storeId = fixture.storeId().toString();
         Map<String, Object> draftItem =
                 itemCreateBody(storeId, itemCode, "两步创建商品", "STANDARD_SALE_COUNTED", categoryRef);
@@ -5759,7 +6270,7 @@ final class CatalogAcceptanceScenarios {
                 Set.of(200));
         assertTrue(
                 created.json().path("result").path("version").asLong() > 0,
-                "BUSINESS: first step atomically creates a versioned draft fact");
+                "BUSINESS: first step atomically creates a versioned disabled fact");
         JsonNode item = readItem(context, fixture, session, itemCode);
         assertEquals(
                 created.json().path("result").path("resourceRef").asText(),
@@ -5772,11 +6283,11 @@ final class CatalogAcceptanceScenarios {
         assertEquals(
                 categoryRef,
                 item.path("categoryRef").asText(),
-                "BUSINESS: first-step category is already persisted on the draft product");
+                "BUSINESS: first-step category is already persisted on the disabled product");
         assertEquals(
-                "DRAFT",
+                "DISABLED",
                 item.path("lifecycle").path("status").asText(),
-                "BUSINESS: first-step create produces a DRAFT rather than a half-created product");
+                "BUSINESS: first-step create produces DISABLED per the three-state lifecycle");
     }
 
     /**
@@ -7407,7 +7918,8 @@ final class CatalogAcceptanceScenarios {
         JsonNode node =
                 findInventoryOwner(item, "OPTION_VALUE", item.path("itemRef").asText(), optionValueRef, null);
         JsonNode line = StreamSupport.stream(node.path("bom").path("lines").spliterator(), false)
-                .filter(candidate -> targetRef.equals(candidate.path("targetRef").asText()))
+                .filter(candidate ->
+                        targetRef.equals(candidate.path("targetRef").asText()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("BUSINESS: option-value BOM line remains present in readback"));
         assertEquals(
@@ -8012,6 +8524,218 @@ final class CatalogAcceptanceScenarios {
 
     private static List<JsonNode> array(JsonNode value) {
         return StreamSupport.stream(value.spliterator(), false).toList();
+    }
+
+    private static void assertCatalogJson(JsonNode json, String pointer, JsonNode expected, String message) {
+        JsonNode actual = json.at(pointer);
+        assertFalse(actual.isMissingNode(), message + ": missing " + pointer);
+        assertCatalogJsonValue(expected, actual, message, pointer);
+    }
+
+    /**
+     * A registry-bound oracle keeps the operation identity next to the HTTP response it verifies. The operation id is
+     * intentionally explicit at each call site so the static gate cannot mistake a family marker for a real oracle.
+     */
+    private static void assertCatalogOperationOracle(
+            JsonNode json, String operationId, String pointer, JsonNode expected, String message) {
+        assertFalse(operationId.isBlank(), message + ": operation identity is required");
+        JsonNode actual = json.at(pointer);
+        assertFalse(actual.isMissingNode(), message + ": missing " + pointer);
+        assertCatalogJsonValue(expected, actual, message, pointer);
+    }
+
+    /**
+     * Compare JSON facts by their wire-level type and value. Jackson may materialize a Java Long expected value as a
+     * LongNode while parsing the same HTTP integer back into an IntNode; that implementation width is not a JSON
+     * business fact, but numeric kind, exact value, object membership and array order remain asserted here.
+     */
+    private static void assertCatalogJsonValue(JsonNode expected, JsonNode actual, String message, String pointer) {
+        assertEquals(expected.getNodeType(), actual.getNodeType(), message + ": type at " + pointer);
+        if (expected.isObject()) {
+            assertEquals(expected.size(), actual.size(), message + ": object size at " + pointer);
+            var fields = expected.fieldNames();
+            while (fields.hasNext()) {
+                String field = fields.next();
+                assertTrue(actual.has(field), message + ": missing field at " + pointer + "/" + field);
+                assertCatalogJsonValue(expected.get(field), actual.get(field), message, pointer + "/" + field);
+            }
+            return;
+        }
+        if (expected.isArray()) {
+            assertEquals(expected.size(), actual.size(), message + ": array size at " + pointer);
+            for (int index = 0; index < expected.size(); index++)
+                assertCatalogJsonValue(expected.get(index), actual.get(index), message, pointer + "/" + index);
+            return;
+        }
+        if (expected.isNumber()) {
+            assertEquals(
+                    expected.isIntegralNumber(), actual.isIntegralNumber(), message + ": numeric kind at " + pointer);
+            if (expected.isIntegralNumber())
+                assertEquals(
+                        expected.bigIntegerValue(),
+                        actual.bigIntegerValue(),
+                        message + ": numeric value at " + pointer);
+            else
+                assertEquals(
+                        expected.decimalValue().stripTrailingZeros(),
+                        actual.decimalValue().stripTrailingZeros(),
+                        message + ": numeric value at " + pointer);
+            return;
+        }
+        assertEquals(expected, actual, message + ": value at " + pointer);
+    }
+
+    private static Map<String, Object> catalogNavigationCategoryFact(
+            JsonNode category,
+            String parentCategoryRef,
+            long count,
+            long subtreeSize,
+            boolean canDelete,
+            String blockingReference,
+            String blockingCode,
+            String blockingName) {
+        JsonNode result = category.path("result");
+        Map<String, Object> fact = new LinkedHashMap<>();
+        fact.put("categoryRef", result.path("categoryRef").asText());
+        fact.put("code", result.path("code").asText());
+        fact.put("name", result.path("name").asText());
+        fact.put("parentCategoryRef", parentCategoryRef);
+        fact.put("version", result.path("version").asLong());
+        fact.put("displayOrder", result.path("displayOrder").asInt());
+        fact.put("count", count);
+        fact.put("countSemantics", "SELF_ONLY");
+        Map<String, Object> deletionAvailability = new LinkedHashMap<>();
+        deletionAvailability.put("canDelete", canDelete);
+        deletionAvailability.put("subtreeSize", subtreeSize);
+        deletionAvailability.put("blockingReferenceCount", blockingReference == null ? 0L : 1L);
+        Map<String, Object> blockingReferences = new LinkedHashMap<>();
+        blockingReferences.put("count", blockingReference == null ? 0L : 1L);
+        if (blockingReference == null) blockingReferences.put("references", List.of());
+        else {
+            blockingReferences.put(
+                    "references",
+                    List.of(Map.of(
+                            "referenceKind",
+                            "CATALOG_ITEM",
+                            "referenceRef",
+                            blockingReference,
+                            "code",
+                            blockingCode,
+                            "name",
+                            blockingName,
+                            "direction",
+                            "INBOUND")));
+        }
+        deletionAvailability.put("blockingReferences", blockingReferences);
+        fact.put("deletionAvailability", deletionAvailability);
+        return fact;
+    }
+
+    private static void assertCatalogSkuItemsOracle(
+            JsonNode json,
+            String operationId,
+            Map<String, JsonNode> ownerFacts,
+            int expectedPageSize,
+            String expectedProductionTagName,
+            String message) {
+        assertFalse(operationId.isBlank(), message + ": operation identity is required");
+        JsonNode items = json.at("/data/items");
+        assertFalse(items.isMissingNode(), message + ": missing /data/items");
+        assertTrue(items.isArray(), message + ": /data/items is an array");
+        assertEquals(expectedPageSize, items.size(), message + ": exact page cardinality");
+        List<String> expectedRefs = new ArrayList<>(ownerFacts.keySet()).subList(0, expectedPageSize);
+        for (int index = 0; index < items.size(); index++) {
+            JsonNode actual = items.get(index);
+            JsonNode expected = ownerFacts.get(expectedRefs.get(index));
+            assertTrue(actual.isObject(), message + ": row is an object at index " + index);
+            assertEquals(expectedRefs.get(index), actual.at("/productSkuRef").asText(), message + ": ordered SKU ref");
+            assertEquals(expected.at("/skuCode"), actual.at("/skuCode"), message + ": SKU code");
+            assertEquals(expected.at("/skuName"), actual.at("/skuName"), message + ": SKU name");
+            assertEquals(
+                    expected.at("/attributeValueRefs"),
+                    actual.at("/attributeValueRefs"),
+                    message + ": owner attribute values");
+            assertEquals(
+                    actual.at("/attributeValueRefs"),
+                    actual.at("/attributeFacts"),
+                    message + ": structured attribute facts");
+            assertEquals(
+                    expectedProductionTagName,
+                    actual.at("/preparationFacts/productionTag/name").asText(),
+                    message + ": preparation production tag");
+            assertEquals("SKU", actual.at("/inventoryDeductionSummary/grain").asText(), message + ": SKU grain");
+            assertEquals("NONE", actual.at("/inventoryDeductionSummary/mode").asText(), message + ": SKU mode");
+        }
+    }
+
+    private static Map<String, Object> emptyInventoryChangeSummary() {
+        Map<String, Object> emptyPeriod = Map.of("increase", "0", "decrease", "0", "netChange", "0", "entryCount", 0);
+        return Map.of("today", emptyPeriod, "sevenDays", emptyPeriod, "thirtyDays", emptyPeriod);
+    }
+
+    private static void assertInventoryMutationOperationOracle(
+            JsonNode json,
+            String operationId,
+            String targetRef,
+            String before,
+            String change,
+            String after,
+            String stockState,
+            String message) {
+        assertFalse(operationId.isBlank(), message + ": operation identity is required");
+        JsonNode result = json.at("/result");
+        assertFalse(result.isMissingNode(), message + ": missing /result");
+        assertTrue(result.isObject(), message + ": /result is an object");
+        assertEquals(7, result.size(), message + ": result contains the complete typed mutation shape");
+        assertEquals(targetRef, result.at("/targetRef").asText(), message + ": targetRef");
+        assertEquals(before, result.at("/before").asText(), message + ": before");
+        assertEquals(change, result.at("/change").asText(), message + ": change");
+        assertEquals(after, result.at("/after").asText(), message + ": after");
+        JsonNode ledgerEntryRef = result.at("/ledgerEntryRef");
+        assertTrue(ledgerEntryRef.isTextual(), message + ": ledgerEntryRef is typed");
+        assertTrue(ledgerEntryRef.asText().matches("[0-9a-f-]{36}"), message + ": ledgerEntryRef is opaque");
+        assertEquals(stockState, result.at("/stockState").asText(), message + ": stockState");
+        assertTrue(result.at("/version").isIntegralNumber(), message + ": result version is typed");
+        assertTrue(json.at("/version").isIntegralNumber(), message + ": response version is typed");
+    }
+
+    private static void assertCatalogAbsent(JsonNode json, String pointer, String message) {
+        assertTrue(json.at(pointer).isMissingNode(), message + ": unexpected " + pointer);
+    }
+
+    private static Map<String, Object> catalogTagFact(String tagRef, String code, String name) {
+        return Map.of("tagRef", tagRef, "code", code, "name", name);
+    }
+
+    private static Map<String, Object> catalogTagFact(String tagRef, String code, String name, int count) {
+        return Map.of("tagRef", tagRef, "code", code, "name", name, "count", count);
+    }
+
+    private static Map<String, Object> catalogCategoryFact(String categoryRef, String code, String name) {
+        return Map.of("categoryRef", categoryRef, "code", code, "name", name);
+    }
+
+    private static void assertInventoryMutationResult(
+            JsonNode json, String targetRef, String before, String change, String after, String message) {
+        JsonNode actualTargetRef = json.at("/result/targetRef");
+        assertTrue(actualTargetRef.isTextual(), message + ": targetRef is typed");
+        assertEquals(targetRef, actualTargetRef.asText(), message + ": targetRef");
+        JsonNode actualBefore = json.at("/result/before");
+        assertTrue(actualBefore.isTextual(), message + ": before is typed");
+        assertEquals(before, actualBefore.asText(), message + ": before");
+        JsonNode actualChange = json.at("/result/change");
+        assertTrue(actualChange.isTextual(), message + ": change is typed");
+        assertEquals(change, actualChange.asText(), message + ": change");
+        JsonNode actualAfter = json.at("/result/after");
+        assertTrue(actualAfter.isTextual(), message + ": after is typed");
+        assertEquals(after, actualAfter.asText(), message + ": after");
+        JsonNode ledgerEntryRef = json.at("/result/ledgerEntryRef");
+        assertTrue(ledgerEntryRef.isTextual(), message + ": ledgerEntryRef is typed");
+        assertTrue(ledgerEntryRef.asText().matches("[0-9a-f-]{36}"), message + ": ledgerEntryRef is an opaque UUID");
+        JsonNode stockState = json.at("/result/stockState");
+        assertTrue(stockState.isTextual() && !stockState.asText().isBlank(), message + ": stockState is typed");
+        assertTrue(json.at("/result/version").isIntegralNumber(), message + ": result version is typed");
+        assertTrue(json.at("/version").isIntegralNumber(), message + ": response version is typed");
     }
 
     /* Package-private calibration fixtures. These keep CP-05 recipes on the same real HTTP

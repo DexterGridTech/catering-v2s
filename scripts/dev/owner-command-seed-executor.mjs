@@ -36,6 +36,30 @@ export class FormalSeedFailure extends Error {
 
 function fail(code) { throw new FormalSeedFailure(code); }
 function required(value, code) { if (value === undefined || value === null || value === '') fail(code); return value; }
+const THREE_STATE_VALUES = new Set(['ENABLED', 'DISABLED', 'VOIDED']);
+function requireThreeStateCoverage(entries, label) {
+  if (!Array.isArray(entries) || entries.length === 0) fail(`SEED_STATUS_COLLECTION_INVALID:${label}`);
+  const statuses = new Set();
+  for (const entry of entries) {
+    if (!THREE_STATE_VALUES.has(entry?.status)) fail(`SEED_STATUS_VALUE_INVALID:${label}`);
+    statuses.add(entry.status);
+  }
+  for (const status of THREE_STATE_VALUES) if (!statuses.has(status)) fail(`SEED_STATUS_COVERAGE_MISSING:${label}:${status}`);
+}
+export function validateThreeStateSeedCoverage(fixture) {
+  const organization = fixture?.stableFixtures?.organization;
+  const workspaceIam = fixture?.stableFixtures?.workspaceIam;
+  for (const [label, entries] of [
+    ['organization.regions', organization?.regions],
+    ['organization.projects', organization?.projects],
+    ['organization.brands', organization?.brands],
+    ['organization.tenants', organization?.tenants],
+    ['organization.headCompanies', organization?.headCompanies],
+    ['organization.stores', organization?.stores],
+    ['workspaceIam.roles', workspaceIam?.roles],
+    ['workspaceIam.accounts', workspaceIam?.accounts],
+  ]) requireThreeStateCoverage(entries, label);
+}
 const defaultSeedLogoBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X+0JXwAAAABJRU5ErkJggg==', 'base64');
 
 export function readSeedAssetFixtureBytes(asset, rootDir = root) {
@@ -131,8 +155,9 @@ export function resolveInvitationCreationPlan(fixture) {
 
 export function validateFormalSeedStaticInputs({fixture, registry}) {
   if (fixture?.profile?.id !== 'r5-full' || fixture?.profile?.version !== 1) fail('SEED_PROFILE_CONTRACT_INVALID');
+  validateThreeStateSeedCoverage(fixture);
   const operations = Array.isArray(registry) ? registry : [];
-  for (const operationId of ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract']) {
+  for (const operationId of ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'transitionWorkspaceRoleStatus', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract']) {
     if (operations.filter((entry) => entry.operationId === operationId).length !== 1) fail(`SEED_OPERATION_REGISTRY_MISSING:${operationId}`);
   }
   return Object.freeze({invitationPlan: resolveInvitationCreationPlan(fixture)});
@@ -248,11 +273,6 @@ function invocationKey(runId, stage) {
 export function invocationKeyForTest(runId, stage) { return invocationKey(runId, stage); }
 function canonicalUserName(displayName) { return requireValue(displayName, 'SEED_ACCOUNT_DISPLAY_NAME'); }
 function canonicalLogin(key) { return `r5-${key}`.replaceAll(/[^a-z0-9-]/g, '-').slice(0, 60); }
-function tokenFromInvitationPath(value) {
-  const pieces = String(value ?? '').split('/').filter(Boolean);
-  if (pieces.length < 4 || pieces.at(-2) === undefined || !pieces.at(-1)) throw new FormalSeedFailure('SEED_INVITATION_RETURN_TOKEN_MISSING');
-  return pieces.at(-1);
-}
 
 /**
  * Seed fixtures declare administrator-defined stable keys. The owner readback
@@ -449,7 +469,7 @@ async function executeFormalSeed() {
       return created.json;
     };
     const advanceInvitation = async (plan, invitation, target = 'COMPLETED') => {
-      const token = tokenFromInvitationPath(requireValue(invitation.invitationPageUrl, 'SEED_INVITATION_URL'));
+      const token = requireValue(invitation.invitationRouteFacts?.invitationToken, 'SEED_INVITATION_ROUTE_FACTS');
       const publicInvitationPath = {groupWorkspaceKey: aurora, invitationToken: token};
       await request(`invitation-accept-${plan.invitationKey}`, 'acceptPublicInvitation', publicInvitationPath);
       if (target === 'ACCEPT_INTENT_RECORDED') return;
@@ -501,6 +521,15 @@ async function executeFormalSeed() {
       const state = stateByKey.get(plan.invitationKey).status;
       if (['ACCEPT_INTENT_RECORDED', 'MOBILE_VERIFIED', 'CREDENTIAL_READY', 'COMPLETED'].includes(state)) await advanceInvitation(plan, ids.invitation[plan.invitationKey], state);
     }
+    // Roles must remain ENABLED while the invitation chain materializes.  Once
+    // all invitation writes are complete, apply each declared terminal role
+    // state through the owner command and retain its authoritative readback.
+    for (const role of fixture.stableFixtures.workspaceIam.roles.filter((entry) => entry.status !== 'ENABLED')) {
+      const current = ids.role[role.key];
+      const updated = await request(`role-transition-${role.key}`, 'transitionWorkspaceRoleStatus', {groupWorkspaceKey: aurora, roleId: requireValue(current?.id, 'SEED_ROLE_ID')}, {cookie: platformCookie, body: {targetStatus: requireValue(role.status, 'SEED_ROLE_STATUS'), expectedVersion: requireValue(current?.revision, 'SEED_ROLE_VERSION'), idempotencyKey: '$header'}});
+      if (updated.json?.status !== role.status) throw new FormalSeedFailure(`SEED_ROLE_STATUS_READBACK_INVALID:${role.key}`);
+      ids.role[role.key] = updated.json;
+    }
     const cancelled = invitationPlan.find((entry) => entry.invitationKey === 'inv-cancelled');
     const cancelledResult = await request('invitation-cancelled', 'cancelWorkspaceInvitation', {groupWorkspaceKey: aurora, invitationId: requireValue(ids.invitation['inv-cancelled']?.id, 'SEED_CANCELLED_INVITATION_ID')}, {cookie: platformCookie, body: {expectedVersion: requireValue(ids.invitation['inv-cancelled']?.revision, 'SEED_CANCELLED_INVITATION_VERSION')}});
     ids.invitation['inv-cancelled'] = cancelledResult.json;
@@ -525,18 +554,31 @@ async function executeFormalSeed() {
       const account = ids.account[assignment.account]; const actual = assignmentFor(assignment.account, assignment.role);
       await request(`assignment-revoke-${assignment.key}`, 'revokePlatformWorkspaceAssignment', {groupWorkspaceKey: aurora, accountId: account.id, assignmentId: actual.id}, {cookie: platformCookie, body: {expectedVersion: requireValue(actual.revision, 'SEED_ASSIGNMENT_VERSION')}});
     }
-    const disabledAccount = ids.account['account-disabled'];
-    await request('account-disable-account-disabled', 'transitionWorkspaceAccountStatus', {groupWorkspaceKey: aurora, accountId: disabledAccount.id}, {cookie: platformCookie, body: {targetStatus: 'DISABLED', expectedVersion: requireValue(disabledAccount.revision, 'SEED_ACCOUNT_VERSION')}});
+    for (const account of fixture.stableFixtures.workspaceIam.accounts.filter((entry) => entry.status !== 'ENABLED')) {
+      const current = ids.account[account.key];
+      const updated = await request(`account-transition-${account.key}`, 'transitionWorkspaceAccountStatus', {groupWorkspaceKey: aurora, accountId: requireValue(current?.id, 'SEED_ACCOUNT_ID')}, {cookie: platformCookie, body: {targetStatus: requireValue(account.status, 'SEED_ACCOUNT_STATUS'), expectedVersion: requireValue(current?.revision, 'SEED_ACCOUNT_VERSION')}});
+      if (updated.json?.status !== account.status) throw new FormalSeedFailure(`SEED_ACCOUNT_STATUS_READBACK_INVALID:${account.key}`);
+      ids.account[account.key] = updated.json;
+    }
+    for (const account of fixture.stableFixtures.workspaceIam.accounts.filter((entry) => entry.status !== 'ENABLED')) {
+      const reused = await request(`account-${account.key}-identity-reuse`, 'createWorkspaceInvitation', {groupWorkspaceKey: aurora}, {cookie: platformCookie, expected: [422], body: {mobile: account.mobile, targetOrganizationType: 'GROUP', targetOrganizationRef: requireValue(ids.group['cg-aurora']?.id, 'SEED_GROUP_ID'), roleIds: [requireValue(ids.role['role-group']?.id, 'SEED_ROLE_ID')]}});
+      if (reused.json?.errorCode !== 'ACCOUNT_NOT_BINDABLE') throw new FormalSeedFailure(`SEED_ACCOUNT_REUSE_PROBLEM_INVALID:${account.key}`);
+    }
     const resetAccount = ids.account['account-reset'];
     await request('account-reset-account-reset', 'requestWorkspaceCredentialReset', {groupWorkspaceKey: aurora, accountId: resetAccount.id}, {cookie: platformCookie, body: {expectedVersion: requireValue(resetAccount.revision, 'SEED_ACCOUNT_VERSION')}});
-    const transition = async (stage, operationId, pathParameters, entity) => request(stage, operationId, pathParameters, {cookie: operationsCookie, body: {targetStatus: 'DISABLED', expectedVersion: requireValue(entity?.revision, 'SEED_ENTITY_VERSION')}});
-    for (const project of fixture.stableFixtures.organization.projects.filter((entry) => entry.status === 'DISABLED')) await transition(`project-disable-${project.key}`, 'transitionOperationsOrganizationNodeStatus', {groupWorkspaceKey: aurora, nodeId: ids.project[project.key].id}, ids.project[project.key]);
-    for (const brand of fixture.stableFixtures.organization.brands.filter((entry) => entry.status === 'DISABLED')) await transition(`brand-disable-${brand.key}`, 'transitionOperationsOrganizationBrandStatus', {groupWorkspaceKey: aurora, brandId: ids.brand[brand.key].id}, ids.brand[brand.key]);
-    for (const tenant of fixture.stableFixtures.organization.tenants.filter((entry) => entry.status === 'DISABLED')) await transition(`tenant-disable-${tenant.key}`, 'transitionOperationsOrganizationTenantStatus', {groupWorkspaceKey: aurora, tenantId: ids.tenant[tenant.key].id}, ids.tenant[tenant.key]);
-    for (const head of fixture.stableFixtures.organization.headCompanies.filter((entry) => entry.status === 'DISABLED')) await transition(`head-company-disable-${head.key}`, 'transitionOperationsOrganizationHeadCompanyStatus', {groupWorkspaceKey: aurora, headCompanyId: ids.headCompany[head.key].id}, ids.headCompany[head.key]);
-    for (const store of fixture.stableFixtures.organization.stores.filter((entry) => entry.status === 'DISABLED')) {
+    const transition = async (stage, operationId, pathParameters, entity, targetStatus) => {
+      const updated = await request(stage, operationId, pathParameters, {cookie: operationsCookie, body: {targetStatus: requireValue(targetStatus, 'SEED_ENTITY_STATUS'), expectedVersion: requireValue(entity?.revision, 'SEED_ENTITY_VERSION')}});
+      if (updated.json?.status !== targetStatus) throw new FormalSeedFailure(`SEED_ENTITY_STATUS_READBACK_INVALID:${stage}`);
+      return updated;
+    };
+    for (const region of fixture.stableFixtures.organization.regions.filter((entry) => entry.status !== 'ENABLED')) await transition(`region-transition-${region.key}`, 'transitionOperationsOrganizationNodeStatus', {groupWorkspaceKey: aurora, nodeId: ids.region[region.key].id}, ids.region[region.key], region.status);
+    for (const project of fixture.stableFixtures.organization.projects.filter((entry) => entry.status !== 'ENABLED')) await transition(`project-transition-${project.key}`, 'transitionOperationsOrganizationNodeStatus', {groupWorkspaceKey: aurora, nodeId: ids.project[project.key].id}, ids.project[project.key], project.status);
+    for (const brand of fixture.stableFixtures.organization.brands.filter((entry) => entry.status !== 'ENABLED')) await transition(`brand-transition-${brand.key}`, 'transitionOperationsOrganizationBrandStatus', {groupWorkspaceKey: aurora, brandId: ids.brand[brand.key].id}, ids.brand[brand.key], brand.status);
+    for (const tenant of fixture.stableFixtures.organization.tenants.filter((entry) => entry.status !== 'ENABLED')) await transition(`tenant-transition-${tenant.key}`, 'transitionOperationsOrganizationTenantStatus', {groupWorkspaceKey: aurora, tenantId: ids.tenant[tenant.key].id}, ids.tenant[tenant.key], tenant.status);
+    for (const head of fixture.stableFixtures.organization.headCompanies.filter((entry) => entry.status !== 'ENABLED')) await transition(`head-company-transition-${head.key}`, 'transitionOperationsOrganizationHeadCompanyStatus', {groupWorkspaceKey: aurora, headCompanyId: ids.headCompany[head.key].id}, ids.headCompany[head.key], head.status);
+    for (const store of fixture.stableFixtures.organization.stores.filter((entry) => entry.status !== 'ENABLED')) {
       await selectProjectScope({projectRef: requireValue(ids.project[store.project]?.id, 'SEED_PROJECT_ID'), stage: `project-select-store-disable-${store.key}`});
-      await transition(`store-disable-${store.key}`, 'transitionOperationsOrganizationStoreStatus', {groupWorkspaceKey: aurora, storeId: ids.store[store.key].id}, ids.store[store.key]);
+      await transition(`store-transition-${store.key}`, 'transitionOperationsOrganizationStoreStatus', {groupWorkspaceKey: aurora, storeId: ids.store[store.key].id}, ids.store[store.key], store.status);
     }
     const contracts = {};
     for (const contract of fixture.stableFixtures.contracts) {

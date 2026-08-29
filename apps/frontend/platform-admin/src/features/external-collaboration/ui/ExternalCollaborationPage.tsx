@@ -1,7 +1,7 @@
 import {ApartmentOutlined, ReloadOutlined} from '@ant-design/icons';
 import {Alert, Button, Card, Empty, Input, Spin, Tag, Tree} from 'antd';
 import type {DataNode} from 'antd/es/tree';
-import {NameCodeText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {closedCodeLabel, NameCodeText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState} from 'react';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import type {ExternalCollaborationTree} from '../../../app/api/generated/platform-edge';
@@ -12,7 +12,8 @@ import {ProviderProfileDetail} from './ProviderProfileDetail';
 
 type SelectedNode = {kind: 'system'; code: string} | {kind: 'provider'; code: string} | undefined;
 
-const statusLabel = (status: 'ENABLED' | 'DISABLED') => (status === 'ENABLED' ? '已启用' : '已停用');
+const enablementStatusLabels = {ENABLED: '已启用', DISABLED: '已停用'} as const;
+const statusLabel = (status: unknown) => closedCodeLabel(enablementStatusLabels, status);
 
 function treeData(value: ExternalCollaborationTree | undefined, query: string): DataNode[] {
   const normalized = query.trim().toLocaleLowerCase('zh-CN');

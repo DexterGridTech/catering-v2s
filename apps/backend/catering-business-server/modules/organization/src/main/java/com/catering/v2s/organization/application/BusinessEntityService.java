@@ -427,6 +427,7 @@ public class BusinessEntityService
 
     private OrganizationEntityReadback updateStoreSubmission(UpdateStoreCommand command, StoreCommandFacts current) {
         OrganizationEntityReadback before = current.before();
+        requireMutable(before.status());
         current.requireEnabledReferences();
         int changed;
         try {
@@ -597,9 +598,14 @@ public class BusinessEntityService
             AuditActor actor,
             OperationsOwnerScopeGrant ownerScopeGrant) {
         String type = entityType(entityType);
-        if (ServiceNodeTypes.HEAD_COMPANY.equals(type))
-            requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.HEAD_COMPANY, id);
-        else
+        final OrganizationEntityReadback knownOwnerFact;
+        if (ServiceNodeTypes.HEAD_COMPANY.equals(type)) {
+            knownOwnerFact = requireHeadCompanyOwnerFact(
+                    ownerScopeGrant, workspaceUuid, groupWorkspaceKey, id);
+        } else {
+            knownOwnerFact = null;
+        }
+        if (!ServiceNodeTypes.HEAD_COMPANY.equals(type))
             requireOwnerGrantForResolvedTarget(
                     ownerScopeGrant,
                     workspaceUuid,
@@ -636,7 +642,8 @@ public class BusinessEntityService
                         remark,
                         expectedVersion,
                         submission,
-                        actor));
+                        actor,
+                        knownOwnerFact));
     }
 
     private OrganizationEntityReadback updateEntitySubmission(
@@ -652,11 +659,29 @@ public class BusinessEntityService
             String remark,
             long expectedVersion,
             ExtensionSubmission submission,
-            AuditActor actor) {
+            AuditActor actor,
+            OrganizationEntityReadback knownOwnerFact) {
         String type = entityType(entityType);
         String table = table(type);
-        OrganizationEntityReadback before = requireEntity(type, workspaceUuid, groupWorkspaceKey, id);
+        OrganizationEntityReadback before = knownOwnerFact == null
+                ? requireEntity(type, workspaceUuid, groupWorkspaceKey, id)
+                : knownOwnerFact;
+        requireMutable(before.status());
         ensureAvailable(type, workspaceUuid, groupWorkspaceKey, id, code, name);
+        if (ServiceNodeTypes.HEAD_COMPANY.equals(type))
+            return updateHeadCompanySubmission(
+                    workspaceUuid,
+                    groupWorkspaceKey,
+                    id,
+                    code,
+                    name,
+                    legalName,
+                    creditCode,
+                    remark,
+                    expectedVersion,
+                    submission,
+                    actor,
+                    before);
         String update = BusinessEntityTypes.BRAND.equals(type)
                 ? "UPDATE organization.brand SET code=?, name=?, alias=?, remark=?, version=version+1, "
                         + "updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND "
@@ -705,9 +730,65 @@ public class BusinessEntityService
         return updated;
     }
 
+    /** Head-company update returns its complete post-merge row from the owner write. */
+    private OrganizationEntityReadback updateHeadCompanySubmission(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID id,
+            String code,
+            String name,
+            String legalName,
+            String creditCode,
+            String remark,
+            long expectedVersion,
+            ExtensionSubmission submission,
+            AuditActor actor,
+            OrganizationEntityReadback before) {
+        ExtensionValues extensions = extensionValuesForUpdate(
+                workspaceUuid, groupWorkspaceKey, before.extensionValues(), submission);
+        long now = time.currentEpochMillis();
+        OrganizationEntityReadback updated = OwnerOperationDiagnostics.readback(() -> jdbc.query(
+                "UPDATE organization.head_company SET code=?, name=?, legal_name=?, credit_code=?, remark=?, "
+                        + "extension_values=CAST(? AS JSONB), extension_rule_revision=?, version=version+1, "
+                        + "updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND "
+                        + "version=? RETURNING id, workspace_uuid, group_workspace_key, code, name, legal_name, "
+                        + "credit_code, NULL::varchar AS alias, remark, NULL::varchar AS notes, status, version, "
+                        + "extension_rule_revision, created_at_epoch_millis, updated_at_epoch_millis, "
+                        + "extension_values::text",
+                statement -> {
+                    statement.setString(1, text(code, 64));
+                    statement.setString(2, text(name, 120));
+                    statement.setString(3, text(legalName, 240));
+                    statement.setString(4, text(creditCode, 32));
+                    statement.setString(5, optional(remark, 2000));
+                    statement.setString(6, extensions.json());
+                    statement.setLong(7, extensions.revision());
+                    statement.setLong(8, now);
+                    statement.setObject(9, id);
+                    statement.setObject(10, workspaceUuid);
+                    statement.setString(11, groupWorkspaceKey);
+                    statement.setLong(12, expectedVersion);
+                },
+                result -> {
+                    if (!result.next()) throw new OrganizationConflictException();
+                    return readEntity(BusinessEntityTypes.HEAD_COMPANY, result);
+                }));
+        audit(
+                workspaceUuid,
+                groupWorkspaceKey,
+                id,
+                BusinessEntityTypes.HEAD_COMPANY,
+                BusinessEntityTypes.HEAD_COMPANY + "_UPDATED",
+                time.currentEpochMillis(),
+                actor,
+                changed(before, updated));
+        return updated;
+    }
+
     private HeadCompanyCommandReadback headCompanyReadback(
             UUID workspaceUuid, String groupWorkspaceKey, OrganizationEntityReadback entity) {
-        return new HeadCompanyCommandReadback(entity, authorizedBrands(workspaceUuid, groupWorkspaceKey, entity.id()));
+        return new HeadCompanyCommandReadback(
+                entity, authorizedBrandsForKnownHeadCompany(workspaceUuid, groupWorkspaceKey, entity.id()));
     }
 
     @Transactional
@@ -1195,7 +1276,8 @@ public class BusinessEntityService
             AuditActor actor,
             OrganizationEntityReadback before) {
         String table = table(type);
-        if (!Set.of("ENABLED", "DISABLED").contains(status)
+        if (!Set.of("ENABLED", "DISABLED", "VOIDED").contains(status)
+                || "VOIDED".equals(before.status())
                 || jdbc.update(
                                 "UPDATE organization." + table
                                         + " SET status=?, version=version+1, updated_at_epoch_millis=? WHERE id=? AND "
@@ -1846,6 +1928,12 @@ public class BusinessEntityService
     public List<OrganizationEntityReadback> authorizedBrands(
             UUID workspaceUuid, String groupWorkspaceKey, UUID headCompanyId) {
         requireEntity(BusinessEntityTypes.HEAD_COMPANY, workspaceUuid, groupWorkspaceKey, headCompanyId);
+        return authorizedBrandsForKnownHeadCompany(workspaceUuid, groupWorkspaceKey, headCompanyId);
+    }
+
+    /** Reads only the relationship closure when the caller already holds an authoritative head-company fact. */
+    private List<OrganizationEntityReadback> authorizedBrandsForKnownHeadCompany(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID headCompanyId) {
         return jdbc.query(
                 "SELECT b.id, b.workspace_uuid, b.group_workspace_key, b.code, b.name, NULL::varchar AS legal_name, "
                         + "NULL::varchar AS credit_code, b.alias, b.remark, NULL::varchar AS notes, b.status, "
@@ -2112,10 +2200,25 @@ public class BusinessEntityService
     @Transactional(readOnly = true)
     public StoreContractContext requireStoreContractContext(
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
+        return requireStoreContractContext(workspaceUuid, groupWorkspaceKey, storeId, false);
+    }
+
+    @Override
+    @Transactional
+    public StoreContractContext requireStoreContractContextForCreate(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
+        return requireStoreContractContext(workspaceUuid, groupWorkspaceKey, storeId, true);
+    }
+
+    private StoreContractContext requireStoreContractContext(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeId, boolean lockStoreAndTenant) {
         return jdbc.query(
-                "SELECT s.tenant_id, s.project_id, s.status, phase.phase_name FROM organization.store s LEFT JOIN "
+                "SELECT s.tenant_id, s.project_id, s.status, t.status AS tenant_status, phase.phase_name "
+                        + "FROM organization.store s JOIN organization.tenant t ON t.id=s.tenant_id AND "
+                        + "t.workspace_uuid=s.workspace_uuid AND t.group_workspace_key=s.group_workspace_key LEFT JOIN "
                         + "organization.project_phase_name phase ON phase.project_id=s.project_id WHERE s.id=? AND "
-                        + "s.workspace_uuid=? AND s.group_workspace_key=? ORDER BY phase.display_order",
+                        + "s.workspace_uuid=? AND s.group_workspace_key=? ORDER BY phase.display_order"
+                        + (lockStoreAndTenant ? " FOR UPDATE OF s, t" : ""),
                 statement -> {
                     statement.setObject(1, storeId);
                     statement.setObject(2, workspaceUuid);
@@ -2126,12 +2229,13 @@ public class BusinessEntityService
                     UUID tenantId = result.getObject("tenant_id", UUID.class);
                     UUID projectId = result.getObject("project_id", UUID.class);
                     String status = result.getString("status");
+                    String tenantStatus = result.getString("tenant_status");
                     List<String> phases = new ArrayList<>();
                     do {
                         String phase = result.getString("phase_name");
                         if (phase != null) phases.add(phase);
                     } while (result.next());
-                    return new StoreContractContext(storeId, tenantId, projectId, status, phases);
+                    return new StoreContractContext(storeId, tenantId, projectId, status, tenantStatus, phases);
                 });
     }
 
@@ -2508,7 +2612,7 @@ public class BusinessEntityService
         String safeStatus = status == null
                 ? null
                 : switch (status) {
-                    case "ENABLED", "DISABLED" -> status;
+                    case "ENABLED", "DISABLED", "VOIDED" -> status;
                     default -> throw new OrganizationValidationException();
                 };
         String nameFilter = filter(name);
@@ -2673,6 +2777,14 @@ public class BusinessEntityService
         return grant.targetId();
     }
 
+    private OrganizationEntityReadback requireHeadCompanyOwnerFact(
+            OperationsOwnerScopeGrant grant, UUID workspaceUuid, String groupWorkspaceKey, UUID headCompanyId) {
+        if (grant == null
+                || !grant.matches(workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.HEAD_COMPANY, headCompanyId))
+            throw new OrganizationAuthorizationException();
+        return requireEntity(BusinessEntityTypes.HEAD_COMPANY, workspaceUuid, groupWorkspaceKey, headCompanyId);
+    }
+
     private void requireOwnerGrant(
             OperationsOwnerScopeGrant grant,
             UUID workspaceUuid,
@@ -2713,6 +2825,7 @@ public class BusinessEntityService
         Map<String, String> actual = values == null ? Map.of() : values;
         try {
             ExtensionDefinitionReadback definition = definitions.requireDefinition(workspaceUuid, key, type);
+            if (!actual.isEmpty()) ExtensionDefinitionService.requireConsumableDefinition(definition);
             Map<String, ExtensionDefinitionReadback.Field> known = definition.fields().stream()
                     .collect(java.util.stream.Collectors.toMap(
                             ExtensionDefinitionReadback.Field::fieldKey, value -> value));
@@ -2725,6 +2838,8 @@ public class BusinessEntityService
                 throw new OrganizationValidationException();
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (!actual.isEmpty()) throw new OrganizationValidationException(absent);
+        } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
+            throw new OrganizationValidationException(invalid);
         }
     }
 
@@ -2737,57 +2852,40 @@ public class BusinessEntityService
                     if (!result.next()) throw new OrganizationNotFoundException();
                     return result.getString(1);
                 });
-        ObjectNode merged;
-        try {
-            JsonNode parsed = JSON.readTree(current);
-            if (!parsed.isObject()) throw new OrganizationValidationException();
-            merged = (ObjectNode) parsed;
-        } catch (java.io.IOException failure) {
-            throw new OrganizationValidationException(failure);
-        }
         ExtensionDefinitionReadback definition;
         try {
             definition = definitions.requireDefinition(workspaceUuid, key, hostType);
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (values != null && !values.isEmpty()) throw new OrganizationValidationException(absent);
+            validateExistingExtensionValues(current);
             jdbc.update(
                     "UPDATE organization." + table
                             + " SET extension_values=CAST(? AS JSONB), extension_rule_revision=? WHERE id=?",
-                    merged.toString(),
+                    current,
                     0L,
                     id);
             return;
         }
-        Map<String, ExtensionDefinitionReadback.Field> fields = definition.fields().stream()
-                .collect(
-                        java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, field -> field));
-        if (values != null)
-            for (var entry : values.entrySet()) {
-                ExtensionDefinitionReadback.Field field = fields.get(entry.getKey());
-                if (field == null) throw new OrganizationValidationException();
-                if ("DISABLED".equals(field.status())) continue;
-                if (isJsonNull(entry.getValue())) {
-                    merged.remove(entry.getKey());
-                    continue;
-                }
-                if (!validJsonValue(field, entry.getValue())) throw new OrganizationValidationException();
-                try {
-                    merged.set(entry.getKey(), JSON.readTree(entry.getValue()));
-                } catch (java.io.IOException failure) {
-                    throw new OrganizationValidationException(failure);
-                }
-            }
-        if (fields.values().stream()
-                .filter(field -> "ENABLED".equals(field.status()) && field.required())
-                .anyMatch(field -> !merged.hasNonNull(field.fieldKey())
-                        || !validJsonValue(field, merged.get(field.fieldKey()).toString())))
-            throw new OrganizationValidationException();
+        final String merged;
+        try {
+            merged = ExtensionDefinitionService.mergeValues(definition, current, values);
+        } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
+            throw new OrganizationValidationException(invalid);
+        }
         jdbc.update(
                 "UPDATE organization." + table
                         + " SET extension_values=CAST(? AS JSONB), extension_rule_revision=? WHERE id=?",
                 merged.toString(),
                 definition.version(),
                 id);
+    }
+
+    private static void validateExistingExtensionValues(String current) {
+        try {
+            ExtensionDefinitionService.readValues(current);
+        } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
+            throw new OrganizationValidationException(invalid);
+        }
     }
 
     private void replaceValues(
@@ -2846,6 +2944,28 @@ public class BusinessEntityService
                 merged,
                 definition.version(),
                 id);
+    }
+
+    private ExtensionValues extensionValuesForUpdate(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            Map<String, String> currentValues,
+            ExtensionSubmission submission) {
+        String current = extensionJson(currentValues);
+        ExtensionDefinitionReadback definition;
+        try {
+            definition = definitions.requireDefinition(
+                    workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.HEAD_COMPANY);
+        } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
+            if (submission != null && !submission.fields().isEmpty()) throw new OrganizationValidationException(absent);
+            return new ExtensionValues(current, 0L);
+        }
+        try {
+            return new ExtensionValues(
+                    ExtensionDefinitionService.mergeValues(definition, current, submission), definition.version());
+        } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
+            throw new OrganizationValidationException(invalid);
+        }
     }
 
     /** New rows start with the schema's empty JSON object; do not reread that row just to merge extensions. */
@@ -2924,10 +3044,10 @@ public class BusinessEntityService
         String nameValue = text(name, 120).toLowerCase(Locale.ROOT);
         String exclusion = currentId == null ? "" : " AND id<>?";
         String sql = "SELECT EXISTS(SELECT 1 FROM organization." + table
-                + " WHERE workspace_uuid=? AND group_workspace_key=? AND code=?" + exclusion
+                + " WHERE workspace_uuid=? AND group_workspace_key=? AND status <> 'VOIDED' AND code=?" + exclusion
                 + ") AS code_conflict, EXISTS(SELECT 1 FROM organization." + table
-                + " WHERE workspace_uuid=? AND group_workspace_key=? AND lower(btrim(name))=?" + exclusion
-                + ") AS name_conflict";
+                + " WHERE workspace_uuid=? AND group_workspace_key=? AND status <> 'VOIDED' AND lower(btrim(name))=?"
+                + exclusion + ") AS name_conflict";
         Object[] args = currentId == null
                 ? new Object[] {workspaceUuid, key, codeValue, workspaceUuid, key, nameValue}
                 : new Object[] {workspaceUuid, key, codeValue, currentId, workspaceUuid, key, nameValue, currentId};
@@ -3096,6 +3216,10 @@ public class BusinessEntityService
         };
     }
 
+    private static void requireMutable(String status) {
+        if ("VOIDED".equals(status)) throw new OrganizationConflictException();
+    }
+
     private static String text(String value, int limit) {
         String normalized = Objects.requireNonNullElse(value, "").trim();
         if (normalized.isEmpty() || normalized.length() > limit) throw new OrganizationValidationException();
@@ -3169,6 +3293,9 @@ public class BusinessEntityService
             super(cause);
         }
     }
+
+    private record ExtensionValues(String json, long revision) {}
+
     /** Closed conflict without store identity, count, or persistence detail. */
     public static final class HeadCompanyBrandAuthorizationInUseException extends OrganizationConflictException {
         public HeadCompanyBrandAuthorizationInUseException() {}

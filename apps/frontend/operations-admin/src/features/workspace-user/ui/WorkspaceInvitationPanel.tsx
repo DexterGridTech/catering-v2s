@@ -248,7 +248,7 @@ export function WorkspaceInvitationPanel({
   }, [acceptRoleCandidatePage, roleCandidatePage, roleCandidateResult.currentData]);
   const organizationOptions = organizationCandidateItems.map(candidate => ({
     value: candidate.organizationRef,
-    label: <NameCodePathText value={candidate.path} />,
+    label: <NameCodePathText nodes={candidate.pathNodes} />,
   }));
   const roleOptions = roleCandidateItems.map(role => ({value: role.id, label: role.name}));
   const selected = detail.target;
@@ -321,13 +321,13 @@ export function WorkspaceInvitationPanel({
       },
       {
         title: '任职机构',
-        dataIndex: 'targetOrganizationPath',
+        dataIndex: 'targetOrganizationPathNodes',
         ellipsis: {showTitle: false},
         search: false,
         render: (_, value) => (
-          <EllipsisTooltip title={<NameCodePathText value={value.targetOrganizationPath} />}>
+          <EllipsisTooltip title={<NameCodePathText nodes={value.targetOrganizationPathNodes} />}>
             <span>
-              <NameCodePathText value={value.targetOrganizationPath} />
+              <NameCodePathText nodes={value.targetOrganizationPathNodes} />
             </span>
           </EllipsisTooltip>
         ),
@@ -346,7 +346,7 @@ export function WorkspaceInvitationPanel({
       },
       {
         title: '邀请链接',
-        key: 'invitationPageUrl',
+        key: 'invitationRouteFacts',
         search: false,
         render: (_, value) => {
           const href = activeInvitationPageUrl(value);

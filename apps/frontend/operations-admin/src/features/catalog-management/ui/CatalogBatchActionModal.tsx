@@ -6,7 +6,7 @@ import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 import {CatalogBatchOutcome} from './CatalogBatchOutcome';
 import type {useCatalogCategoryCandidates} from './useCatalogCategoryCandidates';
 
-export type CatalogBatchAction = 'CATEGORY' | 'TAG' | 'STATUS' | 'ARCHIVE';
+export type CatalogBatchAction = 'CATEGORY' | 'TAG' | 'STATUS';
 type CategoryCandidates = ReturnType<typeof useCatalogCategoryCandidates>;
 
 type Props = {
@@ -51,18 +51,12 @@ export function CatalogBatchActionModal({
   onClose,
   onExecute,
 }: Props) {
+  const showingOutcome = results.length > 0;
+
   return (
     <Modal
       open={Boolean(action)}
-      title={
-        action === 'CATEGORY'
-          ? '批量改分类'
-          : action === 'TAG'
-            ? '批量改标签'
-            : action === 'STATUS'
-              ? '批量改状态'
-              : '批量归档'
-      }
+      title={action === 'CATEGORY' ? '批量改分类' : action === 'TAG' ? '批量改标签' : '批量改状态'}
       onCancel={onClose}
       onOk={() => {
         if (results.length) onClose();
@@ -70,7 +64,19 @@ export function CatalogBatchActionModal({
       }}
       maskClosable={!submitting}
       keyboard={!submitting}
-      footer={results.length ? null : undefined}
+      footer={showingOutcome ? null : undefined}
+      styles={
+        showingOutcome
+          ? {
+              body: {
+                display: 'flex',
+                minHeight: 0,
+                maxHeight: 'calc(100dvh - 240px)',
+                overflow: 'hidden',
+              },
+            }
+          : undefined
+      }
       okText="执行"
       cancelText="取消"
       confirmLoading={submitting}
@@ -84,7 +90,11 @@ export function CatalogBatchActionModal({
       cancelButtonProps={{disabled: submitting, ...testId(catalogTestIdControls.batch.cancel)}}
       destroyOnHidden
     >
-      <div aria-busy={submitting} {...testId(catalogTestIds.surface.batchTaskModal)}>
+      <div
+        className={showingOutcome ? 'catalog-batch-task-modal catalog-batch-task-modal--outcome' : 'catalog-batch-task-modal'}
+        aria-busy={submitting}
+        {...testId(catalogTestIds.surface.batchTaskModal)}
+      >
         {submitting && (
           <Alert
             type="info"
@@ -148,6 +158,7 @@ export function CatalogBatchActionModal({
               options={[
                 {value: 'ENABLED', label: '启用'},
                 {value: 'DISABLED', label: '停用'},
+                {value: 'VOIDED', label: '标记删除'},
               ]}
               onChange={onStatusChange}
               placeholder="请选择目标状态"
@@ -156,15 +167,7 @@ export function CatalogBatchActionModal({
             />
           </Form.Item>
         )}
-        {!results.length && action === 'ARCHIVE' && (
-          <Alert
-            type="warning"
-            showIcon
-            title={`将归档 ${selectedItemCount} 个商品`}
-            description="归档只改变商品状态，不会清空图片、属性或其他商品资料。每条结果会单独显示。"
-          />
-        )}
-        {results.length > 0 && (
+        {showingOutcome && (
           <CatalogBatchOutcome results={results} refreshProblem={refreshProblem} onClose={onClose} />
         )}
       </div>

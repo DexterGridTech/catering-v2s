@@ -25,7 +25,6 @@ export function CatalogWorkbenchController({
     setView,
     brandRef,
     brands,
-    brandsLoading,
     headers,
     scopeReady,
     treeSelection,
@@ -106,9 +105,7 @@ export function CatalogWorkbenchController({
   const sourceFilterConflict = catalogFilterConflictReason(treeSelection, 'source');
   const statusOptions = useMemo(
     () =>
-      catalogEnumOptions(manifest, 'catalogItemStatus').filter(({value}) =>
-        ['DRAFT', 'ENABLED', 'DISABLED', 'ARCHIVED'].includes(value),
-      ),
+      catalogEnumOptions(manifest, 'catalogItemStatus').filter(({value}) => ['ENABLED', 'DISABLED'].includes(value)),
     [manifest],
   );
   const sourceOptions = useMemo(() => catalogEnumOptions(manifest, 'catalogSource'), [manifest]);

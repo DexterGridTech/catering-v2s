@@ -29,12 +29,14 @@ function scanSource(source, relativeFile) {
     // Do not suppress object properties (`key: ...`) or arbitrary assignments:
     // those may still be rendering a hand-built name/code label.
     const isJsxKeyValue = /\bkey\s*=\s*\{\s*$/.test(prefix);
-    if (!isJsxKeyValue && /\$\{[^}]*(?:name|Name)[^}]*\}/.test(match[0]) && /\$\{[^}]*(?:code|Code)[^}]*\}/.test(match[0])) handBuilt.push(match);
+    if (!isJsxKeyValue
+      && /\$\{[^}]*[\w$.]*(?:name|Name)\b[^}]*\}/.test(match[0])
+      && /\$\{[^}]*[\w$.]*(?:code|Code)\b[^}]*\}/.test(match[0])) handBuilt.push(match);
   }
-  for (const match of source.matchAll(/<[^>]+>\s*\{[^}]*(?:name|Name)[^}]*\}\s*<\/[^>]+>\s*<[^>]+>\s*\{[^}]*(?:code|Code)[^}]*\}\s*<\/[^>]+>/gi)) handBuilt.push(match);
+  for (const match of source.matchAll(/<[^>]+>\s*\{[^}]*[\w$.]*(?:name|Name)\b[^}]*\}\s*<\/[^>]+>\s*<[^>]+>\s*\{[^}]*[\w$.]*(?:code|Code)\b[^}]*\}\s*<\/[^>]+>/gi)) handBuilt.push(match);
   for (const pattern of [
-    /<([A-Za-z][\w.]*)\b[^>]*>[^<{}]*\{[^}]*?(?:name|Name)[^}]*\}[^<{}]*\{[^}]*?(?:code|Code)[^}]*\}[^<{}]*<\/\1>/gs,
-    /<([A-Za-z][\w.]*)\b[^>]*>[^<{}]*\{[^}]*?(?:code|Code)[^}]*\}[^<{}]*\{[^}]*?(?:name|Name)[^}]*\}[^<{}]*<\/\1>/gs,
+    /<([A-Za-z][\w.]*)\b[^>]*>[^<{}]*\{[^}]*?[\w$.]*(?:name|Name)\b[^}]*\}[^<{}]*\{[^}]*?[\w$.]*(?:code|Code)\b[^}]*\}[^<{}]*<\/\1>/gs,
+    /<([A-Za-z][\w.]*)\b[^>]*>[^<{}]*\{[^}]*?[\w$.]*(?:code|Code)\b[^}]*\}[^<{}]*\{[^}]*?[\w$.]*(?:name|Name)\b[^}]*\}[^<{}]*<\/\1>/gs,
   ]) for (const match of source.matchAll(pattern)) handBuilt.push(match);
   for (const pattern of [
     /\b[\w$.]*(?:name|Name)\w*\b\s*\+\s*['"`][^'"`]*['"`]\s*\+\s*\b[\w$.]*(?:code|Code)\w*\b/g,

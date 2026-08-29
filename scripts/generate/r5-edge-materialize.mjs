@@ -58,7 +58,7 @@ function pointer(pathValue) {
   return pathValue.replaceAll("~", "~0").replaceAll("/", "~1");
 }
 function clone(value) { return structuredClone(value); }
-const uuidReferenceExceptions = new Set(["sourceOrderRef", "sourceRecordRef", "sourceItemRef"]);
+const uuidReferenceExceptions = new Set(["sourceOrderRef", "sourceRecordRef", "sourceItemRef", "optionSourceRef"]);
 const isUuidReferenceName = (name) => typeof name === "string" && name.endsWith("Ref") && !uuidReferenceExceptions.has(name);
 function applyUuidReferenceFormat(schema, name) {
   const next = clone(schema);
@@ -88,9 +88,15 @@ function convertSymbolRefs(value) {
   if (!value || typeof value !== "object") return value;
   const result = Object.fromEntries(Object.entries(value).map(([key, item]) => [key, convertSymbolRefs(item)]));
   if (Object.hasOwn(result, "ref")) {
-    if (typeof result.ref !== "string" || Object.keys(result).some((key) => key !== "ref" && !["nullable", "description"].includes(key))) fail("R5_EDGE_SYMBOL_REF_INVALID");
-    const {ref, ...annotations} = result;
-    return { $ref: `#/components/schemas/${ref}`, ...annotations };
+    // `ref` is also a legitimate business property name inside a JSON-schema
+    // `properties` map. Treat only the compact symbol-reference shape as a
+    // reference; recurse through ordinary property maps unchanged.
+    const symbolReferenceShape = Object.keys(result).every((key) => key === "ref" || ["nullable", "description"].includes(key));
+    if (symbolReferenceShape) {
+      if (typeof result.ref !== "string") fail("R5_EDGE_SYMBOL_REF_INVALID");
+      const {ref, ...annotations} = result;
+      return { $ref: `#/components/schemas/${ref}`, ...annotations };
+    }
   }
   return result;
 }

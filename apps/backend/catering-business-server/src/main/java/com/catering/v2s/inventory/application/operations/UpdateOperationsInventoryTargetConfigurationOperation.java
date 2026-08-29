@@ -118,7 +118,8 @@ public class UpdateOperationsInventoryTargetConfigurationOperation {
                         consumptionUnitSnapshot(target.consumptionUnitSnapshot()),
                         countingUnitSnapshot(target.countingUnitSnapshot()),
                         target.conversionSummary(),
-                        target.authorityType()),
+                        target.authorityType(),
+                        conversionFacts(target.conversionFacts())),
                 decimal(value.balance()),
                 new InventoryTargetCurrentView.Configuration(
                         configuration.allowNegative(),
@@ -206,6 +207,28 @@ public class UpdateOperationsInventoryTargetConfigurationOperation {
                 ? null
                 : new InventoryTargetCurrentView.Configuration.CountingUnitSnapshot(
                         value.unitRef(), value.code(), value.name(), value.unitDimension(), (long) value.precision());
+    }
+
+    private static InventoryTargetCurrentView.Target.ConversionFacts conversionFacts(
+            InventoryOwnerApi.InventoryConversionFacts value) {
+        if (value == null) return null;
+        InventoryOwnerApi.UnitSnapshot counting = value.countingUnitSnapshot();
+        InventoryOwnerApi.UnitSnapshot consumption = value.consumptionUnitSnapshot();
+        return new InventoryTargetCurrentView.Target.ConversionFacts(
+                counting == null
+                        ? null
+                        : new InventoryTargetCurrentView.Target.ConversionFacts.CountingUnitSnapshot(
+                                counting.unitRef(), counting.code(), counting.name(), counting.unitDimension(), (long)
+                                        counting.precision()),
+                consumption == null
+                        ? null
+                        : new InventoryTargetCurrentView.Target.ConversionFacts.ConsumptionUnitSnapshot(
+                                consumption.unitRef(),
+                                consumption.code(),
+                                consumption.name(),
+                                consumption.unitDimension(),
+                                (long) consumption.precision()),
+                decimal(value.conversionFactor()));
     }
 
     private static String string(UUID value) {

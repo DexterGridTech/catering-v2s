@@ -5,7 +5,7 @@
   "sourceBindings": {
     "designCoverage": {
       "path": "contracts/policy/catalog-inventory-design-byte-coverage.json",
-      "sha256": "56ce65c2b36a957ec2233a6ed140c3ca7bca108d50ef3a514c7b04b7b2727da1"
+      "sha256": "716fe268ab3872dba56662a8cc9d54a701e0d478ca6b92f63fd1fd9801765d1b"
     },
     "categoryRemediationDesign": {
       "path": "doc/plans/platform/2026-08-08-v2s-catalog-reference-model-category-remediation-design-codex.md",

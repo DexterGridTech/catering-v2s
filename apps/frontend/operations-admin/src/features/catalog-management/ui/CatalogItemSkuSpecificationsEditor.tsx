@@ -1,4 +1,4 @@
-import {Alert, Button, Card, Divider, Input, Select, Space, Typography} from 'antd';
+import {Alert, Button, Card, Divider, Select, Space, Typography} from 'antd';
 import {useMemo, useState, type ReactNode} from 'react';
 import {testId} from '@catering-v2s/admin-ui-foundation';
 import {wireUuid} from '../../../app/api/wireUuid';

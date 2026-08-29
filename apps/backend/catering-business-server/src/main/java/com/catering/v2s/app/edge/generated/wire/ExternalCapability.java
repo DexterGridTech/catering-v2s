@@ -2,8 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record ExternalCapability(
-    String capabilityClass,
+    ExternalCapabilityCapabilityClass capabilityClass,
     String displayName,
-    tools.jackson.databind.JsonNode attributeValueLabels,
-    tools.jackson.databind.JsonNode attributeValues
+    ExternalCapabilityAttributeValues attributeValues
 ) {}

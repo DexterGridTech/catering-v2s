@@ -1,7 +1,9 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
+import com.catering.v2s.workspace.iam.api.WorkspaceAccountReadback;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
@@ -26,10 +28,13 @@ public class PlatformWorkspaceAccountTaskReadService {
     private static final Set<String> SORTS = Set.of("DISPLAY_NAME", "LOGIN_NAME", "LAST_LOGIN_AT", "UPDATED_AT");
     private final JdbcTemplate jdbc;
     private final OrganizationTaskPathLookup paths;
+    private final WorkspaceAccountService accounts;
 
-    public PlatformWorkspaceAccountTaskReadService(JdbcTemplate jdbc, OrganizationTaskPathLookup paths) {
+    public PlatformWorkspaceAccountTaskReadService(
+            JdbcTemplate jdbc, OrganizationTaskPathLookup paths, WorkspaceAccountService accounts) {
         this.jdbc = jdbc;
         this.paths = paths;
+        this.accounts = accounts;
     }
 
     @Transactional(readOnly = true)
@@ -72,6 +77,22 @@ public class PlatformWorkspaceAccountTaskReadService {
                 safe.accountId()));
         if (rows.isEmpty()) throw new WorkspaceAccountService.AccountNotFoundException();
         return users(safe.workspaceUuid(), safe.groupWorkspaceKey(), rows).getFirst();
+    }
+
+    /** Keeps the owner command and complete platform account readback in one REQUIRED transaction. */
+    @Transactional
+    public WorkspaceUserService.User transitionStatusAndReadback(
+            UUID workspaceUuid,
+            String key,
+            UUID accountId,
+            String status,
+            long expectedVersion,
+            String idempotencyKey,
+            AuditActor actor) {
+        WorkspaceAccountReadback changed = accounts.transitionStatusForPlatform(
+                workspaceUuid, key, accountId, status, expectedVersion, idempotencyKey, actor);
+        return detail(WorkspaceUserService.AccountDetailQuery.forPlatform(
+                changed.workspaceUuid(), changed.groupWorkspaceKey(), changed.id()));
     }
 
     private List<WorkspaceUserService.User> users(UUID workspaceUuid, String key, List<Row> rows) {
@@ -124,7 +145,7 @@ public class PlatformWorkspaceAccountTaskReadService {
                 value.roleId(),
                 value.roleName(),
                 value.serviceNodeType(),
-                path.displayPath(),
+                path.nodes(),
                 value.status(),
                 value.sourceInvitationId() == null ? "ADMINISTRATION" : "INVITATION",
                 value.version(),
@@ -141,7 +162,8 @@ public class PlatformWorkspaceAccountTaskReadService {
                 || query.groupWorkspaceKey().isBlank()
                 || query.page() < 1
                 || query.pageSize() < 1
-                || (query.status() != null && !Set.of("ENABLED", "DISABLED").contains(query.status())))
+                || (query.status() != null
+                        && !Set.of("ENABLED", "DISABLED", "VOIDED").contains(query.status())))
             throw new WorkspaceAccountService.AccountNotFoundException();
         if (query.pageSize() > 100) throw new WorkspaceUserService.PageValidationException();
         return query;

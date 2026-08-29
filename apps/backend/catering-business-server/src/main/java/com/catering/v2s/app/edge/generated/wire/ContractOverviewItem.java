@@ -17,7 +17,6 @@ public record ContractOverviewItem(
     String storeResolutionStatus,
     String tenantResolutionStatus,
     ContractOverviewItemProjectRef projectRef,
-    String itemSummary,
     java.util.List<StoreContractItem> items,
     java.util.List<ContractOverviewItemExtensionFieldsItem> extensionFields
 ) {}

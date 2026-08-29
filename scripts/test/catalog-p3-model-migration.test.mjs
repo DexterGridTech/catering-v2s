@@ -6,7 +6,8 @@ import {fileURLToPath} from 'node:url';
 import {readCatalogInventoryOpenApi} from '../lib/catalog-inventory-openapi.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const migration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260814_100000_000__catalog_p3_model.sql'), 'utf8');
+const historicalP3Migration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260814_100000_000__catalog_p3_model.sql'), 'utf8');
+const base1LifecycleMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260827_010000_000__base1_three_state_lifecycle.sql'), 'utf8');
 const unitModelMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260821_090000_000__catalog_inventory_unit_model.sql'), 'utf8');
 const inventoryIdentityMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260808_160000_000__inventory_opaque_catalog_identity_refs.sql'), 'utf8');
 const itemCodeReleaseMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260815_010000_000__catalog_voided_item_code_release.sql'), 'utf8');
@@ -39,29 +40,39 @@ test('catalog inventory root OpenAPI declares its generated projection boundary'
   assert.deepEqual(openApiRootDocument, openApiJson);
 });
 
-test('P3 catalog model migration contains relational source-of-truth constraints only', () => {
+test('historical P3 catalog model migration retains its immutable relational source-of-truth constraints', () => {
   for (const table of [
     'catalog.catalog_sku', 'catalog.catalog_sku_attribute_value', 'catalog.catalog_item_category',
     'catalog.catalog_composite_group', 'catalog.catalog_composite_component', 'catalog.catalog_item_reference',
     'catalog.catalog_item_image', 'catalog.catalog_sku_media',
     'catalog.catalog_sku_variant_axis', 'catalog.catalog_sku_variant_axis_value',
-  ]) assert.match(migration, new RegExp(`CREATE TABLE ${table.replace('.', '\\.')}`));
+  ]) assert.match(historicalP3Migration, new RegExp(`CREATE TABLE ${table.replace('.', '\\.')}`));
 
-  assert.match(migration, /PRIMARY KEY \(product_sku_ref, attribute_ref\)/);
-  assert.match(migration, /UNIQUE \(item_ref, sku_code\)/);
-  assert.match(migration, /ux_catalog_sku_default_per_item[\s\S]*WHERE is_default AND status <> 'ARCHIVED'/);
-  assert.match(migration, /ux_catalog_sku_variant_digest_per_item[\s\S]*WHERE status <> 'ARCHIVED'/);
-  assert.match(migration, /PRIMARY KEY \(item_ref, category_ref\)/);
-  assert.match(migration, /CHECK \(max_selections >= min_selections\)/);
-  assert.match(migration, /PRIMARY KEY \(item_ref, kind, ref\)/);
-  assert.match(migration, /CREATE TABLE catalog\.catalog_item_image/);
-  assert.match(migration, /CREATE TABLE catalog\.catalog_sku_media/);
-  assert.match(migration, /UNIQUE \(item_ref, asset_ref\)/);
-  assert.match(migration, /UNIQUE \(product_sku_ref, asset_ref\)/);
-  assert.doesNotMatch(migration, /ORDER_OPTION_ATTRIBUTE_VALUE/);
-  assert.match(migration, /UNIQUE \(item_ref, attribute_ref\)/);
-  assert.match(migration, /PRIMARY KEY \(sku_variant_axis_ref, value_ref\)/);
-  assert.doesNotMatch(migration, /\b(?:INSERT INTO|UPDATE|DELETE FROM|DO \$\$|ALTER TABLE catalog\.catalog_item)\b/);
+  assert.match(historicalP3Migration, /PRIMARY KEY \(product_sku_ref, attribute_ref\)/);
+  assert.match(historicalP3Migration, /UNIQUE \(item_ref, sku_code\)/);
+  assert.match(historicalP3Migration, /ux_catalog_sku_default_per_item[\s\S]*WHERE is_default AND status <> 'ARCHIVED'/);
+  assert.match(historicalP3Migration, /ux_catalog_sku_variant_digest_per_item[\s\S]*WHERE status <> 'ARCHIVED'/);
+  assert.match(historicalP3Migration, /PRIMARY KEY \(item_ref, category_ref\)/);
+  assert.match(historicalP3Migration, /CHECK \(max_selections >= min_selections\)/);
+  assert.match(historicalP3Migration, /PRIMARY KEY \(item_ref, kind, ref\)/);
+  assert.match(historicalP3Migration, /CREATE TABLE catalog\.catalog_item_image/);
+  assert.match(historicalP3Migration, /CREATE TABLE catalog\.catalog_sku_media/);
+  assert.match(historicalP3Migration, /UNIQUE \(item_ref, asset_ref\)/);
+  assert.match(historicalP3Migration, /UNIQUE \(product_sku_ref, asset_ref\)/);
+  assert.doesNotMatch(historicalP3Migration, /ORDER_OPTION_ATTRIBUTE_VALUE/);
+  assert.match(historicalP3Migration, /UNIQUE \(item_ref, attribute_ref\)/);
+  assert.match(historicalP3Migration, /PRIMARY KEY \(sku_variant_axis_ref, value_ref\)/);
+  assert.doesNotMatch(historicalP3Migration, /\b(?:INSERT INTO|UPDATE|DELETE FROM|DO \$\$|ALTER TABLE catalog\.catalog_item)\b/);
+});
+
+test('base1 lifecycle migration converges catalog rows and uniqueness predicates to the three-state model', () => {
+  assert.match(base1LifecycleMigration, /WHEN 'DRAFT' THEN 'DISABLED'/);
+  assert.match(base1LifecycleMigration, /WHEN 'ARCHIVED' THEN 'VOIDED'/);
+  assert.match(base1LifecycleMigration, /ALTER COLUMN status DROP DEFAULT/);
+  assert.match(base1LifecycleMigration, /ADD CONSTRAINT catalog_item_status_check[\s\S]*CHECK \(status IN \('ENABLED', 'DISABLED', 'VOIDED'\)\)/);
+  assert.match(base1LifecycleMigration, /ADD CONSTRAINT catalog_sku_status_check[\s\S]*CHECK \(status IN \('ENABLED', 'DISABLED', 'VOIDED'\)\)/);
+  assert.match(base1LifecycleMigration, /ux_catalog_sku_default_per_item[\s\S]*WHERE is_default AND status <> 'VOIDED'/);
+  assert.match(base1LifecycleMigration, /ux_catalog_sku_variant_digest_per_item[\s\S]*WHERE status <> 'VOIDED'/);
 });
 
 test('inventory identity migration names legacy constraints explicitly and fails when they are absent', () => {
@@ -193,7 +204,7 @@ test('P3 derives the smart-view wire vocabulary and exposes dictionary entry ide
   const smartViewKey = pageQuery.fields.find((field) => field.path === 'smartViewKey');
   assert.deepEqual(smartViewKey, {
     path: 'smartViewKey', type: 'string', enum: [
-      'ALL', 'EXTERNAL_ORDER_TEMP', 'INACTIVE', 'ARCHIVED', 'RECENTLY_UPDATED', 'AUTO_SYNC',
+      'ALL', 'EXTERNAL_ORDER_TEMP', 'INACTIVE', 'RECENTLY_UPDATED', 'AUTO_SYNC',
     ], required: false,
   });
   assert.equal(dictionary.fields.some((field) => field.path === 'data.entries[].entryRef' && field.format === 'uuid'), true);
@@ -201,7 +212,7 @@ test('P3 derives the smart-view wire vocabulary and exposes dictionary entry ide
 
   const querySchema = openApiJson.components.schemas.CatalogItemPageQuery;
   assert.deepEqual(querySchema.properties.smartViewKey.enum, [
-    'ALL', 'EXTERNAL_ORDER_TEMP', 'INACTIVE', 'ARCHIVED', 'RECENTLY_UPDATED', 'AUTO_SYNC',
+    'ALL', 'EXTERNAL_ORDER_TEMP', 'INACTIVE', 'RECENTLY_UPDATED', 'AUTO_SYNC',
   ]);
   const entrySchema = openApiJson.components.schemas.CatalogDictionaryView.properties.data.properties.entries.items;
   assert.equal(entrySchema.properties.entryRef.format, 'uuid');

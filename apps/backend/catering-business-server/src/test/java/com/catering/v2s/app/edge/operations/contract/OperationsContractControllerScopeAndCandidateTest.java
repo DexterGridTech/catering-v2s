@@ -101,7 +101,7 @@ class OperationsContractControllerScopeAndCandidateTest {
     void extensionDefinitionIsWorkspaceScopedAssociationMetadataWithoutProjectRangeResolution() {
         Fixture fixture = fixture();
         when(fixture.definitions.operationsManagementDefinition(fixture.workspaceId, KEY, "CONTRACT"))
-                .thenReturn(new ExtensionDefinitionReadback(KEY, "CONTRACT", 2L, 10L, List.of()));
+                .thenReturn(new ExtensionDefinitionReadback(KEY, "CONTRACT", 2L, 10L, List.of(), "ENABLED", List.of()));
 
         var result = fixture.controller.extensionDefinition(fixture.request, KEY, fixture.session.contextVersion());
 
@@ -130,7 +130,7 @@ class OperationsContractControllerScopeAndCandidateTest {
                 List.of(scopedProjectId));
         when(fixture.entities.requireStoreContractContext(fixture.workspaceId, KEY, storeId))
                 .thenReturn(new StoreContractLookup.StoreContractContext(
-                        storeId, tenantId, scopedProjectId, "ENABLED", List.of("一期")));
+                        storeId, tenantId, scopedProjectId, "ENABLED", "ENABLED", List.of("一期")));
         when(fixture.capabilityScopes.resolve(
                         fixture.session,
                         "REQ_CREATE_OPERATIONS_CONTRACT",

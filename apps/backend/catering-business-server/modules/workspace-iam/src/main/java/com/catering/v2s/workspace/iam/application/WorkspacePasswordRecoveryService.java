@@ -1,8 +1,8 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import java.security.SecureRandom;
 import java.util.HexFormat;
 import java.util.UUID;
@@ -36,7 +36,7 @@ public class WorkspacePasswordRecoveryService {
                 time,
                 new WorkspaceOtpRateLimitService(jdbc, time),
                 new WorkspaceLoginRateLimitService(jdbc, time),
-                (workspaceUuid, groupWorkspaceKey) -> true,
+                (workspaceUuid, groupWorkspaceKey) -> "ENABLED",
                 new com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy("", false));
     }
 

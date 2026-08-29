@@ -2,6 +2,8 @@ import {Alert, Button, Descriptions, Drawer, Space, Tag} from 'antd';
 import {
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  closedCodeLabel,
+  isKnownClosedCode,
   testId,
   useDetailDrawer,
   useOverlayLock,
@@ -12,6 +14,13 @@ import type {OperationsPageContext} from '../../../app/routing/model';
 import {useEffect, useState} from 'react';
 import {operationsContentTabRefreshSignal, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import {readExternalProviderCandidates} from '../application/queries';
+import {
+  accessKindLabels,
+  dineInFormLabels,
+  lifecycleStatusLabels,
+  operatorKindLabels,
+  orderKindLabels,
+} from '../model/businessChannelCodeLabels';
 
 export function BusinessChannelTemplateDetailDrawer({
   open,
@@ -37,6 +46,7 @@ export function BusinessChannelTemplateDetailDrawer({
   useOverlayLock(open);
 
   const {open: openDetail, close: closeDetail, target} = detail;
+  const targetStatusKnown = target ? isKnownClosedCode(lifecycleStatusLabels, target.status) : false;
   useEffect(() => {
     if (open && template) openDetail(template);
     else closeDetail();
@@ -60,7 +70,10 @@ export function BusinessChannelTemplateDetailDrawer({
   }, [contentTabRefreshVersion, open, queryContext, target]);
 
   const transitionStatus = async () => {
-    if (!target) return;
+    if (!target || !targetStatusKnown) {
+      if (target) setStatusProblem('当前模板状态无法识别，已停止该操作。');
+      return;
+    }
     setStatusProblem(undefined);
     setStatusSubmitting(true);
     try {
@@ -90,7 +103,7 @@ export function BusinessChannelTemplateDetailDrawer({
       extra={
         target && (
           <Space>
-            {target.status === 'ENABLED' && (
+            {targetStatusKnown && target.status !== 'VOIDED' && (
               <Button
                 onClick={() => {
                   closeDetail();
@@ -102,14 +115,16 @@ export function BusinessChannelTemplateDetailDrawer({
                 编辑
               </Button>
             )}
-            <Button
-              danger={target.status === 'ENABLED'}
-              loading={statusSubmitting}
-              onClick={() => void transitionStatus()}
-              {...testId('business-channel-template-detail-status')}
-            >
-              {target.status === 'ENABLED' ? '停用' : '启用'}
-            </Button>
+            {targetStatusKnown && target.status !== 'VOIDED' && (
+              <Button
+                danger={target.status === 'ENABLED'}
+                loading={statusSubmitting}
+                onClick={() => void transitionStatus()}
+                {...testId('business-channel-template-detail-status')}
+              >
+                {target.status === 'ENABLED' ? '停用' : '启用'}
+              </Button>
+            )}
           </Space>
         )
       }
@@ -130,12 +145,20 @@ export function BusinessChannelTemplateDetailDrawer({
           items={[
             {key: 'name', label: '模板名称', children: target.templateName},
             {key: 'code', label: '模板编码', children: target.templateCode || '—'},
-            {key: 'access', label: '接入类型', children: target.accessKindDisplayName},
-            {key: 'operator', label: '经营主体', children: target.operatorKindDisplayName},
-            {key: 'order', label: '订单类型', children: target.orderKindDisplayName},
-            {key: 'dineInForm', label: '到店点餐形式', children: target.dineInFormDisplayName ?? '—'},
+            {key: 'access', label: '接入类型', children: closedCodeLabel(accessKindLabels, target.accessKind)},
+            {key: 'operator', label: '经营主体', children: closedCodeLabel(operatorKindLabels, target.operatorKind)},
+            {key: 'order', label: '订单类型', children: closedCodeLabel(orderKindLabels, target.orderKind)},
+            {
+              key: 'dineInForm',
+              label: '到店点餐形式',
+              children: target.dineInForm ? closedCodeLabel(dineInFormLabels, target.dineInForm) : '未配置',
+            },
             {key: 'provider', label: '外部接入档案', children: providerName ?? '—'},
-            {key: 'status', label: '状态', children: <Tag>{target.statusDisplayName}</Tag>},
+            {
+              key: 'status',
+              label: '状态',
+              children: <Tag>{closedCodeLabel(lifecycleStatusLabels, target.status)}</Tag>,
+            },
           ]}
         />
       )}

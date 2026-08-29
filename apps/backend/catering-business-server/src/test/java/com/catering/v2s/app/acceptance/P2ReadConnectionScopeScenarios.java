@@ -38,8 +38,8 @@ final class P2ReadConnectionScopeScenarios {
     private static final BackendAcceptanceTest.RouteIdentity DICTIONARY_REORDER = route(
             "reorderOperationsCatalogDictionaryEntry",
             "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/reorder");
-    private static final BackendAcceptanceTest.RouteIdentity UNIT_DELETE =
-            route("deleteOperationsCatalogUnit", "/operations/catalog-inventory/units/{unitRef}");
+    private static final BackendAcceptanceTest.RouteIdentity UNIT_STATUS =
+            route("transitionOperationsCatalogUnitStatus", "/operations/catalog-inventory/units/{unitRef}/status");
     private static final BackendAcceptanceTest.RouteIdentity ITEM_PREFLIGHT = route(
             "preflightOperationsTemporaryCatalogItemPromotion",
             "/operations/catalog-inventory/items/{itemCode}/temporary-promotion/preflight");
@@ -235,9 +235,9 @@ final class P2ReadConnectionScopeScenarios {
                         0);
         JsonNode disposableUnitReadback = disposableUnit.path("result").path("unit");
         String disposableUnitRef = disposableUnitReadback.path("unitRef").asText();
-        BackendAcceptanceTest.Response deletedUnit = normalContext.delete(
-                UNIT_DELETE,
-                root + "/units/" + disposableUnitRef,
+        BackendAcceptanceTest.Response voidedUnit = normalContext.post(
+                UNIT_STATUS,
+                root + "/units/" + disposableUnitRef + "/status",
                 session.cookie(),
                 Map.of(
                         "dataNodeRef",
@@ -245,12 +245,14 @@ final class P2ReadConnectionScopeScenarios {
                         "unitRef",
                         disposableUnitRef,
                         "expectedVersion",
-                        disposableUnitReadback.path("version").asLong()),
+                        disposableUnitReadback.path("version").asLong(),
+                        "targetStatus",
+                        "VOIDED"),
                 Set.of(200));
         assertEquals(
                 disposableUnitRef,
-                deletedUnit.json().path("result").path("unitRef").asText(),
-                "BUSINESS: an unreferenced unit is deleted by the catalog owner");
+                voidedUnit.json().path("result").path("unit").path("unitRef").asText(),
+                "BUSINESS: an unreferenced unit is voided by the catalog owner");
 
         JsonNode material = new CatalogAcceptanceScenarios(host)
                 .calibrationCreateInventoryMaterial(
@@ -378,9 +380,9 @@ final class P2ReadConnectionScopeScenarios {
                 Map.of("Idempotency-Key", "calibration-promotion-execute-" + suffix),
                 Set.of(200));
         assertEquals(
-                "DRAFT",
+                "DISABLED",
                 execute.json().path("result").path("status").asText(),
-                "BUSINESS: temporary promotion returns the newly owned formal draft");
+                "BUSINESS: temporary promotion returns the newly owned disabled formal item");
 
         brandCopyNormalPath(host, normalContext, coverageContext);
 

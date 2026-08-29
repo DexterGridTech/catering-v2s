@@ -121,6 +121,35 @@
           }
         },
         "additionalProperties": false
+      },
+      "OrganizationPathNode": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ref",
+          "code",
+          "name",
+          "nodeType"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "nodeType": {
+            "$ref": "enum.schemas.json#/components/schemas/ServiceNodeType"
+          }
+        }
       }
     }
   }

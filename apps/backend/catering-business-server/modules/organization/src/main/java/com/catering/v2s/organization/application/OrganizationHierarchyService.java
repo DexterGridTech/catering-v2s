@@ -12,7 +12,6 @@ import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationNodeLookup;
 import com.catering.v2s.organization.api.OrganizationNodeReadback;
 import com.catering.v2s.organization.api.OrganizationNodeTypes;
-import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import java.util.ArrayList;
@@ -20,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -62,7 +62,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             JdbcTemplate jdbc,
             TimeProvider time,
             OrganizationHierarchyCommandReceiptService receipts,
-            WorkspaceStatusLookup ignoredWorkspaceStatus,
+            BiPredicate<UUID, String> ignoredWorkspaceStatus,
             CommercialGroupLookup commercialGroups,
             ExtensionDefinitionLookup definitions) {
         this(jdbc, time, receipts, commercialGroups, definitions);
@@ -803,14 +803,18 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             AuditActor actor) {
         // The owner-bound command already performed the grant-bound read before receipt replay.
         // Keep the post-write readback fresh; only the pre-write fact is transferred.
-        if (!List.of("ENABLED", "DISABLED").contains(status)
+        if (!List.of("ENABLED", "DISABLED", "VOIDED").contains(status)
+                || "VOIDED".equals(current.status())
                 || current.version() != expectedVersion
                 || jdbc.update(
                                 "UPDATE organization.organization_node SET status=?, version=version+1, "
-                                        + "updated_at_epoch_millis=? WHERE id=? AND version=?",
+                                        + "updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? "
+                                        + "AND group_workspace_key=? AND version=?",
                                 status,
                                 time.currentEpochMillis(),
                                 nodeId,
+                                workspaceUuid,
+                                groupWorkspaceKey,
                                 expectedVersion)
                         != 1) {
             throw new OrganizationConflictException();
@@ -959,6 +963,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             Map<String, String> extensionValues,
             AuditActor actor) {
         OrganizationNodeReadback current = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null);
+        requireMutable(current.status());
         ExtensionValues extensions =
                 extensionValues(workspaceUuid, groupWorkspaceKey, current.nodeType(), current, extensionValues);
         List<String> phases = normalizedPhases(current.nodeType(), phaseNames);
@@ -996,6 +1001,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
     }
 
     private OrganizationNodeReadback updateWithSubmission(UpdateNodeCommand command, OrganizationNodeReadback current) {
+        requireMutable(current.status());
         ExtensionValues extensions = extensionValues(
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
@@ -1440,6 +1446,10 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
         }
     }
 
+    private static void requireMutable(String status) {
+        if ("VOIDED".equals(status)) throw new OrganizationConflictException();
+    }
+
     private void requireCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey) {
         if (commercialGroups == null) return;
         commercialGroups.requireCommercialGroupRef(workspaceUuid, groupWorkspaceKey);
@@ -1682,7 +1692,8 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             if (!List.of("NAME", "CODE", "UPDATED_AT").contains(safeSort)
                     || !List.of("ASC", "DESC").contains(safeDirection)
                     || (type != null && !NODE_TYPES.contains(type))
-                    || (status != null && !List.of("ENABLED", "DISABLED").contains(status))
+                    || (status != null
+                            && !List.of("ENABLED", "DISABLED", "VOIDED").contains(status))
                     || (projectId != null && !OrganizationNodeTypes.PROJECT.equals(type)))
                 throw new OrganizationValidationException();
             return new HierarchyQuery(type, name, code, status, projectId, safeSort, safeDirection, page, pageSize);

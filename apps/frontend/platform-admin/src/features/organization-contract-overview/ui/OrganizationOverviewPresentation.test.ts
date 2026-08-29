@@ -9,6 +9,8 @@ describe('organization overview extension presentation', () => {
         entityType: 'COMMERCIAL_GROUP',
         revision: 1,
         updatedAt: 0,
+        workspaceStatus: 'ENABLED',
+        blockers: [],
         definitions: [
           {
             key: 'disabled',

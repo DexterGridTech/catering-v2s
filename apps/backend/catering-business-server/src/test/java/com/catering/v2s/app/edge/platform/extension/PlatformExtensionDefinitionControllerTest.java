@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.catering.v2s.app.edge.generated.wire.GroupWorkspaceStatus;
 import com.catering.v2s.app.edge.platform.session.PlatformSessionCookie;
 import com.catering.v2s.app.edge.platform.session.PlatformSessionResolver;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
@@ -30,7 +31,7 @@ class PlatformExtensionDefinitionControllerTest {
                         UUID.randomUUID(), 1L, UUID.randomUUID(), "Platform", Long.MAX_VALUE));
         WorkspaceAdministrationService workspaces = mock(WorkspaceAdministrationService.class);
         UUID workspaceId = UUID.randomUUID();
-        when(workspaces.requireEnabled(WORKSPACE_KEY))
+        when(workspaces.require(WORKSPACE_KEY))
                 .thenReturn(new WorkspaceAdministrationReadback(
                         workspaceId,
                         WORKSPACE_KEY,
@@ -46,9 +47,11 @@ class PlatformExtensionDefinitionControllerTest {
                         true));
         ExtensionDefinitionService definitions = mock(ExtensionDefinitionService.class);
         when(definitions.platformManagementDefinitions(workspaceId, WORKSPACE_KEY))
-                .thenReturn(List.of(new ExtensionDefinitionReadback(WORKSPACE_KEY, "BRAND", 1L, 2L, List.of())));
+                .thenReturn(List.of(new ExtensionDefinitionReadback(
+                        WORKSPACE_KEY, "BRAND", 1L, 2L, List.of(), "ENABLED", List.of())));
         when(definitions.platformManagementDefinition(workspaceId, WORKSPACE_KEY, "BRAND"))
-                .thenReturn(new ExtensionDefinitionReadback(WORKSPACE_KEY, "BRAND", 1L, 2L, List.of()));
+                .thenReturn(new ExtensionDefinitionReadback(
+                        WORKSPACE_KEY, "BRAND", 1L, 2L, List.of(), "ENABLED", List.of()));
         PlatformExtensionDefinitionController controller = new PlatformExtensionDefinitionController(
                 new PlatformSessionResolver(authentication), workspaces, definitions);
         EdgeRequestContext request = new EdgeRequestContext(
@@ -64,6 +67,11 @@ class PlatformExtensionDefinitionControllerTest {
         assertEquals(
                 "BRAND",
                 controller.detail(request, WORKSPACE_KEY, "BRAND").entityType().wire());
+        assertEquals(
+                GroupWorkspaceStatus.ENABLED,
+                controller.detail(request, WORKSPACE_KEY, "BRAND").workspaceStatus());
+        assertEquals(
+                List.of(), controller.detail(request, WORKSPACE_KEY, "BRAND").blockers());
 
         verify(definitions).platformManagementDefinitions(eq(workspaceId), eq(WORKSPACE_KEY));
         verify(definitions).platformManagementDefinition(eq(workspaceId), eq(WORKSPACE_KEY), eq("BRAND"));

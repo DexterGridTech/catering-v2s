@@ -13,6 +13,7 @@ import {
 } from '../../../app/api/generated/platform-edge';
 import {platformClient, platformProblemOf, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
 import {RolePermissionFields, type RolePermissionFields as Fields, serviceNodeTypeLabel} from './RolePermissionFields';
+import {canManageWorkspaceIam} from '../model/workspaceIamLifecycle';
 
 type Props = {
   role?: WorkspaceRole;
@@ -49,7 +50,7 @@ export function RoleEditDrawer({role, groupWorkspaceKey, catalog, onClose, onUpd
     }
   }, [form, lifecycle, role]);
   const submit = async (value: Fields) => {
-    if (!role || lifecycle.submitting) return;
+    if (!role || !canManageWorkspaceIam(role.status) || lifecycle.submitting) return;
     lifecycle.setSubmitting(true);
     setProblem(undefined);
     try {
@@ -87,23 +88,25 @@ export function RoleEditDrawer({role, groupWorkspaceKey, catalog, onClose, onUpd
       keyboard={!lifecycle.submitting}
       {...adminDrawerSurfaceProps}
       footer={
-        <Space>
-          <Button
-            onClick={lifecycle.requestClose}
-            disabled={lifecycle.submitting}
-            {...testId('workspace-role-edit-cancel')}
-          >
-            取消
-          </Button>
-          <Button
-            type="primary"
-            loading={lifecycle.submitting}
-            onClick={() => form.submit()}
-            {...testId('workspace-role-edit-submit')}
-          >
-            保存
-          </Button>
-        </Space>
+        role && canManageWorkspaceIam(role.status) ? (
+          <Space>
+            <Button
+              onClick={lifecycle.requestClose}
+              disabled={lifecycle.submitting}
+              {...testId('workspace-role-edit-cancel')}
+            >
+              取消
+            </Button>
+            <Button
+              type="primary"
+              loading={lifecycle.submitting}
+              onClick={() => form.submit()}
+              {...testId('workspace-role-edit-submit')}
+            >
+              保存
+            </Button>
+          </Space>
+        ) : null
       }
     >
       <div className="workspace-role-permission-drawer-content">
@@ -117,32 +120,41 @@ export function RoleEditDrawer({role, groupWorkspaceKey, catalog, onClose, onUpd
             {...testId('workspace-role-edit-error')}
           />
         )}
-        <Form
-          className="workspace-role-permission-drawer-form"
-          form={form}
-          layout="vertical"
-          onFinish={value => void submit(value)}
-          onValuesChange={() => {
-            lifecycle.setDirty(true);
-            lifecycle.markBusinessIntentChanged();
-          }}
-          disabled={lifecycle.submitting}
-        >
-          <Form.Item name="name" label="名称" rules={[{required: true, whitespace: true}]}>
-            <Input {...testId('workspace-role-edit-name')} />
-          </Form.Item>
-          <Form.Item label="任职机构类型">
-            <Input
-              value={role ? serviceNodeTypeLabel(role.serviceNodeType) : undefined}
-              readOnly
-              {...testId('workspace-role-edit-service-node-type')}
-            />
-          </Form.Item>
-          <Form.Item name="description" label="说明">
-            <Input.TextArea autoSize={{minRows: 2, maxRows: 4}} {...testId('workspace-role-edit-description')} />
-          </Form.Item>
-          <RolePermissionFields catalog={catalog} serviceNodeType={role?.serviceNodeType} fillDrawer />
-        </Form>
+        {!role || canManageWorkspaceIam(role.status) ? (
+          <Form
+            className="workspace-role-permission-drawer-form"
+            form={form}
+            layout="vertical"
+            onFinish={value => void submit(value)}
+            onValuesChange={() => {
+              lifecycle.setDirty(true);
+              lifecycle.markBusinessIntentChanged();
+            }}
+            disabled={lifecycle.submitting}
+          >
+            <Form.Item name="name" label="名称" rules={[{required: true, whitespace: true}]}>
+              <Input {...testId('workspace-role-edit-name')} />
+            </Form.Item>
+            <Form.Item label="任职机构类型">
+              <Input
+                value={role ? serviceNodeTypeLabel(role.serviceNodeType) : undefined}
+                readOnly
+                {...testId('workspace-role-edit-service-node-type')}
+              />
+            </Form.Item>
+            <Form.Item name="description" label="说明">
+              <Input.TextArea autoSize={{minRows: 2, maxRows: 4}} {...testId('workspace-role-edit-description')} />
+            </Form.Item>
+            <RolePermissionFields catalog={catalog} serviceNodeType={role?.serviceNodeType} fillDrawer />
+          </Form>
+        ) : (
+          <Alert
+            type="info"
+            showIcon
+            title="该业务角色已标记删除，不能继续修改。"
+            {...testId('workspace-role-voided-readonly')}
+          />
+        )}
       </div>
     </Drawer>
   );

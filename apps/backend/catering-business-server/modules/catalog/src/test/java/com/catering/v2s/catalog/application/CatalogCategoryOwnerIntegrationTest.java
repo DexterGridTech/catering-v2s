@@ -90,7 +90,7 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
-    void categoryOperationsUseOpaqueRefsAndAllowDeleteThenCodeReuse() {
+    void categoryOperationsUseOpaqueRefsAndAllowVoidThenCodeReuse() {
         JsonNode rootA = create("CAT-A", "A", null);
         JsonNode rootB = create("CAT-B", "B", null);
         JsonNode childC = create("CAT-C", "C", rootA.path("categoryRef").asText());
@@ -152,20 +152,16 @@ class CatalogCategoryOwnerIntegrationTest {
                                 .put("action", "DOWN")));
         assertEquals("MOVE_BOUNDARY", boundary.code());
 
-        JsonNode deletion = write(
-                "deleteOperationsCatalogCategory",
+        JsonNode voided = write(
+                "transitionOperationsCatalogCategoryStatus",
                 MAPPER.createObjectNode()
                         .put("categoryRef", rootA.path("categoryRef").asText())
-                        .put("expectedVersion", rootA.path("version").asLong()));
+                        .put("expectedVersion", rootA.path("version").asLong())
+                        .put("targetStatus", "VOIDED"));
         assertEquals(
-                rootA.path("categoryRef").asText(), deletion.path("categoryRef").asText());
-        assertEquals(1, deletion.path("deletedSubtreeSize").asInt());
-        assertEquals(
-                List.of("CAT-A"),
-                MAPPER.convertValue(
-                        deletion.path("deletedCategoryCodes"),
-                        new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {}));
-        assertTrue(!deletion.has("deletedCount"));
+                rootA.path("categoryRef").asText(), voided.path("categoryRef").asText());
+        assertEquals("VOIDED", voided.path("status").asText());
+        assertEquals(rootA.path("version").asLong() + 1L, voided.path("version").asLong());
         JsonNode recreated = create("CAT-A", "A-recreated", null);
         assertEquals("CAT-A", recreated.path("code").asText());
     }
@@ -233,8 +229,10 @@ class CatalogCategoryOwnerIntegrationTest {
         String sourceChildCode = "COPY-DEPTH-CHILD-" + suffix;
         String sourceLeafCode = "COPY-DEPTH-LEAF-" + suffix;
         JsonNode sourceRoot = create(sourceRootCode, "来源一级", null);
-        JsonNode sourceChild = create(sourceChildCode, "来源二级", sourceRoot.path("categoryRef").asText());
-        JsonNode sourceLeaf = create(sourceLeafCode, "来源三级", sourceChild.path("categoryRef").asText());
+        JsonNode sourceChild =
+                create(sourceChildCode, "来源二级", sourceRoot.path("categoryRef").asText());
+        JsonNode sourceLeaf =
+                create(sourceLeafCode, "来源三级", sourceChild.path("categoryRef").asText());
         String sourceItemCode = generatedCatalogCode("COPY-DEPTH-ITEM");
         JsonNode sourceItem = write(
                 "createOperationsCatalogItem",
@@ -243,7 +241,8 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("name", "分类复制深度来源")
                         .put("shapeKey", "STANDARD_SALE_COUNTED"));
         ObjectNode sourceSave = MAPPER.createObjectNode().put("itemCode", sourceItemCode);
-        sourceSave.putObject("sections")
+        sourceSave
+                .putObject("sections")
                 .put("expectedCatalogVersion", sourceItem.path("version").asLong())
                 .putObject("catalogDraft")
                 .putArray("categoryRefs")
@@ -392,7 +391,8 @@ class CatalogCategoryOwnerIntegrationTest {
         JsonNode category = create("NAV-COUNT-CATEGORY", "navigation count category", null);
         String categoryRef = category.path("categoryRef").asText();
         JsonNode before = category(navigation(), categoryRef);
-        long inactiveBefore = smartView(navigationData(), "INACTIVE").path("count").asLong();
+        long inactiveBefore =
+                smartView(navigationData(), "INACTIVE").path("count").asLong();
         String itemCode = generatedCatalogCode("NAV-CATEGORY-ITEM");
 
         JsonNode created = write(
@@ -403,13 +403,13 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("shapeKey", "STANDARD_SALE_COUNTED")
                         .put("categoryRef", categoryRef));
 
-        assertEquals("DRAFT", created.path("status").asText());
+        assertEquals("DISABLED", created.path("status").asText());
         JsonNode after = category(navigation(), categoryRef);
         assertEquals(before.path("count").asLong() + 1, after.path("count").asLong());
         assertEquals(
                 inactiveBefore + 1,
                 smartView(navigationData(), "INACTIVE").path("count").asLong(),
-                "DRAFT 商品必须进入未启用商品集合");
+                "停用商品必须进入未启用商品集合");
         assertEquals(
                 categoryRef,
                 service.readItem(SCOPE.toString(), BRAND, itemCode, "navigation-category-detail")
@@ -420,7 +420,7 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
-    void voidedItemReleasesItsCodeWhileArchivedItemStillReservesItsCode() {
+    void voidedItemReleasesItsCodeWhileDisabledItemStillReservesItsCode() {
         String voidedCode = generatedCatalogCode("RELEASED-CODE");
         JsonNode voided = write(
                 "createOperationsCatalogItem",
@@ -441,7 +441,7 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("code", voidedCode)
                         .put("name", "replacement")
                         .put("shapeKey", "STANDARD_SALE_COUNTED"));
-        assertEquals("DRAFT", replacement.path("status").asText());
+        assertEquals("DISABLED", replacement.path("status").asText());
         ObjectNode query = MAPPER.createObjectNode();
         query.putArray("itemCodes").add(voidedCode);
         JsonNode page = service.readItems(SCOPE.toString(), BRAND, query, "released-code-readback")
@@ -456,25 +456,19 @@ class CatalogCategoryOwnerIntegrationTest {
                 .path("data");
         assertEquals(0, voidedPage.path("items").size());
 
-        String archivedCode = generatedCatalogCode("ARCHIVED-CODE");
-        JsonNode archived = write(
+        String disabledCode = generatedCatalogCode("DISABLED-CODE");
+        write(
                 "createOperationsCatalogItem",
                 MAPPER.createObjectNode()
-                        .put("code", archivedCode)
-                        .put("name", "archived source")
+                        .put("code", disabledCode)
+                        .put("name", "disabled source")
                         .put("shapeKey", "STANDARD_SALE_COUNTED"));
-        write(
-                "transitionOperationsCatalogItemStatus",
-                MAPPER.createObjectNode()
-                        .put("itemCode", archivedCode)
-                        .put("expectedVersion", archived.path("version").asLong())
-                        .put("targetStatus", "ARCHIVED"));
         CatalogOwnerApi.Problem reserved = assertThrows(
                 CatalogOwnerApi.Problem.class,
                 () -> write(
                         "createOperationsCatalogItem",
                         MAPPER.createObjectNode()
-                                .put("code", archivedCode)
+                                .put("code", disabledCode)
                                 .put("name", "must be rejected")
                                 .put("shapeKey", "STANDARD_SALE_COUNTED")));
         assertEquals("DUPLICATE_CODE", reserved.code());
@@ -511,9 +505,11 @@ class CatalogCategoryOwnerIntegrationTest {
                 .path("voidAvailability");
         assertFalse(voidAvailability.path("canVoid").asBoolean());
         assertTrue(
-                java.util.stream.StreamSupport.stream(voidAvailability.path("blockingReasons").spliterator(), false)
-                        .anyMatch(reason -> "已配置库存对象".equals(reason.path("label").asText())
-                                && reason.path("count").asLong() == 1L),
+                java.util.stream.StreamSupport.stream(
+                                voidAvailability.path("blockingReasons").spliterator(), false)
+                        .anyMatch(
+                                reason -> "已配置库存对象".equals(reason.path("label").asText())
+                                        && reason.path("count").asLong() == 1L),
                 "详情必须直接表达 inventory owner 的作废阻断，而不是泛化为关联");
 
         CatalogOwnerApi.Problem blocked = assertThrows(
@@ -526,7 +522,7 @@ class CatalogCategoryOwnerIntegrationTest {
                                 .put("targetStatus", "VOIDED")));
         assertEquals("REFERENCE_BLOCKS_VOID", blocked.code());
         assertEquals(
-                "DRAFT",
+                "DISABLED",
                 jdbc.queryForObject("SELECT status FROM catalog.catalog_item WHERE item_ref=?", String.class, itemRef));
     }
 
@@ -676,8 +672,8 @@ class CatalogCategoryOwnerIntegrationTest {
         JsonNode before = service.readItem(SCOPE.toString(), BRAND, itemCode, "qg10-retire-before")
                 .path("data")
                 .path("item");
-        ObjectNode catalogBlockedVoid = skuVoidSaveMany(
-                itemCode, before.path("version").asLong(), before, List.of(catalogBlockedSkuRef), 1L);
+        ObjectNode catalogBlockedVoid =
+                skuVoidSaveMany(itemCode, before.path("version").asLong(), before, List.of(catalogBlockedSkuRef), 1L);
         CatalogOwnerApi.Problem catalogBlocked = assertThrows(
                 CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", catalogBlockedVoid));
         assertEquals("REFERENCE_BLOCKS_VOID", catalogBlocked.code());
@@ -1179,7 +1175,7 @@ class CatalogCategoryOwnerIntegrationTest {
                         + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,sections,version,cre"
                         + "ated"
                         + "_at_epoch_millis,updated_at_epoch_millis) VALUES "
-                        + "(?,?,?,?,?,'STANDARD_SALE_COUNTED','DRAFT','{}'::jsonb,1,1,1)",
+                        + "(?,?,?,?,?,'STANDARD_SALE_COUNTED','DISABLED','{}'::jsonb,1,1,1)",
                 probeItemRef,
                 SCOPE.toString(),
                 BRAND,
@@ -1248,8 +1244,7 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("shapeKey", "SKU_VARIANT_SALE_COUNTED"));
         UUID skuRef = UUID.randomUUID();
         ObjectNode save = skuSave(itemCode, created.path("version").asLong(), skuRef, "RELATIONAL-SKU");
-        ((ObjectNode) save.path("sections").path("catalogDraft").path("skus").get(0))
-                .put("standardSalePrice", 12800);
+        ((ObjectNode) save.path("sections").path("catalogDraft").path("skus").get(0)).put("standardSalePrice", 12800);
         JsonNode saved = write("saveOperationsCatalogItem", save);
 
         assertFalse(
@@ -1318,12 +1313,8 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("itemCode", itemCode)
                         .put("expectedVersion", saved.path("version").asLong())
                         .put("targetStatus", "ENABLED"));
-        assertEquals(
-                "ENABLED",
-                enabled.path("status").asText());
-        assertEquals(
-                saved.path("version").asLong() + 1,
-                enabled.path("version").asLong());
+        assertEquals("ENABLED", enabled.path("status").asText());
+        assertEquals(saved.path("version").asLong() + 1, enabled.path("version").asLong());
         assertEquals(
                 "ENABLED",
                 jdbc.queryForObject("SELECT status FROM catalog.catalog_item WHERE item_ref=?", String.class, itemRef));
@@ -1347,7 +1338,8 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("expectedVersion", created.path("version").asLong())
                         .put("targetStatus", "ENABLED"));
         assertEquals("ENABLED", enabled.path("status").asText());
-        assertEquals(created.path("version").asLong() + 1, enabled.path("version").asLong());
+        assertEquals(
+                created.path("version").asLong() + 1, enabled.path("version").asLong());
         assertEquals(
                 "ENABLED",
                 jdbc.queryForObject("SELECT status FROM catalog.catalog_item WHERE item_ref=?", String.class, itemRef));
@@ -1838,72 +1830,61 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
-    void categoryDeleteReturnsTheCanonicalSubtreeReadbackAndReplaysOnlyAfterOwnerFactRecheck() {
-        JsonNode root = create("DELETE-ROOT", "delete root", null);
-        create("DELETE-CHILD", "delete child", root.path("categoryRef").asText());
+    void categoryStatusTransitionReturnsCanonicalReadbackAndReplaysOnlyAfterOwnerFactRecheck() {
+        JsonNode root = create("VOID-ROOT", "void root", null);
         ObjectNode request = MAPPER.createObjectNode()
                 .put("categoryRef", root.path("categoryRef").asText())
-                .put("expectedVersion", root.path("version").asLong());
+                .put("expectedVersion", root.path("version").asLong())
+                .put("targetStatus", "VOIDED");
 
-        JsonNode first = writeFull("deleteOperationsCatalogCategory", request, "delete-first", "delete-replay-key");
+        JsonNode first =
+                writeFull("transitionOperationsCatalogCategoryStatus", request, "void-first", "void-replay-key");
         JsonNode result = first.path("result");
         assertEquals(
                 root.path("categoryRef").asText(), result.path("categoryRef").asText());
-        assertEquals(2, result.path("deletedSubtreeSize").asInt());
-        assertEquals(
-                List.of("DELETE-CHILD", "DELETE-ROOT"),
-                MAPPER.convertValue(
-                        result.path("deletedCategoryCodes"),
-                        new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {}));
-        assertTrue(!result.has("deletedCount"));
+        assertEquals("VOIDED", result.path("status").asText());
+        assertEquals(root.path("version").asLong() + 1L, result.path("version").asLong());
 
-        JsonNode replay = writeFull("deleteOperationsCatalogCategory", request, "delete-replay", "delete-replay-key");
+        JsonNode replay =
+                writeFull("transitionOperationsCatalogCategoryStatus", request, "void-replay", "void-replay-key");
         JsonNode replayResult = replay.path("result");
-        assertEquals(3, replayResult.size());
-        assertEquals(
-                root.path("categoryRef").asText(),
-                replayResult.path("categoryRef").asText());
-        assertEquals(2, replayResult.path("deletedSubtreeSize").asInt());
-        assertEquals(
-                List.of("DELETE-CHILD", "DELETE-ROOT"),
-                MAPPER.convertValue(
-                        replayResult.path("deletedCategoryCodes"),
-                        new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {}));
-        assertTrue(!replayResult.has("deletedCount"));
+        assertEquals(result, replayResult);
 
         CatalogOwnerApi.Problem mismatchedReplay = assertThrows(
                 CatalogOwnerApi.Problem.class,
                 () -> writeFull(
-                        "deleteOperationsCatalogCategory",
+                        "transitionOperationsCatalogCategoryStatus",
                         request.deepCopy()
                                 .put("expectedVersion", root.path("version").asLong() + 1),
-                        "delete-mismatch",
-                        "delete-replay-key"));
+                        "void-mismatch",
+                        "void-replay-key"));
         assertEquals("IDEMPOTENCY_MISMATCH", mismatchedReplay.code());
 
-        CatalogOwnerApi.Problem newKeyAfterDelete = assertThrows(
+        CatalogOwnerApi.Problem newKeyAfterVoid = assertThrows(
                 CatalogOwnerApi.Problem.class,
-                () -> writeFull("deleteOperationsCatalogCategory", request, "delete-new-key", "delete-new-key"));
-        assertEquals("NOT_FOUND", newKeyAfterDelete.code());
+                () -> writeFull("transitionOperationsCatalogCategoryStatus", request, "void-new-key", "void-new-key"));
+        assertEquals("VOIDED_RECORD_IMMUTABLE", newKeyAfterVoid.code());
 
-        JsonNode stale = create("DELETE-STALE", "delete stale", null);
+        JsonNode stale = create("VOID-STALE", "void stale", null);
         JsonNode updated = write(
                 "updateOperationsCatalogCategory",
                 MAPPER.createObjectNode()
                         .put("categoryRef", stale.path("categoryRef").asText())
                         .put("expectedVersion", stale.path("version").asLong())
-                        .put("name", "delete stale updated"));
-        assertEquals(stale.path("version").asLong() + 1, updated.path("version").asLong());
-        CatalogOwnerApi.Problem staleDelete = assertThrows(
+                        .put("name", "void stale updated"));
+        assertEquals(
+                stale.path("version").asLong() + 1L, updated.path("version").asLong());
+        CatalogOwnerApi.Problem staleTransition = assertThrows(
                 CatalogOwnerApi.Problem.class,
                 () -> writeFull(
-                        "deleteOperationsCatalogCategory",
+                        "transitionOperationsCatalogCategoryStatus",
                         MAPPER.createObjectNode()
                                 .put("categoryRef", stale.path("categoryRef").asText())
-                                .put("expectedVersion", stale.path("version").asLong()),
-                        "delete-stale",
-                        "delete-stale-key"));
-        assertEquals("VERSION_CONFLICT", staleDelete.code());
+                                .put("expectedVersion", stale.path("version").asLong())
+                                .put("targetStatus", "VOIDED"),
+                        "void-stale",
+                        "void-stale-key"));
+        assertEquals("VERSION_CONFLICT", staleTransition.code());
     }
 
     @Test
@@ -2207,7 +2188,7 @@ class CatalogCategoryOwnerIntegrationTest {
                         + "vers"
                         + "ion,created_at_epoch_millis,updated_at_epoch_millis) "
                         + "SELECT md5('short-name-index-noise-' || value)::uuid, ?, ?, 'SHORT-NAME-NOISE-' || value, "
-                        + "'noise name', 'noise short name', 'STANDARD_SALE_COUNTED', 'DRAFT', "
+                        + "'noise name', 'noise short name', 'STANDARD_SALE_COUNTED', 'DISABLED', "
                         + "'{}'::jsonb, 1, 1, 1 FROM generate_series(1, 2000) AS value",
                 SCOPE.toString(),
                 BRAND);
@@ -2472,7 +2453,7 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
-    void deleteIsBlockedByAnyReferencedDescendantAndSaveRejectsBusinessCodes() {
+    void voidIsBlockedByAnyReferencedDescendantAndSaveRejectsBusinessCodes() {
         JsonNode root = create("BLOCK-ROOT", "root", null);
         JsonNode child = create("BLOCK-CHILD", "child", root.path("categoryRef").asText());
         UUID blockingItemRef = UUID.randomUUID();
@@ -2481,7 +2462,7 @@ class CatalogCategoryOwnerIntegrationTest {
                         + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,sections,version,cre"
                         + "ated"
                         + "_at_epoch_millis,updated_at_epoch_millis) VALUES "
-                        + "(?,?,?,?,?,'STANDARD_SALE_COUNTED','DRAFT','{}'::jsonb,1,1,1)",
+                        + "(?,?,?,?,?,'STANDARD_SALE_COUNTED','DISABLED','{}'::jsonb,1,1,1)",
                 blockingItemRef,
                 SCOPE.toString(),
                 BRAND,
@@ -2495,11 +2476,12 @@ class CatalogCategoryOwnerIntegrationTest {
         CatalogOwnerApi.Problem blocked = assertThrows(
                 CatalogOwnerApi.Problem.class,
                 () -> write(
-                        "deleteOperationsCatalogCategory",
+                        "transitionOperationsCatalogCategoryStatus",
                         MAPPER.createObjectNode()
                                 .put("categoryRef", root.path("categoryRef").asText())
-                                .put("expectedVersion", root.path("version").asLong())));
-        assertEquals("REFERENCE_BLOCKS_DELETE", blocked.code());
+                                .put("expectedVersion", root.path("version").asLong())
+                                .put("targetStatus", "VOIDED")));
+        assertEquals("REFERENCE_BLOCKS_VOID", blocked.code());
         JsonNode rootNavigation =
                 category(navigation(), root.path("categoryRef").asText());
         assertTrue(
@@ -2514,8 +2496,10 @@ class CatalogCategoryOwnerIntegrationTest {
                 "Blocking item",
                 rootNavigation
                         .path("deletionAvailability")
-                        .path("blockingReferenceLabels")
+                        .path("blockingReferences")
+                        .path("references")
                         .get(0)
+                        .path("name")
                         .asText());
 
         JsonNode item = write(
@@ -2534,7 +2518,7 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
-    void categoryDeleteObservesACompletedSaveAsItsLinearizedReferenceState() {
+    void categoryVoidObservesACompletedSaveAsItsLinearizedReferenceState() {
         JsonNode category = create("SAVE-DELETE", "save-delete", null);
         JsonNode item = write(
                 "createOperationsCatalogItem",
@@ -2560,11 +2544,12 @@ class CatalogCategoryOwnerIntegrationTest {
         CatalogOwnerApi.Problem blocked = assertThrows(
                 CatalogOwnerApi.Problem.class,
                 () -> write(
-                        "deleteOperationsCatalogCategory",
+                        "transitionOperationsCatalogCategoryStatus",
                         MAPPER.createObjectNode()
                                 .put("categoryRef", category.path("categoryRef").asText())
-                                .put("expectedVersion", category.path("version").asLong())));
-        assertEquals("REFERENCE_BLOCKS_DELETE", blocked.code());
+                                .put("expectedVersion", category.path("version").asLong())
+                                .put("targetStatus", "VOIDED")));
+        assertEquals("REFERENCE_BLOCKS_VOID", blocked.code());
     }
 
     @Test
@@ -2723,9 +2708,10 @@ class CatalogCategoryOwnerIntegrationTest {
                                 .put("expectedVersion", 1)
                                 .put("targetStatus", "VOIDED")));
         assertEquals("REFERENCE_BLOCKS_VOID", blocked.code(), blocked.getMessage());
-        CatalogOwnerApi.UnitDefinitionReadback disabledUnit = service.disableUnitDefinition(
-                context("disableOperationsCatalogUnit", SCOPE, "disable-snapshot-unit"),
-                new CatalogOwnerApi.UnitDefinitionDisableCommand(usedUnit.unitRef(), usedUnit.version()),
+        CatalogOwnerApi.UnitDefinitionReadback disabledUnit = service.transitionUnitStatus(
+                context("transitionOperationsCatalogUnitStatus", SCOPE, "disable-snapshot-unit"),
+                new CatalogOwnerApi.UnitDefinitionStatusTransitionCommand(
+                        usedUnit.unitRef(), usedUnit.version(), "DISABLED"),
                 "disable-snapshot-unit-key");
         assertEquals("DISABLED", disabledUnit.status());
         JsonNode disabledDetail = service.readItem(SCOPE.toString(), BRAND, "SNAPSHOT-ITEM", "unit-snapshot-disabled")
@@ -2754,17 +2740,20 @@ class CatalogCategoryOwnerIntegrationTest {
 
         CatalogOwnerApi.Problem unitBlocked = assertThrows(
                 CatalogOwnerApi.Problem.class,
-                () -> service.deleteUnitDefinition(
-                        context("deleteOperationsCatalogUnit", SCOPE, "delete-snapshot-unit"),
-                        new CatalogOwnerApi.UnitDefinitionDeleteCommand(usedUnit.unitRef(), disabledUnit.version()),
-                        "delete-snapshot-unit-key"));
-        assertEquals("CATALOG_UNIT_IN_USE", unitBlocked.code(), unitBlocked.getMessage());
+                () -> service.transitionUnitStatus(
+                        context("transitionOperationsCatalogUnitStatus", SCOPE, "void-snapshot-unit"),
+                        new CatalogOwnerApi.UnitDefinitionStatusTransitionCommand(
+                                usedUnit.unitRef(), disabledUnit.version(), "VOIDED"),
+                        "void-snapshot-unit-key"));
+        assertEquals("REFERENCE_BLOCKS_VOID", unitBlocked.code(), unitBlocked.getMessage());
 
-        service.deleteUnitDefinition(
-                context("deleteOperationsCatalogUnit", SCOPE, "delete-free-snapshot-unit"),
-                new CatalogOwnerApi.UnitDefinitionDeleteCommand(freeUnit.unitRef(), freeUnit.version()),
-                "delete-free-snapshot-unit-key");
-        assertTrue(service.listUnitDefinitions(SCOPE.toString(), BRAND, true, null, null, null).units().stream()
+        CatalogOwnerApi.UnitDefinitionReadback voidedUnit = service.transitionUnitStatus(
+                context("transitionOperationsCatalogUnitStatus", SCOPE, "void-free-snapshot-unit"),
+                new CatalogOwnerApi.UnitDefinitionStatusTransitionCommand(
+                        freeUnit.unitRef(), freeUnit.version(), "VOIDED"),
+                "void-free-snapshot-unit-key");
+        assertEquals("VOIDED", voidedUnit.status());
+        assertTrue(service.listUnitDefinitions(SCOPE.toString(), BRAND, false, null, null, null).units().stream()
                 .noneMatch(unit -> freeUnit.unitRef().equals(unit.unitRef())));
     }
 
@@ -3131,7 +3120,9 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("code", itemCode)
                         .put("name", "sku void blocker")
                         .put("shapeKey", "STANDARD_SALE_COUNTED"));
-        write("saveOperationsCatalogItem", skuSave(itemCode, created.path("version").asLong(), UUID.randomUUID(), "VOID-SKU"));
+        write(
+                "saveOperationsCatalogItem",
+                skuSave(itemCode, created.path("version").asLong(), UUID.randomUUID(), "VOID-SKU"));
 
         JsonNode availability = service.readItem(SCOPE.toString(), BRAND, itemCode, "void-sku-reasons")
                 .path("data")
@@ -3140,7 +3131,8 @@ class CatalogCategoryOwnerIntegrationTest {
 
         assertFalse(availability.path("canVoid").asBoolean());
         assertTrue(
-                java.util.stream.StreamSupport.stream(availability.path("blockingReasons").spliterator(), false)
+                java.util.stream.StreamSupport.stream(
+                                availability.path("blockingReasons").spliterator(), false)
                         .anyMatch(reason -> "包含规格".equals(reason.path("label").asText())
                                 && reason.path("count").asLong() == 1L),
                 "不可作废的 SKU 父商品必须返回同一条可见阻断原因");
@@ -3230,9 +3222,13 @@ class CatalogCategoryOwnerIntegrationTest {
                                         .path("blockingReasons")
                                         .spliterator(),
                                 false)
-                        .anyMatch(reason -> "被套餐内容使用".equals(reason.path("label").asText())
-                                && reason.path("count").asLong() == 1L
-                                && "SKU inbound owner".equals(reason.path("relatedItemNames").path(0).asText())),
+                        .anyMatch(
+                                reason -> "被套餐内容使用".equals(reason.path("label").asText())
+                                        && reason.path("count").asLong() == 1L
+                                        && "SKU inbound owner"
+                                                .equals(reason.path("relatedItemNames")
+                                                        .path(0)
+                                                        .asText())),
                 "不可作废的规格必须返回同一条可见阻断原因");
         assertFalse(skuDetail(detail, secondSkuRef)
                 .path("voidAvailability")
@@ -3503,9 +3499,13 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("name", "拿铁咖啡")
                         .put("shapeKey", "SKU_VARIANT_SALE_COUNTED"));
         UUID componentSkuRef = UUID.randomUUID();
-        ObjectNode componentSkuSave = skuSave(
-                componentCode, component.path("version").asLong(), componentSkuRef, "LATTE-MEDIUM");
-        ((ObjectNode) componentSkuSave.path("sections").path("catalogDraft").path("skus").get(0))
+        ObjectNode componentSkuSave =
+                skuSave(componentCode, component.path("version").asLong(), componentSkuRef, "LATTE-MEDIUM");
+        ((ObjectNode) componentSkuSave
+                        .path("sections")
+                        .path("catalogDraft")
+                        .path("skus")
+                        .get(0))
                 .put("skuName", "中杯拿铁");
         write("saveOperationsCatalogItem", componentSkuSave);
 
@@ -3550,9 +3550,11 @@ class CatalogCategoryOwnerIntegrationTest {
         assertEquals(
                 componentItemRef,
                 jdbc.queryForObject(
-                        "SELECT component.component_item_ref FROM catalog.catalog_composite_component component JOIN "
+                        "SELECT component.component_item_ref "
+                                + "FROM catalog.catalog_composite_component component JOIN "
                                 + "catalog.catalog_composite_group group_row ON "
-                                + "group_row.composite_group_ref=component.composite_group_ref WHERE group_row.item_ref=?",
+                                + "group_row.composite_group_ref=component.composite_group_ref "
+                                + "WHERE group_row.item_ref=?",
                         UUID.class,
                         UUID.fromString(parent.path("resourceRef").asText())));
 
@@ -3575,15 +3577,13 @@ class CatalogCategoryOwnerIntegrationTest {
                 .get(0);
         assertEquals("拿铁咖啡", componentReadback.path("itemName").asText());
         assertEquals("中杯拿铁", componentReadback.path("skuName").asText());
-        JsonNode outwardReference = detail.path("data")
-                .path("references")
-                .findValue("referenceRef");
+        JsonNode outwardReference = detail.path("data").path("references").findValue("referenceRef");
         assertTrue(outwardReference != null, "outbound package component reference must be present");
         assertEquals(componentItemRef.toString(), outwardReference.asText());
         JsonNode references = detail.path("data").path("references");
         assertEquals(1, references.size());
-        assertEquals("COMPOSITE_COMPONENT", references.get(0).path("referenceKind").asText());
-        assertEquals("套餐包含", references.get(0).path("relationLabel").asText());
+        assertEquals(
+                "COMPOSITE_COMPONENT", references.get(0).path("referenceKind").asText());
         assertEquals("拿铁咖啡", references.get(0).path("name").asText());
         assertEquals(componentCode, references.get(0).path("code").asText());
     }
@@ -3799,8 +3799,9 @@ class CatalogCategoryOwnerIntegrationTest {
                         .path("data")
                         .path("items")
                         .get(0)
-                        .path("skuDimensionSummary")
+                        .path("specificationFacts")
                         .get(0)
+                        .path("attributeName")
                         .asText());
 
         ObjectNode outsideAxis = skuSave(itemCode, 2L, skuRef, "SWEET-SKU");
@@ -4055,7 +4056,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 .put("skuCode", "REENABLE-B");
         JsonNode replacementSaved = write("saveOperationsCatalogItem", replacement);
         assertEquals(
-                "ARCHIVED",
+                "VOIDED",
                 jdbc.queryForObject(
                         "SELECT status FROM catalog.catalog_sku WHERE product_sku_ref=?",
                         String.class,
@@ -4098,7 +4099,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 assertThrows(CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", reenable));
         assertEquals("DUPLICATE_VARIANT_COMBINATION", rejected.code());
         assertEquals(
-                "ARCHIVED",
+                "VOIDED",
                 jdbc.queryForObject(
                         "SELECT status FROM catalog.catalog_sku WHERE product_sku_ref=?",
                         String.class,
@@ -4129,7 +4130,7 @@ class CatalogCategoryOwnerIntegrationTest {
                         + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,sections,version,cre"
                         + "ated"
                         + "_at_epoch_millis,updated_at_epoch_millis) VALUES "
-                        + "(?,?,?,?,?,'SKU_VARIANT_SALE_COUNTED','DRAFT','{}'::jsonb,1,1,1)",
+                        + "(?,?,?,?,?,'SKU_VARIANT_SALE_COUNTED','DISABLED','{}'::jsonb,1,1,1)",
                 itemRef,
                 SCOPE.toString(),
                 BRAND,
@@ -4163,7 +4164,7 @@ class CatalogCategoryOwnerIntegrationTest {
         assertEquals(
                 1,
                 jdbc.queryForObject(
-                        "SELECT COUNT(*) FROM catalog.catalog_sku WHERE item_ref=? AND status <> 'ARCHIVED'",
+                        "SELECT COUNT(*) FROM catalog.catalog_sku WHERE item_ref=? AND status <> 'VOIDED'",
                         Integer.class,
                         itemRef));
         assertEquals(
@@ -4343,7 +4344,7 @@ class CatalogCategoryOwnerIntegrationTest {
                         + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,attributes,sections,version,cre"
                         + "ated"
                         + "_at_epoch_millis,updated_at_epoch_millis) VALUES (?,?,?,'LEGACY-ITEM','legacy "
-                        + "item','STANDARD_SALE_COUNTED','DRAFT','{}'::jsonb,CAST(? AS JSONB),1,1,1)",
+                        + "item','STANDARD_SALE_COUNTED','DISABLED','{}'::jsonb,CAST(? AS JSONB),1,1,1)",
                 item,
                 "legacy-scope",
                 BRAND,
@@ -4358,8 +4359,9 @@ class CatalogCategoryOwnerIntegrationTest {
     private static void insertCategory(UUID scope, UUID ref, String code, UUID parentCategoryRef) {
         jdbc.update(
                 "INSERT INTO catalog.catalog_category "
-                        + "(category_ref,data_node_ref,brand_ref,code,name,parent_category_ref,status,display_order,version,"
-                        + "created_at_epoch_millis,updated_at_epoch_millis) VALUES (?,?,?,?,?,?,'ENABLED',0,1,1,1)",
+                        + "(category_ref,data_node_ref,brand_ref,code,name,parent_category_ref,status,display_order,"
+                        + "version,created_at_epoch_millis,updated_at_epoch_millis) "
+                        + "VALUES (?,?,?,?,?,?,'ENABLED',0,1,1,1)",
                 ref,
                 scope.toString(),
                 BRAND,
@@ -4550,7 +4552,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 "INSERT INTO catalog.catalog_item(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,"
                         + "sections,version,created_at_epoch_millis,"
                         + "updated_at_epoch_millis) VALUES(?,?,?,?,?,"
-                        + "'SKU_VARIANT_SALE_COUNTED','DRAFT','{}'::jsonb,1,1,1)",
+                        + "'SKU_VARIANT_SALE_COUNTED','DISABLED','{}'::jsonb,1,1,1)",
                 itemRef,
                 SCOPE.toString(),
                 BRAND,
@@ -4690,7 +4692,7 @@ class CatalogCategoryOwnerIntegrationTest {
                     "one command must commit and the competing command must be rejected");
 
             int activeSku = jdbc.queryForObject(
-                    "SELECT COUNT(*) FROM catalog.catalog_sku WHERE product_sku_ref=? AND status <> 'ARCHIVED'",
+                    "SELECT COUNT(*) FROM catalog.catalog_sku WHERE product_sku_ref=? AND status <> 'VOIDED'",
                     Integer.class,
                     secondSkuRef);
             int inventoryReferences = jdbc.queryForObject(
@@ -4891,7 +4893,8 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     private static JsonNode smartView(JsonNode navigation, String key) {
-        for (JsonNode view : navigation.path("smartViews")) if (key.equals(view.path("key").asText())) return view;
+        for (JsonNode view : navigation.path("smartViews"))
+            if (key.equals(view.path("key").asText())) return view;
         throw new AssertionError("smart view not found: " + key);
     }
 

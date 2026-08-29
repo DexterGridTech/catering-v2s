@@ -20,7 +20,6 @@ import {
   decodeWorkbenchContext,
   isCatalogBatchRowSelectable,
 } from '../../model/catalogModel';
-import type {CatalogItemSummary} from '../../model/catalogModel';
 import type {CatalogTreeSelection} from '../catalogWorkbenchPresentation';
 import {useCatalogCategoryCandidates} from '../useCatalogCategoryCandidates';
 import {defaultCatalogTreeExpandedKeys} from '../CatalogWorkbenchNavigationTree';

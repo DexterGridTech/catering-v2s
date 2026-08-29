@@ -21,7 +21,7 @@ const redControls = Object.freeze([
   { id: "PLANNED_PROVIDER_CANDIDATE", proof: "enabled PLANNED provider remains a candidate and can be selected" },
   { id: "EXTERNAL_GRANT_NULL_OWNER", proof: "EXTERNAL_GRANT create accepts null externalOwnerId and remains pending" },
   { id: "DISABLED_OBJECT_VISIBLE", proof: "disabled template/channel remains in detail/list readback" },
-  { id: "DISABLED_OBJECT_WRITE_REJECTED", proof: "disabled object edit returns typed DISABLED_OBJECT_NOT_EDITABLE" },
+  { id: "DISABLED_OBJECT_EDITABLE", proof: "disabled object edit remains allowed and can be read back" },
   { id: "SENSITIVE_FIELDS_ABSENT", proof: "response/log scan excludes token, credential, authorizationRef, cookie and raw callback payload" },
 ]);
 

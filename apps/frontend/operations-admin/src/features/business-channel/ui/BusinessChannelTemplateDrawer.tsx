@@ -1,6 +1,8 @@
 import {Alert, Button, Drawer, Form, Input, Radio, Select, Space, Tag} from 'antd';
 import {
   adminDrawerSurfaceProps,
+  closedCodeLabel,
+  isKnownClosedCode,
   useDrawerFormLifecycle,
   useOverlayLock,
   useSubmissionLifecycle,
@@ -15,6 +17,18 @@ import {useEffect, useState} from 'react';
 import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import {wireUuid} from '../../../app/api/wireUuid';
 import {readExternalProviderCandidates} from '../application/queries';
+import {
+  accessKindLabels,
+  dineInFormLabels,
+  lifecycleStatusLabels,
+  operatorKindLabels,
+  orderKindLabels,
+} from '../model/businessChannelCodeLabels';
+import {
+  authenticationKindLabels,
+  catalogStatusLabels,
+  organizationNodeTypeLabels,
+} from '../model/collaborationCodeLabels';
 
 type Values = {
   templateName: string;
@@ -58,6 +72,8 @@ export function BusinessChannelTemplateDrawer({
   useOverlayLock(open);
   const accessKind = Form.useWatch('accessKind', form);
   const orderKind = Form.useWatch('orderKind', form);
+  const templateVoidedOrUnknown =
+    Boolean(template) && (!isKnownClosedCode(lifecycleStatusLabels, template?.status) || template?.status === 'VOIDED');
 
   useEffect(() => {
     if (!open) return;
@@ -98,6 +114,10 @@ export function BusinessChannelTemplateDrawer({
   }, [accessKind, open, orderKind, queryContext, template]);
 
   const save = async (values: Values) => {
+    if (templateVoidedOrUnknown) {
+      setProblem('当前模板状态无法识别或已标记删除，已停止保存。');
+      return;
+    }
     setProblem(undefined);
     lifecycle.setSubmitting(true);
     try {
@@ -162,7 +182,7 @@ export function BusinessChannelTemplateDrawer({
           <Button
             type="primary"
             loading={lifecycle.submitting}
-            disabled={template?.status === 'DISABLED' || lifecycle.submitting}
+            disabled={templateVoidedOrUnknown || lifecycle.submitting}
             onClick={() => form.submit()}
             {...testId('business-channel-template-form-submit')}
           >
@@ -191,37 +211,30 @@ export function BusinessChannelTemplateDrawer({
         }}
       >
         <Form.Item label="模板名称" name="templateName" rules={[{required: true, message: '请输入模板名称'}]}>
-          <Input disabled={template?.status === 'DISABLED'} />
+          <Input disabled={templateVoidedOrUnknown} />
         </Form.Item>
         <Form.Item label="模板编码" name="templateCode" rules={[{required: true, message: '请输入模板编码'}]}>
-          <Input disabled={Boolean(template) || template?.status === 'DISABLED'} />
+          <Input disabled={Boolean(template) || templateVoidedOrUnknown} />
         </Form.Item>
         <Form.Item label="接入类型" name="accessKind" rules={[{required: true}]}>
           <Radio.Group disabled={Boolean(template)} {...testId('business-channel-template-access-kind')}>
-            <Radio value="INTERNAL">内部接入</Radio>
+            <Radio value="INTERNAL">{accessKindLabels.INTERNAL}</Radio>
             <Radio value="EXTERNAL" disabled={orderKind === 'DINE_IN'}>
-              外部接入
+              {accessKindLabels.EXTERNAL}
             </Radio>
           </Radio.Group>
         </Form.Item>
         <Form.Item label="经营主体" name="operatorKind" rules={[{required: true}]}>
           <Select
             disabled={Boolean(template)}
-            options={[
-              {value: 'PROJECT', label: '项目'},
-              {value: 'STORE', label: '门店'},
-            ]}
+            options={Object.entries(operatorKindLabels).map(([value, label]) => ({value, label}))}
             {...testId('business-channel-template-operator-kind')}
           />
         </Form.Item>
         <Form.Item label="订单类型" name="orderKind" rules={[{required: true}]}>
           <Select
             disabled={Boolean(template)}
-            options={[
-              {value: 'DINE_IN', label: '到店点餐'},
-              {value: 'TAKEAWAY', label: '外卖'},
-              {value: 'GROUP_BUY', label: '团购'},
-            ]}
+            options={Object.entries(orderKindLabels).map(([value, label]) => ({value, label}))}
             {...testId('business-channel-template-order-kind')}
           />
         </Form.Item>
@@ -229,11 +242,7 @@ export function BusinessChannelTemplateDrawer({
           <Form.Item label="到店点餐形式" name="dineInForm" rules={[{required: true, message: '请选择到店点餐形式'}]}>
             <Select
               disabled={Boolean(template) || accessKind === 'EXTERNAL'}
-              options={[
-                {value: 'POS', label: 'POS'},
-                {value: 'QR', label: '扫码'},
-                {value: 'KIOSK', label: '自助机'},
-              ]}
+              options={Object.entries(dineInFormLabels).map(([value, label]) => ({value, label}))}
               {...testId('business-channel-template-dine-in-form')}
             />
           </Form.Item>
@@ -249,11 +258,19 @@ export function BusinessChannelTemplateDrawer({
                 label: (
                   <Space>
                     <span>{provider.displayName}</span>
-                    <span>{provider.authenticationKindDisplayName}</span>
-                    <span>{provider.bindableNodeTypeDisplayNames?.join('、') || '—'}</span>
-                    <Tag>{provider.catalogStatusDisplayName || '—'}</Tag>
+                    <span>{closedCodeLabel(authenticationKindLabels, provider.authenticationKind)}</span>
+                    <span>
+                      {provider.bindableNodeTypes
+                        .map(value => closedCodeLabel(organizationNodeTypeLabels, value))
+                        .join('、') || '—'}
+                    </span>
+                    <Tag>{closedCodeLabel(catalogStatusLabels, provider.catalogStatus)}</Tag>
                   </Space>
                 ),
+                disabled:
+                  !isKnownClosedCode(authenticationKindLabels, provider.authenticationKind) ||
+                  !isKnownClosedCode(catalogStatusLabels, provider.catalogStatus) ||
+                  provider.bindableNodeTypes.some(value => !isKnownClosedCode(organizationNodeTypeLabels, value)),
               }))}
               {...testId('business-channel-template-provider')}
             />

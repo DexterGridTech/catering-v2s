@@ -12,8 +12,11 @@ import com.catering.v2s.collaboration.api.CollaborationReadback;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CollaborationOwnerService
         implements CollaborationCatalogReadApi, CollaborationBindingReadApi, CollaborationCommandApi {
+    private static final ObjectMapper JSON = new ObjectMapper();
     private static final String ENABLED = "ENABLED";
     private static final String DISABLED = "DISABLED";
     private static final String DELETED = "DELETED";
@@ -109,10 +113,29 @@ public class CollaborationOwnerService
     @Transactional(readOnly = true)
     public CollaborationReadback.Tree readTree(UUID workspaceUuid, String groupWorkspaceKey) {
         requireScope(workspaceUuid, groupWorkspaceKey);
-        Map<String, EnablementRow> systems =
-                readEnablements("collaboration.external_system_enablement", workspaceUuid, groupWorkspaceKey);
-        Map<String, EnablementRow> providers =
-                readEnablements("collaboration.provider_profile_enablement", workspaceUuid, groupWorkspaceKey);
+        List<EnablementSnapshot> snapshots = jdbc.query(
+                "SELECT 'EXTERNAL_SYSTEM' AS enablement_kind, external_system_code AS code, status, version "
+                        + "FROM collaboration.external_system_enablement WHERE workspace_uuid=? "
+                        + "AND group_workspace_key=? UNION ALL SELECT 'PROVIDER_PROFILE' AS enablement_kind, "
+                        + "provider_code AS code, status, version "
+                        + "FROM collaboration.provider_profile_enablement "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=?",
+                statement -> {
+                    statement.setObject(1, workspaceUuid);
+                    statement.setString(2, groupWorkspaceKey);
+                    statement.setObject(3, workspaceUuid);
+                    statement.setString(4, groupWorkspaceKey);
+                },
+                (result, rowNumber) -> new EnablementSnapshot(
+                        result.getString("enablement_kind"),
+                        result.getString("code"),
+                        new EnablementRow(result.getString("status"), result.getLong("version"))));
+        Map<String, EnablementRow> systems = snapshots.stream()
+                .filter(snapshot -> "EXTERNAL_SYSTEM".equals(snapshot.kind()))
+                .collect(Collectors.toUnmodifiableMap(EnablementSnapshot::code, EnablementSnapshot::enablement));
+        Map<String, EnablementRow> providers = snapshots.stream()
+                .filter(snapshot -> "PROVIDER_PROFILE".equals(snapshot.kind()))
+                .collect(Collectors.toUnmodifiableMap(EnablementSnapshot::code, EnablementSnapshot::enablement));
         List<CollaborationReadback.ExternalSystem> systemReadbacks = catalog.externalSystems().stream()
                 .map(definition -> externalSystemReadback(definition, systems.get(definition.externalSystemCode())))
                 .toList();
@@ -178,62 +201,66 @@ public class CollaborationOwnerService
                 + "WHERE workspace_uuid=? AND group_workspace_key=? AND provider_code=?"
                 + "), requested_nodes AS ("
                 + "SELECT DISTINCT node_type, node_ref FROM owner_bindings"
-                + "), node_seeds AS ("
-                + "SELECT requested.node_type, requested.node_ref, node.id, node.parent_id, node.code, "
-                + "node.name FROM requested_nodes requested JOIN organization.organization_node node "
+                + "), node_seeds(target_node_type, target_node_ref, id, parent_id, path_node_type, code, name) AS ("
+                + "SELECT requested.node_type, requested.node_ref, node.id, node.parent_id, node.node_type, "
+                + "node.code, node.name FROM requested_nodes requested JOIN organization.organization_node node "
                 + "ON requested.node_type IN ('REGION','PROJECT') AND requested.node_type=node.node_type "
                 + "AND requested.node_ref=node.id::text WHERE node.workspace_uuid=? "
                 + "AND node.group_workspace_key=? UNION ALL "
-                + "SELECT requested.node_type, requested.node_ref, project.id, project.parent_id, "
+                + "SELECT requested.node_type, requested.node_ref, project.id, project.parent_id, project.node_type, "
                 + "project.code, project.name FROM requested_nodes requested JOIN organization.store store "
                 + "ON requested.node_type='STORE' AND requested.node_ref=store.id::text "
                 + "JOIN organization.organization_node project ON project.id=store.project_id "
                 + "WHERE store.workspace_uuid=? AND store.group_workspace_key=? "
                 + "AND project.workspace_uuid=? AND project.group_workspace_key=?"
-                + "), ancestry AS ("
-                + "SELECT node_type, node_ref, id, parent_id, code, name, 0 AS depth FROM node_seeds "
-                + "UNION ALL SELECT ancestry.node_type, ancestry.node_ref, parent.id, parent.parent_id, "
-                + "parent.code, parent.name, ancestry.depth + 1 FROM organization.organization_node parent "
+                + "), ancestry(target_node_type, target_node_ref, id, parent_id, "
+                + "path_node_type, code, name, depth) AS ("
+                + "SELECT target_node_type, target_node_ref, id, parent_id, path_node_type, code, name, "
+                + "0 AS depth FROM node_seeds "
+                + "UNION ALL SELECT ancestry.target_node_type, ancestry.target_node_ref, parent.id, parent.parent_id, "
+                + "parent.node_type, parent.code, parent.name, ancestry.depth + 1 "
+                + "FROM organization.organization_node parent "
                 + "JOIN ancestry ON ancestry.parent_id=parent.id WHERE parent.workspace_uuid=? "
                 + "AND parent.group_workspace_key=?"
                 + "), node_paths AS ("
-                + "SELECT node_type, node_ref, string_agg(code || ' ' || name, ' / ' ORDER BY depth DESC) "
-                + "AS display_path FROM ancestry GROUP BY node_type, node_ref"
-                + "), owner_node_display AS ("
+                + "SELECT target_node_type, target_node_ref, jsonb_agg(jsonb_build_object('ref', id, 'code', code, "
+                + "'name', name, 'nodeType', path_node_type) ORDER BY depth DESC) AS node_path "
+                + "FROM ancestry GROUP BY target_node_type, target_node_ref"
+                + "), owner_node_path AS ("
                 + "SELECT 'COMMERCIAL_GROUP' AS node_type, commercial_group_uuid::text AS node_ref, "
-                + "commercial_group_code || ' ' || commercial_group_name AS node_display_name, "
-                + "commercial_group_name || '（' || commercial_group_code || '）' AS node_display_path "
+                + "jsonb_build_array(jsonb_build_object('ref', commercial_group_uuid, 'code', commercial_group_code, "
+                + "'name', commercial_group_name, 'nodeType', 'GROUP')) AS node_path "
                 + "FROM organization.commercial_group group_node JOIN requested_nodes requested "
                 + "ON requested.node_type='COMMERCIAL_GROUP' "
                 + "AND requested.node_ref=group_node.commercial_group_uuid::text "
                 + "WHERE group_node.group_workspace_key=? UNION ALL "
-                + "SELECT node.node_type, node.node_ref, node.code || ' ' || node.name AS node_display_name, "
-                + "node_paths.display_path AS node_display_path FROM node_seeds node "
-                + "JOIN node_paths ON node_paths.node_type=node.node_type "
-                + "AND node_paths.node_ref=node.node_ref WHERE node.node_type IN ('REGION','PROJECT') "
+                + "SELECT node.target_node_type, node.target_node_ref, node_paths.node_path FROM node_seeds node "
+                + "JOIN node_paths ON node_paths.target_node_type=node.target_node_type "
+                + "AND node_paths.target_node_ref=node.target_node_ref "
+                + "WHERE node.target_node_type IN ('REGION','PROJECT') "
                 + "UNION ALL SELECT 'HEAD_COMPANY', head_company.id::text, "
-                + "head_company.code || ' ' || head_company.name AS node_display_name, "
-                + "head_company.code || ' ' || head_company.name AS node_display_path "
+                + "jsonb_build_array(jsonb_build_object('ref', head_company.id, 'code', head_company.code, "
+                + "'name', head_company.name, 'nodeType', 'HEAD_COMPANY')) AS node_path "
                 + "FROM organization.head_company head_company JOIN requested_nodes requested "
                 + "ON requested.node_type='HEAD_COMPANY' AND requested.node_ref=head_company.id::text "
                 + "WHERE head_company.workspace_uuid=? AND head_company.group_workspace_key=? UNION ALL "
-                + "SELECT 'STORE', store.id::text, store.code || ' ' || store.name AS node_display_name, "
-                + "node_paths.display_path || ' / ' || store.code || ' ' || store.name AS node_display_path "
+                + "SELECT 'STORE', store.id::text, node_paths.node_path || jsonb_build_array(jsonb_build_object("
+                + "'ref', store.id, 'code', store.code, 'name', store.name, 'nodeType', 'STORE')) AS node_path "
                 + "FROM organization.store store JOIN requested_nodes requested "
                 + "ON requested.node_type='STORE' AND requested.node_ref=store.id::text "
-                + "JOIN node_paths ON node_paths.node_type='STORE' "
-                + "AND node_paths.node_ref=store.id::text "
+                + "JOIN node_paths ON node_paths.target_node_type='STORE' "
+                + "AND node_paths.target_node_ref=store.id::text "
                 + "WHERE store.workspace_uuid=? AND store.group_workspace_key=?"
                 + ") SELECT binding.binding_ref, binding.provider_code, binding.capability_class, "
                 + "binding.node_type, binding.node_ref, binding.binding_display_name, "
                 + "binding.external_owner_id, binding.status, binding.version, "
                 + "binding.created_at_epoch_millis, binding.status_changed_at_epoch_millis, "
-                + "node_display.node_display_path, COUNT(*) OVER() AS total "
-                + "FROM owner_bindings binding LEFT JOIN owner_node_display node_display "
-                + "ON node_display.node_type=binding.node_type AND node_display.node_ref=binding.node_ref "
+                + "node_path.node_path::text AS node_path, COUNT(*) OVER() AS total "
+                + "FROM owner_bindings binding LEFT JOIN owner_node_path node_path "
+                + "ON node_path.node_type=binding.node_type AND node_path.node_ref=binding.node_ref "
                 + "WHERE (?::text IS NULL OR COALESCE(binding.binding_display_name, '') ILIKE ? ESCAPE E'\\\\') "
                 + "AND (?::text IS NULL OR CONCAT_WS(' ', binding.node_ref, "
-                + "COALESCE(node_display.node_display_name, ''), COALESCE(node_display.node_display_path, '')) "
+                + "COALESCE(node_path.node_path::text, '')) "
                 + "ILIKE ? ESCAPE E'\\\\') ORDER BY "
                 + bindingOrderBy(normalizedSortKey, normalizedSortDirection)
                 + " LIMIT ? OFFSET ?";
@@ -288,7 +315,7 @@ public class CollaborationOwnerService
                                         result.getLong("created_at_epoch_millis"),
                                         result.getLong("status_changed_at_epoch_millis"),
                                         0L),
-                                result.getString("node_display_path")),
+                                parseNodePath(result.getString("node_path"))),
                         result.getLong("total")));
         long total = rows.isEmpty() ? 0L : rows.get(0).total();
         return new CollaborationReadback.OwnerBindingPage(
@@ -1054,14 +1081,9 @@ public class CollaborationOwnerService
                 definition.externalSystemCode(),
                 definition.displayName(),
                 definition.catalogStatus(),
-                definition.catalogStatusDisplayName(),
-                definition.attributeDictionary(),
                 definition.capabilities().stream()
                         .map(value -> new CollaborationReadback.Capability(
-                                value.capabilityClass(),
-                                value.displayName(),
-                                value.attributeValues(),
-                                value.attributeValueLabels()))
+                                value.capabilityClass(), value.displayName(), value.attributeValues()))
                         .toList(),
                 status(enablement),
                 version(enablement));
@@ -1075,53 +1097,35 @@ public class CollaborationOwnerService
                 definition.externalSystemCode(),
                 catalogExternalSystemDisplayName(definition.externalSystemCode()),
                 definition.businessScope(),
-                definition.businessScopeDisplayNames(),
                 definition.bindableNodeTypes(),
-                definition.bindableNodeTypeDisplayNames(),
                 definition.authenticationKind(),
-                definition.authenticationKindDisplayName(),
                 definition.unbindKind(),
-                definition.unbindKindDisplayName(),
                 definition.catalogStatus(),
-                definition.catalogStatusDisplayName(),
                 status(enablement),
                 version(enablement));
     }
 
     private CollaborationReadback.OwnerBinding ownerBinding(BindingRow row) {
-        return ownerBinding(row, null);
+        return ownerBinding(row, readNodePath(row));
     }
 
-    private CollaborationReadback.OwnerBinding ownerBinding(BindingRow row, String nodeDisplayPath) {
+    private CollaborationReadback.OwnerBinding ownerBinding(
+            BindingRow row, List<CollaborationReadback.OrganizationPathNode> nodePath) {
         CollaborationCatalogSource.ProviderProfileDefinition provider = catalog.providerProfile(row.providerCode());
-        CollaborationCatalogSource.ExternalSystemDefinition system =
-                provider == null ? null : catalog.externalSystem(provider.externalSystemCode());
-        String capabilityDisplayName = system == null || row.capabilityClass() == null
-                ? null
-                : system.capabilities().stream()
-                        .filter(value -> value.capabilityClass().equals(row.capabilityClass()))
-                        .map(CollaborationCatalogSource.CapabilityDefinition::displayName)
-                        .findFirst()
-                        .orElse(null);
-        String nodeTypeDisplayName = provider == null
-                ? null
-                : displayNameAt(provider.bindableNodeTypes(), provider.bindableNodeTypeDisplayNames(), row.nodeType());
         return new CollaborationReadback.OwnerBinding(
                 row.bindingRef(),
                 row.providerCode(),
                 provider == null ? row.providerCode() : provider.displayName(),
                 row.capabilityClass(),
-                capabilityDisplayName,
-                provider == null ? List.of() : provider.businessScopeDisplayNames(),
+                provider == null ? List.of() : provider.businessScope(),
                 row.nodeType(),
-                nodeTypeDisplayName,
                 row.nodeRef(),
+                nodePath,
                 row.bindingDisplayName(),
                 row.externalOwnerId(),
                 row.createdAt(),
                 row.statusChangedAt(),
                 row.status(),
-                bindingStatusDisplayName(row.status()),
                 row.version());
     }
 
@@ -1130,19 +1134,98 @@ public class CollaborationOwnerService
         return system == null ? externalSystemCode : system.displayName();
     }
 
-    private static String displayNameAt(List<String> codes, List<String> names, String code) {
-        int index = codes.indexOf(code);
-        return index >= 0 && index < names.size() ? names.get(index) : code;
+    private List<CollaborationReadback.OrganizationPathNode> readNodePath(BindingRow row) {
+        String path = jdbc.query(
+                "WITH RECURSIVE target AS ("
+                        + "SELECT ?::text AS target_type, ?::uuid AS target_id, ?::uuid AS workspace_uuid, "
+                        + "?::text AS group_workspace_key"
+                        + "), store_target AS ("
+                        + "SELECT target.target_type, target.target_id, store.id, store.code, store.name, "
+                        + "store.project_id FROM target JOIN organization.store store ON target.target_type='STORE' "
+                        + "AND store.id=target.target_id AND store.workspace_uuid=target.workspace_uuid "
+                        + "AND store.group_workspace_key=target.group_workspace_key"
+                        + "), node_seeds AS ("
+                        + "SELECT target.target_type, target.target_id, node.id, node.parent_id, node.node_type, "
+                        + "node.code, node.name, 0 AS depth FROM target JOIN organization.organization_node node "
+                        + "ON target.target_type IN ('REGION','PROJECT') AND node.id=target.target_id "
+                        + "AND node.workspace_uuid=target.workspace_uuid "
+                        + "AND node.group_workspace_key=target.group_workspace_key "
+                        + "UNION ALL SELECT store_target.target_type, store_target.target_id, project.id, "
+                        + "project.parent_id, project.node_type, project.code, project.name, 0 AS depth "
+                        + "FROM store_target JOIN target ON TRUE JOIN organization.organization_node project "
+                        + "ON project.id=store_target.project_id AND project.workspace_uuid=target.workspace_uuid "
+                        + "AND project.group_workspace_key=target.group_workspace_key"
+                        + "), ancestry AS ("
+                        + "SELECT target_type, target_id, id, parent_id, node_type, code, name, depth FROM node_seeds "
+                        + "UNION ALL SELECT ancestry.target_type, ancestry.target_id, parent.id, parent.parent_id, "
+                        + "parent.node_type, parent.code, parent.name, ancestry.depth+1 "
+                        + "FROM ancestry JOIN target ON TRUE "
+                        + "JOIN organization.organization_node parent ON parent.id=ancestry.parent_id "
+                        + "AND parent.workspace_uuid=target.workspace_uuid "
+                        + "AND parent.group_workspace_key=target.group_workspace_key"
+                        + "), node_path AS ("
+                        + "SELECT target_type, target_id, jsonb_agg(jsonb_build_object('ref', id, 'code', code, "
+                        + "'name', name, 'nodeType', node_type) ORDER BY depth DESC) AS path FROM ancestry "
+                        + "GROUP BY target_type, target_id"
+                        + ") SELECT CASE "
+                        + "WHEN target.target_type='COMMERCIAL_GROUP' THEN "
+                        + "(SELECT jsonb_build_array(jsonb_build_object("
+                        + "'ref', group_node.commercial_group_uuid, 'code', group_node.commercial_group_code, "
+                        + "'name', group_node.commercial_group_name, 'nodeType', 'GROUP')) "
+                        + "FROM organization.commercial_group "
+                        + "group_node WHERE group_node.commercial_group_uuid=target.target_id "
+                        + "AND group_node.group_workspace_key=target.group_workspace_key) "
+                        + "WHEN target.target_type='HEAD_COMPANY' THEN (SELECT jsonb_build_array(jsonb_build_object("
+                        + "'ref', head_company.id, 'code', head_company.code, 'name', head_company.name, "
+                        + "'nodeType', 'HEAD_COMPANY')) FROM organization.head_company head_company "
+                        + "WHERE head_company.id="
+                        + "target.target_id AND head_company.workspace_uuid=target.workspace_uuid "
+                        + "AND head_company.group_workspace_key=target.group_workspace_key) "
+                        + "WHEN target.target_type='STORE' THEN COALESCE(node_path.path, '[]'::jsonb) || "
+                        + "COALESCE((SELECT jsonb_build_array(jsonb_build_object('ref', store_target.id, 'code', "
+                        + "store_target.code, 'name', store_target.name, 'nodeType', 'STORE')) "
+                        + "FROM store_target), '[]'::jsonb) "
+                        + "ELSE COALESCE(node_path.path, '[]'::jsonb) END::text AS node_path FROM target "
+                        + "LEFT JOIN node_path ON node_path.target_type=target.target_type "
+                        + "AND node_path.target_id=target.target_id",
+                statement -> {
+                    statement.setString(1, row.nodeType());
+                    statement.setObject(2, UUID.fromString(row.nodeRef()));
+                    statement.setObject(3, row.workspaceUuid());
+                    statement.setString(4, row.groupWorkspaceKey());
+                },
+                result -> result.next() ? result.getString("node_path") : "[]");
+        return parseNodePath(path);
     }
 
-    private static String bindingStatusDisplayName(String status) {
-        return switch (status) {
-            case "PENDING_AUTHORIZATION" -> "待授权";
-            case "EFFECTIVE" -> "有效";
-            case "INVALID" -> "无效";
-            case "DELETED" -> "已删除";
-            default -> status;
-        };
+    private static List<CollaborationReadback.OrganizationPathNode> parseNodePath(String value) {
+        if (value == null || value.isBlank()) return List.of();
+        try {
+            JsonNode nodes = JSON.readTree(value);
+            if (nodes == null || !nodes.isArray()) throw new IllegalStateException("owner node path is not an array");
+            List<CollaborationReadback.OrganizationPathNode> result = new ArrayList<>();
+            for (JsonNode node : nodes) {
+                if (!node.isObject()) throw new IllegalStateException("owner node path contains a non-object");
+                result.add(new CollaborationReadback.OrganizationPathNode(
+                        UUID.fromString(requiredNodeText(node, "ref")),
+                        requiredNodeText(node, "code"),
+                        requiredNodeText(node, "name"),
+                        requiredNodeText(node, "nodeType")));
+            }
+            return List.copyOf(result);
+        } catch (IllegalStateException failure) {
+            throw failure;
+        } catch (Exception failure) {
+            throw new IllegalStateException("owner node path cannot be decoded", failure);
+        }
+    }
+
+    private static String requiredNodeText(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        if (value == null || !value.isTextual() || value.asText().isBlank()) {
+            throw new IllegalStateException("owner node path field is missing: " + field);
+        }
+        return value.asText();
     }
 
     private static String status(EnablementRow row) {
@@ -1200,9 +1283,7 @@ public class CollaborationOwnerService
     private static String bindingOrderBy(String sortKey, String sortDirection) {
         String expression =
                 switch (sortKey) {
-                    case "NODE" -> "COALESCE(node_display.node_display_path, node_display.node_display_name, "
-                            + "binding.no"
-                            + "de_ref)";
+                    case "NODE" -> "COALESCE(node_path.node_path::text, binding.node_ref)";
                     case "BUSINESS" -> "COALESCE(binding.capability_class, '')";
                     case "EXTERNAL_OWNER_ID" -> "COALESCE(binding.external_owner_id, '')";
                     case "STATUS" -> "binding.status";
@@ -1262,6 +1343,8 @@ public class CollaborationOwnerService
     }
 
     private record EnablementRow(String status, long version) {}
+
+    private record EnablementSnapshot(String kind, String code, EnablementRow enablement) {}
 
     private record BindingPageRow(CollaborationReadback.OwnerBinding readback, long total) {}
 

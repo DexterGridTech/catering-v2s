@@ -343,6 +343,17 @@ public final class ContractProblemAdvice {
                 request);
     }
 
+    @ExceptionHandler(WorkspaceInvitationService.AccountNotBindableException.class)
+    ResponseEntity<Problem> accountNotBindable(RuntimeException exception, HttpServletRequest request) {
+        // spotless:off
+        return problem(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "ACCOUNT_NOT_BINDABLE",
+                "该账号当前不可接受邀请，请联系空间管理员",
+                request);
+        // spotless:on
+    }
+
     @ExceptionHandler(WorkspacePasswordResetService.ResetStateException.class)
     ResponseEntity<Problem> workspaceCredentialResetUnavailable(
             RuntimeException exception, HttpServletRequest request) {

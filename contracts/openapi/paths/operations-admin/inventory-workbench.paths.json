@@ -32,20 +32,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 13,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 13,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -156,20 +142,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 11,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 11,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -223,20 +195,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 9,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 9,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -299,20 +257,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 9,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 9,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -386,20 +330,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 17,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 17,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -471,20 +401,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 9,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 9,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -556,20 +472,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 7,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 7,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -624,20 +526,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 8,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 8,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",

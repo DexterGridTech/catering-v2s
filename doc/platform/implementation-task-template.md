@@ -90,6 +90,17 @@
 发现更好的写法就直接用,不必回来问 —— 只需在报告里**登记一行理由**:
 「我选了 X 而不是 Y,因为 Z」。
 
+**受控预算例外也属于这项自主权,但只在当前详设和 Dexter 授权明确委托时成立**:
+仅对单个 `FIXED` operation,当你已完成同根扫描并证明所有业务事实、owner 复核、事务、幂等、锁、typed
+problem、审计和权威 readback 不变,共享机制已复用且不存在安全的可消除优化空间时,你可以不再回问 Dexter,
+自行放行该 operation 的精确预算例外。必须使用预算生成器唯一 source 中注册的 operation-scoped
+`decisionRef`,在记录中声明 `authority=IMPLEMENTATION_AGENT`,记录三次同一 fixture 的 `from/to/measuredMax`、事实与复用证据、被拒替代方案及成本,
+保留“未获准上调必红”的 red mutation,并在报告标记 `SELF_DECIDED_IMPLEMENTATION_EXCEPTION`。
+已有 Dexter 批准且覆盖多个 operation 的历史 `decisionRef` 只能声明 `authority=DEXTER`,不能拿来作这项自主决定；自主例外必须在唯一预算
+生成源登记一个只绑定该 operation 的新 `decisionRef`,机器门会拒绝 `authority=IMPLEMENTATION_AGENT` 的 grouped scope。
+这不覆盖线性批量预算、operation 身份/数量、契约/模型/业务语义或未决产品/Journey/权限；任一证据未知就不放行,
+按四类停机边界报告缺口。
+
 ━━ 必须停的四类(只有这四类)━━
 1. 不变量之间**互相冲突** —— 满足这条就违反那条
 2. 不变量**说不清** —— 失败条件写不出来
@@ -136,6 +147,10 @@
 形态由你定:不变量全部满足、不违反 FORBID 的前提下,写法你选,
 不必回来问 —— 报告里登记一行「我选了 X 而不是 Y,因为 Z」。
 前提是你走完了该项的 RECALL。
+
+受控预算例外:详设明确委托且单个 `FIXED` operation 的双重准入、三次测量、operation-scoped
+`decisionRef`、`authority=IMPLEMENTATION_AGENT`、替代方案成本和 red mutation 都齐全时,由实施 agent 自行放行并留证；历史 grouped ref 仅可声明 `authority=DEXTER`；线性批量、接口/契约/业务语义
+不在此授权内。
 
 只有四类必须停:不变量互相冲突 · 说不清 · 与源码不符 · 满足它必须动 FORBID。
 上游(含我给的数字与 finding)都是待验证输入,以源码为准。

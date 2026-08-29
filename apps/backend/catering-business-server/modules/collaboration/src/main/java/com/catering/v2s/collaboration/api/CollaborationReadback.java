@@ -2,7 +2,6 @@ package com.catering.v2s.collaboration.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -14,27 +13,19 @@ public final class CollaborationReadback {
             String externalSystemCode,
             String displayName,
             String catalogStatus,
-            String catalogStatusDisplayName,
-            List<CollaborationCatalogSource.AttributeDefinition> attributeDictionary,
             List<Capability> capabilities,
             String enablementStatus,
             long version) {
         public ExternalSystem {
-            attributeDictionary = List.copyOf(attributeDictionary == null ? List.of() : attributeDictionary);
             capabilities = List.copyOf(capabilities == null ? List.of() : capabilities);
         }
     }
 
-    public record Capability(
-            String capabilityClass,
-            String displayName,
-            JsonNode attributeValues,
-            Map<String, String> attributeValueLabels) {
+    public record Capability(String capabilityClass, String displayName, JsonNode attributeValues) {
         public Capability {
             capabilityClass = Objects.requireNonNull(capabilityClass, "capabilityClass");
             displayName = Objects.requireNonNull(displayName, "displayName");
             attributeValues = Objects.requireNonNull(attributeValues, "attributeValues");
-            attributeValueLabels = Map.copyOf(attributeValueLabels == null ? Map.of() : attributeValueLabels);
         }
     }
 
@@ -44,24 +35,15 @@ public final class CollaborationReadback {
             String externalSystemCode,
             String externalSystemDisplayName,
             List<String> businessScope,
-            List<String> businessScopeDisplayNames,
             List<String> bindableNodeTypes,
-            List<String> bindableNodeTypeDisplayNames,
             String authenticationKind,
-            String authenticationKindDisplayName,
             String unbindKind,
-            String unbindKindDisplayName,
             String catalogStatus,
-            String catalogStatusDisplayName,
             String enablementStatus,
             long version) {
         public ProviderProfile {
             businessScope = List.copyOf(businessScope == null ? List.of() : businessScope);
-            businessScopeDisplayNames =
-                    List.copyOf(businessScopeDisplayNames == null ? List.of() : businessScopeDisplayNames);
             bindableNodeTypes = List.copyOf(bindableNodeTypes == null ? List.of() : bindableNodeTypes);
-            bindableNodeTypeDisplayNames =
-                    List.copyOf(bindableNodeTypeDisplayNames == null ? List.of() : bindableNodeTypeDisplayNames);
         }
     }
 
@@ -77,18 +59,36 @@ public final class CollaborationReadback {
             String providerCode,
             String providerDisplayName,
             String capabilityClass,
-            String capabilityClassDisplayName,
-            List<String> businessScopeDisplayNames,
+            List<String> businessScope,
             String nodeType,
-            String nodeTypeDisplayName,
             String nodeRef,
+            List<OrganizationPathNode> nodePath,
             String bindingDisplayName,
             String externalOwnerId,
             long boundAt,
             long statusChangedAt,
             String status,
-            String statusDisplayName,
-            long version) {}
+            long version) {
+        public OwnerBinding {
+            businessScope = List.copyOf(businessScope == null ? List.of() : businessScope);
+            nodePath = List.copyOf(nodePath == null ? List.of() : nodePath);
+        }
+    }
+
+    public record OrganizationPathNode(UUID ref, String code, String name, String nodeType) {
+        public OrganizationPathNode {
+            ref = Objects.requireNonNull(ref, "ref");
+            code = required(code, "code");
+            name = required(name, "name");
+            nodeType = required(nodeType, "nodeType");
+        }
+
+        private static String required(String value, String field) {
+            String normalized = Objects.requireNonNullElse(value, "").trim();
+            if (normalized.isEmpty()) throw new IllegalArgumentException(field + " is required");
+            return normalized;
+        }
+    }
 
     public record OwnerBindingPage(List<OwnerBinding> items, Metadata metadata) {
         public OwnerBindingPage {

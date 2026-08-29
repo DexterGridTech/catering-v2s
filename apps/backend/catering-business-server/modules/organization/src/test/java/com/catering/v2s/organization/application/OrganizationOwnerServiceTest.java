@@ -17,6 +17,7 @@ import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.access.PlatformExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +73,13 @@ class OrganizationOwnerServiceTest {
                 NOW,
                 NOW,
                 NOW);
-        definitions = new ExtensionDefinitionService(jdbc, time);
+        WorkspaceStatusLookup workspaceStatuses = (id, key) -> jdbc.queryForObject(
+                "SELECT status FROM platform_workspace.group_workspace "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=?",
+                String.class,
+                id,
+                key);
+        definitions = new ExtensionDefinitionService(jdbc, time, workspaceStatuses);
         hierarchy = new OrganizationHierarchyService(jdbc, time, definitions);
         entities = new BusinessEntityService(jdbc, time, definitions, hierarchy);
         commercialGroups = new OrganizationCommandService(

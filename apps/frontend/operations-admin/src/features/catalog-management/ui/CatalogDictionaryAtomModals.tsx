@@ -83,8 +83,7 @@ export function CatalogDictionaryAtomModals({
   onChangeStatus: () => void;
   onCancelStatus: () => void;
 }) {
-  const statusAction =
-    statusChange && (statusChange.dictionaryKind === 'UNIT' || statusChange.row.status === 'ENABLED') ? '停用' : '启用';
+  const statusAction = statusChange?.row.status === 'ENABLED' ? '停用' : '启用';
   return (
     <>
       {canWrite && creatingKind && (
@@ -118,7 +117,7 @@ export function CatalogDictionaryAtomModals({
                 type="warning"
                 showIcon
                 title="正在重建作废记录"
-                description={`旧编码 ${rebuildCode} 已永久保留，请输入新的唯一编码后创建。`}
+                description={`旧编码 ${rebuildCode} 的历史记录会保留；作废后该编码可在没有其他有效记录占用时复用。`}
                 style={{marginBottom: 12}}
                 {...testId(catalogTestIds.static.dictionaryRebuildNotice)}
               />
@@ -280,11 +279,11 @@ export function CatalogDictionaryAtomModals({
             <Alert type="error" showIcon title="状态更新未完成" description={problem} style={{marginBottom: 16}} />
           )}
           <Typography.Paragraph>
-            {statusChange.dictionaryKind === 'UNIT'
-              ? '停用后，新建商品、规格与库存配置不会再提供该单位；已经保存的配置和历史快照不受影响。'
-              : statusChange.row.status === 'ENABLED'
-                ? '停用后，新建商品时不会再提供该条目；已经保存的商品引用不受影响。'
-                : '启用后，该条目会重新出现在新建商品的候选列表中。'}
+            {statusChange.row.status === 'ENABLED'
+              ? statusChange.dictionaryKind === 'UNIT'
+                ? '停用后，新建商品、规格与库存配置不会再提供该单位；已经保存的配置和历史快照不受影响。'
+                : '停用后，新建商品时不会再提供该条目；已经保存的商品引用不受影响。'
+              : '启用后，该条目会重新出现在新建商品的候选列表中。'}
           </Typography.Paragraph>
         </Modal>
       )}

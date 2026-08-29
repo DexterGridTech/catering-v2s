@@ -1,5 +1,7 @@
 package com.catering.v2s.app.edge.workspaceiam;
 
+import com.catering.v2s.app.edge.generated.wire.OrganizationPathNode;
+import com.catering.v2s.app.edge.generated.wire.ServiceNodeType;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceInvitationCandidatePage;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceInvitationCandidatePageMetadata;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceInvitationCandidatePageOrganizationsItem;
@@ -39,7 +41,18 @@ public final class WorkspaceInvitationCandidatePageWireMapper {
     private static WorkspaceInvitationCandidatePageOrganizationsItem organization(
             WorkspaceUserService.CandidateOrganization value) {
         return new WorkspaceInvitationCandidatePageOrganizationsItem(
-                value.serviceNodeType(), value.organizationRef(), value.path());
+                value.serviceNodeType(),
+                value.organizationRef(),
+                value.path(),
+                value.pathNodes().stream()
+                        .map(WorkspaceInvitationCandidatePageWireMapper::pathNode)
+                        .toList());
+    }
+
+    private static OrganizationPathNode pathNode(
+            com.catering.v2s.organization.api.OrganizationTaskPathLookup.TaskPathNode value) {
+        return new OrganizationPathNode(
+                value.ref(), value.code(), value.name(), ServiceNodeType.valueOf(value.nodeType()));
     }
 
     private static WorkspaceRole role(WorkspaceRoleReadback value) {

@@ -31,7 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class ExternalCollaborationBusinessChannelCoordinator {
-    private static final String DISABLED = "DISABLED";
     private static final String IDEMPOTENCY_NAMESPACE = "external-collaboration-business-channel";
     private static final String REQ_BINDING_CREATE = "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_CREATE";
     private static final String REQ_UPDATE_CHANNEL = "REQ_UPDATE_OPERATIONS_BUSINESS_CHANNEL";
@@ -78,14 +77,13 @@ public class ExternalCollaborationBusinessChannelCoordinator {
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.bindingRef());
         CollaborationReadback.OwnerBinding result = collaboration.requestOrDeletePlatformBinding(command);
         for (BusinessChannelReadback.Channel channel : attached) {
-            businessChannels.returnChannelToDraftAfterBindingDeletion(
-                    new BusinessChannelCommandApi.ReturnChannelToDraftAfterBindingDeletionCommand(
-                            command.workspaceUuid(),
-                            command.groupWorkspaceKey(),
-                            channel.channelRef(),
-                            channel.version(),
-                            childKey(command.idempotencyKey(), "binding-delete", channel.channelRef()),
-                            command.actor()));
+            businessChannels.detachChannelBinding(new BusinessChannelCommandApi.DetachChannelBindingCommand(
+                    command.workspaceUuid(),
+                    command.groupWorkspaceKey(),
+                    channel.channelRef(),
+                    channel.version(),
+                    childKey(command.idempotencyKey(), "binding-delete", channel.channelRef()),
+                    command.actor()));
         }
         return result;
     }
@@ -96,15 +94,24 @@ public class ExternalCollaborationBusinessChannelCoordinator {
         BusinessChannelReadback.Channel channel =
                 requireChannel(command.workspaceUuid(), command.groupWorkspaceKey(), channelRef);
         requireBinding(channel, command.bindingRef());
+        return deleteOperationsBinding(command, commandContext(channel));
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public CollaborationReadback.OwnerBinding deleteOperationsBinding(
+            CollaborationCommandApi.DeleteOperationsBindingCommand command,
+            BusinessChannelReadback.ChannelCommandContext channel) {
+        requireChannelContext(channel);
+        requireBinding(channel.bindingRef(), command.bindingRef());
         CollaborationReadback.OwnerBinding result = collaboration.requestOrDeleteOperationsBinding(command);
-        businessChannels.returnChannelToDraftAfterBindingDeletion(
-                new BusinessChannelCommandApi.ReturnChannelToDraftAfterBindingDeletionCommand(
-                        command.workspaceUuid(),
-                        command.groupWorkspaceKey(),
-                        channel.channelRef(),
-                        channel.version(),
-                        childKey(command.idempotencyKey(), "binding-delete", channel.channelRef()),
-                        command.actor()));
+        businessChannels.detachChannelBinding(new BusinessChannelCommandApi.DetachChannelBindingCommand(
+                command.workspaceUuid(),
+                command.groupWorkspaceKey(),
+                channel.channelRef(),
+                channel.version(),
+                childKey(command.idempotencyKey(), "binding-delete", channel.channelRef()),
+                command.actor(),
+                command.bindingRef()));
         return result;
     }
 
@@ -119,12 +126,10 @@ public class ExternalCollaborationBusinessChannelCoordinator {
             throw new IllegalStateException("operations binding coordinator dependencies are not configured");
         }
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
-        BusinessChannelReadback.ChannelWithTemplateProvider channelFacts =
-                businessChannelsRead.readChannelWithTemplateProvider(
-                        session.workspaceUuid(), session.groupWorkspaceKey(), channelRef);
-        BusinessChannelReadback.Channel channel = channelFacts.channel();
+        BusinessChannelReadback.ChannelCommandContext channel = businessChannelsRead.readChannelCommandContext(
+                session.workspaceUuid(), session.groupWorkspaceKey(), channelRef);
         assertChannelNode(channel, body.nodeType(), body.nodeRef());
-        String providerCode = channelFacts.providerCode();
+        String providerCode = channel.templateProviderCode();
         if (!Objects.equals(providerCode, required(body.providerCode(), "providerCode"))) {
             throw new InvalidEdgeRequestException("providerCode does not match channel template");
         }
@@ -159,76 +164,67 @@ public class ExternalCollaborationBusinessChannelCoordinator {
             BusinessChannelReadback.Channel channel,
             OperationsOwnerScopeGrant businessChannelGrant) {
         requireChannelContext(command, channelRef, channel);
-        if (channel.bindingRef() != null) {
+        return createOperationsBindingInternal(
+                command,
+                channelRef,
+                channel.channelName(),
+                channel.bindingRef(),
+                channel.version(),
+                businessChannelGrant);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public CollaborationReadback.OwnerBinding createOperationsBinding(
+            CollaborationCommandApi.CreateOperationsBindingCommand command,
+            UUID channelRef,
+            BusinessChannelReadback.ChannelCommandContext channel,
+            OperationsOwnerScopeGrant businessChannelGrant) {
+        requireChannelContext(channelRef, channel);
+        return createOperationsBindingInternal(
+                command,
+                channelRef,
+                channel.channelName(),
+                channel.bindingRef(),
+                channel.version(),
+                businessChannelGrant);
+    }
+
+    private CollaborationReadback.OwnerBinding createOperationsBindingInternal(
+            CollaborationCommandApi.CreateOperationsBindingCommand command,
+            UUID channelRef,
+            String channelName,
+            UUID bindingRef,
+            long channelVersion,
+            OperationsOwnerScopeGrant businessChannelGrant) {
+        if (bindingRef != null) {
             throw problem("CHANNEL_BINDING_ALREADY_ATTACHED", 409, "business channel already has a binding");
         }
         CollaborationReadback.OwnerBinding result = collaboration.createOperationsBinding(command);
         businessChannels.updateChannel(new BusinessChannelCommandApi.UpdateChannelCommand(
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
-                channel.channelRef(),
-                channel.channelName(),
+                channelRef,
+                channelName,
                 result.bindingRef(),
-                channel.version(),
+                channelVersion,
                 command.contextVersion(),
-                childKey(command.idempotencyKey(), "binding-attach", channel.channelRef()),
+                childKey(command.idempotencyKey(), "binding-attach", channelRef),
                 command.actor(),
                 Objects.requireNonNull(businessChannelGrant, "businessChannelGrant"),
-                result,
-                channel));
+                result));
         return result;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public CollaborationReadback.ExternalSystem transitionExternalSystemStatus(
             CollaborationCommandApi.TransitionExternalSystemStatusCommand command) {
-        CollaborationReadback.Tree tree = catalog.readTree(command.workspaceUuid(), command.groupWorkspaceKey());
-        CollaborationReadback.ExternalSystem result = collaboration.transitionExternalSystemStatus(command);
-        if (DISABLED.equals(command.status())) {
-            tree.providerProfiles().stream()
-                    .filter(profile -> Objects.equals(profile.externalSystemCode(), command.externalSystemCode()))
-                    .forEach(profile -> applyStopForProvider(
-                            command.workspaceUuid(),
-                            command.groupWorkspaceKey(),
-                            profile.providerCode(),
-                            command.idempotencyKey(),
-                            command.actor()));
-        }
-        return result;
+        return collaboration.transitionExternalSystemStatus(command);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public CollaborationReadback.ProviderProfile transitionProviderProfileStatus(
             CollaborationCommandApi.TransitionProviderProfileStatusCommand command) {
-        CollaborationReadback.ProviderProfile result = collaboration.transitionProviderProfileStatus(command);
-        if (DISABLED.equals(command.status())) {
-            applyStopForProvider(
-                    command.workspaceUuid(),
-                    command.groupWorkspaceKey(),
-                    command.providerCode(),
-                    command.idempotencyKey(),
-                    command.actor());
-        }
-        return result;
-    }
-
-    private void applyStopForProvider(
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            String providerCode,
-            String idempotencyKey,
-            com.catering.v2s.audit.contract.AuditActor actor) {
-        for (BusinessChannelReadback.Channel channel :
-                businessChannelsRead.findChannelsForProvider(workspaceUuid, groupWorkspaceKey, providerCode)) {
-            businessChannels.applyExternalStopReason(new BusinessChannelCommandApi.ApplyExternalStopReasonCommand(
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    channel.channelRef(),
-                    providerCode,
-                    channel.version(),
-                    childKey(idempotencyKey, "provider-stop-" + providerCode, channel.channelRef()),
-                    actor));
-        }
+        return collaboration.transitionProviderProfileStatus(command);
     }
 
     private BusinessChannelReadback.Channel requireChannel(
@@ -249,6 +245,33 @@ public class ExternalCollaborationBusinessChannelCoordinator {
         }
     }
 
+    private static void requireChannelContext(UUID channelRef, BusinessChannelReadback.ChannelCommandContext channel) {
+        if (channel == null || channelRef == null || !Objects.equals(channelRef, channel.channelRef())) {
+            throw problem("CHANNEL_CONTEXT_REQUIRED", 422, "business channel context is required");
+        }
+    }
+
+    private static void requireChannelContext(BusinessChannelReadback.ChannelCommandContext channel) {
+        if (channel == null || channel.channelRef() == null) {
+            throw problem("CHANNEL_CONTEXT_REQUIRED", 422, "business channel context is required");
+        }
+    }
+
+    private static BusinessChannelReadback.ChannelCommandContext commandContext(
+            BusinessChannelReadback.Channel channel) {
+        return new BusinessChannelReadback.ChannelCommandContext(
+                channel.channelRef(),
+                channel.templateRef(),
+                channel.ownerNodeType(),
+                channel.ownerNodeRef(),
+                channel.channelName(),
+                channel.bindingRef(),
+                channel.version(),
+                null,
+                null,
+                null);
+    }
+
     private OperationsOwnerScopeGrant grant(
             WorkspaceSessionReadback session,
             String requirementId,
@@ -267,7 +290,7 @@ public class ExternalCollaborationBusinessChannelCoordinator {
     }
 
     private static void assertChannelNode(
-            BusinessChannelReadback.Channel channel, String requestNodeType, UUID requestNodeRef) {
+            BusinessChannelReadback.ChannelCommandContext channel, String requestNodeType, UUID requestNodeRef) {
         if (channel == null
                 || !Objects.equals(ownerNodeType(channel.ownerNodeType()), ownerNodeType(requestNodeType))
                 || !Objects.equals(channel.ownerNodeRef(), requestNodeRef.toString())) {
@@ -302,14 +325,12 @@ public class ExternalCollaborationBusinessChannelCoordinator {
     }
 
     private static void requireBinding(BusinessChannelReadback.Channel channel, UUID bindingRef) {
-        if (!Objects.equals(channel.bindingRef(), bindingRef)) {
-            throw problem("BINDING_CONTEXT_MISMATCH", 409, "binding is not attached to the selected business channel");
-        }
+        requireBinding(channel.bindingRef(), bindingRef);
     }
 
-    private static void requireEditable(BusinessChannelReadback.Channel channel) {
-        if (DISABLED.equals(channel.status())) {
-            throw problem("DISABLED_OBJECT_NOT_EDITABLE", 409, "disabled object is not editable");
+    private static void requireBinding(UUID attachedBindingRef, UUID bindingRef) {
+        if (!Objects.equals(attachedBindingRef, bindingRef)) {
+            throw problem("BINDING_CONTEXT_MISMATCH", 409, "binding is not attached to the selected business channel");
         }
     }
 

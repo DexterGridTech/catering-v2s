@@ -16,6 +16,7 @@ export type OperationsProblemCode = OperationsEdgeProblemCode | PublicEdgeProble
  */
 export const OPERATIONS_PROBLEM_FEEDBACK: Record<OperationsProblemCode, ProblemFeedback> = {
   ADAPTER_UNBIND_REQUIRED: {title: '需要外部解除授权', detail: '请先完成外部平台解除授权后重试。'},
+  ACCOUNT_NOT_BINDABLE: {title: '账号当前不可接受邀请', detail: '该账号当前不可接受邀请，请联系空间管理员。'},
   AUTHORIZATION_REQUIRED: {title: '操作授权已失效', detail: '请重新选择当前数据节点后重试。'},
   BINDING_EDIT_NOT_ALLOWED: {title: '绑定不可编辑', detail: '当前绑定状态不支持手工修改。'},
   BINDING_NOT_EFFECTIVE: {title: '绑定尚未生效', detail: '请完成外部授权后再启用该渠道。'},
@@ -30,7 +31,6 @@ export const OPERATIONS_PROBLEM_FEEDBACK: Record<OperationsProblemCode, ProblemF
   DELETE_NOT_ALLOWED: {title: '对象不可删除', detail: '当前对象状态不支持删除。'},
   DINE_IN_FORM_MISMATCH: {title: '堂食形态不匹配', detail: '请检查堂食渠道形态后重试。'},
   DINE_IN_MUST_BE_INTERNAL: {title: '堂食渠道需为内部渠道', detail: '堂食渠道不能选择外部接入方式。'},
-  DISABLED_OBJECT_NOT_EDITABLE: {title: '停用对象不可编辑', detail: '请先恢复对象后再修改。'},
   DUPLICATE_CODE: {title: '编码已存在', detail: '当前项目或集团空间已有相同编码，请更换后重试。'},
   ORGANIZATION_BUSINESS_ENTITY_CODE_CONFLICT: {title: '业务资料编码已存在', detail: '请更换编码后重试。'},
   ORGANIZATION_BUSINESS_ENTITY_NAME_CONFLICT: {title: '业务资料名称已存在', detail: '请更换名称后重试。'},
@@ -83,6 +83,7 @@ export const OPERATIONS_PROBLEM_FEEDBACK: Record<OperationsProblemCode, ProblemF
   PLATFORM_COMMON_VERSION_CONFLICT: {title: '资料已被更新', detail: '请查看最新资料后再试。'},
   PROVIDER_NOT_ENABLED: {title: '接入档案未启用', detail: '请先启用当前接入档案后重试。'},
   VERSION_CONFLICT: {title: '资料已被更新', detail: '请查看最新资料后再试。'},
+  VOIDED_RECORD_IMMUTABLE: {title: '对象已标记删除', detail: '该对象已标记删除，不能继续修改。'},
   WORKSPACE_IAM_ACCOUNT_DISABLED: {title: '账号已停用', detail: '当前账号无法继续操作，请联系管理员。'},
   WORKSPACE_IAM_ASSIGNMENT_CONFLICT: {title: '任职资料发生冲突', detail: '请刷新任职资料后重试。'},
   WORKSPACE_IAM_CREDENTIAL_LOCKED: {title: '凭据已锁定', detail: '请稍后再试或联系管理员。'},

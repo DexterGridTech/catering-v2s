@@ -61,7 +61,7 @@
   "authorizationBoundary": "P1 definition implementation only: contract/read-model/seed-fixture/scenario/generated artifacts; no owner runtime, schema, migration, reset/seed execution, browser execution or deployment.",
   "implementationInputs": {
     "designPath": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
-    "designSha256": "45f7a763c83dd46a74097dd1ac9606ec277bc482db0b095719b3e09da2f35962",
+    "designSha256": "4959e6f18e68ce944a11f84509bd544cd55af01bfa387f68c344e302af46f445",
     "designReviewIntakePath": "doc/review/platform/2026-08-06-v2s-catalog-inventory-three-stage-design-final-review-intake-codex.md",
     "designReviewIntakeSha256": "acda8e8e40109222b14c5fd4b01a2e1fab9a8e07743f73a6badf23e2ea37a4b6"
   }

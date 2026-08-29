@@ -4,9 +4,25 @@ import com.catering.v2s.app.edge.generated.wire.BusinessChannelPage;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateCandidatePage;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplatePage;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateView;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewAccessKind;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewBlockersItemStatus;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewBlockersItemType;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewDineInForm;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewOperatorKind;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewOrderKind;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewStatus;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewStatusDimensionsItemStatus;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewStatusDimensionsItemType;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelView;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelViewBindingStatus;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelViewBlockersItemStatus;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelViewBlockersItemType;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelViewOwnerNodeType;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelViewSelfStatus;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelViewStatus;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelViewStatusDimensionsItemStatus;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelViewStatusDimensionsItemType;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
-import java.util.List;
 import java.util.UUID;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -23,17 +39,39 @@ final class BusinessChannelWireMapper {
                 value.projectRef(),
                 value.templateName(),
                 text(value.templateCode()),
-                value.accessKind(),
-                accessKindDisplayName(value.accessKind()),
-                value.operatorKind(),
-                operatorKindDisplayName(value.operatorKind()),
-                value.orderKind(),
-                orderKindDisplayName(value.orderKind()),
-                text(value.dineInForm()),
-                text(dineInFormDisplayName(value.dineInForm())),
+                enumValue(BusinessChannelTemplateViewAccessKind.class, value.accessKind(), "accessKind"),
+                enumValue(BusinessChannelTemplateViewOperatorKind.class, value.operatorKind(), "operatorKind"),
+                enumValue(BusinessChannelTemplateViewOrderKind.class, value.orderKind(), "orderKind"),
+                enumValue(BusinessChannelTemplateViewDineInForm.class, value.dineInForm(), "dineInForm"),
                 text(value.providerCode()),
-                value.status(),
-                statusDisplayName(value.status()),
+                enumValue(BusinessChannelTemplateViewStatus.class, value.status(), "status"),
+                value.statusDimensions().stream()
+                        .map(dimension ->
+                                new com.catering.v2s.app.edge.generated.wire
+                                        .BusinessChannelTemplateViewStatusDimensionsItem(
+                                        enumValue(
+                                                BusinessChannelTemplateViewStatusDimensionsItemType.class,
+                                                dimension.type(),
+                                                "statusDimensions.type"),
+                                        dimension.ref(),
+                                        enumValue(
+                                                BusinessChannelTemplateViewStatusDimensionsItemStatus.class,
+                                                dimension.status(),
+                                                "statusDimensions.status")))
+                        .toList(),
+                value.blockers().stream()
+                        .map(dimension ->
+                                new com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewBlockersItem(
+                                        enumValue(
+                                                BusinessChannelTemplateViewBlockersItemType.class,
+                                                dimension.type(),
+                                                "blockers.type"),
+                                        dimension.ref(),
+                                        enumValue(
+                                                BusinessChannelTemplateViewBlockersItemStatus.class,
+                                                dimension.status(),
+                                                "blockers.status")))
+                        .toList(),
                 value.version());
     }
 
@@ -53,19 +91,37 @@ final class BusinessChannelWireMapper {
         return new BusinessChannelView(
                 value.channelRef(),
                 value.templateRef(),
-                value.ownerNodeType(),
-                ownerNodeTypeDisplayName(value.ownerNodeType()),
+                enumValue(BusinessChannelViewOwnerNodeType.class, value.ownerNodeType(), "ownerNodeType"),
                 uuid(value.ownerNodeRef(), "ownerNodeRef"),
                 text(value.channelCode()),
                 value.channelName(),
                 value.bindingRef(),
-                value.status(),
-                statusDisplayName(value.status()),
-                value.stopReasons(),
-                stopReasonDisplayNames(value.stopReasons()),
-                value.version(),
-                value.bindingStatus(),
-                bindingStatusDisplayName(value.bindingStatus()));
+                enumValue(BusinessChannelViewStatus.class, value.status(), "status"),
+                enumValue(BusinessChannelViewBindingStatus.class, value.bindingStatus(), "bindingStatus"),
+                enumValue(BusinessChannelViewSelfStatus.class, value.status(), "selfStatus"),
+                value.statusDimensions().stream()
+                        .map(dimension ->
+                                new com.catering.v2s.app.edge.generated.wire.BusinessChannelViewStatusDimensionsItem(
+                                        enumValue(
+                                                BusinessChannelViewStatusDimensionsItemType.class,
+                                                dimension.type(),
+                                                "statusDimensions.type"),
+                                        dimension.ref(),
+                                        enumValue(
+                                                BusinessChannelViewStatusDimensionsItemStatus.class,
+                                                dimension.status(),
+                                                "statusDimensions.status")))
+                        .toList(),
+                value.blockers().stream()
+                        .map(dimension -> new com.catering.v2s.app.edge.generated.wire.BusinessChannelViewBlockersItem(
+                                enumValue(BusinessChannelViewBlockersItemType.class, dimension.type(), "blockers.type"),
+                                dimension.ref(),
+                                enumValue(
+                                        BusinessChannelViewBlockersItemStatus.class,
+                                        dimension.status(),
+                                        "blockers.status")))
+                        .toList(),
+                value.version());
     }
 
     static BusinessChannelPage channelPage(BusinessChannelReadback.ChannelPage value) {
@@ -86,72 +142,12 @@ final class BusinessChannelWireMapper {
         return value == null ? null : JSON.valueToTree(value);
     }
 
-    private static String accessKindDisplayName(String value) {
-        return switch (value) {
-            case "INTERNAL" -> "内部接入";
-            case "EXTERNAL" -> "外部接入";
-            default -> "未知";
-        };
-    }
-
-    private static String operatorKindDisplayName(String value) {
-        return switch (value) {
-            case "PROJECT" -> "项目";
-            case "STORE" -> "门店";
-            default -> "未知";
-        };
-    }
-
-    private static String orderKindDisplayName(String value) {
-        return switch (value) {
-            case "DINE_IN" -> "到店点餐";
-            case "TAKEAWAY" -> "外卖";
-            case "GROUP_BUY" -> "团购";
-            default -> "未知";
-        };
-    }
-
-    private static String dineInFormDisplayName(String value) {
+    private static <E extends Enum<E>> E enumValue(Class<E> type, String value, String field) {
         if (value == null) return null;
-        return switch (value) {
-            case "POS" -> "POS";
-            case "QR" -> "扫码";
-            case "KIOSK" -> "自助机";
-            default -> "未知";
-        };
-    }
-
-    private static String statusDisplayName(String value) {
-        return switch (value) {
-            case "ENABLED" -> "已启用";
-            case "DISABLED" -> "已停用";
-            case "DRAFT" -> "草稿";
-            case "EFFECTIVE" -> "已生效";
-            default -> "未知";
-        };
-    }
-
-    private static String bindingStatusDisplayName(String value) {
-        return switch (value) {
-            case "NOT_REQUIRED" -> "—";
-            case "UNBOUND" -> "未绑定";
-            case "BOUND" -> "已绑定";
-            default -> "未知";
-        };
-    }
-
-    private static String ownerNodeTypeDisplayName(String value) {
-        return operatorKindDisplayName(value);
-    }
-
-    private static List<String> stopReasonDisplayNames(List<String> values) {
-        return values.stream()
-                .map(value -> switch (value) {
-                    case "CASCADE_TEMPLATE" -> "模板停用";
-                    case "CASCADE_EXTERNAL" -> "外部接入停用";
-                    case "MANUAL" -> "手动停用";
-                    default -> "未知";
-                })
-                .toList();
+        try {
+            return Enum.valueOf(type, value);
+        } catch (IllegalArgumentException failure) {
+            throw new IllegalStateException(field + " is not a supported closed value: " + value, failure);
+        }
     }
 }

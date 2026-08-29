@@ -54,7 +54,7 @@
             "attributeValues": {
               "SIZE": "LARGE"
             },
-            "status": "ARCHIVED",
+            "status": "VOIDED",
             "mediaAssetKey": "coffee"
           }
         ],
@@ -2330,9 +2330,9 @@
       }
     },
     {
-      "fixtureId": "FIXTURE-ARCHIVED-ONLY-SKU",
+      "fixtureId": "FIXTURE-VOIDED-ONLY-SKU",
       "class": "TEST",
-      "purpose": "只剩归档规格，派生 NO_SKU",
+      "purpose": "只剩作废规格，派生 NO_SKU",
       "scenarioIds": [
         "CI-API-013",
         "CI-L2-007"
@@ -2354,14 +2354,14 @@
       "objects": [
         {
           "type": "ProductSku",
-          "code": "SKU-ARCHIVED",
-          "status": "ARCHIVED"
+          "code": "SKU-VOIDED",
+          "status": "VOIDED"
         }
       ],
       "edges": [],
       "generatorRecipe": {
         "kind": "OWNER_COMMAND_FIXTURE",
-        "fixtureId": "FIXTURE-ARCHIVED-ONLY-SKU"
+        "fixtureId": "FIXTURE-VOIDED-ONLY-SKU"
       },
       "setupChannel": "P2_OWNER_COMMANDS",
       "readbackSelectors": [
@@ -2394,8 +2394,8 @@
         "objects": [
           {
             "type": "ProductSku",
-            "code": "SKU-ARCHIVED",
-            "status": "ARCHIVED"
+            "code": "SKU-VOIDED",
+            "status": "VOIDED"
           }
         ],
         "edges": []
@@ -3385,7 +3385,7 @@
           "type": "CatalogItem",
           "code": "TEMP-001",
           "source": "EXTERNAL_ORDER_TEMPORARY",
-          "status": "DRAFT",
+          "status": "DISABLED",
           "externalIdentity": {
             "sourceOrderRef": "EXT-ORDER-001",
             "sourceRecordRef": "EXT-RECORD-001",
@@ -3438,7 +3438,7 @@
             "type": "CatalogItem",
             "code": "TEMP-001",
             "source": "EXTERNAL_ORDER_TEMPORARY",
-            "status": "DRAFT",
+            "status": "DISABLED",
             "externalIdentity": {
               "sourceOrderRef": "EXT-ORDER-001",
               "sourceRecordRef": "EXT-RECORD-001",
@@ -4586,7 +4586,7 @@
     {
       "fixtureId": "FIXTURE-SMART-VIEWS",
       "class": "TEST",
-      "purpose": "六智能视图与需处理派生状态",
+      "purpose": "五智能视图与需处理派生状态",
       "scenarioIds": [
         "CI-API-004",
         "CI-L2-003",
@@ -4615,17 +4615,11 @@
           "type": "SmartView",
           "code": "INACTIVE",
           "includedStatuses": [
-            "DRAFT",
             "DISABLED"
           ],
           "excludedStatuses": [
-            "ARCHIVED",
             "VOIDED"
           ]
-        },
-        {
-          "type": "SmartView",
-          "code": "ARCHIVED"
         },
         {
           "type": "SmartView",
@@ -4652,17 +4646,14 @@
         "viewKeys": [
           "EXTERNAL_ORDER_TEMP",
           "INACTIVE",
-          "ARCHIVED",
           "RECENTLY_UPDATED",
           "AUTO_SYNC"
         ],
         "inactiveMembership": {
           "includedStatuses": [
-            "DRAFT",
             "DISABLED"
           ],
           "excludedStatuses": [
-            "ARCHIVED",
             "VOIDED"
           ]
         },
@@ -4696,17 +4687,11 @@
             "type": "SmartView",
             "code": "INACTIVE",
             "includedStatuses": [
-              "DRAFT",
               "DISABLED"
             ],
             "excludedStatuses": [
-              "ARCHIVED",
               "VOIDED"
             ]
-          },
-          {
-            "type": "SmartView",
-            "code": "ARCHIVED"
           },
           {
             "type": "SmartView",
@@ -4828,7 +4813,7 @@
         {
           "type": "CatalogItem",
           "code": "LIFECYCLE-001",
-          "status": "ENABLED",
+          "status": "DISABLED",
           "version": 1
         }
       ],
@@ -4846,7 +4831,7 @@
       ],
       "expected": {
         "transitions": [
-          "DRAFT->ENABLED",
+          "DISABLED->ENABLED",
           "ENABLED->DISABLED"
         ],
         "versionConflict": true,
@@ -4875,7 +4860,7 @@
           {
             "type": "CatalogItem",
             "code": "LIFECYCLE-001",
-            "status": "ENABLED",
+            "status": "DISABLED",
             "version": 1
           }
         ],
@@ -5266,7 +5251,7 @@
           "code": "L2-VIEW-001",
           "name": "L2VIEW商品",
           "shapeKey": "SKU_VARIANT_SALE_COUNTED",
-          "status": "DRAFT",
+          "status": "DISABLED",
           "version": 1,
           "scopeKind": "STORE_BRAND",
           "categoryCode": "L2-VIEW-CATEGORY",
@@ -5338,7 +5323,7 @@
           "code": "L2-VIEW-SKU-L",
           "skuCode": "L2-VIEW-SKU-L",
           "name": "L2查看大规格",
-          "status": "ARCHIVED",
+          "status": "VOIDED",
           "displayOrder": 2,
           "standardSalePrice": null,
           "attributeValues": {
@@ -5501,7 +5486,7 @@
             "code": "L2-VIEW-001",
             "name": "L2VIEW商品",
             "shapeKey": "SKU_VARIANT_SALE_COUNTED",
-            "status": "DRAFT",
+            "status": "DISABLED",
             "version": 1,
             "scopeKind": "STORE_BRAND",
             "categoryCode": "L2-VIEW-CATEGORY",
@@ -5573,7 +5558,7 @@
             "code": "L2-VIEW-SKU-L",
             "skuCode": "L2-VIEW-SKU-L",
             "name": "L2查看大规格",
-            "status": "ARCHIVED",
+            "status": "VOIDED",
             "displayOrder": 2,
             "standardSalePrice": null,
             "attributeValues": {
@@ -7625,5 +7610,5 @@
     ],
     "seedExecutionNotAuthorized": true
   },
-  "fixtureDigest": "3f31f08c73cdfb6cf4bf035e68a8caef479bae4efe5b00dd7910caa8d672ab38"
+  "fixtureDigest": "523d0bdfb126f36ced1ae87c7567c6c513bdbe085771c183665fa1e71bdeb6f4"
 }

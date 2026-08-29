@@ -174,11 +174,6 @@
           "type": "integer"
         },
         {
-          "path": "tree[].deletionAvailability.blockingReferenceLabels",
-          "type": "array",
-          "itemType": "string"
-        },
-        {
           "path": "tags",
           "type": "array",
           "itemType": "object"
@@ -267,6 +262,44 @@
         {
           "path": "generation",
           "type": "string"
+        },
+        {
+          "path": "tree[].deletionAvailability.blockingReferences",
+          "type": "object"
+        },
+        {
+          "path": "tree[].deletionAvailability.blockingReferences.count",
+          "type": "integer"
+        },
+        {
+          "path": "tree[].deletionAvailability.blockingReferences.references",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "tree[].deletionAvailability.blockingReferences.references[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "tree[].deletionAvailability.blockingReferences.references[].referenceRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "tree[].deletionAvailability.blockingReferences.references[].code",
+          "type": "string"
+        },
+        {
+          "path": "tree[].deletionAvailability.blockingReferences.references[].name",
+          "type": "string"
+        },
+        {
+          "path": "tree[].deletionAvailability.blockingReferences.references[].direction",
+          "type": "string",
+          "enum": [
+            "INBOUND",
+            "OUTBOUND"
+          ]
         }
       ]
     },
@@ -361,11 +394,6 @@
           "type": "integer"
         },
         {
-          "path": "items[].skuDimensionSummary",
-          "type": "array",
-          "itemType": "string"
-        },
-        {
           "path": "items[].standardSalePrice",
           "type": [
             "integer",
@@ -423,33 +451,8 @@
           "format": "epoch-millis"
         },
         {
-          "path": "items[].categoryPathLabels",
-          "type": "array",
-          "itemType": "string"
-        },
-        {
-          "path": "items[].tagSummary",
-          "type": "array",
-          "itemType": "string"
-        },
-        {
           "path": "items[].hasSkuChildren",
           "type": "boolean"
-        },
-        {
-          "path": "items[].specificationOrOptionSummary",
-          "type": "array",
-          "itemType": "string"
-        },
-        {
-          "path": "items[].attributeSummary",
-          "type": "array",
-          "itemType": "string"
-        },
-        {
-          "path": "items[].preparationSummary",
-          "type": "array",
-          "itemType": "string"
         },
         {
           "path": "items[].salesUnit",
@@ -491,7 +494,8 @@
           "type": "string",
           "enum": [
             "ENABLED",
-            "DISABLED"
+            "DISABLED",
+            "VOIDED"
           ]
         },
         {
@@ -542,7 +546,8 @@
           "type": "string",
           "enum": [
             "ENABLED",
-            "DISABLED"
+            "DISABLED",
+            "VOIDED"
           ]
         },
         {
@@ -635,6 +640,313 @@
         {
           "path": "queryGeneration",
           "type": "string"
+        },
+        {
+          "path": "items[].categoryPath",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "items[].categoryPath[].categoryRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].categoryPath[].code",
+          "type": "string"
+        },
+        {
+          "path": "items[].categoryPath[].name",
+          "type": "string"
+        },
+        {
+          "path": "items[].tags",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "items[].tags[].tagRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].tags[].code",
+          "type": "string"
+        },
+        {
+          "path": "items[].tags[].name",
+          "type": "string"
+        },
+        {
+          "path": "items[].specificationFacts",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "items[].specificationFacts[].attributeRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].specificationFacts[].attributeCode",
+          "type": "string"
+        },
+        {
+          "path": "items[].specificationFacts[].attributeName",
+          "type": "string"
+        },
+        {
+          "path": "items[].specificationFacts[].values",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "items[].specificationFacts[].values[].valueRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].specificationFacts[].values[].valueCode",
+          "type": "string"
+        },
+        {
+          "path": "items[].specificationFacts[].values[].valueLabel",
+          "type": "string"
+        },
+        {
+          "path": "items[].specificationFacts[].values[].displayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "items[].specificationFacts[].values[].status",
+          "type": "string"
+        },
+        {
+          "path": "items[].orderOptionFacts",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "items[].orderOptionFacts[].definitionRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].orderOptionFacts[].name",
+          "type": "string"
+        },
+        {
+          "path": "items[].orderOptionFacts[].selectionMode",
+          "type": "string",
+          "enum": [
+            "SINGLE",
+            "MULTIPLE"
+          ]
+        },
+        {
+          "path": "items[].orderOptionFacts[].displayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "items[].orderOptionFacts[].required",
+          "type": "boolean"
+        },
+        {
+          "path": "items[].orderOptionFacts[].minSelectionCount",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        {
+          "path": "items[].orderOptionFacts[].maxSelectionCount",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        {
+          "path": "items[].orderOptionFacts[].values",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "items[].orderOptionFacts[].values[].definitionValueRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].orderOptionFacts[].values[].name",
+          "type": "string"
+        },
+        {
+          "path": "items[].orderOptionFacts[].values[].displayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "items[].orderOptionFacts[].values[].defaultValue",
+          "type": "boolean"
+        },
+        {
+          "path": "items[].orderOptionFacts[].values[].extraPrice",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        {
+          "path": "items[].orderOptionFacts[].values[].bomVersion",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        {
+          "path": "items[].orderOptionFacts[].values[].preparationEffect",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "items[].orderOptionFacts[].values[].preparationEffect.definitionValueRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].orderOptionFacts[].values[].preparationEffect.optionGroupDisplayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "items[].orderOptionFacts[].values[].preparationEffect.optionValueDisplayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "items[].orderOptionFacts[].values[].preparationEffect.instruction",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "items[].orderOptionFacts[].values[].preparationEffect.preparationSecondsDelta",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "items[].attributeFacts",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "items[].attributeFacts[].definitionRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].attributeFacts[].code",
+          "type": "string"
+        },
+        {
+          "path": "items[].attributeFacts[].name",
+          "type": "string"
+        },
+        {
+          "path": "items[].attributeFacts[].valueType",
+          "type": "string",
+          "enum": [
+            "TEXT",
+            "SINGLE_SELECT",
+            "MULTI_SELECT"
+          ]
+        },
+        {
+          "path": "items[].attributeFacts[].textValue",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "items[].attributeFacts[].optionRefs",
+          "type": "array",
+          "itemType": "string",
+          "itemFormat": "uuid"
+        },
+        {
+          "path": "items[].preparationFacts",
+          "type": "object"
+        },
+        {
+          "path": "items[].preparationFacts.productionTag",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "items[].preparationFacts.productionTag.tagRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].preparationFacts.productionTag.code",
+          "type": "string"
+        },
+        {
+          "path": "items[].preparationFacts.productionTag.name",
+          "type": "string"
+        },
+        {
+          "path": "items[].preparationFacts.productionTag.status",
+          "type": "string"
+        },
+        {
+          "path": "items[].preparationFacts.productionTag.owner",
+          "type": "string"
+        },
+        {
+          "path": "items[].preparationFacts.profile",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "items[].preparationFacts.profile.productionDisplayName",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "items[].preparationFacts.profile.estimatedPreparationSeconds",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "items[].preparationFacts.profile.preparationNotes",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "items[].preparationFacts.skuVariation",
+          "type": "object"
+        },
+        {
+          "path": "items[].preparationFacts.skuVariation.varies",
+          "type": "boolean"
         }
       ]
     },
@@ -909,7 +1221,8 @@
           "type": "string",
           "enum": [
             "ENABLED",
-            "DISABLED"
+            "DISABLED",
+            "VOIDED"
           ]
         },
         {
@@ -961,7 +1274,8 @@
           "type": "string",
           "enum": [
             "ENABLED",
-            "DISABLED"
+            "DISABLED",
+            "VOIDED"
           ]
         },
         {
@@ -1168,7 +1482,8 @@
           "type": "string",
           "enum": [
             "ENABLED",
-            "DISABLED"
+            "DISABLED",
+            "VOIDED"
           ]
         },
         {
@@ -1219,7 +1534,8 @@
           "type": "string",
           "enum": [
             "ENABLED",
-            "DISABLED"
+            "DISABLED",
+            "VOIDED"
           ]
         },
         {
@@ -1709,11 +2025,6 @@
           "required": false
         },
         {
-          "path": "item.categoryPathLabels",
-          "type": "array",
-          "itemType": "string"
-        },
-        {
           "path": "item.preparationProfile",
           "type": [
             "object",
@@ -1792,10 +2103,6 @@
         },
         {
           "path": "references[].name",
-          "type": "string"
-        },
-        {
-          "path": "references[].relationLabel",
           "type": "string"
         },
         {
@@ -2419,6 +2726,306 @@
         {
           "path": "inventoryRules.nodes[].bom.lines[].consumptionUnitSnapshot.precision",
           "type": "integer"
+        },
+        {
+          "path": "item.categoryPath",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.categoryPath[].categoryRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "item.categoryPath[].code",
+          "type": "string"
+        },
+        {
+          "path": "item.categoryPath[].name",
+          "type": "string"
+        },
+        {
+          "path": "item.specificationFacts",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.specificationFacts[].attributeRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "item.specificationFacts[].attributeCode",
+          "type": "string"
+        },
+        {
+          "path": "item.specificationFacts[].attributeName",
+          "type": "string"
+        },
+        {
+          "path": "item.specificationFacts[].values",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.specificationFacts[].values[].valueRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "item.specificationFacts[].values[].valueCode",
+          "type": "string"
+        },
+        {
+          "path": "item.specificationFacts[].values[].valueLabel",
+          "type": "string"
+        },
+        {
+          "path": "item.specificationFacts[].values[].displayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "item.specificationFacts[].values[].status",
+          "type": "string"
+        },
+        {
+          "path": "item.orderOptionFacts",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.orderOptionFacts[].definitionRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "item.orderOptionFacts[].name",
+          "type": "string"
+        },
+        {
+          "path": "item.orderOptionFacts[].selectionMode",
+          "type": "string",
+          "enum": [
+            "SINGLE",
+            "MULTIPLE"
+          ]
+        },
+        {
+          "path": "item.orderOptionFacts[].displayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "item.orderOptionFacts[].required",
+          "type": "boolean"
+        },
+        {
+          "path": "item.orderOptionFacts[].minSelectionCount",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        {
+          "path": "item.orderOptionFacts[].maxSelectionCount",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        {
+          "path": "item.orderOptionFacts[].values",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.orderOptionFacts[].values[].definitionValueRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "item.orderOptionFacts[].values[].name",
+          "type": "string"
+        },
+        {
+          "path": "item.orderOptionFacts[].values[].displayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "item.orderOptionFacts[].values[].defaultValue",
+          "type": "boolean"
+        },
+        {
+          "path": "item.orderOptionFacts[].values[].extraPrice",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        {
+          "path": "item.orderOptionFacts[].values[].bomVersion",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        {
+          "path": "item.orderOptionFacts[].values[].preparationEffect",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "item.orderOptionFacts[].values[].preparationEffect.definitionValueRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "item.orderOptionFacts[].values[].preparationEffect.optionGroupDisplayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "item.orderOptionFacts[].values[].preparationEffect.optionValueDisplayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "item.orderOptionFacts[].values[].preparationEffect.instruction",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "item.orderOptionFacts[].values[].preparationEffect.preparationSecondsDelta",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "item.attributeFacts",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.attributeFacts[].definitionRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "item.attributeFacts[].code",
+          "type": "string"
+        },
+        {
+          "path": "item.attributeFacts[].name",
+          "type": "string"
+        },
+        {
+          "path": "item.attributeFacts[].valueType",
+          "type": "string",
+          "enum": [
+            "TEXT",
+            "SINGLE_SELECT",
+            "MULTI_SELECT"
+          ]
+        },
+        {
+          "path": "item.attributeFacts[].textValue",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "item.attributeFacts[].optionRefs",
+          "type": "array",
+          "itemType": "string",
+          "itemFormat": "uuid"
+        },
+        {
+          "path": "item.preparationFacts",
+          "type": "object"
+        },
+        {
+          "path": "item.preparationFacts.productionTag",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "item.preparationFacts.productionTag.tagRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "item.preparationFacts.productionTag.code",
+          "type": "string"
+        },
+        {
+          "path": "item.preparationFacts.productionTag.name",
+          "type": "string"
+        },
+        {
+          "path": "item.preparationFacts.productionTag.status",
+          "type": "string"
+        },
+        {
+          "path": "item.preparationFacts.productionTag.owner",
+          "type": "string"
+        },
+        {
+          "path": "item.preparationFacts.profile",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "item.preparationFacts.profile.productionDisplayName",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "item.preparationFacts.profile.estimatedPreparationSeconds",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "item.preparationFacts.profile.preparationNotes",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "item.preparationFacts.skuVariation",
+          "type": "object"
+        },
+        {
+          "path": "item.preparationFacts.skuVariation.varies",
+          "type": "boolean"
+        },
+        {
+          "path": "compositeGroups[].components[].itemName",
+          "type": "string"
+        },
+        {
+          "path": "compositeGroups[].components[].skuName",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       ]
     },
@@ -2874,7 +3481,8 @@
           "type": "string",
           "enum": [
             "ENABLED",
-            "DISABLED"
+            "DISABLED",
+            "VOIDED"
           ]
         },
         {
@@ -2925,7 +3533,8 @@
           "type": "string",
           "enum": [
             "ENABLED",
-            "DISABLED"
+            "DISABLED",
+            "VOIDED"
           ]
         },
         {
@@ -3020,16 +3629,6 @@
           ]
         },
         {
-          "path": "items[].attributeSummary",
-          "type": "array",
-          "itemType": "string"
-        },
-        {
-          "path": "items[].preparationSummary",
-          "type": "array",
-          "itemType": "string"
-        },
-        {
           "path": "items[].updatedAt",
           "type": "integer",
           "format": "epoch-millis"
@@ -3051,6 +3650,116 @@
             "string",
             "null"
           ]
+        },
+        {
+          "path": "items[].attributeFacts",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "items[].attributeFacts[].attributeRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].attributeFacts[].attributeCode",
+          "type": "string"
+        },
+        {
+          "path": "items[].attributeFacts[].attributeName",
+          "type": "string"
+        },
+        {
+          "path": "items[].attributeFacts[].attributeValueRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].attributeFacts[].valueCode",
+          "type": "string"
+        },
+        {
+          "path": "items[].attributeFacts[].valueLabel",
+          "type": "string"
+        },
+        {
+          "path": "items[].attributeFacts[].displayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "items[].attributeFacts[].status",
+          "type": "string"
+        },
+        {
+          "path": "items[].preparationFacts",
+          "type": "object"
+        },
+        {
+          "path": "items[].preparationFacts.productionTag",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "items[].preparationFacts.productionTag.tagRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].preparationFacts.productionTag.code",
+          "type": "string"
+        },
+        {
+          "path": "items[].preparationFacts.productionTag.name",
+          "type": "string"
+        },
+        {
+          "path": "items[].preparationFacts.productionTag.status",
+          "type": "string"
+        },
+        {
+          "path": "items[].preparationFacts.productionTag.owner",
+          "type": "string"
+        },
+        {
+          "path": "items[].preparationFacts.profile",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "items[].preparationFacts.profile.productionDisplayName",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "items[].preparationFacts.profile.estimatedPreparationSeconds",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "items[].preparationFacts.profile.preparationNotes",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "items[].preparationFacts.skuVariation",
+          "type": "object"
+        },
+        {
+          "path": "items[].preparationFacts.skuVariation.varies",
+          "type": "boolean"
         }
       ]
     },
@@ -4648,6 +5357,82 @@
         {
           "path": "data.counts.UNKNOWN",
           "type": "integer"
+        },
+        {
+          "path": "data.items[].conversionFacts",
+          "type": "object"
+        },
+        {
+          "path": "data.items[].conversionFacts.countingUnitSnapshot",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "data.items[].conversionFacts.countingUnitSnapshot.unitRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "data.items[].conversionFacts.countingUnitSnapshot.code",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].conversionFacts.countingUnitSnapshot.name",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].conversionFacts.countingUnitSnapshot.unitDimension",
+          "type": "string",
+          "enum": [
+            "COUNT",
+            "WEIGHT",
+            "VOLUME",
+            "SERVICE_DURATION",
+            "PACKAGE"
+          ]
+        },
+        {
+          "path": "data.items[].conversionFacts.countingUnitSnapshot.precision",
+          "type": "integer"
+        },
+        {
+          "path": "data.items[].conversionFacts.consumptionUnitSnapshot",
+          "type": "object"
+        },
+        {
+          "path": "data.items[].conversionFacts.consumptionUnitSnapshot.unitRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "data.items[].conversionFacts.consumptionUnitSnapshot.code",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].conversionFacts.consumptionUnitSnapshot.name",
+          "type": "string"
+        },
+        {
+          "path": "data.items[].conversionFacts.consumptionUnitSnapshot.unitDimension",
+          "type": "string",
+          "enum": [
+            "COUNT",
+            "WEIGHT",
+            "VOLUME",
+            "SERVICE_DURATION",
+            "PACKAGE"
+          ]
+        },
+        {
+          "path": "data.items[].conversionFacts.consumptionUnitSnapshot.precision",
+          "type": "integer"
+        },
+        {
+          "path": "data.items[].conversionFacts.conversionFactor",
+          "type": "string",
+          "format": "decimal"
         }
       ]
     },
@@ -5007,6 +5792,82 @@
             "string",
             "null"
           ]
+        },
+        {
+          "path": "target.conversionFacts",
+          "type": "object"
+        },
+        {
+          "path": "target.conversionFacts.countingUnitSnapshot",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "target.conversionFacts.countingUnitSnapshot.unitRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "target.conversionFacts.countingUnitSnapshot.code",
+          "type": "string"
+        },
+        {
+          "path": "target.conversionFacts.countingUnitSnapshot.name",
+          "type": "string"
+        },
+        {
+          "path": "target.conversionFacts.countingUnitSnapshot.unitDimension",
+          "type": "string",
+          "enum": [
+            "COUNT",
+            "WEIGHT",
+            "VOLUME",
+            "SERVICE_DURATION",
+            "PACKAGE"
+          ]
+        },
+        {
+          "path": "target.conversionFacts.countingUnitSnapshot.precision",
+          "type": "integer"
+        },
+        {
+          "path": "target.conversionFacts.consumptionUnitSnapshot",
+          "type": "object"
+        },
+        {
+          "path": "target.conversionFacts.consumptionUnitSnapshot.unitRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "target.conversionFacts.consumptionUnitSnapshot.code",
+          "type": "string"
+        },
+        {
+          "path": "target.conversionFacts.consumptionUnitSnapshot.name",
+          "type": "string"
+        },
+        {
+          "path": "target.conversionFacts.consumptionUnitSnapshot.unitDimension",
+          "type": "string",
+          "enum": [
+            "COUNT",
+            "WEIGHT",
+            "VOLUME",
+            "SERVICE_DURATION",
+            "PACKAGE"
+          ]
+        },
+        {
+          "path": "target.conversionFacts.consumptionUnitSnapshot.precision",
+          "type": "integer"
+        },
+        {
+          "path": "target.conversionFacts.conversionFactor",
+          "type": "string",
+          "format": "decimal"
         }
       ]
     },
@@ -6020,7 +6881,6 @@
             "ALL",
             "EXTERNAL_ORDER_TEMP",
             "INACTIVE",
-            "ARCHIVED",
             "RECENTLY_UPDATED",
             "AUTO_SYNC"
           ],
@@ -7362,30 +8222,6 @@
           ],
           "format": "uuid",
           "required": false
-        }
-      ]
-    },
-    {
-      "model": "CatalogCategoryDeleteRequest",
-      "required": [
-        "dataNodeRef",
-        "categoryRef",
-        "expectedVersion"
-      ],
-      "fields": [
-        {
-          "path": "dataNodeRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "categoryRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "expectedVersion",
-          "type": "integer"
         }
       ]
     }

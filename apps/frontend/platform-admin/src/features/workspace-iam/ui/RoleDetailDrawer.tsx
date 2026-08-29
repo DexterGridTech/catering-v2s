@@ -1,7 +1,13 @@
 import {Button, Descriptions, Drawer, Space} from 'antd';
 import {adminDrawerSurfaceProps, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
-import type {WorkspaceRole, WorkspaceRolePage} from '../../../app/api/generated/platform-edge';
+import type {WorkspaceRole, WorkspaceRolePage, WorkspaceRoleStatus} from '../../../app/api/generated/platform-edge';
 import {RolePermissionSummaryTrees, serviceNodeTypeLabel} from './RolePermissionFields';
+import {
+  canManageWorkspaceIam,
+  canVoidWorkspaceIam,
+  toggleWorkspaceIamStatus,
+  workspaceIamLifecycleLabels,
+} from '../model/workspaceIamLifecycle';
 
 type Props = {
   open: boolean;
@@ -11,7 +17,7 @@ type Props = {
   onClose: () => void;
   onAfterOpenChange: (open: boolean) => void;
   onEdit: () => void;
-  onChangeStatus: () => void;
+  onChangeStatus: (targetStatus: WorkspaceRoleStatus) => void;
   onAudit: () => void;
 };
 
@@ -45,12 +51,26 @@ export function RoleDetailDrawer({
             <Button onClick={onAudit} {...testId('workspace-role-audit-history')}>
               操作历史
             </Button>
-            <Button onClick={onEdit} {...testId('workspace-role-edit')}>
-              编辑业务角色
-            </Button>
-            <Button onClick={onChangeStatus} {...testId('workspace-role-transition-status')}>
-              {role.status === 'ENABLED' ? '停用业务角色' : '启用业务角色'}
-            </Button>
+            {canManageWorkspaceIam(role.status) && (
+              <>
+                <Button onClick={onEdit} {...testId('workspace-role-edit')}>
+                  编辑业务角色
+                </Button>
+                {toggleWorkspaceIamStatus(role.status) && (
+                  <Button
+                    onClick={() => onChangeStatus(toggleWorkspaceIamStatus(role.status)!)}
+                    {...testId('workspace-role-transition-status')}
+                  >
+                    {role.status === 'ENABLED' ? '停用业务角色' : '启用业务角色'}
+                  </Button>
+                )}
+                {canVoidWorkspaceIam(role.status) && (
+                  <Button danger onClick={() => onChangeStatus('VOIDED')} {...testId('workspace-role-void')}>
+                    标记删除业务角色
+                  </Button>
+                )}
+              </>
+            )}
           </Space>
         )
       }
@@ -64,7 +84,7 @@ export function RoleDetailDrawer({
             items={[
               {key: 'name', label: '名称', children: role.name},
               {key: 'service-node-type', label: '任职机构类型', children: serviceNodeTypeLabel(role.serviceNodeType)},
-              {key: 'status', label: '状态', children: role.status === 'ENABLED' ? '启用' : '停用'},
+              {key: 'status', label: '状态', children: workspaceIamLifecycleLabels[role.status]},
               {key: 'description', label: '说明', children: role.description || '—'},
             ]}
           />

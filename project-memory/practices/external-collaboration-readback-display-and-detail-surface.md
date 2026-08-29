@@ -18,9 +18,10 @@ sourceRefs: ["project-memory/practices/external-collaboration-readback-display-a
 
 ## 1. 读回事实必须能直接被用户理解
 
-契约中的 code/enum 只负责机器匹配和命令提交；用户可见处必须使用同一 owner/contract readback 提供的
-`displayName`、`*DisplayName`、`businessScopeDisplayNames` 和 descriptor/value label。能力属性按
-“属性 / 当前值 / 说明”三列展示。`capabilityClass` 对 `INTERNAL_MAPPING` 和 `NO_MAPPING` 应为空，
+契约中的 code/enum 负责机器匹配和命令提交；用户可见处的实体名称仍由 owner readback 提供，代码闭集的
+业务文案由两个前端各自复用本地字典，不能要求 owner 重复传输 `*DisplayName`、scope label 或 descriptor
+payload。能力属性只返回结构化的 typed `attributeValues`；前端按“属性 / 当前值 / 说明”三列展示，说明与
+控件元数据来自本地 presentation map。`capabilityClass` 对 `INTERNAL_MAPPING` 和 `NO_MAPPING` 应为空，
 业务列必须显示 provider 的业务范围名称，不得因为该字段为空就显示 `—`。
 
 外部主体编号的空值按认证类型解释：`EXTERNAL_GRANT` 是“待外部授权回填”；`NO_MAPPING` 是“无需主体映射”；
@@ -44,7 +45,8 @@ sourceRefs: ["project-memory/practices/external-collaboration-readback-display-a
 ## 4. 根因与防再犯
 
 根因是把机器枚举当作用户文案、把认证状态当作统一的“外部授权”流程、把 owner read projection 当作可选
-字段，以及按局部 Card/Table 拼装页面而没有复用标准 surface。修改时必须同时扫描 contract schema、checked-in
+字段，以及按局部 Card/Table 拼装页面而没有复用标准 surface。代码闭集只保留 raw enum union 与前端字典；
+业务实体名、历史快照和结构化属性事实仍由 owner 返回。修改时必须同时扫描 contract schema、checked-in
 catalog、owner mapper/edge、两个管理后台、生成 wire、acceptance fixture 和空值/状态反例；只改单个渲染
 分支不算根因修复。
 

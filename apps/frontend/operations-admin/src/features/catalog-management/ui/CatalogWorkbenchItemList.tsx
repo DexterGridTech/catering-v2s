@@ -160,7 +160,6 @@ export function CatalogWorkbenchItemList({
                     {key: 'CATEGORY', label: '批量改分类'},
                     {key: 'TAG', label: '批量改标签'},
                     {key: 'STATUS', label: '批量改状态'},
-                    {key: 'ARCHIVE', label: '批量归档', danger: true},
                   ],
                   onClick: ({key}) => onBatchAction(key as CatalogBatchAction),
                 }}

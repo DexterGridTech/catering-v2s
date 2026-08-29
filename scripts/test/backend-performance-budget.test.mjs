@@ -4,11 +4,17 @@ import path from 'node:path';
 import test from 'node:test';
 import {
   BATCH_OPERATION_ID,
+  CP05_CALIBRATION_BOOTSTRAP_DIGEST,
   CURRENT_PROGRAM_RESULT_BUDGET_DECISION_REF,
   EXPECTED_OPERATION_COUNT,
   LINEAR_REQUEST_CARDINALITY_BUDGET,
+  REQUIRED_BATCH_CARDINALITIES,
   assertCp05ReadyForBudget,
+  buildCp05CalibrationIdentityProjection,
   buildBudgetProjection,
+  buildBudgetProjectionSubset,
+  controlledBudgetExceptionForOperation,
+  isCp05CalibrationBootstrapMode,
   validateBudgetChange,
   validateBudgetRegistry,
   validateControlledBudgetException,
@@ -108,6 +114,29 @@ test('CP-05 calibration keeps the finite normal recipe set outside coverage-only
   assert.match(runner, /new ScenarioContext\(null, "performance\.coverage-only"\)/);
 });
 
+test('CP-05 calibration bootstrap projects only route identity and never activates budgets', () => {
+  const operations = operationIds.map(operationId => ({
+    operationId,
+    method: operationId === BATCH_OPERATION_ID ? 'POST' : 'GET',
+    path: `/operation/${operationId}`,
+    face: 'operations-admin',
+    owner: 'catalog',
+    databaseOperationBudget: {kind: 'FIXED', max: 1},
+  }));
+  assert.equal(isCp05CalibrationBootstrapMode({V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE: 'CALIBRATION'}), true);
+  assert.equal(isCp05CalibrationBootstrapMode({V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE: 'ACCEPTANCE'}), false);
+
+  const projection = buildCp05CalibrationIdentityProjection({operations});
+  assert.equal(projection.expectedOperations, EXPECTED_OPERATION_COUNT);
+  assert.equal(projection.calibrationReportDigest, CP05_CALIBRATION_BOOTSTRAP_DIGEST);
+  assert.equal(projection.operations.length, EXPECTED_OPERATION_COUNT);
+  assert.equal(
+    projection.operations.some(operation => Object.hasOwn(operation, 'databaseOperationBudget')),
+    false,
+  );
+  assert.throws(() => validateBudgetRegistry({operations: projection.operations}), /BUDGET_MISSING/);
+});
+
 const fixedBudget = (max = 4, history = [{from: null, to: max, reason: 'initial calibrated ceiling'}]) => ({
   kind: 'FIXED',
   max,
@@ -131,30 +160,72 @@ const budgetOperations = (max = 4) =>
     databaseOperationBudget: operationId === BATCH_OPERATION_ID ? linearBudget() : fixedBudget(max),
   }));
 
+const controlledExceptionRecord = ({
+  operationId = 'reorderOperationsCatalogDictionaryEntry',
+  decisionRef = 'DEXTER-2026-08-26-REORDER_DICTIONARY_BUDGET',
+  authority = 'DEXTER',
+  from = 20,
+  to = 25,
+} = {}) => {
+  const history = [
+    {
+      from,
+      to,
+      reason: 'SELF_DECIDED_IMPLEMENTATION_EXCEPTION',
+      decisionRef,
+    },
+  ];
+  return {
+    operationId,
+    decisionRef,
+    authority,
+    from,
+    to,
+    history,
+    businessFactsPreserved: true,
+    businessFactsEvidence: ['owner:catalog.dictionary-entry-reorder', 'event:cp05.run-1'],
+    sharedMechanismsReused: true,
+    sharedMechanismsEvidence: ['source:catalog-owner-command'],
+    rejectedAlternative: 'would remove authoritative dictionary sibling readback',
+    costComparison: 'one extra owner read is lower risk than a second ad hoc projection path',
+    narrowScope: operationId,
+  };
+};
+
 function calibrationReport({blockedCount = 0, operationStatuses = {}} = {}) {
   const sourceRuns = [0, 1, 2].map(runIndex => ({
     runId: `run-${runIndex + 1}`,
     testExecution: {status: 'PASS'},
     measurementEvidence: {status: 'PASS'},
     cleanup: {status: 'PASS'},
-    operationSet: {expected: 239, observed: 239, missing: [], extra: [], drift: []},
+    operationSet: {
+      expected: EXPECTED_OPERATION_COUNT,
+      observed: EXPECTED_OPERATION_COUNT,
+      missing: [],
+      extra: [],
+      drift: [],
+    },
   }));
   const operations = operationIds.map(operationId => {
-    const max = operationId === BATCH_OPERATION_ID ? 20 : 4;
+    const batchObservations = REQUIRED_BATCH_CARDINALITIES.map(requestCardinality => ({
+      requestCardinality,
+      databaseOperationCount:
+        LINEAR_REQUEST_CARDINALITY_BUDGET.base + LINEAR_REQUEST_CARDINALITY_BUDGET.perItem * requestCardinality,
+    }));
+    const max = operationId === BATCH_OPERATION_ID ? batchObservations.at(-1).databaseOperationCount : 4;
     return {
       operationId,
       maxDatabaseOperationCount: max,
       budgetReadiness: {
         status: operationStatuses[operationId] || 'READY',
         databaseOperationBudget:
-          operationId === BATCH_OPERATION_ID
-            ? LINEAR_REQUEST_CARDINALITY_BUDGET
-            : {kind: 'FIXED', max},
+          operationId === BATCH_OPERATION_ID ? LINEAR_REQUEST_CARDINALITY_BUDGET : {kind: 'FIXED', max},
       },
       runs: sourceRuns.map(run => ({
         runDirectory: run.runId,
         databaseOperationCount: {eventCount: 1, max, total: max},
       })),
+      ...(operationId === BATCH_OPERATION_ID ? {linearBudgetObservations: batchObservations} : {}),
     };
   });
   return {
@@ -164,16 +235,22 @@ function calibrationReport({blockedCount = 0, operationStatuses = {}} = {}) {
     business: 'PASS',
     cleanup: 'PASS',
     measurement: {
-      expectedOperations: 239,
+      expectedOperations: EXPECTED_OPERATION_COUNT,
       runCount: 3,
-      exactSet: sourceRuns.map(() => ({expected: 239, observed: 239, missing: [], extra: [], drift: []})),
+      exactSet: sourceRuns.map(() => ({
+        expected: EXPECTED_OPERATION_COUNT,
+        observed: EXPECTED_OPERATION_COUNT,
+        missing: [],
+        extra: [],
+        drift: [],
+      })),
       classificationRule: 'MAX_PER_OPERATION_ACROSS_THREE_RUNS;AVERAGE_NOT_USED',
-      classificationCounts: {P0: 0, P1: 0, P2: 0, P3: 0, P4: 0, P5: 239},
+      classificationCounts: {P0: 0, P1: 0, P2: 0, P3: 0, P4: 0, P5: EXPECTED_OPERATION_COUNT},
     },
     budget: {
       generated: false,
       activation: 'NOT_YET_AUTHORIZED_BY_CP05;CP02_REQUIRES_REMEDIATED_SHAPE',
-      readyCount: 239 - blockedCount,
+      readyCount: EXPECTED_OPERATION_COUNT - blockedCount,
       blockedCount,
     },
     operations,
@@ -186,7 +263,8 @@ function currentProgramResultReport() {
     ...report.source.runs[0],
     currentProgramResult: true,
     managedRunStatus: 'FAIL',
-    firstFailure: 'PERFORMANCE_OPERATION_BUDGET_EXCEEDED:getOperationsWorkspaceGroupInvitationCandidates:kind=FIXED:actual=11:max=7',
+    firstFailure:
+      'PERFORMANCE_OPERATION_BUDGET_EXCEEDED:getOperationsWorkspaceGroupInvitationCandidates:kind=FIXED:actual=11:max=7',
     managedMeasurementEvidence: {status: 'NOT_RUN'},
     evidenceArchive: {status: 'PASS'},
   };
@@ -252,7 +330,7 @@ test('rejects null, sentinel, unlimited, and CALIBRATION_PENDING values', () => 
   );
 });
 
-test('requires exact 239 unique operations and one batch linear member', () => {
+test('requires exact operation count unique operations and one batch linear member', () => {
   assert.doesNotThrow(() =>
     validateBudgetRegistry({operations: budgetOperations()}, {expectedOperationIds: operationIds}),
   );
@@ -325,22 +403,25 @@ test('this remediation rejects a fixed ceiling increase unless its complete repo
 });
 
 test('a controlled increase needs the exact resolver scope and both business/reuse proofs', () => {
-  const operationId = 'deleteOperationsCatalogUnit';
+  const operationId = 'reorderOperationsCatalogDictionaryEntry';
   const from = fixedBudget(12);
-  const to = fixedBudget(13, [{
-    from: 12,
-    to: 13,
-    reason: 'CP-05 measured correctness closure',
-    decisionRef: 'DEXTER-2026-08-26-DELETE_UNIT_BUDGET',
-  }]);
+  const to = fixedBudget(13, [
+    {
+      from: 12,
+      to: 13,
+      reason: 'CP-05 measured correctness closure',
+      decisionRef: 'DEXTER-2026-08-26-REORDER_DICTIONARY_BUDGET',
+    },
+  ]);
   const exception = {
     operationId,
-    decisionRef: 'DEXTER-2026-08-26-DELETE_UNIT_BUDGET',
+    decisionRef: 'DEXTER-2026-08-26-REORDER_DICTIONARY_BUDGET',
+    authority: 'DEXTER',
     from: 12,
     to: 13,
     history: to.history,
     businessFactsPreserved: true,
-    businessFactsEvidence: ['owner:inventory-and-catalog-reference-checks', 'event:calibration:deleteOperationsCatalogUnit'],
+    businessFactsEvidence: ['owner:catalog', 'event:calibration:reorderOperationsCatalogDictionaryEntry'],
     sharedMechanismsReused: true,
     sharedMechanismsEvidence: ['source:owner-command-and-receipt-boundary'],
     rejectedAlternative: 'would remove authoritative reference checks',
@@ -352,24 +433,195 @@ test('a controlled increase needs the exact resolver scope and both business/reu
     validateRemediationBudgetChange({operationId, from, to, measuredMax: 13, controlledException: exception}),
   );
   assert.throws(
-    () => validateRemediationBudgetChange({
-      operationId,
-      from,
-      to,
-      measuredMax: 13,
-      controlledException: {...exception, sharedMechanismsReused: false},
-    }),
+    () =>
+      validateRemediationBudgetChange({
+        operationId,
+        from,
+        to,
+        measuredMax: 13,
+        controlledException: {...exception, sharedMechanismsReused: false},
+      }),
     /PERFORMANCE_REMEDIATION_EXCEPTION_SHARED_MECHANISMS_REQUIRED/,
   );
   assert.throws(
-    () => validateRemediationBudgetChange({
-      operationId: 'operation-1',
-      from,
-      to,
-      measuredMax: 13,
-      controlledException: {...exception, operationId: 'operation-1', narrowScope: 'operation-1'},
-    }),
+    () =>
+      validateRemediationBudgetChange({
+        operationId: 'operation-1',
+        from,
+        to,
+        measuredMax: 13,
+        controlledException: {...exception, operationId: 'operation-1', narrowScope: 'operation-1'},
+      }),
     /PERFORMANCE_REMEDIATION_EXCEPTION_DECISION_SCOPE_MISMATCH/,
+  );
+
+  const groupedOperationId = 'increaseOperationsInventoryTarget';
+  const groupedDecisionRef = 'DEXTER-2026-08-26-INVENTORY_QUANTITY_WRITE_BUDGET';
+  const groupedFrom = fixedBudget(12);
+  const groupedTo = fixedBudget(13, [
+    {
+      from: 12,
+      to: 13,
+      reason: 'CP-05 measured correctness closure',
+      decisionRef: groupedDecisionRef,
+    },
+  ]);
+  const groupedException = {
+    ...exception,
+    operationId: groupedOperationId,
+    decisionRef: groupedDecisionRef,
+    authority: 'IMPLEMENTATION_AGENT',
+    from: 12,
+    to: 13,
+    history: groupedTo.history,
+    narrowScope: groupedOperationId,
+  };
+  assert.throws(
+    () =>
+      validateRemediationBudgetChange({
+        operationId: groupedOperationId,
+        from: groupedFrom,
+        to: groupedTo,
+        measuredMax: 13,
+        controlledException: groupedException,
+      }),
+    /PERFORMANCE_REMEDIATION_EXCEPTION_IMPLEMENTATION_SCOPE_NOT_SINGLE/,
+  );
+  assert.doesNotThrow(() =>
+    validateRemediationBudgetChange({
+      operationId: groupedOperationId,
+      from: groupedFrom,
+      to: groupedTo,
+      measuredMax: 13,
+      controlledException: {...groupedException, authority: 'DEXTER'},
+    }),
+  );
+});
+
+test('CP-05 fixed blockers need a source-owned controlled exception before they become ready', () => {
+  const operationId = 'reorderOperationsCatalogDictionaryEntry';
+  const sourceRecord = controlledExceptionRecord({operationId});
+
+  assert.equal(
+    controlledBudgetExceptionForOperation({
+      operationId,
+      fromMax: 20,
+      toMax: 25,
+      measuredMax: 25,
+      records: [],
+    }),
+    null,
+  );
+  assert.deepEqual(budgetReadiness({operationId, category: 'P3', maxDatabaseOperationCount: 25}), {
+    status: 'BLOCKED_ABOVE_CLASS_CEILING',
+    ceiling: 20,
+    measuredMax: 25,
+  });
+  assert.deepEqual(
+    budgetReadiness({
+      operationId,
+      category: 'P3',
+      maxDatabaseOperationCount: 25,
+      controlledExceptionRecords: [sourceRecord],
+    }),
+    {
+      status: 'READY',
+      reason: 'SELF_DECIDED_IMPLEMENTATION_EXCEPTION',
+      databaseOperationBudget: {kind: 'FIXED', max: 25},
+      controlledBudgetException: sourceRecord,
+    },
+  );
+  assert.throws(
+    () =>
+      controlledBudgetExceptionForOperation({
+        operationId,
+        fromMax: 20,
+        toMax: 25,
+        measuredMax: 25,
+        records: [{...sourceRecord, businessFactsEvidence: []}],
+      }),
+    /PERFORMANCE_REMEDIATION_EXCEPTION_BUSINESS_EVIDENCE_REQUIRED/,
+  );
+  assert.throws(
+    () =>
+      controlledBudgetExceptionForOperation({
+        operationId: 'operation-1',
+        fromMax: 20,
+        toMax: 25,
+        measuredMax: 25,
+        records: [{...sourceRecord, operationId: 'operation-1', narrowScope: 'operation-1'}],
+      }),
+    /PERFORMANCE_REMEDIATION_EXCEPTION_DECISION_SCOPE_MISMATCH/,
+  );
+});
+
+test('budget projection rejects report-only controlled exceptions without the source record', () => {
+  const operationId = 'reorderOperationsCatalogDictionaryEntry';
+  const sourceRecord = controlledExceptionRecord({operationId});
+  const report = calibrationReport();
+  const operationIndex = report.operations.findIndex(operation => operation.operationId === 'operation-1');
+  const reportWithException = {
+    ...report,
+    operations: report.operations.map((operation, index) =>
+      index === operationIndex
+        ? {
+            ...operation,
+            operationId,
+            maxDatabaseOperationCount: 25,
+            budgetReadiness: {status: 'READY', databaseOperationBudget: {kind: 'FIXED', max: 25}},
+            controlledBudgetException: sourceRecord,
+            runs: operation.runs.map(run => ({
+              ...run,
+              databaseOperationCount: {eventCount: 1, max: 25, total: 25},
+            })),
+          }
+        : operation,
+    ),
+  };
+  const projectionOperations = budgetOperations()
+    .map(({databaseOperationBudget: _retired, ...identity}) => identity)
+    .map(operation => (operation.operationId === 'operation-1' ? {...operation, operationId} : operation));
+
+  assert.throws(
+    () => buildBudgetProjectionSubset({operations: projectionOperations, calibrationReport: reportWithException}),
+    /PERFORMANCE_REMEDIATION_EXCEPTION_SOURCE_RECORD_REQUIRED/,
+  );
+  assert.throws(
+    () =>
+      buildBudgetProjectionSubset({
+        operations: projectionOperations,
+        calibrationReport: reportWithException,
+        controlledExceptionRecords: [{...sourceRecord, costComparison: 'different source-side cost'}],
+      }),
+    /PERFORMANCE_REMEDIATION_EXCEPTION_SOURCE_RECORD_MISMATCH/,
+  );
+  assert.doesNotThrow(() =>
+    buildBudgetProjectionSubset({
+      operations: projectionOperations,
+      calibrationReport: reportWithException,
+      controlledExceptionRecords: [sourceRecord],
+    }),
+  );
+});
+
+test('budget projection rejects controlled exception metadata on the linear batch operation', () => {
+  const sourceRecord = controlledExceptionRecord({
+    operationId: BATCH_OPERATION_ID,
+    decisionRef: 'DEXTER-2026-08-26-REORDER_DICTIONARY_BUDGET',
+  });
+  const report = calibrationReport();
+  const reportWithLinearException = {
+    ...report,
+    operations: report.operations.map(operation =>
+      operation.operationId === BATCH_OPERATION_ID
+        ? {...operation, controlledBudgetException: sourceRecord}
+        : operation,
+    ),
+  };
+  const projectionOperations = budgetOperations().map(({databaseOperationBudget: _retired, ...identity}) => identity);
+  assert.throws(
+    () => buildBudgetProjectionSubset({operations: projectionOperations, calibrationReport: reportWithLinearException}),
+    /PERFORMANCE_REMEDIATION_EXCEPTION_LINEAR_FORBIDDEN/,
   );
 });
 
@@ -410,8 +662,8 @@ test('enforces the unique batch formula 15 + 5 * N for 1..100 items', () => {
   );
 });
 
-test('CP-05 marks the measured batch ready only after every event satisfies the linear formula', () => {
-  const ready = budgetReadiness({
+test('CP-05 requires the approved batch cardinality evidence set and validates every event', () => {
+  const incomplete = budgetReadiness({
     operationId: BATCH_OPERATION_ID,
     category: 'P1',
     maxDatabaseOperationCount: 110,
@@ -421,8 +673,22 @@ test('CP-05 marks the measured batch ready only after every event satisfies the 
       {requestCardinality: 20, databaseOperationCount: 110},
     ],
   });
+  assert.equal(incomplete.status, 'BLOCKED_REQUIRES_BATCH_CARDINALITY_EVIDENCE');
+  assert.deepEqual(incomplete.missingCardinalities, [1, 100]);
+
+  const ready = budgetReadiness({
+    operationId: BATCH_OPERATION_ID,
+    category: 'P1',
+    maxDatabaseOperationCount: 515,
+    linearObservations: [
+      {requestCardinality: 1, databaseOperationCount: 20},
+      {requestCardinality: 20, databaseOperationCount: 110},
+      {requestCardinality: 100, databaseOperationCount: 515},
+    ],
+  });
   assert.equal(ready.status, 'READY');
   assert.deepEqual(ready.databaseOperationBudget, LINEAR_REQUEST_CARDINALITY_BUDGET);
+
   const blocked = budgetReadiness({
     operationId: BATCH_OPERATION_ID,
     category: 'P1',
@@ -430,6 +696,20 @@ test('CP-05 marks the measured batch ready only after every event satisfies the 
     linearObservations: [{requestCardinality: 20, databaseOperationCount: 116}],
   });
   assert.equal(blocked.status, 'BLOCKED_ABOVE_LINEAR_CEILING');
+
+  const unexpected = budgetReadiness({
+    operationId: BATCH_OPERATION_ID,
+    category: 'P1',
+    maxDatabaseOperationCount: 520,
+    linearObservations: [
+      {requestCardinality: 1, databaseOperationCount: 20},
+      {requestCardinality: 2, databaseOperationCount: 25},
+      {requestCardinality: 20, databaseOperationCount: 110},
+      {requestCardinality: 100, databaseOperationCount: 515},
+    ],
+  });
+  assert.equal(unexpected.status, 'BLOCKED_REQUIRES_BATCH_CARDINALITY_EVIDENCE');
+  assert.deepEqual(unexpected.unexpectedCardinalities, [2]);
 });
 
 test('CP-05 applies explicit aggregate ceilings before the generic P3 ceiling', () => {
@@ -458,7 +738,7 @@ test('validates exactly three per-operation max inputs and uses max, never avera
   }));
   const result = validateThreeRunMaxInputs({operationIds, runs});
   assert.equal(result.runCount, 3);
-  assert.equal(result.expectedOperations, 239);
+  assert.equal(result.expectedOperations, EXPECTED_OPERATION_COUNT);
   assert.equal(result.maxByOperation['operation-1'], 6);
   assert.throws(() => validateThreeRunMaxInputs({operationIds, runs: runs.slice(0, 2)}), /BUDGET_THREE_RUNS_REQUIRED/);
   assert.throws(
@@ -477,6 +757,29 @@ test('CP-05 measurement is a hard prerequisite and blocked evidence stays NOT_RE
   assert.throws(() => assertCp05ReadyForBudget(report), /BUDGET_NOT_READY_CP05_BLOCKED/);
 });
 
+test('CP-05 report rejects a repeated batch cardinality calibration set', () => {
+  const report = calibrationReport();
+  const incomplete = {
+    ...report,
+    operations: report.operations.map(operation =>
+      operation.operationId === BATCH_OPERATION_ID
+        ? {
+            ...operation,
+            linearBudgetObservations: [
+              {requestCardinality: 20, databaseOperationCount: 110},
+              {requestCardinality: 20, databaseOperationCount: 110},
+              {requestCardinality: 20, databaseOperationCount: 110},
+            ],
+          }
+        : operation,
+    ),
+  };
+  assert.throws(
+    () => validateCp05CalibrationReport(incomplete),
+    /BUDGET_CP05_BATCH_CARDINALITY_EVIDENCE_INVALID:missing=1,100/,
+  );
+});
+
 test('Dexter current-program decision admits exactly one archived acceptance input, not a disguised calibration run', () => {
   const report = currentProgramResultReport();
   assert.doesNotThrow(() => validateCp05CalibrationReport(report));
@@ -486,11 +789,19 @@ test('Dexter current-program decision admits exactly one archived acceptance inp
     /BUDGET_CP05_MEASUREMENT_SHAPE_INVALID/,
   );
   assert.throws(
-    () => validateCp05CalibrationReport({...report, budget: {...report.budget, currentRunAuthorityDecisionRef: 'DEXTER-OTHER'}}),
+    () =>
+      validateCp05CalibrationReport({
+        ...report,
+        budget: {...report.budget, currentRunAuthorityDecisionRef: 'DEXTER-OTHER'},
+      }),
     /BUDGET_CP05_MEASUREMENT_SHAPE_INVALID/,
   );
   assert.throws(
-    () => validateCp05CalibrationReport({...report, source: {...report.source, runs: [{...report.source.runs[0], managedMeasurementEvidence: {status: 'PASS'}}]}}),
+    () =>
+      validateCp05CalibrationReport({
+        ...report,
+        source: {...report.source, runs: [{...report.source.runs[0], managedMeasurementEvidence: {status: 'PASS'}}]},
+      }),
     /BUDGET_CP05_RUN_NOT_PASS:0/,
   );
 });
@@ -501,11 +812,24 @@ test('a fully ready in-memory calibration can validate the future projection wit
     operations: budgetOperations().map(({databaseOperationBudget: _retired, ...identity}) => identity),
     calibrationReport: report,
   });
-  assert.equal(registry.operations.length, 239);
-  assert.equal(registry.expectedOperations, 239);
+  assert.equal(registry.operations.length, EXPECTED_OPERATION_COUNT);
+  assert.equal(registry.expectedOperations, EXPECTED_OPERATION_COUNT);
 });
 
-test('run-level verifier consumes all 239 generated budgets and rejects fixed or linear overages', () => {
+test('budget projection rejects an operation missing from the measured calibration report', () => {
+  const report = calibrationReport();
+  const operations = budgetOperations().map(({databaseOperationBudget: _retired, ...identity}) => identity);
+  assert.throws(
+    () =>
+      buildBudgetProjectionSubset({
+        operations: [...operations, {...operations[0], operationId: 'newUnmeasuredOperation'}],
+        calibrationReport: report,
+      }),
+    /BUDGET_PROJECTION_OPERATION_MISSING:newUnmeasuredOperation/,
+  );
+});
+
+test('run-level verifier consumes all generated budgets and rejects fixed or linear overages', () => {
   const registry = budgetOperations();
   const events = registry.map(({operationId, databaseOperationBudget, ...identity}) => ({
     ...identity,
@@ -520,8 +844,8 @@ test('run-level verifier consumes all 239 generated budgets and rejects fixed or
   assert.deepEqual(
     {declared: evidence.declared, observed: evidence.observed, exceeded: evidence.exceeded},
     {
-      declared: 239,
-      observed: 239,
+      declared: EXPECTED_OPERATION_COUNT,
+      observed: EXPECTED_OPERATION_COUNT,
       exceeded: 0,
     },
   );
@@ -531,7 +855,7 @@ test('run-level verifier consumes all 239 generated budgets and rejects fixed or
       observed: normalSampleMatrix.observed,
       rows: normalSampleMatrix.rows.length,
     },
-    {expected: 239, observed: 239, rows: 239},
+    {expected: EXPECTED_OPERATION_COUNT, observed: EXPECTED_OPERATION_COUNT, rows: EXPECTED_OPERATION_COUNT},
   );
   const fixedOverage = events.map(event =>
     event.operationId === 'operation-1' ? {...event, databaseOperationCount: 5} : event,
@@ -585,8 +909,8 @@ test('run-level connection gate uses operation sections and keeps real red mutat
   assert.deepEqual(
     {declared: evidence.declared, observed: evidence.observed, exceeded: evidence.exceeded},
     {
-      declared: 239,
-      observed: 239,
+      declared: EXPECTED_OPERATION_COUNT,
+      observed: EXPECTED_OPERATION_COUNT,
       exceeded: 0,
     },
   );

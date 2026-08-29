@@ -12,11 +12,30 @@ const definition: ExtensionDefinition = {
   entityType: 'REGION',
   revision: 1,
   updatedAt: 0,
+  workspaceStatus: 'ENABLED',
+  blockers: [],
   definitions: [
     {key: 'hidden', label: '停用字段', type: 'TEXT', required: false, options: [], status: 'DISABLED', displayOrder: 0},
-    {key: 'startsOn', label: '开始日期', type: 'DATE', required: true, options: [], displayOrder: 1},
-    {key: 'enabled', label: '启用标记', type: 'BOOLEAN', required: false, options: [], displayOrder: 2},
-    {key: 'area', label: '面积', type: 'NUMBER', required: false, options: [], displayOrder: 3, displaySuffix: '㎡'},
+    {key: 'startsOn', label: '开始日期', type: 'DATE', required: true, options: [], status: 'ENABLED', displayOrder: 1},
+    {
+      key: 'enabled',
+      label: '启用标记',
+      type: 'BOOLEAN',
+      required: false,
+      options: [],
+      status: 'ENABLED',
+      displayOrder: 2,
+    },
+    {
+      key: 'area',
+      label: '面积',
+      type: 'NUMBER',
+      required: false,
+      options: [],
+      status: 'ENABLED',
+      displayOrder: 3,
+      displaySuffix: '㎡',
+    },
   ],
 };
 

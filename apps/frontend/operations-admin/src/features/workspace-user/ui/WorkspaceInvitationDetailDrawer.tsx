@@ -83,7 +83,7 @@ export function WorkspaceInvitationDetailDrawer({open, invitation, canInvite, on
               {
                 key: 'organization',
                 label: '任职机构',
-                children: <NameCodePathText value={invitation.targetOrganizationPath} />,
+                children: <NameCodePathText nodes={invitation.targetOrganizationPathNodes} />,
               },
               {key: 'roles', label: '业务角色', children: invitation.roleNames.join('、')},
               {key: 'status', label: '状态', children: statusLabel[invitation.status]},
@@ -124,7 +124,7 @@ export function WorkspaceInvitationDetailDrawer({open, invitation, canInvite, on
             ? {
                 entityType: 'WORKSPACE_INVITATION',
                 entityId: invitation.id,
-                displayName: <NameCodePathText value={invitation.targetOrganizationPath} />,
+                displayName: <NameCodePathText nodes={invitation.targetOrganizationPathNodes} />,
               }
             : undefined
         }

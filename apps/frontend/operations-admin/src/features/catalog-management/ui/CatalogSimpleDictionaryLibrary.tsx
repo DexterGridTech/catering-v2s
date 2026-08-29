@@ -91,7 +91,7 @@ export function CatalogSimpleDictionaryLibrary({
             {value: 'ALL', label: '全部状态'},
             {value: 'ENABLED', label: '启用'},
             {value: 'DISABLED', label: '已停用'},
-            ...(!isUnit ? [{value: 'VOIDED', label: '已作废'}] : []),
+            {value: 'VOIDED', label: '已作废'},
           ]}
           style={{width: 160}}
           aria-label={`筛选${entityLabel}状态`}

@@ -549,7 +549,7 @@ export function WorkspaceUserPage({
       <WorkspaceUserRevokeModal
         open={Boolean(pendingRevoke)}
         displayName={detail.target?.displayName}
-        organizationPath={pendingRevoke?.organizationPath}
+        organizationPathNodes={pendingRevoke?.organizationPathNodes}
         problem={revokeProblem}
         submitting={revoking}
         onCancel={() => {

@@ -4,13 +4,8 @@ import type {CatalogUnitList, Uuid} from '../../../app/api/generated/catalog-inv
 import type {CatalogShapeManifestView} from '../../../app/api/generated/catalog-inventory-edge';
 import type {CatalogSkuRow} from '../model/catalogModel';
 import {catalogCentsToYuan, catalogSkuIssueCodes, catalogYuanToCents} from '../model/catalogModel';
-import type {
-  MediaDraft,
-  PreparationProfileDraft,
-  SkuDimensionDraft,
-  SkuRowDraft,
-} from '../model/catalogItemEditorDraftAdapters';
-import {catalogEnumOptions, catalogFieldLabel} from '../model/catalogManifestLabels';
+import type {MediaDraft, SkuDimensionDraft, SkuRowDraft} from '../model/catalogItemEditorDraftAdapters';
+import {catalogEnumOptions} from '../model/catalogManifestLabels';
 import {CatalogAssetPreview} from './CatalogAssetPreview';
 import {catalogVoidBlockReason} from './CatalogItemEditorFieldPresentation';
 import {catalogTestIdControls} from '../catalogTestIds';

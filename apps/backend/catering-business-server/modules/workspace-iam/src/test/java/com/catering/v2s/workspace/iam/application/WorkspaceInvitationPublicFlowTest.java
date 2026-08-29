@@ -13,6 +13,7 @@ import com.catering.v2s.organization.application.OrganizationTaskPathService;
 import com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy;
 import com.catering.v2s.platform.foundation.seed.DevFixedOtpIssuer;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -72,7 +73,13 @@ class WorkspaceInvitationPublicFlowTest {
                 NOW,
                 NOW,
                 NOW);
-        ExtensionDefinitionService definitions = new ExtensionDefinitionService(jdbc, time);
+        WorkspaceStatusLookup workspaceStatuses = (id, key) -> jdbc.queryForObject(
+                "SELECT status FROM platform_workspace.group_workspace "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=?",
+                String.class,
+                id,
+                key);
+        ExtensionDefinitionService definitions = new ExtensionDefinitionService(jdbc, time, workspaceStatuses);
         OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, time);
         BusinessEntityService entities = new BusinessEntityService(jdbc, time, definitions, hierarchy);
         WorkspaceRoleService roles = new WorkspaceRoleService(jdbc, time);
@@ -122,6 +129,155 @@ class WorkspaceInvitationPublicFlowTest {
                 fixedOtpIssuer);
         authentication = new WorkspaceAuthenticationService(jdbc, time, roles, hierarchy, entities, entities);
         WorkspaceInvitationPublicFlowTest.user = user;
+    }
+
+    @Test
+    void createRejectsDisabledAccountOrRoleBeforeInvitationWrites() {
+        for (String status : List.of("DISABLED", "VOIDED")) {
+            String mobile = "DISABLED".equals(status) ? "13800000018" : "13800000021";
+            UUID accountId = UUID.randomUUID();
+            jdbc.update(
+                    "INSERT INTO workspace_iam.workspace_account (id, workspace_uuid, group_workspace_key, "
+                            + "mobile_normalized, login_name_normalized, display_name, status, version, "
+                            + "created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'public-flow', "
+                            + "?, ?, ?, ?, 1, ?, ?)",
+                    accountId,
+                    workspaceId,
+                    mobile,
+                    status.toLowerCase(java.util.Locale.ROOT) + "-invite-user",
+                    status + " Invite User",
+                    status,
+                    NOW,
+                    NOW);
+            assertThrows(
+                    WorkspaceInvitationService.AccountNotBindableException.class,
+                    () -> invitations.create(
+                            workspaceId,
+                            "public-flow",
+                            mobile,
+                            List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", regionId)),
+                            NOW + 60 * 60 * 1000L));
+            assertEquals(
+                    0,
+                    jdbc.queryForObject(
+                            "SELECT COUNT(*) FROM workspace_iam.invitation WHERE mobile_normalized=?",
+                            Integer.class,
+                            mobile));
+            assertEquals(
+                    0,
+                    jdbc.queryForObject(
+                            "SELECT COUNT(*) FROM workspace_iam.invitation_assignment_intent i JOIN "
+                                    + "workspace_iam.invitation v ON v.id=i.invitation_id WHERE "
+                                    + "v.mobile_normalized=?",
+                            Integer.class,
+                            mobile));
+        }
+
+        for (String status : List.of("DISABLED", "VOIDED")) {
+            String mobile = "DISABLED".equals(status) ? "13800000019" : "13800000023";
+            jdbc.update("UPDATE workspace_iam.workspace_role SET status=? WHERE id=?", status, roleId);
+            try {
+                assertThrows(
+                        WorkspaceInvitationService.InvitationValidationException.class,
+                        () -> invitations.create(
+                                workspaceId,
+                                "public-flow",
+                                mobile,
+                                List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", regionId)),
+                                NOW + 60 * 60 * 1000L));
+            } finally {
+                jdbc.update("UPDATE workspace_iam.workspace_role SET status='ENABLED' WHERE id=?", roleId);
+            }
+            assertEquals(
+                    0,
+                    jdbc.queryForObject(
+                            "SELECT COUNT(*) FROM workspace_iam.invitation WHERE mobile_normalized=?",
+                            Integer.class,
+                            mobile));
+        }
+    }
+
+    @Test
+    void publicReadinessReportsAccountFourStateAndCompleteRejectsUnbindableAccount() {
+        var created = invitations.create(
+                workspaceId,
+                "public-flow",
+                "13800000020",
+                List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", regionId)),
+                NOW + 60 * 60 * 1000L);
+        invitations.acceptPublic("public-flow", created.rawInvitationToken());
+        String otp = invitations.issueMobileVerificationOtp(
+                "public-flow", created.rawInvitationToken(), NOW + 5 * 60 * 1000L);
+        UUID accountId = UUID.randomUUID();
+        jdbc.update(
+                "INSERT INTO workspace_iam.workspace_account (id, workspace_uuid, group_workspace_key, "
+                        + "mobile_normalized, login_name_normalized, display_name, status, version, "
+                        + "created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'public-flow', "
+                        + "'13800000020', 'disabled-during-invite', 'Disabled During Invite', 'DISABLED', 1, ?, ?)",
+                accountId,
+                workspaceId,
+                NOW,
+                NOW);
+
+        var verified = invitations.verifyPublicOtp("public-flow", created.rawInvitationToken(), "13800000020", otp);
+        assertEquals("DISABLED", verified.accountExists());
+        invitations.savePublicCredentials(
+                "public-flow",
+                created.rawInvitationToken(),
+                verified.verificationGrant(),
+                "Blocked User",
+                "blocked-user",
+                "a-secure-password".toCharArray());
+        assertThrows(
+                WorkspaceInvitationService.AccountNotBindableException.class,
+                () -> invitations.completePublic("public-flow", created.rawInvitationToken()));
+        assertEquals(0, assignments(created.id()));
+        assertEquals(
+                0,
+                jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM workspace_iam.workspace_credential WHERE account_id=?",
+                        Integer.class,
+                        accountId));
+
+        var voided = invitations.create(
+                workspaceId,
+                "public-flow",
+                "13800000022",
+                List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", regionId)),
+                NOW + 60 * 60 * 1000L);
+        invitations.acceptPublic("public-flow", voided.rawInvitationToken());
+        String voidedOtp = invitations.issueMobileVerificationOtp(
+                "public-flow", voided.rawInvitationToken(), NOW + 5 * 60 * 1000L);
+        UUID voidedAccountId = UUID.randomUUID();
+        jdbc.update(
+                "INSERT INTO workspace_iam.workspace_account (id, workspace_uuid, group_workspace_key, "
+                        + "mobile_normalized, login_name_normalized, display_name, status, version, "
+                        + "created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'public-flow', "
+                        + "'13800000022', 'voided-during-invite', 'Voided During Invite', 'VOIDED', 1, ?, ?)",
+                voidedAccountId,
+                workspaceId,
+                NOW,
+                NOW);
+        var voidedVerified =
+                invitations.verifyPublicOtp("public-flow", voided.rawInvitationToken(), "13800000022", voidedOtp);
+        assertEquals("VOIDED", voidedVerified.accountExists());
+        invitations.savePublicCredentials(
+                "public-flow",
+                voided.rawInvitationToken(),
+                voidedVerified.verificationGrant(),
+                "Voided User",
+                "voided-user",
+                "a-secure-password".toCharArray());
+        assertThrows(
+                WorkspaceInvitationService.AccountNotBindableException.class,
+                () -> invitations.completePublic("public-flow", voided.rawInvitationToken()));
+        assertEquals(0, assignments(voided.id()));
+        assertEquals(
+                0,
+                jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM workspace_iam.workspace_credential WHERE account_id=?",
+                        Integer.class,
+                        voidedAccountId));
     }
 
     @Test
@@ -404,9 +560,10 @@ class WorkspaceInvitationPublicFlowTest {
                 workspaceId, "public-flow", null, null, null, null, null, "REGION", scopeId, null, null, 1, 20));
         assertEquals(1, page.total());
         assertEquals(1, page.items().size());
-        assertEquals(
-                "user-scope User scope",
-                page.items().getFirst().assignments().getFirst().organizationPath());
+        var pathNodes = page.items().getFirst().assignments().getFirst().organizationPathNodes();
+        assertEquals(1, pathNodes.size());
+        assertEquals("user-scope", pathNodes.getFirst().code());
+        assertEquals("User scope", pathNodes.getFirst().name());
         UUID emptyScopeId = new OrganizationHierarchyService(jdbc, () -> NOW)
                 .create(workspaceId, "public-flow", "REGION", null, "empty-scope", "Empty scope")
                 .id();
@@ -570,7 +727,8 @@ class WorkspaceInvitationPublicFlowTest {
                         "SELECT invitation_token FROM workspace_iam.invitation WHERE id=?",
                         String.class,
                         created.id()));
-        assertEquals("/operations/invitations/public-flow/" + created.rawInvitationToken(), item.invitationPageUrl());
+        assertEquals("public-flow", item.invitationRouteFacts().groupWorkspaceKey());
+        assertEquals(created.rawInvitationToken(), item.invitationRouteFacts().invitationToken());
     }
 
     @Test

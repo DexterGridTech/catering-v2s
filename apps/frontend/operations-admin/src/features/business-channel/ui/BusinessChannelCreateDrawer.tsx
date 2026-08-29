@@ -1,6 +1,7 @@
 import {Alert, Button, Drawer, Form, Input, Select, Space} from 'antd';
 import {
   adminDrawerSurfaceProps,
+  closedCodeLabel,
   useDrawerFormLifecycle,
   useOverlayLock,
   useSubmissionLifecycle,
@@ -14,6 +15,7 @@ import type {OperationsPageContext} from '../../../app/routing/model';
 import {useEffect, useState} from 'react';
 import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import {wireUuid} from '../../../app/api/wireUuid';
+import {operatorKindLabels} from '../model/businessChannelCodeLabels';
 
 export function BusinessChannelCreateDrawer({
   open,
@@ -80,7 +82,7 @@ export function BusinessChannelCreateDrawer({
   const availableTemplates =
     ownerNodeType === 'STORE'
       ? templates.filter(template => template.operatorKind === 'STORE' && template.status === 'ENABLED')
-      : templates;
+      : templates.filter(template => template.operatorKind === 'PROJECT' && template.status === 'ENABLED');
   return (
     <Drawer
       open={open}
@@ -129,8 +131,7 @@ export function BusinessChannelCreateDrawer({
             optionFilterProp="label"
             options={availableTemplates.map(template => ({
               value: template.templateRef,
-              label: `${template.templateName}（${template.operatorKind === 'STORE' ? '门店' : '项目'}）`,
-              disabled: template.status === 'DISABLED',
+              label: `${template.templateName}（${closedCodeLabel(operatorKindLabels, template.operatorKind)}）`,
             }))}
             {...testId(`${ownerNodeType.toLocaleLowerCase()}-business-channel-template-select`)}
           />

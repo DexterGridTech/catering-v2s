@@ -32,12 +32,10 @@ const CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS = ["replaceCatalogInventoryRule
 const CATALOG_ORDER_OPTION_DEFINITION_COMMANDS = Object.freeze({
   createOperationsCatalogOrderOptionDefinition: ["resolveCatalogOrderOptionMaterialTarget"],
   updateOperationsCatalogOrderOptionDefinition: ["resolveCatalogOrderOptionMaterialTarget", "deleteCatalogOrderOptionValueBoms"],
-  deleteOperationsCatalogOrderOptionDefinition: ["deleteCatalogOptionValueBoms"],
 });
 const CATALOG_UNIT_DEFINITION_COMMANDS = Object.freeze({
   updateOperationsCatalogUnit: ["validateCatalogUnitLifecycle"],
-  disableOperationsCatalogUnit: ["validateCatalogUnitLifecycle"],
-  deleteOperationsCatalogUnit: ["validateCatalogUnitLifecycle"],
+  transitionOperationsCatalogUnitStatus: ["validateCatalogUnitLifecycle"],
 });
 function catalogInventoryDefinitionCommands(operationId) {
   if (operationId === CATALOG_SAVE_OPERATION_ID) return CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS;
@@ -502,7 +500,10 @@ function exactStringList(left, right) {
 function catalogInventoryContractOperations(root) {
   if (!fs.existsSync(path.join(root, CATALOG_INVENTORY_EDGE_CONTRACT_PATH))) return new Map();
   const contract = json(root, CATALOG_INVENTORY_EDGE_CONTRACT_PATH, "CATALOG_INVENTORY_CONTRACT_INVALID");
-  if (contract.kind !== "catalog-inventory-edge-contract" || !Array.isArray(contract.operations) || contract.operations.length !== 59) {
+  if (contract.kind !== "catalog-inventory-edge-contract"
+    || !Number.isInteger(contract.operationCount)
+    || !Array.isArray(contract.operations)
+    || contract.operations.length !== contract.operationCount) {
     fail("CATALOG_INVENTORY_CONTRACT_OPERATION_COUNT_INVALID");
   }
   const rows = new Map();
@@ -558,7 +559,7 @@ function catalogInventoryContractOperations(root) {
     }
     rows.set(identity, operation);
   }
-  if (mutations !== 37 || reads !== 22) fail(`CATALOG_INVENTORY_CONTRACT_WRITE_READ_DENOMINATOR_DRIFT:${mutations}/${reads}`);
+  if (mutations !== 36 || reads !== 22) fail(`CATALOG_INVENTORY_CONTRACT_WRITE_READ_DENOMINATOR_DRIFT:${mutations}/${reads}`);
   return rows;
 }
 

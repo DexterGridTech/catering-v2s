@@ -276,6 +276,7 @@
         "OWNER_LOCAL_EFFICIENCY_REPAIR",
         "EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY",
         "COMMAND_CORRECTNESS_COST_PRESERVED",
+        "BUSINESS_CORRECTNESS_PRECEDES_DB_EFFICIENCY",
         "TASK_READ_BUDGET_REQUIRES_EXPLANATION",
         "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT",
         "CONTRACT_ROUTE_CLOSURE",
@@ -289,6 +290,7 @@
         "PERFORMANCE_IS_TWO_MULTIPLIERS",
         "MEASUREMENT_BASIS_BEFORE_MEASUREMENT_CLAIM",
         "BUDGET_CALIBRATED_AFTER_REPAIR_NOT_BEFORE",
+        "IMPLEMENTATION_AGENT_CONTROLLED_BUDGET_EXCEPTION",
         "OPTIMIZATION_CLOSURE_NEEDS_BEFORE_AFTER_NUMBERS"
       ],
       "assertionSources": [
@@ -316,6 +318,11 @@
           "assertionKey": "COMMAND_CORRECTNESS_COST_PRESERVED",
           "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
           "anchor": "# 6. 明确不做"
+        },
+        {
+          "assertionKey": "BUSINESS_CORRECTNESS_PRECEDES_DB_EFFICIENCY",
+          "path": "PLATFORM-BLUEPRINT.md",
+          "anchor": "## HTTP CRUD 效率设计红线"
         },
         {
           "assertionKey": "TASK_READ_BUDGET_REQUIRES_EXPLANATION",
@@ -383,6 +390,11 @@
           "anchor": "### CP-05 · P0 与初始预算"
         },
         {
+          "assertionKey": "IMPLEMENTATION_AGENT_CONTROLLED_BUDGET_EXCEPTION",
+          "path": "doc/platform/implementation-task-template.md",
+          "anchor": "**受控预算例外也属于这项自主权,但只在当前详设和 Dexter 授权明确委托时成立**:"
+        },
+        {
           "assertionKey": "OPTIMIZATION_CLOSURE_NEEDS_BEFORE_AFTER_NUMBERS",
           "path": "doc/review/platform/2026-08-22-v2s-backend-performance-root-cause-analysis-claude.md",
           "anchor": "## 4 · 为什么历次专项优化没有用(四条,全部可证)"
@@ -397,6 +409,7 @@
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
         "doc/plans/platform/2026-08-22-v2s-backend-performance-remediation-implementation-design-codex.md",
         "doc/platform/backend-coding-standard.md",
+        "doc/platform/implementation-task-template.md",
         "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md",
         "doc/review/platform/2026-08-22-v2s-backend-performance-remediation-design-review-claude.md",
         "doc/review/platform/2026-08-22-v2s-backend-performance-root-cause-analysis-claude.md"
@@ -4273,6 +4286,270 @@
       "sourceRefs": [
         "doc/decisions/templates/ui-interaction-design-template.md",
         "project-memory/decisions/confirmed-business-language-corpus.md"
+      ]
+    },
+    {
+      "id": "pitfalls.analysis-ruler-and-scope-discipline",
+      "path": "project-memory/pitfalls/analysis-ruler-and-scope-discipline.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "review",
+          "design",
+          "diagnostics"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "evidence",
+          "governance"
+        ],
+        "triggers": [
+          "review",
+          "task-start",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "RULER_MUST_MATCH_SUBJECT_STAGE",
+        "VERIFY_ONLY_WHAT_CHANGES_THE_RECOMMENDATION",
+        "BATCH_EDIT_MUST_ASSERT_AND_READ_BACK"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "RULER_MUST_MATCH_SUBJECT_STAGE",
+          "path": "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/03-review-discipline-claude.md",
+          "anchor": "## D-4 用**产品阶段**的尺子量 **POC**"
+        },
+        {
+          "assertionKey": "VERIFY_ONLY_WHAT_CHANGES_THE_RECOMMENDATION",
+          "path": "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/03-review-discipline-claude.md",
+          "anchor": "## D-6 验证与结论无关的事实"
+        },
+        {
+          "assertionKey": "BATCH_EDIT_MUST_ASSERT_AND_READ_BACK",
+          "path": "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/03-review-discipline-claude.md",
+          "anchor": "## D-7 Python 批改脚本：引号嵌套 / `replace` 不加 assert"
+        }
+      ],
+      "sourceRefs": [
+        "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/03-review-discipline-claude.md"
+      ]
+    },
+    {
+      "id": "operations.terminal-coding-standard",
+      "path": "project-memory/operations/terminal-coding-standard.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "frontend-platform"
+        ],
+        "impacts": [
+          "governance",
+          "architecture"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "requiredAssertions": [
+        "TERMINAL_STANDARD_SINGLE_SOURCE",
+        "TERMINAL_STANDARD_POINTERS_ONLY",
+        "TERMINAL_NINE_HARD_RULES",
+        "TERMINAL_TRIPLE_NAMING_DERIVED",
+        "TERMINAL_PORT_REGISTRY_WITH_DEFAULTS"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "TERMINAL_STANDARD_SINGLE_SOURCE",
+          "path": "doc/platform/terminal-coding-standard.md",
+          "anchor": "# 终端编码规范 · 唯一权威"
+        },
+        {
+          "assertionKey": "TERMINAL_STANDARD_POINTERS_ONLY",
+          "path": "doc/platform/terminal-coding-standard.md",
+          "anchor": "## 6 · 维护约定"
+        },
+        {
+          "assertionKey": "TERMINAL_NINE_HARD_RULES",
+          "path": "doc/platform/terminal-coding-standard.md",
+          "anchor": "## 1 · 九条硬规则（`TR-01` … `TR-09`）"
+        },
+        {
+          "assertionKey": "TERMINAL_TRIPLE_NAMING_DERIVED",
+          "path": "doc/platform/terminal-coding-standard.md",
+          "anchor": "## 2 · 三重命名与依赖方向"
+        },
+        {
+          "assertionKey": "TERMINAL_PORT_REGISTRY_WITH_DEFAULTS",
+          "path": "doc/platform/terminal-coding-standard.md",
+          "anchor": "## 3 · 能力端口的形状"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/terminal-coding-standard.md"
+      ]
+    },
+    {
+      "id": "decisions.terminal-architecture-and-stack-rulings",
+      "path": "project-memory/decisions/terminal-architecture-and-stack-rulings.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "frontend-platform",
+          "product"
+        ],
+        "impacts": [
+          "architecture",
+          "governance",
+          "runtime"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "requiredAssertions": [
+        "TER_SAME_GOVERNANCE_AS_MAIN_REPO",
+        "TER_FOUR_LAYER_NESTED_STRUCTURE",
+        "TER_SINGLE_VM_SINGLE_STORE_MULTI_SURFACE",
+        "TER_PAIR_TOPOLOGY_WITH_DETACHABLE_SECONDARY",
+        "TER_STACK_RULINGS_T1_T13",
+        "TER_SCRIPT_EXECUTE_UNRESTRICTED"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "TER_SAME_GOVERNANCE_AS_MAIN_REPO",
+          "path": "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md",
+          "anchor": "### 4B.9b 治理形态：TER 与主仓同规，不另立第二套（Dexter 2026-08-28，补记）"
+        },
+        {
+          "assertionKey": "TER_FOUR_LAYER_NESTED_STRUCTURE",
+          "path": "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md",
+          "anchor": "### 4B.7 目录结构与三重命名（Dexter 2026-08-28 要求）"
+        },
+        {
+          "assertionKey": "TER_SINGLE_VM_SINGLE_STORE_MULTI_SURFACE",
+          "path": "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md",
+          "anchor": "### 4B.1 【正解】端口注册器 + 默认实例（取代我上一版的\"三态 + fail-fast\"）"
+        },
+        {
+          "assertionKey": "TER_PAIR_TOPOLOGY_WITH_DETACHABLE_SECONDARY",
+          "path": "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md",
+          "anchor": "### 4B.11 Dexter 2026-08-28 第三轮裁定（Q-04 / X-02 / X-07 / X-08 / Q-11）"
+        },
+        {
+          "assertionKey": "TER_STACK_RULINGS_T1_T13",
+          "path": "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md",
+          "anchor": "### 4B.10 技术栈裁定汇总（补记 —— 此前散在讨论稿，未进决策载体）"
+        },
+        {
+          "assertionKey": "TER_SCRIPT_EXECUTE_UNRESTRICTED",
+          "path": "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md",
+          "anchor": "### 4B.11 Dexter 2026-08-28 第三轮裁定（Q-04 / X-02 / X-07 / X-08 / Q-11）"
+        }
+      ],
+      "sourceRefs": [
+        "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md"
+      ]
+    },
+    {
+      "id": "decisions.terminal-build-order-and-batches",
+      "path": "project-memory/decisions/terminal-build-order-and-batches.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "frontend-platform"
+        ],
+        "impacts": [
+          "architecture",
+          "roadmap"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "requiredAssertions": [
+        "TER_FOUNDATION_FIRST_THREE_BATCHES",
+        "TER_DEPENDENCY_GRAPH_FROM_REAL_IMPORTS",
+        "TER_FOUNDATION_DONE_CRITERIA",
+        "TER_SKELETON_TWO_BATCH_VERTICAL_SLICE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "TER_FOUNDATION_FIRST_THREE_BATCHES",
+          "path": "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md",
+          "anchor": "## 2 · 三个批次"
+        },
+        {
+          "assertionKey": "TER_DEPENDENCY_GRAPH_FROM_REAL_IMPORTS",
+          "path": "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md",
+          "anchor": "## 1 · 先说一个必须先解决的前提：声明的依赖图是不可信的"
+        },
+        {
+          "assertionKey": "TER_FOUNDATION_DONE_CRITERIA",
+          "path": "doc/plans/platform/2026-08-29-v2s-terminal-skeleton-requirements-claude.md",
+          "anchor": "## 9 · 骨架验收：真实解析闭包"
+        },
+        {
+          "assertionKey": "TER_SKELETON_TWO_BATCH_VERTICAL_SLICE",
+          "path": "doc/plans/platform/2026-08-29-v2s-terminal-skeleton-requirements-claude.md",
+          "anchor": "### 6.2 分两批建，**批 1 验收通过后才开批 2**"
+        }
+      ],
+      "sourceRefs": [
+        "doc/plans/platform/2026-08-29-v2s-terminal-skeleton-requirements-claude.md",
+        "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md"
       ]
     }
   ]

@@ -215,6 +215,7 @@ public class WorkspaceRoleService {
             Set<String> actionCapabilityKeys,
             AuditActor actor) {
         WorkspaceRoleReadback current = require(workspaceUuid, groupWorkspaceKey, roleId);
+        requireMutable(current.status());
         validateCatalogs(current.serviceNodeType(), pageAccessKeys, actionCapabilityKeys);
         if (jdbc.update(
                         "UPDATE workspace_iam.workspace_role SET name=?, description=?, page_access_keys=CAST(? AS "
@@ -317,7 +318,8 @@ public class WorkspaceRoleService {
             long expectedVersion,
             AuditActor actor) {
         String beforeStatus = currentStatus(workspaceUuid, groupWorkspaceKey, roleId);
-        if (!Set.of("ENABLED", "DISABLED").contains(status)
+        if (!Set.of("ENABLED", "DISABLED", "VOIDED").contains(status)
+                || "VOIDED".equals(beforeStatus)
                 || jdbc.update(
                                 "UPDATE workspace_iam.workspace_role SET status=?, version=version+1, "
                                         + "updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND "
@@ -415,7 +417,7 @@ public class WorkspaceRoleService {
                 || pageSize < 1
                 || pageSize > 100
                 || (organizationType != null && !SERVICE_NODE_TYPES.contains(organizationType))
-                || (status != null && !Set.of("ENABLED", "DISABLED").contains(status)))
+                || (status != null && !Set.of("ENABLED", "DISABLED", "VOIDED").contains(status)))
             throw new RoleValidationException();
         String effectiveSort = sort == null ? "NAME" : sort;
         String effectiveDirection = direction == null ? "ASC" : direction;
@@ -655,6 +657,10 @@ public class WorkspaceRoleService {
         String normalized = value == null ? "" : value.toUpperCase(Locale.ROOT);
         if (!SERVICE_NODE_TYPES.contains(normalized)) throw new RoleValidationException();
         return normalized;
+    }
+
+    private static void requireMutable(String status) {
+        if ("VOIDED".equals(status)) throw new RoleConflictException();
     }
 
     private static String requiredName(String value) {

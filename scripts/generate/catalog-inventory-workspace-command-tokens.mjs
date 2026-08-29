@@ -43,6 +43,7 @@ const copySourcePolicyByOperation = new Map([
   ["preflightOperationsBrandCatalogCopy", "ORGANIZATION_JUDGMENT"],
   ["executeOperationsBrandCatalogCopy", "ORGANIZATION_JUDGMENT"],
 ]);
+const CATALOG_WORKSPACE_COMMAND_TOKEN_COUNT = 36;
 const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex");
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath));
 const json = (relativePath) => JSON.parse(read(relativePath).toString("utf8"));
@@ -70,7 +71,7 @@ function validateTokenRow(row, operation, copySourcePolicies) {
 function tokens(bindings = json(bindingPath).operations, contract = json(contractPath).operations, copySourcePolicies = copySourcePolicyByOperation) {
   const contractById = new Map(contract.map((operation) => [operation.operationId, operation]));
   const rows = bindings.filter((row) => row.routeRegistry === "catalog-inventory" && row.mode === "COMMAND" && row.contextKind === "WORKSPACE_EXECUTION_CONTEXT");
-  if (rows.length !== 37) fail(`BP_U03_RUNTIME_TOKEN_EXACT_SET:${rows.length}`);
+  if (rows.length !== CATALOG_WORKSPACE_COMMAND_TOKEN_COUNT) fail(`BP_U03_RUNTIME_TOKEN_EXACT_SET:${rows.length}`);
   const ids = new Set();
   const tokenRows = rows.map((row) => {
     if (ids.has(row.operationId)) fail(`BP_U03_RUNTIME_TOKEN_DUPLICATE:${row.operationId}`);
@@ -174,14 +175,18 @@ function check() {
   validateOpaqueContextTypes();
   verifyContextForgeryDoesNotCompile();
   console.log("BP_U03_RUNTIME_TOKEN_CHECK=PASS");
-  console.log("TOKENS=37");
+  console.log(`TOKENS=${CATALOG_WORKSPACE_COMMAND_TOKEN_COUNT}`);
   console.log("CONTEXT_FORGERY_NEGATIVE=PASS");
 }
 function selfTest() {
   const rows = tokens();
   const copy = structuredClone(rows); copy.pop();
-  if (copy.length !== 36) fail("BP_U03_RUNTIME_TOKEN_RED_FIXTURE_INVALID");
-  try { if (copy.length !== 37) fail("BP_U03_RUNTIME_TOKEN_EXACT_SET"); } catch (error) { if (error.message !== "BP_U03_RUNTIME_TOKEN_EXACT_SET") throw error; }
+  if (copy.length !== CATALOG_WORKSPACE_COMMAND_TOKEN_COUNT - 1) fail("BP_U03_RUNTIME_TOKEN_RED_FIXTURE_INVALID");
+  try {
+    if (copy.length !== CATALOG_WORKSPACE_COMMAND_TOKEN_COUNT) fail("BP_U03_RUNTIME_TOKEN_EXACT_SET");
+  } catch (error) {
+    if (error.message !== "BP_U03_RUNTIME_TOKEN_EXACT_SET") throw error;
+  }
   const alteredBindings = structuredClone(json(bindingPath).operations);
   const copyTarget = alteredBindings.find((row) => row.operationId === "executeOperationsBrandCatalogCopy");
   copyTarget.copyRole = "NONE";

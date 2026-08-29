@@ -61,7 +61,18 @@ export function CatalogItemOrderOptionsEditor({
       ),
     [headers, scopeRef],
   );
+  const candidateRequest = useMemo(
+    () =>
+      catalogInventoryRtkRequest.listOperationsCatalogOrderOptionDefinitions(
+        {},
+        {query: {dataNodeRef: wireUuid(scopeRef ?? ''), candidateUsage: 'ITEM_ASSIGNMENT'}, headers},
+      ),
+    [headers, scopeRef],
+  );
   const query = operationsRtk.useListOperationsCatalogOrderOptionDefinitionsQuery(request, {skip: !scopeRef || locked});
+  const candidateQuery = operationsRtk.useListOperationsCatalogOrderOptionDefinitionsQuery(candidateRequest, {
+    skip: !scopeRef || locked,
+  });
   if (locked)
     return (
       <Space direction="vertical" style={{display: 'flex'}}>
@@ -69,8 +80,8 @@ export function CatalogItemOrderOptionsEditor({
         <OrderOptionConfigurationsReadOnly values={readOnlyValues} />
       </Space>
     );
-  const definitions = query.currentData?.data.definitions ?? [];
-  const availableDefinitions = definitions.filter(
+  const candidateDefinitions = candidateQuery.currentData?.data.definitions ?? [];
+  const availableDefinitions = candidateDefinitions.filter(
     definition => !values.some(value => value.definitionRef === definition.definitionRef),
   );
   const normalize = (next: CatalogOrderOptionConfig[]) =>
@@ -99,7 +110,7 @@ export function CatalogItemOrderOptionsEditor({
   const activeConfig = values.find(config => config.definitionRef === activeDefinitionRef);
   const add = () => {
     const chosen = new Set(pendingDefinitionRefs);
-    const additions = definitions
+    const additions = candidateDefinitions
       .filter(
         definition =>
           chosen.has(definition.definitionRef) &&
@@ -162,7 +173,7 @@ export function CatalogItemOrderOptionsEditor({
           setAddOpen(true);
         }}
         disabled={!availableDefinitions.length}
-        loading={query.isFetching}
+        loading={query.isFetching || candidateQuery.isFetching}
         {...testId(catalogTestIds.static.itemOrderOptionLibraryAdd)}
       >
         添加点单选项

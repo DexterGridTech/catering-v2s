@@ -125,7 +125,10 @@ export function WorkspaceInvitationCreateDrawer({open, targetType, queryContext,
     if (!open || !organizationPageResult) return;
     const nextOptions = organizationPageResult.organizations
       .filter(candidate => candidate.serviceNodeType === targetType)
-      .map(candidate => ({value: candidate.organizationRef, label: <NameCodePathText value={candidate.path} />}));
+      .map(candidate => ({
+        value: candidate.organizationRef,
+        label: <NameCodePathText nodes={candidate.pathNodes} />,
+      }));
     acceptOrganizationCandidatePage(nextOptions, organizationPageResult.metadata);
   }, [acceptOrganizationCandidatePage, open, organizationPageResult, targetType]);
 

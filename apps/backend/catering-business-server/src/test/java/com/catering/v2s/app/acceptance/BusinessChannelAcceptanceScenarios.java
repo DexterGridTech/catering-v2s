@@ -4,6 +4,9 @@ import static com.catering.v2s.app.acceptance.BackendAcceptanceTest.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -20,6 +23,9 @@ final class BusinessChannelAcceptanceScenarios {
             "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding");
     private static final RouteIdentity OWNER_BINDING_CREATE = new RouteIdentity(
             "createOperationsOwnerBinding",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding");
+    private static final RouteIdentity OWNER_BINDING_DELETE = new RouteIdentity(
+            "deleteOperationsOwnerBinding",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding");
     private static final RouteIdentity PROVIDER_DETAIL = new RouteIdentity(
             "getPlatformProviderProfileDetail",
@@ -234,17 +240,24 @@ final class BusinessChannelAcceptanceScenarios {
                 fixture.fixture().projectId(),
                 "Project takeaway");
         assertEquals(
-                "EFFECTIVE",
+                "ENABLED",
                 channel.json().path("status").asText(),
-                "BUSINESS: an internal channel is effective immediately without an external binding");
+                "BUSINESS: an internal channel is enabled immediately without an external binding");
         assertEquals(
                 "NOT_REQUIRED",
                 channel.json().path("bindingStatus").asText(),
                 "BUSINESS: an internal channel has no binding requirement");
-        assertEquals(
-                "—",
-                channel.json().path("bindingStatusDisplayName").asText(),
-                "BUSINESS: an internal channel does not present an unbound state");
+        assertFalse(
+                channel.json().has("bindingStatusDisplayName"),
+                "BUSINESS: binding status presentation is owned by the frontend dictionary");
+        UUID templateRef = UUID.fromString(template.json().path("templateRef").asText());
+        assertChannelFacts(
+                channel.json(),
+                "createOperationsBusinessChannel",
+                "ENABLED",
+                projectChannelDimensions(fixture.fixture(), templateRef, "ENABLED"),
+                dimensions(),
+                "BUSINESS: channel create returns exact structured status facts");
 
         BackendAcceptanceTest.Response projectChannels = context.get(
                 CHANNEL_LIST_PROJECT,
@@ -252,6 +265,13 @@ final class BusinessChannelAcceptanceScenarios {
                         + fixture.fixture().projectId() + "/business-channels",
                 fixture.session().cookie(),
                 Set.of(200));
+        assertChannelPageFacts(
+                projectChannels.json(),
+                "getOperationsProjectBusinessChannels",
+                "ENABLED",
+                projectChannelDimensions(fixture.fixture(), templateRef, "ENABLED"),
+                dimensions(),
+                "BUSINESS: project channel page binds structured status facts to the page response");
         JsonNode internalListRow = find(
                 projectChannels.json().path("items"),
                 "channelRef",
@@ -260,6 +280,13 @@ final class BusinessChannelAcceptanceScenarios {
                 "NOT_REQUIRED",
                 internalListRow.path("bindingStatus").asText(),
                 "BUSINESS: project channel list preserves the owner binding semantic");
+        assertChannelFacts(
+                internalListRow,
+                "getOperationsProjectBusinessChannels",
+                "ENABLED",
+                projectChannelDimensions(fixture.fixture(), templateRef, "ENABLED"),
+                dimensions(),
+                "BUSINESS: project channel list returns exact structured status facts");
 
         Map<String, Object> duplicateTemplateBody = new LinkedHashMap<>();
         duplicateTemplateBody.put("projectRef", fixture.fixture().projectId().toString());
@@ -305,7 +332,6 @@ final class BusinessChannelAcceptanceScenarios {
                 duplicateChannel.problemCode(),
                 "BUSINESS: channel code is unique within the group workspace");
 
-        UUID templateRef = UUID.fromString(template.json().path("templateRef").asText());
         UUID channelRef = UUID.fromString(channel.json().path("channelRef").asText());
         BackendAcceptanceTest.Response stoppedTemplate = context.post(
                 TEMPLATE_STATUS,
@@ -337,27 +363,262 @@ final class BusinessChannelAcceptanceScenarios {
                 fixture.session().cookie(),
                 Map.of(
                         "templateName",
-                        "illegal disabled edit",
+                        "disabled template edited",
                         "expectedVersion",
                         stoppedTemplate.json().path("version").asLong()),
                 headers(),
-                Set.of(409));
+                Set.of(200));
         assertEquals(
-                "DISABLED_OBJECT_NOT_EDITABLE",
-                disabledEdit.problemCode(),
-                "BUSINESS: disabled template cannot be saved");
+                "disabled template edited",
+                disabledEdit.json().path("templateName").asText(),
+                "BUSINESS: disabled template remains editable");
+        assertEquals(
+                "DISABLED",
+                disabledEdit.json().path("status").asText(),
+                "BUSINESS: editing a disabled template does not re-enable it");
         BackendAcceptanceTest.Response readback = context.get(
                 CHANNEL_DETAIL,
                 channelPath(fixture.fixture(), channelRef),
                 fixture.session().cookie(),
                 Set.of(200));
-        assertTrue(
-                readback.json().path("stopReasons").toString().contains("CASCADE_TEMPLATE"),
-                "BUSINESS: template stop cascades to channel stop reasons");
+        assertChannelFacts(
+                readback.json(),
+                "getOperationsBusinessChannelDetail",
+                "ENABLED",
+                projectChannelDimensions(fixture.fixture(), templateRef, "DISABLED"),
+                dimensions(dimension("BUSINESS_CHANNEL_TEMPLATE", templateRef.toString(), "DISABLED")),
+                "BUSINESS: channel detail returns exact structured status facts");
+        assertEquals(
+                "ENABLED",
+                requiredJsonNode(readback.json(), "/status", JsonNodeType.STRING, "BUSINESS: channel self status")
+                        .asText(),
+                "BUSINESS: template stop does not rewrite channel self status");
+        assertEquals(
+                "ENABLED",
+                requiredJsonNode(readback.json(), "/selfStatus", JsonNodeType.STRING, "BUSINESS: channel selfStatus")
+                        .asText(),
+                "BUSINESS: selfStatus mirrors the channel's own lifecycle fact");
+        assertJsonNodeEquals(
+                readback.json(),
+                "/statusDimensions",
+                dimensions(
+                        dimension("GROUP_WORKSPACE", fixture.fixture().groupWorkspaceKey(), "ENABLED"),
+                        dimension("BUSINESS_CHANNEL_TEMPLATE", templateRef.toString(), "DISABLED"),
+                        dimension(
+                                "ORGANIZATION_PROJECT",
+                                fixture.fixture().projectId().toString(),
+                                "ENABLED"),
+                        dimension(
+                                "ORGANIZATION_REGION",
+                                fixture.fixture().regionId().toString(),
+                                "ENABLED")),
+                "BUSINESS: channel status dimensions preserve ordered owner facts");
+        assertJsonNodeEquals(
+                readback.json(),
+                "/blockers",
+                dimensions(dimension("BUSINESS_CHANNEL_TEMPLATE", templateRef.toString(), "DISABLED")),
+                "BUSINESS: channel blockers contain exactly the disabled template fact");
+        assertEquals(
+                "ENABLED",
+                readback.json().path("status").asText(),
+                "BUSINESS: template stop does not rewrite channel self status");
         assertEquals(
                 "DISABLED",
-                readback.json().path("status").asText(),
-                "BUSINESS: cascaded channel is not reported effective");
+                dimensionStatus(readback.json().path("statusDimensions"), "BUSINESS_CHANNEL_TEMPLATE", templateRef),
+                "BUSINESS: template status is returned as an independent dimension");
+        assertEquals(
+                "DISABLED",
+                dimensionStatus(readback.json().path("blockers"), "BUSINESS_CHANNEL_TEMPLATE", templateRef),
+                "BUSINESS: template stop is surfaced as a structured blocker");
+        BackendAcceptanceTest.Response updatedChannel = context.patch(
+                CHANNEL_UPDATE,
+                channelPath(fixture.fixture(), channelRef),
+                fixture.session().cookie(),
+                Map.of(
+                        "channelName",
+                        "Project takeaway edited while template disabled",
+                        "expectedVersion",
+                        readback.json().path("version").asLong()),
+                headers(),
+                Set.of(200));
+        assertChannelFacts(
+                updatedChannel.json(),
+                "updateOperationsBusinessChannel",
+                "ENABLED",
+                projectChannelDimensions(fixture.fixture(), templateRef, "DISABLED"),
+                dimensions(dimension("BUSINESS_CHANNEL_TEMPLATE", templateRef.toString(), "DISABLED")),
+                "BUSINESS: channel update preserves exact upstream status facts");
+        BackendAcceptanceTest.Response disabledChannel = context.post(
+                CHANNEL_STATUS,
+                channelPath(fixture.fixture(), channelRef),
+                fixture.session().cookie(),
+                Map.of(
+                        "status",
+                        "DISABLED",
+                        "expectedVersion",
+                        updatedChannel.json().path("version").asLong()),
+                headers(),
+                Set.of(200));
+        assertChannelFacts(
+                disabledChannel.json(),
+                "transitionOperationsBusinessChannelStatus",
+                "DISABLED",
+                projectChannelDimensions(fixture.fixture(), templateRef, "DISABLED"),
+                dimensions(dimension("BUSINESS_CHANNEL_TEMPLATE", templateRef.toString(), "DISABLED")),
+                "BUSINESS: channel transition returns exact disabled and blocker facts");
+        BackendAcceptanceTest.Response enabledChannel = context.post(
+                CHANNEL_STATUS,
+                channelPath(fixture.fixture(), channelRef),
+                fixture.session().cookie(),
+                Map.of(
+                        "status",
+                        "ENABLED",
+                        "expectedVersion",
+                        disabledChannel.json().path("version").asLong()),
+                headers(),
+                Set.of(200));
+        assertChannelFacts(
+                enabledChannel.json(),
+                "transitionOperationsBusinessChannelStatus",
+                "ENABLED",
+                projectChannelDimensions(fixture.fixture(), templateRef, "DISABLED"),
+                dimensions(dimension("BUSINESS_CHANNEL_TEMPLATE", templateRef.toString(), "DISABLED")),
+                "BUSINESS: channel re-enable preserves exact upstream blocker facts");
+        BackendAcceptanceTest.Response restoredTemplate = context.post(
+                TEMPLATE_STATUS,
+                templatePath(fixture.fixture(), templateRef) + "/status",
+                fixture.session().cookie(),
+                Map.of(
+                        "status",
+                        "ENABLED",
+                        "expectedVersion",
+                        disabledEdit.json().path("version").asLong()),
+                headers(),
+                Set.of(200));
+        assertEquals("ENABLED", restoredTemplate.json().path("status").asText());
+        BackendAcceptanceTest.Response recovered = context.get(
+                CHANNEL_DETAIL,
+                channelPath(fixture.fixture(), channelRef),
+                fixture.session().cookie(),
+                Set.of(200));
+        assertChannelFacts(
+                recovered.json(),
+                "getOperationsBusinessChannelDetail",
+                "ENABLED",
+                projectChannelDimensions(fixture.fixture(), templateRef, "ENABLED"),
+                dimensions(),
+                "BUSINESS: recovered channel returns exact structured status facts");
+        assertEquals(
+                "ENABLED",
+                requiredJsonNode(recovered.json(), "/status", JsonNodeType.STRING, "BUSINESS: recovered channel status")
+                        .asText(),
+                "BUSINESS: restoring the upstream template preserves channel self status");
+        assertJsonNodeEquals(
+                recovered.json(),
+                "/statusDimensions",
+                dimensions(
+                        dimension("GROUP_WORKSPACE", fixture.fixture().groupWorkspaceKey(), "ENABLED"),
+                        dimension("BUSINESS_CHANNEL_TEMPLATE", templateRef.toString(), "ENABLED"),
+                        dimension(
+                                "ORGANIZATION_PROJECT",
+                                fixture.fixture().projectId().toString(),
+                                "ENABLED"),
+                        dimension(
+                                "ORGANIZATION_REGION",
+                                fixture.fixture().regionId().toString(),
+                                "ENABLED")),
+                "BUSINESS: recovery returns the complete ordered status dimensions");
+        assertJsonNodeEquals(
+                recovered.json(),
+                "/blockers",
+                dimensions(),
+                "BUSINESS: restoring the upstream template clears derived blockers without a channel write");
+
+        String reusableTemplateCode = "TPL-VOIDED-" + UUID.randomUUID();
+        BackendAcceptanceTest.Response voidedTemplate = createTemplateWithCode(
+                context,
+                fixture,
+                "Void and reuse template",
+                "INTERNAL",
+                "PROJECT",
+                "TAKEAWAY",
+                null,
+                null,
+                reusableTemplateCode);
+        BackendAcceptanceTest.Response voidedTemplateReadback = context.post(
+                TEMPLATE_STATUS,
+                templatePath(
+                                fixture.fixture(),
+                                UUID.fromString(voidedTemplate
+                                        .json()
+                                        .path("templateRef")
+                                        .asText()))
+                        + "/status",
+                fixture.session().cookie(),
+                Map.of(
+                        "status",
+                        "VOIDED",
+                        "expectedVersion",
+                        voidedTemplate.json().path("version").asLong()),
+                headers(),
+                Set.of(200));
+        assertEquals(
+                "VOIDED",
+                voidedTemplateReadback.json().path("status").asText(),
+                "BUSINESS: voided template remains a historical fact");
+        BackendAcceptanceTest.Response replacementTemplate = createTemplateWithCode(
+                context,
+                fixture,
+                "Replacement template after void",
+                "INTERNAL",
+                "PROJECT",
+                "TAKEAWAY",
+                null,
+                null,
+                reusableTemplateCode);
+        assertEquals(
+                reusableTemplateCode,
+                replacementTemplate.json().path("templateCode").asText(),
+                "BUSINESS: VOIDED template releases its project-scoped code");
+
+        String reusableChannelCode = "CH-VOIDED-" + UUID.randomUUID();
+        BackendAcceptanceTest.Response voidedChannel = createChannelWithCode(
+                context,
+                fixture,
+                templateRef.toString(),
+                "PROJECT",
+                fixture.fixture().projectId(),
+                "Void and reuse channel",
+                reusableChannelCode);
+        BackendAcceptanceTest.Response voidedChannelReadback = context.post(
+                CHANNEL_STATUS,
+                channelPath(
+                        fixture.fixture(),
+                        UUID.fromString(voidedChannel.json().path("channelRef").asText())),
+                fixture.session().cookie(),
+                Map.of(
+                        "status",
+                        "VOIDED",
+                        "expectedVersion",
+                        voidedChannel.json().path("version").asLong()),
+                headers(),
+                Set.of(200));
+        assertEquals(
+                "VOIDED",
+                voidedChannelReadback.json().path("status").asText(),
+                "BUSINESS: voided channel remains a historical fact");
+        BackendAcceptanceTest.Response replacementChannel = createChannelWithCode(
+                context,
+                fixture,
+                templateRef.toString(),
+                "PROJECT",
+                fixture.fixture().projectId(),
+                "Replacement channel after void",
+                reusableChannelCode);
+        assertEquals(
+                reusableChannelCode,
+                replacementChannel.json().path("channelCode").asText(),
+                "BUSINESS: VOIDED channel releases its group-scoped code");
     }
 
     @AcceptanceScenario(
@@ -417,10 +678,14 @@ final class BusinessChannelAcceptanceScenarios {
                         channel.json().path("version").asLong()),
                 headers(),
                 Set.of(200));
-        assertTrue(
-                manual.json().path("stopReasons").toString().contains("MANUAL"),
-                "BUSINESS: manual stop is an independent reason");
         UUID templateRef = UUID.fromString(template.json().path("templateRef").asText());
+        assertChannelFacts(
+                manual.json(),
+                "transitionOperationsBusinessChannelStatus",
+                "DISABLED",
+                projectChannelDimensions(fixture.fixture(), templateRef, "ENABLED"),
+                dimensions(),
+                "BUSINESS: manual stop returns exact channel status facts");
         BackendAcceptanceTest.Response templateStop = context.post(
                 TEMPLATE_STATUS,
                 templatePath(fixture.fixture(), templateRef) + "/status",
@@ -454,13 +719,13 @@ final class BusinessChannelAcceptanceScenarios {
                 channelPath(fixture.fixture(), channelRef),
                 fixture.session().cookie(),
                 Set.of(200));
-        assertTrue(
-                afterOneSource.json().path("stopReasons").toString().contains("MANUAL"),
-                "BUSINESS: restoring template does not clear manual stop");
-        assertNotEquals(
-                "EFFECTIVE",
-                afterOneSource.json().path("status").asText(),
-                "BUSINESS: one remaining stop reason keeps channel non-effective");
+        assertChannelFacts(
+                afterOneSource.json(),
+                "getOperationsBusinessChannelDetail",
+                "DISABLED",
+                projectChannelDimensions(fixture.fixture(), templateRef, "ENABLED"),
+                dimensions(),
+                "BUSINESS: one remaining manual stop is read back exactly");
     }
 
     @AcceptanceScenario(
@@ -531,12 +796,36 @@ final class BusinessChannelAcceptanceScenarios {
                 storeViewer.fixture().storeId(),
                 "Store channel from project template");
         assertEquals(
-                "EFFECTIVE",
+                "ENABLED",
                 channel.json().path("status").asText(),
-                "BUSINESS: an internal store channel is effective immediately");
+                "BUSINESS: an internal store channel is enabled immediately");
         UUID storeTemplateRef =
                 UUID.fromString(storeTemplate.json().path("templateRef").asText());
         UUID channelRef = UUID.fromString(channel.json().path("channelRef").asText());
+        BackendAcceptanceTest.Response storeChannels = context.get(
+                CHANNEL_LIST_STORE,
+                "/api/operations/group-workspaces/" + storeViewer.fixture().groupWorkspaceKey() + "/stores/"
+                        + storeViewer.fixture().storeId() + "/business-channels?pageSize=20",
+                storeViewer.session().cookie(),
+                Set.of(200));
+        assertChannelPageFacts(
+                storeChannels.json(),
+                "getOperationsStoreBusinessChannels",
+                "ENABLED",
+                storeChannelDimensions(storeViewer.fixture(), storeTemplateRef, "ENABLED"),
+                dimensions(),
+                "BUSINESS: store channel page binds structured status facts to the page response");
+        JsonNode storeListRow = find(
+                storeChannels.json().path("items"),
+                "channelRef",
+                channel.json().path("channelRef").asText());
+        assertChannelFacts(
+                storeListRow,
+                "getOperationsStoreBusinessChannels",
+                "ENABLED",
+                storeChannelDimensions(storeViewer.fixture(), storeTemplateRef, "ENABLED"),
+                dimensions(),
+                "BUSINESS: store channel list returns exact structured status facts");
         BackendAcceptanceTest.Response stoppedStoreTemplate = context.post(
                 TEMPLATE_STATUS,
                 templatePath(projectOwner.fixture(), storeTemplateRef) + "/status",
@@ -557,13 +846,13 @@ final class BusinessChannelAcceptanceScenarios {
                 channelPath(storeViewer.fixture(), channelRef),
                 storeViewer.session().cookie(),
                 Set.of(200));
-        assertEquals(
-                "DISABLED",
-                cascadedChannel.json().path("status").asText(),
-                "BUSINESS: an existing store channel is disabled with its template");
-        assertTrue(
-                cascadedChannel.json().path("stopReasons").toString().contains("CASCADE_TEMPLATE"),
-                "BUSINESS: store channel records the template cascade reason");
+        assertChannelFacts(
+                cascadedChannel.json(),
+                "getOperationsBusinessChannelDetail",
+                "ENABLED",
+                storeChannelDimensions(storeViewer.fixture(), storeTemplateRef, "DISABLED"),
+                dimensions(dimension("BUSINESS_CHANNEL_TEMPLATE", storeTemplateRef.toString(), "DISABLED")),
+                "BUSINESS: existing store channel keeps exact status facts when template is disabled");
         BackendAcceptanceTest.Response candidatesAfterDisable = context.get(
                 TEMPLATE_CANDIDATES,
                 "/api/operations/group-workspaces/" + storeViewer.fixture().groupWorkspaceKey()
@@ -621,9 +910,9 @@ final class BusinessChannelAcceptanceScenarios {
                 channel.json().path("ownerNodeRef").asText(),
                 "BUSINESS: disabled store identity is read back");
         assertEquals(
-                "EFFECTIVE",
+                "ENABLED",
                 channel.json().path("status").asText(),
-                "BUSINESS: store status does not block an internal channel from taking effect");
+                "BUSINESS: store status does not block an internal channel from becoming enabled");
         assertFalse(
                 channel.json().path("channelRef").asText().isBlank(),
                 "BUSINESS: disabled store creation returns a real channel identity");
@@ -668,10 +957,9 @@ final class BusinessChannelAcceptanceScenarios {
                 "UNBOUND",
                 ownerChannel.json().path("bindingStatus").asText(),
                 "BUSINESS: an external channel without a binding is explicitly unbound");
-        assertEquals(
-                "未绑定",
-                ownerChannel.json().path("bindingStatusDisplayName").asText(),
-                "BUSINESS: external channel binding display remains distinct from internal no-binding");
+        assertFalse(
+                ownerChannel.json().has("bindingStatusDisplayName"),
+                "BUSINESS: binding status presentation is owned by the frontend dictionary");
         UUID ownerChannelRef =
                 UUID.fromString(ownerChannel.json().path("channelRef").asText());
         BackendAcceptanceTest.Response ownerBinding = createBinding(
@@ -807,6 +1095,130 @@ final class BusinessChannelAcceptanceScenarios {
                 "PENDING_AUTHORIZATION",
                 elemeB.json().path("status").asText(),
                 "BUSINESS: same Eleme owner id is not a global uniqueness key");
+
+        BackendAcceptanceTest.Response readbackTemplate = createTemplate(
+                context,
+                projectOwner,
+                "Owner binding readback template",
+                "EXTERNAL",
+                "STORE",
+                "TAKEAWAY",
+                "ELEME_OPEN",
+                null);
+        BackendAcceptanceTest.Response readbackChannel = createChannel(
+                context,
+                fixture,
+                readbackTemplate.json().path("templateRef").asText(),
+                "STORE",
+                fixture.fixture().storeId(),
+                "Owner binding readback channel");
+        UUID readbackChannelRef =
+                UUID.fromString(readbackChannel.json().path("channelRef").asText());
+        BackendAcceptanceTest.Response readbackBinding = createBinding(
+                context,
+                fixture,
+                readbackChannelRef,
+                "ELEME_OPEN",
+                "TAKEAWAY",
+                "STORE",
+                fixture.fixture().storeId(),
+                "Owner binding readback",
+                "MEITUAN-OWNER-READBACK");
+        ArrayNode expectedNodePath = path(
+                pathNode(fixture.fixture().regionId(), "acceptance-region", "Acceptance Region", "REGION"),
+                pathNode(fixture.fixture().projectId(), "acceptance-project", "Acceptance Project", "PROJECT"),
+                pathNode(fixture.fixture().storeId(), "acceptance-store", "Acceptance Store", "STORE"));
+        ArrayNode expectedBusinessScope = arrayText("TAKEAWAY", "GROUP_BUY");
+        oracleEquals(
+                readbackBinding.json(),
+                "createOperationsOwnerBinding",
+                "/nodePath",
+                expectedNodePath,
+                JsonNodeType.ARRAY,
+                "BUSINESS: operations external binding create returns the exact ordered store path");
+        oracleEquals(
+                readbackBinding.json(),
+                "createOperationsOwnerBinding",
+                "/status",
+                text("PENDING_AUTHORIZATION"),
+                JsonNodeType.STRING,
+                "BUSINESS: operations external binding create preserves callback-controlled status");
+        oracleEquals(
+                readbackBinding.json(),
+                "createOperationsOwnerBinding",
+                "/businessScope",
+                expectedBusinessScope,
+                JsonNodeType.ARRAY,
+                "BUSINESS: operations external binding create returns provider scope");
+        oracleEquals(
+                readbackBinding.json(),
+                "createOperationsOwnerBinding",
+                "/capabilityClass",
+                text("TAKEAWAY"),
+                JsonNodeType.STRING,
+                "BUSINESS: operations external binding create returns its capability class");
+
+        BackendAcceptanceTest.Response readback = context.get(
+                OWNER_BINDING_DETAIL,
+                channelPath(fixture.fixture(), readbackChannelRef) + "/owner-binding",
+                fixture.session().cookie(),
+                Set.of(200));
+        oracleEquals(
+                readback.json(),
+                "getOperationsOwnerBindingDetail",
+                "/nodePath",
+                expectedNodePath,
+                JsonNodeType.ARRAY,
+                "BUSINESS: operations binding detail returns the exact ordered store path");
+        oracleEquals(
+                readback.json(),
+                "getOperationsOwnerBindingDetail",
+                "/status",
+                text("PENDING_AUTHORIZATION"),
+                JsonNodeType.STRING,
+                "BUSINESS: operations binding detail preserves callback-controlled status");
+        oracleEquals(
+                readback.json(),
+                "getOperationsOwnerBindingDetail",
+                "/businessScope",
+                expectedBusinessScope,
+                JsonNodeType.ARRAY,
+                "BUSINESS: operations binding detail returns provider scope");
+        oracleEquals(
+                readback.json(),
+                "getOperationsOwnerBindingDetail",
+                "/capabilityClass",
+                text("TAKEAWAY"),
+                JsonNodeType.STRING,
+                "BUSINESS: operations binding detail returns its capability class");
+
+        BackendAcceptanceTest.Response deleted = context.delete(
+                OWNER_BINDING_DELETE,
+                channelPath(fixture.fixture(), readbackChannelRef) + "/owner-binding",
+                fixture.session().cookie(),
+                Map.of("expectedVersion", readback.json().path("version").asLong()),
+                Set.of(200));
+        oracleEquals(
+                deleted.json(),
+                "deleteOperationsOwnerBinding",
+                "/nodePath",
+                expectedNodePath,
+                JsonNodeType.ARRAY,
+                "BUSINESS: operations binding delete preserves the exact ordered store path");
+        oracleEquals(
+                deleted.json(),
+                "deleteOperationsOwnerBinding",
+                "/status",
+                text("DELETED"),
+                JsonNodeType.STRING,
+                "BUSINESS: operations binding delete returns terminal status");
+        oracleEquals(
+                deleted.json(),
+                "deleteOperationsOwnerBinding",
+                "/businessScope",
+                expectedBusinessScope,
+                JsonNodeType.ARRAY,
+                "BUSINESS: operations binding delete preserves provider scope");
     }
 
     private BackendAcceptanceTest.Response createExternalStoreBinding(
@@ -944,10 +1356,33 @@ final class BusinessChannelAcceptanceScenarios {
             String providerCode,
             String dineInForm)
             throws Exception {
+        return createTemplateWithCode(
+                context,
+                fixture,
+                name,
+                accessKind,
+                operatorKind,
+                orderKind,
+                providerCode,
+                dineInForm,
+                "TPL-" + UUID.randomUUID());
+    }
+
+    private BackendAcceptanceTest.Response createTemplateWithCode(
+            BackendAcceptanceTest.ScenarioContext context,
+            OperationsFixture fixture,
+            String name,
+            String accessKind,
+            String operatorKind,
+            String orderKind,
+            String providerCode,
+            String dineInForm,
+            String templateCode)
+            throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("projectRef", fixture.fixture().projectId().toString());
         body.put("templateName", name);
-        body.put("templateCode", "TPL-" + UUID.randomUUID());
+        body.put("templateCode", templateCode);
         body.put("accessKind", accessKind);
         body.put("operatorKind", operatorKind);
         body.put("orderKind", orderKind);
@@ -971,11 +1406,24 @@ final class BusinessChannelAcceptanceScenarios {
             UUID ownerNodeRef,
             String channelName)
             throws Exception {
+        return createChannelWithCode(
+                context, fixture, templateRef, ownerNodeType, ownerNodeRef, channelName, "CH-" + UUID.randomUUID());
+    }
+
+    private BackendAcceptanceTest.Response createChannelWithCode(
+            BackendAcceptanceTest.ScenarioContext context,
+            OperationsFixture fixture,
+            String templateRef,
+            String ownerNodeType,
+            UUID ownerNodeRef,
+            String channelName,
+            String channelCode)
+            throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("templateRef", templateRef);
         body.put("ownerNodeType", ownerNodeType);
         body.put("ownerNodeRef", ownerNodeRef.toString());
-        body.put("channelCode", "CH-" + UUID.randomUUID());
+        body.put("channelCode", channelCode);
         body.put("channelName", channelName);
         body.put("bindingRef", null);
         return context.post(
@@ -1004,6 +1452,137 @@ final class BusinessChannelAcceptanceScenarios {
         for (JsonNode value : values) if (expected.equals(value.path(field).asText())) return value;
         fail("BUSINESS: missing " + field + "=" + expected);
         return null;
+    }
+
+    private static String dimensionStatus(JsonNode values, String type, UUID ref) {
+        for (JsonNode value : values) {
+            if (type.equals(value.path("type").asText())
+                    && ref.toString().equals(value.path("ref").asText())) {
+                return value.path("status").asText();
+            }
+        }
+        fail("BUSINESS: missing status dimension " + type + "=" + ref);
+        return null;
+    }
+
+    private static ArrayNode dimensions(ObjectNode... values) {
+        ArrayNode result = JsonNodeFactory.instance.arrayNode();
+        for (ObjectNode value : values) result.add(value);
+        return result;
+    }
+
+    private static ArrayNode path(ObjectNode... values) {
+        ArrayNode result = JsonNodeFactory.instance.arrayNode();
+        for (ObjectNode value : values) result.add(value);
+        return result;
+    }
+
+    private static ArrayNode arrayText(String... values) {
+        ArrayNode result = JsonNodeFactory.instance.arrayNode();
+        for (String value : values) result.add(value);
+        return result;
+    }
+
+    private static JsonNode text(String value) {
+        return JsonNodeFactory.instance.textNode(value);
+    }
+
+    private static ObjectNode pathNode(UUID ref, String code, String name, String nodeType) {
+        ObjectNode result = JsonNodeFactory.instance.objectNode();
+        result.put("ref", ref.toString());
+        result.put("code", code);
+        result.put("name", name);
+        result.put("nodeType", nodeType);
+        return result;
+    }
+
+    private static ObjectNode dimension(String type, String ref, String status) {
+        ObjectNode result = JsonNodeFactory.instance.objectNode();
+        result.put("type", type);
+        result.put("ref", ref);
+        result.put("status", status);
+        return result;
+    }
+
+    private static void assertChannelFacts(
+            JsonNode json,
+            String operationId,
+            String expectedStatus,
+            ArrayNode expectedDimensions,
+            ArrayNode expectedBlockers,
+            String message) {
+        JsonNode status = oracle(json, operationId, "/status", message);
+        JsonNode selfStatus = oracle(json, operationId, "/selfStatus", message);
+        JsonNode statusDimensions = oracle(json, operationId, "/statusDimensions", message);
+        JsonNode blockers = oracle(json, operationId, "/blockers", message);
+        assertEquals(JsonNodeType.STRING, status.getNodeType(), message + ": status type");
+        assertEquals(JsonNodeType.STRING, selfStatus.getNodeType(), message + ": selfStatus type");
+        assertEquals(JsonNodeType.ARRAY, statusDimensions.getNodeType(), message + ": statusDimensions type");
+        assertEquals(JsonNodeType.ARRAY, blockers.getNodeType(), message + ": blockers type");
+        assertEquals(expectedStatus, status.asText(), message + ": status");
+        assertEquals(expectedStatus, selfStatus.asText(), message + ": selfStatus");
+        assertEquals(expectedDimensions, statusDimensions, message + ": ordered status dimensions");
+        assertEquals(expectedBlockers, blockers, message + ": ordered blockers");
+    }
+
+    private static void assertChannelPageFacts(
+            JsonNode json,
+            String operationId,
+            String expectedStatus,
+            ArrayNode expectedDimensions,
+            ArrayNode expectedBlockers,
+            String message) {
+        JsonNode status = json.at("/items/0/status");
+        JsonNode selfStatus = json.at("/items/0/selfStatus");
+        JsonNode statusDimensions = json.at("/items/0/statusDimensions");
+        JsonNode blockers = json.at("/items/0/blockers");
+        assertEquals(JsonNodeType.STRING, status.getNodeType(), operationId + ": page status type");
+        assertEquals(JsonNodeType.STRING, selfStatus.getNodeType(), operationId + ": page selfStatus type");
+        assertEquals(JsonNodeType.ARRAY, statusDimensions.getNodeType(), operationId + ": page dimensions type");
+        assertEquals(JsonNodeType.ARRAY, blockers.getNodeType(), operationId + ": page blockers type");
+        assertEquals(expectedStatus, status.asText(), message + ": status");
+        assertEquals(expectedStatus, selfStatus.asText(), message + ": selfStatus");
+        assertEquals(expectedDimensions, statusDimensions, message + ": ordered status dimensions");
+        assertEquals(expectedBlockers, blockers, message + ": ordered blockers");
+    }
+
+    private static JsonNode oracle(JsonNode json, String operationId, String pointer, String message) {
+        JsonNode value = json.at(pointer);
+        assertFalse(value.isMissingNode(), message + ": missing pointer " + pointer);
+        assertFalse(value.isNull(), message + ": null pointer " + pointer);
+        return value;
+    }
+
+    private static void oracleEquals(
+            JsonNode json,
+            String operationId,
+            String pointer,
+            JsonNode expected,
+            JsonNodeType expectedType,
+            String message) {
+        JsonNode actual = requiredJsonNode(json, pointer, expectedType, message + ": operation=" + operationId);
+        assertEquals(expected, actual, message + ": exact value");
+    }
+
+    private static ArrayNode storeChannelDimensions(
+            BackendAcceptanceTest.Fixture fixture, UUID templateRef, String templateStatus) {
+        return dimensions(
+                dimension("GROUP_WORKSPACE", fixture.groupWorkspaceKey(), "ENABLED"),
+                dimension("BUSINESS_CHANNEL_TEMPLATE", templateRef.toString(), templateStatus),
+                dimension("ORGANIZATION_PROJECT", fixture.projectId().toString(), "ENABLED"),
+                dimension("ORGANIZATION_REGION", fixture.regionId().toString(), "ENABLED"),
+                dimension("ORGANIZATION_STORE", fixture.storeId().toString(), "ENABLED"),
+                dimension("ORGANIZATION_TENANT", fixture.tenantId().toString(), "ENABLED"),
+                dimension("ORGANIZATION_BRAND", fixture.brandId().toString(), "ENABLED"));
+    }
+
+    private static ArrayNode projectChannelDimensions(
+            BackendAcceptanceTest.Fixture fixture, UUID templateRef, String templateStatus) {
+        return dimensions(
+                dimension("GROUP_WORKSPACE", fixture.groupWorkspaceKey(), "ENABLED"),
+                dimension("BUSINESS_CHANNEL_TEMPLATE", templateRef.toString(), templateStatus),
+                dimension("ORGANIZATION_PROJECT", fixture.projectId().toString(), "ENABLED"),
+                dimension("ORGANIZATION_REGION", fixture.regionId().toString(), "ENABLED"));
     }
 
     private record OperationsFixture(BackendAcceptanceTest.Fixture fixture, BackendAcceptanceTest.Session session) {}

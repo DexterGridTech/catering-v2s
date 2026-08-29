@@ -816,7 +816,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 configuration.countingUnitSnapshot(),
                 unitLabel(configuration.countingUnitSnapshot()) + " -> " + unitLabel(consumption) + " × "
                         + decimal(configuration.conversionFactor()),
-                "INTERNAL");
+                "INTERNAL",
+                new InventoryOwnerApi.InventoryConversionFacts(
+                        configuration.countingUnitSnapshot(), consumption, configuration.conversionFactor()));
     }
 
     private InventoryChangePeriodReadback changePeriodReadback(UUID targetRef, String period) {
@@ -1830,8 +1832,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         // A BOM owner is not required to own a stock target itself.  Its display
         // facts still belong to catalog, however: never substitute the opaque
         // item ref (or the stored code) for the operator-facing item name.
-        definitionFacts.bomOwners().forEach(owner ->
-                displayIdentities.add(new TargetIdentity(catalogItemRef, owner.productSkuRef())));
+        definitionFacts
+                .bomOwners()
+                .forEach(owner -> displayIdentities.add(new TargetIdentity(catalogItemRef, owner.productSkuRef())));
         Map<TargetIdentity, CatalogTargetDisplay> targetDisplays =
                 catalogTargetDisplays(scope, brand, displayIdentities);
         for (TargetRow row : targets) {
@@ -1912,8 +1915,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                                 : mapper.valueToTree(componentTarget.consumptionUnitSnapshot()));
             }
             CatalogTargetDisplay ownerDisplay = requiredCatalogTargetDisplay(
-                    targetDisplays,
-                    new TargetIdentity(catalogItemRef, ownerRow.productSkuRef()));
+                    targetDisplays, new TargetIdentity(catalogItemRef, ownerRow.productSkuRef()));
             node.put("itemCode", ownerDisplay.itemCode())
                     .put("itemName", ownerDisplay.itemName())
                     .put("mode", "BOM")
@@ -1928,9 +1930,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     }
 
     /**
-     * A stock target keeps catalog references as identity only.  The catalog name is
-     * deliberately resolved in this explicit task read: neither a target code nor a
-     * local UI cache is a user-facing name.
+     * A stock target keeps catalog references as identity only. The catalog name is deliberately resolved in this
+     * explicit task read: neither a target code nor a local UI cache is a user-facing name.
      */
     private Map<TargetIdentity, CatalogTargetDisplay> catalogTargetDisplays(
             String scope, String brand, Collection<TargetIdentity> identities) {
@@ -1966,8 +1967,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                         if (skuRef != null)
                             result.put(
                                     new TargetIdentity(itemRef, skuRef),
-                                    new CatalogTargetDisplay(
-                                            itemCode, itemName, rows.getString(5), rows.getString(6)));
+                                    new CatalogTargetDisplay(itemCode, itemName, rows.getString(5), rows.getString(6)));
                     }
                     return null;
                 });
@@ -1982,8 +1982,10 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     private CatalogTargetDisplay requiredCatalogTargetDisplay(
             Map<TargetIdentity, CatalogTargetDisplay> displays, TargetIdentity target) {
         CatalogTargetDisplay display = displays.get(target);
+        // spotless:off
         if (display == null)
             throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "耗用对象缺少商品名称");
+        // spotless:on
         requireCatalogBusinessName(display.itemName(), "耗用对象缺少商品名称");
         if (target.productSkuRef() != null) {
             requireCatalogBusinessName(display.skuName(), "耗用对象缺少规格名称");
@@ -4464,7 +4466,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         jdbc.query(
                 "SELECT target.target_ref,target.item_ref,target.product_sku_ref,target.item_code,target.sku_code,"
                         + "item.name,sku.sku_name,target.consumption_unit_ref,target.consumption_unit_code,"
-                        + "target.consumption_unit_name,target.consumption_unit_dimension,target.consumption_unit_precision,"
+                        + "target.consumption_unit_name,target.consumption_unit_dimension,"
+                        + "target.consumption_unit_precision,"
                         + "COUNT(*) OVER() FROM inventory.stock_target target "
                         + "JOIN catalog.catalog_item item ON item.item_ref=target.item_ref "
                         + "AND item.data_node_ref=target.data_node_ref AND item.brand_ref=target.brand_ref "
@@ -4543,13 +4546,11 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     }
 
     /**
-     * Task reads consume the catalog name field, never substitute the identity
-     * code as a display name. A business may legitimately give a SKU a name
-     * with the same characters as its code, so equality is not corrupt data.
+     * Task reads consume the catalog name field, never substitute the identity code as a display name. A business may
+     * legitimately give a SKU a name with the same characters as its code, so equality is not corrupt data.
      */
     private void requireCatalogBusinessName(String name, String missingMessage) {
-        if (name == null || name.isBlank())
-            throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, missingMessage);
+        if (name == null || name.isBlank()) throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, missingMessage);
     }
 
     /**
@@ -5462,6 +5463,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 .put("authorityType", "INTERNAL");
         setNullableSnapshot(result, "consumptionUnitSnapshot", consumption);
         setNullableSnapshot(result, "countingUnitSnapshot", counting);
+        setConversionFacts(result, counting, consumption, factor);
         if (snapshot == null || snapshot.lastSource() == null) result.putNull("lastChangeSource");
         else result.put("lastChangeSource", snapshot.lastSource());
         if (snapshot == null || snapshot.lastAt() == null) result.putNull("lastChangeAt");
@@ -5500,7 +5502,20 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 .put("authorityType", "INTERNAL");
         setNullableSnapshot(result, "consumptionUnitSnapshot", consumption);
         setNullableSnapshot(result, "countingUnitSnapshot", counting);
+        setConversionFacts(result, counting, consumption, factor);
         return result;
+    }
+
+    private void setConversionFacts(
+            ObjectNode target,
+            InventoryOwnerApi.UnitSnapshot counting,
+            InventoryOwnerApi.UnitSnapshot consumption,
+            BigDecimal factor) {
+        ObjectNode facts = target.putObject("conversionFacts");
+        if (counting == null) facts.putNull("countingUnitSnapshot");
+        else facts.set("countingUnitSnapshot", mapper.valueToTree(counting));
+        facts.set("consumptionUnitSnapshot", mapper.valueToTree(consumption));
+        facts.put("conversionFactor", decimal(factor));
     }
 
     private ArrayNode ledgerEntries(String targetRef, int limit) {
@@ -5993,7 +6008,6 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         if (Set.of(
                         "createOperationsCatalogOrderOptionDefinition",
                         "updateOperationsCatalogOrderOptionDefinition",
-                        "deleteOperationsCatalogOrderOptionDefinition",
                         "saveOperationsCatalogItem")
                 .contains(operationId)) {
             return scope;

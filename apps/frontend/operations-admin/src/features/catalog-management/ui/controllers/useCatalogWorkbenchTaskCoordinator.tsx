@@ -30,7 +30,6 @@ type Args = {
  */
 export function useCatalogWorkbenchTaskCoordinator({
   queryContext,
-  surface,
   brandRef,
   headers,
   scopeReady,

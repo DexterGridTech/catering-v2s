@@ -10,6 +10,16 @@ const isChineseBusinessText = (value) => typeof value === "string" && /[\u3400-\
 const requireChineseBusinessText = (value, label) => {
   if (!isChineseBusinessText(value)) throw new Error(`R5_SEED_BUSINESS_LABEL_INVALID:${label}`);
 };
+const THREE_STATE_VALUES = new Set(["ENABLED", "DISABLED", "VOIDED"]);
+const requireThreeStateCoverage = (entries, label) => {
+  if (!Array.isArray(entries) || entries.length === 0) throw new Error(`R5_SEED_STATUS_COLLECTION_INVALID:${label}`);
+  const statuses = new Set();
+  for (const entry of entries) {
+    if (!THREE_STATE_VALUES.has(entry?.status)) throw new Error(`R5_SEED_STATUS_VALUE_INVALID:${label}`);
+    statuses.add(entry.status);
+  }
+  for (const status of THREE_STATE_VALUES) if (!statuses.has(status)) throw new Error(`R5_SEED_STATUS_COVERAGE_MISSING:${label}:${status}`);
+};
 const displayTextDenominator = (source) => {
   const fixtures = source.stableFixtures;
   const organization = fixtures.organization;
@@ -43,8 +53,18 @@ if (process.argv.includes("--self-test")) {
   if (!rejected) throw new Error("R5_SEED_BUSINESS_LABEL_RED_MUTATION_MISSED");
   process.stdout.write("R5_SEED_PLAN_SELF_TEST=PASS; RED=TECHNICAL_ENGLISH_DISPLAY_TEXT\n");
 }
-if (fixture.stableFixtures.workspaceIam.roles.length !== 7) throw new Error("R5_SEED_ROLE_EXPERIENCE_DENOMINATOR_DRIFT");
+if (fixture.stableFixtures.workspaceIam.roles.length !== 8) throw new Error("R5_SEED_ROLE_EXPERIENCE_DENOMINATOR_DRIFT");
 for (const roleKey of ["role-store-inventory", "role-store-manager"]) if (!fixture.stableFixtures.workspaceIam.roles.some((role) => role.key === roleKey)) throw new Error(`R5_SEED_ROLE_EXPERIENCE_MISSING:${roleKey}`);
+for (const [label, entries] of [
+  ["organization.regions", fixture.stableFixtures.organization.regions],
+  ["organization.projects", fixture.stableFixtures.organization.projects],
+  ["organization.brands", fixture.stableFixtures.organization.brands],
+  ["organization.tenants", fixture.stableFixtures.organization.tenants],
+  ["organization.headCompanies", fixture.stableFixtures.organization.headCompanies],
+  ["organization.stores", fixture.stableFixtures.organization.stores],
+  ["workspaceIam.roles", fixture.stableFixtures.workspaceIam.roles],
+  ["workspaceIam.accounts", fixture.stableFixtures.workspaceIam.accounts],
+]) requireThreeStateCoverage(entries, label);
 const facts = {platformAdmins: fixture.stableFixtures.platformAdmins.length, groupWorkspaces: fixture.stableFixtures.groupWorkspaces.length, activeAssets: fixture.stableFixtures.assets.filter((entry) => entry.status === "ACTIVE").length, extensionDefinitions: fixture.stableFixtures.extensionDefinitions.length, commercialGroups: fixture.stableFixtures.organization.commercialGroups.length, regions: fixture.stableFixtures.organization.regions.length, projects: fixture.stableFixtures.organization.projects.length, brands: fixture.stableFixtures.organization.brands.length, tenants: fixture.stableFixtures.organization.tenants.length, headCompanies: fixture.stableFixtures.organization.headCompanies.length, stores: fixture.stableFixtures.organization.stores.length, roles: fixture.stableFixtures.workspaceIam.roles.length, accounts: fixture.stableFixtures.workspaceIam.accounts.length, assignments: fixture.stableFixtures.workspaceIam.assignments.length, invitationStateFixtures: fixture.stableFixtures.workspaceIam.invitationStates.length, contracts: fixture.stableFixtures.contracts.length};
 for (const [key, expected] of Object.entries(profile.expectedCounts)) if (facts[key] !== expected) throw new Error(`R5_SEED_PROFILE_DRIFT:${key}:${facts[key]}!=${expected}`);
 if (fixture.scenarioPrerequisitePolicy.denominator !== profile.scenarioDenominator) throw new Error("R5_SEED_SCENARIO_DENOMINATOR_DRIFT");

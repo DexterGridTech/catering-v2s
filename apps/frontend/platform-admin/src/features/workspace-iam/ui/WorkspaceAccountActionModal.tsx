@@ -30,7 +30,7 @@ function copy(action: WorkspaceAccountAction, account: WorkspaceAccount): {title
     title: (
       <span>
         确认撤销“{account.displayName}”在“
-        <NameCodePathText value={action.assignment.organizationPath} />
+        <NameCodePathText nodes={action.assignment.organizationPathNodes} />
         ”的任职？
       </span>
     ),

@@ -1,38 +1,66 @@
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
-import {mkdtempSync, rmSync, writeFileSync} from 'node:fs';
+import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import test from 'node:test';
 import os from 'node:os';
 import {resolveGradleCommand} from '../lib/gradle-runtime.mjs';
+import {BACKEND_PERFORMANCE_OPERATION_COUNTS} from '../policy/backend-performance-operation-counts.mjs';
 import {
   backendAcceptanceEnvironment,
   classifyGradleTestExecution,
   classifyManagedDevLifecycleCommand,
+  firstGradleFailureCode,
   inspectManagedDevState,
   managedGradleHomeScript,
   parseAndValidateRunManifest,
+  acquireLocalRunLock,
   fullPerformanceWorkload,
   parseBackendAcceptanceResult,
   parseEvidenceArchiveIndex,
+  hasArchivedEvidenceIndexEntries,
   readEvidenceArtifact,
   remoteGradleDistributionPath,
   resolveGradleHome,
   validateCleanupReceipt,
+  validateEvidenceArchiveReceipt,
   validateGradleDistribution,
   validateGradleHome,
   validateInvocationArguments,
   requiresFullPerformanceVerification,
+  requiresBackendAcceptanceEvidence,
   requiresActiveBudgetVerification,
   verifyFullBackendAcceptanceCalibration,
   verifyFullBackendAcceptancePerformance,
 } from './r5-remote-testcontainers.mjs';
 import {loadPerformanceOperationRegistry} from './backend-performance-operation-reconciliation.mjs';
+import {BATCH_OPERATION_ID, LINEAR_REQUEST_CARDINALITY_BUDGET} from '../generate/backend-performance-budget.mjs';
 import path from 'node:path';
 import {gzipSync} from 'node:zlib';
 
 const task = ':apps:backend:catering-business-server:test';
+const expectedOperationCount = BACKEND_PERFORMANCE_OPERATION_COUNTS.operations;
 const distribution = {sha256: 'a'.repeat(64), path: remoteGradleDistributionPath('a'.repeat(64)), status: 'REUSED'};
+const validEvidenceArchive = () => ({
+  status: 'PASS',
+  indexPath: '.runtime/r5/evidence/remote-testcontainers/r5-tc-1786638000000-123/evidence-artifacts.tsv',
+  artifacts: [
+    'http-request-events.jsonl',
+    'backend-acceptance-result.jsonl',
+    'db-operation-events.jsonl',
+    'statement-dictionary.json',
+  ].map((name, index) => ({
+    name,
+    rawBytes: 10 + index,
+    rawSha256: String(index + 1)
+      .repeat(64)
+      .slice(0, 64),
+    archiveBytes: 20 + index,
+    archiveSha256: String(index + 5)
+      .repeat(64)
+      .slice(0, 64),
+  })),
+});
 const validManifest = () => ({
   schemaVersion: 1,
   kind: 'r5-managed-testcontainers-run',
@@ -95,6 +123,10 @@ test('backend acceptance supplies every non-production server prerequisite and s
     backendAcceptanceEnvironment('backend-acceptance-run-12345678', 'catalog.category-candidate-hierarchy').join('\n'),
     /V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF=true/,
   );
+  assert.match(
+    backendAcceptanceEnvironment('backend-acceptance-run-12345678', 'all', 'CALIBRATION', '1').join('\n'),
+    /V2S_BACKEND_ACCEPTANCE_BATCH_CARDINALITY='1'/,
+  );
 });
 
 test('managed evidence archives preserve exact raw bytes without retaining raw event streams locally', () => {
@@ -122,6 +154,163 @@ test('managed evidence archives preserve exact raw bytes without retaining raw e
   }
 });
 
+test('pre-test failures do not masquerade as missing acceptance artifacts', () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'r5-evidence-pretest-'));
+  try {
+    writeFileSync(path.join(directory, 'evidence-artifacts.tsv'), '\n');
+    assert.equal(hasArchivedEvidenceIndexEntries(directory), false);
+    writeFileSync(path.join(directory, 'evidence-artifacts.tsv'), 'http-request-events.jsonl\t1\t' + 'a'.repeat(64) + '\t1\t' + 'b'.repeat(64) + '\n');
+    assert.equal(hasArchivedEvidenceIndexEntries(directory), true);
+  } finally {
+    rmSync(directory, {recursive: true, force: true});
+  }
+});
+
+test('managed evidence reader can fail closed against local raw streams when archive is required', () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'r5-evidence-archive-raw-'));
+  try {
+    writeFileSync(path.join(directory, 'http-request-events.jsonl'), '{"operationId":"catalog.example"}\n');
+    assert.equal(readEvidenceArtifact(directory, 'http-request-events.jsonl'), '{"operationId":"catalog.example"}\n');
+    assert.throws(
+      () => readEvidenceArtifact(directory, 'http-request-events.jsonl', {requireArchive: true}),
+      /EVIDENCE_ARTIFACT_REQUIRED:http-request-events\.jsonl/,
+    );
+  } finally {
+    rmSync(directory, {recursive: true, force: true});
+  }
+});
+
+test('manifest evidence archive receipt requires the exact managed artifact set', () => {
+  assert.deepEqual(validateEvidenceArchiveReceipt(validEvidenceArchive()), validEvidenceArchive());
+  assert.throws(
+    () =>
+      validateEvidenceArchiveReceipt({
+        ...validEvidenceArchive(),
+        artifacts: validEvidenceArchive().artifacts.filter(row => row.name !== 'statement-dictionary.json'),
+      }),
+    /RUN_MANIFEST_EVIDENCE_ARCHIVE_NOT_CLOSED:statement-dictionary\.json/,
+  );
+  assert.throws(
+    () =>
+      validateEvidenceArchiveReceipt({
+        ...validEvidenceArchive(),
+        artifacts: [...validEvidenceArchive().artifacts, validEvidenceArchive().artifacts[0]],
+      }),
+    /RUN_MANIFEST_EVIDENCE_ARCHIVE_ARTIFACT_INVALID/,
+  );
+});
+
+test('managed Testcontainers runner admits only one live local run lock', () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'r5-local-run-lock-'));
+  const lockPath = path.join(directory, 'remote-testcontainers.lock');
+  try {
+    const release = acquireLocalRunLock(lockPath, {
+      pid: 101,
+      startToken: 'Fri Aug 28 00:00:00 2026',
+      alive: () => true,
+      startTokenForPid: () => 'Fri Aug 28 00:00:00 2026',
+      nowValue: '2026-08-28T00:00:00.000Z',
+      ownerToken: 'owner-101',
+      remoteHostValue: 'remote-a',
+    });
+    assert.throws(
+      () =>
+        acquireLocalRunLock(lockPath, {
+          pid: 202,
+          startToken: 'Fri Aug 28 00:00:01 2026',
+          alive: candidate => candidate === 101,
+          startTokenForPid: () => 'Fri Aug 28 00:00:00 2026',
+          ownerToken: 'owner-202',
+          remoteHostValue: 'remote-a',
+        }),
+      /LOCAL_TESTCONTAINERS_RUN_ALREADY_ACTIVE:101/,
+    );
+    release();
+    const releaseAfterFree = acquireLocalRunLock(lockPath, {
+      pid: 202,
+      startToken: 'Fri Aug 28 00:00:01 2026',
+      alive: () => false,
+      startTokenForPid: () => null,
+      ownerToken: 'owner-202',
+      remoteHostValue: 'remote-a',
+    });
+    releaseAfterFree();
+  } finally {
+    rmSync(directory, {recursive: true, force: true});
+  }
+});
+
+test('managed Testcontainers runner fails closed on stale local run lock', () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'r5-local-run-lock-stale-'));
+  const lockPath = path.join(directory, 'remote-testcontainers.lock');
+  try {
+    mkdirSync(lockPath);
+    writeFileSync(
+      path.join(lockPath, 'owner.json'),
+      `${JSON.stringify({
+        pid: 101,
+        startToken: 'Fri Aug 28 00:00:00 2026',
+        ownerToken: 'owner-101',
+        remoteHost: 'remote-a',
+        startedAt: '2026-08-28T00:00:00.000Z',
+      })}\n`,
+    );
+    assert.throws(
+      () =>
+        acquireLocalRunLock(lockPath, {
+          pid: 202,
+          startToken: 'Fri Aug 28 00:01:00 2026',
+          alive: () => false,
+          startTokenForPid: () => null,
+          nowValue: '2026-08-28T00:01:00.000Z',
+          ownerToken: 'owner-202',
+          remoteHostValue: 'remote-a',
+        }),
+      /STALE_LOCAL_TESTCONTAINERS_RUN_LOCK_REQUIRES_EXPLICIT_DIAGNOSIS/,
+    );
+    const current = JSON.parse(readFileSync(path.join(lockPath, 'owner.json'), 'utf8'));
+    assert.equal(current.pid, 101);
+    assert.equal(current.ownerToken, 'owner-101');
+  } finally {
+    rmSync(directory, {recursive: true, force: true});
+  }
+});
+
+test('managed Testcontainers runner fails closed on pid reuse with a different OS start token', () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'r5-local-run-lock-reuse-'));
+  const lockPath = path.join(directory, 'remote-testcontainers.lock');
+  try {
+    mkdirSync(lockPath);
+    writeFileSync(
+      path.join(lockPath, 'owner.json'),
+      `${JSON.stringify({
+        pid: 101,
+        startToken: 'Fri Aug 28 00:00:00 2026',
+        ownerToken: 'owner-101',
+        remoteHost: 'remote-a',
+        startedAt: '2026-08-28T00:00:00.000Z',
+      })}\n`,
+    );
+    assert.throws(
+      () =>
+        acquireLocalRunLock(lockPath, {
+          pid: 202,
+          startToken: 'Fri Aug 28 00:01:00 2026',
+          alive: () => true,
+          startTokenForPid: () => 'Fri Aug 28 00:01:00 2026',
+          nowValue: '2026-08-28T00:01:00.000Z',
+          ownerToken: 'owner-202',
+          remoteHostValue: 'remote-a',
+        }),
+      /STALE_LOCAL_TESTCONTAINERS_RUN_LOCK_REQUIRES_EXPLICIT_DIAGNOSIS/,
+    );
+    const current = JSON.parse(readFileSync(path.join(lockPath, 'owner.json'), 'utf8'));
+    assert.equal(current.ownerToken, 'owner-101');
+  } finally {
+    rmSync(directory, {recursive: true, force: true});
+  }
+});
+
 test('a complete backend acceptance run always enforces generated budgets without an environment opt-in', () => {
   assert.equal(requiresFullPerformanceVerification('run-1', 'all'), true);
   assert.equal(requiresFullPerformanceVerification('run-1', 'catalog.category-candidate-hierarchy'), false);
@@ -130,7 +319,27 @@ test('a complete backend acceptance run always enforces generated budgets withou
   assert.equal(requiresActiveBudgetVerification('run-1', 'all', 'CALIBRATION'), false);
 
   const repositoryRoot = path.resolve(import.meta.dirname, '..', '..');
-  const registry = loadPerformanceOperationRegistry({root: repositoryRoot});
+  const identityRegistry = loadPerformanceOperationRegistry({root: repositoryRoot});
+  // The checked-in route registries intentionally remain identity-only until
+  // CP-05 calibration is ready.  This unit test exercises the verifier's
+  // active-budget contract with an explicit in-memory ready fixture instead
+  // of pretending that the not-yet-activated generated files carry ceilings.
+  const registry = identityRegistry.map(operation => ({
+    ...operation,
+    databaseOperationBudget:
+      operation.operationId === BATCH_OPERATION_ID
+        ? {
+            ...LINEAR_REQUEST_CARDINALITY_BUDGET,
+            measurementScenarioIds: ['performance.normal-path'],
+            history: [{from: null, to: 20, reason: 'test-ready-fixture'}],
+          }
+        : {
+            kind: 'FIXED',
+            max: 4,
+            measurementScenarioIds: ['performance.normal-path'],
+            history: [{from: null, to: 4, reason: 'test-ready-fixture'}],
+          },
+  }));
   const events = registry.map(operation => ({
     operationId: operation.operationId,
     method: operation.method,
@@ -146,7 +355,8 @@ test('a complete backend acceptance run always enforces generated budgets withou
     transactionBeginCount: operation.method === 'GET' ? 0 : 1,
   }));
   assert.doesNotThrow(() => verifyFullBackendAcceptancePerformance(registry, events));
-  const itemSkusMax = registry.find(operation => operation.operationId === 'getOperationsCatalogItemSkus').databaseOperationBudget.max;
+  const itemSkusMax = registry.find(operation => operation.operationId === 'getOperationsCatalogItemSkus')
+    .databaseOperationBudget.max;
   assert.throws(
     () =>
       verifyFullBackendAcceptancePerformance(
@@ -155,7 +365,9 @@ test('a complete backend acceptance run always enforces generated budgets withou
           event.operationId === 'getOperationsCatalogItemSkus' ? {...event, databaseOperationCount: 24} : event,
         ),
       ),
-    new RegExp(`PERFORMANCE_OPERATION_BUDGET_EXCEEDED:getOperationsCatalogItemSkus:kind=FIXED:actual=24:max=${itemSkusMax}`),
+    new RegExp(
+      `PERFORMANCE_OPERATION_BUDGET_EXCEEDED:getOperationsCatalogItemSkus:kind=FIXED:actual=24:max=${itemSkusMax}`,
+    ),
   );
   assert.throws(
     () =>
@@ -285,6 +497,15 @@ test('focused runner accepts only a non-cached actual Gradle Test task', () => {
   );
 });
 
+test('failed pre-test Gradle output preserves its structured first failure without requiring acceptance artifacts', () => {
+  const log = `> Task :apps:backend:catering-business-server:modules:catalog:processResources\nError: BUDGET_NOT_READY_CP05_BLOCKED:25\nBUILD FAILED`;
+  assert.equal(firstGradleFailureCode(log), 'BUDGET_NOT_READY_CP05_BLOCKED:25');
+  assert.equal(firstGradleFailureCode('Error: ordinary build failure'), null);
+  assert.equal(requiresBackendAcceptanceEvidence('backend-acceptance-run', false), false);
+  assert.equal(requiresBackendAcceptanceEvidence('backend-acceptance-run', true), true);
+  assert.equal(requiresBackendAcceptanceEvidence(null, true), false);
+});
+
 test('manifest requires proof that the focused process, workspace, containers, and volumes were reclaimed', () => {
   const manifest = validManifest();
   assert.deepEqual(validateCleanupReceipt(manifest.cleanup), manifest.cleanup);
@@ -304,11 +525,15 @@ test('manifest requires proof that the focused process, workspace, containers, a
 const closedFullMeasurementEvidence = verificationMode => ({
   status: 'PASS',
   verificationMode,
-  operationSet: {expected: 239, observed: 239, missing: [], extra: [], drift: []},
-  connectionBudgetEvidence: {declared: 239, observed: 239, exceeded: 0},
-  normalSampleMatrix: {expected: 239, observed: 239, path: '.runtime/r5/evidence/normal-sample-matrix.json'},
+  operationSet: {expected: expectedOperationCount, observed: expectedOperationCount, missing: [], extra: [], drift: []},
+  connectionBudgetEvidence: {declared: expectedOperationCount, observed: expectedOperationCount, exceeded: 0},
+  normalSampleMatrix: {
+    expected: expectedOperationCount,
+    observed: expectedOperationCount,
+    path: '.runtime/r5/evidence/normal-sample-matrix.json',
+  },
   ...(verificationMode === 'ACCEPTANCE'
-    ? {budgetEvidence: {declared: 239, observed: 239, exceeded: 0}}
+    ? {budgetEvidence: {declared: expectedOperationCount, observed: expectedOperationCount, exceeded: 0}}
     : {calibrationEvidence: {status: 'PASS'}}),
 });
 
@@ -318,6 +543,7 @@ test('full backend-acceptance manifests structurally retain their mode-specific 
     backendAcceptance: {runId: 'backend-acceptance-r5-tc-1786638000000-123', operation: 'all'},
     workload: {schemaVersion: 1, fingerprint: 'a'.repeat(64), descriptor: {fixture: 'test'}},
     measurementEvidence: closedFullMeasurementEvidence('ACCEPTANCE'),
+    evidenceArchive: validEvidenceArchive(),
   };
   assert.deepEqual(parseAndValidateRunManifest(acceptanceManifest), acceptanceManifest);
   const calibrationManifest = {
@@ -332,7 +558,13 @@ test('full backend-acceptance manifests structurally retain their mode-specific 
         ...acceptanceManifest,
         measurementEvidence: {
           ...acceptanceManifest.measurementEvidence,
-          operationSet: {expected: 239, observed: 238, missing: ['missing'], extra: [], drift: []},
+          operationSet: {
+            expected: expectedOperationCount,
+            observed: expectedOperationCount - 1,
+            missing: ['missing'],
+            extra: [],
+            drift: [],
+          },
         },
       }),
     /RUN_MANIFEST_OPERATION_SET_NOT_CLOSED/,
@@ -343,7 +575,7 @@ test('full backend-acceptance manifests structurally retain their mode-specific 
         ...acceptanceManifest,
         measurementEvidence: {
           ...acceptanceManifest.measurementEvidence,
-          budgetEvidence: {declared: 239, observed: 238, exceeded: 1},
+          budgetEvidence: {declared: expectedOperationCount, observed: expectedOperationCount - 1, exceeded: 1},
         },
       }),
     /RUN_MANIFEST_BUDGET_NOT_CLOSED/,
@@ -354,7 +586,7 @@ test('full backend-acceptance manifests structurally retain their mode-specific 
         ...calibrationManifest,
         measurementEvidence: {
           ...calibrationManifest.measurementEvidence,
-          budgetEvidence: {declared: 239, observed: 239, exceeded: 0},
+          budgetEvidence: {declared: expectedOperationCount, observed: expectedOperationCount, exceeded: 0},
         },
       }),
     /RUN_MANIFEST_CALIBRATION_BUDGET_EVIDENCE_FORBIDDEN/,
@@ -367,6 +599,21 @@ test('full backend-acceptance manifests structurally retain their mode-specific 
     () => parseAndValidateRunManifest({...validManifest(), measurementEvidence: {status: 'PASS'}}),
     /RUN_MANIFEST_MEASUREMENT_WITHOUT_BACKEND_ACCEPTANCE/,
   );
+  assert.throws(
+    () => parseAndValidateRunManifest({...acceptanceManifest, evidenceArchive: {status: 'NOT_RUN'}}),
+    /RUN_MANIFEST_EVIDENCE_ARCHIVE_REQUIRED/,
+  );
+  assert.throws(
+    () =>
+      parseAndValidateRunManifest({
+        ...acceptanceManifest,
+        evidenceArchive: {
+          ...validEvidenceArchive(),
+          artifacts: validEvidenceArchive().artifacts.filter(row => row.name !== 'db-operation-events.jsonl'),
+        },
+      }),
+    /RUN_MANIFEST_EVIDENCE_ARCHIVE_NOT_CLOSED:db-operation-events\.jsonl/,
+  );
   assert.doesNotThrow(() =>
     parseAndValidateRunManifest({
       ...validManifest(),
@@ -375,6 +622,7 @@ test('full backend-acceptance manifests structurally retain their mode-specific 
         operation: 'catalog.category-candidate-hierarchy',
       },
       measurementEvidence: {status: 'PASS', verificationMode: 'ACCEPTANCE', discovered: 1},
+      evidenceArchive: validEvidenceArchive(),
     }),
   );
   assert.throws(
@@ -407,6 +655,7 @@ test('full performance workload uses one envelope schema shared by construction 
       backendAcceptance: {runId: 'backend-acceptance-r5-tc-1786638000000-123', operation: 'all'},
       workload,
       measurementEvidence: closedFullMeasurementEvidence('ACCEPTANCE'),
+      evidenceArchive: validEvidenceArchive(),
     }),
   );
 });

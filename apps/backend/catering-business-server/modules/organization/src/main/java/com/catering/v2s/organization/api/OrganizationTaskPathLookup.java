@@ -148,11 +148,21 @@ public interface OrganizationTaskPathLookup {
         };
     }
 
-    record TaskPath(String targetType, UUID targetId, List<UUID> ancestorIds, String displayPath) {
+    record TaskPath(
+            String targetType, UUID targetId, List<UUID> ancestorIds, String displayPath, List<TaskPathNode> nodes) {
         public TaskPath {
             ancestorIds = List.copyOf(ancestorIds);
+            nodes = List.copyOf(nodes);
+        }
+
+        /** Legacy owner call sites keep their existing display projection until their consumer is migrated. */
+        public TaskPath(String targetType, UUID targetId, List<UUID> ancestorIds, String displayPath) {
+            this(targetType, targetId, ancestorIds, displayPath, List.of());
         }
     }
+
+    /** One organization-owned node fact; presentation layers choose labels and separators. */
+    record TaskPathNode(UUID ref, String code, String name, String nodeType) {}
 
     record TaskPathRef(String targetType, UUID targetId) {}
 

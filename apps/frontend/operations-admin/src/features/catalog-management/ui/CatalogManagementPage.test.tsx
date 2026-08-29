@@ -70,7 +70,7 @@ const batchRow = (index: number, outcome: CatalogBatchResult['outcome']): Catalo
   itemCode: `ITEM-${index}`,
   outcome,
   problemCode: outcome === 'FAILED' ? 'VERSION_CONFLICT' : null,
-  reason: outcome === 'FAILED' ? '商品资料已有更新，请重新读取后再操作。' : null,
+  reason: outcome === 'FAILED' ? 'owner raw reason must not render' : null,
   version: outcome === 'SUCCEEDED' ? index + 1 : null,
 });
 
@@ -323,9 +323,9 @@ describe('catalog management runtime model contracts', () => {
     );
   });
 
-  it('excludes archived and temporary rows from every batch write snapshot', () => {
+  it('excludes voided and temporary rows from every batch write snapshot', () => {
     expect(isCatalogBatchRowSelectable({status: 'ENABLED', source: 'SELF_MANAGED'})).toBe(true);
-    expect(isCatalogBatchRowSelectable({status: 'ARCHIVED', source: 'SELF_MANAGED'})).toBe(false);
+    expect(isCatalogBatchRowSelectable({status: 'VOIDED', source: 'SELF_MANAGED'})).toBe(false);
     expect(isCatalogBatchRowSelectable({status: 'ENABLED', source: 'TEMPORARY'})).toBe(false);
   });
 
@@ -425,7 +425,12 @@ describe('catalog management runtime model contracts', () => {
         displayOrder: 0,
         count: 0,
         countSemantics: 'SELF_ONLY',
-        deletionAvailability: {canDelete: true, subtreeSize: 1, blockingReferenceCount: 0, blockingReferenceLabels: []},
+        deletionAvailability: {
+          canDelete: true,
+          subtreeSize: 1,
+          blockingReferenceCount: 0,
+          blockingReferences: {count: 0, references: []},
+        },
       },
       {
         categoryRef: testUuid('category-b'),
@@ -436,7 +441,12 @@ describe('catalog management runtime model contracts', () => {
         displayOrder: 1,
         count: 0,
         countSemantics: 'SELF_ONLY',
-        deletionAvailability: {canDelete: true, subtreeSize: 1, blockingReferenceCount: 0, blockingReferenceLabels: []},
+        deletionAvailability: {
+          canDelete: true,
+          subtreeSize: 1,
+          blockingReferenceCount: 0,
+          blockingReferences: {count: 0, references: []},
+        },
       },
     ];
     expect(catalogCategoryCodeExists(tree, 'drink')).toBe(true);
@@ -454,8 +464,11 @@ describe('catalog management runtime model contracts', () => {
           status: 'ENABLED',
           shapeKey: 'MATERIAL',
           materialRole: 'RAW_MATERIAL',
-          tagSummary: [],
-          categoryPathLabels: [],
+          categoryPath: [],
+          specificationFacts: [],
+          orderOptionFacts: [],
+          attributeFacts: [],
+          preparationFacts: {productionTag: null, profile: null, skuVariation: {varies: false}},
           lifecycle: {status: 'DISABLED', version: 4, source: 'TEMPORARY'},
           externalIdentity: {
             sourceOrderRef: 'EXT-ORDER-001',
@@ -492,9 +505,14 @@ describe('catalog management runtime model contracts', () => {
             code: 'LATTE-001',
             name: '拿铁',
             categoryRef: null,
+            categoryPath: [],
             productionTagRef: null,
-            tagSummary: [],
+            tags: [],
             tagRefs: ['00000000-0000-4000-8000-000000000002'],
+            specificationFacts: [],
+            orderOptionFacts: [],
+            attributeFacts: [],
+            preparationFacts: {productionTag: null, profile: null, skuVariation: {varies: false}},
             standardSalePrice: null,
             standardSalePriceMin: 2800,
             standardSalePriceMax: 3400,
@@ -540,11 +558,15 @@ describe('catalog management runtime model contracts', () => {
           code: 'COMBO-001',
           name: '双人套餐',
           source: 'CATALOG',
-          status: 'DRAFT',
+          status: 'DISABLED',
           shapeKey: 'COMPOSITE',
-          categoryPathLabels: [],
+          categoryPath: [],
+          specificationFacts: [],
+          orderOptionFacts: [],
+          attributeFacts: [],
+          preparationFacts: {productionTag: null, profile: null, skuVariation: {varies: false}},
           compositeGroups: groups,
-          lifecycle: {status: 'DRAFT', version: 1, source: 'CATALOG'},
+          lifecycle: {status: 'DISABLED', version: 1, source: 'CATALOG'},
         },
         compositeGroups: groups,
         productionTags: [],
@@ -567,10 +589,13 @@ describe('catalog management runtime model contracts', () => {
           status: 'ENABLED',
           shapeKey: 'STANDARD_SALE_COUNTED',
           tagRefs: ['tag-ref'],
+          categoryPath: [],
           salesUnitRef: 'unit-ref',
           baseMeasureUnitRef: 'base-unit-ref',
-          tagSummary: [],
-          categoryPathLabels: [],
+          specificationFacts: [],
+          orderOptionFacts: [],
+          attributeFacts: [],
+          preparationFacts: {productionTag: null, profile: null, skuVariation: {varies: false}},
         },
         inventoryRules: {
           nodes: [
@@ -715,9 +740,9 @@ describe('catalog management runtime model contracts', () => {
       ...existing,
       productSkuRef: testUuid('sku-archived'),
       skuCode: 'SKU-011',
-      skuName: '已归档旧行',
+      skuName: '已作废旧行',
       displayOrder: 9,
-      status: 'ARCHIVED',
+      status: 'VOIDED',
       isDefault: false,
     };
     const dimensions = [
@@ -942,9 +967,9 @@ describe('catalog management runtime model contracts', () => {
       {itemRef: testUuid('00000000-0000-4000-8000-000000000001'), code: 'A', version: 4},
       {itemRef: testUuid('00000000-0000-4000-8000-000000000002'), code: 'B', version: 9},
     ];
-    expect(buildCatalogBatchStatusRequest(testUuid('node-1'), 'ARCHIVED', rows)).toEqual({
+    expect(buildCatalogBatchStatusRequest(testUuid('node-1'), 'VOIDED', rows)).toEqual({
       dataNodeRef: 'node-1',
-      targetStatus: 'ARCHIVED',
+      targetStatus: 'VOIDED',
       items: [
         {itemRef: '00000000-0000-4000-8000-000000000001', expectedVersion: 4},
         {itemRef: '00000000-0000-4000-8000-000000000002', expectedVersion: 9},
@@ -989,10 +1014,44 @@ describe('catalog management runtime model contracts', () => {
         itemCode: 'B',
         outcome: 'FAILED',
         problemCode: 'VERSION_CONFLICT',
-        reason: '商品资料已有更新，请重新读取后再操作。',
+        reason: '商品版本已变化',
         version: null,
       },
     ]);
+  });
+
+  it('accepts a typed failed receipt without an explanatory reason', () => {
+    const itemRef = testUuid('00000000-0000-4000-8000-000000000003');
+    const results = decodeCatalogBatchResults(
+      {
+        revision: 'r',
+        requestId: 'q',
+        results: [
+          {
+            itemRef,
+            itemCode: 'C',
+            outcome: 'FAILED',
+            problemCode: 'VERSION_CONFLICT',
+            reason: null,
+            version: null,
+          },
+        ],
+      } as never,
+      [itemRef],
+    );
+    expect(results).toEqual([
+      {
+        itemRef,
+        itemCode: 'C',
+        outcome: 'FAILED',
+        problemCode: 'VERSION_CONFLICT',
+        reason: null,
+        version: null,
+      },
+    ]);
+    const markup = renderToStaticMarkup(<CatalogBatchOutcome results={results} onClose={() => undefined} />);
+    expect(markup).toContain('商品资料已有更新，请重新读取后再操作。');
+    expect(markup).not.toContain('VERSION_CONFLICT');
   });
 
   it('fails closed when the owner response is nested or reordered', () => {
@@ -1030,9 +1089,9 @@ describe('catalog management runtime model contracts', () => {
     expect(markup).toContain('成功 2 项，失败 0 项');
     expect(markup).toContain('data-testid="catalog-batch-outcome-summary"');
     expect(markup).toContain('data-testid="catalog-batch-outcome-close"');
-    expect(markup).toContain('catalog-batch-outcome-failures');
-    expect(markup).toContain('逐项处理结果');
-    expect(markup).toContain('已处理');
+    expect(markup).not.toContain('catalog-batch-outcome-failures');
+    expect(markup).not.toContain('逐项处理结果');
+    expect(markup).not.toContain('已处理');
   });
 
   it('renders partial failures with the approved heading and table columns', () => {
@@ -1040,24 +1099,39 @@ describe('catalog management runtime model contracts', () => {
       <CatalogBatchOutcome results={[batchRow(1, 'SUCCEEDED'), batchRow(2, 'FAILED')]} onClose={() => undefined} />,
     );
     expect(markup).toContain('成功 1 项，失败 1 项');
-    expect(markup).toContain('逐项处理结果');
+    expect(markup).toContain('以下 1 个商品未处理成功');
     expect(markup).toContain('商品编码');
-    expect(markup).toContain('处理结果');
-    expect(markup).toContain('说明');
-    expect(markup).toContain('未处理');
+    expect(markup).toContain('失败原因');
+    expect(markup).toContain('ITEM-2');
+    expect(markup).toContain('商品资料已有更新，请重新读取后再操作。');
+    expect(markup).not.toContain('owner raw reason must not render');
+    expect(markup).not.toContain('处理结果');
+    expect(markup).not.toContain('说明');
     expect(markup).toContain('data-testid="catalog-batch-outcome-failures"');
+    expect(markup).toContain('tabindex="0"');
   });
 
-  it('keeps the 100-item failure result inside the bounded scroll container', () => {
+  it('keeps the 100-item failure result in the keyboard-accessible result table region', () => {
     const markup = renderToStaticMarkup(
       <CatalogBatchOutcome
         results={Array.from({length: 100}, (_, index) => batchRow(index + 1, 'FAILED'))}
         onClose={() => undefined}
       />,
     );
-    expect(markup).toContain('max-height:360px');
-    expect(markup).toContain('overflow-y:auto');
-    expect(markup).toContain('逐项处理结果');
+    expect(markup).toContain('以下 100 个商品未处理成功');
+    expect(markup).toContain('class="catalog-batch-outcome__failure-table"');
+    expect(markup).toContain('tabindex="0"');
+  });
+
+  it('projects known problem codes instead of rendering a long owner reason', () => {
+    const markup = renderToStaticMarkup(
+      <CatalogBatchOutcome
+        results={[{...batchRow(1, 'FAILED'), reason: '业务原因 '.repeat(400)}]}
+        onClose={() => undefined}
+      />,
+    );
+    expect(markup).toContain('商品资料已有更新，请重新读取后再操作。');
+    expect(markup).not.toContain('业务原因');
   });
 
   it('does not fabricate a result layer for an empty or protocol-invalid receipt', () => {
@@ -1077,16 +1151,17 @@ describe('catalog management runtime model contracts', () => {
     expect(markup).toContain('成功 1 项，失败 0 项');
   });
 
-  it('does not expose itemRef, problemCode, version, or raw exception as user fields', () => {
+  it('uses a safe fallback when the problem code is not in the UI dictionary', () => {
     const result: CatalogBatchResult = {
       ...batchRow(1, 'FAILED'),
       itemRef: testUuid('hidden-item-ref'),
       problemCode: 'INTERNAL_PROBLEM_CODE',
       version: 42,
-      reason: '已脱敏的业务失败原因',
+      reason: 'raw exception / internal detail',
     };
     const markup = renderToStaticMarkup(<CatalogBatchOutcome results={[result]} onClose={() => undefined} />);
-    expect(markup).toContain('已脱敏的业务失败原因');
+    expect(markup).toContain('批量操作项执行失败，请重新读取后再试。');
+    expect(markup).not.toContain('raw exception / internal detail');
     expect(markup).not.toContain('hidden-item-ref');
     expect(markup).not.toContain('INTERNAL_PROBLEM_CODE');
     expect(markup).not.toContain('>42<');
@@ -1320,7 +1395,18 @@ describe('catalog management runtime model contracts', () => {
               canDelete: false,
               subtreeSize: 2,
               blockingReferenceCount: 1,
-              blockingReferenceLabels: ['烤鸡翅(APP-CHICKEN-WINGS-001)'],
+              blockingReferences: {
+                count: 1,
+                references: [
+                  {
+                    referenceKind: 'CATALOG_ITEM',
+                    referenceRef: 'item-ref',
+                    code: 'APP-CHICKEN-WINGS-001',
+                    name: '烤鸡翅',
+                    direction: 'INBOUND',
+                  },
+                ],
+              },
             },
           },
         ],
@@ -1357,7 +1443,18 @@ describe('catalog management runtime model contracts', () => {
         canDelete: false,
         subtreeSize: 2,
         blockingReferenceCount: 1,
-        blockingReferenceLabels: ['烤鸡翅(APP-CHICKEN-WINGS-001)'],
+        blockingReferences: {
+          count: 1,
+          references: [
+            {
+              referenceKind: 'CATALOG_ITEM',
+              referenceRef: 'item-ref',
+              code: 'APP-CHICKEN-WINGS-001',
+              name: '烤鸡翅',
+              direction: 'INBOUND',
+            },
+          ],
+        },
       },
     });
     expect(navigation.tags).toEqual([

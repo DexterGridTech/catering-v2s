@@ -1,10 +1,13 @@
 import {Alert, Button, Modal, Typography} from 'antd';
 import {NameCodePathText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import type {WorkspaceUser} from '../../../app/api/generated/operations-edge';
+
+type OrganizationPathNodes = WorkspaceUser['assignments'][number]['organizationPathNodes'];
 
 type Props = {
   open: boolean;
   displayName?: string;
-  organizationPath?: string;
+  organizationPathNodes?: OrganizationPathNodes;
   problem?: string;
   submitting: boolean;
   onCancel: () => void;
@@ -14,22 +17,23 @@ type Props = {
 export function WorkspaceUserRevokeModal({
   open,
   displayName,
-  organizationPath,
+  organizationPathNodes,
   problem,
   submitting,
   onCancel,
   onConfirm,
 }: Props) {
   useOverlayLock(open);
-  const confirmation = organizationPath ? (
-    <span>
-      确认撤销“{displayName ?? '该用户'}”在“
-      <NameCodePathText value={organizationPath} />
-      ”的任职？
-    </span>
-  ) : (
-    <>确认撤销“{displayName ?? '该用户'}”在“当前任职机构”的任职？</>
-  );
+  const confirmation =
+    organizationPathNodes && organizationPathNodes.length > 0 ? (
+      <span>
+        确认撤销“{displayName ?? '该用户'}”在“
+        <NameCodePathText nodes={organizationPathNodes} />
+        ”的任职？
+      </span>
+    ) : (
+      <>确认撤销“{displayName ?? '该用户'}”在“当前任职机构”的任职？</>
+    );
   return (
     <Modal
       title={confirmation}

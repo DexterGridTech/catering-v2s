@@ -4,7 +4,7 @@ package com.catering.v2s.app.edge.generated.wire;
 public record WorkspaceAccountAssignmentsItem(
     String id,
     ServiceNodeType serviceNodeType,
-    String organizationPath,
+    java.util.List<OrganizationPathNode> organizationPathNodes,
     String roleName,
     String status,
     String source,

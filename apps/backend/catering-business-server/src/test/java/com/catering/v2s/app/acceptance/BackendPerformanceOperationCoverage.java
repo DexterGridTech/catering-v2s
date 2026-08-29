@@ -598,11 +598,6 @@ final class BackendPerformanceOperationCoverage {
                     "adjustOperationsInventoryTarget",
                     "POST",
                     "/api/operations/catalog-inventory/inventory-targets/{targetRef}/adjust",
-                    "operations-admin"),
-            route(
-                    "deleteOperationsCatalogUnit",
-                    "DELETE",
-                    "/api/operations/catalog-inventory/units/{unitRef}",
                     "operations-admin"));
 
     private BackendPerformanceOperationCoverage() {}
@@ -672,9 +667,193 @@ final class BackendPerformanceOperationCoverage {
                 "BUSINESS: normal context calibration returns the selected role");
 
         new BusinessChannelAcceptanceScenarios(host).calibrationUpdateInternalTemplateAndChannel(context);
+        runCatalogLifecycleNormalRecipes(context, fixture, session);
         assertTrue(
                 NORMAL_RECIPE_OPERATIONS.contains(SESSION_CONTEXT.operationId()),
                 "BUSINESS: normal recipe declaration retains session-context coverage");
+    }
+
+    private static void runCatalogLifecycleNormalRecipes(
+            BackendAcceptanceTest.ScenarioContext context,
+            BackendAcceptanceTest.Fixture fixture,
+            BackendAcceptanceTest.Session session)
+            throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String root = "/api/operations/catalog-inventory";
+        String dataNodeRef = fixture.storeId().toString();
+
+        Map<String, Object> categoryBody = new LinkedHashMap<>();
+        categoryBody.put("dataNodeRef", dataNodeRef);
+        categoryBody.put("code", "CP05-LEGACY-CATEGORY-" + suffix);
+        categoryBody.put("name", "CP05 legacy category " + suffix);
+        categoryBody.put("parentCategoryRef", null);
+        BackendAcceptanceTest.Response category = context.post(
+                new BackendAcceptanceTest.RouteIdentity("createOperationsCatalogCategory", root + "/categories"),
+                root + "/categories",
+                session.cookie(),
+                categoryBody,
+                Set.of(200));
+        var categoryResult = category.json().path("result");
+        String categoryRef = categoryResult.path("categoryRef").asText();
+        long categoryVersion = categoryResult.path("version").asLong();
+        assertTrue(
+                !categoryRef.isBlank() && categoryVersion > 0,
+                "BUSINESS: legacy category normal recipe creates a versioned owner fact");
+        BackendAcceptanceTest.Response disabledCategory = context.post(
+                new BackendAcceptanceTest.RouteIdentity(
+                        "transitionOperationsCatalogCategoryStatus", root + "/categories/{categoryRef}/status"),
+                root + "/categories/" + categoryRef + "/status",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef", dataNodeRef,
+                        "categoryRef", categoryRef,
+                        "expectedVersion", categoryVersion,
+                        "targetStatus", "DISABLED"),
+                Set.of(200));
+        assertEquals(
+                categoryRef,
+                disabledCategory.json().path("result").path("categoryRef").asText(),
+                "BUSINESS: category lifecycle transition returns its owner reference");
+
+        String attributeCode = "CP05-LEGACY-ATTRIBUTE-" + suffix;
+        BackendAcceptanceTest.Response attribute = context.post(
+                new BackendAcceptanceTest.RouteIdentity(
+                        "createOperationsCatalogAttributeDefinition", root + "/attribute-definitions"),
+                root + "/attribute-definitions",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef",
+                        dataNodeRef,
+                        "code",
+                        attributeCode,
+                        "name",
+                        "CP05 legacy attribute " + suffix,
+                        "valueType",
+                        "TEXT",
+                        "options",
+                        List.of()),
+                Set.of(200));
+        var attributeDefinition = attribute.json().path("result").path("definition");
+        String attributeRef = attributeDefinition.path("definitionRef").asText();
+        long attributeVersion = attributeDefinition.path("version").asLong();
+        assertTrue(
+                !attributeRef.isBlank() && attributeVersion > 0,
+                "BUSINESS: legacy attribute normal recipe creates a versioned owner fact");
+        BackendAcceptanceTest.Response disabledAttribute = context.post(
+                new BackendAcceptanceTest.RouteIdentity(
+                        "transitionOperationsCatalogAttributeDefinitionStatus",
+                        root + "/attribute-definitions/{definitionRef}/status"),
+                root + "/attribute-definitions/" + attributeRef + "/status",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef", dataNodeRef,
+                        "definitionRef", attributeRef,
+                        "expectedVersion", attributeVersion,
+                        "targetStatus", "DISABLED"),
+                Set.of(200));
+        assertEquals(
+                attributeRef,
+                disabledAttribute
+                        .json()
+                        .path("result")
+                        .path("definition")
+                        .path("definitionRef")
+                        .asText(),
+                "BUSINESS: attribute lifecycle transition returns its owner reference");
+
+        String optionCode = "CP05-LEGACY-OPTION-" + suffix;
+        String optionValueCode = "CP05-LEGACY-OPTION-VALUE-" + suffix;
+        BackendAcceptanceTest.Response option = context.post(
+                new BackendAcceptanceTest.RouteIdentity(
+                        "createOperationsCatalogOrderOptionDefinition", root + "/order-option-definitions"),
+                root + "/order-option-definitions",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef",
+                        dataNodeRef,
+                        "code",
+                        optionCode,
+                        "name",
+                        "CP05 legacy option " + suffix,
+                        "selectionMode",
+                        "SINGLE",
+                        "values",
+                        List.of(Map.of(
+                                "code",
+                                optionValueCode,
+                                "name",
+                                "CP05 legacy option value " + suffix,
+                                "displayOrder",
+                                0,
+                                "materials",
+                                List.of()))),
+                Set.of(200));
+        var optionDefinition = option.json().path("result").path("definition");
+        String optionRef = optionDefinition.path("definitionRef").asText();
+        long optionVersion = optionDefinition.path("version").asLong();
+        assertTrue(
+                !optionRef.isBlank() && optionVersion > 0,
+                "BUSINESS: legacy option normal recipe creates a versioned owner fact");
+        BackendAcceptanceTest.Response disabledOption = context.post(
+                new BackendAcceptanceTest.RouteIdentity(
+                        "transitionOperationsCatalogOrderOptionDefinitionStatus",
+                        root + "/order-option-definitions/{definitionRef}/status"),
+                root + "/order-option-definitions/" + optionRef + "/status",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef", dataNodeRef,
+                        "definitionRef", optionRef,
+                        "expectedVersion", optionVersion,
+                        "targetStatus", "DISABLED"),
+                Set.of(200));
+        assertEquals(
+                optionRef,
+                disabledOption
+                        .json()
+                        .path("result")
+                        .path("definition")
+                        .path("definitionRef")
+                        .asText(),
+                "BUSINESS: option lifecycle transition returns its owner reference");
+
+        String unitCode = "CP05-LEGACY-UNIT-" + suffix;
+        BackendAcceptanceTest.Response unit = context.post(
+                new BackendAcceptanceTest.RouteIdentity("createOperationsCatalogUnit", root + "/units"),
+                root + "/units",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef",
+                        dataNodeRef,
+                        "code",
+                        unitCode,
+                        "name",
+                        "CP05 legacy unit " + suffix,
+                        "unitDimension",
+                        "COUNT",
+                        "precision",
+                        0),
+                Set.of(200));
+        var unitReadback = unit.json().path("result").path("unit");
+        String unitRef = unitReadback.path("unitRef").asText();
+        long unitVersion = unitReadback.path("version").asLong();
+        assertTrue(
+                !unitRef.isBlank() && unitVersion > 0,
+                "BUSINESS: legacy unit normal recipe creates a versioned owner fact");
+        BackendAcceptanceTest.Response disabledUnit = context.post(
+                new BackendAcceptanceTest.RouteIdentity(
+                        "transitionOperationsCatalogUnitStatus", root + "/units/{unitRef}/status"),
+                root + "/units/" + unitRef + "/status",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef", dataNodeRef,
+                        "unitRef", unitRef,
+                        "expectedVersion", unitVersion,
+                        "targetStatus", "DISABLED"),
+                Set.of(200));
+        assertEquals(
+                unitRef,
+                disabledUnit.json().path("result").path("unit").path("unitRef").asText(),
+                "BUSINESS: unit lifecycle transition returns its owner reference");
     }
 
     private static BackendAcceptanceTest.Response send(
@@ -793,6 +972,7 @@ final class BackendPerformanceOperationCoverage {
                         : fixture.headCompanyId().toString());
         values.put("nodeId", fixture.projectId().toString());
         values.put("categoryRef", UUID.randomUUID().toString());
+        values.put("definitionRef", UUID.randomUUID().toString());
         values.put("category", "STORE");
         values.put("itemId", UUID.randomUUID().toString());
         values.put("contractId", UUID.randomUUID().toString());

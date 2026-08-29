@@ -159,10 +159,26 @@ project.taskPath().displayPath() + " / " + store.code() + " " + store.name()
 
 | 类 | 数量 | 处置 |
 | --- | --- | --- |
-| **代码定义的闭集** | 12(business-channel 7、collaboration 5,契约里有 `enum` 定义) | **前端建字典**,后端删字段 |
+| **代码定义的闭集** | **13**(business-channel 7、collaboration 6) | **前端建字典**,后端删字段;**响应契约先补 enum** |
 | **实体名字**(`bindingDisplayName`、`externalSystemDisplayName`、`productionDisplayName` 等) | 若干 | 业务自定义 → **后端返实体,不是病** |
 | **装配产物**(`categoryPathLabels`、`blockingReferenceLabels`、`relationLabel` 等) | 若干 | 按形态一/二删装配,与字典无关 |
 | **时点快照**(`actorDisplayName`) | 2 | **§0.1 例外,保留** |
+
+**⚠️ 判据不是「契约里有 enum」,是「后端有代码支撑」。** 二者实测不等价,且差异正是病根:
+
+```
+enum         BusinessChannelTemplateCreateRequest/properties/operatorKind
+type=string  BusinessChannelTemplateView/properties/operatorKind
+```
+
+同一个概念,**写请求时是闭集、读响应时是裸 `string`**。`accessKind`、`dineInForm`、`orderKind`、`ownerNodeType`、`capabilityClass` 同型。后端知道值域(请求侧的 enum 就是证据)却在响应里不告诉前端,前端拿不到联合类型,只好由后端改送 `*DisplayName` —— **这批字段就是这么来的**。
+
+**Dexter 2026-08-27 裁定:统一都用 enum。** 落成两件事:
+
+1. **响应契约补 enum**(值直接取请求侧现成的字面量,是复制不是新造)。前端生成类型随之变成联合类型,字典获得**编译期穷尽性** —— 后端新增枚举值,前端编译不过直到补上文案。这是白送的一道门,比任何 checker 都硬。
+2. 升为通则,已写进后台编码规范 **1-O**;`nodeTypeDisplayName`(collaboration 的 `nodeType`,节点类型是代码闭集)按此判据补入,成员数 12 → 13。
+
+⚠️ **补 enum 时必须同步取齐三值。** 实测 `CatalogItemDetail.status` / `CatalogUnitList.status` 是两值 `('ENABLED','DISABLED')`,而 `CatalogDictionaryQuery.status` 已是三值。三态改完后若响应 enum 仍是两值,owner 会返回一个不在自己 enum 里的值。
 
 **字典在前端,后端不建接口。** 这些标签是代码定义的静态闭集(catalog 的 `enumLabels` 在 `p1.mjs` 里就是字面量),不随租户品牌变化,前端自己持有即可 —— 因此**没有"先建后退役"的顺序约束**。
 
@@ -340,6 +356,8 @@ owner 主源码共 **40 条** `DELETE FROM`,绝大多数属后者 —— `catalo
 | `scripts/test/r5-remote-testcontainers.mjs:343,352,353,368,369` | 五处字面 239 |
 | `catalog-inventory-p1` 的 design-byte 摘要链 | `DESIGN_FIELD_DIGEST` / `designByteCoverage.fieldCount` 随契约字段集变动 |
 
+**以下 239 描述是 CP-B0 实施前的历史基线，不是 CP-F3 后的 active denominator。CP-F3 当前权威值为 `238/102/136/93/34/9`；所有运行时、生成器、report 与 verifier 必须读取 canonical count source，历史 239/243 只用于说明实施阶段的接口集变化。**
+
 **三个后果**:
 
 1. **不只"收敛(减)会撞",新增一个 operation 同样立刻撞** —— `BUDGET_PROJECTION_OPERATION_MISSING` 对新 id 直接失败。
@@ -421,7 +439,7 @@ owner 主源码共 **40 条** `DELETE FROM`,绝大多数属后者 —— `catalo
 - **不需要先关闭漂移的**:步骤一、二、三 —— 只改字段与 schema,不动 operation 身份与数量,只需与 design-byte 摘要链同批同步。
 - **必须先关闭漂移的**:步骤四与步骤六。
 
-⚠️ **步骤四会改变 operation 集合,此前把它漏了。** 裁定 1「定义库一律 `transitionStatus`」加裁定 2「物理删除完全取消」意味着要**退役** `deleteOperationsCatalogCategory`、`deleteOperationsCatalogUnit`、`disableOperationsCatalogUnit`、`deleteOperationsCatalogAttributeDefinition`、`deleteOperationsCatalogOrderOptionDefinition` 五个 operation,并为 `catalog_attribute_definition`、`catalog_order_option_definition` **新增** `transitionStatus`。**减与增同时发生** —— 同时触发 `BUDGET_OPERATION_COUNT_INVALID`、`BP_U02_BINDING_COUNT_DRIFT`、`BP_U02_BINDING_EXACT_SET_DRIFT` 与 `BUDGET_PROJECTION_OPERATION_MISSING`。
+⚠️ **步骤四会改变 operation 集合,此前把它漏了。** 裁定 1「定义库一律 `transitionStatus`」加裁定 2「物理删除完全取消」意味着要**退役** `deleteOperationsCatalogCategory`、`deleteOperationsCatalogUnit`、`disableOperationsCatalogUnit`、`deleteOperationsCatalogAttributeDefinition`、`deleteOperationsCatalogOrderOptionDefinition` 五个 operation,并**新增 4 个** `transitionStatus`(**Dexter 2026-08-27 裁定 D01=B**:`catalog_category`、`unit_definition`、`catalog_attribute_definition`、`catalog_order_option_definition` 各一个)。**只加属性与点单选项两个是不够的** —— 分类与单位会一个状态命令都不剩,裁定 1、2 在这两个库上不可执行。**operation 净 −1**;减与增同时发生 —— 同时触发 `BUDGET_OPERATION_COUNT_INVALID`、`BP_U02_BINDING_COUNT_DRIFT`、`BP_U02_BINDING_EXACT_SET_DRIFT` 与 `BUDGET_PROJECTION_OPERATION_MISSING`。
 
 ⛔ **禁止的规避路径**:为了不动数量,把 `deleteOperationsCatalogCategory` 的**语义偷偷改成软删而保留 operation id**。那是用兼容层掩盖裁定,仓规明禁。步骤四的 operation 集合 delta 必须在开工前量化并显式确认。
 
@@ -433,7 +451,7 @@ owner 主源码共 **40 条** `DELETE FROM`,绝大多数属后者 —— `catalo
 
 四 · **三态改造**。真实迁移分母见下;`business_channel` 纳入时同步修拦截 2。
 
-五 · **形态三:前端建字典**。按 Dexter 判据 —— **代码定义的闭集由前端建字典,后端不建接口**;业务自定义的由后端返实体。工作全在前端,不新增 operation。须在四之后,因为 `enumLabels` 现含 `DRAFT` / `ARCHIVED`,三态改完才有正确内容可写。
+五 · **形态三:前端建字典**。按 Dexter 判据 —— **代码定义的闭集由前端建字典,后端不建接口**;业务自定义的由后端返实体。**本批含一步后台改动:响应契约补 enum(规范 1-O)**,不是纯前端批;补完前端才拿得到联合类型,字典才有编译期穷尽性。不新增 operation。须在四之后,因为 `enumLabels` 现含 `DRAFT` / `ARCHIVED`,三态改完才有正确内容可写,且响应 enum 必须同步取齐三值。
 
 六 · **读接口收敛**。分母写死为 `catalog-inventory.openapi.json` 全部 GET(实测 22,含 8 个 inventory)。
 
@@ -441,7 +459,13 @@ owner 主源码共 **40 条** `DELETE FROM`,绝大多数属后者 —— `catalo
 
 初稿写"唯一需要迁移的是新增 `status` 列",**不成立**。实测:
 
-- **两值 CHECK 声明 17 处 / distinct 表 15 张。按裁定 11 排除本轮不动的 4 张(`group_workspace`、`platform_admin`、`collaboration` 两张 enablement)后,本批处理 11 张**:`organization_node`、`brand`、`tenant`、`head_company`、`store`、`workspace_account`、`workspace_role`、`business_channel`、`business_channel_template`、`unit_definition`、`catalog_category`。各需加 `VOIDED` 并把业务唯一键改为排除已删除的 partial index。⚠️ **被裁定 11 排除的四张不得出现在本清单里**(此前误列,已删)。
+- **按当前值域重数(2026-08-27 全量迁移扫描)**:恰为 `ENABLED/DISABLED` 两值的 **15 处**;已是三值的 3 处(`catalog_category`、`dictionary_entry`、`production_tag_definition`,**不需改**);其他值域 10 处。
+  - **本批加 `VOIDED` 的两值表 = 9 张**:`organization_node`、`brand`、`tenant`、`head_company`、`store`、`workspace_account`、`workspace_role`、`business_channel_template`、`unit_definition`。
+  - **本批做值域变更 + 回填的 4 张**(不属两值,须单列):`business_channel`(`DRAFT/EFFECTIVE/DISABLED`)、`catalog_item`(五值)、`catalog_sku`(四值)、`catalog_composite_component`(`ENABLED/DISABLED/ARCHIVED`,存量 ARCHIVED 须先判零)。
+  - **须按规范 1-L 反向判据登记豁免并写理由的 2 处**:`stock_target.definition_status`、`stock_bom.definition_status`(inventory 两张本批不动)。**不登记就是门红,不能靠「没列进来」默认放过。**
+  - ⚠️ **更正(2026-08-27 独立复核)**:此前本行写「16 处」并把 `organization.commercial_group_idempotency.status` 列为第三处豁免,**两者都是错的**。该表实测无 `status` 列(列为 `idempotency_key/group_workspace_key/request_fingerprint/commercial_group_id/commercial_group_code/commercial_group_name/created_at`);原扫描按「最近前置表名」归属 CHECK,被该表的 `ENABLE ROW LEVEL SECURITY` 等 ALTER 带偏。按严格归属重数为 **15 处**,豁免 **2 处**。9 张表的清单不受影响(15−4−2=9)。
+  - 裁定 11 排除的 4 张(`group_workspace`、`platform_admin`、`external_system_enablement`、`provider_profile_enablement`)不得出现在以上任何一档。
+  - ⚠️ 此前版本写作「17 处 / 15 表 / 本批 11 张」,其中 `catalog_category`(已三值)与 `business_channel`(非两值)两处归档错误,已按实测更正。
 - **`catalog_item`** 五值 → 三值(裁定 6 + 7)
 - **`catalog_sku`** 四值 → 三值(裁定 7)
 - **`business_channel`** `DRAFT/EFFECTIVE/DISABLED` → 三态(裁定 10),⚠️ `DRAFT→停用` 会与现存 `DISABLED` **撞值**,映射须显式定义
@@ -515,7 +539,9 @@ ORG / IAM 的接口**不合并**:实测 21 个 operation 带 `noClientDerivedAut
 
 **理由**:按判据二者是主数据 —— `WorkspaceRoleService` 有真实 `transitionStatus`,`Set.of("ENABLED","DISABLED")` 可由人手动来回切;裁定 5 明写适用所有域。
 
-**执行面**:两表实测**无 `code` 列**。`workspace_role` 的唯一键是 `uq_workspace_role_name`(按名称),`workspace_account` 是登录名与手机号。加 `VOIDED` 值后,partial index 建在各自的真实唯一键上。
+**执行面**:两表实测**无 `code` 列**。`workspace_role` 的唯一键是 `uq_workspace_role_name`(按名称),`workspace_account` 是登录名与手机号。加 `VOIDED` 值后,**`workspace_role` 的 partial index 建在真实唯一键上**。
+
+⚠️ **`workspace_account` 例外(Dexter 2026-08-27 裁定 D02=B)**:`uq_workspace_mobile` 与 `uq_workspace_login` **保持普通 `UNIQUE`,不改 partial**。账号一旦 `VOIDED`,该手机号/登录名**永久不可再用** —— 身份键不是业务编码,复用会让「这个号以前是谁」不可判定。既然应用层永久拒绝,DB 就不能放行;改成 partial 会让 predicate 变成死代码。已登记为规范 1-M 的显式例外。`accountExists` 的 `VOIDED` 与 `DISABLED` 同样返回 `ACCOUNT_NOT_BINDABLE` / 422,**不新增「存在作废历史」字段**。
 
 **⚠️ 前一版在这里写错了两条执行面,均会造成回退,现更正:**
 
@@ -590,7 +616,7 @@ Dexter 2026-08-27 确认按此处理。给角色新增不可变编码属新增�
 
 ### 7.4 形态三:前端建字典,后端不建接口
 
-**裁定**(按 Dexter 2026-08-27「后端有明确代码支撑、不是业务自定义的,前端就建字典」):纳入 base-1,**字典建在前端**;后端只删那 12 个代码闭集的 `DisplayName` 字段。
+**裁定**(按 Dexter 2026-08-27「后端有明确代码支撑、不是业务自定义的,前端就建字典」):纳入 base-1,**字典建在前端**;后端删那 **13** 个代码闭集的 `DisplayName` 字段,并**先在响应契约补上 enum**(规范 1-O)。
 
 **为什么不是"后端各建一份词汇表接口"**(此前版本的写法,已作废):
 
@@ -600,8 +626,10 @@ Dexter 2026-08-27 确认按此处理。给角色新增不可变编码属新增�
 
 **顺带**:按同一判据,catalog 现在把 `enumLabels` 放在 shapeManifest 里**运行时下发**也差一步 —— 静态闭集不该每次请求都取。catalog 不是标杆,是"比别的域走远一步但仍未到位"。是否一并改,列为实施时的可选项。
 
-**执行面**:两个 App 各建一份枚举字典(或从生成的契约 `enum` 派生);后端删除那 12 个字段;第二、三、四类按 §2.3 分别处置,**不整批退役**。
+**执行面**:① 后端在**响应** schema 补 enum(取请求侧现成字面量;`status` 类须取齐三值);② 重生成契约,两个 App 的字典**从生成的联合类型派生**——不是手抄一份平行清单,否则新增枚举值前端不会红;③ 后端删除那 13 个字段;④ 第二、三、四类按 §2.3 分别处置,**不整批退役**。
+
+⚠️ **①必须先做。** 实测 `operatorKind` 等 6 个字段的响应侧现为裸 `string`,不补 enum 就没有联合类型可派生,②会退化成手抄清单——那正是本条要避免的形态。
 
 ## 8. 授权边界
 
-本文是需求稿。第 3 章为 Dexter 已裁定事项;第 7 章中 §7.1、§7.4 为 Claude 代裁可推翻,§7.2、§7.3 已由 Dexter 亲裁;其余为待批准需求。**本文不授权任何实施、DEV 或数据操作。** 第 4 章的六条拦截在开工前必须逐条有处置结论,其中拦截 2 是生产代码里的既有缺陷,与本批范围无关也应尽快修。
+本文是需求稿。第 3 章为 Dexter 已裁定事项;第 7 章中 §7.1 为 Claude 代裁可推翻,**§7.4 的 enum 口径已由 Dexter 2026-08-27 亲裁**,§7.2、§7.3 已由 Dexter 亲裁;其余为待批准需求。**本文不授权任何实施、DEV 或数据操作。** 第 4 章的六条拦截在开工前必须逐条有处置结论,其中拦截 2 是生产代码里的既有缺陷,与本批范围无关也应尽快修。

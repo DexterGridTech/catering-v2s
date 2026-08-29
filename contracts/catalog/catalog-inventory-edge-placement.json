@@ -83,12 +83,6 @@
       "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
     },
     {
-      "operationId": "deleteOperationsCatalogCategory",
-      "face": "operations-admin",
-      "ownerModule": "catalog",
-      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
-    },
-    {
       "operationId": "getOperationsCatalogDictionary",
       "face": "operations-admin",
       "ownerModule": "catalog",
@@ -299,12 +293,6 @@
       "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
     },
     {
-      "operationId": "deleteOperationsCatalogAttributeDefinition",
-      "face": "operations-admin",
-      "ownerModule": "catalog",
-      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
-    },
-    {
       "operationId": "listOperationsCatalogOrderOptionDefinitions",
       "face": "operations-admin",
       "ownerModule": "catalog",
@@ -318,12 +306,6 @@
     },
     {
       "operationId": "updateOperationsCatalogOrderOptionDefinition",
-      "face": "operations-admin",
-      "ownerModule": "catalog",
-      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
-    },
-    {
-      "operationId": "deleteOperationsCatalogOrderOptionDefinition",
       "face": "operations-admin",
       "ownerModule": "catalog",
       "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
@@ -347,13 +329,25 @@
       "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
     },
     {
-      "operationId": "disableOperationsCatalogUnit",
+      "operationId": "transitionOperationsCatalogAttributeDefinitionStatus",
       "face": "operations-admin",
       "ownerModule": "catalog",
       "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
     },
     {
-      "operationId": "deleteOperationsCatalogUnit",
+      "operationId": "transitionOperationsCatalogOrderOptionDefinitionStatus",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "transitionOperationsCatalogUnitStatus",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "transitionOperationsCatalogCategoryStatus",
       "face": "operations-admin",
       "ownerModule": "catalog",
       "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
@@ -377,5 +371,5 @@
       "shard": "paths/operations-admin/catalog-item-management.paths.json"
     }
   ],
-  "placementDigest": "2448cddb42975a94904c3a6bdee7bf03b20d7718eb3f07551dcc3907283899af"
+  "placementDigest": "c294e5a458c4fc930cf32eeb46c8f6fe2db8d04bcc9c20e7f856fe37568fea9e"
 }

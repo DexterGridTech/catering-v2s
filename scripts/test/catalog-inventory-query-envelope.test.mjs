@@ -18,7 +18,7 @@ const queryOperations = contract.operations.filter(operation => operation.method
 const transportEnvelopeRequired = required =>
   required.includes('revision') &&
   required.includes('requestId') &&
-  (required.includes('data') || required.includes('result'));
+  (required.includes('data') || required.includes('result') || required.includes('results'));
 const schemaRequired = component => openApi.components.schemas[component]?.required ?? [];
 const responseEnvelopeOwner = operation => {
   const wireRequired = schemaRequired(operation.responseComponent);
@@ -112,6 +112,91 @@ test('every catalog GET has exactly one source-owned transport envelope', () => 
   }
 });
 
+test('CP-B2 reference lifecycle validation distinguishes new bindings from existing relational facts', () => {
+  const owner = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
+  );
+  const definitionFacts = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemDefinitionFacts.java',
+  );
+  const categoryStart = owner.indexOf('private void lockAndValidateCategoryRefs');
+  const categoryEnd = owner.indexOf('private Set<UUID> categoryRefsFromSections', categoryStart);
+  assert.ok(categoryStart >= 0 && categoryEnd > categoryStart);
+  const categoryValidation = owner.slice(categoryStart, categoryEnd);
+  assert.match(categoryValidation, /lockCategoriesForReferenceValidation\(scope, brand, categoryRefs\)/);
+  assert.match(categoryValidation, /categoryReferencesFromOwner\(currentItemRef\)/);
+  assert.match(categoryValidation, /!existingRefs\.contains\(row\.ref\(\)\) && !"ENABLED"\.equals\(row\.status\(\)\)/);
+
+  const dictionaryStart = owner.indexOf('private void validateDeclaredOpaqueReferences');
+  const dictionaryEnd = owner.indexOf('private void lockDictionaryRefsByKind', dictionaryStart);
+  assert.ok(dictionaryStart >= 0 && dictionaryEnd > dictionaryStart);
+  const dictionaryValidation = owner.slice(dictionaryStart, dictionaryEnd);
+  assert.match(dictionaryValidation, /dictionaryReferencesFromOwner\(scope, brand, currentItemRef, currentSections/);
+  assert.match(dictionaryValidation, /private Map<String, Set<UUID>> dictionaryReferencesFromOwner/);
+  const dictionaryLockEnd = owner.indexOf('private void validateProductionTagRef', dictionaryEnd);
+  assert.ok(dictionaryLockEnd > dictionaryEnd);
+  const dictionaryLock = owner.slice(dictionaryEnd, dictionaryLockEnd);
+  assert.match(dictionaryLock, /!alreadyAttached && !"ENABLED"\.equals\(statuses\.get\(requestedKey\)\)/);
+
+  const relationStart = owner.indexOf('private void validateCatalogRelationRefs');
+  const relationEnd = owner.indexOf('private String skuRelationKey', relationStart);
+  assert.ok(relationStart >= 0 && relationEnd > relationStart);
+  const relationValidation = owner.slice(relationStart, relationEnd);
+  assert.match(relationValidation, /readByItemRefs\(List\.of\(currentItemRef\)\)/);
+  assert.match(relationValidation, /!existingItemRefs\.contains\(itemRef\) && !"ENABLED"\.equals\(itemStatuses\.get\(itemRef\)\)/);
+  assert.match(relationValidation, /!existingSkuRelationKeys\.contains\(relationKey\)/);
+  assert.match(relationValidation, /owner\.itemStatus\(\)/);
+  assert.match(relationValidation, /owner\.skuStatus\(\)/);
+
+  const saveStart = owner.indexOf('private SaveItemResult saveItem');
+  const saveEnd = owner.indexOf('private ArrayNode identifierArray', saveStart);
+  assert.ok(saveStart >= 0 && saveEnd > saveStart);
+  const save = owner.slice(saveStart, saveEnd);
+  assert.match(save, /Set<UUID> submittedUnitRefs = unitReferences\(sections\)/);
+  assert.match(save, /unitReferencesFromOwner\(dataNodeRef, brandRef, current\.ref\(\)\)/);
+
+  assert.match(definitionFacts, /definition\.value_type,definition\.status/);
+  assert.match(definitionFacts, /requireBindableDefinition\(\s*definition\.status\(\),\s*existing\.containsKey/);
+  assert.match(definitionFacts, /private static void requireBindableDefinition/);
+
+  const categoryCandidateStart = owner.indexOf('String cte = "WITH RECURSIVE category_tree');
+  const categoryCandidateEnd = owner.indexOf('StringBuilder matchingVisibility', categoryCandidateStart);
+  assert.ok(categoryCandidateStart >= 0 && categoryCandidateEnd > categoryCandidateStart);
+  const categoryCandidate = owner.slice(categoryCandidateStart, categoryCandidateEnd);
+  assert.match(categoryCandidate, /c\.status = 'ENABLED'/);
+  assert.match(categoryCandidate, /child\.status = 'ENABLED'/);
+  const categoryRedMutation = categoryCandidate.replace("c.status = 'ENABLED'", "c.status <> 'VOIDED'");
+  assert.throws(() => assert.match(categoryRedMutation, /c\.status = 'ENABLED'/), /did not match/);
+
+  const compositeCandidateStart = owner.indexOf('if ("COMPOSITE_COMPONENT".equals(candidateUsage))');
+  const compositeCandidateEnd = owner.indexOf('sql.append("), aggregate', compositeCandidateStart);
+  assert.ok(compositeCandidateStart >= 0 && compositeCandidateEnd > compositeCandidateStart);
+  const compositeCandidate = owner.slice(compositeCandidateStart, compositeCandidateEnd);
+  assert.match(compositeCandidate, /i\.status='ENABLED' AND i\.code <> \?/);
+  const compositeRedMutation = compositeCandidate.replace("i.status='ENABLED'", "i.status <> 'VOIDED'");
+  assert.throws(() => assert.match(compositeRedMutation, /i\.status='ENABLED'/), /did not match/);
+});
+
+test('CP-B2 catalog lifecycle routes expose the four typed status commands', () => {
+  const controller = read(
+    'apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java',
+  );
+  const routes = [
+    ['transitionAttributeDefinitionStatus', 'CatalogAttributeDefinitionStatusTransitionRequest', '/attribute-definitions/{definitionRef}/status'],
+    ['transitionOrderOptionDefinitionStatus', 'CatalogOrderOptionDefinitionStatusTransitionRequest', '/order-option-definitions/{definitionRef}/status'],
+    ['transitionCatalogUnitStatus', 'CatalogUnitStatusTransitionRequest', '/units/{unitRef}/status'],
+    ['transitionCatalogCategoryStatus', 'CatalogCategoryStatusTransitionRequest', '/categories/{categoryRef}/status'],
+  ];
+  for (const [method, requestType, route] of routes) {
+    const methodStart = controller.lastIndexOf('@PostMapping', controller.indexOf(` ${method}(`));
+    assert.ok(methodStart >= 0, `${method} must be a public controller method`);
+    const methodEnd = controller.indexOf('\n    }', methodStart);
+    const source = controller.slice(methodStart, methodEnd);
+    assert.match(source, new RegExp(`@PostMapping\\(\\"${route.replace(/[{}]/g, '\\$&')}\\"\\)`));
+    assert.match(source, new RegExp(requestType));
+  }
+});
+
 test('a second strict GET wrapper around an envelope-shaped model is a real red mutation', () => {
   assert.throws(
     () =>
@@ -134,7 +219,6 @@ test('mutation response models do not receive a semantic second envelope', () =>
     [
       'preflightOperationsBrandCatalogCopy',
       'updateOperationsInventoryTargetConfiguration',
-      'batchTransitionOperationsCatalogItemStatus',
     ],
   );
   for (const operation of mutations) {
@@ -208,7 +292,7 @@ test('navigation derives both all and uncategorized counts from its one scoped s
     /COUNT\(\*\) FILTER \(WHERE NOT EXISTS \(SELECT 1 FROM catalog\.catalog_item_category relation WHERE relation\.item_ref=catalog_item\.item_ref\)\)/,
   );
   assert.match(navigation, /allCount\[0\] \+= result\.getLong\(2\)/);
-  assert.match(navigation, /uncategorizedCount\[0\] \+= result\.getLong\(9\)/);
+  assert.match(navigation, /uncategorizedCount\[0\] \+= result\.getLong\(8\)/);
   assert.match(navigation, /data\.put\("allCount", allCount\[0\]\)/);
   assert.match(navigation, /data\.put\("uncategorizedCount", uncategorizedCount\[0\]\)/);
   assert.doesNotMatch(navigation, /jdbc\.queryForObject\(/);
@@ -351,15 +435,35 @@ test('every catalog-management GET consumer preserves its generated strict respo
   assert.equal(queryConsumers.length, 7);
   for (const [file, required, forbidden] of queryConsumers) {
     const source = read(`apps/frontend/operations-admin/src/features/catalog-management/${file}`);
-    for (const expression of required) assert.ok(source.includes(expression), `${file} must consume ${expression}`);
+    const normalizedSource = source.replace(/\s+/g, ' ');
+    for (const expression of required)
+      assert.ok(normalizedSource.includes(expression.replace(/\s+/g, ' ')), `${file} must consume ${expression}`);
     for (const expression of forbidden)
-      assert.equal(source.includes(expression), false, `${file} must not widen ${expression}`);
+      assert.equal(normalizedSource.includes(expression.replace(/\s+/g, ' ')), false, `${file} must not widen ${expression}`);
   }
   const model = read('apps/frontend/operations-admin/src/features/catalog-management/model/catalogModel.ts');
   assert.match(
     model,
     /export function selectCatalogDetailForItem\([\s\S]*?for \(const envelope of \[currentData, data\]\)[\s\S]*?detail\?\.item\.code === itemCode/,
   );
+});
+
+test('catalog void-and-rebuild copy explains released codes without hiding history', () => {
+  const drawer = read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawerState.tsx');
+  const modal = read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryAtomModals.tsx');
+  for (const source of [drawer, modal]) {
+    assert.equal(source.includes('旧编码不会释放'), false);
+    assert.match(source, /历史记录会保留/);
+    assert.match(source, /复用/);
+  }
+});
+
+test('unit list declares its owner limit problem in the source and materialized contract', () => {
+  const generator = read('scripts/generate/catalog-inventory-p1.mjs');
+  const contract = JSON.parse(read('contracts/catalog/catalog-inventory-edge-contract.json'));
+  const operation = contract.operations.find(entry => entry.operationId === 'listOperationsCatalogUnits');
+  assert.match(generator, /const unitListProblems = \['VALIDATION_ERROR', 'SCOPE_FORBIDDEN', 'CATALOG_UNIT_LIMIT_EXCEEDED'\]/);
+  assert.deepEqual(operation.problemCodes, ['VALIDATION_ERROR', 'SCOPE_FORBIDDEN', 'CATALOG_UNIT_LIMIT_EXCEEDED']);
 });
 
 test('Local Copy consumes each model-owned response directly', () => {
@@ -430,7 +534,7 @@ test('CatalogOwner parent-page summaries keep SQL placeholder and JSON array pro
     'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
   );
   const catalogTagProjection =
-    owner.match(/private Map<UUID, List<String>> catalogTagLabelsForItems\([\s\S]*?\n    \}/)?.[0] ?? '';
+    owner.match(/private Map<UUID, List<CatalogTagFact>> catalogTagFactsForItems\([\s\S]*?\n    \}/)?.[0] ?? '';
   const itemSummaryProjection = owner.match(/private ObjectNode itemSummary\([\s\S]*?\n    \}/)?.[0] ?? '';
 
   assert.notEqual(catalogTagProjection, '');
@@ -441,8 +545,17 @@ test('CatalogOwner parent-page summaries keep SQL placeholder and JSON array pro
   );
   assert.match(catalogTagProjection, /\+ placeholders\n\s*\+ "\) ORDER BY/);
   assert.doesNotMatch(catalogTagProjection, /placeholders\(itemRefs\)/);
-  assert.match(itemSummaryProjection, /precomputedAttributeSummaryLines\.forEach\(attributeSummary::add\);/);
-  assert.doesNotMatch(itemSummaryProjection, /attributeSummary\.addAll\(precomputedAttributeSummaryLines\)/);
+  assert.match(itemSummaryProjection, /item\.set\("attributeFacts", arrayCopy\(sections\.path\("attributeAssignments"\)\)\);/);
+  assert.match(itemSummaryProjection, /item\.set\("preparationFacts", preparationFacts\(/);
+  for (const retiredField of [
+    'categoryPathLabels',
+    'tagSummary',
+    'skuDimensionSummary',
+    'specificationOrOptionSummary',
+    'attributeSummary',
+    'preparationSummary',
+    'relationLabel',
+  ]) assert.doesNotMatch(itemSummaryProjection, new RegExp(`\\b${retiredField}\\b`));
 
   const missingPlaceholderProjection = catalogTagProjection.replace(
     'String placeholders = String.join(",", Collections.nCopies(itemRefs.size(), "?"));',
@@ -455,14 +568,6 @@ test('CatalogOwner parent-page summaries keep SQL placeholder and JSON array pro
         /String placeholders = String\.join\(",", Collections\.nCopies\(itemRefs\.size\(\), "\?"\)\);/,
       ),
     assert.AssertionError,
-  );
-  const widenedArrayProjection = itemSummaryProjection.replace(
-    'precomputedAttributeSummaryLines.forEach(attributeSummary::add);',
-    'attributeSummary.addAll(precomputedAttributeSummaryLines);',
-  );
-  assert.throws(
-    () => assert.doesNotMatch(widenedArrayProjection, /attributeSummary\.addAll\(precomputedAttributeSummaryLines\)/),
-    /expected.*not match/i,
   );
 });
 
@@ -529,9 +634,9 @@ test('catalog hierarchy, production-tag navigation, and SKU page preserve their 
   assert.match(moveCategory, /HIERARCHY_CYCLE/);
   assert.match(moveCategory, /assertCategoryMoveDepth\(/);
   assert.match(moveCategory, /lockCategoryHierarchy\(dataNodeRef, brandRef\);/);
-  assert.match(navigationSql, /WITH RECURSIVE category_subtree\(root_category_ref,category_ref\)/);
+  assert.match(navigationSql, /category_subtree\(root_category_ref,category_ref\) AS/);
   assert.match(navigationSql, /UNION SELECT subtree\.root_category_ref,child\.category_ref/);
-  assert.match(navigationSql, /COALESCE\(subtree_stats\.subtree_size,1\)/);
+  assert.match(navigationSql, /COALESCE\(subtree_sizes\.subtree_size,1\)/);
   assert.match(navigation, /\.put\("subtreeSize", subtreeSize\)/);
   assert.doesNotMatch(navigation, /\.put\("subtreeSize", 1 \+ childCount\)/);
   assert.match(
@@ -592,7 +697,7 @@ test('typed production-tag commands atomically claim their receipt, lock the fac
   assert.match(createMutation, /written_receipt AS/);
   assert.doesNotMatch(existingMutation, /recheckExistingTagBeforeReceipt|replayTyped|saveTypedReceipt|find\(scope, brand, code\)/);
   assert.match(p1, /const catalogBudgetProjection = projectedCatalogOperationMetadata\(catalogOperationMetadata\);/);
-  assert.match(p1, /catalogOperations: Object\.freeze\(entries\.map\(entry => \{/);
+  assert.match(p1, /catalogOperations: Object\.freeze\(entries\.map\(entry => (?:Object\.freeze\(\{\.\.\.entry\}\)|\{)/);
   assert.doesNotMatch(p1, /(?:transitionOperationsProductionTagStatus|updateOperationsProductionTag):\s*\d+,/);
 
   const unlockedMutation = existingMutation.replace('FOR UPDATE', '');
@@ -873,6 +978,7 @@ test('catalog detail reads preparation facts through one owner-local projection 
   const detailHydrator = owner.slice(detailStart, detailEnd);
   assert.match(detailHydrator, /preparationFacts\.readDetailFacts\(itemRefs, skuRefs\)/);
   assert.match(detailHydrator, /categorySummaryFactsForItems\(dataNodeRef, brandRef, rows\)/);
+  assert.match(detailHydrator, /sections\.set\("categoryPath", categoryPathArray\(categoryFacts, row\.ref\(\)\)\)/);
   assert.doesNotMatch(detailHydrator, /categoryFacts\.readByItemRefs\(/);
   assert.doesNotMatch(detailHydrator, /preparationFacts\.readItemProfiles\(/);
   assert.doesNotMatch(detailHydrator, /preparationFacts\.readSkuOverrides\(/);
@@ -886,9 +992,44 @@ test('catalog detail reads preparation facts through one owner-local projection 
     owner,
     /private Set<UUID> existingProductionTagRef\(ItemRow current, ObjectNode request\)[\s\S]*?currentSections\.has\("productionTagRef"\)/,
   );
+  assert.match(owner, /if \(ref\.isNull\(\)\) return Set\.of\(\);/);
   assert.match(referenceReplace, /jdbc\.update\("DELETE FROM catalog\.catalog_item_reference WHERE item_ref=\?", itemRef\);/);
   assert.match(referenceReplace, /jdbc\.batchUpdate\("INSERT INTO catalog\.catalog_item_reference\(item_ref,kind,ref\) VALUES\(\?,\?,\?\)", rows\);/);
   assert.doesNotMatch(referenceReplace, /WITH deleted AS/);
+  const saveCurrentStart = owner.indexOf('private ItemRow requireSaveCurrent');
+  const saveCurrentEnd = owner.indexOf('private boolean saveContainsAnyField', saveCurrentStart);
+  const saveCurrent = owner.slice(saveCurrentStart, saveCurrentEnd);
+  assert.match(
+    saveCurrent,
+    /if \(!sections\.has\("productionTagRef"\) \|\| !sections\.has\("tagRefs"\)\) \{[\s\S]*?itemReferenceFacts\.readByItemRefs\(/,
+  );
+  const dictionaryStart = owner.indexOf('private Map<String, Set<UUID>> dictionaryReferencesFromOwner');
+  const dictionaryEnd = owner.indexOf('private Map<String, Set<UUID>> relationalSkuDictionaryReferencesForItem', dictionaryStart);
+  const dictionaryMethod = owner.slice(dictionaryStart, dictionaryEnd);
+  assert.match(
+    dictionaryMethod,
+    /if \(!currentSections\.has\("tagRefs"\)\) \{[\s\S]*?itemReferenceFacts\.readByItemRefs\(/,
+  );
+  const relationSnapshotGuardRedMutation = saveCurrent.replace(
+    'if (!sections.has("productionTagRef") || !sections.has("tagRefs")) {',
+    'if (!saveContainsField(request, "productionTagRef") || !saveContainsField(request, "tagRefs")) {',
+  );
+  assert.throws(
+    () =>
+      assert.match(
+        relationSnapshotGuardRedMutation,
+        /if \(!sections\.has\("productionTagRef"\) \|\| !sections\.has\("tagRefs"\)\)/,
+      ),
+    /did not match/,
+  );
+  const dictionarySnapshotGuardRedMutation = dictionaryMethod.replace(
+    'if (!currentSections.has("tagRefs")) {',
+    'if (true) {',
+  );
+  assert.throws(
+    () => assert.match(dictionarySnapshotGuardRedMutation, /if \(!currentSections\.has\("tagRefs"\)\)/),
+    /did not match/,
+  );
   const requireAllStart = unitFacts.indexOf('private Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> requireAll');
   const requireAllEnd = unitFacts.indexOf('private void lock(UUID unitRef)', requireAllStart);
   assert.ok(requireAllStart >= 0 && requireAllEnd > requireAllStart);
@@ -912,6 +1053,23 @@ test('catalog detail reads preparation facts through one owner-local projection 
     owner.slice(itemDetailStart, itemDetailEnd),
     /categorySummaryFactsForItems\(/,
   );
+  const detailStartForNoRepeat = owner.indexOf('private ObjectNode detail(');
+  const detailEndForNoRepeat = owner.indexOf('private ObjectNode dictionary(', detailStartForNoRepeat);
+  assert.ok(detailStartForNoRepeat >= 0 && detailEndForNoRepeat > detailStartForNoRepeat);
+  const detailMethod = owner.slice(detailStartForNoRepeat, detailEndForNoRepeat);
+  assert.doesNotMatch(detailMethod, /categorySummaryFactsForItems\(/);
+  assert.doesNotMatch(detailMethod, /compositeFacts\.readByItemRefs\(/);
+  assert.match(detailMethod, /arrayCopy\(sections\.path\("compositeGroups"\)\)/);
+  const detailCategoryRepeatRedMutation = detailMethod.replace(
+    'ItemRow row = requireDetailItem(dataNodeRef, brandRef, code);',
+    'ItemRow row = requireDetailItem(dataNodeRef, brandRef, code);\n'
+      + '        CategorySummaryFacts repeatedCategoryFacts = categorySummaryFactsForItems(dataNodeRef, brandRef, List.of(row));\n'
+      + '        if (repeatedCategoryFacts == null) throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品分类路径读取失败");',
+  );
+  assert.throws(
+    () => assert.doesNotMatch(detailCategoryRepeatRedMutation, /categorySummaryFactsForItems\(/),
+    /expected to not match/,
+  );
 
   const redMutation = detailHydrator.replace(
     'preparationFacts.readDetailFacts(itemRefs, skuRefs)',
@@ -930,7 +1088,22 @@ test('catalog detail reads preparation facts through one owner-local projection 
     () => assert.match(categoryRedMutation, /categorySummaryFactsForItems\(dataNodeRef, brandRef, rows\)/),
     /did not match/,
   );
-
+  const categoryPathRedMutation = detailHydrator.replace(
+    'sections.set("categoryPath", categoryPathArray(categoryFacts, row.ref()));',
+    'sections.set("categoryPath", mapper.createArrayNode());',
+  );
+  assert.throws(
+    () => assert.match(categoryPathRedMutation, /categoryPathArray\(categoryFacts, row\.ref\(\)\)/),
+    /did not match/,
+  );
+  const compositeRedMutation = detailMethod.replace(
+    'arrayCopy(sections.path("compositeGroups"))',
+    'compositeFacts.readByItemRefs(List.of(row.ref())).getOrDefault(row.ref(), mapper.createArrayNode())',
+  );
+  assert.throws(
+    () => assert.match(compositeRedMutation, /arrayCopy\(sections\.path\("compositeGroups"\)\)/),
+    /did not match/,
+  );
   const productionTagRedMutation = owner.replace(
     'if (currentSections.has("productionTagRef"))',
     'if (!saveContainsField(request, "productionTagRef"))',
@@ -941,6 +1114,15 @@ test('catalog detail reads preparation facts through one owner-local projection 
         productionTagRedMutation,
         /currentSections\.has\("productionTagRef"\)/,
       ),
+    /did not match/,
+  );
+
+  const productionTagNullReuseRedMutation = owner.replace(
+    'if (ref.isNull()) return Set.of();',
+    '',
+  );
+  assert.throws(
+    () => assert.match(productionTagNullReuseRedMutation, /if \(ref\.isNull\(\)\) return Set\.of\(\);/),
     /did not match/,
   );
 

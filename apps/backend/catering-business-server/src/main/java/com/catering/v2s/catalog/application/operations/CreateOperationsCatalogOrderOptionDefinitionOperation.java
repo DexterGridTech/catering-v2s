@@ -91,6 +91,7 @@ public class CreateOperationsCatalogOrderOptionDefinitionOperation {
                 value.definitionRef(),
                 value.code(),
                 value.name(),
+                value.status(),
                 value.selectionMode(),
                 value.values().stream()
                         .map(option -> new CatalogOrderOptionDefinitionReadback.Result.Definition.ValuesItem(

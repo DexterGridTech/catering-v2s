@@ -43,7 +43,6 @@ test('set-value catalog commands derive keys from operation and request content'
     'createOperationsCatalogCategory',
     'updateOperationsCatalogCategory',
     'moveOperationsCatalogCategory',
-    'deleteOperationsCatalogCategory',
     'batchTransitionOperationsCatalogItemStatus',
     'updateOperationsInventoryTargetConfiguration',
   ];

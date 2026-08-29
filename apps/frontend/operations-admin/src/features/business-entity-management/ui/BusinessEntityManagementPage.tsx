@@ -28,6 +28,7 @@ import {BusinessEntityDetailDrawer, type BusinessEntity} from './BusinessEntityD
 import {BusinessEntityEditDrawer} from './BusinessEntityEditDrawer';
 import {BusinessEntityStatusModal} from './BusinessEntityStatusModal';
 import {HeadCompanyBrandAuthorizationDrawer} from './HeadCompanyBrandAuthorizationDrawer';
+import {businessEntityLifecycleLabels} from './businessEntityLifecycle';
 
 type Props = OperationsPageProps & {
   pageDesignKey: Extract<
@@ -76,7 +77,9 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
   const [creating, setCreating] = useState(false);
   const [detail, setDetail] = useState<BusinessEntity>();
   const [editing, setEditing] = useState<BusinessEntity>();
-  const [transitioning, setTransitioning] = useState<BusinessEntity>();
+  const [transitioning, setTransitioning] = useState<
+    {entity: BusinessEntity; targetStatus: BusinessEntityStatus} | undefined
+  >();
   const [authorizing, setAuthorizing] = useState<HeadCompany>();
   const queryIdentity = useMemo(
     () =>
@@ -208,14 +211,16 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
       title: '状态',
       dataIndex: 'status',
       valueType: 'select',
-      valueEnum: {ENABLED: {text: '启用'}, DISABLED: {text: '停用'}},
+      valueEnum: Object.fromEntries(
+        Object.entries(businessEntityLifecycleLabels).map(([value, label]) => [value, {text: label}]),
+      ),
       fieldProps: {
         ...testId(`operations-business-entity-filter-status-${config.kind.toLowerCase()}`),
         allowClear: true,
       },
       render: (_, entity) => (
-        <Tag color={entity.status === 'ENABLED' ? 'green' : 'default'}>
-          {entity.status === 'ENABLED' ? '启用' : '停用'}
+        <Tag color={entity.status === 'ENABLED' ? 'green' : entity.status === 'VOIDED' ? 'error' : 'default'}>
+          {businessEntityLifecycleLabels[entity.status]}
         </Tag>
       ),
     },
@@ -324,9 +329,9 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
           setDetail(undefined);
           setEditing(entity);
         }}
-        onStatus={entity => {
+        onStatus={(entity, targetStatus) => {
           setDetail(undefined);
-          setTransitioning(entity);
+          setTransitioning({entity, targetStatus});
         }}
         onAuthorizeBrands={entity => {
           setDetail(undefined);
@@ -354,7 +359,8 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
         }}
       />
       <BusinessEntityStatusModal
-        entity={transitioning}
+        entity={transitioning?.entity}
+        targetStatus={transitioning?.targetStatus}
         kind={config.kind}
         queryContext={queryContext}
         onClose={() => setTransitioning(undefined)}

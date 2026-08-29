@@ -82,17 +82,12 @@ public class PlatformWorkspaceInvitationTaskReadService {
             throw new WorkspaceInvitationService.InvitationStateException();
         List<String> roleNames = intents.stream().map(Intent::roleName).toList();
         if (roleNames.isEmpty()) throw new WorkspaceInvitationService.InvitationStateException();
-        String path = intents.stream()
-                .map(value -> {
-                    OrganizationTaskPathLookup.TaskPath task =
-                            paths.get(new OrganizationTaskPathLookup.TaskPathRef(value.type(), value.targetId()));
-                    if (task == null) throw new WorkspaceInvitationService.InvitationStateException();
-                    return task.displayPath();
-                })
+        List<OrganizationTaskPathLookup.TaskPath> pathFacts = intents.stream()
+                .map(value -> paths.get(new OrganizationTaskPathLookup.TaskPathRef(value.type(), value.targetId())))
+                .filter(java.util.Objects::nonNull)
                 .distinct()
-                .reduce((first, second) -> first + " ; " + second)
-                .orElseThrow(WorkspaceInvitationService.InvitationStateException::new);
-        String invitationPageUrl = row.token() == null ? null : "/operations/invitations/" + key + "/" + row.token();
+                .toList();
+        if (pathFacts.size() != 1) throw new WorkspaceInvitationService.InvitationStateException();
         return new WorkspaceInvitationService.ManagementInvitationView(
                 row.id(),
                 key,
@@ -100,7 +95,7 @@ public class PlatformWorkspaceInvitationTaskReadService {
                 row.mobile(),
                 row.issuer(),
                 type,
-                path,
+                pathFacts.getFirst().nodes(),
                 roleNames,
                 row.status(),
                 1L,
@@ -110,7 +105,7 @@ public class PlatformWorkspaceInvitationTaskReadService {
                 row.consented(),
                 row.completed(),
                 row.cancelled(),
-                invitationPageUrl);
+                row.token() == null ? null : new WorkspaceInvitationService.InvitationRouteFacts(key, row.token()));
     }
 
     private static Page page(WorkspaceInvitationService.ManagementInvitationPageRequest request) {

@@ -100,7 +100,7 @@ export function SkuMatrixReadOnly({
           {
             key: 'sku',
             label: '规格数量',
-            children: `${summary.enabledCount}/${summary.nonArchivedCount}/${summary.totalCount}（启用/未归档/总数）`,
+            children: `${summary.enabledCount}/${summary.nonArchivedCount}/${summary.totalCount}（启用/未作废/总数）`,
           },
           {
             key: 'granularity',
@@ -116,7 +116,7 @@ export function SkuMatrixReadOnly({
             <Typography.Text key={dimension.attributeCode} style={{display: 'block'}}>
               {dimension.attributeName || dimension.attributeCode}（{dimension.attributeCode}）：
               {dimension.values
-                .map(value => `${value.valueLabel || value.valueCode}${value.status === 'ARCHIVED' ? ' · 归档' : ''}`)
+                .map(value => `${value.valueLabel || value.valueCode}${value.status === 'VOIDED' ? ' · 作废' : ''}`)
                 .join('、') || '—'}
             </Typography.Text>
           ))

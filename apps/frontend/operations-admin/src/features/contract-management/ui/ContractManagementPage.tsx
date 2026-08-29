@@ -149,7 +149,12 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
         search: false,
         render: (_, row) => <NameCodeText name={row.store.name} code={row.store.code} />,
       },
-      {title: '分期', dataIndex: 'phaseName', search: false},
+      {
+        title: '分期',
+        dataIndex: 'phaseName',
+        search: false,
+        render: (_, row) => row.phaseName || '未设置',
+      },
       {
         title: '经营租户',
         dataIndex: 'tenantDisplay',

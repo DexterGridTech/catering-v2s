@@ -104,6 +104,11 @@ async function startRemoteJava(host, {runId, remoteRoot, env, credential, catalo
   const remoteSeedEventsPath = `${remoteResults}/seed-request-events.jsonl`;
   const remoteDbOperationsPath = `${remoteResults}/db-operations.jsonl`;
   const remoteStatementDictionaryPath = `${remoteResults}/statement-dictionary.json`;
+  const backendAcceptanceVerificationMode = env.environment.V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE;
+  if (backendAcceptanceVerificationMode !== undefined
+    && !['ACCEPTANCE', 'CALIBRATION'].includes(backendAcceptanceVerificationMode)) {
+    fail('BACKEND_ACCEPTANCE_VERIFICATION_MODE_INVALID');
+  }
   const databaseUrl = env.environment.V2S_DEV_DATABASE_URL;
   const values = {
     CATERING_BUSINESS_DB_URL: databaseUrl,
@@ -114,6 +119,9 @@ async function startRemoteJava(host, {runId, remoteRoot, env, credential, catalo
     CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true',
     V2S_RUNTIME_ENVIRONMENT: env.environment.V2S_RUNTIME_ENVIRONMENT,
     V2S_DEV_PROFILE: env.environment.V2S_DEV_PROFILE,
+    ...(backendAcceptanceVerificationMode === undefined
+      ? {}
+      : {V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE: backendAcceptanceVerificationMode}),
     V2S_DEV_NAMESPACE: env.namespace,
     V2S_CATALOG_TEST_FAULTS: catalogTestFaultsAdmitted ? 'true' : 'false',
     V2S_SEED_OTP_FIXED_VALUE: credential.values.V2S_SEED_OTP_FIXED_VALUE,

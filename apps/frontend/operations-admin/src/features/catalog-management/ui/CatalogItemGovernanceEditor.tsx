@@ -6,6 +6,10 @@ import {catalogEnumLabel} from '../model/catalogManifestLabels';
 import {catalogTestIds} from '../catalogTestIds';
 import {CatalogLifecycleStatusTag} from './CatalogLifecycleStatusTag';
 
+function referenceGroupLabel(direction: string): string {
+  return direction === 'INBOUND' ? '被其他商品引用' : '引用其他商品';
+}
+
 /** A read-only governance fact family, deliberately separate from ordinary save fields. */
 export function CatalogItemGovernanceEditor({
   detail,
@@ -41,9 +45,10 @@ export function CatalogItemGovernanceEditor({
             key: 'references',
             label: `关联与依赖（${detail.references.length}）`,
             children: detail.references.length
-              ? [...new Map(detail.references.map(entry => [entry.relationLabel, 0])).keys()]
+              ? [...new Map(detail.references.map(entry => [referenceGroupLabel(entry.direction), 0])).keys()]
                   .map(
-                    label => `${label}（${detail.references.filter(entry => entry.relationLabel === label).length}项）`,
+                    label =>
+                      `${label}（${detail.references.filter(entry => referenceGroupLabel(entry.direction) === label).length}项）`,
                   )
                   .join('；')
               : '没有与其他商品的关联',

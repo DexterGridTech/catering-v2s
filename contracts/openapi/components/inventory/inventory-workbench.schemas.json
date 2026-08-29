@@ -962,6 +962,109 @@
                     "enum": [
                       "INTERNAL"
                     ]
+                  },
+                  "conversionFacts": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "countingUnitSnapshot",
+                      "consumptionUnitSnapshot",
+                      "conversionFactor"
+                    ],
+                    "properties": {
+                      "countingUnitSnapshot": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "unitRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "unit definition reference"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "unit code"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "unit name"
+                          },
+                          "unitDimension": {
+                            "type": "string",
+                            "enum": [
+                              "COUNT",
+                              "WEIGHT",
+                              "VOLUME",
+                              "SERVICE_DURATION",
+                              "PACKAGE"
+                            ],
+                            "description": "unit category"
+                          },
+                          "precision": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "decimal places; zero means whole numbers"
+                          }
+                        },
+                        "required": [
+                          "unitRef",
+                          "code",
+                          "name",
+                          "unitDimension",
+                          "precision"
+                        ]
+                      },
+                      "consumptionUnitSnapshot": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "unitRef",
+                          "code",
+                          "name",
+                          "unitDimension",
+                          "precision"
+                        ],
+                        "properties": {
+                          "unitRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "unit definition reference"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "unit code"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "unit name"
+                          },
+                          "unitDimension": {
+                            "type": "string",
+                            "enum": [
+                              "COUNT",
+                              "WEIGHT",
+                              "VOLUME",
+                              "SERVICE_DURATION",
+                              "PACKAGE"
+                            ],
+                            "description": "unit category"
+                          },
+                          "precision": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "decimal places; zero means whole numbers"
+                          }
+                        }
+                      },
+                      "conversionFactor": {
+                        "type": "string",
+                        "format": "decimal",
+                        "description": "counting-to-consumption factor"
+                      }
+                    }
                   }
                 },
                 "required": [
@@ -989,7 +1092,8 @@
                   "change30d",
                   "lastChangeSource",
                   "lastChangeAt",
-                  "authorityType"
+                  "authorityType",
+                  "conversionFacts"
                 ]
               }
             },
@@ -1247,6 +1351,109 @@
               "enum": [
                 "INTERNAL"
               ]
+            },
+            "conversionFacts": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "countingUnitSnapshot",
+                "consumptionUnitSnapshot",
+                "conversionFactor"
+              ],
+              "properties": {
+                "countingUnitSnapshot": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "unitRef": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "unit definition reference"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "unit code"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "unit name"
+                    },
+                    "unitDimension": {
+                      "type": "string",
+                      "enum": [
+                        "COUNT",
+                        "WEIGHT",
+                        "VOLUME",
+                        "SERVICE_DURATION",
+                        "PACKAGE"
+                      ],
+                      "description": "unit category"
+                    },
+                    "precision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "decimal places; zero means whole numbers"
+                    }
+                  },
+                  "required": [
+                    "unitRef",
+                    "code",
+                    "name",
+                    "unitDimension",
+                    "precision"
+                  ]
+                },
+                "consumptionUnitSnapshot": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "unitRef",
+                    "code",
+                    "name",
+                    "unitDimension",
+                    "precision"
+                  ],
+                  "properties": {
+                    "unitRef": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "unit definition reference"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "unit code"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "unit name"
+                    },
+                    "unitDimension": {
+                      "type": "string",
+                      "enum": [
+                        "COUNT",
+                        "WEIGHT",
+                        "VOLUME",
+                        "SERVICE_DURATION",
+                        "PACKAGE"
+                      ],
+                      "description": "unit category"
+                    },
+                    "precision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "decimal places; zero means whole numbers"
+                    }
+                  }
+                },
+                "conversionFactor": {
+                  "type": "string",
+                  "format": "decimal",
+                  "description": "counting-to-consumption factor"
+                }
+              }
             }
           },
           "required": [
@@ -1262,7 +1469,8 @@
             "consumptionUnitSnapshot",
             "countingUnitSnapshot",
             "conversionSummary",
-            "authorityType"
+            "authorityType",
+            "conversionFacts"
           ]
         },
         "balance": {

@@ -24,21 +24,11 @@ public interface BusinessChannelCommandApi {
 
     BusinessChannelReadback.Channel transitionChannelStatus(TransitionChannelStatusCommand command);
 
-    /** C-04 remains pending; this is only the accepted detach fact, not an invented unbind state machine. */
-    BusinessChannelReadback.Channel returnChannelToDraftAfterBindingDeletion(
-            ReturnChannelToDraftAfterBindingDeletionCommand command, long expectedVersion);
+    /** Detaches a collaboration binding without rewriting the channel's own lifecycle status. */
+    BusinessChannelReadback.Channel detachChannelBinding(DetachChannelBindingCommand command, long expectedVersion);
 
-    /** C-01 remains pending; this command only adds the external stop fact and never clears stop reasons. */
-    BusinessChannelReadback.Channel applyExternalStopReason(
-            ApplyExternalStopReasonCommand command, long expectedVersion);
-
-    default BusinessChannelReadback.Channel returnChannelToDraftAfterBindingDeletion(
-            ReturnChannelToDraftAfterBindingDeletionCommand command) {
-        return returnChannelToDraftAfterBindingDeletion(command, command.expectedVersion());
-    }
-
-    default BusinessChannelReadback.Channel applyExternalStopReason(ApplyExternalStopReasonCommand command) {
-        return applyExternalStopReason(command, command.expectedVersion());
+    default BusinessChannelReadback.Channel detachChannelBinding(DetachChannelBindingCommand command) {
+        return detachChannelBinding(command, command.expectedVersion());
     }
 
     record CreateTemplateCommand(
@@ -153,6 +143,34 @@ public interface BusinessChannelCommandApi {
                     null);
         }
 
+        /** Cross-owner attach path supplies the already-created binding readback, but never a trusted channel row. */
+        public UpdateChannelCommand(
+                UUID workspaceUuid,
+                String groupWorkspaceKey,
+                UUID channelRef,
+                String channelName,
+                UUID bindingRef,
+                long expectedVersion,
+                long contextVersion,
+                String idempotencyKey,
+                AuditActor actor,
+                OperationsOwnerScopeGrant ownerScopeGrant,
+                CollaborationReadback.OwnerBinding bindingReadback) {
+            this(
+                    workspaceUuid,
+                    groupWorkspaceKey,
+                    channelRef,
+                    channelName,
+                    bindingRef,
+                    expectedVersion,
+                    contextVersion,
+                    idempotencyKey,
+                    actor,
+                    ownerScopeGrant,
+                    bindingReadback,
+                    null);
+        }
+
         public UpdateChannelCommand {
             actor = Objects.requireNonNull(actor, "actor");
             ownerScopeGrant = Objects.requireNonNull(ownerScopeGrant, "ownerScopeGrant");
@@ -175,27 +193,25 @@ public interface BusinessChannelCommandApi {
         }
     }
 
-    record ReturnChannelToDraftAfterBindingDeletionCommand(
+    record DetachChannelBindingCommand(
             UUID workspaceUuid,
             String groupWorkspaceKey,
             UUID channelRef,
             long expectedVersion,
             String idempotencyKey,
-            AuditActor actor) {
-        public ReturnChannelToDraftAfterBindingDeletionCommand {
-            actor = Objects.requireNonNull(actor, "actor");
+            AuditActor actor,
+            UUID expectedBindingRef) {
+        public DetachChannelBindingCommand(
+                UUID workspaceUuid,
+                String groupWorkspaceKey,
+                UUID channelRef,
+                long expectedVersion,
+                String idempotencyKey,
+                AuditActor actor) {
+            this(workspaceUuid, groupWorkspaceKey, channelRef, expectedVersion, idempotencyKey, actor, null);
         }
-    }
 
-    record ApplyExternalStopReasonCommand(
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            UUID channelRef,
-            String providerCode,
-            long expectedVersion,
-            String idempotencyKey,
-            AuditActor actor) {
-        public ApplyExternalStopReasonCommand {
+        public DetachChannelBindingCommand {
             actor = Objects.requireNonNull(actor, "actor");
         }
     }

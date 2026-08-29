@@ -31,7 +31,7 @@ final class CatalogUnitDefinitionFacts {
             String query,
             String status) {
         String normalizedQuery = query == null ? "" : query.trim();
-        if (status != null && !"ENABLED".equals(status) && !"DISABLED".equals(status))
+        if (status != null && !Set.of("ENABLED", "DISABLED", "VOIDED").contains(status))
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "单位状态筛选不合法");
         StringBuilder sql = new StringBuilder(
                 "SELECT unit_ref,code,name,dimension,precision,status,version FROM catalog.unit_definition "
@@ -103,6 +103,8 @@ final class CatalogUnitDefinitionFacts {
             String scope, String brand, CatalogOwnerApi.UnitDefinitionUpdateCommand command, long now) {
         lock(command.unitRef());
         UnitRow current = require(scope, brand, command.unitRef());
+        if ("VOIDED".equals(current.status()))
+            throw new CatalogOwnerApi.Problem("VOIDED_RECORD_IMMUTABLE", 409, "已作废的单位定义不可修改");
         String code = command.code() == null ? current.code() : command.code();
         CatalogOwnerApi.UnitDimension dimension =
                 command.unitDimension() == null ? current.dimension() : command.unitDimension();
@@ -137,36 +139,30 @@ final class CatalogUnitDefinitionFacts {
         return readback(require(scope, brand, current.ref()));
     }
 
-    CatalogOwnerApi.UnitDefinitionReadback disable(
-            String scope, String brand, UUID unitRef, long expectedVersion, long now) {
-        lock(unitRef);
-        UnitRow current = require(scope, brand, unitRef);
-        if (current.version() != expectedVersion)
+    CatalogOwnerApi.UnitDefinitionReadback transition(
+            String scope, String brand, CatalogOwnerApi.UnitDefinitionStatusTransitionCommand command, long now) {
+        lock(command.unitRef());
+        UnitRow current = require(scope, brand, command.unitRef());
+        if (!Set.of("ENABLED", "DISABLED", "VOIDED").contains(command.targetStatus()))
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "单位状态不合法");
+        if ("VOIDED".equals(current.status()))
+            throw new CatalogOwnerApi.Problem("VOIDED_RECORD_IMMUTABLE", 409, "已作废的单位定义不可修改");
+        if (current.version() != command.expectedVersion())
             throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "单位定义版本已变化");
-        if (jdbc.update(
-                        "UPDATE catalog.unit_definition SET status='DISABLED',version=version+1,updated_at_epoch_mi"
-                                + "llis=? "
-                                + "WHERE unit_ref=? AND version=? AND status='ENABLED'",
-                        now,
-                        unitRef,
-                        expectedVersion)
-                != 1) throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "单位定义版本已变化");
-        return readback(require(scope, brand, unitRef));
-    }
-
-    void delete(String scope, String brand, UUID unitRef, long expectedVersion) {
-        lock(unitRef);
-        UnitRow current = require(scope, brand, unitRef);
-        if (current.version() != expectedVersion)
-            throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "单位定义版本已变化");
-        if (isReferenced(unitRef))
+        if ("VOIDED".equals(command.targetStatus()) && isReferenced(current.ref()))
+            // spotless:off
             throw new CatalogOwnerApi.Problem(
-                    "CATALOG_UNIT_IN_USE",
-                    409,
-                    /* format-wrap */
-                    "该计量单位正在使用，不能删除。");
-        if (jdbc.update("DELETE FROM catalog.unit_definition WHERE unit_ref=? AND version=?", unitRef, expectedVersion)
+                    "REFERENCE_BLOCKS_VOID", 422, "单位定义仍被商品或库存事实引用，不能作废");
+            // spotless:on
+        if (jdbc.update(
+                        "UPDATE catalog.unit_definition SET status=?,version=version+1,updated_at_epoch_millis=? "
+                                + "WHERE unit_ref=? AND version=? AND status <> 'VOIDED'",
+                        command.targetStatus(),
+                        now,
+                        current.ref(),
+                        command.expectedVersion())
                 != 1) throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "单位定义版本已变化");
+        return readback(require(scope, brand, current.ref()));
     }
 
     boolean definitionShapeChanges(CatalogOwnerApi.UnitDefinitionUpdateCommand command) {

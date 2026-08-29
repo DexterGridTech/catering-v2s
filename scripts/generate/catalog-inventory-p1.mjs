@@ -5,7 +5,9 @@ import crypto from 'node:crypto';
 import {readCatalogInventoryOpenApi} from '../lib/catalog-inventory-openapi.mjs';
 import {
   EXPECTED_OPERATION_COUNT,
+  buildCp05CalibrationIdentityProjection,
   buildBudgetProjection,
+  isCp05CalibrationBootstrapMode,
   readCp05CalibrationReport,
   validateDatabaseOperationBudget,
   validateBudgetRegistry,
@@ -34,8 +36,19 @@ const projectedCatalogOperationMetadata = entries => {
   if (entries.some(entry => Object.hasOwn(entry, 'databaseOperationBudget')))
     throw new Error('P1_STATIC_CATALOG_BUDGET_RETIRED');
   const edgeOperations = readJson(edgeCatalogIdentityPath).operations;
-  if (edgeOperations.length !== 180 || entries.length !== 59)
+  if (edgeOperations.length + entries.length !== EXPECTED_OPERATION_COUNT)
     throw new Error('P1_BUDGET_SOURCE_DENOMINATOR_INVALID');
+  if (isCp05CalibrationBootstrapMode()) {
+    const projection = buildCp05CalibrationIdentityProjection({
+      operations: [...edgeOperations, ...entries].map(({databaseOperationBudget: _retired, ...identity}) => identity),
+    });
+    return Object.freeze({
+      calibrationReportDigest: projection.calibrationReportDigest,
+      identityOnlyBootstrap: true,
+      allBudgets: new Map(projection.operations.map(entry => [entry.operationId, undefined])),
+      catalogOperations: Object.freeze(entries.map(entry => Object.freeze({...entry}))),
+    });
+  }
   const calibration = readCp05CalibrationReport({root: ROOT});
   const projection = buildBudgetProjection({
     operations: [...edgeOperations, ...entries].map(({databaseOperationBudget: _retired, ...identity}) => identity),
@@ -45,11 +58,13 @@ const projectedCatalogOperationMetadata = entries => {
   return Object.freeze({
     calibrationReportDigest: projection.calibrationReportDigest,
     allBudgets: new Map(projection.operations.map(entry => [entry.operationId, entry.databaseOperationBudget])),
-    catalogOperations: Object.freeze(entries.map(entry => {
-      const budget = byOperationId.get(entry.operationId);
-      validateDatabaseOperationBudget(budget, {operationId: entry.operationId});
-      return Object.freeze({...entry, databaseOperationBudget: budget});
-    })),
+    catalogOperations: Object.freeze(
+      entries.map(entry => {
+        const budget = byOperationId.get(entry.operationId);
+        validateDatabaseOperationBudget(budget, {operationId: entry.operationId});
+        return Object.freeze({...entry, databaseOperationBudget: budget});
+      }),
+    ),
   });
 };
 // The media catalog retains the historical P1 representative-seed marker; the
@@ -470,7 +485,6 @@ const routeByOrdinal = {
   8: '/operations/catalog-inventory/categories',
   9: '/operations/catalog-inventory/categories/{categoryRef}',
   10: '/operations/catalog-inventory/categories/{categoryRef}/move',
-  11: '/operations/catalog-inventory/categories/{categoryRef}',
   12: '/operations/catalog-inventory/dictionaries/{dictionaryKind}',
   13: '/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries',
   14: '/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}',
@@ -595,14 +609,13 @@ const shapes = [
 // Values that are intrinsic to a shape are deliberately derived from `shapes`,
 // so a shape key and its Chinese label cannot drift into separate lists.
 const enumLabels = {
-  catalogItemStatus: {DRAFT: '草稿', ENABLED: '启用', DISABLED: '停用', ARCHIVED: '已归档', VOIDED: '已作废'},
-  skuStatus: {ENABLED: '启用', DISABLED: '停用', ARCHIVED: '已归档', VOIDED: '已作废'},
+  catalogItemStatus: {ENABLED: '启用', DISABLED: '停用', VOIDED: '已作废'},
+  skuStatus: {ENABLED: '启用', DISABLED: '停用', VOIDED: '已作废'},
   dictionaryEntryStatus: {ENABLED: '启用', DISABLED: '停用', VOIDED: '已作废'},
   smartViewKey: {
     ALL: '全部商品',
     EXTERNAL_ORDER_TEMP: '外部订单临时商品',
     INACTIVE: '未启用商品',
-    ARCHIVED: '已归档商品',
     RECENTLY_UPDATED: '最近更新',
     AUTO_SYNC: '自动同步商品',
   },
@@ -893,7 +906,7 @@ const fieldDescriptors = [
     helpText: '从商品属性库选择属性后，为当前商品填写内容。',
     optionSourceRef: endpointSource({
       operationId: 'listOperationsCatalogAttributeDefinitions',
-      query: {dataNodeRef: scopeBinding('scope.dataNodeRef')},
+      query: {dataNodeRef: scopeBinding('scope.dataNodeRef'), candidateUsage: 'ITEM_ASSIGNMENT'},
       itemsPath: 'data.definitions',
       valueField: 'definitionRef',
       labelField: 'name',
@@ -910,7 +923,7 @@ const fieldDescriptors = [
     helpText: '从点单选项库选择选项后，设置当前商品的点单规则。',
     optionSourceRef: endpointSource({
       operationId: 'listOperationsCatalogOrderOptionDefinitions',
-      query: {dataNodeRef: scopeBinding('scope.dataNodeRef')},
+      query: {dataNodeRef: scopeBinding('scope.dataNodeRef'), candidateUsage: 'ITEM_ASSIGNMENT'},
       itemsPath: 'data.definitions',
       valueField: 'definitionRef',
       labelField: 'name',
@@ -1003,9 +1016,10 @@ const fieldDescriptors = [
     admittedShapes: ['COMPOSITE'],
     helpText: '选择已选组件商品中的规格。',
     optionSourceRef: endpointSource({
-      operationId: 'getOperationsCatalogItem',
+      operationId: 'getOperationsCatalogItemSkus',
       path: {itemCode: {context: 'compositeGroups[].components[].itemCode'}},
-      itemsPath: 'data.item.skus',
+      query: {dataNodeRef: scopeBinding('scope.dataNodeRef'), candidateUsage: 'COMPOSITE_COMPONENT'},
+      itemsPath: 'data.items',
       valueField: 'productSkuRef',
       labelParts: ['skuName'],
       disabledWhen: null,
@@ -1264,7 +1278,7 @@ const typeEffects = {
   })),
   shapeNodeAdmission,
   modeEligibilityByShape,
-  hasSku: {positiveStatuses: ['ENABLED', 'DISABLED'], excludedStatuses: ['ARCHIVED']},
+  hasSku: {positiveStatuses: ['ENABLED', 'DISABLED'], excludedStatuses: ['VOIDED']},
   mediaLimits: {
     maxImageCount: catalogItemImageLimits.maxImageCount,
     maxImageBytes: catalogItemImageLimits.maxImageBytes,
@@ -1370,8 +1384,8 @@ const shapeManifest = {
   hasSkuRule: {
     field: 'ProductSku.status',
     positiveStatuses: ['ENABLED', 'DISABLED'],
-    excludedStatuses: ['ARCHIVED', 'VOIDED'],
-    description: '存在至少一个未归档、未作废的规格即视为按规格管理。',
+    excludedStatuses: ['VOIDED'],
+    description: '存在至少一个未作废的规格即视为按规格管理。',
   },
   shapeAdmission: {
     source: 'shapeKey',
@@ -1481,13 +1495,11 @@ const legacyOperationMetadata = operationRows.map(function (row) {
     ordinal: row.ordinal,
     operationId: row.operationId,
     method:
-      row.operationId === 'deleteOperationsCatalogCategory'
-        ? 'DELETE'
-        : row.operationId.startsWith('getOperations')
-          ? 'GET'
-          : row.operationId.startsWith('updateOperations') || row.operationId.startsWith('saveOperations')
-            ? 'PATCH'
-            : 'POST',
+      row.operationId.startsWith('getOperations')
+        ? 'GET'
+        : row.operationId.startsWith('updateOperations') || row.operationId.startsWith('saveOperations')
+          ? 'PATCH'
+          : 'POST',
     path: routeByOrdinal[row.ordinal],
     consumerFaces: ['operations-admin'],
     pageKeys: pageKeys,
@@ -1610,6 +1622,7 @@ const catalogLibraryOperation = ({
   };
 };
 const definitionLimitProblems = ['VALIDATION_ERROR', 'SCOPE_FORBIDDEN', 'CATALOG_DEFINITION_LIMIT_EXCEEDED'];
+const unitListProblems = ['VALIDATION_ERROR', 'SCOPE_FORBIDDEN', 'CATALOG_UNIT_LIMIT_EXCEEDED'];
 const attributeMutationProblems = [
   'VALIDATION_ERROR',
   'SCOPE_FORBIDDEN',
@@ -1637,6 +1650,16 @@ const unitMutationProblems = [
   'VERSION_CONFLICT',
   'CATALOG_UNIT_IN_USE',
   'CATALOG_UNIT_LIMIT_EXCEEDED',
+  'IDEMPOTENCY_MISMATCH',
+  'RESULT_UNKNOWN',
+];
+const lifecycleTransitionProblems = [
+  'VALIDATION_ERROR',
+  'SCOPE_FORBIDDEN',
+  'NOT_FOUND',
+  'VERSION_CONFLICT',
+  'VOIDED_RECORD_IMMUTABLE',
+  'REFERENCE_BLOCKS_VOID',
   'IDEMPOTENCY_MISMATCH',
   'RESULT_UNKNOWN',
 ];
@@ -1741,15 +1764,6 @@ const catalogOperationMetadata = [
     problemCodes: attributeMutationProblems,
   }),
   catalogLibraryOperation({
-    ordinal: 47,
-    operationId: 'deleteOperationsCatalogAttributeDefinition',
-    method: 'DELETE',
-    path: '/operations/catalog-inventory/attribute-definitions/{definitionRef}',
-    requestComponent: 'CatalogAttributeDefinitionDeleteRequest',
-    responseComponent: 'CatalogAttributeDefinitionDeleteReadback',
-    problemCodes: attributeMutationProblems,
-  }),
-  catalogLibraryOperation({
     ordinal: 48,
     operationId: 'listOperationsCatalogOrderOptionDefinitions',
     method: 'GET',
@@ -1784,24 +1798,13 @@ const catalogOperationMetadata = [
     ],
   }),
   catalogLibraryOperation({
-    ordinal: 51,
-    operationId: 'deleteOperationsCatalogOrderOptionDefinition',
-    method: 'DELETE',
-    path: '/operations/catalog-inventory/order-option-definitions/{definitionRef}',
-    requestComponent: 'CatalogOrderOptionDefinitionDeleteRequest',
-    responseComponent: 'CatalogOrderOptionDefinitionDeleteReadback',
-    problemCodes: orderOptionMutationProblems,
-    coordinatedOwners: ['inventory'],
-    coordinatedInventoryDefinitionCommands: ['deleteCatalogOptionValueBoms'],
-  }),
-  catalogLibraryOperation({
     ordinal: 52,
     operationId: 'listOperationsCatalogUnits',
     method: 'GET',
     path: '/operations/catalog-inventory/units',
     requestComponent: 'CatalogUnitListQuery',
     responseComponent: 'CatalogUnitList',
-    problemCodes: definitionLimitProblems,
+    problemCodes: unitListProblems,
   }),
   catalogLibraryOperation({
     ordinal: 53,
@@ -1824,26 +1827,42 @@ const catalogOperationMetadata = [
     coordinatedInventoryDefinitionCommands: ['validateCatalogUnitLifecycle'],
   }),
   catalogLibraryOperation({
-    ordinal: 55,
-    operationId: 'disableOperationsCatalogUnit',
+    ordinal: 60,
+    operationId: 'transitionOperationsCatalogAttributeDefinitionStatus',
     method: 'POST',
-    path: '/operations/catalog-inventory/units/{unitRef}/disable',
-    requestComponent: 'CatalogUnitDisableRequest',
+    path: '/operations/catalog-inventory/attribute-definitions/{definitionRef}/status',
+    requestComponent: 'CatalogAttributeDefinitionStatusTransitionRequest',
+    responseComponent: 'CatalogAttributeDefinitionReadback',
+    problemCodes: lifecycleTransitionProblems,
+  }),
+  catalogLibraryOperation({
+    ordinal: 61,
+    operationId: 'transitionOperationsCatalogOrderOptionDefinitionStatus',
+    method: 'POST',
+    path: '/operations/catalog-inventory/order-option-definitions/{definitionRef}/status',
+    requestComponent: 'CatalogOrderOptionDefinitionStatusTransitionRequest',
+    responseComponent: 'CatalogOrderOptionDefinitionReadback',
+    problemCodes: lifecycleTransitionProblems,
+  }),
+  catalogLibraryOperation({
+    ordinal: 62,
+    operationId: 'transitionOperationsCatalogUnitStatus',
+    method: 'POST',
+    path: '/operations/catalog-inventory/units/{unitRef}/status',
+    requestComponent: 'CatalogUnitStatusTransitionRequest',
     responseComponent: 'CatalogUnitReadback',
-    problemCodes: unitMutationProblems,
+    problemCodes: [...lifecycleTransitionProblems, 'CATALOG_UNIT_IN_USE'],
     coordinatedOwners: ['inventory'],
     coordinatedInventoryDefinitionCommands: ['validateCatalogUnitLifecycle'],
   }),
   catalogLibraryOperation({
-    ordinal: 56,
-    operationId: 'deleteOperationsCatalogUnit',
-    method: 'DELETE',
-    path: '/operations/catalog-inventory/units/{unitRef}',
-    requestComponent: 'CatalogUnitDeleteRequest',
-    responseComponent: 'CatalogUnitDeleteReadback',
-    problemCodes: unitMutationProblems,
-    coordinatedOwners: ['inventory'],
-    coordinatedInventoryDefinitionCommands: ['validateCatalogUnitLifecycle'],
+    ordinal: 63,
+    operationId: 'transitionOperationsCatalogCategoryStatus',
+    method: 'POST',
+    path: '/operations/catalog-inventory/categories/{categoryRef}/status',
+    requestComponent: 'CatalogCategoryStatusTransitionRequest',
+    responseComponent: 'CatalogCategoryReadback',
+    problemCodes: lifecycleTransitionProblems,
   }),
   catalogLibraryOperation({
     ordinal: 57,
@@ -1880,10 +1899,15 @@ const operationMetadata = catalogBudgetProjection.catalogOperations;
 function budgetGeneratorSelfTest() {
   if (catalogBudgetProjection.allBudgets.size !== EXPECTED_OPERATION_COUNT)
     throw new Error('P1_BUDGET_PROJECTION_EXACT_SET_INVALID');
-  if (catalogBudgetProjection.calibrationReportDigest.length !== 64)
-    throw new Error('P1_BUDGET_REPORT_DIGEST_INVALID');
+  if (catalogBudgetProjection.calibrationReportDigest.length !== 64) throw new Error('P1_BUDGET_REPORT_DIGEST_INVALID');
   if (catalogOperationMetadata.some(entry => Object.hasOwn(entry, 'databaseOperationBudget')))
     throw new Error('P1_STATIC_CATALOG_BUDGET_RETIRED');
+  if (catalogBudgetProjection.identityOnlyBootstrap) {
+    process.stdout.write(
+      'CATALOG_INVENTORY_P1_BUDGET_SELF_TEST=PASS\nBUDGET_OPERATION_EXACT_SET=PASS\nCALIBRATION_BOOTSTRAP_IDENTITY_ONLY=PASS\nSTATIC_CATALOG_BUDGET_RETIRED=PASS\n',
+    );
+    return;
+  }
   process.stdout.write(
     'CATALOG_INVENTORY_P1_BUDGET_SELF_TEST=PASS\nBUDGET_OPERATION_EXACT_SET=PASS\nCALIBRATION_REPORT_PROJECTION=PASS\nSTATIC_CATALOG_BUDGET_RETIRED=PASS\n',
   );
@@ -1977,7 +2001,9 @@ const placement = {
                 ? 'paths/operations-admin/inventory-management.paths.json'
                 : entry.ordinal >= 21 && entry.ordinal <= 28
                   ? 'paths/operations-admin/catalog-copy.paths.json'
-                  : (entry.ordinal >= 8 && entry.ordinal <= 16) || (entry.ordinal >= 44 && entry.ordinal <= 56)
+                  : (entry.ordinal >= 8 && entry.ordinal <= 16) ||
+                      (entry.ordinal >= 44 && entry.ordinal <= 56) ||
+                      (entry.ordinal >= 60 && entry.ordinal <= 63)
                     ? 'paths/operations-admin/catalog-dictionary-management.paths.json'
                     : entry.ordinal >= 17 && entry.ordinal <= 20
                       ? 'paths/operations-admin/production-tag-management.paths.json'
@@ -2532,7 +2558,11 @@ const requestFieldMap = {
     },
     dimension: stringField('optional unit dimension filter'),
     query: stringField('server-side unit name or code search'),
-    status: {type: 'string', enum: ['ENABLED', 'DISABLED'], description: 'optional unit lifecycle status filter'},
+    status: {
+      type: 'string',
+      enum: ['ENABLED', 'DISABLED', 'VOIDED'],
+      description: 'optional unit lifecycle status filter',
+    },
   },
   CatalogCategoryCandidateQuery: {
     dataNodeRef: uuidField('selected data node'),
@@ -2558,6 +2588,11 @@ const requestFieldMap = {
   CatalogItemSkusQuery: {
     dataNodeRef: uuidField('selected data node'),
     itemCode: stringField('parent catalog item code'),
+    candidateUsage: {
+      type: 'string',
+      enum: ['COMPOSITE_COMPONENT'],
+      description: 'owner-defined candidate usage; only enabled SKUs are returned',
+    },
     cursor: stringField('opaque SKU cursor'),
     pageSize: {type: 'integer', minimum: 1, maximum: 100, description: 'SKU page size'},
   },
@@ -2583,17 +2618,20 @@ const requestFieldMap = {
     unitDimension: stringField('optional unit category'),
     precision: {type: 'integer', minimum: 0, description: 'optional decimal places; zero means whole numbers'},
   },
-  CatalogUnitDisableRequest: {
+  CatalogUnitStatusTransitionRequest: {
     dataNodeRef: uuidField('selected data node'),
     unitRef: uuidField('unit reference'),
     expectedVersion: integerField('expected version'),
+    targetStatus: {type: 'string', enum: enumValues('dictionaryEntryStatus'), description: 'target lifecycle status'},
   },
-  CatalogUnitDeleteRequest: {
+  CatalogAttributeDefinitionListQuery: {
     dataNodeRef: uuidField('selected data node'),
-    unitRef: uuidField('unit reference'),
-    expectedVersion: integerField('expected version'),
+    candidateUsage: {
+      type: 'string',
+      enum: ['ITEM_ASSIGNMENT'],
+      description: 'owner-defined candidate usage; only enabled definitions are returned',
+    },
   },
-  CatalogAttributeDefinitionListQuery: {dataNodeRef: uuidField('selected data node')},
   CatalogAttributeDefinitionCreateRequest: {
     dataNodeRef: uuidField('selected data node'),
     code: stringField('attribute code'),
@@ -2637,12 +2675,20 @@ const requestFieldMap = {
       ),
     ),
   },
-  CatalogAttributeDefinitionDeleteRequest: {
+  CatalogAttributeDefinitionStatusTransitionRequest: {
     dataNodeRef: uuidField('selected data node'),
     definitionRef: uuidField('attribute definition reference'),
     expectedVersion: integerField('expected version'),
+    targetStatus: {type: 'string', enum: enumValues('dictionaryEntryStatus'), description: 'target lifecycle status'},
   },
-  CatalogOrderOptionDefinitionListQuery: {dataNodeRef: uuidField('selected data node')},
+  CatalogOrderOptionDefinitionListQuery: {
+    dataNodeRef: uuidField('selected data node'),
+    candidateUsage: {
+      type: 'string',
+      enum: ['ITEM_ASSIGNMENT'],
+      description: 'owner-defined candidate usage; only enabled definitions are returned',
+    },
+  },
   CatalogOrderOptionDefinitionCreateRequest: {
     dataNodeRef: uuidField('selected data node'),
     code: stringField('ordering option business code; immutable after creation'),
@@ -2698,15 +2744,16 @@ const requestFieldMap = {
       ),
     ),
   },
-  CatalogOrderOptionDefinitionDeleteRequest: {
+  CatalogOrderOptionDefinitionStatusTransitionRequest: {
     dataNodeRef: uuidField('selected data node'),
     definitionRef: uuidField('ordering option definition reference'),
     expectedVersion: integerField('expected version'),
+    targetStatus: {type: 'string', enum: enumValues('dictionaryEntryStatus'), description: 'target lifecycle status'},
   },
   CatalogItemTransitionRequest: {
     itemCode: stringField('catalog item code'),
     expectedVersion: integerField('expected version'),
-    targetStatus: stringField('target lifecycle status'),
+    targetStatus: {type: 'string', enum: enumValues('catalogItemStatus'), description: 'target lifecycle status'},
   },
   CatalogItemBatchStatusTransitionRequest: {
     dataNodeRef: uuidField('selected data node'),
@@ -2750,9 +2797,11 @@ const requestFieldMap = {
       description: 'target parent category opaque ref; required only for REPARENT',
     },
   },
-  CatalogCategoryDeleteRequest: {
-    categoryRef: {type: 'string', format: 'uuid', description: 'category opaque ref'},
+  CatalogCategoryStatusTransitionRequest: {
+    dataNodeRef: uuidField('selected data node'),
+    categoryRef: uuidField('category reference'),
     expectedVersion: integerField('expected version'),
+    targetStatus: {type: 'string', enum: enumValues('dictionaryEntryStatus'), description: 'target lifecycle status'},
   },
   CatalogDictionaryQuery: {
     dataNodeRef: uuidField('selected data node'),
@@ -3008,7 +3057,9 @@ const optionalRequestFields = {
     'cursor',
     'pageSize',
   ]),
-  CatalogItemSkusQuery: new Set(['dataNodeRef', 'cursor', 'pageSize']),
+  CatalogItemSkusQuery: new Set(['dataNodeRef', 'candidateUsage', 'cursor', 'pageSize']),
+  CatalogAttributeDefinitionListQuery: new Set(['dataNodeRef', 'candidateUsage']),
+  CatalogOrderOptionDefinitionListQuery: new Set(['dataNodeRef', 'candidateUsage']),
 };
 const unitSnapshotSchema = typedEntry(
   {
@@ -3043,7 +3094,7 @@ const catalogUnitAssignmentSchema = {
       description: 'unit category',
     },
     precision: {type: 'integer', minimum: 0, description: 'decimal places; zero means whole numbers'},
-    status: {type: 'string', enum: ['ENABLED', 'DISABLED'], description: 'unit lifecycle status'},
+    status: {type: 'string', enum: ['ENABLED', 'DISABLED', 'VOIDED'], description: 'unit lifecycle status'},
     inheritanceSource: {
       type: 'string',
       enum: ['ITEM_DEFAULT', 'SKU_OVERRIDE'],
@@ -3064,6 +3115,95 @@ const categoryPathSegmentSchema = typedEntry(
     name: stringField('category name'),
   },
   ['categoryRef', 'code', 'name'],
+);
+const catalogTagFactSchema = typedEntry(
+  {
+    tagRef: uuidField('catalog tag reference'),
+    code: stringField('catalog tag business code'),
+    name: stringField('catalog tag name'),
+  },
+  ['tagRef', 'code', 'name'],
+);
+const businessReferenceSchema = typedEntry(
+  {
+    referenceKind: stringField('business reference kind'),
+    referenceRef: uuidField('business reference opaque reference'),
+    code: stringField('referenced business code'),
+    name: stringField('referenced business name'),
+    direction: {type: 'string', enum: ['INBOUND', 'OUTBOUND'], description: 'reference direction'},
+  },
+  ['referenceKind', 'referenceRef', 'code', 'name', 'direction'],
+);
+const specificationFactSchema = typedEntry(
+  {
+    attributeRef: uuidField('specification definition reference'),
+    attributeCode: stringField('specification definition code'),
+    attributeName: stringField('specification definition name'),
+    values: arrayField(
+      'specification values',
+      typedEntry(
+        {
+          valueRef: uuidField('specification value reference'),
+          valueCode: stringField('specification value code'),
+          valueLabel: stringField('specification value name'),
+          displayOrder: integerField('specification value display order'),
+          status: stringField('specification value status'),
+        },
+        ['valueRef', 'valueCode', 'valueLabel', 'displayOrder', 'status'],
+      ),
+    ),
+  },
+  ['attributeRef', 'attributeCode', 'attributeName', 'values'],
+);
+const skuAttributeValueFactSchema = typedEntry(
+  {
+    attributeRef: uuidField('specification definition reference'),
+    attributeCode: stringField('specification definition code'),
+    attributeName: stringField('specification definition name'),
+    attributeValueRef: uuidField('specification value reference'),
+    valueCode: stringField('specification value code'),
+    valueLabel: stringField('specification value name'),
+    displayOrder: integerField('specification value display order'),
+    status: stringField('specification value status'),
+  },
+  [
+    'attributeRef',
+    'attributeCode',
+    'attributeName',
+    'attributeValueRef',
+    'valueCode',
+    'valueLabel',
+    'displayOrder',
+    'status',
+  ],
+);
+const preparationFactsSchema = typedEntry(
+  {
+    productionTag: {
+      type: ['object', 'null'],
+      additionalProperties: false,
+      properties: {
+        tagRef: uuidField('production tag reference'),
+        code: stringField('production tag code'),
+        name: stringField('production tag name'),
+        status: stringField('production tag status'),
+        owner: stringField('production tag owner'),
+      },
+      required: ['tagRef', 'code', 'name', 'status', 'owner'],
+    },
+    profile: nullablePreparationProfileReadbackSchema,
+    skuVariation: typedEntry({varies: booleanField('whether SKU preparation differs from the item default')}, [
+      'varies',
+    ]),
+  },
+  ['productionTag', 'profile', 'skuVariation'],
+);
+const blockingReferencesSchema = typedEntry(
+  {
+    count: integerField('number of blocking references'),
+    references: arrayField('typed blocking references', businessReferenceSchema),
+  },
+  ['count', 'references'],
 );
 const inventoryDeductionSummarySchema = typedEntry(
   {
@@ -3363,6 +3503,11 @@ const responseFieldMap = {
               definitionRef: uuidField('attribute definition reference'),
               code: stringField('attribute code'),
               name: stringField('attribute name'),
+              status: {
+                type: 'string',
+                enum: enumValues('dictionaryEntryStatus'),
+                description: 'attribute lifecycle status',
+              },
               valueType: {
                 type: 'string',
                 enum: ['TEXT', 'SINGLE_SELECT', 'MULTI_SELECT'],
@@ -3381,7 +3526,7 @@ const responseFieldMap = {
               ),
               version: integerField('definition version'),
             },
-            ['definitionRef', 'code', 'name', 'valueType', 'options', 'version'],
+            ['definitionRef', 'code', 'name', 'status', 'valueType', 'options', 'version'],
           ),
         ),
       },
@@ -3398,6 +3543,11 @@ const responseFieldMap = {
             definitionRef: uuidField('attribute definition reference'),
             code: stringField('attribute code'),
             name: stringField('attribute name'),
+            status: {
+              type: 'string',
+              enum: enumValues('dictionaryEntryStatus'),
+              description: 'attribute lifecycle status',
+            },
             valueType: {
               type: 'string',
               enum: ['TEXT', 'SINGLE_SELECT', 'MULTI_SELECT'],
@@ -3416,24 +3566,12 @@ const responseFieldMap = {
             ),
             version: integerField('definition version'),
           },
-          ['definitionRef', 'code', 'name', 'valueType', 'options', 'version'],
+          ['definitionRef', 'code', 'name', 'status', 'valueType', 'options', 'version'],
         ),
       },
       ['definition'],
     ),
     version: integerField('definition version'),
-  },
-  CatalogAttributeDefinitionDeleteReadback: {
-    revision: stringField('contract revision'),
-    requestId: stringField('request correlation'),
-    result: typedEntry(
-      {
-        definitionRef: uuidField('deleted attribute definition reference'),
-        deletedAssignmentCount: integerField('product attribute assignments removed by the cascade'),
-      },
-      ['definitionRef', 'deletedAssignmentCount'],
-    ),
-    version: integerField('delete receipt version'),
   },
   CatalogOrderOptionDefinitionList: {
     revision: stringField('contract revision'),
@@ -3447,6 +3585,11 @@ const responseFieldMap = {
               definitionRef: uuidField('ordering option definition reference'),
               code: stringField('ordering option business code'),
               name: stringField('ordering option name'),
+              status: {
+                type: 'string',
+                enum: enumValues('dictionaryEntryStatus'),
+                description: 'ordering option lifecycle status',
+              },
               selectionMode: {type: 'string', enum: ['SINGLE', 'MULTIPLE'], description: 'customer selection mode'},
               values: arrayField(
                 'customer options',
@@ -3481,7 +3624,7 @@ const responseFieldMap = {
               ),
               version: integerField('definition version'),
             },
-            ['definitionRef', 'code', 'name', 'selectionMode', 'values', 'version'],
+            ['definitionRef', 'code', 'name', 'status', 'selectionMode', 'values', 'version'],
           ),
         ),
       },
@@ -3498,6 +3641,11 @@ const responseFieldMap = {
             definitionRef: uuidField('ordering option definition reference'),
             code: stringField('ordering option business code'),
             name: stringField('ordering option name'),
+            status: {
+              type: 'string',
+              enum: enumValues('dictionaryEntryStatus'),
+              description: 'ordering option lifecycle status',
+            },
             selectionMode: {type: 'string', enum: ['SINGLE', 'MULTIPLE'], description: 'customer selection mode'},
             values: arrayField(
               'customer options',
@@ -3532,7 +3680,7 @@ const responseFieldMap = {
             ),
             version: integerField('definition version'),
           },
-          ['definitionRef', 'code', 'name', 'selectionMode', 'values', 'version'],
+          ['definitionRef', 'code', 'name', 'status', 'selectionMode', 'values', 'version'],
         ),
         deletedDefinitionValueRefs: arrayField(
           'option values removed by this whole-definition update',
@@ -3542,22 +3690,6 @@ const responseFieldMap = {
       ['definition', 'deletedDefinitionValueRefs'],
     ),
     version: integerField('definition version'),
-  },
-  CatalogOrderOptionDefinitionDeleteReadback: {
-    revision: stringField('contract revision'),
-    requestId: stringField('request correlation'),
-    result: typedEntry(
-      {
-        definitionRef: uuidField('deleted ordering option definition reference'),
-        deletedDefinitionValueRefs: arrayField(
-          'deleted option value references',
-          uuidField('deleted option value reference'),
-        ),
-        deletedItemConfigCount: integerField('product ordering option configurations removed by the cascade'),
-      },
-      ['definitionRef', 'deletedDefinitionValueRefs', 'deletedItemConfigCount'],
-    ),
-    version: integerField('delete receipt version'),
   },
   CatalogUnitList: {
     revision: stringField('contract revision'),
@@ -3579,7 +3711,7 @@ const responseFieldMap = {
               precision: {type: 'integer', minimum: 0, description: 'decimal places; zero means whole numbers'},
               status: {
                 type: 'string',
-                enum: ['ENABLED', 'DISABLED'],
+                enum: enumValues('dictionaryEntryStatus'),
                 description: 'whether the unit can be selected for new configurations',
               },
               isReferenced: {type: 'boolean', description: 'whether any current catalog fact uses the unit'},
@@ -3682,10 +3814,8 @@ const responseFieldMap = {
               status: stringField('SKU lifecycle status'),
               primaryImageAssetRef: {type: ['string', 'null'], format: 'uuid', description: 'primary SKU image'},
               inventoryDeductionSummary: inventoryDeductionSummarySchema,
-              attributeSummary: arrayField(
-                'SKU-specific product attribute display lines; empty means inherit the parent product',
-              ),
-              preparationSummary: arrayField('effective SKU production information display lines'),
+              attributeFacts: arrayField('typed SKU attribute value facts', skuAttributeValueFactSchema),
+              preparationFacts: preparationFactsSchema,
               updatedAt: epochMillisField('SKU update time'),
             },
             [
@@ -3700,8 +3830,8 @@ const responseFieldMap = {
               'status',
               'primaryImageAssetRef',
               'inventoryDeductionSummary',
-              'attributeSummary',
-              'preparationSummary',
+              'attributeFacts',
+              'preparationFacts',
               'updatedAt',
             ],
           ),
@@ -3774,7 +3904,7 @@ const responseFieldMap = {
             precision: {type: 'integer', minimum: 0, description: 'decimal places; zero means whole numbers'},
             status: {
               type: 'string',
-              enum: ['ENABLED', 'DISABLED'],
+              enum: enumValues('dictionaryEntryStatus'),
               description: 'whether the unit can be selected for new configurations',
             },
             version: integerField('unit definition version'),
@@ -3785,12 +3915,6 @@ const responseFieldMap = {
       ['unit'],
     ),
     version: integerField('unit definition version'),
-  },
-  CatalogUnitDeleteReadback: {
-    revision: stringField('contract revision'),
-    requestId: stringField('request correlation'),
-    result: typedEntry({unitRef: uuidField('deleted unit definition reference')}, ['unitRef']),
-    version: integerField('delete receipt version'),
   },
   CatalogItemCommandReadback: {
     revision: stringField('contract revision'),
@@ -3897,6 +4021,7 @@ const responseFieldMap = {
         categoryRef: {type: 'string', format: 'uuid', description: 'category opaque ref'},
         code: stringField('category business code'),
         name: stringField('category name'),
+        status: {type: 'string', enum: enumValues('dictionaryEntryStatus'), description: 'category lifecycle status'},
         parentCategoryRef: {type: ['string', 'null'], format: 'uuid', description: 'parent category opaque ref'},
         version: integerField('version'),
         displayOrder: integerField('sibling display order'),
@@ -3905,25 +4030,12 @@ const responseFieldMap = {
             canDelete: booleanField('whether the category subtree can be deleted'),
             subtreeSize: integerField('category subtree size'),
             blockingReferenceCount: integerField('blocking product reference count'),
-            blockingReferenceLabels: arrayField('safe blocking product labels'),
+            blockingReferences: blockingReferencesSchema,
           },
-          ['canDelete', 'subtreeSize', 'blockingReferenceCount', 'blockingReferenceLabels'],
+          ['canDelete', 'subtreeSize', 'blockingReferenceCount', 'blockingReferences'],
         ),
       },
-      ['categoryRef', 'code', 'name', 'parentCategoryRef', 'version', 'displayOrder', 'deletionAvailability'],
-    ),
-    version: integerField('version'),
-  },
-  CatalogCategoryDeleteReadback: {
-    revision: stringField('contract revision'),
-    requestId: stringField('request correlation'),
-    result: typedEntry(
-      {
-        categoryRef: {type: 'string', format: 'uuid', description: 'deleted category opaque ref'},
-        deletedSubtreeSize: integerField('deleted category subtree size'),
-        deletedCategoryCodes: arrayField('deleted category business codes'),
-      },
-      ['categoryRef', 'deletedSubtreeSize', 'deletedCategoryCodes'],
+      ['categoryRef', 'code', 'name', 'status', 'parentCategoryRef', 'version', 'displayOrder', 'deletionAvailability'],
     ),
     version: integerField('version'),
   },
@@ -4116,14 +4228,25 @@ const applyDefinitionFactsToCatalogItemDetail = detailSchema => {
   delete item.properties.productionTagRefs;
   delete item.properties.productionProfiles;
   delete item.properties.missingPriceCount;
+  delete item.properties.skuDimensionSummary;
+  // Human-readable string assemblies are retired in favor of owner-provided
+  // structured business facts.  Keep the generated schema closed so a stale
+  // source read-model cannot reintroduce these fields.
+  for (const field of [
+    'categoryPathLabels',
+    'tagSummary',
+    'specificationOrOptionSummary',
+    'attributeSummary',
+    'preparationSummary',
+  ]) delete item.properties[field];
   item.properties.categoryRef = {
     type: ['string', 'null'],
     format: 'uuid',
     description: 'one optional catalog category',
   };
-  item.properties.categoryPathLabels = arrayField(
-    'owner-provided complete category path for the item detail',
-    stringField('category path label'),
+  item.properties.categoryPath = arrayField(
+    'owner-provided complete category path facts for the item detail',
+    categoryPathSegmentSchema,
   );
   item.properties.productionTagRef = {
     type: ['string', 'null'],
@@ -4142,6 +4265,16 @@ const applyDefinitionFactsToCatalogItemDetail = detailSchema => {
   item.properties.preparationProfile = nullablePreparationProfileReadbackSchema;
   item.properties.attributeAssignments = arrayField('product attribute assignments', attributeAssignmentSchema);
   item.properties.orderOptionConfigs = arrayField('product ordering option settings', orderOptionConfigSchema);
+  item.properties.specificationFacts = arrayField(
+    'typed SKU specification definition and value facts',
+    specificationFactSchema,
+  );
+  item.properties.orderOptionFacts = arrayField(
+    'typed ordering option definition and value facts',
+    orderOptionConfigSchema,
+  );
+  item.properties.attributeFacts = arrayField('typed product attribute assignment facts', attributeAssignmentSchema);
+  item.properties.preparationFacts = preparationFactsSchema;
   const skuItems = item.properties.skus?.items;
   if (skuItems?.properties) {
     delete skuItems.properties.skuBarcode;
@@ -4188,10 +4321,16 @@ const applyDefinitionFactsToCatalogItemDetail = detailSchema => {
             'productionTagRefs',
             'productionProfiles',
             'missingPriceCount',
+            'skuDimensionSummary',
+            'categoryPathLabels',
+            'tagSummary',
+            'specificationOrOptionSummary',
+            'attributeSummary',
+            'preparationSummary',
           ].includes(field),
       ),
       'categoryRef',
-      'categoryPathLabels',
+      'categoryPath',
       'productionTagRef',
       'salesUnitRef',
       'baseMeasureUnitRef',
@@ -4201,6 +4340,10 @@ const applyDefinitionFactsToCatalogItemDetail = detailSchema => {
       'preparationProfile',
       'attributeAssignments',
       'orderOptionConfigs',
+      'specificationFacts',
+      'orderOptionFacts',
+      'attributeFacts',
+      'preparationFacts',
     ]),
   );
   delete data.properties.orderOptions;
@@ -4210,10 +4353,9 @@ const applyDefinitionFactsToCatalogItemDetail = detailSchema => {
   const references = data.properties.references;
   if (!references?.items?.properties) throw new Error('P1_CATALOG_ITEM_DETAIL_REFERENCES_SCHEMA_MISSING');
   references.items.properties.name = stringField('referenced catalog item name');
-  references.items.properties.relationLabel = stringField('user-visible relationship label');
-  references.items.required = Array.from(
-    new Set([...(references.items.required || []), 'name', 'relationLabel']),
-  );
+  delete references.items.properties.relationLabel;
+  references.items.required = (references.items.required || []).filter(field => field !== 'relationLabel');
+  references.items.required = Array.from(new Set([...(references.items.required || []), 'name']));
   const compositeComponentSchemas = [
     data.properties.compositeGroups?.items?.properties?.components?.items,
     data.properties.item?.properties?.compositeGroups?.items?.properties?.components?.items,
@@ -4226,9 +4368,7 @@ const applyDefinitionFactsToCatalogItemDetail = detailSchema => {
       type: ['string', 'null'],
       description: 'optional component SKU name',
     };
-    compositeComponent.required = Array.from(
-      new Set([...(compositeComponent.required || []), 'itemName', 'skuName']),
-    );
+    compositeComponent.required = Array.from(new Set([...(compositeComponent.required || []), 'itemName', 'skuName']));
   });
   data.required = Array.from(
     new Set([...(data.required || []).filter(field => field !== 'inventoryBom'), 'inventoryRules']),
@@ -4250,32 +4390,35 @@ const applySingleCategoryToCatalogItemPage = pageSchema => {
   delete item.properties.missingPriceCount;
   delete item.properties.stockTargetCount;
   delete item.properties.bomCount;
+  delete item.properties.skuDimensionSummary;
+  for (const field of [
+    'categoryPathLabels',
+    'tagSummary',
+    'specificationOrOptionSummary',
+    'attributeSummary',
+    'preparationSummary',
+  ]) delete item.properties[field];
   item.properties.categoryRef = {
     type: ['string', 'null'],
     format: 'uuid',
     description: 'one optional catalog category',
   };
-  item.properties.categoryPathLabels = arrayField(
-    'owner-provided category path labels for cross-category results',
-    stringField('category path label'),
-  );
-  item.properties.tagSummary = arrayField(
-    'business-ordered catalog tag names for list rendering',
-    stringField('catalog tag name'),
+  item.properties.categoryPath = arrayField(
+    'owner-provided category path facts for cross-category results',
+    categoryPathSegmentSchema,
   );
   item.properties.hasSkuChildren = {type: 'boolean', description: 'whether the parent row has SKU child rows'};
-  item.properties.specificationOrOptionSummary = arrayField(
-    'business-ordered specification or ordering-option display lines',
-    stringField('specification or option display line'),
+  item.properties.tags = arrayField('typed catalog tag facts for list rendering', catalogTagFactSchema);
+  item.properties.specificationFacts = arrayField(
+    'typed SKU specification definition and value facts',
+    specificationFactSchema,
   );
-  item.properties.attributeSummary = arrayField(
-    'business-ordered product attribute display lines',
-    stringField('product attribute display line'),
+  item.properties.orderOptionFacts = arrayField(
+    'typed ordering option definition and value facts',
+    orderOptionConfigSchema,
   );
-  item.properties.preparationSummary = arrayField(
-    'business-ordered production information display lines',
-    stringField('production information display line'),
-  );
+  item.properties.attributeFacts = arrayField('typed product attribute assignment facts', attributeAssignmentSchema);
+  item.properties.preparationFacts = preparationFactsSchema;
   item.properties.productionTagRef = {
     type: ['string', 'null'],
     format: 'uuid',
@@ -4288,15 +4431,28 @@ const applySingleCategoryToCatalogItemPage = pageSchema => {
     new Set([
       ...(item.required || []).filter(
         field =>
-          !['categoryRefs', 'productionTagRefs', 'missingPriceCount', 'stockTargetCount', 'bomCount'].includes(field),
+          ![
+            'categoryRefs',
+            'productionTagRefs',
+            'missingPriceCount',
+            'stockTargetCount',
+            'bomCount',
+            'skuDimensionSummary',
+            'categoryPathLabels',
+            'tagSummary',
+            'specificationOrOptionSummary',
+            'attributeSummary',
+            'preparationSummary',
+          ].includes(field),
       ),
       'categoryRef',
-      'categoryPathLabels',
-      'tagSummary',
+      'categoryPath',
+      'tags',
       'hasSkuChildren',
-      'specificationOrOptionSummary',
-      'attributeSummary',
-      'preparationSummary',
+      'specificationFacts',
+      'orderOptionFacts',
+      'attributeFacts',
+      'preparationFacts',
       'productionTagRef',
       'salesUnit',
       'baseMeasureUnit',
@@ -4305,6 +4461,16 @@ const applySingleCategoryToCatalogItemPage = pageSchema => {
   );
 };
 applySingleCategoryToCatalogItemPage(componentSchemas.CatalogItemPage);
+const patchBlockingReferenceFacts = schema => {
+  const availability = schema?.properties?.deletionAvailability;
+  if (!availability?.properties) return;
+  availability.properties.blockingReferences = blockingReferencesSchema;
+  delete availability.properties.blockingReferenceLabels;
+  availability.required = (availability.required || []).filter(field => field !== 'blockingReferenceLabels');
+  availability.required = [...new Set([...(availability.required || []), 'blockingReferences'])];
+};
+patchBlockingReferenceFacts(componentSchemas.CatalogCategoryReadback?.properties?.result);
+patchBlockingReferenceFacts(componentSchemas.CatalogNavigationView?.properties?.data?.properties?.tree?.items);
 const responseRequiredFields = {
   CatalogItemBatchStatusTransitionReadback: ['revision', 'requestId', 'results'],
   CatalogAttributeDefinitionList: ['revision', 'requestId', 'data'],
@@ -4380,6 +4546,10 @@ componentSchemas.CatalogItemSkuPage = {
   required: ['revision', 'requestId', 'data'],
   properties: responseFieldMap.CatalogItemSkuPage,
 };
+// CatalogCategoryReadback is introduced by the operation loop below the initial
+// read-model materialization; apply the shared deletion fact patch again once
+// that response schema is guaranteed to exist.
+patchBlockingReferenceFacts(componentSchemas.CatalogCategoryReadback?.properties?.result);
 const applyDefinitionFactsToCatalogItemSaveRequest = saveSchema => {
   const sections = saveSchema?.properties?.sections;
   const draft = sections?.properties?.catalogDraft;
@@ -4497,7 +4667,8 @@ const applyIdentificationPreparationToCatalogItemSaveReadback = readbackSchema =
   );
 };
 applyIdentificationPreparationToCatalogItemSaveReadback(componentSchemas.CatalogItemSaveReadback);
-const skuTransitionVoidAvailability = componentSchemas.CatalogItemSaveReadback?.properties?.result?.properties?.skuTransitions?.items;
+const skuTransitionVoidAvailability =
+  componentSchemas.CatalogItemSaveReadback?.properties?.result?.properties?.skuTransitions?.items;
 requireVoidReasonClosure(skuTransitionVoidAvailability, 'user-visible reasons the voided SKU remains unavailable');
 
 const cloneJson = value => JSON.parse(JSON.stringify(value));
@@ -4804,8 +4975,21 @@ const catalogDefinitionSelfTest = () => {
   assertRequiredSchemaProperty(detailSku, 'updatedAt', 'detail.sku');
   if (detailSku.properties.updatedAt?.format !== 'epoch-millis')
     throw new Error('P1_CATALOG_DETAIL_SKU_UPDATED_AT_WIRE_INVALID');
-  assertSchemaPropertyPresent(detailItem, 'categoryPathLabels', 'detail.item');
-  assertRequiredSchemaProperty(detailItem, 'categoryPathLabels', 'detail.item');
+  assertNoSchemaProperty(detailItem, 'categoryPathLabels', 'detail.item');
+  assertNoSchemaProperty(detailItem, 'tagSummary', 'detail.item');
+  assertNoSchemaProperty(detailItem, 'specificationOrOptionSummary', 'detail.item');
+  assertNoSchemaProperty(detailItem, 'attributeSummary', 'detail.item');
+  assertNoSchemaProperty(detailItem, 'preparationSummary', 'detail.item');
+  for (const field of [
+    'categoryPath',
+    'specificationFacts',
+    'orderOptionFacts',
+    'attributeFacts',
+    'preparationFacts',
+  ]) {
+    assertSchemaPropertyPresent(detailItem, field, `detail.item.${field}`);
+    assertRequiredSchemaProperty(detailItem, field, `detail.item.${field}`);
+  }
   const detailCompositeComponents = [
     componentSchemas.CatalogItemDetail.properties.data.properties.compositeGroups.items.properties.components.items,
     detailItem.properties.compositeGroups.items.properties.components.items,
@@ -4816,8 +5000,8 @@ const catalogDefinitionSelfTest = () => {
       assertRequiredSchemaProperty(schema, field, `detail.compositeGroups[${index}]`);
     }
   }
-  const voidAvailability = componentSchemas.CatalogItemDetail.properties.data.properties.actionAvailability.properties
-    .voidAvailability;
+  const voidAvailability =
+    componentSchemas.CatalogItemDetail.properties.data.properties.actionAvailability.properties.voidAvailability;
   assertSchemaPropertyPresent(voidAvailability, 'blockingReasons', 'detail.actionAvailability.voidAvailability');
   assertRequiredSchemaProperty(voidAvailability, 'blockingReasons', 'detail.actionAvailability.voidAvailability');
   const blockingReason = voidAvailability.properties.blockingReasons.items;
@@ -4829,7 +5013,7 @@ const catalogDefinitionSelfTest = () => {
   const skuBlockingReason = skuVoidAvailability.properties.blockingReasons.items;
   for (const field of ['label', 'count', 'relatedItemNames'])
     assertRequiredSchemaProperty(skuBlockingReason, field, 'detail.sku.voidAvailability.blockingReasons');
-  const skuTransition = componentSchemas.CatalogItemSaveReadback.result.properties.skuTransitions.items;
+  const skuTransition = componentSchemas.CatalogItemSaveReadback.properties.result.properties.skuTransitions.items;
   assertSchemaPropertyPresent(skuTransition, 'blockingReasons', 'save.skuTransitions');
   assertRequiredSchemaProperty(skuTransition, 'blockingReasons', 'save.skuTransitions');
   for (const [label, schema] of [
@@ -4842,17 +5026,31 @@ const catalogDefinitionSelfTest = () => {
       throw new Error(`P1_VOID_REASON_ENTRY_CONSTRAINT_MISSING:${label}`);
     const disablesWithoutReason = schema.allOf?.some(
       branch =>
-        branch.if?.properties?.canVoid?.const === false &&
-        branch.then?.properties?.blockingReasons?.minItems === 1,
+        branch.if?.properties?.canVoid?.const === false && branch.then?.properties?.blockingReasons?.minItems === 1,
     );
     if (!disablesWithoutReason) throw new Error(`P1_VOID_REASON_CLOSURE_MISSING:${label}`);
   }
-  assertSchemaPropertyPresent(skuPageItem, 'attributeSummary', 'sku.page.item');
-  assertSchemaPropertyPresent(skuPageItem, 'preparationSummary', 'sku.page.item');
-  assertRequiredSchemaProperty(skuPageItem, 'attributeSummary', 'sku.page.item');
-  assertRequiredSchemaProperty(skuPageItem, 'preparationSummary', 'sku.page.item');
-  assertSchemaPropertyPresent(itemPageItem, 'tagSummary', 'item.page.item');
-  assertRequiredSchemaProperty(itemPageItem, 'tagSummary', 'item.page.item');
+  for (const field of ['attributeFacts', 'preparationFacts']) {
+    assertSchemaPropertyPresent(skuPageItem, field, `sku.page.item.${field}`);
+    assertRequiredSchemaProperty(skuPageItem, field, `sku.page.item.${field}`);
+  }
+  for (const field of [
+    'categoryPath',
+    'tags',
+    'specificationFacts',
+    'orderOptionFacts',
+    'attributeFacts',
+    'preparationFacts',
+  ]) {
+    assertSchemaPropertyPresent(itemPageItem, field, `item.page.item.${field}`);
+    assertRequiredSchemaProperty(itemPageItem, field, `item.page.item.${field}`);
+  }
+  const navigationDeletion = navigationData?.properties?.tree?.items?.properties?.deletionAvailability;
+  if (navigationDeletion) {
+    assertNoSchemaProperty(navigationDeletion, 'blockingReferenceLabels', 'navigation.deletionAvailability');
+    assertSchemaPropertyPresent(navigationDeletion, 'blockingReferences', 'navigation.deletionAvailability');
+    assertRequiredSchemaProperty(navigationDeletion, 'blockingReferences', 'navigation.deletionAvailability');
+  }
   if (
     !detailSku.properties.identifiers ||
     !detailSku.properties.preparationOverride ||
@@ -4920,29 +5118,6 @@ const catalogDefinitionSelfTest = () => {
   expectSelfTestFailure('item-composite-name-projection', () => {
     assertSchemaPropertyPresent(itemCompositeNameMutation, 'itemName', 'detail.item.compositeGroups');
     assertRequiredSchemaProperty(itemCompositeNameMutation, 'itemName', 'detail.item.compositeGroups');
-  });
-  const skuSummaryMutation = cloneJson(skuPageItem);
-  delete skuSummaryMutation.properties.preparationSummary;
-  skuSummaryMutation.required = skuSummaryMutation.required.filter(field => field !== 'preparationSummary');
-  expectSelfTestFailure('sku-page-preparation-summary', () => {
-    assertSchemaPropertyPresent(skuSummaryMutation, 'preparationSummary', 'sku.page.item');
-    assertRequiredSchemaProperty(skuSummaryMutation, 'preparationSummary', 'sku.page.item');
-  });
-  const tagSummaryMutation = cloneJson(itemPageItem);
-  delete tagSummaryMutation.properties.tagSummary;
-  tagSummaryMutation.required = tagSummaryMutation.required.filter(field => field !== 'tagSummary');
-  expectSelfTestFailure('item-page-tag-summary-owner-projection', () => {
-    assertSchemaPropertyPresent(tagSummaryMutation, 'tagSummary', 'item.page.item');
-    assertRequiredSchemaProperty(tagSummaryMutation, 'tagSummary', 'item.page.item');
-  });
-  const detailCategoryPathMutation = cloneJson(detailItem);
-  delete detailCategoryPathMutation.properties.categoryPathLabels;
-  detailCategoryPathMutation.required = detailCategoryPathMutation.required.filter(
-    field => field !== 'categoryPathLabels',
-  );
-  expectSelfTestFailure('detail-category-path-owner-projection', () => {
-    assertSchemaPropertyPresent(detailCategoryPathMutation, 'categoryPathLabels', 'detail.item');
-    assertRequiredSchemaProperty(detailCategoryPathMutation, 'categoryPathLabels', 'detail.item');
   });
   expectSelfTestFailure('generated-catalog-user-visible-vocabulary', () =>
     assertGeneratedCatalogUserVisibleVocabulary([...generatedCatalogUserVisibleCopy(), '按 SKU 管理商品']),
@@ -5012,12 +5187,30 @@ const patchInventoryItem = schema => {
   if (!item) throw new Error('P1_INVENTORY_ITEM_SCHEMA_MISSING');
   renameRequiredField(item, 'consumptionUnit', 'consumptionUnitSnapshot', unitSnapshotSchema);
   renameRequiredField(item, 'countingUnit', 'countingUnitSnapshot', nullableUnitSnapshotSchema);
+  item.properties.conversionFacts = typedEntry(
+    {
+      countingUnitSnapshot: nullableUnitSnapshotSchema,
+      consumptionUnitSnapshot: unitSnapshotSchema,
+      conversionFactor: {type: 'string', format: 'decimal', description: 'counting-to-consumption factor'},
+    },
+    ['countingUnitSnapshot', 'consumptionUnitSnapshot', 'conversionFactor'],
+  );
+  item.required = [...new Set([...(item.required || []), 'conversionFacts'])];
 };
 const patchInventoryTargetView = schema => {
   const target = schema?.properties?.target;
   if (!target) throw new Error('P1_INVENTORY_TARGET_SCHEMA_MISSING');
   renameRequiredField(target, 'consumptionUnit', 'consumptionUnitSnapshot', unitSnapshotSchema);
   renameRequiredField(target, 'countingUnit', 'countingUnitSnapshot', nullableUnitSnapshotSchema);
+  target.properties.conversionFacts = typedEntry(
+    {
+      countingUnitSnapshot: nullableUnitSnapshotSchema,
+      consumptionUnitSnapshot: unitSnapshotSchema,
+      conversionFactor: {type: 'string', format: 'decimal', description: 'counting-to-consumption factor'},
+    },
+    ['countingUnitSnapshot', 'consumptionUnitSnapshot', 'conversionFactor'],
+  );
+  target.required = [...new Set([...(target.required || []), 'conversionFacts'])];
   const configuration = schema.properties.configuration;
   if (!configuration) throw new Error('P1_INVENTORY_CONFIGURATION_SCHEMA_MISSING');
   renameRequiredField(configuration, 'countingUnit', 'countingUnitSnapshot', nullableUnitSnapshotSchema);
@@ -5185,28 +5378,25 @@ const componentShardGroups = {
     'CatalogDictionaryEntryUpdateRequest',
     'CatalogDictionaryEntryReorderRequest',
     'CatalogDictionaryEntryReadback',
+    'CatalogCategoryStatusTransitionRequest',
     'CatalogAttributeDefinitionListQuery',
     'CatalogAttributeDefinitionList',
     'CatalogAttributeDefinitionCreateRequest',
     'CatalogAttributeDefinitionUpdateRequest',
-    'CatalogAttributeDefinitionDeleteRequest',
+    'CatalogAttributeDefinitionStatusTransitionRequest',
     'CatalogAttributeDefinitionReadback',
-    'CatalogAttributeDefinitionDeleteReadback',
     'CatalogOrderOptionDefinitionListQuery',
     'CatalogOrderOptionDefinitionList',
     'CatalogOrderOptionDefinitionCreateRequest',
     'CatalogOrderOptionDefinitionUpdateRequest',
-    'CatalogOrderOptionDefinitionDeleteRequest',
+    'CatalogOrderOptionDefinitionStatusTransitionRequest',
     'CatalogOrderOptionDefinitionReadback',
-    'CatalogOrderOptionDefinitionDeleteReadback',
     'CatalogUnitListQuery',
     'CatalogUnitList',
     'CatalogUnitCreateRequest',
     'CatalogUnitUpdateRequest',
-    'CatalogUnitDisableRequest',
-    'CatalogUnitDeleteRequest',
+    'CatalogUnitStatusTransitionRequest',
     'CatalogUnitReadback',
-    'CatalogUnitDeleteReadback',
   ],
   'components/catalog/catalog-copy.schemas.json': [
     'LocalCopyCandidatePage',
@@ -5241,7 +5431,7 @@ const componentShardGroups = {
   ],
 };
 const schemaShardForOrdinal = ordinal =>
-  ordinal >= 44 && ordinal <= 56
+  (ordinal >= 44 && ordinal <= 56) || (ordinal >= 60 && ordinal <= 63)
     ? 'components/catalog/catalog-dictionary.schemas.json'
     : ordinal === 57
       ? 'components/inventory/inventory-workbench.schemas.json'
@@ -5296,7 +5486,7 @@ const pathShardGroups = {
   'paths/operations-admin/catalog-workbench.paths.json': [1, 2, 3, 4, 21, 26, 42, 58],
   'paths/operations-admin/catalog-item-management.paths.json': [5, 6, 7, 24, 25, 40, 41, 43, 59],
   'paths/operations-admin/catalog-dictionary-management.paths.json': [
-    8, 9, 10, 11, 12, 13, 14, 15, 16, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
+    8, 9, 10, 11, 12, 13, 14, 15, 16, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 60, 61, 62, 63,
   ],
   'paths/operations-admin/catalog-copy.paths.json': [22, 23, 27, 28],
   'paths/operations-admin/inventory-workbench.paths.json': [29, 30, 31, 32, 33, 34, 35, 57],
@@ -5340,7 +5530,7 @@ const seedDatasets = [
       skus: [
         {code: 'LATTE-SKU-S', attributeValues: {SIZE: 'SMALL'}, status: 'ENABLED'},
         {code: 'LATTE-SKU-M', attributeValues: {SIZE: 'MEDIUM'}, status: 'DISABLED'},
-        {code: 'LATTE-SKU-L', attributeValues: {SIZE: 'LARGE'}, status: 'ARCHIVED'},
+        {code: 'LATTE-SKU-L', attributeValues: {SIZE: 'LARGE'}, status: 'VOIDED'},
       ],
       bomLines: [
         {skuCode: 'LATTE-SKU-S', componentCode: 'BEAN-001', quantity: 14},
@@ -6327,7 +6517,7 @@ const testDatasetSpecs = [
   ['FIXTURE-CLOSURE-LIMIT', '读取 copy policy 当前 closure limit，边界与超限且不截断', ['CI-API-017']],
   ['FIXTURE-STALE-SOURCE', '检查影响后来源版本漂移', ['CI-API-021', 'CI-L2-015']],
   ['FIXTURE-STALE-TARGET', '检查影响后目标版本漂移', ['CI-API-021', 'CI-L2-015']],
-  ['FIXTURE-ARCHIVED-ONLY-SKU', '只剩归档规格，派生 NO_SKU', ['CI-API-013', 'CI-L2-007']],
+  ['FIXTURE-VOIDED-ONLY-SKU', '只剩作废规格，派生 NO_SKU', ['CI-API-013', 'CI-L2-007']],
   ['FIXTURE-DISABLED-SKU', '只有停用规格，仍派生 HAS_SKU', ['CI-API-013', 'CI-L2-007']],
   ['FIXTURE-SHAPE-ADMISSION', 'SERVICE/BENEFIT_SHELL 不因 NO_SKU 获得库存/BOM三态', ['CI-API-014', 'CI-L2-007']],
   ['FIXTURE-PRODUCIBLE-RETAINED', 'PRODUCIBLE 在契约全集但无形态派生', ['CI-API-001', 'CI-L2-007']],
@@ -6383,7 +6573,7 @@ testDatasetSpecs.push(
   ['FIXTURE-VOID-OBJECT-TYPES', '八类有编码对象逐类作废与引用保护', ['CI-API-006', 'CI-L2-010']],
   ['FIXTURE-COMPATIBILITY-MATRIX', '九类兼容矩阵逐位正反例', ['CI-API-018', 'CI-L2-015']],
   ['FIXTURE-WORKBENCH-QUERY', '树节点、域内 keyword、cursor 与 generation', ['CI-API-003', 'CI-L2-002', 'CI-L2-016']],
-  ['FIXTURE-SMART-VIEWS', '六智能视图与需处理派生状态', ['CI-API-004', 'CI-L2-003', 'CI-L2-012']],
+  ['FIXTURE-SMART-VIEWS', '五智能视图与需处理派生状态', ['CI-API-004', 'CI-L2-003', 'CI-L2-012']],
   [
     'FIXTURE-SURFACE-STATES',
     '九 surface loading/error/empty/recovery',
@@ -6701,15 +6891,14 @@ const catalogLibraryFixtureGraph = journey => {
   };
   const itemShape = journey === 'VIEW' ? 'SKU_VARIANT_SALE_COUNTED' : 'STANDARD_SALE_COUNTED';
   // The fixture graph describes the state that the browser consumes, not the
-  // transient create state.  A weighted/variant draft is intentionally kept
-  // draft for the no-price view case; every other library primary is enabled
-  // because its journey needs an actionable parent row.
+  // transient create state.  The no-price view case is a disabled item under
+  // the three-state lifecycle; DRAFT is no longer a persisted fixture state.
   const item = {
     type: 'CatalogItem',
     code: journey === 'COPY' ? 'L2-COPY-TARGET' : `L2-${journey}-001`,
     name: journey === 'COPY' ? 'L2复制目标商品' : `L2${journey}商品`,
     shapeKey: itemShape,
-    status: journey === 'VIEW' ? 'DRAFT' : 'ENABLED',
+    status: journey === 'VIEW' ? 'DISABLED' : 'ENABLED',
     version: 1,
     scopeKind: 'STORE_BRAND',
     categoryCode: child.code,
@@ -6886,7 +7075,7 @@ const catalogLibraryFixtureGraph = journey => {
         code: 'L2-VIEW-SKU-L',
         skuCode: 'L2-VIEW-SKU-L',
         name: 'L2查看大规格',
-        status: 'ARCHIVED',
+        status: 'VOIDED',
         displayOrder: 2,
         standardSalePrice: null,
         attributeValues: {[sizeAttributeCode]: sizeValues[2].code},
@@ -7129,8 +7318,8 @@ const testGraphFor = fixtureId => {
       problemCode: 'STALE_COPY_PREFLIGHT',
       writes: 0,
     };
-  if (fixtureId === 'FIXTURE-ARCHIVED-ONLY-SKU')
-    ((graph.objects = [{type: 'ProductSku', code: 'SKU-ARCHIVED', status: 'ARCHIVED'}]),
+  if (fixtureId === 'FIXTURE-VOIDED-ONLY-SKU')
+    ((graph.objects = [{type: 'ProductSku', code: 'SKU-VOIDED', status: 'VOIDED'}]),
       (graph.expected = {hasSku: false}));
   if (fixtureId === 'FIXTURE-DISABLED-SKU')
     ((graph.objects = [{type: 'ProductSku', code: 'SKU-DISABLED', status: 'DISABLED'}]),
@@ -7195,7 +7384,7 @@ const testGraphFor = fixtureId => {
         type: 'CatalogItem',
         code: 'TEMP-001',
         source: 'EXTERNAL_ORDER_TEMPORARY',
-        status: 'DRAFT',
+        status: 'DISABLED',
         externalIdentity: {
           sourceOrderRef: 'EXT-ORDER-001',
           sourceRecordRef: 'EXT-RECORD-001',
@@ -7282,16 +7471,16 @@ const testGraphFor = fixtureId => {
     };
   }
   if (fixtureId === 'FIXTURE-SMART-VIEWS') {
-    graph.objects = ['EXTERNAL_ORDER_TEMP', 'INACTIVE', 'ARCHIVED', 'RECENTLY_UPDATED', 'AUTO_SYNC'].map(viewKey =>
+    graph.objects = ['EXTERNAL_ORDER_TEMP', 'INACTIVE', 'RECENTLY_UPDATED', 'AUTO_SYNC'].map(viewKey =>
       viewKey === 'INACTIVE'
-        ? {type: 'SmartView', code: viewKey, includedStatuses: ['DRAFT', 'DISABLED'], excludedStatuses: ['ARCHIVED', 'VOIDED']}
+        ? {type: 'SmartView', code: viewKey, includedStatuses: ['DISABLED'], excludedStatuses: ['VOIDED']}
         : {type: 'SmartView', code: viewKey},
     );
     graph.expected = {
       viewKeys: graph.objects.map(entry => entry.code),
       inactiveMembership: {
-        includedStatuses: ['DRAFT', 'DISABLED'],
-        excludedStatuses: ['ARCHIVED', 'VOIDED'],
+        includedStatuses: ['DISABLED'],
+        excludedStatuses: ['VOIDED'],
       },
       needsAttentionExcludedFromStockState: true,
       caseParameterKey: 'viewKey',
@@ -7303,9 +7492,9 @@ const testGraphFor = fixtureId => {
       caseParameterKey: 'surfaceState',
     };
   if (fixtureId === 'FIXTURE-LIFECYCLE-CAS-IDEMPOTENCY') {
-    graph.objects = [{type: 'CatalogItem', code: 'LIFECYCLE-001', status: 'ENABLED', version: 1}];
+    graph.objects = [{type: 'CatalogItem', code: 'LIFECYCLE-001', status: 'DISABLED', version: 1}];
     graph.expected = {
-      transitions: ['DRAFT->ENABLED', 'ENABLED->DISABLED'],
+      transitions: ['DISABLED->ENABLED', 'ENABLED->DISABLED'],
       versionConflict: true,
       idempotencyReplay: true,
       caseParameterKey: 'lifecycleCase',
@@ -7363,10 +7552,10 @@ const assertInactiveSmartViewFixture = dataset => {
   const membership = dataset?.expected?.inactiveMembership;
   if (
     !inactive ||
-    JSON.stringify(inactive.includedStatuses) !== JSON.stringify(['DRAFT', 'DISABLED']) ||
-    JSON.stringify(inactive.excludedStatuses) !== JSON.stringify(['ARCHIVED', 'VOIDED']) ||
-    JSON.stringify(membership?.includedStatuses) !== JSON.stringify(['DRAFT', 'DISABLED']) ||
-    JSON.stringify(membership?.excludedStatuses) !== JSON.stringify(['ARCHIVED', 'VOIDED'])
+    JSON.stringify(inactive.includedStatuses) !== JSON.stringify(['DISABLED']) ||
+    JSON.stringify(inactive.excludedStatuses) !== JSON.stringify(['VOIDED']) ||
+    JSON.stringify(membership?.includedStatuses) !== JSON.stringify(['DISABLED']) ||
+    JSON.stringify(membership?.excludedStatuses) !== JSON.stringify(['VOIDED'])
   ) {
     throw new Error('P1_SMART_VIEW_INACTIVE_MEMBERSHIP_INVALID');
   }
@@ -7374,12 +7563,13 @@ const assertInactiveSmartViewFixture = dataset => {
 const smartViewFixture = testDatasets.find(entry => entry.fixtureId === 'FIXTURE-SMART-VIEWS');
 assertInactiveSmartViewFixture(smartViewFixture);
 const smartViewInactiveRedMutation = cloneJson(smartViewFixture);
-smartViewInactiveRedMutation.expected.inactiveMembership.includedStatuses = ['DISABLED'];
+smartViewInactiveRedMutation.expected.inactiveMembership.includedStatuses = ['ENABLED'];
 let smartViewInactiveRedMutationRejected = false;
 try {
   assertInactiveSmartViewFixture(smartViewInactiveRedMutation);
 } catch (error) {
-  smartViewInactiveRedMutationRejected = error instanceof Error && error.message === 'P1_SMART_VIEW_INACTIVE_MEMBERSHIP_INVALID';
+  smartViewInactiveRedMutationRejected =
+    error instanceof Error && error.message === 'P1_SMART_VIEW_INACTIVE_MEMBERSHIP_INVALID';
 }
 if (!smartViewInactiveRedMutationRejected) throw new Error('P1_SMART_VIEW_INACTIVE_RED_MUTATION_NOT_REJECTED');
 const catalogLibraryFixtureRequirements = {
@@ -7750,6 +7940,16 @@ const fixtureSchema = {
     },
     catalogDefinitionSeed: fixtureObject(
       {
+        experienceLifecycle: fixtureObject(
+          {
+            targetStatus: {const: 'ENABLED'},
+            activateSourceShapeKeys: {
+              type: 'array',
+              items: {type: 'string', enum: shapes.map(shape => shape.key)},
+            },
+          },
+          ['targetStatus', 'activateSourceShapeKeys'],
+        ),
         categoryDefinitions: {type: 'array', minItems: 1, items: {$ref: '#/$defs/categoryDefinitionSeed'}},
         tagDefinitions: {type: 'array', minItems: 1, items: {$ref: '#/$defs/codeName'}},
         productionTagDefinitions: {type: 'array', minItems: 1, items: {$ref: '#/$defs/codeName'}},
@@ -7761,6 +7961,7 @@ const fixtureSchema = {
         sourceItemAssignments: {type: 'array', items: {$ref: '#/$defs/itemIdentificationPreparationAssignment'}},
       },
       [
+        'experienceLifecycle',
         'categoryDefinitions',
         'tagDefinitions',
         'productionTagDefinitions',
@@ -8062,6 +8263,8 @@ const fixtureSchema = {
         name: stringField('object name'),
         mediaAssetKey: stringField('media asset key'),
         status: stringField('object status'),
+        includedStatuses: arrayField('smart-view included lifecycle statuses'),
+        excludedStatuses: arrayField('smart-view excluded lifecycle statuses'),
         version: integerField('object version'),
         shapeKey: stringField('shape'),
         scopeKind: {
@@ -8197,6 +8400,10 @@ const fixtureSchema = {
               generation: stringField('generation'),
             }),
             viewKeys: arrayField('smart view keys'),
+            inactiveMembership: fixtureObject({
+              includedStatuses: arrayField('smart-view included lifecycle statuses'),
+              excludedStatuses: arrayField('smart-view excluded lifecycle statuses'),
+            }),
             needsAttentionExcludedFromStockState: booleanField('needs attention rule'),
             surfaceKeys: arrayField('surface keys'),
             transitions: arrayField('lifecycle transitions'),
@@ -8398,7 +8605,7 @@ const apiDescriptions = [
   '库存列表 set-based 状态、缺口、三周期变化',
   '库存详情六个独立读区',
   '库存盘点/增加/调整/快捷配置前后读回',
-  'HAS_SKU 非归档判据',
+  'HAS_SKU 非作废判据',
   '形态准入与 modeRules 两层判定',
   '闭包 DAG 到 visited 不动点且不沿反向扩张',
   'selected limit 当前值边界与超限',
@@ -8465,9 +8672,7 @@ const caseParameterFor = (scenarioId, caseIndex, fixtureRef) => {
   if (scenarioId === 'CI-API-003') return {queryVariant: caseIndex + 1, fixtureRef};
   if (scenarioId === 'CI-API-004')
     return {
-      viewKey:
-        ['EXTERNAL_ORDER_TEMP', 'INACTIVE', 'ARCHIVED', 'RECENTLY_UPDATED', 'AUTO_SYNC'][caseIndex] ||
-        'EXTERNAL_ORDER_TEMP',
+      viewKey: ['EXTERNAL_ORDER_TEMP', 'INACTIVE', 'RECENTLY_UPDATED', 'AUTO_SYNC'][caseIndex] || 'EXTERNAL_ORDER_TEMP',
       fixtureRef,
     };
   if (scenarioId === 'CI-API-005')
@@ -8568,7 +8773,7 @@ const caseExpectationFor = (scenarioId, caseIndex, fixtureRef, parameter) => {
   return {kind: 'FACT'};
 };
 const p4FixtureCandidate = fixtureRef =>
-  /^FIXTURE-(?:VOID-|INVENTORY-NEGATIVE$|ARCHIVED-ONLY-SKU$|DISABLED-SKU$|SHAPE-ADMISSION$|UNIT-GRAM-EACH$|REFERENCE-MAPPING-MISSING$|STALE-|MISSING-HEAD-COMPANY$|NO-COPY-SOURCE$|OWNER-SCOPE$)/.test(
+  /^FIXTURE-(?:VOID-|INVENTORY-NEGATIVE$|VOIDED-ONLY-SKU$|DISABLED-SKU$|SHAPE-ADMISSION$|UNIT-GRAM-EACH$|REFERENCE-MAPPING-MISSING$|STALE-|MISSING-HEAD-COMPANY$|NO-COPY-SOURCE$|OWNER-SCOPE$)/.test(
     fixtureRef,
   );
 const p4BoundaryCase = (scenarioId, caseIndex, parameter, fixtureRef) =>
@@ -8695,14 +8900,14 @@ const L2_DB_OPERATION_MS = 42.7;
 const L2_TIMEOUT_HEADROOM_FACTOR = 2;
 const L2_LOCAL_ACTION_P95_MS = 250;
 // L2 is a catalog journey, but its fresh-browser envelope also consumes
-// workspace operations.  Resolve both domains from the same 239-operation
+// workspace operations.  Resolve both domains from the same 238-operation
 // performance registry used by the run-level verifier; do not assign a local
 // default to non-catalog operations.
 const l2OperationBudgetRegistry = catalogBudgetProjection.allBudgets;
 if (l2OperationBudgetRegistry.size !== EXPECTED_OPERATION_COUNT)
   throw new Error(`P1_L2_OPERATION_BUDGET_REGISTRY_INVALID:${l2OperationBudgetRegistry.size}`);
 for (const [operationId, budget] of l2OperationBudgetRegistry) {
-  validateDatabaseOperationBudget(budget, {operationId});
+  if (!catalogBudgetProjection.identityOnlyBootstrap) validateDatabaseOperationBudget(budget, {operationId});
 }
 // Each catalog L2 journey begins in a fresh browser context.  Its login,
 // session and initial workbench reads are therefore real per-case work, not
@@ -9036,6 +9241,7 @@ function l2DeclaredActionsFor(caseId) {
 }
 function l2BudgetMax(request) {
   const budget = l2OperationBudgetRegistry.get(request.operationId);
+  if (catalogBudgetProjection.identityOnlyBootstrap) return 0;
   if (!budget) throw new Error(`P1_L2_DATABASE_OPERATION_BUDGET_MISSING:${request.operationId}`);
   return budget.kind === 'LINEAR_REQUEST_CARDINALITY'
     ? budget.base + budget.perItem * (request.cardinality ?? 1)

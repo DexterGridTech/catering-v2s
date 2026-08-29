@@ -4,19 +4,66 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-case "${1:-}" in
-  --operation)
-    [[ ( "$#" -eq 2 || "$#" -eq 3 ) && -n "${2:-}" ]] || { printf '%s\n' 'BACKEND_ACCEPTANCE_OPERATION_REQUIRED' >&2; exit 2; }
-    export V2S_BACKEND_ACCEPTANCE_OPERATION="$2"
-    if [[ "$#" -eq 3 ]]; then
-      [[ "$2" == "all" && "${3:-}" == "--calibration" ]] || { printf '%s\n' 'BACKEND_ACCEPTANCE_CALIBRATION_ARGUMENT_INVALID' >&2; exit 2; }
-      export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=CALIBRATION
-    fi
-    V2S_BACKEND_ACCEPTANCE_EXECUTION=true exec node "$REPO_ROOT/scripts/test/r5-remote-testcontainers.mjs" \
-      :apps:backend:catering-business-server:test --tests com.catering.v2s.app.acceptance.BackendAcceptanceTest
-    ;;
-  *)
-    printf '%s\n' 'BACKEND_ACCEPTANCE_ARGUMENT_INVALID' >&2
+[[ "${1:-}" == "--operation" && -n "${2:-}" ]] || {
+  printf '%s\n' 'BACKEND_ACCEPTANCE_OPERATION_REQUIRED' >&2
+  exit 2
+}
+
+operation="$2"
+shift 2
+calibration=false
+production_mutation=''
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --calibration)
+      [[ "$operation" == "all" && "$calibration" == false ]] || {
+        printf '%s\n' 'BACKEND_ACCEPTANCE_CALIBRATION_ARGUMENT_INVALID' >&2
+        exit 2
+      }
+      calibration=true
+      shift
+      ;;
+    --production-mutation)
+      [[ -z "$production_mutation" && -n "${2:-}" ]] || {
+        printf '%s\n' 'BACKEND_ACCEPTANCE_PRODUCTION_MUTATION_ARGUMENT_INVALID' >&2
+        exit 2
+      }
+      production_mutation="$2"
+      shift 2
+      ;;
+    *)
+      printf '%s\n' 'BACKEND_ACCEPTANCE_ARGUMENT_INVALID' >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [[ -n "$production_mutation" ]]; then
+  [[ "$production_mutation" == 'extension-definition-second-field-status' ]] || {
+    printf '%s\n' 'BACKEND_ACCEPTANCE_PRODUCTION_MUTATION_UNKNOWN' >&2
     exit 2
-    ;;
-esac
+  }
+  [[ "$operation" == 'pagination.extension-definition-aggregate-closure' || "$operation" == 'extensionDefinitionAggregateClosure' ]] || {
+    printf '%s\n' 'BACKEND_ACCEPTANCE_PRODUCTION_MUTATION_OPERATION_INVALID' >&2
+    exit 2
+  }
+  [[ "$calibration" == false ]] || {
+    printf '%s\n' 'BACKEND_ACCEPTANCE_PRODUCTION_MUTATION_CALIBRATION_INVALID' >&2
+    exit 2
+  }
+fi
+
+export V2S_BACKEND_ACCEPTANCE_OPERATION="$operation"
+if [[ "$calibration" == true ]]; then
+  export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=CALIBRATION
+fi
+
+runner_arguments=(
+  :apps:backend:catering-business-server:test
+  --tests
+  com.catering.v2s.app.acceptance.BackendAcceptanceTest
+)
+if [[ -n "$production_mutation" ]]; then
+  runner_arguments+=(--production-mutation "$production_mutation")
+fi
+V2S_BACKEND_ACCEPTANCE_EXECUTION=true exec node "$REPO_ROOT/scripts/test/r5-remote-testcontainers.mjs" "${runner_arguments[@]}"

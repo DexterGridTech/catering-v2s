@@ -1,0 +1,4173 @@
+{
+  "schemaVersion": 1,
+  "kind": "base1-structured-field-oracle-registry",
+  "scope": "CP-B4",
+  "source": {
+    "requirements": "doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md",
+    "implementationDesign": "doc/plans/platform/2026-08-27-v2s-base-1-implementation-design-codex.md",
+    "appendix": "doc/plans/platform/2026-08-27-v2s-base-1-appendix-cascade-and-members-claude.md"
+  },
+  "operationSets": {
+    "businessChannel": [
+      "getOperationsProjectBusinessChannels",
+      "getOperationsStoreBusinessChannels",
+      "createOperationsBusinessChannel",
+      "getOperationsBusinessChannelDetail",
+      "updateOperationsBusinessChannel",
+      "transitionOperationsBusinessChannelStatus"
+    ],
+    "accountPresence": ["verifyPublicInvitationOtp", "savePublicInvitationCredentials"],
+    "contract": ["getPlatformContractOverviewPage", "getPlatformContractOverviewDetail"],
+    "invitationRoute": [
+      "getWorkspaceInvitations",
+      "createWorkspaceInvitation",
+      "getWorkspaceInvitation",
+      "cancelWorkspaceInvitation",
+      "reissueWorkspaceInvitation",
+      "getOperationsWorkspaceGroupInvitations",
+      "createOperationsWorkspaceGroupInvitation",
+      "cancelOperationsWorkspaceGroupInvitation",
+      "reissueOperationsWorkspaceGroupInvitation",
+      "getOperationsWorkspaceRegionInvitations",
+      "createOperationsWorkspaceRegionInvitation",
+      "cancelOperationsWorkspaceRegionInvitation",
+      "reissueOperationsWorkspaceRegionInvitation",
+      "getOperationsWorkspaceProjectInvitations",
+      "createOperationsWorkspaceProjectInvitation",
+      "cancelOperationsWorkspaceProjectInvitation",
+      "reissueOperationsWorkspaceProjectInvitation",
+      "getOperationsWorkspaceHeadCompanyInvitations",
+      "createOperationsWorkspaceHeadCompanyInvitation",
+      "cancelOperationsWorkspaceHeadCompanyInvitation",
+      "reissueOperationsWorkspaceHeadCompanyInvitation",
+      "getOperationsWorkspaceStoreInvitations",
+      "createOperationsWorkspaceStoreInvitation",
+      "cancelOperationsWorkspaceStoreInvitation",
+      "reissueOperationsWorkspaceStoreInvitation"
+    ],
+    "invitationCandidate": [
+      "getWorkspaceInvitationCandidates",
+      "getOperationsWorkspaceGroupInvitationCandidates",
+      "getOperationsWorkspaceRegionInvitationCandidates",
+      "getOperationsWorkspaceProjectInvitationCandidates",
+      "getOperationsWorkspaceHeadCompanyInvitationCandidates",
+      "getOperationsWorkspaceStoreInvitationCandidates"
+    ],
+    "accountOrganization": [
+      "getWorkspaceAccounts",
+      "getWorkspaceAccount",
+      "transitionWorkspaceAccountStatus",
+      "getOperationsWorkspaceGroupUser",
+      "getOperationsWorkspaceGroupUserAccount",
+      "revokeOperationsWorkspaceGroupUserAssignment",
+      "getOperationsWorkspaceRegionUser",
+      "getOperationsWorkspaceRegionUserAccount",
+      "revokeOperationsWorkspaceRegionUserAssignment",
+      "getOperationsWorkspaceProjectUser",
+      "getOperationsWorkspaceProjectUserAccount",
+      "revokeOperationsWorkspaceProjectUserAssignment",
+      "getOperationsWorkspaceHeadCompanyUser",
+      "getOperationsWorkspaceHeadCompanyUserAccount",
+      "revokeOperationsWorkspaceHeadCompanyUserAssignment",
+      "getOperationsWorkspaceStoreUser",
+      "getOperationsWorkspaceStoreUserAccount",
+      "revokeOperationsWorkspaceStoreUserAssignment"
+    ],
+    "extensionDefinition": [
+      "getExtensionDefinition",
+      "replaceExtensionDefinition",
+      "getOperationsContractExtensionDefinition",
+      "getOperationsOrganizationBusinessEntityExtensionDefinition",
+      "getOperationsOrganizationHierarchyExtensionDefinition",
+      "getOperationsOrganizationStoreExtensionDefinition"
+    ],
+    "collaborationBinding": [
+      "getPlatformProviderProfileBindings",
+      "getPlatformOwnerBindingDetail",
+      "updatePlatformOwnerBinding",
+      "deletePlatformOwnerBinding",
+      "createPlatformOwnerBinding",
+      "getOperationsOwnerBindingDetail",
+      "createOperationsOwnerBinding",
+      "deleteOperationsOwnerBinding"
+    ],
+    "collaborationCatalog": [
+      "getPlatformExternalCollaborationTree",
+      "getPlatformExternalSystemDetail",
+      "getPlatformProviderProfileDetail",
+      "getPlatformExternalCapabilityDictionary",
+      "getOperationsExternalCapabilityDictionary",
+      "getOperationsExternalProviderCandidates"
+    ],
+    "catalog": [
+      "getOperationsCatalogNavigation",
+      "getOperationsCatalogItems",
+      "getOperationsCatalogItem",
+      "getOperationsCatalogItemSkus",
+      "createOperationsCatalogCategory",
+      "updateOperationsCatalogCategory",
+      "moveOperationsCatalogCategory",
+      "transitionOperationsCatalogCategoryStatus",
+      "getOperationsInventoryTargets",
+      "getOperationsInventoryTarget",
+      "countOperationsInventoryTarget",
+      "increaseOperationsInventoryTarget",
+      "adjustOperationsInventoryTarget",
+      "updateOperationsInventoryTargetConfiguration"
+    ]
+  },
+  "excludedOperationIds": ["getExtensionEntityCatalog"],
+  "expectedSignal": "HTTP=200;CONTRACT=PASS;BUSINESS=FAIL;failureCategory=BUSINESS_ORACLE",
+  "operations": [
+    {
+      "family": "businessChannel",
+      "scenarioId": "business-channel.cascade-and-draft",
+      "operationId": "getOperationsProjectBusinessChannels",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/businesschannel/BusinessChannelWireMapper.java",
+        "symbol": "channel.statusDimensions",
+        "mutation": "replace a valid dimension status with another valid ENABLED value"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/items/0/selfStatus",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/items/0/statusDimensions",
+          "jsonType": "array",
+          "fixtureExpected": ["ordered dimension objects"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for populated fixture"
+        },
+        {
+          "jsonPointer": "/items/0/blockers",
+          "jsonType": "array",
+          "fixtureExpected": ["template DISABLED dimension"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red while template is disabled"
+        }
+      ]
+    },
+    {
+      "family": "businessChannel",
+      "scenarioId": "business-channel.cascade-and-draft",
+      "operationId": "getOperationsStoreBusinessChannels",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/businesschannel/BusinessChannelWireMapper.java",
+        "symbol": "channel.statusDimensions",
+        "mutation": "replace a valid dimension status with another valid ENABLED value"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/items/0/selfStatus",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/items/0/statusDimensions",
+          "jsonType": "array",
+          "fixtureExpected": ["ordered dimension objects"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for populated fixture"
+        },
+        {
+          "jsonPointer": "/items/0/blockers",
+          "jsonType": "array",
+          "fixtureExpected": ["template DISABLED dimension"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red while template is disabled"
+        }
+      ]
+    },
+    {
+      "family": "businessChannel",
+      "scenarioId": "business-channel.cascade-and-draft",
+      "operationId": "createOperationsBusinessChannel",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/businesschannel/BusinessChannelWireMapper.java",
+        "symbol": "channel.statusDimensions",
+        "mutation": "replace a valid dimension status with another valid ENABLED value"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/selfStatus",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/statusDimensions",
+          "jsonType": "array",
+          "fixtureExpected": ["ordered dimension objects"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for populated fixture"
+        },
+        {
+          "jsonPointer": "/blockers",
+          "jsonType": "array",
+          "fixtureExpected": [],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "wrong type is red; empty is valid only for enabled fixture"
+        }
+      ]
+    },
+    {
+      "family": "businessChannel",
+      "scenarioId": "business-channel.cascade-and-draft",
+      "operationId": "getOperationsBusinessChannelDetail",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/businesschannel/BusinessChannelWireMapper.java",
+        "symbol": "channel.statusDimensions",
+        "mutation": "replace a valid dimension status with another valid ENABLED value"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/selfStatus",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/statusDimensions",
+          "jsonType": "array",
+          "fixtureExpected": ["ordered dimension objects"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for populated fixture"
+        },
+        {
+          "jsonPointer": "/blockers",
+          "jsonType": "array",
+          "fixtureExpected": ["template DISABLED dimension"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red while template is disabled"
+        }
+      ]
+    },
+    {
+      "family": "businessChannel",
+      "scenarioId": "business-channel.cascade-and-draft",
+      "operationId": "updateOperationsBusinessChannel",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/businesschannel/BusinessChannelWireMapper.java",
+        "symbol": "channel.statusDimensions",
+        "mutation": "replace a valid dimension status with another valid ENABLED value"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/selfStatus",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/statusDimensions",
+          "jsonType": "array",
+          "fixtureExpected": ["ordered dimension objects"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for populated fixture"
+        },
+        {
+          "jsonPointer": "/blockers",
+          "jsonType": "array",
+          "fixtureExpected": ["template DISABLED dimension"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red while template is disabled"
+        }
+      ]
+    },
+    {
+      "family": "businessChannel",
+      "scenarioId": "business-channel.cascade-and-draft",
+      "operationId": "transitionOperationsBusinessChannelStatus",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/businesschannel/BusinessChannelWireMapper.java",
+        "symbol": "channel.statusDimensions",
+        "mutation": "replace a valid dimension status with another valid ENABLED value"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "DISABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/selfStatus",
+          "jsonType": "string",
+          "fixtureExpected": "DISABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/statusDimensions",
+          "jsonType": "array",
+          "fixtureExpected": ["ordered dimension objects"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for populated fixture"
+        },
+        {
+          "jsonPointer": "/blockers",
+          "jsonType": "array",
+          "fixtureExpected": ["template DISABLED dimension"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red while template is disabled"
+        }
+      ]
+    },
+    {
+      "family": "extensionDefinition",
+      "scenarioId": "pagination.extension-definition-aggregate-closure",
+      "operationId": "getExtensionDefinition",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/extension/ExtensionDefinitionWireMapper.java",
+        "symbol": "field.status",
+        "mutation": "replace the second field status with the other legal enum member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/workspaceStatus",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/definitions",
+          "jsonType": "array",
+          "fixtureExpected": ["field-0", "field-1"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for configured fixture"
+        },
+        {
+          "jsonPointer": "/definitions/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/definitions/1/status",
+          "jsonType": "string",
+          "fixtureExpected": "DISABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/blockers",
+          "jsonType": "array",
+          "fixtureExpected": [],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty is valid only when workspace is enabled"
+        }
+      ]
+    },
+    {
+      "family": "extensionDefinition",
+      "scenarioId": "pagination.extension-definition-aggregate-closure",
+      "operationId": "replaceExtensionDefinition",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/extension/ExtensionDefinitionWireMapper.java",
+        "symbol": "field.status",
+        "mutation": "replace the second field status with the other legal enum member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/workspaceStatus",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/definitions",
+          "jsonType": "array",
+          "fixtureExpected": ["field-0", "field-1"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for configured fixture"
+        },
+        {
+          "jsonPointer": "/definitions/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/definitions/1/status",
+          "jsonType": "string",
+          "fixtureExpected": "DISABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/blockers",
+          "jsonType": "array",
+          "fixtureExpected": [],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty is valid only when workspace is enabled"
+        }
+      ]
+    },
+    {
+      "family": "extensionDefinition",
+      "scenarioId": "pagination.extension-definition-aggregate-closure",
+      "operationId": "getOperationsContractExtensionDefinition",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/extension/ExtensionDefinitionWireMapper.java",
+        "symbol": "field.status",
+        "mutation": "replace the second field status with the other legal enum member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/workspaceStatus",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/definitions",
+          "jsonType": "array",
+          "fixtureExpected": ["field-0", "field-1"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for configured fixture"
+        },
+        {
+          "jsonPointer": "/definitions/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/definitions/1/status",
+          "jsonType": "string",
+          "fixtureExpected": "DISABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/blockers",
+          "jsonType": "array",
+          "fixtureExpected": [],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty is valid only when workspace is enabled"
+        }
+      ]
+    },
+    {
+      "family": "extensionDefinition",
+      "scenarioId": "pagination.extension-definition-aggregate-closure",
+      "operationId": "getOperationsOrganizationBusinessEntityExtensionDefinition",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/extension/ExtensionDefinitionWireMapper.java",
+        "symbol": "field.status",
+        "mutation": "replace the second field status with the other legal enum member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/workspaceStatus",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/definitions",
+          "jsonType": "array",
+          "fixtureExpected": ["field-0", "field-1"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for configured fixture"
+        },
+        {
+          "jsonPointer": "/definitions/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/definitions/1/status",
+          "jsonType": "string",
+          "fixtureExpected": "DISABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/blockers",
+          "jsonType": "array",
+          "fixtureExpected": [],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty is valid only when workspace is enabled"
+        }
+      ]
+    },
+    {
+      "family": "extensionDefinition",
+      "scenarioId": "pagination.extension-definition-aggregate-closure",
+      "operationId": "getOperationsOrganizationHierarchyExtensionDefinition",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/extension/ExtensionDefinitionWireMapper.java",
+        "symbol": "field.status",
+        "mutation": "replace the second field status with the other legal enum member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/workspaceStatus",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/definitions",
+          "jsonType": "array",
+          "fixtureExpected": ["field-0", "field-1"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for configured fixture"
+        },
+        {
+          "jsonPointer": "/definitions/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/definitions/1/status",
+          "jsonType": "string",
+          "fixtureExpected": "DISABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/blockers",
+          "jsonType": "array",
+          "fixtureExpected": [],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty is valid only when workspace is enabled"
+        }
+      ]
+    },
+    {
+      "family": "extensionDefinition",
+      "scenarioId": "pagination.extension-definition-aggregate-closure",
+      "operationId": "getOperationsOrganizationStoreExtensionDefinition",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/extension/ExtensionDefinitionWireMapper.java",
+        "symbol": "field.status",
+        "mutation": "replace the second field status with the other legal enum member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/workspaceStatus",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/definitions",
+          "jsonType": "array",
+          "fixtureExpected": ["field-0", "field-1"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for configured fixture"
+        },
+        {
+          "jsonPointer": "/definitions/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/definitions/1/status",
+          "jsonType": "string",
+          "fixtureExpected": "DISABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/blockers",
+          "jsonType": "array",
+          "fixtureExpected": [],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty is valid only when workspace is enabled"
+        }
+      ]
+    },
+    {
+      "family": "collaborationBinding",
+      "scenarioId": "collaboration.binding-page-searches-node-name",
+      "operationId": "getPlatformProviderProfileBindings",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/externalcollaboration/ExternalCollaborationWireMapper.java",
+        "symbol": "nodePath",
+        "mutation": "replace one path node name with its valid code or reverse the path order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/nodePath",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {"ref": "<fixture-region-id>", "code": "acceptance-region", "name": "Acceptance Region", "nodeType": "REGION"},
+            {"ref": "<fixture-project-id>", "code": "acceptance-project", "name": "Acceptance Project", "nodeType": "PROJECT"},
+            {"ref": "<fixture-store-id>", "code": "acceptance-store", "name": "Acceptance Store", "nodeType": "STORE"}
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for store binding"
+        },
+        {
+          "jsonPointer": "/items/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "EFFECTIVE",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/items/0/businessScope",
+          "jsonType": "array",
+          "fixtureExpected": ["MEMBER_BENEFIT"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for scoped provider"
+        },
+        {
+          "jsonPointer": "/items/0/capabilityClass",
+          "jsonType": "null",
+          "fixtureExpected": null,
+          "comparison": "EXACT_NULL",
+          "nullableOrEmptyCounterexample": "exact-null fixture is required for a NO_MAPPING binding"
+        }
+      ]
+    },
+    {
+      "family": "collaborationBinding",
+      "scenarioId": "collaboration.binding-page-searches-node-name",
+      "operationId": "getPlatformOwnerBindingDetail",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/externalcollaboration/ExternalCollaborationWireMapper.java",
+        "symbol": "nodePath",
+        "mutation": "replace one path node name with its valid code or reverse the path order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/nodePath",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {"ref": "<fixture-region-id>", "code": "acceptance-region", "name": "Acceptance Region", "nodeType": "REGION"},
+            {"ref": "<fixture-project-id>", "code": "acceptance-project", "name": "Acceptance Project", "nodeType": "PROJECT"},
+            {"ref": "<fixture-store-id>", "code": "acceptance-store", "name": "Acceptance Store", "nodeType": "STORE"}
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for store binding"
+        },
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "EFFECTIVE",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/businessScope",
+          "jsonType": "array",
+          "fixtureExpected": ["MEMBER_BENEFIT"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for scoped provider"
+        },
+        {
+          "jsonPointer": "/capabilityClass",
+          "jsonType": "null",
+          "fixtureExpected": null,
+          "comparison": "EXACT_NULL",
+          "nullableOrEmptyCounterexample": "exact-null fixture is required for a NO_MAPPING binding"
+        }
+      ]
+    },
+    {
+      "family": "collaborationBinding",
+      "scenarioId": "collaboration.binding-page-searches-node-name",
+      "operationId": "updatePlatformOwnerBinding",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/externalcollaboration/ExternalCollaborationWireMapper.java",
+        "symbol": "nodePath",
+        "mutation": "replace one path node name with its valid code or reverse the path order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/nodePath",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {"ref": "<fixture-region-id>", "code": "acceptance-region", "name": "Acceptance Region", "nodeType": "REGION"},
+            {"ref": "<fixture-project-id>", "code": "acceptance-project", "name": "Acceptance Project", "nodeType": "PROJECT"},
+            {"ref": "<fixture-store-id>", "code": "acceptance-store", "name": "Acceptance Store", "nodeType": "STORE"}
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for store binding"
+        },
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "EFFECTIVE",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/businessScope",
+          "jsonType": "array",
+          "fixtureExpected": ["ORDER_SYNC"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for scoped provider"
+        },
+        {
+          "jsonPointer": "/capabilityClass",
+          "jsonType": "null",
+          "fixtureExpected": null,
+          "comparison": "EXACT_NULL",
+          "nullableOrEmptyCounterexample": "exact-null fixture is required for an INTERNAL_MAPPING binding"
+        }
+      ]
+    },
+    {
+      "family": "collaborationBinding",
+      "scenarioId": "collaboration.binding-page-searches-node-name",
+      "operationId": "deletePlatformOwnerBinding",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/externalcollaboration/ExternalCollaborationWireMapper.java",
+        "symbol": "nodePath",
+        "mutation": "replace one path node name with its valid code or reverse the path order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/nodePath",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {"ref": "<fixture-region-id>", "code": "acceptance-region", "name": "Acceptance Region", "nodeType": "REGION"},
+            {"ref": "<fixture-project-id>", "code": "acceptance-project", "name": "Acceptance Project", "nodeType": "PROJECT"},
+            {"ref": "<fixture-store-id>", "code": "acceptance-store", "name": "Acceptance Store", "nodeType": "STORE"}
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for store binding"
+        },
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "DELETED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/businessScope",
+          "jsonType": "array",
+          "fixtureExpected": ["MEMBER_BENEFIT"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for scoped provider"
+        }
+      ]
+    },
+    {
+      "family": "collaborationBinding",
+      "scenarioId": "collaboration.binding-page-searches-node-name",
+      "operationId": "createPlatformOwnerBinding",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/externalcollaboration/ExternalCollaborationWireMapper.java",
+        "symbol": "nodePath",
+        "mutation": "replace one path node name with its valid code or reverse the path order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/nodePath",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {"ref": "<fixture-region-id>", "code": "acceptance-region", "name": "Acceptance Region", "nodeType": "REGION"},
+            {"ref": "<fixture-project-id>", "code": "acceptance-project", "name": "Acceptance Project", "nodeType": "PROJECT"},
+            {"ref": "<fixture-store-id>", "code": "acceptance-store", "name": "Acceptance Store", "nodeType": "STORE"}
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for store binding"
+        },
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "EFFECTIVE",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/businessScope",
+          "jsonType": "array",
+          "fixtureExpected": ["MEMBER_BENEFIT"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for scoped provider"
+        },
+        {
+          "jsonPointer": "/capabilityClass",
+          "jsonType": "null",
+          "fixtureExpected": null,
+          "comparison": "EXACT_NULL",
+          "nullableOrEmptyCounterexample": "exact-null fixture is required for a NO_MAPPING binding"
+        }
+      ]
+    },
+    {
+      "family": "collaborationBinding",
+      "scenarioId": "business-channel.same-store-two-owner-ids",
+      "operationId": "getOperationsOwnerBindingDetail",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/externalcollaboration/ExternalCollaborationWireMapper.java",
+        "symbol": "nodePath",
+        "mutation": "replace one path node name with its valid code or reverse the path order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/nodePath",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {"ref": "<fixture-region-id>", "code": "acceptance-region", "name": "Acceptance Region", "nodeType": "REGION"},
+            {"ref": "<fixture-project-id>", "code": "acceptance-project", "name": "Acceptance Project", "nodeType": "PROJECT"},
+            {"ref": "<fixture-store-id>", "code": "acceptance-store", "name": "Acceptance Store", "nodeType": "STORE"}
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for store binding"
+        },
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "PENDING_AUTHORIZATION",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/businessScope",
+          "jsonType": "array",
+          "fixtureExpected": ["TAKEAWAY"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for scoped provider"
+        },
+        {
+          "jsonPointer": "/capabilityClass",
+          "jsonType": "string",
+          "fixtureExpected": "TAKEAWAY",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong capability class is red for an external binding"
+        }
+      ]
+    },
+    {
+      "family": "collaborationBinding",
+      "scenarioId": "business-channel.same-store-two-owner-ids",
+      "operationId": "createOperationsOwnerBinding",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/externalcollaboration/ExternalCollaborationWireMapper.java",
+        "symbol": "nodePath",
+        "mutation": "replace one path node name with its valid code or reverse the path order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/nodePath",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {"ref": "<fixture-region-id>", "code": "acceptance-region", "name": "Acceptance Region", "nodeType": "REGION"},
+            {"ref": "<fixture-project-id>", "code": "acceptance-project", "name": "Acceptance Project", "nodeType": "PROJECT"},
+            {"ref": "<fixture-store-id>", "code": "acceptance-store", "name": "Acceptance Store", "nodeType": "STORE"}
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for store binding"
+        },
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "PENDING_AUTHORIZATION",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/businessScope",
+          "jsonType": "array",
+          "fixtureExpected": ["TAKEAWAY"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for scoped provider"
+        },
+        {
+          "jsonPointer": "/capabilityClass",
+          "jsonType": "string",
+          "fixtureExpected": "TAKEAWAY",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong capability class is red for an external binding"
+        }
+      ]
+    },
+    {
+      "family": "collaborationBinding",
+      "scenarioId": "business-channel.same-store-two-owner-ids",
+      "operationId": "deleteOperationsOwnerBinding",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/externalcollaboration/ExternalCollaborationWireMapper.java",
+        "symbol": "nodePath",
+        "mutation": "replace one path node name with its valid code or reverse the path order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/nodePath",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {"ref": "<fixture-region-id>", "code": "acceptance-region", "name": "Acceptance Region", "nodeType": "REGION"},
+            {"ref": "<fixture-project-id>", "code": "acceptance-project", "name": "Acceptance Project", "nodeType": "PROJECT"},
+            {"ref": "<fixture-store-id>", "code": "acceptance-store", "name": "Acceptance Store", "nodeType": "STORE"}
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for store binding"
+        },
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "DELETED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/businessScope",
+          "jsonType": "array",
+          "fixtureExpected": ["TAKEAWAY"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for scoped provider"
+        }
+      ]
+    },
+    {
+      "family": "collaborationCatalog",
+      "scenarioId": "collaboration.catalog-readback",
+      "operationId": "getPlatformExternalCollaborationTree",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/externalcollaboration/ExternalCollaborationWireMapper.java",
+        "symbol": "providerProfile.businessScope",
+        "mutation": "replace a legal enum member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/externalSystems/0/externalSystemCode",
+          "jsonType": "string",
+          "fixtureExpected": "MEITUAN",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/providerProfiles/0/businessScope",
+          "jsonType": "array",
+          "fixtureExpected": ["provider scope codes"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red for catalog provider"
+        },
+        {
+          "jsonPointer": "/providerProfiles/0/bindableNodeTypes",
+          "jsonType": "array",
+          "fixtureExpected": ["five node types"],
+          "comparison": "EXACT_SET_CARDINALITY",
+          "nullableOrEmptyCounterexample": "empty array is red"
+        }
+      ]
+    },
+    {
+      "family": "collaborationCatalog",
+      "scenarioId": "collaboration.catalog-readback",
+      "operationId": "getPlatformExternalSystemDetail",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/externalcollaboration/ExternalCollaborationWireMapper.java",
+        "symbol": "capability.attributeValues",
+        "mutation": "replace a legal attribute enum member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/externalSystemCode",
+          "jsonType": "string",
+          "fixtureExpected": "MEITUAN",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/capabilities/0/capabilityClass",
+          "jsonType": "string",
+          "fixtureExpected": "GROUP_BUY",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/capabilities/0/attributeValues/groupBuyMappingDirection",
+          "jsonType": "string",
+          "fixtureExpected": "EXTERNAL_TO_INTERNAL",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        }
+      ]
+    },
+    {
+      "family": "collaborationCatalog",
+      "scenarioId": "collaboration.catalog-readback",
+      "operationId": "getPlatformProviderProfileDetail",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/externalcollaboration/ExternalCollaborationWireMapper.java",
+        "symbol": "providerProfile.businessScope",
+        "mutation": "replace a legal enum member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/providerCode",
+          "jsonType": "string",
+          "fixtureExpected": "MEITUAN_ISV_A",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/businessScope",
+          "jsonType": "array",
+          "fixtureExpected": ["provider scope codes"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red"
+        },
+        {
+          "jsonPointer": "/bindableNodeTypes",
+          "jsonType": "array",
+          "fixtureExpected": ["five node types"],
+          "comparison": "EXACT_SET_CARDINALITY",
+          "nullableOrEmptyCounterexample": "empty array is red"
+        },
+        {
+          "jsonPointer": "/authenticationKind",
+          "jsonType": "string",
+          "fixtureExpected": "EXTERNAL_GRANT",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        }
+      ]
+    },
+    {
+      "family": "collaborationCatalog",
+      "scenarioId": "collaboration.catalog-readback",
+      "operationId": "getPlatformExternalCapabilityDictionary",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/externalcollaboration/ExternalCollaborationWireMapper.java",
+        "symbol": "capability.attributeValues",
+        "mutation": "replace a legal attribute enum member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/externalSystems/0/externalSystemCode",
+          "jsonType": "string",
+          "fixtureExpected": "MEITUAN",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/externalSystems/0/capabilities/0/capabilityClass",
+          "jsonType": "string",
+          "fixtureExpected": "GROUP_BUY",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/providerProfiles/0/businessScope",
+          "jsonType": "array",
+          "fixtureExpected": ["provider scope codes"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red"
+        }
+      ]
+    },
+    {
+      "family": "collaborationCatalog",
+      "scenarioId": "collaboration.catalog-readback",
+      "operationId": "getOperationsExternalCapabilityDictionary",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/externalcollaboration/ExternalCollaborationWireMapper.java",
+        "symbol": "capability.attributeValues",
+        "mutation": "replace a legal attribute enum member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/externalSystems/0/externalSystemCode",
+          "jsonType": "string",
+          "fixtureExpected": "MEITUAN",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/providerProfiles/0/businessScope",
+          "jsonType": "array",
+          "fixtureExpected": ["provider scope codes"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red"
+        },
+        {
+          "jsonPointer": "/providerProfiles/0/bindableNodeTypes",
+          "jsonType": "array",
+          "fixtureExpected": ["five node types"],
+          "comparison": "EXACT_SET_CARDINALITY",
+          "nullableOrEmptyCounterexample": "empty array is red"
+        }
+      ]
+    },
+    {
+      "family": "collaborationCatalog",
+      "scenarioId": "collaboration.catalog-readback",
+      "operationId": "getOperationsExternalProviderCandidates",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/externalcollaboration/ExternalCollaborationWireMapper.java",
+        "symbol": "providerProfile.businessScope",
+        "mutation": "replace a legal enum member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/providerCode",
+          "jsonType": "string",
+          "fixtureExpected": "MEITUAN_ISV_A",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type is red"
+        },
+        {
+          "jsonPointer": "/items/0/businessScope",
+          "jsonType": "array",
+          "fixtureExpected": ["provider scope codes"],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "empty array is red"
+        },
+        {
+          "jsonPointer": "/items/0/bindableNodeTypes",
+          "jsonType": "array",
+          "fixtureExpected": ["five node types"],
+          "comparison": "EXACT_SET_CARDINALITY",
+          "nullableOrEmptyCounterexample": "empty array is red"
+        }
+      ]
+    },
+    {
+      "family": "accountPresence",
+      "scenarioId": "iam.invitation-readiness-account-presence-status",
+      "operationId": "verifyPublicInvitationOtp",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java",
+        "symbol": "response.accountExists",
+        "mutation": "replace a legal account presence enum member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/accountExists",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/nextStep",
+          "jsonType": "string",
+          "fixtureExpected": "COMPLETE_CREDENTIALS",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "accountPresence",
+      "scenarioId": "iam.invitation-readiness-account-presence-status",
+      "operationId": "savePublicInvitationCredentials",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java",
+        "symbol": "response.accountExists",
+        "mutation": "replace a legal account presence enum member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/accountExists",
+          "jsonType": "string",
+          "fixtureExpected": "DISABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/nextStep",
+          "jsonType": "string",
+          "fixtureExpected": "FINALIZE",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "contract",
+      "scenarioId": "contract.lifecycle-preserves-fields",
+      "operationId": "getPlatformContractOverviewPage",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/contract/PlatformContractOverviewController.java",
+        "symbol": "contract.items",
+        "mutation": "swap two legal contract item members or replace phase with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/contractRef/code",
+          "jsonType": "string",
+          "fixtureExpected": "ACCEPT-CONTRACT-001",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different contract number is red"
+        },
+        {
+          "jsonPointer": "/items/0/phaseName",
+          "jsonType": "string",
+          "fixtureExpected": "Opening",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/items/0/items",
+          "jsonType": "array",
+          "fixtureExpected": [
+          {
+            "code": "LATTE",
+            "name": "Latte Updated"
+          },
+          {
+            "code": "ESPRESSO",
+            "name": "Espresso Updated"
+          }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "contract",
+      "scenarioId": "contract.lifecycle-preserves-fields",
+      "operationId": "getPlatformContractOverviewDetail",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/contract/PlatformContractOverviewController.java",
+        "symbol": "contract.items",
+        "mutation": "swap two legal contract item members or replace phase with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/phaseName",
+          "jsonType": "string",
+          "fixtureExpected": "Opening",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/items",
+          "jsonType": "array",
+          "fixtureExpected": [
+          {
+            "code": "LATTE",
+            "name": "Latte Updated"
+          },
+          {
+            "code": "ESPRESSO",
+            "name": "Espresso Updated"
+          }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getWorkspaceInvitations",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/items/0/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "createWorkspaceInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getWorkspaceInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "cancelWorkspaceInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "reissueWorkspaceInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceGroupInvitations",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/items/0/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "createOperationsWorkspaceGroupInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "cancelOperationsWorkspaceGroupInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "reissueOperationsWorkspaceGroupInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceRegionInvitations",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/items/0/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "createOperationsWorkspaceRegionInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "cancelOperationsWorkspaceRegionInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "reissueOperationsWorkspaceRegionInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceProjectInvitations",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/items/0/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "createOperationsWorkspaceProjectInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "cancelOperationsWorkspaceProjectInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "reissueOperationsWorkspaceProjectInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceHeadCompanyInvitations",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/items/0/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "createOperationsWorkspaceHeadCompanyInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "cancelOperationsWorkspaceHeadCompanyInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "reissueOperationsWorkspaceHeadCompanyInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceStoreInvitations",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/items/0/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "createOperationsWorkspaceStoreInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "cancelOperationsWorkspaceStoreInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationRoute",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "reissueOperationsWorkspaceStoreInvitation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationWireMapper.java",
+        "symbol": "invitation.targetOrganizationPathNodes|invitation.invitationRouteFacts",
+        "mutation": "replace one legal path node or route fact member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        },
+        {
+          "jsonPointer": "/invitationRouteFacts",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "groupWorkspaceKey": "<fixture.groupWorkspaceKey>",
+            "invitationToken": "<fixture.invitationToken>"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal route fact is red; exact-null is valid only for a tokenless invitation"
+        }
+      ]
+    },
+    {
+      "family": "invitationCandidate",
+      "scenarioId": "pagination.workspace-user-candidates-db-page",
+      "operationId": "getWorkspaceInvitationCandidates",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationCandidatePageWireMapper.java",
+        "symbol": "organization",
+        "mutation": "replace one path node member with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/organizations/0/path",
+          "jsonType": "string",
+          "requestCase": "subjectType=ORGANIZATION",
+          "fixtureExpected": "Acceptance Group / Acceptance Region / Acceptance Project",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/roles/0/status",
+          "jsonType": "string",
+          "requestCase": "subjectType=ROLE",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/organizations/0/pathNodes",
+          "jsonType": "array",
+          "requestCase": "subjectType=ORGANIZATION",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "invitationCandidate",
+      "scenarioId": "pagination.workspace-user-candidates-db-page",
+      "operationId": "getOperationsWorkspaceGroupInvitationCandidates",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationCandidatePageWireMapper.java",
+        "symbol": "organization",
+        "mutation": "replace one path node member with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/organizations/0/path",
+          "jsonType": "string",
+          "requestCase": "subjectType=ORGANIZATION",
+          "fixtureExpected": "Acceptance Group / Acceptance Region / Acceptance Project",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/roles/0/status",
+          "jsonType": "string",
+          "requestCase": "subjectType=ROLE",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/organizations/0/pathNodes",
+          "jsonType": "array",
+          "requestCase": "subjectType=ORGANIZATION",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "invitationCandidate",
+      "scenarioId": "pagination.workspace-user-candidates-db-page",
+      "operationId": "getOperationsWorkspaceRegionInvitationCandidates",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationCandidatePageWireMapper.java",
+        "symbol": "organization",
+        "mutation": "replace one path node member with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/organizations/0/path",
+          "jsonType": "string",
+          "requestCase": "subjectType=ORGANIZATION",
+          "fixtureExpected": "Acceptance Group / Acceptance Region / Acceptance Project",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/roles/0/status",
+          "jsonType": "string",
+          "requestCase": "subjectType=ROLE",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/organizations/0/pathNodes",
+          "jsonType": "array",
+          "requestCase": "subjectType=ORGANIZATION",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "invitationCandidate",
+      "scenarioId": "pagination.workspace-user-candidates-db-page",
+      "operationId": "getOperationsWorkspaceProjectInvitationCandidates",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationCandidatePageWireMapper.java",
+        "symbol": "organization",
+        "mutation": "replace one path node member with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/organizations/0/path",
+          "jsonType": "string",
+          "requestCase": "subjectType=ORGANIZATION",
+          "fixtureExpected": "Acceptance Group / Acceptance Region / Acceptance Project",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/roles/0/status",
+          "jsonType": "string",
+          "requestCase": "subjectType=ROLE",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/organizations/0/pathNodes",
+          "jsonType": "array",
+          "requestCase": "subjectType=ORGANIZATION",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "invitationCandidate",
+      "scenarioId": "pagination.workspace-user-candidates-db-page",
+      "operationId": "getOperationsWorkspaceHeadCompanyInvitationCandidates",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationCandidatePageWireMapper.java",
+        "symbol": "organization",
+        "mutation": "replace one path node member with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/organizations/0/path",
+          "jsonType": "string",
+          "requestCase": "subjectType=ORGANIZATION",
+          "fixtureExpected": "Acceptance Group / Acceptance Region / Acceptance Project",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/roles/0/status",
+          "jsonType": "string",
+          "requestCase": "subjectType=ROLE",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/organizations/0/pathNodes",
+          "jsonType": "array",
+          "requestCase": "subjectType=ORGANIZATION",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "invitationCandidate",
+      "scenarioId": "pagination.workspace-user-candidates-db-page",
+      "operationId": "getOperationsWorkspaceStoreInvitationCandidates",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/workspaceiam/WorkspaceInvitationCandidatePageWireMapper.java",
+        "symbol": "organization",
+        "mutation": "replace one path node member with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/organizations/0/path",
+          "jsonType": "string",
+          "requestCase": "subjectType=ORGANIZATION",
+          "fixtureExpected": "Acceptance Group / Acceptance Region / Acceptance Project",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/roles/0/status",
+          "jsonType": "string",
+          "requestCase": "subjectType=ROLE",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/organizations/0/pathNodes",
+          "jsonType": "array",
+          "requestCase": "subjectType=ORGANIZATION",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getWorkspaceAccounts",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/items/0/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getWorkspaceAccount",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "transitionWorkspaceAccountStatus",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "DISABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceGroupUser",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/items/0/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceGroupUserAccount",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "revokeOperationsWorkspaceGroupUserAssignment",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/user/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/user/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceRegionUser",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/items/0/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceRegionUserAccount",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "revokeOperationsWorkspaceRegionUserAssignment",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/user/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/user/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceProjectUser",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/items/0/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceProjectUserAccount",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "revokeOperationsWorkspaceProjectUserAssignment",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/user/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/user/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceHeadCompanyUser",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/items/0/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceHeadCompanyUserAccount",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "revokeOperationsWorkspaceHeadCompanyUserAssignment",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/user/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/user/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceStoreUser",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/items/0/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/items/0/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "getOperationsWorkspaceStoreUserAccount",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "accountOrganization",
+      "scenarioId": "pagination.workspace-iam-page-owner-boundary",
+      "operationId": "revokeOperationsWorkspaceStoreUserAssignment",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+        "symbol": "user.organizationPathNodes",
+        "mutation": "replace one organization-path node with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/user/status",
+          "jsonType": "string",
+          "fixtureExpected": "ENABLED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/user/assignments/0/organizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            },
+            {
+              "ref": "<fixture-project-id>",
+              "code": "acceptance-project",
+              "name": "Acceptance Project",
+              "nodeType": "PROJECT"
+            },
+            {
+              "ref": "<fixture-store-id>",
+              "code": "acceptance-store",
+              "name": "Acceptance Store",
+              "nodeType": "STORE"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    },
+    {
+      "family": "catalog",
+      "scenarioId": "catalog.tag-navigation",
+      "operationId": "getOperationsCatalogNavigation",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java",
+        "symbol": "navigation",
+        "mutation": "replace one legal category/tag member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/data/tree",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "categoryRef": "<fixture-category-ref>",
+              "code": "<fixture-category-code>",
+              "name": "<fixture-category-name>",
+              "parentCategoryRef": null,
+              "version": 1,
+              "displayOrder": 0,
+              "count": 0,
+              "countSemantics": "SELF_ONLY",
+              "deletionAvailability": {
+                "canDelete": true,
+                "subtreeSize": 1,
+                "blockingReferenceCount": 0,
+                "blockingReferences": {
+                  "count": 0,
+                  "references": []
+                }
+              }
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/data/tags",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "tagRef": "fixture-tag-a",
+              "code": "FIXTURE-TAG-A",
+              "name": "Fixture tag A",
+              "count": 1
+            },
+            {
+              "tagRef": "fixture-tag-b",
+              "code": "FIXTURE-TAG-B",
+              "name": "Fixture tag B",
+              "count": 0
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "catalog",
+      "scenarioId": "catalog.item-tag-filter",
+      "operationId": "getOperationsCatalogItems",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java",
+        "symbol": "items",
+        "mutation": "replace one categoryPath member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/data/items/0/categoryPath",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "categoryRef": "fixture-root",
+              "code": "FIXTURE-ROOT",
+              "name": "Fixture root"
+            },
+            {
+              "categoryRef": "fixture-branch",
+              "code": "FIXTURE-BRANCH",
+              "name": "Fixture branch"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/data/items/0/tags",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "tagRef": "fixture-tag-a",
+              "code": "FIXTURE-TAG-A",
+              "name": "Fixture tag A"
+            },
+            {
+              "tagRef": "fixture-tag-b",
+              "code": "FIXTURE-TAG-B",
+              "name": "Fixture tag B"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "catalog",
+      "scenarioId": "catalog.item-tag-filter",
+      "operationId": "getOperationsCatalogItem",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java",
+        "symbol": "item",
+        "mutation": "replace one reference member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/data/item/categoryPath",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "categoryRef": "fixture-root",
+              "code": "FIXTURE-ROOT",
+              "name": "Fixture root"
+            },
+            {
+              "categoryRef": "fixture-branch",
+              "code": "FIXTURE-BRANCH",
+              "name": "Fixture branch"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/data/references",
+          "jsonType": "array",
+          "fixtureExpected": [],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a non-empty reference collection in the ordinary-item fixture is red"
+        }
+      ]
+    },
+    {
+      "family": "catalog",
+      "scenarioId": "catalog.item-sku-page-contract",
+      "operationId": "getOperationsCatalogItemSkus",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java",
+        "symbol": "itemSkus",
+        "mutation": "swap two legal SKU members in the returned ordered page"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/data/items",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "productSkuRef": "<fixture-sku-ref-1>",
+              "skuCode": "FIXTURE-SKU-A",
+              "skuName": "Fixture SKU A"
+            },
+            {
+              "productSkuRef": "<fixture-sku-ref-2>",
+              "skuCode": "FIXTURE-SKU-B",
+              "skuName": "Fixture SKU B"
+            },
+            {
+              "productSkuRef": "<fixture-sku-ref-3>",
+              "skuCode": "FIXTURE-SKU-C",
+              "skuName": "Fixture SKU C"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "catalog",
+      "scenarioId": "catalog.category-relation-integrity",
+      "operationId": "createOperationsCatalogCategory",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java",
+        "symbol": "createCatalogCategory",
+        "mutation": "replace a category readback member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/result/categoryRef",
+          "jsonType": "string",
+          "fixtureExpected": "fixture-category-ref",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/result/name",
+          "jsonType": "string",
+          "fixtureExpected": "Fixture category",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "catalog",
+      "scenarioId": "catalog.category-relation-integrity",
+      "operationId": "updateOperationsCatalogCategory",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java",
+        "symbol": "updateCatalogCategory",
+        "mutation": "replace a category readback member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/result/categoryRef",
+          "jsonType": "string",
+          "fixtureExpected": "fixture-category-ref",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/result/name",
+          "jsonType": "string",
+          "fixtureExpected": "Fixture category",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "catalog",
+      "scenarioId": "catalog.category-relation-integrity",
+      "operationId": "moveOperationsCatalogCategory",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java",
+        "symbol": "moveCatalogCategory",
+        "mutation": "replace a category readback member with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/result/categoryRef",
+          "jsonType": "string",
+          "fixtureExpected": "fixture-category-ref",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/result/name",
+          "jsonType": "string",
+          "fixtureExpected": "Fixture category",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "catalog",
+      "scenarioId": "catalog.category-relation-integrity",
+      "operationId": "transitionOperationsCatalogCategoryStatus",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java",
+        "symbol": "category.result.categoryRef|category.result.status",
+        "mutation": "replace the terminal VOIDED status or category identity with another legal fixture member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/result/categoryRef",
+          "jsonType": "string",
+          "fixtureExpected": "fixture-category-ref",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal category identity is red"
+        },
+        {
+          "jsonPointer": "/result/status",
+          "jsonType": "string",
+          "fixtureExpected": "VOIDED",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a non-terminal legal lifecycle member is red"
+        }
+      ]
+    },
+    {
+      "family": "catalog",
+      "scenarioId": "inventory-page-and-detail-readback",
+      "operationId": "getOperationsInventoryTargets",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java",
+        "symbol": "readTargets",
+        "mutation": "replace one inventory target product name with another legal fixture name"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/data/items/0/productName",
+          "jsonType": "string",
+          "fixtureExpected": "Fixture product A",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/data/items/0/targetRef",
+          "jsonType": "string",
+          "fixtureExpected": "fixture-target-ref",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "catalog",
+      "scenarioId": "inventory.current-readback-separates-lazy-zones",
+      "operationId": "getOperationsInventoryTarget",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java",
+        "symbol": "readTarget",
+        "mutation": "replace one typed inventory conversion member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/target/productName",
+          "jsonType": "string",
+          "fixtureExpected": "Fixture product A",
+          "comparison": "EXACT_VALUE",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/changeSummary",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "today": {
+              "increase": "0",
+              "decrease": "0",
+              "netChange": "0",
+              "entryCount": 0
+            },
+            "sevenDays": {
+              "increase": "0",
+              "decrease": "0",
+              "netChange": "0",
+              "entryCount": 0
+            },
+            "thirtyDays": {
+              "increase": "0",
+              "decrease": "0",
+              "netChange": "0",
+              "entryCount": 0
+            }
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "catalog",
+      "scenarioId": "inventory.counting-unit-precision-semantics",
+      "operationId": "countOperationsInventoryTarget",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java",
+        "symbol": "countTarget",
+        "mutation": "replace one legal inventory write-readback member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/result",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "targetRef": "fixture-target-ref",
+            "before": "0",
+            "change": "1",
+            "after": "1",
+            "ledgerEntryRef": "<fixture-ledger-entry-ref>",
+            "stockState": "OK",
+            "version": 2
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "catalog",
+      "scenarioId": "inventory.current-readback-separates-lazy-zones",
+      "operationId": "increaseOperationsInventoryTarget",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java",
+        "symbol": "increaseTarget",
+        "mutation": "replace one legal inventory write-readback member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/result",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "targetRef": "fixture-target-ref",
+            "before": "0",
+            "change": "1",
+            "after": "1",
+            "ledgerEntryRef": "<fixture-ledger-entry-ref>",
+            "stockState": "OK",
+            "version": 2
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "catalog",
+      "scenarioId": "inventory.current-readback-separates-lazy-zones",
+      "operationId": "adjustOperationsInventoryTarget",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java",
+        "symbol": "adjustTarget",
+        "mutation": "replace one legal inventory write-readback member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/result",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "targetRef": "fixture-target-ref",
+            "before": "1",
+            "change": "-1",
+            "after": "0",
+            "ledgerEntryRef": "<fixture-ledger-entry-ref>",
+            "stockState": "OUT",
+            "version": 3
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    },
+    {
+      "family": "catalog",
+      "scenarioId": "inventory.current-readback-separates-lazy-zones",
+      "operationId": "updateOperationsInventoryTargetConfiguration",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java",
+        "symbol": "updateTargetConfiguration",
+        "mutation": "replace one typed inventory configuration member with another legal member"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/changeSummary",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "today": {
+              "increase": "0",
+              "decrease": "0",
+              "netChange": "0",
+              "entryCount": 0
+            },
+            "sevenDays": {
+              "increase": "0",
+              "decrease": "0",
+              "netChange": "0",
+              "entryCount": 0
+            },
+            "thirtyDays": {
+              "increase": "0",
+              "decrease": "0",
+              "netChange": "0",
+              "entryCount": 0
+            }
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        },
+        {
+          "jsonPointer": "/configuration",
+          "jsonType": "object",
+          "fixtureExpected": {
+            "allowNegative": false,
+            "lowStockThreshold": "0",
+            "countingUnitSnapshot": {
+              "unitRef": "fixture-unit",
+              "conversionFactor": "1"
+            },
+            "conversionFactor": "1"
+          },
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type or a different legal member is red"
+        }
+      ]
+    }
+  ],
+  "supportingOperations": [
+    {
+      "family": "invitationRoute",
+      "scenarioId": "iam.public-invitation-view",
+      "operationId": "getPublicInvitationView",
+      "productionMutationAnchor": {
+        "file": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java",
+        "symbol": "invitation.targetOrganizationPathNodes",
+        "mutation": "replace one target path node member with another legal fixture member or reverse node order"
+      },
+      "pointers": [
+        {
+          "jsonPointer": "/targetOrganizationPathNodes",
+          "jsonType": "array",
+          "fixtureExpected": [
+            {
+              "ref": "<fixture-region-id>",
+              "code": "acceptance-region",
+              "name": "Acceptance Region",
+              "nodeType": "REGION"
+            }
+          ],
+          "comparison": "DEEP_ORDERED",
+          "nullableOrEmptyCounterexample": "missing/null/wrong type, a different legal member, or reversed node order is red"
+        }
+      ]
+    }
+  ]
+}

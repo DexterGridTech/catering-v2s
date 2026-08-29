@@ -5,32 +5,12 @@
       "externalSystemCode": "MEITUAN",
       "displayName": "美团",
       "catalogStatus": "PLANNED",
-      "catalogStatusDisplayName": "计划中",
-      "attributeDictionary": [
-        {
-          "fieldKey": "groupBuyMappingDirection",
-          "label": "团购商品映射方向",
-          "helpText": "团购商品由外部映射到内部，还是由内部映射到外部",
-          "controlKind": "readonlySummary",
-          "optionSourceRef": { "kind": "enum", "enumKind": "GROUP_BUY_MAPPING_DIRECTION" }
-        },
-        {
-          "fieldKey": "menuCollaborationDirection",
-          "label": "菜单协作方向",
-          "helpText": "只拉取外部菜单，还是支持将本地菜单推送到外部平台",
-          "controlKind": "readonlySummary",
-          "optionSourceRef": { "kind": "enum", "enumKind": "MENU_COLLABORATION_DIRECTION" }
-        }
-      ],
       "capabilities": [
         {
           "capabilityClass": "GROUP_BUY",
           "displayName": "团购",
           "attributeValues": {
             "groupBuyMappingDirection": "EXTERNAL_TO_INTERNAL"
-          },
-          "attributeValueLabels": {
-            "groupBuyMappingDirection": "外部映射到内部"
           }
         },
         {
@@ -38,16 +18,12 @@
           "displayName": "外卖",
           "attributeValues": {
             "menuCollaborationDirection": "PULL_ONLY"
-          },
-          "attributeValueLabels": {
-            "menuCollaborationDirection": "仅拉取外部菜单"
           }
         },
         {
           "capabilityClass": "TAKEAWAY_DELIVERY",
           "displayName": "外卖配送",
-          "attributeValues": {},
-          "attributeValueLabels": {}
+          "attributeValues": {}
         }
       ]
     },
@@ -55,32 +31,12 @@
       "externalSystemCode": "ELEME",
       "displayName": "饿了么",
       "catalogStatus": "PLANNED",
-      "catalogStatusDisplayName": "计划中",
-      "attributeDictionary": [
-        {
-          "fieldKey": "groupBuyMappingDirection",
-          "label": "团购商品映射方向",
-          "helpText": "团购商品由外部映射到内部，还是由内部映射到外部",
-          "controlKind": "readonlySummary",
-          "optionSourceRef": { "kind": "enum", "enumKind": "GROUP_BUY_MAPPING_DIRECTION" }
-        },
-        {
-          "fieldKey": "menuCollaborationDirection",
-          "label": "菜单协作方向",
-          "helpText": "只拉取外部菜单，还是支持将本地菜单推送到外部平台",
-          "controlKind": "readonlySummary",
-          "optionSourceRef": { "kind": "enum", "enumKind": "MENU_COLLABORATION_DIRECTION" }
-        }
-      ],
       "capabilities": [
         {
           "capabilityClass": "GROUP_BUY",
           "displayName": "团购",
           "attributeValues": {
             "groupBuyMappingDirection": "INTERNAL_TO_EXTERNAL"
-          },
-          "attributeValueLabels": {
-            "groupBuyMappingDirection": "内部映射到外部"
           }
         },
         {
@@ -88,9 +44,6 @@
           "displayName": "外卖",
           "attributeValues": {
             "menuCollaborationDirection": "PULL_ONLY"
-          },
-          "attributeValueLabels": {
-            "menuCollaborationDirection": "仅拉取外部菜单"
           }
         }
       ]
@@ -99,14 +52,11 @@
       "externalSystemCode": "SHOPPING_MALL_ERP",
       "displayName": "购物中心 ERP",
       "catalogStatus": "AVAILABLE",
-      "catalogStatusDisplayName": "可用",
-      "attributeDictionary": [],
       "capabilities": [
         {
           "capabilityClass": "ORDER_SYNC",
           "displayName": "订单同步",
-          "attributeValues": {},
-          "attributeValueLabels": {}
+          "attributeValues": {}
         }
       ]
     },
@@ -114,14 +64,11 @@
       "externalSystemCode": "MEMBERSHIP_COUPON",
       "displayName": "会员卡券系统",
       "catalogStatus": "AVAILABLE",
-      "catalogStatusDisplayName": "可用",
-      "attributeDictionary": [],
       "capabilities": [
         {
           "capabilityClass": "MEMBER_BENEFIT",
           "displayName": "用户与权益",
-          "attributeValues": {},
-          "attributeValueLabels": {}
+          "attributeValues": {}
         }
       ]
     }
@@ -132,105 +79,70 @@
       "displayName": "美团外卖",
       "externalSystemCode": "MEITUAN",
       "businessScope": ["TAKEAWAY"],
-      "businessScopeDisplayNames": ["外卖"],
       "bindableNodeTypes": ["COMMERCIAL_GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE"],
-      "bindableNodeTypeDisplayNames": ["集团", "大区", "项目", "总公司", "门店"],
       "authenticationKind": "EXTERNAL_GRANT",
-      "authenticationKindDisplayName": "需要外部平台授权",
       "unbindKind": "REQUIRES_ADAPTER_UNBIND",
-      "unbindKindDisplayName": "需外部平台解除授权",
-      "catalogStatus": "PLANNED",
-      "catalogStatusDisplayName": "计划中"
+      "catalogStatus": "PLANNED"
     },
     {
       "providerCode": "MEITUAN_ISV_B",
       "displayName": "美团外卖与团购",
       "externalSystemCode": "MEITUAN",
       "businessScope": ["TAKEAWAY", "GROUP_BUY"],
-      "businessScopeDisplayNames": ["外卖", "团购"],
       "bindableNodeTypes": ["COMMERCIAL_GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE"],
-      "bindableNodeTypeDisplayNames": ["集团", "大区", "项目", "总公司", "门店"],
       "authenticationKind": "EXTERNAL_GRANT",
-      "authenticationKindDisplayName": "需要外部平台授权",
       "unbindKind": "REQUIRES_ADAPTER_UNBIND",
-      "unbindKindDisplayName": "需外部平台解除授权",
-      "catalogStatus": "PLANNED",
-      "catalogStatusDisplayName": "计划中"
+      "catalogStatus": "PLANNED"
     },
     {
       "providerCode": "ELEME_OPEN",
       "displayName": "饿了么外卖与团购",
       "externalSystemCode": "ELEME",
       "businessScope": ["TAKEAWAY", "GROUP_BUY"],
-      "businessScopeDisplayNames": ["外卖", "团购"],
       "bindableNodeTypes": ["COMMERCIAL_GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE"],
-      "bindableNodeTypeDisplayNames": ["集团", "大区", "项目", "总公司", "门店"],
       "authenticationKind": "EXTERNAL_GRANT",
-      "authenticationKindDisplayName": "需要外部平台授权",
       "unbindKind": "LOCAL_ONLY",
-      "unbindKindDisplayName": "本地解除绑定",
-      "catalogStatus": "PLANNED",
-      "catalogStatusDisplayName": "计划中"
+      "catalogStatus": "PLANNED"
     },
     {
       "providerCode": "SHOPPING_MALL_ERP_DEFAULT",
       "displayName": "购物中心 ERP 默认档案",
       "externalSystemCode": "SHOPPING_MALL_ERP",
       "businessScope": ["ORDER_SYNC"],
-      "businessScopeDisplayNames": ["订单同步"],
       "bindableNodeTypes": ["COMMERCIAL_GROUP", "REGION", "PROJECT"],
-      "bindableNodeTypeDisplayNames": ["集团", "大区", "项目"],
       "authenticationKind": "INTERNAL_MAPPING",
-      "authenticationKindDisplayName": "内部主体映射",
       "unbindKind": "LOCAL_ONLY",
-      "unbindKindDisplayName": "本地解除绑定",
-      "catalogStatus": "AVAILABLE",
-      "catalogStatusDisplayName": "可用"
+      "catalogStatus": "AVAILABLE"
     },
     {
       "providerCode": "MEMBERSHIP_COUPON_GROUP",
       "displayName": "集团会员卡券",
       "externalSystemCode": "MEMBERSHIP_COUPON",
       "businessScope": ["MEMBER_BENEFIT"],
-      "businessScopeDisplayNames": ["用户与权益"],
       "bindableNodeTypes": ["COMMERCIAL_GROUP"],
-      "bindableNodeTypeDisplayNames": ["集团"],
       "authenticationKind": "INTERNAL_MAPPING",
-      "authenticationKindDisplayName": "内部主体映射",
       "unbindKind": "LOCAL_ONLY",
-      "unbindKindDisplayName": "本地解除绑定",
-      "catalogStatus": "AVAILABLE",
-      "catalogStatusDisplayName": "可用"
+      "catalogStatus": "AVAILABLE"
     },
     {
       "providerCode": "MEMBERSHIP_COUPON_PROJECT",
       "displayName": "项目会员卡券",
       "externalSystemCode": "MEMBERSHIP_COUPON",
       "businessScope": ["MEMBER_BENEFIT"],
-      "businessScopeDisplayNames": ["用户与权益"],
       "bindableNodeTypes": ["PROJECT"],
-      "bindableNodeTypeDisplayNames": ["项目"],
       "authenticationKind": "INTERNAL_MAPPING",
-      "authenticationKindDisplayName": "内部主体映射",
       "unbindKind": "LOCAL_ONLY",
-      "unbindKindDisplayName": "本地解除绑定",
-      "catalogStatus": "AVAILABLE",
-      "catalogStatusDisplayName": "可用"
+      "catalogStatus": "AVAILABLE"
     },
     {
       "providerCode": "MEMBERSHIP_COUPON_STORE",
       "displayName": "门店自有会员卡券",
       "externalSystemCode": "MEMBERSHIP_COUPON",
       "businessScope": ["MEMBER_BENEFIT"],
-      "businessScopeDisplayNames": ["用户与权益"],
       "bindableNodeTypes": ["STORE"],
-      "bindableNodeTypeDisplayNames": ["门店"],
       "authenticationKind": "NO_MAPPING",
-      "authenticationKindDisplayName": "无需主体映射",
       "unbindKind": "LOCAL_ONLY",
-      "unbindKindDisplayName": "本地解除绑定",
-      "catalogStatus": "AVAILABLE",
-      "catalogStatusDisplayName": "可用"
+      "catalogStatus": "AVAILABLE"
     }
   ]
 }

@@ -19,6 +19,7 @@ import {formatCodeNamePath, formatNameCode, NameCodePathText, NameCodeText} from
 import {activeInvitationPageUrl} from './presentation/activeInvitationPageUrl';
 import {EllipsisTooltip} from './presentation/EllipsisTooltip';
 import {ValidityStatus} from './presentation/validityStatus';
+import {closedCodeLabel, isKnownClosedCode} from './presentation/closedCode';
 import {wireUuid} from './http/wireUuid';
 import {MOBILE_PATTERN} from './validation/mobilePattern';
 import {collectCursorPages, mergeCursorCandidateItems} from './list/useCursorCandidates';
@@ -34,6 +35,14 @@ import {
 } from './list/usePageQuery';
 
 describe('admin UI foundation contract and lifecycle primitives', () => {
+  it('renders unknown closed-set values visibly and reports them as not actionable', () => {
+    const labels = {ENABLED: '启用', DISABLED: '停用'} as const;
+    expect(closedCodeLabel(labels, 'MYSTERY')).toBe('当前状态无法识别');
+    expect(isKnownClosedCode(labels, 'MYSTERY')).toBe(false);
+    expect(closedCodeLabel(labels, 'ENABLED')).toBe('启用');
+    expect(isKnownClosedCode(labels, 'ENABLED')).toBe(true);
+  });
+
   it('accepts only actual UUID values at generated-wire boundaries', () => {
     expect(wireUuid('00000000-0000-4000-8000-000000000001')).toBe('00000000-0000-4000-8000-000000000001');
     expect(() => wireUuid('CATALOG-001')).toThrow('WIRE_UUID_REQUIRED');
@@ -211,6 +220,25 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
     expect(path).toContain('(EAST)');
     expect(path).toContain('河畔项目');
     expect(path).toContain('(RIVER)');
+    const structuredPath = renderToStaticMarkup(
+      createElement(NameCodePathText, {
+        nodes: [
+          {ref: 'region-ref', code: 'EAST', name: '东区', nodeType: 'REGION'},
+          {ref: 'project-ref', code: 'RIVER', name: '河畔项目', nodeType: 'PROJECT'},
+        ],
+      }),
+    );
+    expect(structuredPath).toContain('东区');
+    expect(structuredPath).toContain('(EAST)');
+    expect(structuredPath).toContain('河畔项目');
+    expect(structuredPath).toContain('(RIVER)');
+    expect(
+      renderToStaticMarkup(
+        createElement(NameCodePathText, {
+          nodes: [{ref: 'missing-name', code: 'HIDDEN', name: '', nodeType: 'STORE'}],
+        }),
+      ),
+    ).not.toContain('HIDDEN');
   });
   it('renders owner task paths segment by segment without rewriting malformed transport values', () => {
     expect(formatCodeNamePath('EAST 东区 / RIVER 河畔项目 / S-OP 河畔茶里店')).toBe(
@@ -239,12 +267,19 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
   });
 
   it('exposes an invitation link only while the workspace-IAM owner reports it ACTIVE', () => {
-    const invitationPageUrl = '/operations/invitations/aurora/token';
-    expect(activeInvitationPageUrl({status: 'ACTIVE', invitationPageUrl})).toBe(invitationPageUrl);
+    expect(
+      activeInvitationPageUrl({
+        status: 'ACTIVE',
+        routeFacts: {groupWorkspaceKey: 'aurora group', invitationToken: 'token/one'},
+      }),
+    ).toBe('/operations/invitations/aurora%20group/token%2Fone');
+    expect(
+      activeInvitationPageUrl({status: 'ACTIVE', routeFacts: {groupWorkspaceKey: ' ', invitationToken: 'token'}}),
+    ).toBeUndefined();
     for (const status of ['CANCELLED', 'EXPIRED', 'COMPLETED', 'UNKNOWN']) {
-      expect(activeInvitationPageUrl({status, invitationPageUrl})).toBeUndefined();
+      expect(activeInvitationPageUrl({status})).toBeUndefined();
     }
-    expect(activeInvitationPageUrl({status: 'ACTIVE', invitationPageUrl: '   '})).toBeUndefined();
+    expect(activeInvitationPageUrl({status: 'ACTIVE'})).toBeUndefined();
   });
   it('exposes the generated shared HTTP protocol without local aliases', () => {
     expect(platformHttpProtocol.CORRELATION_ID).toBeTruthy();

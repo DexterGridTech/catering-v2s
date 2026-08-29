@@ -1,6 +1,7 @@
 package com.catering.v2s.app.edge.operations.context;
 
 import com.catering.v2s.app.edge.generated.backendperformancem1.BackendPerformanceM1CommandExecutionBindings;
+import com.catering.v2s.app.edge.generated.wire.OrganizationPathNode;
 import com.catering.v2s.app.edge.generated.wire.ServiceNodeType;
 import com.catering.v2s.app.edge.generated.wire.SortDirection;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceAccountStatus;
@@ -452,12 +453,20 @@ public final class OperationsWorkspaceUserController {
                 value.roleId().toString(),
                 value.roleName(),
                 ServiceNodeType.valueOf(value.serviceNodeType()),
-                value.organizationPath(),
+                value.organizationPathNodes().stream()
+                        .map(OperationsWorkspaceUserController::pathNode)
+                        .toList(),
                 value.status(),
                 value.source(),
                 value.revision(),
                 value.createdAt(),
                 value.updatedAt());
+    }
+
+    private static OrganizationPathNode pathNode(
+            com.catering.v2s.organization.api.OrganizationTaskPathLookup.TaskPathNode value) {
+        return new OrganizationPathNode(
+                value.ref(), value.code(), value.name(), ServiceNodeType.valueOf(value.nodeType()));
     }
 
     private static WorkspaceUserInvitationHistoryItem invitation(WorkspaceUserService.Invitation value) {

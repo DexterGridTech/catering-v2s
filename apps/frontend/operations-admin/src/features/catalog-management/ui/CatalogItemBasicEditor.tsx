@@ -326,7 +326,7 @@ export function CatalogItemBasicEditor({
             manifest={manifest}
             shapeKey={detail.item.shapeKey}
             value={categoryRef}
-            selectedPathLabels={detail.item.categoryPathLabels}
+            selectedPathLabels={detail.item.categoryPath.map(node => node.name)}
             denied={false}
             scopeRef={scopeRef}
             brandRef={brandRef}

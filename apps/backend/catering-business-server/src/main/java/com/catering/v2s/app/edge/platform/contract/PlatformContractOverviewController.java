@@ -128,7 +128,7 @@ public final class PlatformContractOverviewController {
         return new ContractOverviewItem(
                 contractRef(value.id(), value.contractNo(), value.contractNo(), "RESOLVED"),
                 storeRef(value.store()),
-                value.phaseName() == null ? "未设置" : value.phaseName(),
+                value.phaseName(),
                 tenantRef(value.tenant()),
                 value.effectiveFrom().toString(),
                 value.effectiveTo() == null ? null : value.effectiveTo().toString(),
@@ -142,9 +142,6 @@ public final class PlatformContractOverviewController {
                 "RESOLVED",
                 projectRef(value.project()),
                 value.items().stream()
-                        .map(ContractTaskReadService.Item::code)
-                        .collect(java.util.stream.Collectors.joining(", ")),
-                value.items().stream()
                         .map(item -> new StoreContractItem(item.code(), item.name()))
                         .toList(),
                 java.util.List.of());
@@ -156,7 +153,7 @@ public final class PlatformContractOverviewController {
         return new ContractOverviewItem(
                 contractRef(value.id(), value.contractNo(), value.contractNo(), "RESOLVED"),
                 storeRef(value.store()),
-                value.phaseName() == null ? "未设置" : value.phaseName(),
+                value.phaseName(),
                 tenantRef(value.tenant()),
                 value.effectiveFrom().toString(),
                 value.effectiveTo() == null ? null : value.effectiveTo().toString(),
@@ -169,9 +166,6 @@ public final class PlatformContractOverviewController {
                 "RESOLVED",
                 "RESOLVED",
                 projectRef(value.project()),
-                value.items().stream()
-                        .map(ContractTaskReadService.Item::code)
-                        .collect(java.util.stream.Collectors.joining(", ")),
                 value.items().stream()
                         .map(item -> new StoreContractItem(item.code(), item.name()))
                         .toList(),

@@ -105,6 +105,7 @@
     "workspace-access": "workspace-iam"
   },
   "exactComponentOverrides": {
+    "AccountPresenceStatus": "components/workspace-iam/workspace-access.schemas.json",
     "WorkspaceLoginEntry": "components/workspace-iam/workspace-session.schemas.json",
     "WorkspacePasswordLoginRequest": "components/workspace-iam/workspace-session.schemas.json",
     "WorkspaceSessionEntry": "components/workspace-iam/workspace-session.schemas.json",
@@ -123,6 +124,8 @@
     "EpochMillis": "components/common/time.schemas.json",
     "SortDirection": "components/common/enum.schemas.json",
     "ServiceNodeType": "components/common/enum.schemas.json",
+    "OrganizationPathNode": "components/common/common.schemas.json",
+    "InvitationRouteFacts": "components/workspace-iam/workspace-access.schemas.json",
     "ProjectPhaseNames": "components/common/enum.schemas.json",
     "NoBody": "components/common/empty.schemas.json",
     "NoContent": "components/common/empty.schemas.json"

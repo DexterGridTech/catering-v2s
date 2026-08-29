@@ -41,7 +41,7 @@ type Input = {
   navigation?: CatalogNavigation;
 };
 
-function categoryPathLabels(
+function categoryPathNames(
   navigation: CatalogNavigation | undefined,
   categoryRef: string | null | undefined,
 ): string[] {
@@ -94,15 +94,16 @@ export function useCatalogCategoryActionController({
   const [createCategory, createCategoryState] = operationsRtk.useCreateOperationsCatalogCategoryMutation();
   const [updateCategory, updateCategoryState] = operationsRtk.useUpdateOperationsCatalogCategoryMutation();
   const [moveCategory, moveCategoryState] = operationsRtk.useMoveOperationsCatalogCategoryMutation();
-  const [deleteCategory, deleteCategoryState] = operationsRtk.useDeleteOperationsCatalogCategoryMutation();
+  const [transitionCategory, transitionCategoryState] =
+    operationsRtk.useTransitionOperationsCatalogCategoryStatusMutation();
   const selectedParentRef =
     action?.mode === 'REPARENT'
       ? action.node?.parentCategoryRef
       : action?.mode === 'CREATE'
         ? action.node?.categoryRef
         : undefined;
-  const selectedParentPathLabels = useMemo(
-    () => categoryPathLabels(navigation, selectedParentRef ? String(selectedParentRef) : undefined),
+  const selectedParentPathNames = useMemo(
+    () => categoryPathNames(navigation, selectedParentRef ? String(selectedParentRef) : undefined),
     [navigation, selectedParentRef],
   );
   const createCandidates = useCatalogCategoryCandidates({
@@ -112,7 +113,7 @@ export function useCatalogCategoryActionController({
     usage: 'CATEGORY_CREATE',
     selected: {
       categoryRef: action?.mode === 'CREATE' ? action.node?.categoryRef : undefined,
-      pathLabels: action?.mode === 'CREATE' ? selectedParentPathLabels : [],
+      pathLabels: action?.mode === 'CREATE' ? selectedParentPathNames : [],
     },
   });
   const reparentCandidates = useCatalogCategoryCandidates({
@@ -123,14 +124,14 @@ export function useCatalogCategoryActionController({
     currentCategoryRef: action?.mode === 'REPARENT' ? action.node?.categoryRef : undefined,
     selected: {
       categoryRef: action?.mode === 'REPARENT' ? action.node?.parentCategoryRef : undefined,
-      pathLabels: action?.mode === 'REPARENT' ? selectedParentPathLabels : [],
+      pathLabels: action?.mode === 'REPARENT' ? selectedParentPathNames : [],
     },
   });
   const submitting =
     createCategoryState.isLoading ||
     updateCategoryState.isLoading ||
     moveCategoryState.isLoading ||
-    deleteCategoryState.isLoading;
+    transitionCategoryState.isLoading;
 
   useEffect(() => {
     if (!action) return;
@@ -243,13 +244,13 @@ export function useCatalogCategoryActionController({
           ),
         ).unwrap();
       } else {
-        const body = {dataNodeRef, categoryRef, expectedVersion: node.version};
+        const body = {dataNodeRef, categoryRef, expectedVersion: node.version, targetStatus: 'VOIDED' as const};
         const idempotencyKey = await createContentIdempotencyKey(
-          CATALOG_INVENTORY_OPERATION_IDS.deleteOperationsCatalogCategory,
+          CATALOG_INVENTORY_OPERATION_IDS.transitionOperationsCatalogCategoryStatus,
           body,
         );
-        await deleteCategory(
-          catalogInventoryRtkRequest.deleteOperationsCatalogCategory(
+        await transitionCategory(
+          catalogInventoryRtkRequest.transitionOperationsCatalogCategoryStatus(
             {categoryRef},
             {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
           ),
@@ -260,7 +261,7 @@ export function useCatalogCategoryActionController({
       if (error && typeof error === 'object' && 'errorFields' in error) return;
       setProblem(catalogUiProblemFeedback(error, '分类操作未完成，请重试。').message);
     }
-  }, [action, createCategory, deleteCategory, finish, form, headers, moveCategory, queryContext, updateCategory]);
+  }, [action, createCategory, finish, form, headers, moveCategory, queryContext, transitionCategory, updateCategory]);
 
   return {action, form, problem, createCandidates, reparentCandidates, submitting, rememberTrigger, close, submit};
 }

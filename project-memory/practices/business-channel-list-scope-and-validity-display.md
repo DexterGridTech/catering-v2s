@@ -24,7 +24,7 @@ sourceRefs: ["doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md", 
 - `operatorKind = STORE`，即经营主体为门店；
 - `status = ENABLED`，即模板有效。
 
-因此门店候选表不再显示“状态”列：停用模板已经不属于候选集合，展示一个永远成立的状态会制造无意义信息。该规则只针对候选投影；项目模板主列表仍需展示模板状态，停用对象在主列表与详情中仍可读但不可编辑。
+因此门店候选表不再显示“状态”列：停用模板已经不属于候选集合，展示一个永远成立的状态会制造无意义信息。该规则只针对候选投影；项目模板主列表仍需展示模板状态，停用对象在主列表与详情中仍可读、可编辑并可重新启用；只有新建候选排除停用模板。
 
 `store status` 不是模板候选准入条件。门店本身停用不应改变“上级项目维护的有效门店模板”这一候选事实；创建渠道时再由适用 owner 规则处理门店状态。
 
@@ -46,7 +46,7 @@ sourceRefs: ["doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md", 
 
 合同表格和合同详情对 `VALID/INVALID` 统一使用 foundation 的 `ValidityStatus`：蓝色状态点 + `有效`，灰色状态点 + `已失效`。不得在同一事实类型下混用 `生效中`、`已作废`、裸文本或局部 `valueEnum.status`。
 
-本条不覆盖其他状态机：`ENABLED/DISABLED` 仍表达主数据启停，`ACTIVE` 仍表达邀请有效，经营渠道的 `DRAFT/EFFECTIVE` 仍表达渠道生效条件，门店合同 Tab 的“已作废”仍是历史查询分组名称。它们不能被机械替换成合同有效性文案。
+本条不覆盖其他状态机：`ENABLED/DISABLED/VOIDED` 表达主数据启停，`ACTIVE` 仍表达邀请有效，经营渠道自身采用 `ENABLED/DISABLED/VOIDED`，其候选可用性由适用维度组合决定，不能再把 `DRAFT/EFFECTIVE` 当现行正例；门店合同 Tab 的“已作废”仍表达历史查询分组名称。它们不能被机械替换成合同有效性文案。
 
 ## 4. 根因与最小防再犯解
 

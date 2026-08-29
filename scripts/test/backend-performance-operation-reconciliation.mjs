@@ -6,6 +6,9 @@ import {
   validateDatabaseOperationBudget,
   validateLinearBudgetObservation,
 } from '../generate/backend-performance-budget.mjs';
+import {BACKEND_PERFORMANCE_OPERATION_COUNTS} from '../policy/backend-performance-operation-counts.mjs';
+
+const EXPECTED_OPERATION_COUNT = BACKEND_PERFORMANCE_OPERATION_COUNTS.operations;
 
 const defaultRegistryPaths = Object.freeze([
   'apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json',
@@ -160,7 +163,7 @@ export const assertPerformanceOperationBudgets = (registry, events) => {
     }
     expected.set(row.operationId, row);
   }
-  if (expected.size !== 239) throw new Error(`PERFORMANCE_OPERATION_BUDGET_OPERATION_COUNT_INVALID:${expected.size}`);
+  if (expected.size !== EXPECTED_OPERATION_COUNT) throw new Error(`PERFORMANCE_OPERATION_BUDGET_OPERATION_COUNT_INVALID:${expected.size}`);
 
   const observed = new Map();
   for (const event of normalMeasurementEvents(expected, events, {
@@ -220,7 +223,7 @@ export const assertPerformanceConnectionBudgets = (registry, events) => {
     throw new Error('PERFORMANCE_CONNECTION_RECONCILIATION_INPUT_INVALID');
   }
   const expected = new Map(registry.map(row => [row.operationId, row]));
-  if (expected.size !== 239) throw new Error(`PERFORMANCE_CONNECTION_OPERATION_COUNT_INVALID:${expected.size}`);
+  if (expected.size !== EXPECTED_OPERATION_COUNT) throw new Error(`PERFORMANCE_CONNECTION_OPERATION_COUNT_INVALID:${expected.size}`);
   const observed = new Map();
   for (const event of normalMeasurementEvents(expected, events, {
     missingCode: 'PERFORMANCE_CONNECTION_MISSING_NORMAL_SAMPLE',
@@ -258,7 +261,7 @@ export const assertPerformanceConnectionBudgetsForIdentity = (registry, events) 
     throw new Error('PERFORMANCE_CONNECTION_RECONCILIATION_INPUT_INVALID');
   }
   const expected = new Map(registry.map(row => [row.operationId, row]));
-  if (expected.size !== 239) throw new Error(`PERFORMANCE_CONNECTION_OPERATION_COUNT_INVALID:${expected.size}`);
+  if (expected.size !== EXPECTED_OPERATION_COUNT) throw new Error(`PERFORMANCE_CONNECTION_OPERATION_COUNT_INVALID:${expected.size}`);
   const observed = new Map();
   for (const event of normalMeasurementEventsForIdentity(expected, events, {
     missingCode: 'PERFORMANCE_CONNECTION_MISSING_NORMAL_SAMPLE',
@@ -299,7 +302,7 @@ export const buildNormalSampleMatrix = (registry, events) => {
     throw new Error('PERFORMANCE_NORMAL_SAMPLE_MATRIX_INPUT_INVALID');
   }
   const expected = new Map(registry.map(row => [row.operationId, row]));
-  if (expected.size !== 239) throw new Error(`PERFORMANCE_NORMAL_SAMPLE_MATRIX_OPERATION_COUNT_INVALID:${expected.size}`);
+  if (expected.size !== EXPECTED_OPERATION_COUNT) throw new Error(`PERFORMANCE_NORMAL_SAMPLE_MATRIX_OPERATION_COUNT_INVALID:${expected.size}`);
   const rowsByOperation = new Map();
   for (const event of normalMeasurementEvents(expected, events, {
     missingCode: 'PERFORMANCE_NORMAL_SAMPLE_MATRIX_MISSING_NORMAL_SAMPLE',
@@ -329,7 +332,7 @@ export const buildNormalSampleMatrixForIdentity = (registry, events) => {
     throw new Error('PERFORMANCE_NORMAL_SAMPLE_MATRIX_INPUT_INVALID');
   }
   const expected = new Map(registry.map(row => [row.operationId, row]));
-  if (expected.size !== 239) throw new Error(`PERFORMANCE_NORMAL_SAMPLE_MATRIX_OPERATION_COUNT_INVALID:${expected.size}`);
+  if (expected.size !== EXPECTED_OPERATION_COUNT) throw new Error(`PERFORMANCE_NORMAL_SAMPLE_MATRIX_OPERATION_COUNT_INVALID:${expected.size}`);
   const rowsByOperation = new Map();
   for (const event of normalMeasurementEventsForIdentity(expected, events, {
     missingCode: 'PERFORMANCE_NORMAL_SAMPLE_MATRIX_MISSING_NORMAL_SAMPLE',

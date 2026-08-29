@@ -14,7 +14,12 @@ const category = (categoryRef: string, parentCategoryRef: string | null): Catego
     displayOrder: 0,
     count: 0,
     countSemantics: 'SELF_ONLY',
-    deletionAvailability: {canDelete: true, subtreeSize: 1, blockingReferenceCount: 0, blockingReferenceLabels: []},
+    deletionAvailability: {
+      canDelete: true,
+      subtreeSize: 1,
+      blockingReferenceCount: 0,
+      blockingReferences: {count: 0, references: []},
+    },
   }) as unknown as Category;
 
 describe('catalog category child entry availability', () => {

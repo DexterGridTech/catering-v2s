@@ -76,3 +76,7 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 - [practices.reuse-projection-within-request](../project-memory/practices/reuse-projection-within-request.md)
 - [practices.set-interaction-not-n-times-single](../project-memory/practices/set-interaction-not-n-times-single.md)
 - [practices.ui-visible-business-language-and-dynamic-aggregate-layout](../project-memory/practices/ui-visible-business-language-and-dynamic-aggregate-layout.md)
+- [pitfalls.analysis-ruler-and-scope-discipline](../project-memory/pitfalls/analysis-ruler-and-scope-discipline.md)
+- [operations.terminal-coding-standard](../project-memory/operations/terminal-coding-standard.md)
+- [decisions.terminal-architecture-and-stack-rulings](../project-memory/decisions/terminal-architecture-and-stack-rulings.md)
+- [decisions.terminal-build-order-and-batches](../project-memory/decisions/terminal-build-order-and-batches.md)

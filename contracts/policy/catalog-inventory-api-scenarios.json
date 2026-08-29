@@ -1273,29 +1273,29 @@
       "layer": "API",
       "caseCount": 3,
       "fixtureRefs": [
-        "FIXTURE-ARCHIVED-ONLY-SKU",
+        "FIXTURE-VOIDED-ONLY-SKU",
         "FIXTURE-DISABLED-SKU"
       ],
-      "businessRequirement": "HAS_SKU 非归档判据",
+      "businessRequirement": "HAS_SKU 非作废判据",
       "primaryVerifier": "owner-api",
       "cases": [
         {
           "caseId": "CI-API-013-01",
-          "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU",
+          "fixtureRef": "FIXTURE-VOIDED-ONLY-SKU",
           "parameterization": "case-1-of-3",
           "parameter": {
             "variant": 1,
-            "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU"
+            "fixtureRef": "FIXTURE-VOIDED-ONLY-SKU"
           },
           "expected": {
-            "assertionKey": "CI-API-013:1/FIXTURE-ARCHIVED-ONLY-SKU",
-            "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU",
+            "assertionKey": "CI-API-013:1/FIXTURE-VOIDED-ONLY-SKU",
+            "fixtureRef": "FIXTURE-VOIDED-ONLY-SKU",
             "parameter": {
               "variant": 1,
-              "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU"
+              "fixtureRef": "FIXTURE-VOIDED-ONLY-SKU"
             }
           },
-          "expectedBusinessResult": "HAS_SKU 非归档判据；case={\"variant\":1,\"fixtureRef\":\"FIXTURE-ARCHIVED-ONLY-SKU\"}",
+          "expectedBusinessResult": "HAS_SKU 非作废判据；case={\"variant\":1,\"fixtureRef\":\"FIXTURE-VOIDED-ONLY-SKU\"}",
           "polarity": "NEGATIVE",
           "expectationKind": "FACT"
         },
@@ -1315,27 +1315,27 @@
               "fixtureRef": "FIXTURE-DISABLED-SKU"
             }
           },
-          "expectedBusinessResult": "HAS_SKU 非归档判据；case={\"variant\":2,\"fixtureRef\":\"FIXTURE-DISABLED-SKU\"}",
+          "expectedBusinessResult": "HAS_SKU 非作废判据；case={\"variant\":2,\"fixtureRef\":\"FIXTURE-DISABLED-SKU\"}",
           "polarity": "NEGATIVE",
           "expectationKind": "FACT"
         },
         {
           "caseId": "CI-API-013-03",
-          "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU",
+          "fixtureRef": "FIXTURE-VOIDED-ONLY-SKU",
           "parameterization": "case-3-of-3",
           "parameter": {
             "variant": 3,
-            "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU"
+            "fixtureRef": "FIXTURE-VOIDED-ONLY-SKU"
           },
           "expected": {
-            "assertionKey": "CI-API-013:3/FIXTURE-ARCHIVED-ONLY-SKU",
-            "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU",
+            "assertionKey": "CI-API-013:3/FIXTURE-VOIDED-ONLY-SKU",
+            "fixtureRef": "FIXTURE-VOIDED-ONLY-SKU",
             "parameter": {
               "variant": 3,
-              "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU"
+              "fixtureRef": "FIXTURE-VOIDED-ONLY-SKU"
             }
           },
-          "expectedBusinessResult": "HAS_SKU 非归档判据；case={\"variant\":3,\"fixtureRef\":\"FIXTURE-ARCHIVED-ONLY-SKU\"}",
+          "expectedBusinessResult": "HAS_SKU 非作废判据；case={\"variant\":3,\"fixtureRef\":\"FIXTURE-VOIDED-ONLY-SKU\"}",
           "polarity": "NEGATIVE",
           "expectationKind": "FACT"
         }

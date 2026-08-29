@@ -7,7 +7,6 @@
         "required": [
           "capabilityClass",
           "displayName",
-          "attributeValueLabels",
           "attributeValues"
         ],
         "properties": {
@@ -27,50 +26,27 @@
             "type": "string",
             "minLength": 1
           },
-          "attributeValueLabels": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
           "attributeValues": {
-            "type": "object",
-            "additionalProperties": true,
-            "description": "Capability values are JSON facts; descriptor metadata remains separate."
+            "$ref": "#/components/schemas/ExternalCapabilityAttributeValues"
           }
         }
       },
-      "ExternalCapabilityAttributeDescriptor": {
+      "ExternalCapabilityAttributeValues": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "fieldKey",
-          "label",
-          "helpText",
-          "controlKind",
-          "optionSourceRef"
-        ],
         "properties": {
-          "fieldKey": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          },
-          "helpText": {
-            "type": "string"
-          },
-          "controlKind": {
+          "groupBuyMappingDirection": {
             "type": "string",
             "enum": [
-              "readonlySummary",
-              "readonlyPreview"
+              "EXTERNAL_TO_INTERNAL",
+              "INTERNAL_TO_EXTERNAL"
             ]
           },
-          "optionSourceRef": {
-            "type": "object",
-            "additionalProperties": true
+          "menuCollaborationDirection": {
+            "type": "string",
+            "enum": [
+              "PULL_ONLY"
+            ]
           }
         }
       },
@@ -81,8 +57,6 @@
           "externalSystemCode",
           "displayName",
           "catalogStatus",
-          "catalogStatusDisplayName",
-          "attributeDictionary",
           "capabilities",
           "enablementStatus",
           "version"
@@ -100,16 +74,6 @@
               "PLANNED",
               "AVAILABLE"
             ]
-          },
-          "catalogStatusDisplayName": {
-            "type": "string",
-            "minLength": 1
-          },
-          "attributeDictionary": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ExternalCapabilityAttributeDescriptor"
-            }
           },
           "capabilities": {
             "type": "array",
@@ -139,15 +103,10 @@
           "externalSystemCode",
           "externalSystemDisplayName",
           "businessScope",
-          "businessScopeDisplayNames",
           "bindableNodeTypes",
-          "bindableNodeTypeDisplayNames",
           "authenticationKind",
-          "authenticationKindDisplayName",
           "unbindKind",
-          "unbindKindDisplayName",
           "catalogStatus",
-          "catalogStatusDisplayName",
           "enablementStatus",
           "version"
         ],
@@ -168,27 +127,26 @@
           "businessScope": {
             "type": "array",
             "items": {
-              "type": "string"
-            }
-          },
-          "businessScopeDisplayNames": {
-            "type": "array",
-            "items": {
               "type": "string",
-              "minLength": 1
+              "enum": [
+                "TAKEAWAY",
+                "GROUP_BUY",
+                "ORDER_SYNC",
+                "MEMBER_BENEFIT"
+              ]
             }
           },
           "bindableNodeTypes": {
             "type": "array",
             "items": {
-              "type": "string"
-            }
-          },
-          "bindableNodeTypeDisplayNames": {
-            "type": "array",
-            "items": {
               "type": "string",
-              "minLength": 1
+              "enum": [
+                "COMMERCIAL_GROUP",
+                "REGION",
+                "PROJECT",
+                "HEAD_COMPANY",
+                "STORE"
+              ]
             }
           },
           "authenticationKind": {
@@ -199,10 +157,6 @@
               "NO_MAPPING"
             ]
           },
-          "authenticationKindDisplayName": {
-            "type": "string",
-            "minLength": 1
-          },
           "unbindKind": {
             "type": "string",
             "enum": [
@@ -210,20 +164,12 @@
               "REQUIRES_ADAPTER_UNBIND"
             ]
           },
-          "unbindKindDisplayName": {
-            "type": "string",
-            "minLength": 1
-          },
           "catalogStatus": {
             "type": "string",
             "enum": [
               "PLANNED",
               "AVAILABLE"
             ]
-          },
-          "catalogStatusDisplayName": {
-            "type": "string",
-            "minLength": 1
           },
           "enablementStatus": {
             "type": "string",
@@ -300,6 +246,16 @@
             "type": [
               "string",
               "null"
+            ],
+            "enum": [
+              "MASTER_DATA_SYNC",
+              "MEMBER_BENEFIT",
+              "GROUP_BUY",
+              "TAKEAWAY",
+              "INVENTORY_SYNC",
+              "TAKEAWAY_DELIVERY",
+              "ORDER_SYNC",
+              null
             ]
           },
           "nodeType": {
@@ -356,15 +312,13 @@
           "bindingRef",
           "providerCode",
           "providerDisplayName",
-          "capabilityClassDisplayName",
-          "businessScopeDisplayNames",
           "nodeType",
-          "nodeTypeDisplayName",
           "nodeRef",
+          "nodePath",
+          "businessScope",
           "boundAt",
           "statusChangedAt",
           "status",
-          "statusDisplayName",
           "version"
         ],
         "properties": {
@@ -383,37 +337,50 @@
             "type": [
               "string",
               "null"
+            ],
+            "enum": [
+              "MASTER_DATA_SYNC",
+              "MEMBER_BENEFIT",
+              "GROUP_BUY",
+              "TAKEAWAY",
+              "INVENTORY_SYNC",
+              "TAKEAWAY_DELIVERY",
+              "ORDER_SYNC",
+              null
             ]
           },
-          "capabilityClassDisplayName": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "businessScopeDisplayNames": {
+          "businessScope": {
             "type": "array",
             "items": {
               "type": "string",
-              "minLength": 1
+              "enum": [
+                "TAKEAWAY",
+                "GROUP_BUY",
+                "ORDER_SYNC",
+                "MEMBER_BENEFIT"
+              ]
             }
           },
           "nodeType": {
-            "type": "string"
-          },
-          "nodeTypeDisplayName": {
             "type": "string",
-            "minLength": 1
+            "enum": [
+              "COMMERCIAL_GROUP",
+              "REGION",
+              "PROJECT",
+              "HEAD_COMPANY",
+              "STORE"
+            ]
           },
           "nodeRef": {
             "type": "string",
             "format": "uuid"
           },
-          "nodeDisplayPath": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "nodePath": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "ref": "OrganizationPathNode"
+            }
           },
           "bindingDisplayName": {
             "type": [
@@ -443,10 +410,6 @@
               "INVALID",
               "DELETED"
             ]
-          },
-          "statusDisplayName": {
-            "type": "string",
-            "minLength": 1
           },
           "version": {
             "type": "integer",

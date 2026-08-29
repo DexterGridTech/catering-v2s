@@ -84,6 +84,15 @@ public final class PlatformSessionResolver {
                     () -> Objects.requireNonNull(workspaces, "workspaces").requireEnabled(groupWorkspaceKey));
             return new EnabledSelectedWorkspaceFact(workspace.workspaceUuid(), workspace.groupWorkspaceKey());
         }
+
+        /** Resolves a selected workspace without applying the enabled-only task gate. */
+        public SelectedWorkspaceFact requireSelectedWorkspace(
+                WorkspaceAdministrationService workspaces, String groupWorkspaceKey) {
+            WorkspaceAdministrationReadback workspace = ReadBudgetComponent.measure(
+                    ReadBudgetComponent.Component.CONTEXT_PLATFORM_WORKSPACE,
+                    () -> Objects.requireNonNull(workspaces, "workspaces").require(groupWorkspaceKey));
+            return new SelectedWorkspaceFact(workspace.workspaceUuid(), workspace.groupWorkspaceKey());
+        }
     }
 
     /** Immutable projection of an owner-validated enabled selected workspace. */
@@ -92,6 +101,25 @@ public final class PlatformSessionResolver {
         private final String groupWorkspaceKey;
 
         private EnabledSelectedWorkspaceFact(UUID workspaceUuid, String groupWorkspaceKey) {
+            this.workspaceUuid = Objects.requireNonNull(workspaceUuid, "workspaceUuid");
+            this.groupWorkspaceKey = Objects.requireNonNull(groupWorkspaceKey, "groupWorkspaceKey");
+        }
+
+        public UUID workspaceUuid() {
+            return workspaceUuid;
+        }
+
+        public String groupWorkspaceKey() {
+            return groupWorkspaceKey;
+        }
+    }
+
+    /** Immutable projection of an owner-validated selected workspace, regardless of raw lifecycle status. */
+    public static final class SelectedWorkspaceFact {
+        private final UUID workspaceUuid;
+        private final String groupWorkspaceKey;
+
+        private SelectedWorkspaceFact(UUID workspaceUuid, String groupWorkspaceKey) {
             this.workspaceUuid = Objects.requireNonNull(workspaceUuid, "workspaceUuid");
             this.groupWorkspaceKey = Objects.requireNonNull(groupWorkspaceKey, "groupWorkspaceKey");
         }

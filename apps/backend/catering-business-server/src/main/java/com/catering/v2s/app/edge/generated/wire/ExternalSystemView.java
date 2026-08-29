@@ -4,10 +4,8 @@ package com.catering.v2s.app.edge.generated.wire;
 public record ExternalSystemView(
     String externalSystemCode,
     String displayName,
-    String catalogStatus,
-    String catalogStatusDisplayName,
-    java.util.List<ExternalCapabilityAttributeDescriptor> attributeDictionary,
+    ExternalSystemViewCatalogStatus catalogStatus,
     java.util.List<ExternalCapability> capabilities,
-    String enablementStatus,
+    ExternalSystemViewEnablementStatus enablementStatus,
     Long version
 ) {}

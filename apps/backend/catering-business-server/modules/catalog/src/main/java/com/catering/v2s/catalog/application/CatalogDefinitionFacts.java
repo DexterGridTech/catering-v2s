@@ -23,15 +23,20 @@ final class CatalogDefinitionFacts {
         this.jdbc = jdbc;
     }
 
-    List<CatalogOwnerApi.AttributeDefinitionReadback> listAttributes(String scope, String brand) {
+    List<CatalogOwnerApi.AttributeDefinitionReadback> listAttributes(
+            String scope, String brand, String candidateUsage) {
+        boolean candidate = candidateOnly(candidateUsage);
+        String statusPredicate = candidate ? " AND status='ENABLED'" : "";
         return jdbc.query(
                 "WITH bounded_definition AS ("
-                        + "SELECT attribute_definition_ref,code,name,value_type,version "
+                        + "SELECT attribute_definition_ref,code,name,status,value_type,version "
                         + "FROM catalog.catalog_attribute_definition "
-                        + "WHERE data_node_ref=? AND brand_ref=? "
+                        + "WHERE data_node_ref=? AND brand_ref=?"
+                        + statusPredicate + " "
                         + "ORDER BY name,code,attribute_definition_ref LIMIT ?) "
                         + "SELECT definition.attribute_definition_ref,definition.code,definition.name,"
-                        + "definition.value_type,definition.version,option.attribute_definition_option_ref,"
+                        + "definition.status,definition.value_type,definition.version,"
+                        + "option.attribute_definition_option_ref,"
                         + "option.name,option.display_order "
                         + "FROM bounded_definition definition "
                         + "LEFT JOIN catalog.catalog_attribute_definition_option option "
@@ -52,13 +57,14 @@ final class CatalogDefinitionFacts {
                                             result.getString(2),
                                             result.getString(3),
                                             result.getString(4),
-                                            result.getLong(5)));
-                        UUID optionRef = result.getObject(6, UUID.class);
+                                            result.getString(5),
+                                            result.getLong(6)));
+                        UUID optionRef = result.getObject(7, UUID.class);
                         if (optionRef != null)
                             optionsByDefinition
                                     .computeIfAbsent(definitionRef, ignored -> new ArrayList<>())
                                     .add(new CatalogOwnerApi.AttributeDefinitionOption(
-                                            optionRef, result.getString(7), result.getInt(8)));
+                                            optionRef, result.getString(8), result.getInt(9)));
                     }
                     requireBounded(definitions.size());
                     return definitions.values().stream()
@@ -66,6 +72,7 @@ final class CatalogDefinitionFacts {
                                     definition.ref(),
                                     definition.code(),
                                     definition.name(),
+                                    definition.status(),
                                     definition.valueType(),
                                     List.copyOf(optionsByDefinition.getOrDefault(definition.ref(), List.of())),
                                     definition.version()))
@@ -86,11 +93,10 @@ final class CatalogDefinitionFacts {
                             /* format-wrap */
                             +
                             /* format-wrap */
-                            "ref,code,name,value_type,version,created_at_epoch_millis,updated_at_epoch_millis) "
+                            "ref,code,name,status,value_type,version,created_at_epoch_millis,updated_at_epoch_millis) "
                             +
                             /* format-wrap */
-                            "VALUES(?"
-                            + ",?,?,?,?,?,1,?,?)",
+                            "VALUES(?,?,?,?,?,'ENABLED',?,1,?,?)",
                     ref,
                     scope,
                     brand,
@@ -108,7 +114,13 @@ final class CatalogDefinitionFacts {
 
     CatalogOwnerApi.AttributeDefinitionReadback updateAttribute(
             String scope, String brand, CatalogOwnerApi.AttributeDefinitionUpdateCommand command, long now) {
+        lockDefinition(command.definitionRef());
         AttributeRow current = requireAttribute(scope, brand, command.definitionRef());
+        // spotless:off
+        if ("VOIDED".equals(current.status()))
+            throw new CatalogOwnerApi.Problem(
+                    "VOIDED_RECORD_IMMUTABLE", 409, "已作废的商品属性定义不可修改");
+        // spotless:on
         // The definition type is creation-time fact.  An update can only change its own code/name
         // and, before use, its selectable values; it must never rely on a caller echoing a type.
         boolean shapeChange = !sameAttributeOptions(current.ref(), command.options());
@@ -123,7 +135,7 @@ final class CatalogDefinitionFacts {
         try {
             changed = jdbc.update(
                     "UPDATE catalog.catalog_attribute_definition SET code=?,name=?,version=version+1,updated_at_epo"
-                            + "ch_millis=? WHERE attribute_definition_ref=? AND version=?",
+                            + "ch_millis=? WHERE attribute_definition_ref=? AND version=? AND status <> 'VOIDED'",
                     command.code(),
                     command.name(),
                     now,
@@ -142,52 +154,36 @@ final class CatalogDefinitionFacts {
         return attributeReadback(requireAttribute(scope, brand, current.ref()));
     }
 
-    CatalogOwnerApi.AttributeDefinitionDeleteReadback deleteAttribute(
-            String scope, String brand, CatalogOwnerApi.AttributeDefinitionDeleteCommand command) {
-        AttributeRow row = requireAttribute(scope, brand, command.definitionRef());
-        if (row.version() != command.expectedVersion())
-            throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "商品属性定义版本已变化");
-        long assignmentCount = jdbc.queryForObject(
-                "SELECT count(*) FROM catalog.catalog_item_attribute_assignment WHERE attribute_definition_ref=?",
-                Long.class,
-                row.ref());
-        // This command is an aggregate cascade. Remove children in FK order instead
-        // of leaking the database constraint as an unresolved HTTP 500.
-        jdbc.update(
-                "DELETE FROM catalog.catalog_item_attribute_selection WHERE item_attribute_assignment_ref IN "
-                        + "(SELECT item_attribute_assignment_ref FROM catalog.catalog_item_attribute_assignment "
-                        + "WHERE attribute_definition_ref=?)",
-                row.ref());
-        jdbc.update(
-                "DELETE FROM catalog.catalog_item_attribute_assignment WHERE attribute_definition_ref=?", row.ref());
-        jdbc.update(
-                "DELETE FROM catalog.catalog_attribute_definition_option WHERE attribute_definition_ref=?", row.ref());
-        if (jdbc.update(
-                        "DELETE FROM catalog.catalog_attribute_definition WHERE attribute_definition_ref=? AND vers"
-                                + "ion=?",
-                        row.ref(),
-                        command.expectedVersion())
-                != 1) throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "商品属性定义版本已变化");
-        return new CatalogOwnerApi.AttributeDefinitionDeleteReadback(row.ref(), assignmentCount);
-    }
-
-    List<CatalogOwnerApi.OrderOptionDefinitionReadback> listOrderOptions(String scope, String brand) {
+    List<CatalogOwnerApi.OrderOptionDefinitionReadback> listOrderOptions(
+            String scope, String brand, String candidateUsage) {
+        boolean candidate = candidateOnly(candidateUsage);
+        String statusPredicate = candidate ? " AND status='ENABLED'" : "";
         List<OrderOptionRow> rows = jdbc.query(
-                "SELECT order_option_definition_ref,code,name,selection_mode,version FROM catalog.catalog_order_opt"
+                "SELECT order_option_definition_ref,code,name,status,selection_mode,version "
+                        + "FROM catalog.catalog_order_opt"
                         + "ion_definition "
-                        + "WHERE data_node_ref=? AND brand_ref=? ORDER BY name,code,order_option_definition_ref LIM"
+                        + "WHERE data_node_ref=? AND brand_ref=?"
+                        + statusPredicate + " ORDER BY name,code,order_option_definition_ref LIM"
                         + "IT ?",
                 (result, row) -> new OrderOptionRow(
                         result.getObject(1, UUID.class),
                         result.getString(2),
                         result.getString(3),
                         result.getString(4),
-                        result.getLong(5)),
+                        result.getString(5),
+                        result.getLong(6)),
                 scope,
                 brand,
                 BOUNDED_LIST_LIMIT + 1);
         requireBounded(rows.size());
         return rows.stream().map(this::orderOptionReadback).toList();
+    }
+
+    private static boolean candidateOnly(String candidateUsage) {
+        if (candidateUsage == null || candidateUsage.isBlank()) return false;
+        if (!"ITEM_ASSIGNMENT".equals(candidateUsage))
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "candidateUsage is not supported");
+        return true;
     }
 
     CatalogOwnerApi.OrderOptionDefinitionReadback createOrderOption(
@@ -199,11 +195,11 @@ final class CatalogDefinitionFacts {
                     "INSERT INTO catalog.catalog_order_option_definition(order_option_definition_ref,data_node_ref,"
                             +
                             /* format-wrap */
-                            "brand_ref,code,name,selection_mode,version,created_at_epoch_millis,"
+                            "brand_ref,code,name,status,selection_mode,version,created_at_epoch_millis,"
                             +
                             /* format-wrap */
                             "updated_at_epoch_millis"
-                            + ") VALUES(?,?,?,?,?,?,1,?,?)",
+                            + ") VALUES(?,?,?,?,?,'ENABLED',?,1,?,?)",
                     ref,
                     scope,
                     brand,
@@ -222,7 +218,13 @@ final class CatalogDefinitionFacts {
 
     CatalogOwnerApi.OrderOptionDefinitionMutationReadback updateOrderOption(
             String scope, String brand, CatalogOwnerApi.OrderOptionDefinitionUpdateCommand command, long now) {
+        lockDefinition(command.definitionRef());
         OrderOptionRow current = requireOrderOption(scope, brand, command.definitionRef());
+        // spotless:off
+        if ("VOIDED".equals(current.status()))
+            throw new CatalogOwnerApi.Problem(
+                    "VOIDED_RECORD_IMMUTABLE", 409, "已作废的点单选项定义不可修改");
+        // spotless:on
         if (command.code() != null
                 && !command.code().isBlank()
                 && !current.code().equals(command.code()))
@@ -238,7 +240,8 @@ final class CatalogDefinitionFacts {
                 .toList();
         int changed = jdbc.update(
                 "UPDATE catalog.catalog_order_option_definition SET name=?,selection_mode=?,version=version+1,updat"
-                        + "ed_at_epoch_millis=? WHERE order_option_definition_ref=? AND version=?",
+                        + "ed_at_epoch_millis=? WHERE order_option_definition_ref=? "
+                        + "AND version=? AND status <> 'VOIDED'",
                 command.name(),
                 command.selectionMode(),
                 now,
@@ -259,41 +262,6 @@ final class CatalogDefinitionFacts {
                 orderOptionReadback(requireOrderOption(scope, brand, current.ref())), deleted);
     }
 
-    CatalogOwnerApi.OrderOptionDefinitionDeleteReadback deleteOrderOption(
-            String scope, String brand, CatalogOwnerApi.OrderOptionDefinitionDeleteCommand command) {
-        OrderOptionRow row = requireOrderOption(scope, brand, command.definitionRef());
-        if (row.version() != command.expectedVersion())
-            throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "点单选项定义版本已变化");
-        List<UUID> valueRefs = new ArrayList<>(valuesByRef(row.ref()).keySet());
-        lockOrderOptionValueRefs(valueRefs);
-        long configCount = jdbc.queryForObject(
-                "SELECT count(*) FROM catalog.catalog_item_order_option_config WHERE order_option_definition_ref=?",
-                Long.class,
-                row.ref());
-        jdbc.update(
-                "DELETE FROM catalog.catalog_item_order_option_value_override WHERE "
-                        + "item_order_option_config_ref IN (SELECT item_order_option_config_ref FROM "
-                        + "catalog.catalog_item_order_option_config WHERE order_option_definition_ref=?)",
-                row.ref());
-        jdbc.update(
-                "DELETE FROM catalog.catalog_item_order_option_config WHERE order_option_definition_ref=?", row.ref());
-        jdbc.update(
-                "DELETE FROM catalog.catalog_order_option_definition_material WHERE "
-                        + "order_option_definition_value_ref IN (SELECT order_option_definition_value_ref FROM "
-                        + "catalog.catalog_order_option_definition_value WHERE order_option_definition_ref=?)",
-                row.ref());
-        jdbc.update(
-                "DELETE FROM catalog.catalog_order_option_definition_value WHERE " + "order_option_definition_ref=?",
-                row.ref());
-        if (jdbc.update(
-                        "DELETE FROM catalog.catalog_order_option_definition WHERE order_option_definition_ref=? AN"
-                                + "D version=?",
-                        row.ref(),
-                        command.expectedVersion())
-                != 1) throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "点单选项定义版本已变化");
-        return new CatalogOwnerApi.OrderOptionDefinitionDeleteReadback(row.ref(), valueRefs, configCount);
-    }
-
     private CatalogOwnerApi.AttributeDefinitionReadback attributeReadback(AttributeRow row) {
         List<CatalogOwnerApi.AttributeDefinitionOption> options = jdbc.query(
                 "SELECT attribute_definition_option_ref,name,display_order FROM catalog.catalog_attribute_definitio"
@@ -307,7 +275,7 @@ final class CatalogDefinitionFacts {
                         result.getObject(1, UUID.class), result.getString(2), result.getInt(3)),
                 row.ref());
         return new CatalogOwnerApi.AttributeDefinitionReadback(
-                row.ref(), row.code(), row.name(), row.valueType(), options, row.version());
+                row.ref(), row.code(), row.name(), row.status(), row.valueType(), options, row.version());
     }
 
     private CatalogOwnerApi.OrderOptionDefinitionReadback orderOptionReadback(OrderOptionRow row) {
@@ -334,7 +302,7 @@ final class CatalogDefinitionFacts {
                         materialsByValue.getOrDefault(value.ref(), List.of())))
                 .toList();
         return new CatalogOwnerApi.OrderOptionDefinitionReadback(
-                row.ref(), row.code(), row.name(), row.selectionMode(), values, row.version());
+                row.ref(), row.code(), row.name(), row.status(), row.selectionMode(), values, row.version());
     }
 
     private List<CatalogOwnerApi.OrderOptionMaterialReadback> materials(UUID valueRef) {
@@ -518,16 +486,68 @@ final class CatalogDefinitionFacts {
                 definitionRef));
     }
 
+    private boolean orderOptionReferenced(UUID definitionRef) {
+        return Boolean.TRUE.equals(jdbc.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM catalog.catalog_item_order_option_config "
+                        + "WHERE order_option_definition_ref=?)",
+                Boolean.class,
+                definitionRef));
+    }
+
+    private void lockDefinition(UUID definitionRef) {
+        if (definitionRef == null)
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "definitionRef is required");
+        AdvisoryLock.acquire(jdbc, 0x43415444, definitionRef);
+    }
+
+    private static void validateLifecycleTarget(String targetStatus, String subject) {
+        if (!List.of("ENABLED", "DISABLED", "VOIDED").contains(targetStatus))
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, subject + "状态不合法");
+    }
+
+    CatalogOwnerApi.AttributeDefinitionReadback transitionAttributeStatus(
+            String scope, String brand, CatalogOwnerApi.AttributeDefinitionStatusTransitionCommand command, long now) {
+        lockDefinition(command.definitionRef());
+        AttributeRow current = requireAttribute(scope, brand, command.definitionRef());
+        validateLifecycleTarget(command.targetStatus(), "商品属性定义");
+        // spotless:off
+        if ("VOIDED".equals(current.status()))
+            throw new CatalogOwnerApi.Problem(
+                    "VOIDED_RECORD_IMMUTABLE", 409, "已作废的商品属性定义不可修改");
+        // spotless:on
+        if (current.version() != command.expectedVersion())
+            throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "商品属性定义版本已变化");
+        // spotless:off
+        if ("VOIDED".equals(command.targetStatus()) && attributeUsed(current.ref()))
+            throw new CatalogOwnerApi.Problem(
+                    "REFERENCE_BLOCKS_VOID", 422, "商品属性定义仍被商品引用，不能作废");
+        // spotless:on
+        // spotless:off
+        if (jdbc.update(
+                        "UPDATE catalog.catalog_attribute_definition SET status=?,version=version+1,"
+                                + "updated_at_epoch_millis=? "
+                                + "WHERE attribute_definition_ref=? AND version=? AND status <> 'VOIDED'",
+                        command.targetStatus(),
+                        now,
+                        current.ref(),
+                        command.expectedVersion())
+                != 1) throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "商品属性定义版本已变化");
+        // spotless:on
+        return attributeReadback(requireAttribute(scope, brand, current.ref()));
+    }
+
     private AttributeRow requireAttribute(String scope, String brand, UUID ref) {
         List<AttributeRow> rows = jdbc.query(
-                "SELECT attribute_definition_ref,code,name,value_type,version FROM catalog.catalog_attribute_defini"
+                "SELECT attribute_definition_ref,code,name,status,value_type,version "
+                        + "FROM catalog.catalog_attribute_defini"
                         + "tion WHERE data_node_ref=? AND brand_ref=? AND attribute_definition_ref=?",
                 (result, index) -> new AttributeRow(
                         result.getObject(1, UUID.class),
                         result.getString(2),
                         result.getString(3),
                         result.getString(4),
-                        result.getLong(5)),
+                        result.getString(5),
+                        result.getLong(6)),
                 scope,
                 brand,
                 ref);
@@ -537,19 +557,55 @@ final class CatalogDefinitionFacts {
 
     private OrderOptionRow requireOrderOption(String scope, String brand, UUID ref) {
         List<OrderOptionRow> rows = jdbc.query(
-                "SELECT order_option_definition_ref,code,name,selection_mode,version FROM catalog.catalog_order_opt"
+                "SELECT order_option_definition_ref,code,name,status,selection_mode,version "
+                        + "FROM catalog.catalog_order_opt"
                         + "ion_definition WHERE data_node_ref=? AND brand_ref=? AND order_option_definition_ref=?",
                 (result, index) -> new OrderOptionRow(
                         result.getObject(1, UUID.class),
                         result.getString(2),
                         result.getString(3),
                         result.getString(4),
-                        result.getLong(5)),
+                        result.getString(5),
+                        result.getLong(6)),
                 scope,
                 brand,
                 ref);
         if (rows.isEmpty()) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "点单选项定义不存在");
         return rows.getFirst();
+    }
+
+    CatalogOwnerApi.OrderOptionDefinitionReadback transitionOrderOptionStatus(
+            String scope,
+            String brand,
+            CatalogOwnerApi.OrderOptionDefinitionStatusTransitionCommand command,
+            long now) {
+        lockDefinition(command.definitionRef());
+        OrderOptionRow current = requireOrderOption(scope, brand, command.definitionRef());
+        validateLifecycleTarget(command.targetStatus(), "点单选项定义");
+        // spotless:off
+        if ("VOIDED".equals(current.status()))
+            throw new CatalogOwnerApi.Problem(
+                    "VOIDED_RECORD_IMMUTABLE", 409, "已作废的点单选项定义不可修改");
+        // spotless:on
+        if (current.version() != command.expectedVersion())
+            throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "点单选项定义版本已变化");
+        // spotless:off
+        if ("VOIDED".equals(command.targetStatus()) && orderOptionReferenced(current.ref()))
+            throw new CatalogOwnerApi.Problem(
+                    "REFERENCE_BLOCKS_VOID", 422, "点单选项定义仍被商品引用，不能作废");
+        // spotless:on
+        // spotless:off
+        if (jdbc.update(
+                        "UPDATE catalog.catalog_order_option_definition SET status=?,version=version+1,"
+                                + "updated_at_epoch_millis=? "
+                                + "WHERE order_option_definition_ref=? AND version=? AND status <> 'VOIDED'",
+                        command.targetStatus(),
+                        now,
+                        current.ref(),
+                        command.expectedVersion())
+                != 1) throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "点单选项定义版本已变化");
+        // spotless:on
+        return orderOptionReadback(requireOrderOption(scope, brand, current.ref()));
     }
 
     private Map<UUID, ValueRow> valuesByRef(UUID definitionRef) {
@@ -640,9 +696,10 @@ final class CatalogDefinitionFacts {
         return value == null || value.isBlank();
     }
 
-    private record AttributeRow(UUID ref, String code, String name, String valueType, long version) {}
+    private record AttributeRow(UUID ref, String code, String name, String status, String valueType, long version) {}
 
-    private record OrderOptionRow(UUID ref, String code, String name, String selectionMode, long version) {}
+    private record OrderOptionRow(
+            UUID ref, String code, String name, String status, String selectionMode, long version) {}
 
     private record ValueReadbackRow(UUID ref, String code, String name, int displayOrder) {}
 

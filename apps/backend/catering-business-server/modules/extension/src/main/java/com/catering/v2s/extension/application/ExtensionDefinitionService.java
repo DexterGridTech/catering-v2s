@@ -10,6 +10,7 @@ import com.catering.v2s.extension.api.ExtensionHostTypes;
 import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,14 +44,34 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
     private final TimeProvider time;
     private final ExtensionCommandReceiptService receipts;
     private final PlatformGovernanceAuthorization platformAuthorization;
+    private final WorkspaceStatusLookup workspaceStatuses;
     /**
      * Convenience construction is retained for internal readers only. It must never make the edge-facing draft command
      * authorization-optional outside the Spring owner graph.
      */
     public ExtensionDefinitionService(JdbcTemplate jdbc, TimeProvider time) {
-        this(jdbc, time, new ExtensionCommandReceiptService(jdbc, time), actor -> {
-            throw new IllegalStateException("platform authorization is required");
-        });
+        this(
+                jdbc,
+                time,
+                new ExtensionCommandReceiptService(jdbc, time),
+                actor -> {
+                    throw new IllegalStateException("platform authorization is required");
+                },
+                (workspaceUuid, groupWorkspaceKey) -> {
+                    throw new IllegalStateException("workspace status lookup is required");
+                });
+    }
+
+    /** Explicit test/internal construction when the shared workspace-status owner is available. */
+    public ExtensionDefinitionService(JdbcTemplate jdbc, TimeProvider time, WorkspaceStatusLookup workspaceStatuses) {
+        this(
+                jdbc,
+                time,
+                new ExtensionCommandReceiptService(jdbc, time),
+                actor -> {
+                    throw new IllegalStateException("platform authorization is required");
+                },
+                workspaceStatuses);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -58,11 +79,13 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
             JdbcTemplate jdbc,
             TimeProvider time,
             ExtensionCommandReceiptService receipts,
-            PlatformGovernanceAuthorization platformAuthorization) {
+            PlatformGovernanceAuthorization platformAuthorization,
+            WorkspaceStatusLookup workspaceStatuses) {
         this.jdbc = jdbc;
         this.time = time;
         this.receipts = receipts;
         this.platformAuthorization = platformAuthorization;
+        this.workspaceStatuses = Objects.requireNonNull(workspaceStatuses, "workspaceStatuses");
     }
 
     @Override
@@ -70,6 +93,12 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
     public ExtensionDefinitionReadback requireDefinition(
             UUID workspaceUuid, String groupWorkspaceKey, String hostType) {
         validateHost(hostType);
+        return requireDefinition(
+                workspaceUuid, groupWorkspaceKey, hostType, workspaceStatus(workspaceUuid, groupWorkspaceKey));
+    }
+
+    private ExtensionDefinitionReadback requireDefinition(
+            UUID workspaceUuid, String groupWorkspaceKey, String hostType, String workspaceStatus) {
         return jdbc.query(
                 "SELECT definitions::text, revision, updated_at_epoch_millis FROM extension.extension_definition WHERE "
                         + "workspace_uuid=? AND group_workspace_key=? AND entity_type=?",
@@ -85,12 +114,19 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                             hostType,
                             result.getLong(2),
                             result.getLong(3),
-                            readFields(result.getString(1)));
+                            readFields(result.getString(1)),
+                            workspaceStatus,
+                            blockers(workspaceStatus));
                 });
     }
 
     @Transactional(readOnly = true)
     public List<ExtensionDefinitionReadback> listDefinitions(UUID workspaceUuid, String groupWorkspaceKey) {
+        return listDefinitions(workspaceUuid, groupWorkspaceKey, workspaceStatus(workspaceUuid, groupWorkspaceKey));
+    }
+
+    private List<ExtensionDefinitionReadback> listDefinitions(
+            UUID workspaceUuid, String groupWorkspaceKey, String workspaceStatus) {
         return jdbc.query(
                 "SELECT entity_type, definitions::text, revision, updated_at_epoch_millis FROM "
                         + "extension.extension_definition WHERE workspace_uuid=? AND group_workspace_key=? ORDER BY "
@@ -100,7 +136,9 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                         row.getString(1),
                         row.getLong(3),
                         row.getLong(4),
-                        readFields(row.getString(2))),
+                        readFields(row.getString(2)),
+                        workspaceStatus,
+                        blockers(workspaceStatus)),
                 workspaceUuid,
                 groupWorkspaceKey);
     }
@@ -112,12 +150,14 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
      */
     @Transactional(readOnly = true)
     public List<ExtensionDefinitionReadback> listManagementDefinitions(UUID workspaceUuid, String groupWorkspaceKey) {
+        String workspaceStatus = workspaceStatus(workspaceUuid, groupWorkspaceKey);
         java.util.Map<String, ExtensionDefinitionReadback> configured =
-                listDefinitions(workspaceUuid, groupWorkspaceKey).stream()
+                listDefinitions(workspaceUuid, groupWorkspaceKey, workspaceStatus).stream()
                         .collect(java.util.stream.Collectors.toMap(
                                 ExtensionDefinitionReadback::hostType, value -> value));
         return MANAGEMENT_HOST_TYPES.stream()
-                .map(hostType -> configured.getOrDefault(hostType, unconfigured(groupWorkspaceKey, hostType)))
+                .map(hostType ->
+                        configured.getOrDefault(hostType, unconfigured(groupWorkspaceKey, hostType, workspaceStatus)))
                 .toList();
     }
 
@@ -126,10 +166,11 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
     public ExtensionDefinitionReadback managementDefinition(
             UUID workspaceUuid, String groupWorkspaceKey, String hostType) {
         validateHost(hostType);
+        String workspaceStatus = workspaceStatus(workspaceUuid, groupWorkspaceKey);
         try {
-            return requireDefinition(workspaceUuid, groupWorkspaceKey, hostType);
+            return requireDefinition(workspaceUuid, groupWorkspaceKey, hostType, workspaceStatus);
         } catch (DefinitionNotFoundException absent) {
-            return unconfigured(groupWorkspaceKey, hostType);
+            return unconfigured(groupWorkspaceKey, hostType, workspaceStatus);
         }
     }
 
@@ -169,8 +210,22 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                 () -> managementDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.CONTRACT));
     }
 
-    private static ExtensionDefinitionReadback unconfigured(String groupWorkspaceKey, String hostType) {
-        return new ExtensionDefinitionReadback(groupWorkspaceKey, hostType, 0, 0, List.of());
+    private String workspaceStatus(UUID workspaceUuid, String groupWorkspaceKey) {
+        String status = workspaceStatuses.requireStatus(workspaceUuid, groupWorkspaceKey);
+        if (status == null || !Set.of("ENABLED", "DISABLED").contains(status)) throw new DefinitionInvalidException();
+        return status;
+    }
+
+    private static List<ExtensionDefinitionReadback.Blocker> blockers(String workspaceStatus) {
+        return "ENABLED".equals(workspaceStatus)
+                ? List.of()
+                : List.of(new ExtensionDefinitionReadback.Blocker("WORKSPACE", workspaceStatus));
+    }
+
+    private static ExtensionDefinitionReadback unconfigured(
+            String groupWorkspaceKey, String hostType, String workspaceStatus) {
+        return new ExtensionDefinitionReadback(
+                groupWorkspaceKey, hostType, 0, 0, List.of(), workspaceStatus, blockers(workspaceStatus));
     }
 
     @Transactional
@@ -429,7 +484,7 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                     : field.options().stream()
                             .map(value -> value == null ? null : value.trim())
                             .toList();
-            String status = field.status() == null ? "ENABLED" : field.status();
+            String status = field.status();
             int order = field.displayOrder() == null ? index : field.displayOrder();
             String suffix =
                     field.displaySuffix() == null || field.displaySuffix().isBlank()
@@ -441,6 +496,7 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                     || label.isEmpty()
                     || label.length() > 120
                     || !Set.of("TEXT", "NUMBER", "DATE", "BOOLEAN", "SELECT").contains(type)
+                    || status == null
                     || !Set.of("ENABLED", "DISABLED").contains(status)
                     || order < 0
                     || (suffix != null && suffix.length() > 20)
@@ -512,6 +568,7 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                 .collect(
                         java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, field -> field));
         Map<String, String> requested = requestedValues == null ? Map.of() : requestedValues;
+        if (!requested.isEmpty()) requireConsumableDefinition(definition);
         for (Map.Entry<String, String> entry : requested.entrySet()) {
             ExtensionDefinitionReadback.Field field = fields.get(entry.getKey());
             if (field == null) throw new DefinitionInvalidException();
@@ -554,9 +611,9 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
         Map<String, ExtensionDefinitionReadback.Field> fields = definition.fields().stream()
                 .collect(
                         java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, field -> field));
-        for (ExtensionSubmission.ExtensionFieldValue value : submission == null
-                ? java.util.List.<ExtensionSubmission.ExtensionFieldValue>of()
-                : submission.fields()) {
+        List<ExtensionSubmission.ExtensionFieldValue> submitted = submission == null ? List.of() : submission.fields();
+        if (!submitted.isEmpty()) requireConsumableDefinition(definition);
+        for (ExtensionSubmission.ExtensionFieldValue value : submitted) {
             ExtensionDefinitionReadback.Field field = fields.get(value.fieldKey());
             if (field == null) throw new DefinitionInvalidException();
             if ("DISABLED".equals(field.status())) continue;
@@ -578,6 +635,20 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
             throw new DefinitionInvalidException();
         }
         return merged.toString();
+    }
+
+    /**
+     * Extension values are a downstream business consumption. A definition may still be read and edited while its
+     * workspace is disabled, but no owner may materialize new values until the root workspace dimension is usable. Keep
+     * this predicate beside the shared merge implementation so every owner-native consumer gets the same fail-closed
+     * rule without duplicating status interpretation.
+     */
+    public static void requireConsumableDefinition(ExtensionDefinitionReadback definition) {
+        if (!"ENABLED".equals(definition.workspaceStatus())
+                || definition.blockers() == null
+                || !definition.blockers().isEmpty()) {
+            throw new DefinitionInvalidException();
+        }
     }
 
     /** Decodes the durable JSON object into the owner readback representation. */
@@ -605,13 +676,17 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                 List<String> options = new java.util.ArrayList<>();
                 if (!value.path("options").isArray()) throw new DefinitionInvalidException();
                 value.path("options").forEach(option -> options.add(option.asText()));
+                JsonNode statusNode = value.get("status");
+                if (statusNode == null || statusNode.isNull() || !statusNode.isTextual()) {
+                    throw new DefinitionInvalidException();
+                }
                 fields.add(new ExtensionDefinitionReadback.Field(
                         value.path("key").asText(),
                         value.path("label").asText(),
                         value.path("type").asText(),
                         value.path("required").asBoolean(),
                         List.copyOf(options),
-                        value.path("status").asText("ENABLED"),
+                        statusNode.asText(),
                         value.path("displayOrder").asInt(),
                         value.path("displaySuffix").isMissingNode()
                                         || value.path("displaySuffix").isNull()

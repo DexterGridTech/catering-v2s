@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 
@@ -122,7 +121,7 @@ class OperationsCatalogInventoryControllerRouteTest {
     }
 
     @Test
-    void categoryRoutesUseOpaqueRefsAndExposeOnlyTheRegisteredDeleteCommand() throws Exception {
+    void categoryRoutesUseOpaqueRefsAndExposeOnlyTheRegisteredStatusCommand() throws Exception {
         Method post = OperationsCatalogInventoryController.class.getMethod(
                 "moveCatalogCategory",
                 com.catering.v2s.app.edge.session.EdgeRequestContext.class,
@@ -143,14 +142,14 @@ class OperationsCatalogInventoryControllerRouteTest {
         assertTrue(Arrays.asList(patchPaths).contains("/categories/{categoryRef}"));
         assertFalse(Arrays.asList(patchPaths).contains("/categories/{categoryCode}"));
 
-        Method delete = OperationsCatalogInventoryController.class.getMethod(
-                "deleteCatalogCategory",
+        Method status = OperationsCatalogInventoryController.class.getMethod(
+                "transitionCatalogCategoryStatus",
                 com.catering.v2s.app.edge.session.EdgeRequestContext.class,
-                com.catering.v2s.app.edge.generated.wire.CatalogCategoryDeleteRequest.class,
+                com.catering.v2s.app.edge.generated.wire.CatalogCategoryStatusTransitionRequest.class,
                 String.class,
                 String.class);
-        assertTrue(
-                Arrays.asList(delete.getAnnotation(DeleteMapping.class).value()).contains("/categories/{categoryRef}"));
+        assertTrue(Arrays.asList(status.getAnnotation(PostMapping.class).value())
+                .contains("/categories/{categoryRef}/status"));
     }
 
     @Test
@@ -223,6 +222,38 @@ class OperationsCatalogInventoryControllerRouteTest {
                 String.class);
 
         assertTrue(Arrays.asList(batch.getAnnotation(PostMapping.class).value()).contains("/items/status"));
+    }
+
+    @Test
+    void catalogDefinitionAndUnitTransitionsUseOpaqueRefsAndTheRegisteredStatusRoutes() throws Exception {
+        assertStatusRoute(
+                "transitionAttributeDefinitionStatus",
+                com.catering.v2s.app.edge.generated.wire.CatalogAttributeDefinitionStatusTransitionRequest.class,
+                "/attribute-definitions/{definitionRef}/status");
+        assertStatusRoute(
+                "transitionOrderOptionDefinitionStatus",
+                com.catering.v2s.app.edge.generated.wire.CatalogOrderOptionDefinitionStatusTransitionRequest.class,
+                "/order-option-definitions/{definitionRef}/status");
+        assertStatusRoute(
+                "transitionCatalogUnitStatus",
+                com.catering.v2s.app.edge.generated.wire.CatalogUnitStatusTransitionRequest.class,
+                "/units/{unitRef}/status");
+        assertStatusRoute(
+                "transitionCatalogCategoryStatus",
+                com.catering.v2s.app.edge.generated.wire.CatalogCategoryStatusTransitionRequest.class,
+                "/categories/{categoryRef}/status");
+    }
+
+    private static void assertStatusRoute(String methodName, Class<?> requestType, String expectedPath)
+            throws Exception {
+        Method method = OperationsCatalogInventoryController.class.getMethod(
+                methodName,
+                com.catering.v2s.app.edge.session.EdgeRequestContext.class,
+                requestType,
+                String.class,
+                String.class);
+        PostMapping mapping = method.getAnnotation(PostMapping.class);
+        assertEquals(Set.of(expectedPath), Set.of(mapping.value()), methodName + " route path drifted");
     }
 
     private record ReadRoute(String operationId, String controllerMethod, String path, String coordinatorMethod) {}

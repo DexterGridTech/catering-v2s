@@ -237,7 +237,7 @@ final class CatalogSkuVariantAxisFacts {
             if (!axisRemoved && removedValues.isEmpty()) continue;
             if (candidateSkus == null) continue;
             for (JsonNode sku : candidateSkus) {
-                if ("ARCHIVED".equals(sku.path("status").asText("ENABLED"))) continue;
+                if ("VOIDED".equals(sku.path("status").asText("ENABLED"))) continue;
                 JsonNode refs = sku.path("attributeValueRefs");
                 if (!refs.isArray()) continue;
                 for (JsonNode ref : refs) {

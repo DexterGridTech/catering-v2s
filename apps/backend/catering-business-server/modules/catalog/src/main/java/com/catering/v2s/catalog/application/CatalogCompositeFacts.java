@@ -43,7 +43,8 @@ final class CatalogCompositeFacts {
                         + "nent"
                         + ".quantity,component.unit,component.is_default,component.extra_price,component.status,compone"
                         + "nt.d"
-                        + "isplay_order,item.code,item.name,sku.sku_code,sku.sku_name FROM catalog.catalog_composite_group group_row LEFT "
+                        + "isplay_order,item.code,item.name,sku.sku_code,sku.sku_name "
+                        + "FROM catalog.catalog_composite_group group_row LEFT "
                         + "JOIN "
                         + "catalog.catalog_composite_component component ON "
                         + "component.composite_group_ref=group_row.composite_group_ref LEFT JOIN catalog.catalog_item "
@@ -85,16 +86,20 @@ final class CatalogCompositeFacts {
                                     rows.getObject(11, UUID.class).toString());
                         component.put("itemCode", rows.getString(18));
                         String itemName = rows.getString(19);
+                        // spotless:off
                         if (itemName == null || itemName.isBlank())
                             throw new CatalogOwnerApi.Problem(
                                     "RESULT_UNKNOWN", 500, "套餐内容的商品名称读取失败");
+                        // spotless:on
                         component.put("itemName", itemName);
                         if (rows.getString(20) == null) component.putNull("skuCode");
                         else component.put("skuCode", rows.getString(20));
                         String skuName = rows.getString(21);
+                        // spotless:off
                         if (rows.getObject(11) != null && (skuName == null || skuName.isBlank()))
                             throw new CatalogOwnerApi.Problem(
                                     "RESULT_UNKNOWN", 500, "套餐内容的规格名称读取失败");
+                        // spotless:on
                         if (skuName == null) component.putNull("skuName");
                         else component.put("skuName", skuName);
                         component.put(

@@ -20,7 +20,34 @@ public final class BusinessChannelReadback {
             String dineInForm,
             String providerCode,
             String status,
-            long version) {}
+            List<StatusDimension> statusDimensions,
+            List<StatusDimension> blockers,
+            long version) {
+        public Template {
+            statusDimensions = List.copyOf(statusDimensions == null ? List.of() : statusDimensions);
+            blockers = List.copyOf(blockers == null ? List.of() : blockers);
+        }
+    }
+
+    /**
+     * Server-owned target context for an operations command preflight. It deliberately excludes read-model status
+     * dimensions; the command owner reloads and locks the complete aggregate before it authorizes or writes.
+     */
+    public record TemplateCommandContext(UUID templateRef, UUID projectRef) {}
+
+    /** One related lifecycle fact; status is never collapsed into an aggregate availability value. */
+    public record StatusDimension(String type, String ref, String status) {
+        public StatusDimension {
+            type = requireText(type, "type");
+            ref = requireText(ref, "ref");
+            status = requireText(status, "status");
+        }
+
+        private static String requireText(String value, String field) {
+            if (value == null || value.isBlank()) throw new IllegalArgumentException(field + " is required");
+            return value;
+        }
+    }
 
     public record Channel(
             UUID channelRef,
@@ -34,12 +61,38 @@ public final class BusinessChannelReadback {
             /** Owner-projected binding meaning: NOT_REQUIRED, UNBOUND, or BOUND. */
             String bindingStatus,
             String status,
-            List<String> stopReasons,
+            List<StatusDimension> statusDimensions,
+            List<StatusDimension> blockers,
             long version) {
         public Channel {
-            stopReasons = List.copyOf(stopReasons == null ? List.of() : stopReasons);
+            statusDimensions = List.copyOf(statusDimensions == null ? List.of() : statusDimensions);
+            blockers = List.copyOf(blockers == null ? List.of() : blockers);
         }
 
+        public String targetNodeType() {
+            return ownerNodeType;
+        }
+
+        public String targetNodeRef() {
+            return ownerNodeRef;
+        }
+    }
+
+    /**
+     * Server-owned channel context used by command edges and cross-owner coordination. Complete status readback is
+     * intentionally not carried here because it is not safe to reuse as post-write authority.
+     */
+    public record ChannelCommandContext(
+            UUID channelRef,
+            UUID templateRef,
+            String ownerNodeType,
+            String ownerNodeRef,
+            String channelName,
+            UUID bindingRef,
+            long version,
+            String templateAccessKind,
+            String templateOrderKind,
+            String templateProviderCode) {
         public String targetNodeType() {
             return ownerNodeType;
         }

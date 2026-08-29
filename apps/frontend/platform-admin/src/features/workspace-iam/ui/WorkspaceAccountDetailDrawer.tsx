@@ -1,6 +1,11 @@
 import {Button, Descriptions, Drawer, Space, Table, Tag, Typography} from 'antd';
 import {adminDrawerSurfaceProps, NameCodePathText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import type {WorkspaceAccount} from '../../../app/api/generated/platform-edge';
+import {
+  canManageWorkspaceIam,
+  toggleWorkspaceIamStatus,
+  workspaceIamLifecycleLabels,
+} from '../model/workspaceIamLifecycle';
 
 export type WorkspaceAccountAction =
   | {kind: 'STATUS'; targetStatus: 'ENABLED' | 'DISABLED'}
@@ -17,7 +22,7 @@ type Props = {
   onAudit: () => void;
 };
 
-const accountStatusLabel = (status: WorkspaceAccount['status']) => (status === 'ENABLED' ? '启用' : '停用');
+const accountStatusLabel = (status: WorkspaceAccount['status']) => workspaceIamLifecycleLabels[status];
 const assignmentStatusLabel = (status: WorkspaceAccount['assignments'][number]['status']) =>
   status === 'ACTIVE' ? '有效' : '已撤销';
 const time = (value: number | null | undefined) => (value ? new Date(value).toLocaleString('zh-CN') : '—');
@@ -50,20 +55,26 @@ export function WorkspaceAccountDetailDrawer({
             <Button onClick={onAudit} {...testId('workspace-account-audit-history')}>
               操作历史
             </Button>
-            <Button
-              onClick={() => onOpenAction({kind: 'CREDENTIAL_RESET'})}
-              {...testId('workspace-account-reset-credential')}
-            >
-              重置登录凭据
-            </Button>
-            <Button
-              onClick={() =>
-                onOpenAction({kind: 'STATUS', targetStatus: account.status === 'ENABLED' ? 'DISABLED' : 'ENABLED'})
-              }
-              {...testId('workspace-account-transition-status')}
-            >
-              {account.status === 'ENABLED' ? '停用账号' : '启用账号'}
-            </Button>
+            {canManageWorkspaceIam(account.status) && (
+              <>
+                <Button
+                  onClick={() => onOpenAction({kind: 'CREDENTIAL_RESET'})}
+                  {...testId('workspace-account-reset-credential')}
+                >
+                  重置登录凭据
+                </Button>
+                {toggleWorkspaceIamStatus(account.status) && (
+                  <Button
+                    onClick={() =>
+                      onOpenAction({kind: 'STATUS', targetStatus: toggleWorkspaceIamStatus(account.status)!})
+                    }
+                    {...testId('workspace-account-transition-status')}
+                  >
+                    {account.status === 'ENABLED' ? '停用账号' : '启用账号'}
+                  </Button>
+                )}
+              </>
+            )}
           </Space>
         )
       }
@@ -92,8 +103,8 @@ export function WorkspaceAccountDetailDrawer({
               columns={[
                 {
                   title: '任职机构',
-                  dataIndex: 'organizationPath',
-                  render: (_, assignment) => <NameCodePathText value={assignment.organizationPath} />,
+                  dataIndex: 'organizationPathNodes',
+                  render: (_, assignment) => <NameCodePathText nodes={assignment.organizationPathNodes} />,
                 },
                 {title: '业务角色', dataIndex: 'roleName'},
                 {title: '状态', render: (_, assignment) => <Tag>{assignmentStatusLabel(assignment.status)}</Tag>},
@@ -101,7 +112,7 @@ export function WorkspaceAccountDetailDrawer({
                   title: '撤销任职',
                   key: 'revoke',
                   render: (_, assignment) =>
-                    assignment.status === 'ACTIVE' ? (
+                    assignment.status === 'ACTIVE' && canManageWorkspaceIam(account.status) ? (
                       <Button
                         type="link"
                         danger

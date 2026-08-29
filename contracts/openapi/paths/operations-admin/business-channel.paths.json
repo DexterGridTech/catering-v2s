@@ -703,7 +703,6 @@
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
         "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
-          "DISABLED_OBJECT_NOT_EDITABLE",
           "IMMUTABLE_FIELD",
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -715,7 +714,8 @@
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "PLATFORM_COMMON_VALIDATION_FAILED",
           "PLATFORM_COMMON_VERSION_CONFLICT",
-          "VERSION_CONFLICT"
+          "VERSION_CONFLICT",
+          "VOIDED_RECORD_IMMUTABLE"
         ],
         "security": [
           {
@@ -818,7 +818,6 @@
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
         "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
-          "DISABLED_OBJECT_NOT_EDITABLE",
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
           "PLATFORM_COMMON_CONTEXT_STALE",
@@ -829,7 +828,8 @@
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "PLATFORM_COMMON_VALIDATION_FAILED",
           "PLATFORM_COMMON_VERSION_CONFLICT",
-          "VERSION_CONFLICT"
+          "VERSION_CONFLICT",
+          "VOIDED_RECORD_IMMUTABLE"
         ],
         "security": [
           {
@@ -1451,7 +1451,6 @@
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
         "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
-          "DISABLED_OBJECT_NOT_EDITABLE",
           "IMMUTABLE_FIELD",
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -1463,7 +1462,8 @@
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "PLATFORM_COMMON_VALIDATION_FAILED",
           "PLATFORM_COMMON_VERSION_CONFLICT",
-          "VERSION_CONFLICT"
+          "VERSION_CONFLICT",
+          "VOIDED_RECORD_IMMUTABLE"
         ],
         "security": [
           {
@@ -1564,7 +1564,6 @@
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
         "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
-          "DISABLED_OBJECT_NOT_EDITABLE",
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
           "PLATFORM_COMMON_CONTEXT_STALE",
@@ -1575,7 +1574,8 @@
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "PLATFORM_COMMON_VALIDATION_FAILED",
           "PLATFORM_COMMON_VERSION_CONFLICT",
-          "VERSION_CONFLICT"
+          "VERSION_CONFLICT",
+          "VOIDED_RECORD_IMMUTABLE"
         ],
         "security": [
           {

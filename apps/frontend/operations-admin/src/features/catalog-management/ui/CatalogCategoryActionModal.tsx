@@ -45,9 +45,9 @@ export function CatalogCategoryActionModal({
                 ? '向上移动分类'
                 : action?.mode === 'MOVE_DOWN'
                   ? '向下移动分类'
-                  : '删除分类'
+                  : '标记删除分类'
       }
-      okText={action?.mode === 'DELETE' ? '删除' : '确定'}
+      okText={action?.mode === 'DELETE' ? '标记删除' : '确定'}
       okButtonProps={action?.mode === 'DELETE' ? {danger: true} : undefined}
       onCancel={onClose}
       onOk={onSubmit}
@@ -139,12 +139,13 @@ export function CatalogCategoryActionModal({
         {action?.mode === 'MOVE_DOWN' && <Typography.Text type="secondary">将按当前最新排序下移一位。</Typography.Text>}
         {action?.mode === 'DELETE' && (
           <Space direction="vertical" size={6}>
-            <Typography.Text>
-              将删除“{action.node?.name}”及其 {action.node?.deletionAvailability.subtreeSize ?? 0} 个分类节点。
-            </Typography.Text>
-            {(action.node?.deletionAvailability.blockingReferenceLabels.length ?? 0) > 0 && (
+            <Typography.Text>将把“{action.node?.name}”标记为删除；分类及其子分类仍会保留历史事实。</Typography.Text>
+            {(action.node?.deletionAvailability.blockingReferences?.references.length ?? 0) > 0 && (
               <Typography.Text type="danger">
-                仍被以下商品引用：{action.node?.deletionAvailability.blockingReferenceLabels.join('、')}
+                仍被以下商品引用，当前不能标记删除：
+                {action.node?.deletionAvailability.blockingReferences?.references
+                  .map(reference => reference.name)
+                  .join('、')}
               </Typography.Text>
             )}
           </Space>

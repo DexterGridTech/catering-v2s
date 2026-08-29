@@ -20,12 +20,12 @@
 | **分流与批次** | `-backend-findings-triage-and-sequencing-claude.md` · `-part-one-coding-standards-batches-claude.md` · `-part-two-batches-claude.md` |
 | **门的清单** | `tools/verify-gates/verify.mjs`(⛔ **门存在 ≠ 门生效**,必须在 command 列表里) |
 
-**十八类里有九类能变成门。** 其余九类只能靠 review —— 这不是偷懒,是那九类的判据需要理解上下文,
+**十九类里有十类能变成门。** 其余九类只能靠 review —— 这不是偷懒,是那九类的判据需要理解上下文,
 做成关键词匹配就会变成"门全绿而功能是坏的"。
 
 ---
 
-## 1 · 能变成门的九类
+## 1 · 能变成门的十类
 
 ### 1-C · 契约声明必须传导到生成物
 
@@ -144,11 +144,18 @@
 
 **唯一键不一定叫 `code`。** 实测仓内至少四种:`(data_node_ref, brand_ref, code)`、`(data_node_ref, brand_ref, dictionary_kind, code)`、`(item_ref, sku_code)`、以及**按名称唯一**的 `uq_workspace_role_name`(`workspace_iam.workspace_role` 无 `code` 列);`workspace_iam.workspace_account` 的唯一键是登录名与手机号。登记项必须写明该表的 scope 列与唯一键列。
 
+**已登记例外 · `workspace_iam.workspace_account`(Dexter 2026-08-27 裁定 D02=B)。**
+该表的登录名与手机号**保持普通 `UNIQUE`,不改 partial**;账号一旦 `VOIDED`,该手机号/登录名**永久不可再用**。
+理由:**身份键不是业务编码。** 分类编码、单位编码是业务自己选的标签,选错要能重来;手机号标识的是一个自然人,
+复用会让"这个号以前是谁"变得不可判定。本条规则的目的是"别让看不见的行占住用户能选的标签",对身份键不成立。
+**推论(必须一致,否则库与应用打架)**:既然应用层永久拒绝,DB 就不能允许 —— 若把索引改成 partial,
+DB 会放行第二行而应用永远拒绝,predicate 变成死代码。`workspace_iam.workspace_role` 不在此例外内:
+角色名是业务标签,照常改 partial。
+
 **反例**:表级普通 `UNIQUE (data_node_ref, brand_ref, code)`——用户建错一个定义再删除,就再也不能用同一编码重建,而且撞的是一个他看不见的已删除行。
 
 **为什么**:取消物理删除后,已删除行仍在表内;不排除它,编码就被永久占住。
 
-**`scope + code` 不是统一形状,必须逐表登记**:仓内实际至少三种 —— `(data_node_ref, brand_ref, code)`、`(data_node_ref, brand_ref, dictionary_kind, code)`、`(item_ref, sku_code)`。登记项必须写明该表的 scope 列与 code 列。
 
 **不适用情形必须登记而不是硬套**:没有 `code` 列的表(如 `catalog.catalog_composite_component`,列为 `composite_component_ref / composite_group_ref / component_item_ref / …`,唯一约束是 `(composite_group_ref, display_order)`)在物理上无法满足本条。这类表通常根本不是主数据 —— 组件行是"整组删掉重插表达一次编辑",按 1-L 的可证伪判据(能不能由人手动在两个状态间来回切)就不该进主数据清单。**先按判据分类,再套约束;分类错了不要靠豁免打补丁。**
 
@@ -163,6 +170,33 @@
 **为什么**:停用与删除的业务含义是"不能再被**新**选中",不是"引用过它的东西全部冻结"。
 
 **门**:`backend-acceptance` 真实场景——把被引用的定义置停用后保存引用它的对象(不改该引用)必须成功;把该引用改成另一个停用的必须被拒。这是本组规则里唯一验证真实行为的门
+
+### 1-O · 代码定义的闭集必须在契约里声明为 enum
+
+**规则**:响应字段的值若来自代码定义的闭集(Java enum、固定常量集、DB CHECK 约束枚举),契约里**必须**声明为 `enum`;不得只在请求侧声明、响应侧留裸 `string`。业务自定义的值(用户自己填的编码、名称)不属于闭集,不得强上 enum。
+
+**反例**(实测,同一个概念在同一份契约里两种形态):
+
+```
+enum         BusinessChannelTemplateCreateRequest/properties/operatorKind
+type=string  BusinessChannelTemplateView/properties/operatorKind
+```
+
+`accessKind`、`dineInForm`、`orderKind`、`ownerNodeType` 同型。全域扫描:22 组同名属性一处 enum、一处裸 string(**含假阳性,见下**)。
+
+**为什么**:响应不声明值域,前端就拿不到联合类型,只能对一个 `string` 建字典——后端新增一个枚举值,前端默默显示成裸英文码,编译器一个都拦不住。**这正是 `*DisplayName` 这批字段当初被造出来的原因**:后端手里有闭集、不结构化地给出来,只好改送一个预渲染的中文字符串。1-K 禁的是拼装,本条堵的是拼装的**成因**——两条不接上,删掉的 DisplayName 会再长回来。
+
+**⚠️ 判据是概念,不是属性名。** 按名字匹配必然误判,实测三种形态:
+
+- **同名不同概念**:`TypedProblem.code` 是 47 值错误码 enum,`CatalogItem.code` 是用户自填的业务编码——后者**不是**闭集,不得因前者而被要求 enum
+- **同名不同值集**:`CatalogItemDetail` 内 `ownerType` 同时存在 `['CATALOG_ITEM','SKU']` 与 `['ITEM','SKU','OPTION_VALUE']` 两份
+- **同概念不同值集**:`CatalogDictionaryQuery.status` 是三值 `('ENABLED','DISABLED','VOIDED')`,而 `CatalogItemDetail.status` / `CatalogUnitList.status` 是两值 `('ENABLED','DISABLED')`——与 1-L 直接冲突,响应侧补 enum 时必须同步取齐三值,否则 owner 会返回一个不在自己 enum 里的值
+
+**完备性靠反向判据**:只说"这几个字段要补 enum"是存在性判据,新写一个裸 `string` 的闭集字段照样全绿。判据反过来写:
+
+> **响应字段的值若由 Java enum 或固定常量集产生,契约声明不是 `enum` 就必须登记豁免并带理由,否则门红。**
+
+**门**:`scripts/check/closed-set-enum-declared`(**待建**);红夹具 = 把任一已声明 enum 的响应字段改回裸 `string`,门必须红
 
 ## 2 · 只能靠 review 的九类
 

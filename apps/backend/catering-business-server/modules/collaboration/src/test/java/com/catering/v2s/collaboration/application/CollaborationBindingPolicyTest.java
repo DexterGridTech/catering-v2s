@@ -82,14 +82,9 @@ class CollaborationBindingPolicyTest {
                 "Test provider",
                 "TEST_SYSTEM",
                 businessScope,
-                businessScope,
                 bindableNodeTypes,
-                bindableNodeTypes,
-                authenticationKind,
                 authenticationKind,
                 "LOCAL_ONLY",
-                "Local only",
-                "AVAILABLE",
-                "Available");
+                "AVAILABLE");
     }
 }

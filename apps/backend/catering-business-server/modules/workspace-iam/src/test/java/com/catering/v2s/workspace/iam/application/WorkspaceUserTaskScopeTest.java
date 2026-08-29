@@ -11,6 +11,7 @@ import com.catering.v2s.organization.application.OrganizationCommandService;
 import com.catering.v2s.organization.application.OrganizationHierarchyService;
 import com.catering.v2s.organization.application.OrganizationTaskPathService;
 import com.catering.v2s.platform.access.PlatformExecutionContext;
+import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import java.time.Instant;
 import java.util.List;
@@ -38,6 +39,12 @@ class WorkspaceUserTaskScopeTest {
     private static UUID commercialGroup;
     private static UUID role;
 
+    private static final WorkspaceStatusLookup WORKSPACE_STATUSES = (id, key) -> jdbc.queryForObject(
+            "SELECT status FROM platform_workspace.group_workspace WHERE workspace_uuid=? AND group_workspace_key=?",
+            String.class,
+            id,
+            key);
+
     @BeforeAll
     static void setup() {
         flyway = Flyway.configure()
@@ -63,8 +70,7 @@ class WorkspaceUserTaskScopeTest {
                 NOW);
         long groupWorkspaceId = jdbc.queryForObject(
                 "SELECT id FROM platform_workspace.group_workspace WHERE group_workspace_key='scope-test'", Long.class);
-        new OrganizationCommandService(
-                        jdbc, (candidate, key) -> workspace.equals(candidate) && "scope-test".equals(key), () -> NOW)
+        new OrganizationCommandService(jdbc, WORKSPACE_STATUSES, () -> NOW)
                 .execute(
                         new PlatformExecutionContext(
                                 "scope-test", "platform-admin", Instant.ofEpochMilli(NOW + 60_000L), "scope-test"),
@@ -108,7 +114,11 @@ class WorkspaceUserTaskScopeTest {
         WorkspaceUserService service = new WorkspaceUserService(
                 jdbc,
                 hierarchy,
-                new BusinessEntityService(jdbc, () -> NOW, new ExtensionDefinitionService(jdbc, () -> NOW), hierarchy),
+                new BusinessEntityService(
+                        jdbc,
+                        () -> NOW,
+                        new ExtensionDefinitionService(jdbc, () -> NOW, WORKSPACE_STATUSES),
+                        hierarchy),
                 new WorkspaceRoleService(jdbc, () -> NOW),
                 groups,
                 (w, k, t) -> List.of(),
@@ -573,7 +583,11 @@ class WorkspaceUserTaskScopeTest {
         return new WorkspaceUserService(
                 jdbc,
                 hierarchy,
-                new BusinessEntityService(jdbc, () -> NOW, new ExtensionDefinitionService(jdbc, () -> NOW), hierarchy),
+                new BusinessEntityService(
+                        jdbc,
+                        () -> NOW,
+                        new ExtensionDefinitionService(jdbc, () -> NOW, WORKSPACE_STATUSES),
+                        hierarchy),
                 new WorkspaceRoleService(jdbc, () -> NOW),
                 groups,
                 (w, k, t) -> List.of(),

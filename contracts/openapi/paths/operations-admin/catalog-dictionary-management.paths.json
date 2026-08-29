@@ -5,7 +5,6 @@
     "createOperationsCatalogCategory",
     "updateOperationsCatalogCategory",
     "moveOperationsCatalogCategory",
-    "deleteOperationsCatalogCategory",
     "getOperationsCatalogDictionary",
     "createOperationsCatalogDictionaryEntry",
     "updateOperationsCatalogDictionaryEntry",
@@ -14,16 +13,16 @@
     "listOperationsCatalogAttributeDefinitions",
     "createOperationsCatalogAttributeDefinition",
     "updateOperationsCatalogAttributeDefinition",
-    "deleteOperationsCatalogAttributeDefinition",
     "listOperationsCatalogOrderOptionDefinitions",
     "createOperationsCatalogOrderOptionDefinition",
     "updateOperationsCatalogOrderOptionDefinition",
-    "deleteOperationsCatalogOrderOptionDefinition",
     "listOperationsCatalogUnits",
     "createOperationsCatalogUnit",
     "updateOperationsCatalogUnit",
-    "disableOperationsCatalogUnit",
-    "deleteOperationsCatalogUnit"
+    "transitionOperationsCatalogAttributeDefinitionStatus",
+    "transitionOperationsCatalogOrderOptionDefinitionStatus",
+    "transitionOperationsCatalogUnitStatus",
+    "transitionOperationsCatalogCategoryStatus"
   ],
   "paths": {
     "/operations/catalog-inventory/categories": {
@@ -52,20 +51,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_CATEGORY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_CATEGORY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 15,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 15,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -136,20 +121,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_CATEGORY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_CATEGORY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 6,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 6,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -201,97 +172,6 @@
             }
           }
         }
-      },
-      "delete": {
-        "operationId": "deleteOperationsCatalogCategory",
-        "tags": [
-          "Catalog"
-        ],
-        "x-consumer-faces": [
-          "operations-admin"
-        ],
-        "x-owner-module": "catalog",
-        "x-coordinated-owners": [],
-        "x-capability-keys": [
-          "EDIT_HEAD_COMPANY_CATALOG",
-          "EDIT_STORE_CATALOG"
-        ],
-        "x-capability-by-data-node-type": {
-          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
-          "STORE": "EDIT_STORE_CATALOG"
-        },
-        "x-allowed-data-node-types": [
-          "HEAD_COMPANY",
-          "STORE"
-        ],
-        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_CATEGORY",
-        "x-required-capability": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_CATEGORY",
-        "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 13,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 13,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
-        "responses": {
-          "200": {
-            "description": "Typed readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CatalogCategoryDeleteReadback"
-                }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Typed problem",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TypedProblem"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "categoryRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CatalogCategoryDeleteRequest"
-              }
-            }
-          }
-        }
       }
     },
     "/operations/catalog-inventory/categories/{categoryRef}/move": {
@@ -320,20 +200,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_MOVE_OPERATIONS_CATALOG_CATEGORY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_MOVE_OPERATIONS_CATALOG_CATEGORY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 6,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 6,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -406,20 +272,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 9,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 9,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -544,20 +396,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 12,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 12,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -636,20 +474,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 13,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 13,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -736,20 +560,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_REORDER_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_REORDER_OPERATIONS_CATALOG_DICTIONARY_ENTRY",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 14,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 14,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -828,20 +638,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 15,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 15,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -921,20 +717,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 8,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 8,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -967,6 +749,18 @@
               "format": "uuid",
               "description": "selected data node"
             }
+          },
+          {
+            "name": "candidateUsage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ITEM_ASSIGNMENT"
+              ],
+              "description": "owner-defined candidate usage; only enabled definitions are returned"
+            }
           }
         ]
       },
@@ -995,20 +789,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 11,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 11,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1079,20 +859,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 10,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 10,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1144,97 +910,6 @@
             }
           }
         }
-      },
-      "delete": {
-        "operationId": "deleteOperationsCatalogAttributeDefinition",
-        "tags": [
-          "Catalog"
-        ],
-        "x-consumer-faces": [
-          "operations-admin"
-        ],
-        "x-owner-module": "catalog",
-        "x-coordinated-owners": [],
-        "x-capability-keys": [
-          "EDIT_HEAD_COMPANY_CATALOG",
-          "EDIT_STORE_CATALOG"
-        ],
-        "x-capability-by-data-node-type": {
-          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
-          "STORE": "EDIT_STORE_CATALOG"
-        },
-        "x-allowed-data-node-types": [
-          "HEAD_COMPANY",
-          "STORE"
-        ],
-        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
-        "x-required-capability": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
-        "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 11,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 11,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
-        "responses": {
-          "200": {
-            "description": "Typed readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CatalogAttributeDefinitionDeleteReadback"
-                }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Typed problem",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TypedProblem"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "definitionRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CatalogAttributeDefinitionDeleteRequest"
-              }
-            }
-          }
-        }
       }
     },
     "/operations/catalog-inventory/order-option-definitions": {
@@ -1256,20 +931,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 10,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 10,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1301,6 +962,18 @@
               "type": "string",
               "format": "uuid",
               "description": "selected data node"
+            }
+          },
+          {
+            "name": "candidateUsage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ITEM_ASSIGNMENT"
+              ],
+              "description": "owner-defined candidate usage; only enabled definitions are returned"
             }
           }
         ]
@@ -1335,20 +1008,6 @@
         ],
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 17,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 17,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1425,20 +1084,6 @@
         ],
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 20,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 20,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1490,102 +1135,6 @@
             }
           }
         }
-      },
-      "delete": {
-        "operationId": "deleteOperationsCatalogOrderOptionDefinition",
-        "tags": [
-          "Catalog"
-        ],
-        "x-consumer-faces": [
-          "operations-admin"
-        ],
-        "x-owner-module": "catalog",
-        "x-coordinated-owners": [
-          "inventory"
-        ],
-        "x-capability-keys": [
-          "EDIT_HEAD_COMPANY_CATALOG",
-          "EDIT_STORE_CATALOG"
-        ],
-        "x-capability-by-data-node-type": {
-          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
-          "STORE": "EDIT_STORE_CATALOG"
-        },
-        "x-allowed-data-node-types": [
-          "HEAD_COMPANY",
-          "STORE"
-        ],
-        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
-        "x-coordinated-inventory-definition-commands": [
-          "deleteCatalogOptionValueBoms"
-        ],
-        "x-required-capability": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
-        "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 16,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 16,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
-        "responses": {
-          "200": {
-            "description": "Typed readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CatalogOrderOptionDefinitionDeleteReadback"
-                }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Typed problem",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TypedProblem"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "definitionRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CatalogOrderOptionDefinitionDeleteRequest"
-              }
-            }
-          }
-        }
       }
     },
     "/operations/catalog-inventory/units": {
@@ -1607,20 +1156,6 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 9,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 9,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1689,7 +1224,8 @@
               "type": "string",
               "enum": [
                 "ENABLED",
-                "DISABLED"
+                "DISABLED",
+                "VOIDED"
               ],
               "description": "optional unit lifecycle status filter"
             }
@@ -1721,20 +1257,6 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_UNIT",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_UNIT",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 9,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 9,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1810,20 +1332,6 @@
         ],
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_UNIT",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 15,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 15,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -1875,9 +1383,11 @@
             }
           }
         }
-      },
-      "delete": {
-        "operationId": "deleteOperationsCatalogUnit",
+      }
+    },
+    "/operations/catalog-inventory/attribute-definitions/{definitionRef}/status": {
+      "post": {
+        "operationId": "transitionOperationsCatalogAttributeDefinitionStatus",
         "tags": [
           "Catalog"
         ],
@@ -1885,9 +1395,7 @@
           "operations-admin"
         ],
         "x-owner-module": "catalog",
-        "x-coordinated-owners": [
-          "inventory"
-        ],
+        "x-coordinated-owners": [],
         "x-capability-keys": [
           "EDIT_HEAD_COMPANY_CATALOG",
           "EDIT_STORE_CATALOG"
@@ -1900,33 +1408,16 @@
           "HEAD_COMPANY",
           "STORE"
         ],
-        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_UNIT",
-        "x-coordinated-inventory-definition-commands": [
-          "validateCatalogUnitLifecycle"
-        ],
-        "x-required-capability": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_UNIT",
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_STATUS",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_STATUS",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 13,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 13,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogUnitDeleteReadback"
+                  "$ref": "#/components/schemas/CatalogAttributeDefinitionReadback"
                 }
               }
             }
@@ -1944,7 +1435,7 @@
         },
         "parameters": [
           {
-            "name": "unitRef",
+            "name": "definitionRef",
             "in": "path",
             "required": true,
             "schema": {
@@ -1966,16 +1457,95 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CatalogUnitDeleteRequest"
+                "$ref": "#/components/schemas/CatalogAttributeDefinitionStatusTransitionRequest"
               }
             }
           }
         }
       }
     },
-    "/operations/catalog-inventory/units/{unitRef}/disable": {
+    "/operations/catalog-inventory/order-option-definitions/{definitionRef}/status": {
       "post": {
-        "operationId": "disableOperationsCatalogUnit",
+        "operationId": "transitionOperationsCatalogOrderOptionDefinitionStatus",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
+        ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_STATUS",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_STATUS",
+        "x-mutation": true,
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogOrderOptionDefinitionReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "definitionRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogOrderOptionDefinitionStatusTransitionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/units/{unitRef}/status": {
+      "post": {
+        "operationId": "transitionOperationsCatalogUnitStatus",
         "tags": [
           "Catalog"
         ],
@@ -1998,26 +1568,12 @@
           "HEAD_COMPANY",
           "STORE"
         ],
-        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_DISABLE_OPERATIONS_CATALOG_UNIT",
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_UNIT_STATUS",
         "x-coordinated-inventory-definition-commands": [
           "validateCatalogUnitLifecycle"
         ],
-        "x-required-capability": "CATALOG_INVENTORY_OPERATION_DISABLE_OPERATIONS_CATALOG_UNIT",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_UNIT_STATUS",
         "x-mutation": true,
-        "x-database-operation-budget": {
-          "kind": "FIXED",
-          "max": 13,
-          "measurementScenarioIds": [
-            "performance.normal-path"
-          ],
-          "history": [
-            {
-              "from": null,
-              "to": 13,
-              "reason": "current managed acceptance program maximum"
-            }
-          ]
-        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -2064,7 +1620,86 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CatalogUnitDisableRequest"
+                "$ref": "#/components/schemas/CatalogUnitStatusTransitionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/categories/{categoryRef}/status": {
+      "post": {
+        "operationId": "transitionOperationsCatalogCategoryStatus",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
+        ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_CATEGORY_STATUS",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_CATEGORY_STATUS",
+        "x-mutation": true,
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogCategoryReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "categoryRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogCategoryStatusTransitionRequest"
               }
             }
           }

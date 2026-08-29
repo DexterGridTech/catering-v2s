@@ -11,8 +11,8 @@
       "schemaVersion": 1,
       "revision": "CATALOG_INVENTORY_P1_20260806",
       "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
-      "contractDigest": "368b97a7d34b99b7c840644e93f8a41082e02e30fdb7c9ac7ca984b20760ffd8",
-      "contentSha256": "f1be675551de7c1ed349fef58b7d1d249d928fef0879246996daa4117e2f0b39"
+      "contractDigest": "2acb8be16dba47fd14d3e16394607642e9ea50ad85d61d463e9a1a23eb095740",
+      "contentSha256": "12e602601de41da453983c44ab6c945914614e811a396274c732a20bb365ba33"
     },
     "edge-face": {
       "schemaVersion": 2,
@@ -22,7 +22,7 @@
         "doc/evidence/platform/r5-u01-edge-placement-resolution.json"
       ],
       "contractDigest": null,
-      "contentSha256": "e03bad5f77260b6bb202a92ed7a47236b0e58170595c7dc1db8c6062c87bc4ee"
+      "contentSha256": "92ad852ac85c0bd3a1247ae4859a6ad99a987a6a10a92c9bbfed55d87489ad78"
     }
   },
   "runtimeIntegration": {
@@ -30,14 +30,14 @@
     "legacyDispatcher": "NO_LEGACY_DISPATCH",
     "reason": "BP-U06 completed the 51-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth."
   },
-  "operationCount": 239,
+  "operationCount": 238,
   "readCount": 102,
-  "commandCount": 137,
+  "commandCount": 136,
   "contextCounts": {
     "PLATFORM_COMMAND_CONTEXT": 34,
     "PUBLIC_PROTOCOL_CONTEXT": 9,
     "READ_CONTEXT": 102,
-    "WORKSPACE_EXECUTION_CONTEXT": 87,
+    "WORKSPACE_EXECUTION_CONTEXT": 86,
     "WORKSPACE_PROTOCOL_CONTEXT": 7
   },
   "operations": [
@@ -214,22 +214,6 @@
       "copyRole": "NONE",
       "path": "/operations/catalog-inventory/categories/{categoryRef}/move",
       "normalizedPath": "/operations/catalog-inventory/categories/{categoryRef}/move",
-      "face": "operations-admin",
-      "commandBoundary": "OWNER_COMMAND"
-    },
-    {
-      "operationId": "deleteOperationsCatalogCategory",
-      "owner": "catalog",
-      "routeRegistry": "catalog-inventory",
-      "mode": "COMMAND",
-      "adapter": "com.catering.v2s.catalog.application.operations.DeleteOperationsCatalogCategoryOperation",
-      "wireRequest": "CatalogCategoryDeleteRequest",
-      "wireResponse": "CatalogCategoryDeleteReadback",
-      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
-      "transactionMode": "REQUIRED",
-      "copyRole": "NONE",
-      "path": "/operations/catalog-inventory/categories/{categoryRef}",
-      "normalizedPath": "/operations/catalog-inventory/categories/{categoryRef}",
       "face": "operations-admin",
       "commandBoundary": "OWNER_COMMAND"
     },
@@ -3658,22 +3642,6 @@
       "commandBoundary": "OWNER_COMMAND"
     },
     {
-      "operationId": "deleteOperationsCatalogAttributeDefinition",
-      "owner": "catalog",
-      "routeRegistry": "catalog-inventory",
-      "mode": "COMMAND",
-      "adapter": "com.catering.v2s.catalog.application.operations.DeleteOperationsCatalogAttributeDefinitionOperation",
-      "wireRequest": "CatalogAttributeDefinitionDeleteRequest",
-      "wireResponse": "CatalogAttributeDefinitionDeleteReadback",
-      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
-      "transactionMode": "REQUIRED",
-      "copyRole": "NONE",
-      "path": "/operations/catalog-inventory/attribute-definitions/{definitionRef}",
-      "normalizedPath": "/operations/catalog-inventory/attribute-definitions/{definitionRef}",
-      "face": "operations-admin",
-      "commandBoundary": "OWNER_COMMAND"
-    },
-    {
       "operationId": "listOperationsCatalogOrderOptionDefinitions",
       "owner": "catalog",
       "routeRegistry": "catalog-inventory",
@@ -3713,22 +3681,6 @@
       "adapter": "com.catering.v2s.catalog.application.operations.UpdateOperationsCatalogOrderOptionDefinitionOperation",
       "wireRequest": "CatalogOrderOptionDefinitionUpdateRequest",
       "wireResponse": "CatalogOrderOptionDefinitionReadback",
-      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
-      "transactionMode": "REQUIRED",
-      "copyRole": "NONE",
-      "path": "/operations/catalog-inventory/order-option-definitions/{definitionRef}",
-      "normalizedPath": "/operations/catalog-inventory/order-option-definitions/{definitionRef}",
-      "face": "operations-admin",
-      "commandBoundary": "OWNER_COMMAND"
-    },
-    {
-      "operationId": "deleteOperationsCatalogOrderOptionDefinition",
-      "owner": "catalog",
-      "routeRegistry": "catalog-inventory",
-      "mode": "COMMAND",
-      "adapter": "com.catering.v2s.catalog.application.operations.DeleteOperationsCatalogOrderOptionDefinitionOperation",
-      "wireRequest": "CatalogOrderOptionDefinitionDeleteRequest",
-      "wireResponse": "CatalogOrderOptionDefinitionDeleteReadback",
       "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
       "transactionMode": "REQUIRED",
       "copyRole": "NONE",
@@ -3786,38 +3738,6 @@
       "commandBoundary": "OWNER_COMMAND"
     },
     {
-      "operationId": "disableOperationsCatalogUnit",
-      "owner": "catalog",
-      "routeRegistry": "catalog-inventory",
-      "path": "/operations/catalog-inventory/units/{unitRef}/disable",
-      "normalizedPath": "/operations/catalog-inventory/units/{unitRef}/disable",
-      "face": "operations-admin",
-      "mode": "COMMAND",
-      "adapter": "com.catering.v2s.catalog.application.operations.DisableOperationsCatalogUnitOperation",
-      "wireRequest": "CatalogUnitDisableRequest",
-      "wireResponse": "CatalogUnitReadback",
-      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
-      "transactionMode": "REQUIRED",
-      "copyRole": "NONE",
-      "commandBoundary": "OWNER_COMMAND"
-    },
-    {
-      "operationId": "deleteOperationsCatalogUnit",
-      "owner": "catalog",
-      "routeRegistry": "catalog-inventory",
-      "path": "/operations/catalog-inventory/units/{unitRef}",
-      "normalizedPath": "/operations/catalog-inventory/units/{unitRef}",
-      "face": "operations-admin",
-      "mode": "COMMAND",
-      "adapter": "com.catering.v2s.catalog.application.operations.DeleteOperationsCatalogUnitOperation",
-      "wireRequest": "CatalogUnitDeleteRequest",
-      "wireResponse": "CatalogUnitDeleteReadback",
-      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
-      "transactionMode": "REQUIRED",
-      "copyRole": "NONE",
-      "commandBoundary": "OWNER_COMMAND"
-    },
-    {
       "operationId": "getOperationsInventoryConsumptionTargetCandidates",
       "owner": "inventory",
       "routeRegistry": "catalog-inventory",
@@ -3864,11 +3784,75 @@
       "transactionMode": "OUTSIDE_TRANSACTION",
       "copyRole": "NONE",
       "commandBoundary": "NOT_APPLICABLE"
+    },
+    {
+      "operationId": "transitionOperationsCatalogAttributeDefinitionStatus",
+      "owner": "catalog",
+      "routeRegistry": "catalog-inventory",
+      "path": "/operations/catalog-inventory/attribute-definitions/{definitionRef}/status",
+      "normalizedPath": "/operations/catalog-inventory/attribute-definitions/{definitionRef}/status",
+      "face": "operations-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.catalog.application.operations.TransitionOperationsCatalogAttributeDefinitionStatusOperation",
+      "wireRequest": "CatalogAttributeDefinitionStatusTransitionRequest",
+      "wireResponse": "CatalogAttributeDefinitionReadback",
+      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "transitionOperationsCatalogOrderOptionDefinitionStatus",
+      "owner": "catalog",
+      "routeRegistry": "catalog-inventory",
+      "path": "/operations/catalog-inventory/order-option-definitions/{definitionRef}/status",
+      "normalizedPath": "/operations/catalog-inventory/order-option-definitions/{definitionRef}/status",
+      "face": "operations-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.catalog.application.operations.TransitionOperationsCatalogOrderOptionDefinitionStatusOperation",
+      "wireRequest": "CatalogOrderOptionDefinitionStatusTransitionRequest",
+      "wireResponse": "CatalogOrderOptionDefinitionReadback",
+      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "transitionOperationsCatalogUnitStatus",
+      "owner": "catalog",
+      "routeRegistry": "catalog-inventory",
+      "path": "/operations/catalog-inventory/units/{unitRef}/status",
+      "normalizedPath": "/operations/catalog-inventory/units/{unitRef}/status",
+      "face": "operations-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.catalog.application.operations.TransitionOperationsCatalogUnitStatusOperation",
+      "wireRequest": "CatalogUnitStatusTransitionRequest",
+      "wireResponse": "CatalogUnitReadback",
+      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "transitionOperationsCatalogCategoryStatus",
+      "owner": "catalog",
+      "routeRegistry": "catalog-inventory",
+      "path": "/operations/catalog-inventory/categories/{categoryRef}/status",
+      "normalizedPath": "/operations/catalog-inventory/categories/{categoryRef}/status",
+      "face": "operations-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.catalog.application.operations.TransitionOperationsCatalogCategoryStatusOperation",
+      "wireRequest": "CatalogCategoryStatusTransitionRequest",
+      "wireResponse": "CatalogCategoryReadback",
+      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND"
     }
   ],
   "commandBoundaryCounts": {
     "NOT_APPLICABLE": 102,
-    "OWNER_COMMAND": 112,
+    "OWNER_COMMAND": 111,
     "PROTOCOL": 25
   }
 }

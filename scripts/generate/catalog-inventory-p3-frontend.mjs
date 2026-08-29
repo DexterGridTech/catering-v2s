@@ -63,7 +63,7 @@ function transportEnvelopeRequired(required) {
   return (
     required.includes('revision') &&
     required.includes('requestId') &&
-    (required.includes('data') || required.includes('result'))
+    (required.includes('data') || required.includes('result') || required.includes('results'))
   );
 }
 

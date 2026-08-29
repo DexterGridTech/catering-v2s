@@ -93,7 +93,7 @@ export function FixedStoreContractDetailDrawer({contract, queryContext, onClose}
                 label: '项目',
                 children: <NameCodeText name={selected.project.name} code={selected.project.code} />,
               },
-              {key: 'phaseName', label: '项目分期', children: selected.phaseName},
+              {key: 'phaseName', label: '项目分期', children: selected.phaseName || '未设置'},
               {
                 key: 'tenant',
                 label: '经营租户',

@@ -1,5 +1,5 @@
 import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
-import {Alert, Button, Card, Form, Input, Modal, Select, Space, Table, Typography} from 'antd';
+import {Alert, Button, Card, Form, Input, Modal, Select, Space, Table, Tag, Typography} from 'antd';
 import {
   adminListState,
   createContentIdempotencyKey,
@@ -24,7 +24,7 @@ import {
   type OrderOptionDefinitionFormValue,
 } from '../model/catalogDefinitionForm';
 import {catalogUiProblemFeedback} from '../model/catalogUiProblemFeedback';
-import {catalogTestIds} from '../catalogTestIds';
+import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 import type {CatalogDefinitionEditorState} from '../model/useCatalogConfigLibrary';
 import {catalogFieldWidth} from './catalogFieldWidths';
 
@@ -207,6 +207,7 @@ export function CatalogDefinitionLibraries({
                   ? '由商品填写'
                   : row.options.map(option => option.name).join('、') || '尚未设置',
             },
+            {title: '状态', dataIndex: 'status', width: 110, render: value => definitionStatusTag(value)},
           ]}
           {...adminListState({
             loading: attributeQuery.isFetching,
@@ -295,6 +296,7 @@ export function CatalogDefinitionLibraries({
                 '尚未设置'
               ),
           },
+          {title: '状态', dataIndex: 'status', width: 110, render: value => definitionStatusTag(value)},
         ]}
         {...adminListState({
           loading: orderOptionQuery.isFetching,
@@ -331,7 +333,8 @@ function CatalogAttributeDefinitionPane({
   const [problem, setProblem] = useState<string>();
   const create = operationsRtk.useCreateOperationsCatalogAttributeDefinitionMutation()[0];
   const update = operationsRtk.useUpdateOperationsCatalogAttributeDefinitionMutation()[0];
-  const remove = operationsRtk.useDeleteOperationsCatalogAttributeDefinitionMutation()[0];
+  const transition = operationsRtk.useTransitionOperationsCatalogAttributeDefinitionStatusMutation()[0];
+  const readOnly = definition !== 'CREATE' && definition.status === 'VOIDED';
   const lifecycle = useDrawerFormLifecycle({
     open: Boolean(definition),
     onOpenChange: open => {
@@ -361,7 +364,7 @@ function CatalogAttributeDefinitionPane({
     setProblem(undefined);
   }, [definition, form, lifecycle]);
   const submit = async () => {
-    if (!scopeRef || !canWrite) return;
+    if (!scopeRef || !canWrite || readOnly) return;
     try {
       const values = await form.validateFields();
       const options =
@@ -407,30 +410,42 @@ function CatalogAttributeDefinitionPane({
       lifecycle.setSubmitting(false);
     }
   };
-  const deleteDefinition = () => {
-    if (!definition || definition === 'CREATE' || !scopeRef || !canWrite) return;
+  const changeStatus = (targetStatus: 'ENABLED' | 'DISABLED' | 'VOIDED') => {
+    if (!definition || definition === 'CREATE' || !scopeRef || !canWrite || readOnly) return;
+    const actionLabel = targetStatus === 'VOIDED' ? '标记删除' : targetStatus === 'DISABLED' ? '停用' : '启用';
     Modal.confirm({
-      title: '删除商品属性',
-      content: '删除后，已使用该属性的商品将不再保留这项属性。',
-      okText: '删除',
-      okButtonProps: {danger: true},
+      title: `${actionLabel}“${definition.name}”`,
+      content:
+        targetStatus === 'VOIDED'
+          ? '标记删除后将保留历史事实并释放编码供新定义使用；已有商品引用不会被静默改写。'
+          : targetStatus === 'DISABLED'
+            ? '停用后，新建商品不会再提供该属性；已有商品引用仍保留。'
+            : '启用后，该属性会重新出现在新建商品的候选列表中。',
+      okText: `确认${actionLabel}`,
+      okButtonProps: {danger: targetStatus !== 'ENABLED'},
       onOk: async () => {
-        const body = {
-          dataNodeRef: wireUuid(scopeRef),
-          definitionRef: wireUuid(definition.definitionRef),
-          expectedVersion: definition.version,
-        };
-        const idempotencyKey = await createContentIdempotencyKey(
-          CATALOG_INVENTORY_OPERATION_IDS.deleteOperationsCatalogAttributeDefinition,
-          body,
-        );
-        await remove(
-          catalogInventoryRtkRequest.deleteOperationsCatalogAttributeDefinition(
-            {definitionRef: wireUuid(definition.definitionRef)},
-            {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
-          ),
-        ).unwrap();
-        onClose();
+        try {
+          const body = {
+            dataNodeRef: wireUuid(scopeRef),
+            definitionRef: wireUuid(definition.definitionRef),
+            expectedVersion: definition.version,
+            targetStatus,
+          };
+          const idempotencyKey = await createContentIdempotencyKey(
+            CATALOG_INVENTORY_OPERATION_IDS.transitionOperationsCatalogAttributeDefinitionStatus,
+            body,
+          );
+          await transition(
+            catalogInventoryRtkRequest.transitionOperationsCatalogAttributeDefinitionStatus(
+              {definitionRef: wireUuid(definition.definitionRef)},
+              {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
+            ),
+          ).unwrap();
+          onClose();
+        } catch (error) {
+          setProblem(catalogUiProblemFeedback(error, '状态更新未完成，请检查后重试。').message);
+          throw error;
+        }
       },
     });
   };
@@ -438,20 +453,31 @@ function CatalogAttributeDefinitionPane({
   return (
     <Card
       size="small"
-      title={definition === 'CREATE' ? '新建商品属性' : '编辑商品属性'}
+      title={definition === 'CREATE' ? '新建商品属性' : readOnly ? '查看商品属性（已作废）' : '编辑商品属性'}
       extra={
         <Space>
           <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>
             返回商品属性库
           </Button>
-          {definition !== 'CREATE' && canWrite && (
-            <Button danger icon={<DeleteOutlined />} onClick={deleteDefinition}>
-              删除
+          {definition !== 'CREATE' && canWrite && !readOnly && (
+            <>
+              <Button
+                danger={definition.status === 'ENABLED'}
+                onClick={() => changeStatus(definition.status === 'ENABLED' ? 'DISABLED' : 'ENABLED')}
+                {...testId(catalogTestIdControls.config.action('ATTRIBUTES', definition.code, 'change-status'))}
+              >
+                {definition.status === 'ENABLED' ? '停用' : '启用'}
+              </Button>
+              <Button danger icon={<DeleteOutlined />} onClick={() => changeStatus('VOIDED')}>
+                标记删除
+              </Button>
+            </>
+          )}
+          {!readOnly && (
+            <Button type="primary" loading={lifecycle.submitting} onClick={() => void submit()} disabled={!canWrite}>
+              保存
             </Button>
           )}
-          <Button type="primary" loading={lifecycle.submitting} onClick={() => void submit()}>
-            保存
-          </Button>
         </Space>
       }
       {...testId(catalogTestIds.static.attributeDefinitionDrawer)}
@@ -459,7 +485,7 @@ function CatalogAttributeDefinitionPane({
       {problem && (
         <Alert type="error" showIcon title="商品属性未保存" description={problem} style={{marginBottom: 16}} />
       )}
-      <Form form={form} layout="vertical" onValuesChange={() => lifecycle.setDirty(true)}>
+      <Form form={form} layout="vertical" disabled={readOnly} onValuesChange={() => lifecycle.setDirty(true)}>
         <Space direction="vertical" size={0} style={{display: 'flex'}}>
           <Form.Item
             label="属性名称"
@@ -622,7 +648,8 @@ function CatalogOrderOptionDefinitionPane({
   }, [acceptMaterialCandidatePage, inventoryPage, materialCandidatePageSize]);
   const create = operationsRtk.useCreateOperationsCatalogOrderOptionDefinitionMutation()[0];
   const update = operationsRtk.useUpdateOperationsCatalogOrderOptionDefinitionMutation()[0];
-  const remove = operationsRtk.useDeleteOperationsCatalogOrderOptionDefinitionMutation()[0];
+  const transition = operationsRtk.useTransitionOperationsCatalogOrderOptionDefinitionStatusMutation()[0];
+  const readOnly = definition !== 'CREATE' && definition.status === 'VOIDED';
   const lifecycle = useDrawerFormLifecycle({
     open: Boolean(definition),
     onOpenChange: open => {
@@ -652,7 +679,7 @@ function CatalogOrderOptionDefinitionPane({
     setProblem(undefined);
   }, [definition, form, lifecycle]);
   const submit = async () => {
-    if (!scopeRef || !canWrite) return;
+    if (!scopeRef || !canWrite || readOnly) return;
     try {
       const values = await form.validateFields();
       const base = {
@@ -700,50 +727,73 @@ function CatalogOrderOptionDefinitionPane({
       lifecycle.setSubmitting(false);
     }
   };
-  const deleteDefinition = () => {
-    if (!definition || definition === 'CREATE' || !scopeRef || !canWrite) return;
+  const changeStatus = (targetStatus: 'ENABLED' | 'DISABLED' | 'VOIDED') => {
+    if (!definition || definition === 'CREATE' || !scopeRef || !canWrite || readOnly) return;
+    const actionLabel = targetStatus === 'VOIDED' ? '标记删除' : targetStatus === 'DISABLED' ? '停用' : '启用';
     Modal.confirm({
-      title: '删除点单选项',
-      content: '删除后，使用该点单选项的商品将不能继续使用它。',
-      okText: '删除',
-      okButtonProps: {danger: true},
+      title: `${actionLabel}“${definition.name}”`,
+      content:
+        targetStatus === 'VOIDED'
+          ? '标记删除后将保留历史事实并释放编码供新定义使用；已有商品引用不会被静默改写。'
+          : targetStatus === 'DISABLED'
+            ? '停用后，新建商品不会再提供该点单选项；已有商品引用仍保留。'
+            : '启用后，该点单选项会重新出现在新建商品的候选列表中。',
+      okText: `确认${actionLabel}`,
+      okButtonProps: {danger: targetStatus !== 'ENABLED'},
       onOk: async () => {
-        const body = {
-          dataNodeRef: wireUuid(scopeRef),
-          definitionRef: wireUuid(definition.definitionRef),
-          expectedVersion: definition.version,
-        };
-        const idempotencyKey = await createContentIdempotencyKey(
-          CATALOG_INVENTORY_OPERATION_IDS.deleteOperationsCatalogOrderOptionDefinition,
-          body,
-        );
-        await remove(
-          catalogInventoryRtkRequest.deleteOperationsCatalogOrderOptionDefinition(
-            {definitionRef: wireUuid(definition.definitionRef)},
-            {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
-          ),
-        ).unwrap();
-        onClose();
+        try {
+          const body = {
+            dataNodeRef: wireUuid(scopeRef),
+            definitionRef: wireUuid(definition.definitionRef),
+            expectedVersion: definition.version,
+            targetStatus,
+          };
+          const idempotencyKey = await createContentIdempotencyKey(
+            CATALOG_INVENTORY_OPERATION_IDS.transitionOperationsCatalogOrderOptionDefinitionStatus,
+            body,
+          );
+          await transition(
+            catalogInventoryRtkRequest.transitionOperationsCatalogOrderOptionDefinitionStatus(
+              {definitionRef: wireUuid(definition.definitionRef)},
+              {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
+            ),
+          ).unwrap();
+          onClose();
+        } catch (error) {
+          setProblem(catalogUiProblemFeedback(error, '状态更新未完成，请检查后重试。').message);
+          throw error;
+        }
       },
     });
   };
   return (
     <Card
       size="small"
-      title={definition === 'CREATE' ? '新建点单选项' : '编辑点单选项'}
+      title={definition === 'CREATE' ? '新建点单选项' : readOnly ? '查看点单选项（已作废）' : '编辑点单选项'}
       extra={
         <Space>
           <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>
             返回点单选项库
           </Button>
-          {definition !== 'CREATE' && canWrite && (
-            <Button danger icon={<DeleteOutlined />} onClick={deleteDefinition}>
-              删除
+          {definition !== 'CREATE' && canWrite && !readOnly && (
+            <>
+              <Button
+                danger={definition.status === 'ENABLED'}
+                onClick={() => changeStatus(definition.status === 'ENABLED' ? 'DISABLED' : 'ENABLED')}
+                {...testId(catalogTestIdControls.config.action('ORDER_OPTIONS', definition.code, 'change-status'))}
+              >
+                {definition.status === 'ENABLED' ? '停用' : '启用'}
+              </Button>
+              <Button danger icon={<DeleteOutlined />} onClick={() => changeStatus('VOIDED')}>
+                标记删除
+              </Button>
+            </>
+          )}
+          {!readOnly && (
+            <Button type="primary" loading={lifecycle.submitting} onClick={() => void submit()} disabled={!canWrite}>
+              保存
             </Button>
           )}
-          <Button type="primary" loading={lifecycle.submitting} onClick={() => void submit()}>
-            保存
-          </Button>
         </Space>
       }
       {...testId(catalogTestIds.static.orderOptionDefinitionDrawer)}
@@ -751,7 +801,7 @@ function CatalogOrderOptionDefinitionPane({
       {problem && (
         <Alert type="error" showIcon title="点单选项未保存" description={problem} style={{marginBottom: 16}} />
       )}
-      <Form form={form} layout="vertical" onValuesChange={() => lifecycle.setDirty(true)}>
+      <Form form={form} layout="vertical" disabled={readOnly} onValuesChange={() => lifecycle.setDirty(true)}>
         <Form.Item
           label="选项组名称"
           name="name"
@@ -928,4 +978,11 @@ function attributeValueTypeLabel(value: AttributeDefinition['valueType']) {
 
 function selectionModeLabel(value: OrderOptionDefinition['selectionMode']) {
   return value === 'SINGLE' ? '单选' : '多选';
+}
+
+function definitionStatusTag(value: string) {
+  if (value === 'ENABLED') return <Tag color="green">启用</Tag>;
+  if (value === 'DISABLED') return <Tag color="orange">已停用</Tag>;
+  if (value === 'VOIDED') return <Tag color="default">已作废</Tag>;
+  return <Tag>状态不可识别</Tag>;
 }

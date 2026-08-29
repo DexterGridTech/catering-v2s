@@ -77,77 +77,6 @@ final class CatalogItemDefinitionFacts {
         return Map.copyOf(result);
     }
 
-    /**
-     * Produces the already-business-ordered attribute lines for a bounded item page. The public assignment shape
-     * deliberately remains reference-only; this projection resolves selected option labels inside the owner rather than
-     * asking a consumer to join opaque option references or rendering a generic placeholder.
-     */
-    Map<UUID, ArrayNode> readAttributeSummaryLines(Collection<UUID> itemRefs) {
-        if (itemRefs == null || itemRefs.isEmpty()) return Map.of();
-        List<UUID> refs = distinct(itemRefs);
-        Map<UUID, ArrayNode> assignmentsByItem = emptyArrays(refs);
-        Map<UUID, ObjectNode> assignments = new LinkedHashMap<>();
-        jdbc.query(
-                "SELECT assignment.item_ref,assignment.item_attribute_assignment_ref,definition.name,"
-                        + "assignment.text_value,selection.attribute_definition_option_ref,selected_option.name "
-                        + "FROM catalog.catalog_item_attribute_assignment assignment "
-                        + "JOIN catalog.catalog_attribute_definition definition ON definition.attribute_definition_"
-                        + "ref=assignment.attribute_definition_ref "
-                        + "LEFT JOIN catalog.catalog_item_attribute_selection selection ON selection.item_attribute"
-                        + "_assignment_ref=assignment.item_attribute_assignment_ref "
-                        + "LEFT JOIN catalog.catalog_attribute_definition_option selected_option ON selected_option."
-                        + "attribute_definition_option_ref=selection.attribute_definition_option_ref "
-                        + "AND selected_option.attribute_definition_ref=definition.attribute_definition_ref "
-                        + "WHERE assignment.item_ref IN ("
-                        + placeholders(refs)
-                        + ") ORDER BY assignment.item_ref,definition.code,definition.attribute_definition_ref,"
-                        + "selected_option.display_order NULLS LAST,"
-                        + "selected_option.attribute_definition_option_ref NULLS LAST",
-                statement -> bind(statement, refs),
-                rows -> {
-                    while (rows.next()) {
-                        UUID itemRef = rows.getObject(1, UUID.class);
-                        UUID assignmentRef = rows.getObject(2, UUID.class);
-                        ObjectNode assignment = assignments.get(assignmentRef);
-                        if (assignment == null) {
-                            String definitionName = rows.getString(3);
-                            if (definitionName == null || definitionName.isBlank()) throw invalidAttributeSummary();
-                            assignment = assignmentsByItem.get(itemRef).addObject();
-                            assignment.put("name", definitionName);
-                            if (rows.getObject(4) == null) assignment.putNull("textValue");
-                            else assignment.put("textValue", rows.getString(4));
-                            assignment.putArray("optionNames");
-                            assignments.put(assignmentRef, assignment);
-                        }
-                        UUID selectedOptionRef = rows.getObject(5, UUID.class);
-                        if (selectedOptionRef != null) {
-                            String optionName = rows.getString(6);
-                            if (optionName == null || optionName.isBlank()) throw invalidAttributeSummary();
-                            assignment.withArray("optionNames").add(optionName);
-                        }
-                    }
-                    return null;
-                });
-        Map<UUID, ArrayNode> result = emptyArrays(refs);
-        assignmentsByItem.forEach((itemRef, assignmentsForItem) -> {
-            ArrayNode lines = result.get(itemRef);
-            assignmentsForItem.forEach(assignment -> {
-                String value = assignment.path("textValue").asText("");
-                if (value.isBlank()) {
-                    List<String> optionNames = new ArrayList<>();
-                    assignment.path("optionNames").forEach(option -> optionNames.add(option.asText()));
-                    value = String.join("、", optionNames);
-                }
-                lines.add(assignment.path("name").asText() + "：" + (value.isBlank() ? "未设置" : value));
-            });
-        });
-        return Map.copyOf(result);
-    }
-
-    private static CatalogOwnerApi.Problem invalidAttributeSummary() {
-        return new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品属性摘要读取失败");
-    }
-
     CopyAttributeFacts readCopyAttributeFacts(String scope, String brand, Collection<UUID> itemRefs) {
         if (itemRefs == null || itemRefs.isEmpty()) return CopyAttributeFacts.empty();
         List<UUID> refs = distinct(itemRefs);
@@ -348,7 +277,6 @@ final class CatalogItemDefinitionFacts {
 
     void replaceAttributeAssignments(String scope, String brand, UUID itemRef, ArrayNode submitted) {
         List<AttributeAssignment> assignments = normalizeAttributes(submitted);
-        Map<UUID, AttributeDefinition> definitions = loadAttributeDefinitions(scope, brand, assignments);
         Map<UUID, UUID> existing = jdbc.query(
                 "SELECT attribute_definition_ref,item_attribute_assignment_ref FROM catalog.catalog_item_attribute_"
                         + "assignment WHERE item_ref=?",
@@ -358,6 +286,7 @@ final class CatalogItemDefinitionFacts {
                     return values;
                 },
                 itemRef);
+        Map<UUID, AttributeDefinition> definitions = loadAttributeDefinitions(scope, brand, assignments);
         LinkedHashSet<UUID> retained = new LinkedHashSet<>();
         List<Object[]> inserts = new ArrayList<>();
         List<Object[]> updates = new ArrayList<>();
@@ -368,6 +297,12 @@ final class CatalogItemDefinitionFacts {
                     assignment.definitionRef(),
                     /* format-wrap */
                     "商品属性定义不存在或不属于当前范围");
+            // spotless:off
+            requireBindableDefinition(
+                    definition.status(),
+                    existing.containsKey(assignment.definitionRef()),
+                    "新绑定的商品属性定义必须处于启用状态");
+            // spotless:on
             validateAttributeAssignment(definition, assignment);
             retained.add(assignment.definitionRef());
             UUID assignmentRef = existing.get(assignment.definitionRef());
@@ -420,7 +355,6 @@ final class CatalogItemDefinitionFacts {
 
     void replaceOrderOptionConfigs(String scope, String brand, UUID itemRef, ArrayNode submitted) {
         List<OrderOptionConfig> configs = normalizeOrderOptions(submitted);
-        Map<UUID, OrderOptionDefinition> definitions = loadOrderOptionDefinitions(scope, brand, configs);
         Map<UUID, UUID> existing = jdbc.query(
                 "SELECT order_option_definition_ref,item_order_option_config_ref FROM catalog.catalog_item_order_op"
                         + "tion_config WHERE item_ref=?",
@@ -430,6 +364,7 @@ final class CatalogItemDefinitionFacts {
                     return values;
                 },
                 itemRef);
+        Map<UUID, OrderOptionDefinition> definitions = loadOrderOptionDefinitions(scope, brand, configs);
         LinkedHashSet<UUID> retained = new LinkedHashSet<>();
         List<Object[]> inserts = new ArrayList<>();
         List<Object[]> updates = new ArrayList<>();
@@ -440,6 +375,12 @@ final class CatalogItemDefinitionFacts {
                     config.definitionRef(),
                     /* format-wrap */
                     "点单选项定义不存在或不属于当前范围");
+            // spotless:off
+            requireBindableDefinition(
+                    definition.status(),
+                    existing.containsKey(config.definitionRef()),
+                    "新绑定的点单选项定义必须处于启用状态");
+            // spotless:on
             validateOrderOptionConfig(definition, config);
             retained.add(config.definitionRef());
             UUID configRef = existing.get(config.definitionRef());
@@ -537,6 +478,41 @@ final class CatalogItemDefinitionFacts {
                 brand,
                 targetItemRef,
                 sourceConfigs == null ? mapper.createArrayNode() : sourceConfigs.deepCopy());
+    }
+
+    /**
+     * Temporary promotion only needs the two item-definition families that are copied to a fresh target. Presence is
+     * decided by the caller's shared set probe so an absent family does not open another empty relation read.
+     */
+    TemporaryPromotionFacts readTemporaryPromotionFacts(
+            String scope, String brand, UUID itemRef, boolean attributesPresent, boolean orderOptionsPresent) {
+        ArrayNode assignments = attributesPresent
+                ? readAttributeAssignments(List.of(itemRef)).getOrDefault(itemRef, mapper.createArrayNode())
+                : mapper.createArrayNode();
+        ArrayNode configs = orderOptionsPresent
+                ? readOrderOptionConfigs(List.of(itemRef)).getOrDefault(itemRef, mapper.createArrayNode())
+                : mapper.createArrayNode();
+        return new TemporaryPromotionFacts(assignments, configs, definitionValueRefs(configs));
+    }
+
+    /** A new promotion target has no existing definition rows, so empty source families need no replacement call. */
+    void copyTemporaryPromotionFactsWithinScope(
+            String scope, String brand, UUID targetItemRef, TemporaryPromotionFacts facts) {
+        if (facts == null) return;
+        if (facts.hasAttributeAssignments())
+            replaceAttributeAssignments(scope, brand, targetItemRef, facts.attributeAssignments().deepCopy());
+        if (facts.hasOrderOptionConfigs())
+            replaceOrderOptionConfigs(scope, brand, targetItemRef, facts.orderOptionConfigs().deepCopy());
+    }
+
+    private static List<UUID> definitionValueRefs(ArrayNode configs) {
+        if (configs == null || configs.isEmpty()) return List.of();
+        LinkedHashSet<UUID> refs = new LinkedHashSet<>();
+        for (JsonNode config : configs) {
+            if (!config.path("values").isArray()) continue;
+            for (JsonNode value : config.path("values")) refs.add(requiredUuid(value, "definitionValueRef"));
+        }
+        return List.copyOf(refs);
     }
 
     /**
@@ -1558,7 +1534,8 @@ final class CatalogItemDefinitionFacts {
                 .toList();
         if (refs.isEmpty()) return Map.of();
         Map<UUID, AttributeDefinition> definitions = jdbc.query(
-                "SELECT definition.attribute_definition_ref,definition.value_type,option_row.attribute_definition_"
+                "SELECT definition.attribute_definition_ref,definition.value_type,definition.status,"
+                        + "option_row.attribute_definition_"
                         + "option_ref FROM catalog.catalog_attribute_definition definition LEFT JOIN "
                         + "catalog.catalog_attribute_definition_option option_row ON option_row.attribute_definition_"
                         + "ref=definition.attribute_definition_ref WHERE definition.data_node_ref=? AND "
@@ -1572,11 +1549,13 @@ final class CatalogItemDefinitionFacts {
                 },
                 rows -> {
                     Map<UUID, String> valueTypes = new LinkedHashMap<>();
+                    Map<UUID, String> statuses = new LinkedHashMap<>();
                     Map<UUID, List<UUID>> optionRefs = new LinkedHashMap<>();
                     while (rows.next()) {
                         UUID ref = rows.getObject(1, UUID.class);
                         valueTypes.putIfAbsent(ref, rows.getString(2));
-                        UUID optionRef = rows.getObject(3, UUID.class);
+                        statuses.putIfAbsent(ref, rows.getString(3));
+                        UUID optionRef = rows.getObject(4, UUID.class);
                         if (optionRef != null)
                             optionRefs
                                     .computeIfAbsent(ref, ignored -> new ArrayList<>())
@@ -1584,7 +1563,9 @@ final class CatalogItemDefinitionFacts {
                     }
                     Map<UUID, AttributeDefinition> values = new LinkedHashMap<>();
                     valueTypes.forEach((ref, valueType) -> values.put(
-                            ref, new AttributeDefinition(valueType, optionRefs.getOrDefault(ref, List.of()))));
+                            ref,
+                            new AttributeDefinition(
+                                    valueType, statuses.get(ref), optionRefs.getOrDefault(ref, List.of()))));
                     return values;
                 });
         return Map.copyOf(definitions);
@@ -1598,7 +1579,7 @@ final class CatalogItemDefinitionFacts {
                 .toList();
         if (refs.isEmpty()) return Map.of();
         Map<UUID, OrderOptionDefinition> definitions = jdbc.query(
-                "SELECT definition.order_option_definition_ref,definition.selection_mode,value_row."
+                "SELECT definition.order_option_definition_ref,definition.selection_mode,definition.status,value_row."
                         + "order_option_definition_value_ref FROM catalog.catalog_order_option_definition definition "
                         + "LEFT JOIN catalog.catalog_order_option_definition_value value_row ON "
                         + "value_row.order_option_definition_ref=definition.order_option_definition_ref WHERE "
@@ -1613,11 +1594,13 @@ final class CatalogItemDefinitionFacts {
                 },
                 rows -> {
                     Map<UUID, String> selectionModes = new LinkedHashMap<>();
+                    Map<UUID, String> statuses = new LinkedHashMap<>();
                     Map<UUID, Set<UUID>> valueRefs = new LinkedHashMap<>();
                     while (rows.next()) {
                         UUID ref = rows.getObject(1, UUID.class);
                         selectionModes.putIfAbsent(ref, rows.getString(2));
-                        UUID valueRef = rows.getObject(3, UUID.class);
+                        statuses.putIfAbsent(ref, rows.getString(3));
+                        UUID valueRef = rows.getObject(4, UUID.class);
                         if (valueRef != null)
                             valueRefs
                                     .computeIfAbsent(ref, ignored -> new LinkedHashSet<>())
@@ -1625,7 +1608,9 @@ final class CatalogItemDefinitionFacts {
                     }
                     Map<UUID, OrderOptionDefinition> values = new LinkedHashMap<>();
                     selectionModes.forEach((ref, selectionMode) -> values.put(
-                            ref, new OrderOptionDefinition(selectionMode, valueRefs.getOrDefault(ref, Set.of()))));
+                            ref,
+                            new OrderOptionDefinition(
+                                    selectionMode, statuses.get(ref), valueRefs.getOrDefault(ref, Set.of()))));
                     return values;
                 });
         return Map.copyOf(definitions);
@@ -1671,6 +1656,16 @@ final class CatalogItemDefinitionFacts {
         if (!definition.optionRefs().containsAll(assignment.optionRefs())) {
             throw problem("商品属性选项不属于所选定义");
         }
+    }
+
+    /**
+     * A disabled definition may remain on an existing item, but a submitted definition ref that was not already
+     * attached is a new binding and must be enabled. The caller owns the current-vs-submitted ref comparison; this
+     * helper deliberately does not infer change from the definition's descriptive fields.
+     */
+    private static void requireBindableDefinition(String status, boolean alreadyAttached, String message) {
+        if (!alreadyAttached && !"ENABLED".equals(status))
+            throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, message);
     }
 
     private static void validateOrderOptionConfig(OrderOptionDefinition definition, OrderOptionConfig config) {
@@ -1829,11 +1824,11 @@ final class CatalogItemDefinitionFacts {
         return configRef + ":" + valueRef;
     }
 
-    private record AttributeDefinition(String valueType, List<UUID> optionRefs) {}
+    private record AttributeDefinition(String valueType, String status, List<UUID> optionRefs) {}
 
     private record AttributeAssignment(UUID definitionRef, String textValue, List<UUID> optionRefs) {}
 
-    private record OrderOptionDefinition(String selectionMode, Set<UUID> valueRefs) {}
+    private record OrderOptionDefinition(String selectionMode, String status, Set<UUID> valueRefs) {}
 
     private record OrderOptionConfig(
             UUID definitionRef,
@@ -1947,6 +1942,21 @@ final class CatalogItemDefinitionFacts {
     record CopyAttributeFacts(Map<UUID, ArrayNode> assignmentsByItem, Map<UUID, CopyAttributeDefinition> definitions) {
         static CopyAttributeFacts empty() {
             return new CopyAttributeFacts(Map.of(), Map.of());
+        }
+    }
+
+    record TemporaryPromotionFacts(
+            ArrayNode attributeAssignments, ArrayNode orderOptionConfigs, List<UUID> optionValueRefs) {
+        TemporaryPromotionFacts {
+            optionValueRefs = optionValueRefs == null ? List.of() : List.copyOf(optionValueRefs);
+        }
+
+        boolean hasAttributeAssignments() {
+            return attributeAssignments != null && !attributeAssignments.isEmpty();
+        }
+
+        boolean hasOrderOptionConfigs() {
+            return orderOptionConfigs != null && !orderOptionConfigs.isEmpty();
         }
     }
 

@@ -70,6 +70,7 @@ class OperationsBusinessChannelControllerScopeTest {
                 "BOUND",
                 "ENABLED",
                 List.of(),
+                List.of(),
                 1L);
         OrganizationOverviewTaskReadService.Item store = mock(OrganizationOverviewTaskReadService.Item.class);
         when(store.project())

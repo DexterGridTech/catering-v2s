@@ -61,7 +61,7 @@ All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-b
 
 2026-08-14 起，唯一公共入口是
 `scripts/test/backend-acceptance --operation all`（也可用同一参数聚焦单个 operation）。性能校准只可使用
-`scripts/test/backend-acceptance --operation all --calibration`：它校验 239 个 operation 的 exact-set、正常样本与连接门，
+`scripts/test/backend-acceptance --operation all --calibration`：它校验 238 个 operation 的 exact-set、正常样本与连接门，
 但不把未校准的固定 DB 上限当作已验收预算。普通 `all` 则无条件执行完整预算门；两种模式都在真实远端
 Testcontainers 中启动应用，经真实 HTTP 自动发现并串行运行全部已注册的手写 fixture/request/business
 assertion，逐条分开打印 `CONTRACT`、`BUSINESS` 和场景内信息性 `DB_OPERATIONS`；结果还明确标记
@@ -85,7 +85,7 @@ collaboration 与 business-channel 的权限、隔离、状态迁移、字段脱
 旧 scenario-level PERFORMANCE verdict、accepted-baseline、known-uncovered、provider exact-set、
 lane/并行/心跳/work-stealing、scenario calibration 与 correctnessCases 继续退役。下一条业务
 scenario 只复制真实 fixture、HTTP request 与业务断言。Dexter 2026-08-22 恢复的 generated
-239-operation budget 由独立 run-level verifier 消费同一 HTTP completion events；不写进
+238-operation budget 由独立 run-level verifier 消费同一 HTTP completion events；不写进
 `@AcceptanceScenario`、不参与其 `CONTRACT`/`BUSINESS`，不复活旧 provider/性能 lane。
 
 Docker-backed Gradle `:test` tasks are never accepted from `FROM-CACHE`, `UP-TO-DATE`,

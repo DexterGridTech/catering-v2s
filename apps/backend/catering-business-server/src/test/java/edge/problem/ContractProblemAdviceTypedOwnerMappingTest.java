@@ -47,6 +47,10 @@ class ContractProblemAdviceTypedOwnerMappingTest {
                 HttpStatus.CONFLICT,
                 "WORKSPACE_IAM_INVITATION_TERMINAL");
         assertProblem(
+                advice.accountNotBindable(new WorkspaceInvitationService.AccountNotBindableException(), request),
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "ACCOUNT_NOT_BINDABLE");
+        assertProblem(
                 advice.credentialLocked(new PlatformAuthenticationService.CredentialLockedException(), request),
                 HttpStatus.LOCKED,
                 "PLATFORM_IAM_CREDENTIAL_LOCKED");

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-operation-counts",
+  "status": "ACTIVE",
+  "manual": true,
+  "operations": 238,
+  "reads": 102,
+  "commands": 136,
+  "commandsByFace": {
+    "operationsAdmin": 93,
+    "platformAdmin": 34,
+    "public": 9
+  }
+}

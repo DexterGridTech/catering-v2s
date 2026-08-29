@@ -6,7 +6,6 @@ public record WorkspaceInvitation(
     String groupWorkspaceKey,
     String maskedMobile,
     String targetOrganizationType,
-    String targetOrganizationPath,
     java.util.List<String> roleNames,
     WorkspaceInvitationStatus status,
     Long generation,
@@ -16,5 +15,6 @@ public record WorkspaceInvitation(
     Long consentedAt,
     Long completedAt,
     Long cancelledAt,
-    String invitationPageUrl
+    java.util.List<OrganizationPathNode> targetOrganizationPathNodes,
+    InvitationRouteFacts invitationRouteFacts
 ) {}

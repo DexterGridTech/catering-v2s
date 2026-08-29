@@ -24,7 +24,7 @@ export function CatalogItemBasicView({
   manifest?: CatalogManifest;
   onNavigateTab: (tabKey: string) => void;
 }) {
-  const category = detail.item.categoryPathLabels.join(' / ') || '—';
+  const category = detail.item.categoryPath.map(node => node.name).join(' / ') || '—';
   return (
     <CatalogFactSectionView section="basic">
       <Space direction="vertical" size={16} style={{display: 'flex'}}>

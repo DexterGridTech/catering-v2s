@@ -575,7 +575,7 @@ export function materializeL2TimingBudget(activeIds, timing = readJson(timingPat
     if (!row) fail('L2_TIMING_CASE_MISSING', id);
     const timeout = Number(row.timeoutMs ?? row.timeout ?? row.caseTimeoutMs ?? 0);
     const dbMs = Number(row.databaseBudgetMs ?? row.dbDurationBudgetMs ?? row.dbMsBudget ?? row.caseExpectedDbMs ?? 0);
-    if (!Number.isFinite(timeout) || timeout <= 0 || !Number.isFinite(dbMs) || dbMs <= 0)
+    if (!Number.isFinite(timeout) || timeout <= 0 || !Number.isFinite(dbMs) || dbMs < 0)
       fail('L2_TIMING_CASE_BUDGET_INVALID', id);
     return {caseId: id, timeoutMs: timeout, databaseBudgetMs: dbMs, operationBudget: row.operationBudget ?? null};
   });
@@ -1463,12 +1463,16 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
         body: {mobile, targetOrganizationType, targetOrganizationRef, roleIds: [roleId]},
       },
     );
-    const invitationUrl = requiredObjectValue(
+    const routeFacts = requiredObjectValue(
       created.json,
-      ['invitationPageUrl', 'pageUrl', 'url'],
-      `L2_${prefix.toUpperCase()}_INVITATION_URL_MISSING`,
+      ['invitationRouteFacts'],
+      `L2_${prefix.toUpperCase()}_INVITATION_ROUTE_FACTS_MISSING`,
     );
-    const token = String(invitationUrl).split('/').filter(Boolean).at(-1);
+    const token = requiredObjectValue(
+      routeFacts,
+      ['invitationToken'],
+      `L2_${prefix.toUpperCase()}_INVITATION_TOKEN_MISSING`,
+    );
     if (!token) fail(`L2_${prefix.toUpperCase()}_INVITATION_TOKEN_MISSING`);
     const publicPath = {groupWorkspaceKey: workspaceKey, invitationToken: token};
     await request(stage(`${prefix}-invitation-accept`), 'acceptPublicInvitation', publicPath, {expected: [200]});

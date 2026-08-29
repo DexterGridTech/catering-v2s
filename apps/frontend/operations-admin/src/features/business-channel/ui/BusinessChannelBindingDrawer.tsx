@@ -1,6 +1,8 @@
 import {Alert, Button, Descriptions, Drawer, Form, Input, Space, Tag} from 'antd';
 import {
   adminDrawerSurfaceProps,
+  closedCodeLabel,
+  isKnownClosedCode,
   useDrawerFormLifecycle,
   useSubmissionLifecycle,
   testId,
@@ -13,6 +15,20 @@ import {
 import type {OperationsPageContext} from '../../../app/routing/model';
 import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import {useEffect, useState} from 'react';
+import {lifecycleStatusLabels, ownerNodeTypeLabels} from '../model/businessChannelCodeLabels';
+import {authenticationKindLabels, collaborationBindingStatusLabels} from '../model/collaborationCodeLabels';
+
+export function businessChannelBindingReadOnlyMessage(
+  channelStatusKnown: boolean,
+  ownerNodeTypeKnown: boolean,
+  authenticationKindKnown: boolean,
+  status: BusinessChannelView['status'],
+): string | undefined {
+  if (!channelStatusKnown || !ownerNodeTypeKnown || !authenticationKindKnown) {
+    return '当前渠道状态或绑定类型无法识别，已停止该操作。';
+  }
+  return status === 'VOIDED' ? '该业务渠道已标记删除，不能继续修改。' : undefined;
+}
 
 export function BusinessChannelBindingDrawer({
   open,
@@ -43,6 +59,18 @@ export function BusinessChannelBindingDrawer({
     diagnosticOperationId: OPERATIONS_ADMIN_OPERATION_IDS.createOperationsOwnerBinding,
   });
   const submission = useSubmissionLifecycle();
+  const channelStatusKnown = isKnownClosedCode(lifecycleStatusLabels, channel.status);
+  const ownerNodeTypeKnown = isKnownClosedCode(ownerNodeTypeLabels, channel.ownerNodeType);
+  const authenticationKindKnown =
+    authenticationKind === undefined || isKnownClosedCode(authenticationKindLabels, authenticationKind);
+  const writeAllowed =
+    channelStatusKnown && ownerNodeTypeKnown && channel.status !== 'VOIDED' && authenticationKindKnown;
+  const readOnlyMessage = businessChannelBindingReadOnlyMessage(
+    channelStatusKnown,
+    ownerNodeTypeKnown,
+    authenticationKindKnown,
+    channel.status,
+  );
   useEffect(() => {
     if (!open) return;
     setProblem(undefined);
@@ -68,6 +96,14 @@ export function BusinessChannelBindingDrawer({
   }, [channel.bindingRef, channel.channelRef, form, lifecycle, open, queryContext.groupWorkspaceKey]);
 
   const create = async (values: {bindingDisplayName?: string; externalOwnerId?: string}) => {
+    if (!writeAllowed) {
+      setProblem(
+        !channelStatusKnown || !ownerNodeTypeKnown || !authenticationKindKnown
+          ? '当前渠道状态或绑定类型无法识别，已停止该操作。'
+          : '该业务渠道已标记删除，不能继续修改。',
+      );
+      return;
+    }
     if (!providerCode) {
       setProblem('当前模板没有可用于绑定的外部接入档案。');
       return;
@@ -99,6 +135,14 @@ export function BusinessChannelBindingDrawer({
   };
 
   const remove = async () => {
+    if (!writeAllowed) {
+      setProblem(
+        !channelStatusKnown || !ownerNodeTypeKnown || !authenticationKindKnown
+          ? '当前渠道状态或绑定类型无法识别，已停止该操作。'
+          : '该业务渠道已标记删除，不能继续修改。',
+      );
+      return;
+    }
     if (!binding) return;
     lifecycle.setSubmitting(true);
     setProblem(undefined);
@@ -133,15 +177,23 @@ export function BusinessChannelBindingDrawer({
       {...testId('business-channel-binding')}
     >
       {problem && <Alert type="error" showIcon title="绑定操作失败" description={problem} />}
+      {readOnlyMessage && (
+        <Alert
+          type={channelStatusKnown && ownerNodeTypeKnown && authenticationKindKnown ? 'info' : 'error'}
+          showIcon
+          title={readOnlyMessage}
+          {...testId('business-channel-binding-readonly')}
+        />
+      )}
       <Alert
         type="info"
         showIcon
-        title={`绑定节点：${channel.ownerNodeTypeDisplayName}经营渠道`}
+        title={`绑定节点：${closedCodeLabel(ownerNodeTypeLabels, channel.ownerNodeType)}经营渠道`}
         style={{margin: '16px 0'}}
       />
       {binding && (
         <p>
-          当前状态：<Tag>{binding.statusDisplayName}</Tag>
+          当前状态：<Tag>{closedCodeLabel(collaborationBindingStatusLabels, binding.status)}</Tag>
         </p>
       )}
       {binding && authenticationKind === 'EXTERNAL_GRANT' && (
@@ -167,12 +219,14 @@ export function BusinessChannelBindingDrawer({
           />
           <Space style={{marginTop: 16}}>
             <Button onClick={lifecycle.requestClose}>关闭</Button>
-            <Button danger onClick={() => void remove()} loading={lifecycle.submitting}>
-              删除绑定
-            </Button>
+            {writeAllowed && isKnownClosedCode(collaborationBindingStatusLabels, binding.status) && (
+              <Button danger onClick={() => void remove()} loading={lifecycle.submitting}>
+                删除绑定
+              </Button>
+            )}
           </Space>
         </>
-      ) : (
+      ) : writeAllowed ? (
         <Form
           form={form}
           layout="vertical"
@@ -198,7 +252,7 @@ export function BusinessChannelBindingDrawer({
             </Button>
           </Space>
         </Form>
-      )}
+      ) : null}
     </Drawer>
   );
 }

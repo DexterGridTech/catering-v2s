@@ -37,6 +37,7 @@ import {wireUuid} from '../../../app/api/wireUuid';
 import {requireOperationsScopeRef, type OperationsPageContext} from '../../../app/routing/model';
 import {
   envelopeResult,
+  inventoryConversionLabel,
   inventoryUnitLabel,
   jsonBody,
   type InventoryCurrentView,
@@ -609,7 +610,7 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
                   }
                   description={
                     <Space direction="vertical" size={4}>
-                      <span>{current.target.conversionSummary ?? '按消耗单位记录'}</span>
+                      <span>{inventoryConversionLabel(current.target.conversionFacts)}</span>
                       <span>
                         录入单位：{selectedUnitLabel}；{actionImpactText}
                       </span>
@@ -700,7 +701,11 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
                         </>
                       ),
                     },
-                    {key: 'conversion', label: '当前换算', children: current.target.conversionSummary ?? '未配置'},
+                    {
+                      key: 'conversion',
+                      label: '当前换算',
+                      children: inventoryConversionLabel(current.target.conversionFacts),
+                    },
                   ]}
                 />
               </>

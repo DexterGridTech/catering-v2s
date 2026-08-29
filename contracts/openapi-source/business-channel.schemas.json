@@ -98,7 +98,8 @@
             "type": "string",
             "enum": [
               "ENABLED",
-              "DISABLED"
+              "DISABLED",
+              "VOIDED"
             ]
           },
           "expectedVersion": {
@@ -115,14 +116,11 @@
           "projectRef",
           "templateName",
           "accessKind",
-          "accessKindDisplayName",
           "operatorKind",
-          "operatorKindDisplayName",
           "orderKind",
-          "orderKindDisplayName",
-          "dineInFormDisplayName",
           "status",
-          "statusDisplayName",
+          "statusDimensions",
+          "blockers",
           "version"
         ],
         "properties": {
@@ -146,36 +144,37 @@
             "maxLength": 240
           },
           "accessKind": {
-            "type": "string"
-          },
-          "accessKindDisplayName": {
             "type": "string",
-            "minLength": 1
+            "enum": [
+              "INTERNAL",
+              "EXTERNAL"
+            ]
           },
           "operatorKind": {
-            "type": "string"
-          },
-          "operatorKindDisplayName": {
             "type": "string",
-            "minLength": 1
+            "enum": [
+              "PROJECT",
+              "STORE"
+            ]
           },
           "orderKind": {
-            "type": "string"
-          },
-          "orderKindDisplayName": {
             "type": "string",
-            "minLength": 1
+            "enum": [
+              "DINE_IN",
+              "TAKEAWAY",
+              "GROUP_BUY"
+            ]
           },
           "dineInForm": {
             "type": [
               "string",
               "null"
-            ]
-          },
-          "dineInFormDisplayName": {
-            "type": [
-              "string",
-              "null"
+            ],
+            "enum": [
+              "POS",
+              "QR",
+              "KIOSK",
+              null
             ]
           },
           "providerCode": {
@@ -188,12 +187,21 @@
             "type": "string",
             "enum": [
               "ENABLED",
-              "DISABLED"
+              "DISABLED",
+              "VOIDED"
             ]
           },
-          "statusDisplayName": {
-            "type": "string",
-            "minLength": 1
+          "statusDimensions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BusinessChannelTemplateStatusDimension"
+            }
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BusinessChannelTemplateStatusDimension"
+            }
           },
           "version": {
             "type": "integer",
@@ -334,14 +342,143 @@
           "status": {
             "type": "string",
             "enum": [
-              "DRAFT",
-              "EFFECTIVE",
-              "DISABLED"
+              "DISABLED",
+              "ENABLED",
+              "VOIDED"
             ]
           },
           "expectedVersion": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "BusinessChannelTemplateStatusDimension": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "ref",
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "BUSINESS_CHANNEL_TEMPLATE",
+              "GROUP_WORKSPACE",
+              "ORGANIZATION_GROUP",
+              "ORGANIZATION_REGION",
+              "ORGANIZATION_PROJECT",
+              "ORGANIZATION_STORE",
+              "ORGANIZATION_TENANT",
+              "ORGANIZATION_BRAND",
+              "COLLABORATION_EXTERNAL_SYSTEM",
+              "COLLABORATION_PROVIDER_PROFILE",
+              "COLLABORATION_BINDING"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "minLength": 1,
+            "maxLength": 32
+          }
+        }
+      },
+      "BusinessChannelViewStatusDimension": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "ref",
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "BUSINESS_CHANNEL_TEMPLATE",
+              "GROUP_WORKSPACE",
+              "ORGANIZATION_GROUP",
+              "ORGANIZATION_REGION",
+              "ORGANIZATION_PROJECT",
+              "ORGANIZATION_STORE",
+              "ORGANIZATION_TENANT",
+              "ORGANIZATION_BRAND",
+              "COLLABORATION_EXTERNAL_SYSTEM",
+              "COLLABORATION_PROVIDER_PROFILE",
+              "COLLABORATION_BINDING"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED",
+              "PENDING_AUTHORIZATION",
+              "EFFECTIVE",
+              "INVALID",
+              "DELETED"
+            ],
+            "minLength": 1,
+            "maxLength": 32
+          }
+        }
+      },
+      "BusinessChannelViewBlockerStatusDimension": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "ref",
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "BUSINESS_CHANNEL_TEMPLATE",
+              "GROUP_WORKSPACE",
+              "ORGANIZATION_GROUP",
+              "ORGANIZATION_REGION",
+              "ORGANIZATION_PROJECT",
+              "ORGANIZATION_STORE",
+              "ORGANIZATION_TENANT",
+              "ORGANIZATION_BRAND",
+              "COLLABORATION_EXTERNAL_SYSTEM",
+              "COLLABORATION_PROVIDER_PROFILE"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "minLength": 1,
+            "maxLength": 32
           }
         }
       },
@@ -352,13 +489,13 @@
           "channelRef",
           "templateRef",
           "ownerNodeType",
-          "ownerNodeTypeDisplayName",
           "ownerNodeRef",
           "channelName",
           "status",
-          "statusDisplayName",
-          "stopReasons",
-          "stopReasonDisplayNames",
+          "bindingStatus",
+          "selfStatus",
+          "statusDimensions",
+          "blockers",
           "version"
         ],
         "properties": {
@@ -371,11 +508,11 @@
             "format": "uuid"
           },
           "ownerNodeType": {
-            "type": "string"
-          },
-          "ownerNodeTypeDisplayName": {
             "type": "string",
-            "minLength": 1
+            "enum": [
+              "PROJECT",
+              "STORE"
+            ]
           },
           "ownerNodeRef": {
             "type": "string",
@@ -402,31 +539,37 @@
           "status": {
             "type": "string",
             "enum": [
-              "DRAFT",
-              "EFFECTIVE",
-              "DISABLED"
+              "DISABLED",
+              "ENABLED",
+              "VOIDED"
             ]
           },
-          "statusDisplayName": {
+          "bindingStatus": {
             "type": "string",
-            "minLength": 1
+            "enum": [
+              "NOT_REQUIRED",
+              "UNBOUND",
+              "BOUND"
+            ]
           },
-          "stopReasons": {
+          "selfStatus": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ]
+          },
+          "statusDimensions": {
             "type": "array",
             "items": {
-              "type": "string",
-              "enum": [
-                "CASCADE_TEMPLATE",
-                "CASCADE_EXTERNAL",
-                "MANUAL"
-              ]
+              "$ref": "#/components/schemas/BusinessChannelViewStatusDimension"
             }
           },
-          "stopReasonDisplayNames": {
+          "blockers": {
             "type": "array",
             "items": {
-              "type": "string",
-              "minLength": 1
+              "$ref": "#/components/schemas/BusinessChannelViewBlockerStatusDimension"
             }
           },
           "version": {

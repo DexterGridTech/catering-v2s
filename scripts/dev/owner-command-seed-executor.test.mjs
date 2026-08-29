@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {FormalSeedFailure, createProjectScopeSelector, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateFormalSeedStaticInputs, invocationKeyForTest} from './owner-command-seed-executor.mjs';
+import {FormalSeedFailure, createProjectScopeSelector, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateFormalSeedStaticInputs, validateThreeStateSeedCoverage, invocationKeyForTest} from './owner-command-seed-executor.mjs';
 import {loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById} from '../test/seed-report.mjs';
 
 const generatedRegistry = loadGeneratedOperationRegistry(new URL('../../apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json', import.meta.url));
@@ -9,12 +9,28 @@ const fixture = {
   profile: {id: 'r5-full', version: 1},
   stableFixtures: {
     workspaceIam: {
-      roles: [{key: 'role-store', serviceNodeType: 'STORE'}],
-      accounts: [{key: 'account-a', mobile: '13800000001'}],
+      roles: [
+        {key: 'role-store', serviceNodeType: 'STORE', status: 'ENABLED'},
+        {key: 'role-disabled', serviceNodeType: 'STORE', status: 'DISABLED'},
+        {key: 'role-voided', serviceNodeType: 'STORE', status: 'VOIDED'},
+      ],
+      accounts: [
+        {key: 'account-a', mobile: '13800000001', status: 'ENABLED'},
+        {key: 'account-disabled', mobile: '13800000002', status: 'DISABLED'},
+        {key: 'account-voided', mobile: '13800000003', status: 'VOIDED'},
+      ],
       invitationStates: [{key: 'pending', status: 'PENDING'}, {key: 'cancelled', status: 'CANCELLED'}, {key: 'reissued', status: 'PENDING', supersedes: 'cancelled'}, {key: 'completed', status: 'COMPLETED'}],
       assignments: [{key: 'assignment-a', account: 'account-a', role: 'role-store', node: 'store-a', sourceInvitation: 'completed'}],
     },
-    organization: {commercialGroups: [], regions: [], projects: [], headCompanies: [], stores: [{key: 'store-a'}]},
+    organization: {
+      commercialGroups: [],
+      regions: [{key: 'region-enabled', status: 'ENABLED'}, {key: 'region-disabled', status: 'DISABLED'}, {key: 'region-voided', status: 'VOIDED'}],
+      projects: [{key: 'project-enabled', status: 'ENABLED'}, {key: 'project-disabled', status: 'DISABLED'}, {key: 'project-voided', status: 'VOIDED'}],
+      brands: [{key: 'brand-enabled', status: 'ENABLED'}, {key: 'brand-disabled', status: 'DISABLED'}, {key: 'brand-voided', status: 'VOIDED'}],
+      tenants: [{key: 'tenant-enabled', status: 'ENABLED'}, {key: 'tenant-disabled', status: 'DISABLED'}, {key: 'tenant-voided', status: 'VOIDED'}],
+      headCompanies: [{key: 'head-enabled', status: 'ENABLED'}, {key: 'head-disabled', status: 'DISABLED'}, {key: 'head-voided', status: 'VOIDED'}],
+      stores: [{key: 'store-a', status: 'ENABLED'}, {key: 'store-disabled', status: 'DISABLED'}, {key: 'store-voided', status: 'VOIDED'}],
+    },
   },
   executionPlan: {invitationPlans: [
     {invitationKey: 'pending', mobile: '13800000002', roleKey: 'role-store', nodeKey: 'store-a'},
@@ -30,6 +46,16 @@ test('formal seed refuses a fixture that does not explicitly map every invitatio
   assert.throws(() => resolveInvitationCreationPlan({...fixture, executionPlan: {invitationPlans: fixture.executionPlan.invitationPlans.slice(1)}}), code('SEED_INVITATION_PLAN_SET_INVALID'));
 });
 
+test('formal seed requires every lifecycle-bearing fixture collection to cover all three statuses', () => {
+  assert.doesNotThrow(() => validateThreeStateSeedCoverage(fixture));
+  const missingVoided = structuredClone(fixture);
+  missingVoided.stableFixtures.organization.stores = missingVoided.stableFixtures.organization.stores.filter((entry) => entry.status !== 'VOIDED');
+  assert.throws(() => validateThreeStateSeedCoverage(missingVoided), code('SEED_STATUS_COVERAGE_MISSING:organization.stores:VOIDED'));
+  const missingStatus = structuredClone(fixture);
+  delete missingStatus.stableFixtures.workspaceIam.accounts[0].status;
+  assert.throws(() => validateThreeStateSeedCoverage(missingStatus), code('SEED_STATUS_VALUE_INVALID:workspaceIam.accounts'));
+});
+
 test('formal seed uses the declared logo bytes and rejects unsafe asset fixture paths', async () => {
   const fixturePath = new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url);
   const actual = JSON.parse(await import('node:fs/promises').then((fs) => fs.readFile(fixturePath, 'utf8')));
@@ -41,7 +67,7 @@ test('formal seed uses the declared logo bytes and rejects unsafe asset fixture 
   assert.throws(() => readSeedAssetFixtureBytes({contentFixture: 'fixtures/assets/not-found.png'}), code('SEED_ASSET_FIXTURE_MISSING'));
 });
 
-test('formal seed models the Runxin workspace, eight regions, and three named projects', async () => {
+test('formal seed models the Runxin workspace, nine regions, and four named projects', async () => {
   const fixturePath = new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url);
   const actual = JSON.parse(await import('node:fs/promises').then((fs) => fs.readFile(fixturePath, 'utf8')));
   const workspace = actual.stableFixtures.groupWorkspaces.find((entry) => entry.key === 'gw-aurora');
@@ -50,12 +76,13 @@ test('formal seed models the Runxin workspace, eight regions, and three named pr
   assert.deepEqual(organization.commercialGroups.find((entry) => entry.key === 'cg-aurora') && {name: organization.commercialGroups.find((entry) => entry.key === 'cg-aurora').name, code: organization.commercialGroups.find((entry) => entry.key === 'cg-aurora').code}, {name: '华润万象生活', code: '0'});
   assert.deepEqual(organization.regions.map(({name, code}) => ({name, code})), [
     {name: '东北大区', code: '001'}, {name: '华北大区', code: '002'}, {name: '西北大区', code: '003'}, {name: '西南大区', code: '004'},
-    {name: '华中大区', code: '005'}, {name: '华东大区', code: '006'}, {name: '华南大区', code: '007'}, {name: '总部直管', code: '008'},
+    {name: '华中大区', code: '005'}, {name: '华东大区', code: '006'}, {name: '华南大区', code: '007'}, {name: '总部直管', code: '008'}, {name: '作废大区', code: '009'},
   ]);
   assert.deepEqual(organization.projects.map(({name, code, parent}) => ({name, code, parent})), [
     {name: '太原万象城', code: '00201', parent: 'region-east'},
     {name: '北京清河万象汇', code: '00202', parent: 'region-east'},
     {name: '长沙万象城', code: '00501', parent: 'region-west'},
+    {name: '作废示范项目', code: '00203', parent: 'region-east'},
   ]);
 });
 
@@ -68,7 +95,7 @@ test('formal seed maps only a role to a node of the same owner type and preserve
 });
 
 test('only generated owner operations may satisfy the executor input', () => {
-  const ids = ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract'];
+  const ids = ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'transitionWorkspaceRoleStatus', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract'];
   const registry = ids.map((operationId) => ({operationId}));
   assert.equal(validateFormalSeedStaticInputs({fixture, registry}).invitationPlan.length, 4);
   assert.throws(() => validateFormalSeedStaticInputs({fixture, registry: registry.slice(1)}), code('SEED_OPERATION_REGISTRY_MISSING:platformPasswordLogin'));
@@ -128,6 +155,13 @@ test('owner-command idempotency keys remain within the public contract limit for
 test('formal seed source requires the hard-locked managed OTP readback', async () => {
   const source = await import('node:fs/promises').then((fs) => fs.readFile(new URL('./owner-command-seed-executor.mjs', import.meta.url), 'utf8'));
   assert.match(source, /manifest\.otpDebugExposure !== true/);
+});
+
+test('formal seed rejects identity reuse for every non-enabled account state', async () => {
+  const source = await import('node:fs/promises').then((fs) => fs.readFile(new URL('./owner-command-seed-executor.mjs', import.meta.url), 'utf8'));
+  assert.match(source, /accounts\.filter\(\(entry\) => entry\.status !== 'ENABLED'\)/);
+  assert.match(source, /account-\$\{account\.key\}-identity-reuse/);
+  assert.match(source, /SEED_ACCOUNT_REUSE_PROBLEM_INVALID/);
 });
 
 test('formal seed child-process failures retain only controlled diagnostic codes', async () => {

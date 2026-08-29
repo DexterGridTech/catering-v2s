@@ -85,11 +85,11 @@
     },
     {
       "path": "contracts/openapi-source/collaboration.schemas.json",
-      "sha256": "f21665dbe869563d89960fbbf21ab0255c44f18b0073eb502dec195bccf78cc8"
+      "sha256": "4aa65fae752a906941bce967d51b383b16595b7d95b5f0be87aba2ee2aee809c"
     },
     {
       "path": "contracts/openapi-source/business-channel.schemas.json",
-      "sha256": "be594aa53eaf5289ca6083b824322482b6848342023a8c31c1a3a7132e6c51b4"
+      "sha256": "780cf513cb63a36fc789db50508af32efec90e026c29aaeb362cc58a8cb96c32"
     }
   ],
   "denominator": {
@@ -368,6 +368,7 @@
       "WORKSPACE_IAM_GRANT_INVALID",
       "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
       "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
+      "ACCOUNT_NOT_BINDABLE",
       "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
       "PLATFORM_COMMON_RESULT_UNKNOWN"
     ],
@@ -563,13 +564,13 @@
       "VERSION_CONFLICT"
     ],
     "updateOperationsBusinessChannelTemplate": [
-      "DISABLED_OBJECT_NOT_EDITABLE",
       "IMMUTABLE_FIELD",
-      "VERSION_CONFLICT"
+      "VERSION_CONFLICT",
+      "VOIDED_RECORD_IMMUTABLE"
     ],
     "transitionOperationsBusinessChannelTemplateStatus": [
-      "DISABLED_OBJECT_NOT_EDITABLE",
-      "VERSION_CONFLICT"
+      "VERSION_CONFLICT",
+      "VOIDED_RECORD_IMMUTABLE"
     ],
     "createOperationsBusinessChannel": [
       "BINDING_NOT_EFFECTIVE",
@@ -581,13 +582,13 @@
       "VERSION_CONFLICT"
     ],
     "updateOperationsBusinessChannel": [
-      "DISABLED_OBJECT_NOT_EDITABLE",
       "IMMUTABLE_FIELD",
-      "VERSION_CONFLICT"
+      "VERSION_CONFLICT",
+      "VOIDED_RECORD_IMMUTABLE"
     ],
     "transitionOperationsBusinessChannelStatus": [
-      "DISABLED_OBJECT_NOT_EDITABLE",
-      "VERSION_CONFLICT"
+      "VERSION_CONFLICT",
+      "VOIDED_RECORD_IMMUTABLE"
     ]
   },
   "operationErrorSelectionRules": {
@@ -11354,14 +11355,12 @@
         "mobile",
         "issuerDisplayName",
         "targetOrganizationType",
-        "targetOrganizationPath",
         "roleNames",
         "status",
         "generation",
         "expiresAt",
         "revision",
-        "createdAt",
-        "invitationPageUrl"
+        "createdAt"
       ],
       "properties": {
         "id": {
@@ -11386,11 +11385,6 @@
         },
         "targetOrganizationType": {
           "$ref": "#/components/schemas/ServiceNodeType"
-        },
-        "targetOrganizationPath": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 240
         },
         "roleNames": {
           "type": "array",
@@ -11431,10 +11425,6 @@
         "cancelledAt": {
           "$ref": "#/components/schemas/EpochMillis",
           "nullable": true
-        },
-        "invitationPageUrl": {
-          "type": "string",
-          "format": "uri"
         }
       }
     },
@@ -11527,8 +11517,52 @@
     "PublicInvitationCredentialRequest": {
       "ref": "PublicInvitationCredentialRequest"
     },
+    "AccountPresenceStatus": {
+      "type": "string",
+      "enum": [
+        "ABSENT",
+        "ENABLED",
+        "DISABLED",
+        "VOIDED"
+      ]
+    },
     "PublicInvitationCredentialResponse": {
-      "ref": "PublicInvitationCredentialResponse"
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verificationGrant",
+        "accountExists",
+        "userNameReady",
+        "loginNameReady",
+        "passwordReady",
+        "nextStep"
+      ],
+      "properties": {
+        "verificationGrant": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 128
+        },
+        "accountExists": {
+          "$ref": "#/components/schemas/AccountPresenceStatus"
+        },
+        "userNameReady": {
+          "type": "boolean"
+        },
+        "loginNameReady": {
+          "type": "boolean"
+        },
+        "passwordReady": {
+          "type": "boolean"
+        },
+        "nextStep": {
+          "type": "string",
+          "enum": [
+            "COMPLETE_CREDENTIALS",
+            "FINALIZE"
+          ]
+        }
+      }
     },
     "PublicInvitationOtpSendRequest": {
       "ref": "PublicInvitationOtpSendRequest"
@@ -11540,7 +11574,42 @@
       "ref": "PublicInvitationOtpVerifyRequest"
     },
     "PublicInvitationReadiness": {
-      "ref": "PublicInvitationReadiness"
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verificationGrant",
+        "accountExists",
+        "userNameReady",
+        "loginNameReady",
+        "passwordReady",
+        "nextStep"
+      ],
+      "properties": {
+        "verificationGrant": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 128
+        },
+        "accountExists": {
+          "$ref": "#/components/schemas/AccountPresenceStatus"
+        },
+        "userNameReady": {
+          "type": "boolean"
+        },
+        "loginNameReady": {
+          "type": "boolean"
+        },
+        "passwordReady": {
+          "type": "boolean"
+        },
+        "nextStep": {
+          "type": "string",
+          "enum": [
+            "COMPLETE_CREDENTIALS",
+            "FINALIZE"
+          ]
+        }
+      }
     },
     "PublicInvitationView": {
       "ref": "PublicInvitationView"
@@ -11671,6 +11740,7 @@
               "id",
               "serviceNodeType",
               "organizationPath",
+              "organizationPathNodes",
               "roleName",
               "status",
               "source",
@@ -11689,6 +11759,13 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 240
+              },
+              "organizationPathNodes": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/components/schemas/OrganizationPathNode"
+                }
               },
               "roleName": {
                 "type": "string",
@@ -12001,6 +12078,7 @@
               "roleName",
               "serviceNodeType",
               "organizationPath",
+              "organizationPathNodes",
               "status",
               "source",
               "revision",
@@ -12035,6 +12113,13 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 240
+              },
+              "organizationPathNodes": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/components/schemas/OrganizationPathNode"
+                }
               },
               "status": {
                 "type": "string",
@@ -12936,8 +13021,54 @@
     "ExternalCapability": {
       "ref": "ExternalCapability"
     },
-    "ExternalCapabilityAttributeDescriptor": {
-      "ref": "ExternalCapabilityAttributeDescriptor"
+    "OrganizationPathNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ref",
+        "code",
+        "name",
+        "nodeType"
+      ],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "nodeType": {
+          "$ref": "#/components/schemas/ServiceNodeType"
+        }
+      }
+    },
+    "InvitationRouteFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "groupWorkspaceKey",
+        "invitationToken"
+      ],
+      "properties": {
+        "groupWorkspaceKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "invitationToken": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
     },
     "ExternalSystemView": {
       "ref": "ExternalSystemView"
@@ -13077,8 +13208,7 @@
     },
     "BusinessChannelView": {
       "requiredAdditions": [
-        "bindingStatus",
-        "bindingStatusDisplayName"
+        "bindingStatus"
       ],
       "properties": {
         "bindingStatus": {
@@ -13088,25 +13218,117 @@
             "UNBOUND",
             "BOUND"
           ]
-        },
-        "bindingStatusDisplayName": {
-          "type": "string",
-          "minLength": 1
         }
       }
     },
-    "ExtensionDefinitionUpdateRequest": {
+    "WorkspaceAccountStatus": {
+      "type": "string",
+      "enum": [
+        "ENABLED",
+        "DISABLED",
+        "VOIDED"
+      ]
+    },
+    "WorkspaceRoleStatus": {
+      "type": "string",
+      "enum": [
+        "ENABLED",
+        "DISABLED",
+        "VOIDED"
+      ]
+    },
+    "BusinessEntityStatus": {
+      "type": "string",
+      "enum": [
+        "ENABLED",
+        "DISABLED",
+        "VOIDED"
+      ]
+    },
+    "PlatformWorkspaceInvitation": {
+      "removeProperties": [
+        "targetOrganizationPath",
+        "invitationPageUrl"
+      ],
+      "requiredAdditions": [
+        "targetOrganizationPathNodes",
+        "invitationRouteFacts"
+      ],
       "properties": {
+        "targetOrganizationPathNodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/components/schemas/OrganizationPathNode"
+          }
+        },
+        "invitationRouteFacts": {
+          "$ref": "#/components/schemas/InvitationRouteFacts",
+          "nullable": true
+        }
+      }
+    },
+    "WorkspaceInvitation": {
+      "removeProperties": [
+        "targetOrganizationPath",
+        "invitationPageUrl"
+      ],
+      "requiredAdditions": [
+        "targetOrganizationPathNodes",
+        "invitationRouteFacts"
+      ],
+      "properties": {
+        "targetOrganizationPathNodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/components/schemas/OrganizationPathNode"
+          }
+        },
+        "invitationRouteFacts": {
+          "$ref": "#/components/schemas/InvitationRouteFacts",
+          "nullable": true
+        }
+      }
+    },
+    "WorkspaceAccount": {
+      "removeProperties": [
+        "organizationPath"
+      ]
+    },
+    "WorkspaceUser": {
+      "removeProperties": [
+        "organizationPath"
+      ]
+    },
+    "ExtensionDefinition": {
+      "requiredAdditions": [
+        "workspaceStatus",
+        "blockers"
+      ],
+      "properties": {
+        "workspaceStatus": {
+          "$ref": "#/components/schemas/GroupWorkspaceStatus"
+        },
+        "blockers": {
+          "type": "array",
+          "maxItems": 1,
+          "items": {
+            "$ref": "#/components/schemas/ExtensionDefinitionBlocker"
+          }
+        },
         "definitions": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
             "required": [
+              "key",
               "label",
               "type",
               "required",
-              "options"
+              "options",
+              "status"
             ],
             "properties": {
               "key": {
@@ -13153,6 +13375,94 @@
               },
               "displaySuffix": {
                 "type": "string",
+                "nullable": true,
+                "minLength": 1,
+                "maxLength": 20
+              }
+            }
+          }
+        }
+      }
+    },
+    "ExtensionDefinitionBlocker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "status"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "WORKSPACE"
+          ]
+        },
+        "status": {
+          "$ref": "#/components/schemas/GroupWorkspaceStatus"
+        }
+      }
+    },
+    "ExtensionDefinitionUpdateRequest": {
+      "properties": {
+        "definitions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "type",
+              "required",
+              "options",
+              "status"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80,
+                "pattern": "^[a-z][a-zA-Z0-9_]*$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "TEXT",
+                  "NUMBER",
+                  "DATE",
+                  "BOOLEAN",
+                  "SELECT"
+                ]
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 120
+                }
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ENABLED",
+                  "DISABLED"
+                ]
+              },
+              "displayOrder": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "displaySuffix": {
+                "type": "string",
+                "nullable": true,
                 "minLength": 1,
                 "maxLength": 20
               }
@@ -13594,11 +13904,16 @@
     "ContractOverviewItem": {
       "requiredAdditions": [
         "projectRef",
-        "itemSummary",
         "items",
         "extensionFields"
       ],
       "properties": {
+        "phaseName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "nullable": true
+        },
         "projectRef": {
           "type": "object",
           "additionalProperties": false,
@@ -13632,11 +13947,6 @@
               ]
             }
           }
-        },
-        "itemSummary": {
-          "type": "string",
-          "minLength": 0,
-          "maxLength": 4000
         },
         "items": {
           "type": "array",
@@ -13784,10 +14094,14 @@
       }
     },
     "PublicInvitationView": {
+      "removeProperties": [
+        "targetOrganizationPath"
+      ],
       "requiredAdditions": [
         "workspaceName",
         "operationsTitle",
-        "nextStep"
+        "nextStep",
+        "targetOrganizationPathNodes"
       ],
       "properties": {
         "workspaceName": {
@@ -13814,14 +14128,67 @@
           "nullable": true,
           "format": "uri",
           "maxLength": 2048
+        },
+        "targetOrganizationPathNodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/components/schemas/OrganizationPathNode"
+          }
         }
       }
     },
     "WorkspaceInvitationCandidatePage": {
+      "removeProperties": [
+        "path"
+      ],
       "requiredAdditions": [
         "metadata"
       ],
       "properties": {
+        "organizations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "serviceNodeType",
+              "organizationRef",
+              "path",
+              "pathNodes"
+            ],
+            "properties": {
+              "serviceNodeType": {
+                "type": "string",
+                "enum": [
+                  "GROUP",
+                  "REGION",
+                  "PROJECT",
+                  "HEAD_COMPANY",
+                  "STORE"
+                ]
+              },
+              "organizationRef": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "format": "uuid"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "pathNodes": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/components/schemas/OrganizationPathNode"
+                }
+              }
+            }
+          }
+        },
         "metadata": {
           "type": "object",
           "nullable": true,
@@ -14079,6 +14446,12 @@
         "effectiveFrom"
       ],
       "properties": {
+        "phaseName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "nullable": true
+        },
         "items": {
           "type": "array",
           "items": {

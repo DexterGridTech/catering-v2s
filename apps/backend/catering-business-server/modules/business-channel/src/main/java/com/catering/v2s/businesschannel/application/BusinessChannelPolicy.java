@@ -15,11 +15,7 @@ final class BusinessChannelPolicy {
     static final String GROUP_BUY = "GROUP_BUY";
     static final String ENABLED = "ENABLED";
     static final String DISABLED = "DISABLED";
-    static final String DRAFT = "DRAFT";
-    static final String EFFECTIVE = "EFFECTIVE";
-    static final String MANUAL = "MANUAL";
-    static final String CASCADE_TEMPLATE = "CASCADE_TEMPLATE";
-    static final String CASCADE_EXTERNAL = "CASCADE_EXTERNAL";
+    static final String VOIDED = "VOIDED";
 
     private BusinessChannelPolicy() {}
 

@@ -26,7 +26,7 @@ owner 的 task-read 返回**该实体的业务结构本身,含相关联的结构
 
 **唯一限定**:当"谁能看这批事实"由接口身份承载时不得合并 —— 见 `AUTHORIZATION_DIMENSION_STAYS_IN_OPERATION_IDENTITY`。
 
-反例(实测):商品列表给 `categoryRef`(UUID)配 `categoryPathLabels`(字符串数组),前端想显示分类编码时该字段不在契约里。
+反例(实测):商品列表只给 `categoryRef`(UUID)而不返回 `categoryPath` 节点事实,前端想显示分类编码或名称时不得不猜测或再发屏幕专用请求。
 
 ## NO_BACKEND_DISPLAY_ASSEMBLY
 
@@ -48,7 +48,7 @@ owner 的 task-read 返回**该实体的业务结构本身,含相关联的结构
 
 三种实测违背形态:
 
-1. **句子装配**(37 行 / 11 个文件,不止 catalog —— `InventoryOwnerService` 也有):`"生产标签：" + name`、`preparationSummary.add("各规格制作内容不同")`
+1. **句子装配**(37 行 / 11 个文件,不止 catalog —— `InventoryOwnerService` 也有):`"生产标签：" + name`、把多条制作事实压成一句提示;应返回结构化 `preparationFacts`,由前端决定是否显示提示。
 2. **分隔符装配**(organization Java 层 18 处 + collaboration/organization 的 **SQL 层**,**无中文**):`region.code() + " " + region.name() + " / " + target.code() + " " + target.name()`,落进契约的 `path` / `organizationPath`。分隔符、节点内分隔、编码在前名称在后,三个表达决定全在后台
 3. **逐记录枚举翻译**(41 个 `*DisplayName` 字段跨 8 域):根因是**枚举词汇表只有 catalog 有**,其它域前端拿不到词汇表。**修法按 Dexter 2026-08-27 判据**:后端有明确代码支撑、非业务自定义的闭集,**由前端建字典,后端不建接口**;业务自定义的由后端返实体;时点快照保留。41 个后缀字段须按四类逐个判定,**不得整批退役**
 

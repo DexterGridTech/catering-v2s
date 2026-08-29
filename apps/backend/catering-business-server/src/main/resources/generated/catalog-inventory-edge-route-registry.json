@@ -3,7 +3,7 @@
   "kind": "catalog-inventory-edge-route-registry",
   "revision": "CATALOG_INVENTORY_P1_20260806",
   "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
-  "contractDigest": "f83c44f22e32cf8253bb37405fc6d85da0223c97425c54e0dbcdfd919ce9456b",
+  "contractDigest": "2acb8be16dba47fd14d3e16394607642e9ea50ad85d61d463e9a1a23eb095740",
   "operations": [
     {
       "operationId": "getOperationsCatalogWorkbenchContext",
@@ -12,21 +12,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsCatalogNavigation",
@@ -35,21 +21,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsCatalogItems",
@@ -58,21 +30,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 20,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsCatalogItem",
@@ -81,21 +39,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 25,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 25,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "createOperationsCatalogItem",
@@ -104,21 +48,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "saveOperationsCatalogItem",
@@ -127,21 +57,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 41,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 41,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "transitionOperationsCatalogItemStatus",
@@ -150,21 +66,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "createOperationsCatalogCategory",
@@ -173,21 +75,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "updateOperationsCatalogCategory",
@@ -196,21 +84,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "moveOperationsCatalogCategory",
@@ -219,44 +93,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
-    },
-    {
-      "operationId": "deleteOperationsCatalogCategory",
-      "method": "DELETE",
-      "path": "/operations/catalog-inventory/categories/{categoryRef}",
-      "owner": "catalog",
-      "consumerFaces": [
-        "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsCatalogDictionary",
@@ -265,21 +102,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "createOperationsCatalogDictionaryEntry",
@@ -288,21 +111,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "updateOperationsCatalogDictionaryEntry",
@@ -311,21 +120,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "reorderOperationsCatalogDictionaryEntry",
@@ -334,21 +129,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "transitionOperationsCatalogDictionaryEntryStatus",
@@ -357,21 +138,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsProductionTags",
@@ -380,21 +147,7 @@
       "owner": "fulfillment-production",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "createOperationsProductionTag",
@@ -403,21 +156,7 @@
       "owner": "fulfillment-production",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "updateOperationsProductionTag",
@@ -426,21 +165,7 @@
       "owner": "fulfillment-production",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "transitionOperationsProductionTagStatus",
@@ -449,21 +174,7 @@
       "owner": "fulfillment-production",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsLocalCatalogCopyCandidates",
@@ -472,21 +183,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "preflightOperationsLocalCatalogCopy",
@@ -495,21 +192,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "executeOperationsLocalCatalogCopy",
@@ -518,21 +201,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 31,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 31,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "preflightOperationsTemporaryCatalogItemPromotion",
@@ -541,21 +210,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "executeOperationsTemporaryCatalogItemPromotion",
@@ -564,21 +219,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 66,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 66,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsBrandCatalogCopyCandidates",
@@ -587,21 +228,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "preflightOperationsBrandCatalogCopy",
@@ -610,21 +237,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 21,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 21,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "executeOperationsBrandCatalogCopy",
@@ -633,21 +246,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 48,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 48,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsInventoryTargets",
@@ -656,21 +255,7 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsInventoryTarget",
@@ -679,21 +264,7 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsInventoryTargetChangeSummary",
@@ -702,21 +273,7 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsInventoryTargetBusinessHistory",
@@ -725,21 +282,7 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsInventoryTargetConsumptionReferences",
@@ -748,21 +291,7 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 17,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 17,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsInventoryTargetLedger",
@@ -771,21 +300,7 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsInventoryTargetDiagnostics",
@@ -794,21 +309,7 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "countOperationsInventoryTarget",
@@ -817,21 +318,7 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "increaseOperationsInventoryTarget",
@@ -840,21 +327,7 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "adjustOperationsInventoryTarget",
@@ -863,21 +336,7 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "updateOperationsInventoryTargetConfiguration",
@@ -886,21 +345,7 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 18,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 18,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "stageOperationsCatalogAsset",
@@ -909,21 +354,7 @@
       "owner": "asset",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 18,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 18,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "releaseOperationsCatalogStagedAsset",
@@ -932,21 +363,7 @@
       "owner": "asset",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsCatalogShapeManifest",
@@ -955,21 +372,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "batchTransitionOperationsCatalogItemStatus",
@@ -978,23 +381,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "LINEAR_REQUEST_CARDINALITY",
-        "base": 15,
-        "perItem": 5,
-        "cardinalityPath": "$.items",
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "CP-05 calibrated linear shape"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "listOperationsCatalogAttributeDefinitions",
@@ -1003,21 +390,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "createOperationsCatalogAttributeDefinition",
@@ -1026,21 +399,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "updateOperationsCatalogAttributeDefinition",
@@ -1049,44 +408,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 10,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 10,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
-    },
-    {
-      "operationId": "deleteOperationsCatalogAttributeDefinition",
-      "method": "DELETE",
-      "path": "/operations/catalog-inventory/attribute-definitions/{definitionRef}",
-      "owner": "catalog",
-      "consumerFaces": [
-        "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "listOperationsCatalogOrderOptionDefinitions",
@@ -1095,21 +417,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 10,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 10,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "createOperationsCatalogOrderOptionDefinition",
@@ -1118,21 +426,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 17,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 17,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "updateOperationsCatalogOrderOptionDefinition",
@@ -1141,44 +435,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 20,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
-    },
-    {
-      "operationId": "deleteOperationsCatalogOrderOptionDefinition",
-      "method": "DELETE",
-      "path": "/operations/catalog-inventory/order-option-definitions/{definitionRef}",
-      "owner": "catalog",
-      "consumerFaces": [
-        "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 16,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 16,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "listOperationsCatalogUnits",
@@ -1187,21 +444,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "createOperationsCatalogUnit",
@@ -1210,21 +453,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "updateOperationsCatalogUnit",
@@ -1233,67 +462,43 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
-      "operationId": "disableOperationsCatalogUnit",
+      "operationId": "transitionOperationsCatalogAttributeDefinitionStatus",
       "method": "POST",
-      "path": "/operations/catalog-inventory/units/{unitRef}/disable",
+      "path": "/operations/catalog-inventory/attribute-definitions/{definitionRef}/status",
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
-      "operationId": "deleteOperationsCatalogUnit",
-      "method": "DELETE",
-      "path": "/operations/catalog-inventory/units/{unitRef}",
+      "operationId": "transitionOperationsCatalogOrderOptionDefinitionStatus",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/order-option-definitions/{definitionRef}/status",
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
+    },
+    {
+      "operationId": "transitionOperationsCatalogUnitStatus",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/units/{unitRef}/status",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "transitionOperationsCatalogCategoryStatus",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/categories/{categoryRef}/status",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
     },
     {
       "operationId": "getOperationsInventoryConsumptionTargetCandidates",
@@ -1302,21 +507,7 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsCatalogCategoryCandidates",
@@ -1325,21 +516,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     },
     {
       "operationId": "getOperationsCatalogItemSkus",
@@ -1348,21 +525,7 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ],
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
+      ]
     }
   ]
 }

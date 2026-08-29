@@ -31,7 +31,6 @@ export const defaultCatalogTreeExpandedKeys: Key[] = [
 const smartViewIcons: Record<string, ReactNode> = {
   EXTERNAL_ORDER_TEMP: <CustomerServiceOutlined />,
   INACTIVE: <StopOutlined />,
-  ARCHIVED: <InboxOutlined />,
   RECENTLY_UPDATED: <HistoryOutlined />,
   AUTO_SYNC: <SyncOutlined />,
 };
@@ -204,7 +203,7 @@ export function CatalogWorkbenchNavigationTree({
                         },
                         {
                           key: 'delete',
-                          label: '删除分类',
+                          label: '标记删除分类',
                           danger: true,
                           disabled: !node.deletionAvailability.canDelete,
                           title: node.deletionAvailability.canDelete

@@ -12,6 +12,7 @@ const explicitScriptTestRoots = Object.freeze(['scripts/dev', 'scripts/generate'
 // the denominator check: a new scripts test file or directory must be added here
 // before the runner can report success.
 const nodeTestFiles = Object.freeze([
+  'scripts/test/base1-three-state-lifecycle-migration.test.mjs',
   'scripts/dev/catalog-inventory-seed-executor.test.mjs',
   'scripts/dev/r5-dev-command-wrapper.test.mjs',
   'scripts/dev/r5-complete-seed-executor.test.mjs',
@@ -22,6 +23,7 @@ const nodeTestFiles = Object.freeze([
   'scripts/dev/terminal-fixture-state.test.mjs',
   'scripts/test/backend-acceptance-structure.test.mjs',
   'scripts/test/backend-performance-event-verifier.test.mjs',
+  'scripts/test/backend-performance-operation-counts.test.mjs',
   'scripts/test/backend-performance-budget.test.mjs',
   'scripts/test/backend-performance-operation-reconciliation.test.mjs',
   'scripts/test/browser-l2-credentials.test.mjs',

@@ -78,7 +78,7 @@ export function ContractOverviewDetailDrawer({
               label: '门店',
               children: <NameCodeText name={item.storeRef.name} code={item.storeRef.code} />,
             },
-            {key: 'phase', label: '分期', children: item.phaseName},
+            {key: 'phase', label: '分期', children: item.phaseName || '未设置'},
             {
               key: 'tenant',
               label: '经营租户',

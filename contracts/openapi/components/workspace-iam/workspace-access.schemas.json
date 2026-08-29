@@ -10,14 +10,14 @@
           "mobile",
           "issuerDisplayName",
           "targetOrganizationType",
-          "targetOrganizationPath",
           "roleNames",
           "status",
           "generation",
           "expiresAt",
           "revision",
           "createdAt",
-          "invitationPageUrl"
+          "targetOrganizationPathNodes",
+          "invitationRouteFacts"
         ],
         "properties": {
           "id": {
@@ -42,11 +42,6 @@
           },
           "targetOrganizationType": {
             "$ref": "../common/enum.schemas.json#/components/schemas/ServiceNodeType"
-          },
-          "targetOrganizationPath": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 240
           },
           "roleNames": {
             "type": "array",
@@ -88,9 +83,16 @@
             "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis",
             "nullable": true
           },
-          "invitationPageUrl": {
-            "type": "string",
-            "format": "uri"
+          "targetOrganizationPathNodes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "../common/common.schemas.json#/components/schemas/OrganizationPathNode"
+            }
+          },
+          "invitationRouteFacts": {
+            "$ref": "#/components/schemas/InvitationRouteFacts",
+            "nullable": true
           }
         }
       },
@@ -254,6 +256,15 @@
           }
         }
       },
+      "AccountPresenceStatus": {
+        "type": "string",
+        "enum": [
+          "ABSENT",
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ]
+      },
       "PublicInvitationCredentialResponse": {
         "type": "object",
         "additionalProperties": false,
@@ -272,7 +283,7 @@
             "maxLength": 128
           },
           "accountExists": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/AccountPresenceStatus"
           },
           "userNameReady": {
             "type": "boolean"
@@ -372,7 +383,7 @@
             "maxLength": 128
           },
           "accountExists": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/AccountPresenceStatus"
           },
           "userNameReady": {
             "type": "boolean"
@@ -399,14 +410,14 @@
           "invitationId",
           "groupWorkspaceKey",
           "targetOrganizationType",
-          "targetOrganizationPath",
           "roleNames",
           "maskedMobile",
           "status",
           "expiresAt",
           "workspaceName",
           "operationsTitle",
-          "nextStep"
+          "nextStep",
+          "targetOrganizationPathNodes"
         ],
         "properties": {
           "invitationId": {
@@ -433,11 +444,6 @@
               "HEAD_COMPANY",
               "STORE"
             ]
-          },
-          "targetOrganizationPath": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 240
           },
           "roleNames": {
             "type": "array",
@@ -478,6 +484,13 @@
             "nullable": true,
             "format": "uri",
             "maxLength": 2048
+          },
+          "targetOrganizationPathNodes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "../common/common.schemas.json#/components/schemas/OrganizationPathNode"
+            }
           }
         }
       },
@@ -564,7 +577,7 @@
               "required": [
                 "id",
                 "serviceNodeType",
-                "organizationPath",
+                "organizationPathNodes",
                 "roleName",
                 "status",
                 "source",
@@ -579,10 +592,12 @@
                 "serviceNodeType": {
                   "$ref": "../common/enum.schemas.json#/components/schemas/ServiceNodeType"
                 },
-                "organizationPath": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 240
+                "organizationPathNodes": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "../common/common.schemas.json#/components/schemas/OrganizationPathNode"
+                  }
                 },
                 "roleName": {
                   "type": "string",
@@ -703,7 +718,8 @@
         "type": "string",
         "enum": [
           "ENABLED",
-          "DISABLED"
+          "DISABLED",
+          "VOIDED"
         ]
       },
       "WorkspaceAccountStatusTransitionRequest": {
@@ -787,14 +803,14 @@
           "groupWorkspaceKey",
           "maskedMobile",
           "targetOrganizationType",
-          "targetOrganizationPath",
           "roleNames",
           "status",
           "generation",
           "expiresAt",
           "revision",
           "createdAt",
-          "invitationPageUrl"
+          "targetOrganizationPathNodes",
+          "invitationRouteFacts"
         ],
         "properties": {
           "id": {
@@ -821,11 +837,6 @@
               "HEAD_COMPANY",
               "STORE"
             ]
-          },
-          "targetOrganizationPath": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 240
           },
           "roleNames": {
             "type": "array",
@@ -867,9 +878,16 @@
             "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis",
             "nullable": true
           },
-          "invitationPageUrl": {
-            "type": "string",
-            "format": "uri"
+          "targetOrganizationPathNodes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "../common/common.schemas.json#/components/schemas/OrganizationPathNode"
+            }
+          },
+          "invitationRouteFacts": {
+            "$ref": "#/components/schemas/InvitationRouteFacts",
+            "nullable": true
           }
         }
       },
@@ -904,7 +922,8 @@
               "required": [
                 "serviceNodeType",
                 "organizationRef",
-                "path"
+                "path",
+                "pathNodes"
               ],
               "properties": {
                 "serviceNodeType": {
@@ -927,6 +946,13 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 240
+                },
+                "pathNodes": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "../common/common.schemas.json#/components/schemas/OrganizationPathNode"
+                  }
                 }
               }
             }
@@ -1223,7 +1249,7 @@
                 "roleId",
                 "roleName",
                 "serviceNodeType",
-                "organizationPath",
+                "organizationPathNodes",
                 "status",
                 "source",
                 "revision",
@@ -1254,10 +1280,12 @@
                 "serviceNodeType": {
                   "$ref": "../common/enum.schemas.json#/components/schemas/ServiceNodeType"
                 },
-                "organizationPath": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 240
+                "organizationPathNodes": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "../common/common.schemas.json#/components/schemas/OrganizationPathNode"
+                  }
                 },
                 "status": {
                   "type": "string",
@@ -2249,8 +2277,29 @@
         "type": "string",
         "enum": [
           "ENABLED",
-          "DISABLED"
+          "DISABLED",
+          "VOIDED"
         ]
+      },
+      "InvitationRouteFacts": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "groupWorkspaceKey",
+          "invitationToken"
+        ],
+        "properties": {
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "invitationToken": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
       },
       "WorkspaceRoleAuthorizationReplaceRequest": {
         "type": "object",

@@ -14,9 +14,47 @@ export type InventoryUnitSnapshot = {
   precision: number;
 };
 
+export type InventoryConversionFacts = {
+  countingUnitSnapshot: InventoryUnitSnapshot | null;
+  consumptionUnitSnapshot: InventoryUnitSnapshot;
+  conversionFactor: string;
+};
+
 export function inventoryUnitLabel(snapshot: InventoryUnitSnapshot | null | undefined): ReactNode {
   if (!snapshot) return '—';
   return createElement(NameCodeText, {name: snapshot.name, code: snapshot.code});
+}
+
+export function inventoryConversionLabel(facts: InventoryConversionFacts | null | undefined): ReactNode {
+  if (!facts) return '换算信息暂缺';
+  if (!facts.countingUnitSnapshot) {
+    return createElement(
+      'span',
+      null,
+      '按 ',
+      createElement(NameCodeText, {
+        name: facts.consumptionUnitSnapshot.name,
+        code: facts.consumptionUnitSnapshot.code,
+      }),
+      ' 记录',
+    );
+  }
+  return createElement(
+    'span',
+    null,
+    '1 ',
+    createElement(NameCodeText, {
+      name: facts.countingUnitSnapshot.name,
+      code: facts.countingUnitSnapshot.code,
+    }),
+    ' = ',
+    facts.conversionFactor,
+    ' ',
+    createElement(NameCodeText, {
+      name: facts.consumptionUnitSnapshot.name,
+      code: facts.consumptionUnitSnapshot.code,
+    }),
+  );
 }
 
 export type InventoryTargetSummary = {
@@ -30,6 +68,7 @@ export type InventoryTargetSummary = {
   materialRole: string | null;
   consumptionUnitSnapshot: InventoryUnitSnapshot;
   countingUnitSnapshot: InventoryUnitSnapshot | null;
+  conversionFacts?: InventoryConversionFacts;
   conversionSummary: string | null;
   balance: string;
   stockState: string;

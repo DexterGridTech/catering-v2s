@@ -24,6 +24,7 @@ import {InventoryDetailDrawer} from './InventoryDetailDrawer';
 import {
   envelopeData,
   hasCapability,
+  inventoryConversionLabel,
   inventoryAuthorityLabel,
   inventoryUnitLabel,
   type InventoryCounts,
@@ -206,12 +207,7 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
               {row.balance} {inventoryUnitLabel(row.consumptionUnitSnapshot)}
             </span>
             <Typography.Text type="secondary" style={{fontSize: 12}}>
-              {row.conversionSummary ??
-                (row.countingUnitSnapshot ? (
-                  <>盘点单位：{inventoryUnitLabel(row.countingUnitSnapshot)}</>
-                ) : (
-                  '未配置盘点单位'
-                ))}
+              {inventoryConversionLabel(row.conversionFacts)}
             </Typography.Text>
           </Space>
         ),

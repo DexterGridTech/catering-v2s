@@ -64,7 +64,10 @@ export function CatalogItemEditorSectionAssembler({
   onNavigateTab,
 }: CatalogItemEditorSectionProps) {
   const {denied, fieldLabel, locked, lockedFact} = useCatalogItemEditorFieldPresentation(detail, manifest);
-  const categorySummary = catalogCategorySummary(basicDraft.values.categoryRefDraft, detail.item.categoryPathLabels);
+  const categorySummary = catalogCategorySummary(
+    basicDraft.values.categoryRefDraft,
+    detail.item.categoryPath.map(node => node.name),
+  );
   const unitRequest = useMemo(
     () =>
       catalogInventoryRtkRequest.listOperationsCatalogUnits(

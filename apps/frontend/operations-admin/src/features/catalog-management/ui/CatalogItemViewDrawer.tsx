@@ -1,4 +1,4 @@
-import {Alert, Button, Card, Descriptions, Dropdown, Drawer, Modal, Space, Tabs, Tag, Tooltip, Typography} from 'antd';
+import {Alert, Button, Card, Descriptions, Dropdown, Drawer, Modal, Space, Tabs, Tooltip, Typography} from 'antd';
 import {useEffect, useMemo, useState} from 'react';
 import {
   adminWideDrawerSurfaceProps,
@@ -12,7 +12,6 @@ import {CATALOG_INVENTORY_OPERATION_IDS} from '../../../app/api/generated/catalo
 import {wireUuid} from '../../../app/api/wireUuid';
 import {requireOperationsScopeRef} from '../../../app/routing/model';
 import {selectCatalogDetailForItem} from '../model/catalogModel';
-import {catalogEnumLabel} from '../model/catalogManifestLabels';
 import {catalogViewTabLabel} from '../model/catalogTabLabels';
 import {catalogUiProblemFeedback} from '../model/catalogUiProblemFeedback';
 import type {CatalogItemDrawerProps, CatalogManifest} from '../model/catalogItemSurfaceTypes';
@@ -39,7 +38,7 @@ export function CatalogItemViewDrawer({
   const [viewedItemCode, setViewedItemCode] = useState(itemCode);
   const [activeTab, setActiveTab] = useState(initialViewTab || 'basic');
   const [problem, setProblem] = useState<string>();
-  const [pendingStatus, setPendingStatus] = useState<'ENABLED' | 'DISABLED' | 'ARCHIVED' | 'VOIDED'>();
+  const [pendingStatus, setPendingStatus] = useState<'ENABLED' | 'DISABLED' | 'VOIDED'>();
   const [promotionOpen, setPromotionOpen] = useState(false);
   const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
   const detailRequest = useMemo(
@@ -51,6 +50,7 @@ export function CatalogItemViewDrawer({
     [headers, queryContext.scopeRef, viewedItemCode],
   );
   const detailQuery = operationsRtk.useGetOperationsCatalogItemQuery(detailRequest, {skip: !viewedItemCode});
+  // detailQuery.isError ? undefined keeps a failed identity read from reusing stale currentData.
   const detail = useMemo(
     () =>
       detailQuery.isError
@@ -87,7 +87,7 @@ export function CatalogItemViewDrawer({
     if (first && !detail.tabs.some(tab => tab.tabKey === activeTab && tab.visible)) setActiveTab(first);
   }, [activeTab, detail]);
 
-  const changeStatus = async (targetStatus: 'ENABLED' | 'DISABLED' | 'ARCHIVED' | 'VOIDED') => {
+  const changeStatus = async (targetStatus: 'ENABLED' | 'DISABLED' | 'VOIDED') => {
     if (!detail || !viewedItemCode) return;
     try {
       const body = {
@@ -120,7 +120,7 @@ export function CatalogItemViewDrawer({
     }
   };
 
-  const confirmStatusChange = (targetStatus: 'ENABLED' | 'DISABLED' | 'ARCHIVED') => {
+  const confirmStatusChange = (targetStatus: 'ENABLED' | 'DISABLED' | 'VOIDED') => {
     if (!detail) return;
     setPendingStatus(targetStatus);
   };
@@ -130,14 +130,7 @@ export function CatalogItemViewDrawer({
     setPendingStatus('VOIDED');
   };
 
-  const pendingStatusLabel =
-    pendingStatus === 'ENABLED'
-      ? '启用'
-      : pendingStatus === 'DISABLED'
-        ? '停用'
-        : pendingStatus === 'ARCHIVED'
-          ? '归档'
-          : '作废并重建';
+  const pendingStatusLabel = pendingStatus === 'ENABLED' ? '启用' : pendingStatus === 'DISABLED' ? '停用' : '标记删除';
 
   const tabs = detail?.tabs
     .filter(tab => tab.visible)
@@ -182,18 +175,15 @@ export function CatalogItemViewDrawer({
                 onClick: () => confirmStatusChange('DISABLED'),
               }
             : null,
-          action?.canArchive
-            ? {
-                key: 'archive',
-                label: <span {...testId(catalogTestIds.control.statusArchive)}>归档</span>,
-                onClick: () => confirmStatusChange('ARCHIVED'),
-              }
-            : null,
           action?.voidAvailability?.canVoid
             ? {
                 key: 'void',
                 danger: true,
-                label: <span {...testId(catalogTestIds.static.itemVoidAndRebuild)}>作废并重建</span>,
+                label: (
+                  <span {...testId(catalogTestIds.static.itemVoidAndRebuild)}>
+                    <span {...testId(catalogTestIds.control.statusVoid)}>标记删除</span>
+                  </span>
+                ),
                 onClick: voidAndRebuild,
               }
             : null,

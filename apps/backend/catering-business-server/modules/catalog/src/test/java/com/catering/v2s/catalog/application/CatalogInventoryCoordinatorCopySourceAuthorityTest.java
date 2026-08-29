@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -328,14 +329,17 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
         assertEquals(
                 "INVENTORY_BOM",
                 availability.path("dependentFacts").path(0).path("factKind").asText());
-        assertEquals("已配置用料", availability.path("blockingReasons").path(0).path("label").asText());
-        assertEquals(1, availability.path("blockingReasons").path(0).path("count").asInt());
+        assertEquals(
+                "已配置用料",
+                availability.path("blockingReasons").path(0).path("label").asText());
+        assertEquals(
+                1, availability.path("blockingReasons").path(0).path("count").asInt());
         verify(production, never())
                 .readTags(
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.any(com.fasterxml.jackson.databind.node.ObjectNode.class),
-                org.mockito.ArgumentMatchers.anyString());
+                        org.mockito.ArgumentMatchers.anyString());
     }
 
     @Test
@@ -391,8 +395,8 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                         org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(definition);
 
-        JsonNode availability = service
-                .readCatalogItem("scope", "brand", "ITEM-1", mapper.createObjectNode(), "request")
+        JsonNode availability = service.readCatalogItem(
+                        "scope", "brand", "ITEM-1", mapper.createObjectNode(), "request")
                 .path("data")
                 .path("item")
                 .path("skus")
@@ -400,18 +404,29 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                 .path("voidAvailability");
 
         assertFalse(availability.path("canVoid").asBoolean());
-        assertEquals("INVENTORY_TARGET", availability.path("dependentFacts").path(0).path("factKind").asText());
-        assertEquals("已配置库存对象", availability.path("blockingReasons").path(0).path("label").asText());
-        assertEquals(1, availability.path("blockingReasons").path(0).path("count").asInt());
-        JsonNode itemAvailability = service
-                .readCatalogItem("scope", "brand", "ITEM-1", mapper.createObjectNode(), "request")
+        assertEquals(
+                "INVENTORY_TARGET",
+                availability.path("dependentFacts").path(0).path("factKind").asText());
+        assertEquals(
+                "已配置库存对象",
+                availability.path("blockingReasons").path(0).path("label").asText());
+        assertEquals(
+                1, availability.path("blockingReasons").path(0).path("count").asInt());
+        JsonNode itemAvailability = service.readCatalogItem(
+                        "scope", "brand", "ITEM-1", mapper.createObjectNode(), "request")
                 .path("data")
                 .path("actionAvailability")
                 .path("voidAvailability");
         assertFalse(itemAvailability.path("canVoid").asBoolean());
-        assertEquals("INVENTORY_TARGET", itemAvailability.path("dependentFacts").path(0).path("factKind").asText());
-        assertEquals("已配置库存对象", itemAvailability.path("blockingReasons").path(0).path("label").asText());
-        assertEquals(1, itemAvailability.path("blockingReasons").path(0).path("count").asInt());
+        assertEquals(
+                "INVENTORY_TARGET",
+                itemAvailability.path("dependentFacts").path(0).path("factKind").asText());
+        assertEquals(
+                "已配置库存对象",
+                itemAvailability.path("blockingReasons").path(0).path("label").asText());
+        assertEquals(
+                1,
+                itemAvailability.path("blockingReasons").path(0).path("count").asInt());
     }
 
     @Test
@@ -468,12 +483,18 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                 .thenReturn(definition);
 
         JsonNode result = service.readCatalogItem("scope", "brand", "ITEM-1", mapper.createObjectNode(), "request");
-        JsonNode skuAvailabilityResult = result.path("data").path("item").path("skus").path(0).path("voidAvailability");
-        JsonNode itemAvailability = result.path("data").path("actionAvailability").path("voidAvailability");
+        JsonNode skuAvailabilityResult =
+                result.path("data").path("item").path("skus").path(0).path("voidAvailability");
+        JsonNode itemAvailability =
+                result.path("data").path("actionAvailability").path("voidAvailability");
         for (JsonNode availability : List.of(skuAvailabilityResult, itemAvailability)) {
             assertFalse(availability.path("canVoid").asBoolean());
-            assertEquals("INVENTORY_BOM", availability.path("dependentFacts").path(0).path("factKind").asText());
-            assertEquals("已配置用料", availability.path("blockingReasons").path(0).path("label").asText());
+            assertEquals(
+                    "INVENTORY_BOM",
+                    availability.path("dependentFacts").path(0).path("factKind").asText());
+            assertEquals(
+                    "已配置用料",
+                    availability.path("blockingReasons").path(0).path("label").asText());
         }
     }
 
@@ -561,6 +582,156 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
         CatalogOwnerApi.Problem malformedRequest =
                 assertThrows(CatalogOwnerApi.Problem.class, () -> canonicalSaveRequest(service, "null"));
         assertEquals("VALIDATION_ERROR", malformedRequest.code());
+    }
+
+    @Test
+    void temporaryPromotionUsesOneInventoryBatchAndKeepsEachDirectConfiguration() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        InventoryOwnerApi inventory = mock(InventoryOwnerApi.class);
+        CatalogTemporaryPromotionOwner promotionOwner = mock(CatalogTemporaryPromotionOwner.class);
+        CatalogInventoryCoordinator service =
+                new CatalogInventoryCoordinator(null, inventory, null, null, mapper, null, null, null, promotionOwner);
+        var context = CatalogCommandContextFixture.context(
+                UUID.randomUUID(),
+                "promotion-test",
+                UUID.randomUUID(),
+                "brand",
+                com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens
+                        .EXECUTE_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION,
+                null,
+                "request-id");
+
+        UUID sourceItemRef = UUID.randomUUID();
+        UUID targetItemRef = UUID.randomUUID();
+        UUID targetSkuRef = UUID.randomUUID();
+        UUID itemUnitRef = UUID.randomUUID();
+        UUID skuUnitRef = UUID.randomUUID();
+        InventoryOwnerApi.UnitSnapshot itemUnit =
+                new InventoryOwnerApi.UnitSnapshot(itemUnitRef, "KG", "千克", "WEIGHT", 3);
+        InventoryOwnerApi.UnitSnapshot skuUnit =
+                new InventoryOwnerApi.UnitSnapshot(skuUnitRef, "KG", "千克", "WEIGHT", 3);
+        CatalogTemporaryPromotionProjection projection = new CatalogTemporaryPromotionProjection(
+                sourceItemRef,
+                "WEIGHED",
+                targetItemRef,
+                "FORMAL-001",
+                itemUnit,
+                Map.of("SKU-1", new CatalogTemporaryPromotionSkuFact(targetSkuRef, skuUnit)),
+                List.of());
+        CatalogOwnerApi.CatalogItemCommandReadback catalogReadback = new CatalogOwnerApi.CatalogItemCommandReadback(
+                "executeOperationsTemporaryCatalogItemPromotion",
+                targetItemRef.toString(),
+                "DISABLED",
+                1,
+                List.of(),
+                new CatalogOwnerApi.CatalogItemActionAvailability(false, true, false));
+        CatalogOwnerApi.TemporaryPromotionExecuteCommand command = new CatalogOwnerApi.TemporaryPromotionExecuteCommand(
+                "TEMP-001", "FORMAL-001", "STANDARD_SALE_COUNTED", "正式商品", null, null, 2, 2, "digest");
+        when(promotionOwner.executeTemporaryCatalogItemPromotionWithProjection(
+                        org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(new CatalogTemporaryPromotionExecution(catalogReadback, projection));
+
+        ObjectNode sourceDefinition = mapper.createObjectNode();
+        ArrayNode sourceNodes =
+                sourceDefinition.putObject("data").putObject("inventoryRules").putArray("nodes");
+        ObjectNode itemSourceNode =
+                sourceNodes.addObject().put("mode", "DIRECT").putNull("skuCode");
+        ObjectNode itemSourceConfiguration = itemSourceNode
+                .putObject("directConfiguration")
+                .put("targetRef", UUID.randomUUID().toString())
+                .put("version", 7)
+                .put("allowNegative", true)
+                .put("conversionFactor", 2);
+        itemSourceConfiguration.set("countingUnitSnapshot", mapper.valueToTree(itemUnit));
+        sourceNodes
+                .addObject()
+                .put("mode", "DIRECT")
+                .put("skuCode", "SKU-1")
+                .putObject("directConfiguration")
+                .put("targetRef", UUID.randomUUID().toString())
+                .put("version", 8)
+                .put("allowNegative", false)
+                .put("conversionFactor", 1);
+        sourceNodes.addObject().put("mode", "BOM").put("skuCode", "SKU-1");
+        when(inventory.readCatalogInventoryDefinition(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(sourceDefinition);
+        when(inventory.replaceCatalogInventoryRules(
+                        org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.anyString()))
+                .thenAnswer(invocation -> {
+                    InventoryOwnerApi.CatalogInventoryRulesReplaceCommand batch = invocation.getArgument(1);
+                    ObjectNode request = (ObjectNode) mapper.readTree(batch.canonicalRequestJson());
+                    ObjectNode data = mapper.createObjectNode().put("itemRef", targetItemRef.toString());
+                    ArrayNode readbackNodes = data.putObject("inventoryRules").putArray("nodes");
+                    for (JsonNode submitted : request.path("nodes")) {
+                        ObjectNode readbackNode = submitted.deepCopy();
+                        ObjectNode readbackConfiguration = (ObjectNode) readbackNode.path("directConfiguration");
+                        readbackConfiguration
+                                .put("targetRef", UUID.randomUUID().toString())
+                                .put("version", 1)
+                                .set(
+                                        "consumptionUnitSnapshot",
+                                        submitted
+                                                .path("consumptionUnitSnapshot")
+                                                .deepCopy());
+                        readbackNodes.add(readbackNode);
+                    }
+                    ObjectNode envelope = mapper.createObjectNode();
+                    envelope.set("data", data);
+                    return new InventoryOwnerApi.CatalogItemSaveReadback(mapper.writeValueAsString(envelope));
+                });
+
+        service.executeTemporaryCatalogItemPromotion(context, command, "promotion-key");
+
+        verify(inventory, never())
+                .ensureCatalogItemSaveTarget(
+                        org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.anyString());
+        ArgumentCaptor<InventoryOwnerApi.CatalogInventoryRulesReplaceCommand> batch =
+                ArgumentCaptor.forClass(InventoryOwnerApi.CatalogInventoryRulesReplaceCommand.class);
+        verify(inventory)
+                .replaceCatalogInventoryRules(
+                        org.mockito.ArgumentMatchers.eq(context),
+                        batch.capture(),
+                        org.mockito.ArgumentMatchers.eq("promotion-key:temporary-promotion-inventory-rules"));
+        JsonNode request = mapper.readTree(batch.getValue().canonicalRequestJson());
+        assertEquals(2, request.path("nodes").size());
+        assertEquals("FORMAL-001", request.path("itemCode").asText());
+        assertEquals(
+                "ITEM",
+                request.path("nodes").get(0).path("owner").path("ownerType").asText());
+        assertEquals(
+                targetSkuRef.toString(),
+                request.path("nodes").get(1).path("owner").path("productSkuRef").asText());
+        assertTrue(request.path("nodes")
+                .get(0)
+                .path("directConfiguration")
+                .path("allowNegative")
+                .asBoolean());
+        assertEquals(
+                2,
+                request.path("nodes")
+                        .get(0)
+                        .path("directConfiguration")
+                        .path("conversionFactor")
+                        .asInt());
+        assertEquals(
+                itemUnitRef.toString(),
+                request.path("nodes")
+                        .get(0)
+                        .path("directConfiguration")
+                        .path("countingUnitRef")
+                        .asText());
+        assertFalse(request.path("nodes").get(0).path("directConfiguration").has("targetRef"));
+        assertFalse(request.path("nodes").get(0).path("directConfiguration").has("version"));
     }
 
     @Test

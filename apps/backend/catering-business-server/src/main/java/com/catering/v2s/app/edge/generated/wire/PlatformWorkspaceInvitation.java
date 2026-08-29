@@ -7,7 +7,6 @@ public record PlatformWorkspaceInvitation(
     String mobile,
     String issuerDisplayName,
     ServiceNodeType targetOrganizationType,
-    String targetOrganizationPath,
     java.util.List<String> roleNames,
     WorkspaceInvitationStatus status,
     Long generation,
@@ -17,5 +16,6 @@ public record PlatformWorkspaceInvitation(
     Long consentedAt,
     Long completedAt,
     Long cancelledAt,
-    String invitationPageUrl
+    java.util.List<OrganizationPathNode> targetOrganizationPathNodes,
+    InvitationRouteFacts invitationRouteFacts
 ) {}

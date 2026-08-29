@@ -186,7 +186,12 @@ public interface InventoryOwnerApi {
             UnitSnapshot consumptionUnitSnapshot,
             UnitSnapshot countingUnitSnapshot,
             String conversionSummary,
-            String authorityType) {}
+            String authorityType,
+            InventoryConversionFacts conversionFacts) {}
+
+    /** Typed conversion facts; presentation strings remain only during the approved dual projection window. */
+    record InventoryConversionFacts(
+            UnitSnapshot countingUnitSnapshot, UnitSnapshot consumptionUnitSnapshot, BigDecimal conversionFactor) {}
 
     record InventoryChangeSummaryReadback(
             InventoryChangePeriodReadback today,

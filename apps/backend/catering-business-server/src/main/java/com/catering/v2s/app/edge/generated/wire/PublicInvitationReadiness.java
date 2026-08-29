@@ -3,7 +3,7 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public record PublicInvitationReadiness(
     String verificationGrant,
-    Boolean accountExists,
+    AccountPresenceStatus accountExists,
     Boolean userNameReady,
     Boolean loginNameReady,
     Boolean passwordReady,

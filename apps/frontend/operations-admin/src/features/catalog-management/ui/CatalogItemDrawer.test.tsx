@@ -412,7 +412,10 @@ describe('catalog identification and preparation editor boundaries', () => {
           shortName: null,
           materialRole: null,
           categoryRef: null,
-          categoryPathLabels: ['餐饮', '饮品'],
+          categoryPath: [
+            {categoryRef: 'category-root', code: 'FOOD', name: '餐饮'},
+            {categoryRef: 'category-drink', code: 'DRINK', name: '饮品'},
+          ],
           productionTagRef: null,
           tagRefs: [],
           shapeKey: 'STANDARD_SALE_COUNTED',
@@ -433,9 +436,13 @@ describe('catalog identification and preparation editor boundaries', () => {
           priceGranularity: 'ITEM',
           attributeAssignments: [],
           orderOptionConfigs: [],
+          specificationFacts: [],
+          orderOptionFacts: [],
+          attributeFacts: [],
+          preparationFacts: {productionTag: null, profile: null, skuVariation: {varies: false}},
           compositeGroups: [],
           preparationProfile: null,
-          lifecycle: {status: 'DRAFT', version: 1, source: 'CATALOG'},
+          lifecycle: {status: 'DISABLED', version: 1, source: 'CATALOG'},
           source: 'CATALOG',
           externalIdentity: null,
           version: 1,
@@ -454,7 +461,7 @@ describe('catalog identification and preparation editor boundaries', () => {
       },
     } as never);
     expect(detail?.item.code).toBe('DETAIL-ONLY');
-    expect(detail?.item.categoryPathLabels).toEqual(['餐饮', '饮品']);
+    expect(detail?.item.categoryPath.map(node => node.name)).toEqual(['餐饮', '饮品']);
   });
 
   it('covers item-only, specification, option, and combined preparation layouts', () => {

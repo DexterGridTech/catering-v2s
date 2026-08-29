@@ -17,6 +17,12 @@ import {
 } from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageContext} from '../../../app/routing/model';
 import {OperationsAuditHistoryModal} from '../../audit-history';
+import {
+  businessEntityLifecycleLabels,
+  canManageBusinessEntity,
+  canVoidBusinessEntity,
+  toggleBusinessEntityStatus,
+} from './businessEntityLifecycle';
 
 export type BusinessEntity = Brand | Tenant | HeadCompany;
 export type BusinessEntityKind = 'BRAND' | 'TENANT' | 'HEAD_COMPANY';
@@ -28,7 +34,7 @@ type Props = {
   actionCapabilityKeys: readonly AdminActionCapabilityKey[];
   onClose: () => void;
   onEdit: (entity: BusinessEntity) => void;
-  onStatus: (entity: BusinessEntity) => void;
+  onStatus: (entity: BusinessEntity, targetStatus: BusinessEntity['status']) => void;
   onAuthorizeBrands?: (entity: HeadCompany) => void;
 };
 
@@ -165,7 +171,7 @@ export function BusinessEntityDetailDrawer({
   };
 
   const entityLabel = detailLabels[kind];
-  const statusLabel = selected?.status === 'ENABLED' ? '停用' : '启用';
+  const statusTarget = selected ? toggleBusinessEntityStatus(selected.status) : undefined;
   return (
     <>
       <Drawer
@@ -188,12 +194,12 @@ export function BusinessEntityDetailDrawer({
               <Button onClick={() => setAuditOpen(true)} {...testId('operations-business-entity-detail-audit-history')}>
                 操作历史
               </Button>
-              {canEdit && (
+              {canManageBusinessEntity(selected.status) && canEdit && (
                 <Button onClick={() => closeThen(onEdit)} {...testId('operations-business-entity-detail-edit')}>
                   {catalogActionLabel(editCapabilityByKind[kind])}
                 </Button>
               )}
-              {canAuthorizeBrands && isHeadCompany(selected, kind) && (
+              {canManageBusinessEntity(selected.status) && canAuthorizeBrands && isHeadCompany(selected, kind) && (
                 <Button
                   onClick={() => closeThen(current => onAuthorizeBrands?.(current as HeadCompany))}
                   {...testId('operations-business-entity-detail-authorize-brands')}
@@ -201,9 +207,21 @@ export function BusinessEntityDetailDrawer({
                   经营品牌
                 </Button>
               )}
-              {canStatus && (
-                <Button onClick={() => closeThen(onStatus)} {...testId('operations-business-entity-detail-status')}>
-                  {statusLabel}
+              {canManageBusinessEntity(selected.status) && canStatus && statusTarget && (
+                <Button
+                  onClick={() => closeThen(current => onStatus(current, statusTarget))}
+                  {...testId('operations-business-entity-detail-status')}
+                >
+                  {statusTarget === 'DISABLED' ? '停用' : '启用'}
+                </Button>
+              )}
+              {canManageBusinessEntity(selected.status) && canStatus && canVoidBusinessEntity(selected.status) && (
+                <Button
+                  danger
+                  onClick={() => closeThen(current => onStatus(current, 'VOIDED'))}
+                  {...testId('operations-business-entity-detail-void')}
+                >
+                  标记删除
                 </Button>
               )}
             </Space>
@@ -219,7 +237,7 @@ export function BusinessEntityDetailDrawer({
               {key: 'name', label: '名称', children: selected.name},
               {key: 'code', label: '编码', children: selected.code},
               ...typeSpecificItems(selected, kind),
-              {key: 'status', label: '状态', children: selected.status === 'ENABLED' ? '已启用' : '已停用'},
+              {key: 'status', label: '状态', children: businessEntityLifecycleLabels[selected.status]},
               {key: 'remark', label: '备注', children: selected.remark ?? '—'},
               {key: 'updatedAt', label: '更新时间', children: displayTime(selected.updatedAt)},
               ...enabledDefinitions.map(definition => ({

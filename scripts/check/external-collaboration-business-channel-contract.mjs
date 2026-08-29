@@ -41,23 +41,16 @@ function unique(values, code) {
   expect(new Set(values).size === values.length, code);
 }
 
-function alignedDisplayNames(values, displayNames, code, detail) {
-  expect(Array.isArray(displayNames) && displayNames.length === values.length, code, detail);
-  displayNames.forEach((value) => nonEmpty(value, `${code}_VALUE`, detail));
-}
-
-function validateDescriptor(descriptor, systemCode, index) {
-  object(descriptor, "CONTRACT_DESCRIPTOR_OBJECT", `${systemCode}:${index}`);
-  for (const field of ["fieldKey", "label", "helpText", "controlKind", "optionSourceRef"]) {
-    expect(Object.hasOwn(descriptor, field), "CONTRACT_DESCRIPTOR_FIELD_MISSING", `${systemCode}:${field}`);
+function validateAttributeValues(values, systemCode, capabilityClass) {
+  object(values, "CONTRACT_ATTRIBUTE_VALUES", `${systemCode}:${capabilityClass}`);
+  const allowed = new Set(["groupBuyMappingDirection", "menuCollaborationDirection"]);
+  for (const key of Object.keys(values)) {
+    expect(allowed.has(key), "CONTRACT_ATTRIBUTE_KEY_UNKNOWN", `${systemCode}:${capabilityClass}:${key}`);
+    const allowedValues = key === "groupBuyMappingDirection"
+      ? ["EXTERNAL_TO_INTERNAL", "INTERNAL_TO_EXTERNAL"]
+      : ["PULL_ONLY"];
+    expect(allowedValues.includes(values[key]), "CONTRACT_ATTRIBUTE_VALUE_UNKNOWN", `${systemCode}:${capabilityClass}:${key}`);
   }
-  nonEmpty(descriptor.fieldKey, "CONTRACT_DESCRIPTOR_FIELD_KEY", systemCode);
-  nonEmpty(descriptor.label, "CONTRACT_DESCRIPTOR_LABEL", `${systemCode}:${descriptor.fieldKey}`);
-  nonEmpty(descriptor.helpText, "CONTRACT_DESCRIPTOR_HELP_TEXT", `${systemCode}:${descriptor.fieldKey}`);
-  expect(["readonlySummary", "readonlyPreview"].includes(descriptor.controlKind), "CONTRACT_DESCRIPTOR_CONTROL_KIND", `${systemCode}:${descriptor.fieldKey}`);
-  object(descriptor.optionSourceRef, "CONTRACT_DESCRIPTOR_OPTION_SOURCE", `${systemCode}:${descriptor.fieldKey}`);
-  expect(["enum", "endpoint", "local"].includes(descriptor.optionSourceRef.kind), "CONTRACT_DESCRIPTOR_OPTION_SOURCE_KIND", `${systemCode}:${descriptor.fieldKey}`);
-  expect(!Object.hasOwn(descriptor, "displayOrder"), "CONTRACT_DESCRIPTOR_DISPLAY_ORDER_FORBIDDEN", `${systemCode}:${descriptor.fieldKey}`);
 }
 
 function validate() {
@@ -74,22 +67,15 @@ function validate() {
     nonEmpty(system.externalSystemCode, "CONTRACT_SYSTEM_CODE");
     nonEmpty(system.displayName, "CONTRACT_SYSTEM_DISPLAY_NAME", system.externalSystemCode);
     expect(["PLANNED", "AVAILABLE"].includes(system.catalogStatus), "CONTRACT_SYSTEM_STATUS", system.externalSystemCode);
-    nonEmpty(system.catalogStatusDisplayName, "CONTRACT_SYSTEM_STATUS_DISPLAY_NAME", system.externalSystemCode);
-    expect(Array.isArray(system.attributeDictionary), "CONTRACT_DESCRIPTOR_DICTIONARY", system.externalSystemCode);
+    expect(!Object.hasOwn(system, "catalogStatusDisplayName"), "CONTRACT_SYSTEM_STATUS_DISPLAY_NAME_RETIRED", system.externalSystemCode);
+    expect(!Object.hasOwn(system, "attributeDictionary"), "CONTRACT_DESCRIPTOR_DICTIONARY_RETIRED", system.externalSystemCode);
     expect(Array.isArray(system.capabilities) && system.capabilities.length > 0, "CONTRACT_SYSTEM_CAPABILITIES", system.externalSystemCode);
-    unique(system.attributeDictionary.map((field) => field.fieldKey), "CONTRACT_DESCRIPTOR_DUPLICATE");
-    system.attributeDictionary.forEach((field, index) => validateDescriptor(field, system.externalSystemCode, index));
-    const dictionary = new Set(system.attributeDictionary.map((field) => field.fieldKey));
     unique(system.capabilities.map((entry) => entry.capabilityClass), "CONTRACT_CAPABILITY_DUPLICATE");
     for (const entry of system.capabilities) {
       expect(capabilities.has(entry.capabilityClass), "CONTRACT_CAPABILITY_UNKNOWN", `${system.externalSystemCode}:${entry.capabilityClass}`);
       nonEmpty(entry.displayName, "CONTRACT_CAPABILITY_DISPLAY_NAME", `${system.externalSystemCode}:${entry.capabilityClass}`);
-      object(entry.attributeValues, "CONTRACT_ATTRIBUTE_VALUES", `${system.externalSystemCode}:${entry.capabilityClass}`);
-      object(entry.attributeValueLabels, "CONTRACT_ATTRIBUTE_VALUE_LABELS", `${system.externalSystemCode}:${entry.capabilityClass}`);
-      for (const key of Object.keys(entry.attributeValues)) {
-        expect(dictionary.has(key), "CONTRACT_ATTRIBUTE_KEY_UNKNOWN", `${system.externalSystemCode}:${key}`);
-        nonEmpty(entry.attributeValueLabels[key], "CONTRACT_ATTRIBUTE_VALUE_LABEL", `${system.externalSystemCode}:${entry.capabilityClass}:${key}`);
-      }
+      validateAttributeValues(entry.attributeValues, system.externalSystemCode, entry.capabilityClass);
+      expect(!Object.hasOwn(entry, "attributeValueLabels"), "CONTRACT_ATTRIBUTE_VALUE_LABELS_RETIRED", `${system.externalSystemCode}:${entry.capabilityClass}`);
     }
     systems.set(system.externalSystemCode, new Set(system.capabilities.map((entry) => entry.capabilityClass)));
   }
@@ -98,20 +84,20 @@ function validate() {
     nonEmpty(provider.displayName, "CONTRACT_PROVIDER_DISPLAY_NAME", provider.providerCode);
     expect(systems.has(provider.externalSystemCode), "CONTRACT_PROVIDER_SYSTEM_UNKNOWN", provider.providerCode);
     expect(Array.isArray(provider.businessScope) && provider.businessScope.length > 0, "CONTRACT_PROVIDER_SCOPE", provider.providerCode);
-    alignedDisplayNames(provider.businessScope, provider.businessScopeDisplayNames, "CONTRACT_PROVIDER_SCOPE_DISPLAY_NAMES", provider.providerCode);
+    expect(!Object.hasOwn(provider, "businessScopeDisplayNames"), "CONTRACT_PROVIDER_SCOPE_DISPLAY_NAMES_RETIRED", provider.providerCode);
     unique(provider.businessScope, "CONTRACT_PROVIDER_SCOPE_DUPLICATE");
     for (const capability of provider.businessScope) expect(capabilities.has(capability), "CONTRACT_PROVIDER_SCOPE_UNKNOWN", `${provider.providerCode}:${capability}`);
     expect(provider.businessScope.every((entry) => systems.get(provider.externalSystemCode).has(entry)), "CONTRACT_PROVIDER_SCOPE_EXCEEDED", provider.providerCode);
     expect(Array.isArray(provider.bindableNodeTypes) && provider.bindableNodeTypes.length > 0, "CONTRACT_PROVIDER_NODE_TYPES", provider.providerCode);
-    alignedDisplayNames(provider.bindableNodeTypes, provider.bindableNodeTypeDisplayNames, "CONTRACT_PROVIDER_NODE_DISPLAY_NAMES", provider.providerCode);
+    expect(!Object.hasOwn(provider, "bindableNodeTypeDisplayNames"), "CONTRACT_PROVIDER_NODE_DISPLAY_NAMES_RETIRED", provider.providerCode);
     unique(provider.bindableNodeTypes, "CONTRACT_PROVIDER_NODE_TYPE_DUPLICATE");
     for (const nodeType of provider.bindableNodeTypes) expect(nodeTypes.has(nodeType), "CONTRACT_PROVIDER_NODE_TYPE_UNKNOWN", `${provider.providerCode}:${nodeType}`);
     expect(authKinds.has(provider.authenticationKind), "CONTRACT_PROVIDER_AUTH_KIND", provider.providerCode);
-    nonEmpty(provider.authenticationKindDisplayName, "CONTRACT_PROVIDER_AUTH_DISPLAY_NAME", provider.providerCode);
+    expect(!Object.hasOwn(provider, "authenticationKindDisplayName"), "CONTRACT_PROVIDER_AUTH_DISPLAY_NAME_RETIRED", provider.providerCode);
     expect(unbindKinds.has(provider.unbindKind), "CONTRACT_PROVIDER_UNBIND_KIND", provider.providerCode);
-    nonEmpty(provider.unbindKindDisplayName, "CONTRACT_PROVIDER_UNBIND_DISPLAY_NAME", provider.providerCode);
+    expect(!Object.hasOwn(provider, "unbindKindDisplayName"), "CONTRACT_PROVIDER_UNBIND_DISPLAY_NAME_RETIRED", provider.providerCode);
     expect(["PLANNED", "AVAILABLE"].includes(provider.catalogStatus), "CONTRACT_PROVIDER_STATUS", provider.providerCode);
-    nonEmpty(provider.catalogStatusDisplayName, "CONTRACT_PROVIDER_STATUS_DISPLAY_NAME", provider.providerCode);
+    expect(!Object.hasOwn(provider, "catalogStatusDisplayName"), "CONTRACT_PROVIDER_STATUS_DISPLAY_NAME_RETIRED", provider.providerCode);
   }
   const forbidden = ["TAKEOUT", "GROUP_BUYING", "SELF_SERVICE"];
   const serialized = JSON.stringify(catalog);

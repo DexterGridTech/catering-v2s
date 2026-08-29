@@ -61,11 +61,13 @@ export {wireUuid} from './http/wireUuid';
 export type {WireUuid} from './http/wireUuid';
 export {MOBILE_PATTERN} from './validation/mobilePattern';
 export {formatCodeNamePath, formatNameCode, NameCodePathText, NameCodeText} from './presentation/nameCode';
+export type {OrganizationPathNode} from './presentation/nameCode';
+export {closedCodeLabel, isKnownClosedCode} from './presentation/closedCode';
 export {EllipsisTooltip} from './presentation/EllipsisTooltip';
 export {adminHierarchyCollator} from './presentation/hierarchyCollator';
 export {activeInvitationPageUrl} from './presentation/activeInvitationPageUrl';
 export {ValidityStatus} from './presentation/validityStatus';
-export type {InvitationPageLinkSource} from './presentation/activeInvitationPageUrl';
+export type {InvitationPageLinkSource, InvitationRouteFacts} from './presentation/activeInvitationPageUrl';
 export {
   assertDescriptorSlotBindingSet,
   assertNever,

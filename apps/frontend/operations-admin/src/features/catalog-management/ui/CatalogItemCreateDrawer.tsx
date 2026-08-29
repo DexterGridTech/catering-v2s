@@ -13,6 +13,7 @@ import type {CatalogItemCreateRequest} from '../../../app/api/generated/catalog-
 import {wireUuid} from '../../../app/api/wireUuid';
 import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 import {catalogEnumLabel} from '../model/catalogManifestLabels';
+import type {CatalogCategoryPathNode} from '../model/catalogModel';
 import {catalogUiProblemFeedback} from '../model/catalogUiProblemFeedback';
 import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 import {catalogFieldWidth} from './catalogFieldWidths';
@@ -27,7 +28,7 @@ type Props = {
     name?: string;
     shapeKey?: string;
     categoryRef?: string;
-    categoryPathLabels?: string[];
+    categoryPath?: CatalogCategoryPathNode[];
   };
   onClose: () => void;
   onCreated: (itemCode: string) => void;
@@ -57,7 +58,10 @@ export function CatalogItemCreateDrawer({open, queryContext, brandRef, initialVa
     scopeRef: queryContext.scopeRef,
     brandRef,
     usage: 'ITEM_ASSIGNMENT',
-    selected: {categoryRef: initialValues?.categoryRef, pathLabels: initialValues?.categoryPathLabels},
+    selected: {
+      categoryRef: initialValues?.categoryRef,
+      pathLabels: initialValues?.categoryPath?.map(node => node.name),
+    },
   });
   const [create, createState] = operationsRtk.useCreateOperationsCatalogItemMutation();
   useOverlayLock(open);

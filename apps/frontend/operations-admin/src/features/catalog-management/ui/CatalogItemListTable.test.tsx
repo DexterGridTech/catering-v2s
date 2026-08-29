@@ -10,6 +10,7 @@ import {
   type CatalogTableRow,
 } from './CatalogItemListTable';
 import type {CatalogItemSummary} from '../model/catalogModel';
+import type {Uuid} from '../../../app/api/generated/catalog-inventory-edge';
 import {catalogTestIdControls} from '../catalogTestIds';
 import {catalogVoidBlockReason} from './CatalogItemEditorFieldPresentation';
 import {catalogLifecycleStatusPresentation} from './CatalogLifecycleStatusTag';
@@ -20,13 +21,17 @@ const itemRow = (code: string, hasSkuChildren: boolean): CatalogItemSummary =>
     code,
     name: '拿铁咖啡',
     categoryRef: null,
-    categoryPathLabels: ['饮品类', '饮品'],
+    categoryPath: [
+      {categoryRef: '00000000-0000-0000-0000-000000000010', code: 'DRINKS', name: '饮品类'},
+      {categoryRef: '00000000-0000-0000-0000-000000000011', code: 'DRINK', name: '饮品'},
+    ],
     hasSkuChildren,
-    specificationOrOptionSummary: [],
-    attributeSummary: [],
-    preparationSummary: [],
+    specificationFacts: [],
+    orderOptionFacts: [],
+    attributeFacts: [],
+    preparationFacts: {productionTag: null, profile: null, skuVariation: {varies: hasSkuChildren}},
     productionTagRef: null,
-    tagSummary: ['招牌推荐'],
+    tags: [{tagRef: '00000000-0000-0000-0000-000000000012', code: 'SIGNATURE', name: '招牌推荐'}],
     tagRefs: [],
     shapeKey: 'SKU_VARIANT_SALE_COUNTED',
     status: 'ENABLED',
@@ -34,7 +39,6 @@ const itemRow = (code: string, hasSkuChildren: boolean): CatalogItemSummary =>
     skuEnabledCount: hasSkuChildren ? 1 : 0,
     skuNonArchivedCount: hasSkuChildren ? 1 : 0,
     skuTotalCount: hasSkuChildren ? 1 : 0,
-    skuDimensionSummary: [],
     priceGranularity: 'SKU',
     salesUnit: null,
     baseMeasureUnit: null,
@@ -100,7 +104,9 @@ describe('catalog item table cell presentation', () => {
 
   it('keeps the confirmed image scale, compact item column, and an untruncated short single tag', () => {
     expect(catalogTableColumnWidths.item).toBe(240);
-    const markup = renderToStaticMarkup(<>{catalogItemTagLine(['招牌推荐'])}</>);
+    const markup = renderToStaticMarkup(
+      <>{catalogItemTagLine([{tagRef: 'tag-ref' as Uuid, code: 'SIGNATURE', name: '招牌推荐'}])}</>,
+    );
     expect(markup).toContain('招牌推荐');
     expect(markup).toContain('overflow:visible');
     expect(markup).not.toContain('text-overflow:ellipsis');
@@ -146,8 +152,8 @@ describe('catalog item table cell presentation', () => {
       isDefault: true,
       status: 'ENABLED',
       primaryImageAssetRef: null,
-      attributeSummary: [],
-      preparationSummary: [],
+      attributeFacts: [],
+      preparationFacts: {productionTag: null, profile: null, skuVariation: {varies: false}},
       inventoryDeductionSummary: {grain: 'SKU', mode: null, bomLineCount: null, consumptionUnitSnapshot: null},
       updatedAt: 0,
     };
@@ -179,21 +185,19 @@ describe('catalog item table cell presentation', () => {
   });
 
   it('presents every lifecycle status consistently and explains a SKU independently from an unenabled item', () => {
-    expect(catalogLifecycleStatusPresentation(undefined, 'ITEM', 'DRAFT')).toMatchObject({color: 'default'});
     expect(catalogLifecycleStatusPresentation(undefined, 'ITEM', 'ENABLED')).toMatchObject({color: 'success'});
     expect(catalogLifecycleStatusPresentation(undefined, 'ITEM', 'DISABLED')).toMatchObject({color: 'warning'});
-    expect(catalogLifecycleStatusPresentation(undefined, 'ITEM', 'ARCHIVED')).toMatchObject({color: 'processing'});
     expect(catalogLifecycleStatusPresentation(undefined, 'ITEM', 'VOIDED')).toMatchObject({color: 'error'});
-    expect(catalogLifecycleStatusPresentation(undefined, 'SKU', 'ENABLED', 'DRAFT').tooltip).toBe(
+    expect(catalogLifecycleStatusPresentation(undefined, 'SKU', 'ENABLED', 'DISABLED').tooltip).toBe(
       '规格状态独立维护；商品尚未启用时不会作为启用商品使用。',
     );
   });
 
-  it('makes a parent draft state visible beside an enabled SKU instead of leaving two apparently conflicting tags', () => {
-    const item = {...itemRow('SKU-DRAFT-001', true), status: 'DRAFT'};
+  it('makes a parent disabled state visible beside an enabled SKU instead of leaving two apparently conflicting tags', () => {
+    const item = {...itemRow('SKU-DISABLED-001', true), status: 'DISABLED'};
     const sku = {
       productSkuRef: '00000000-0000-0000-0000-000000000002',
-      skuCode: 'SKU-DRAFT-SMALL',
+      skuCode: 'SKU-DISABLED-SMALL',
       skuName: '小杯规格',
       attributeValueRefs: [],
       standardSalePrice: 2800,
@@ -202,14 +206,14 @@ describe('catalog item table cell presentation', () => {
       isDefault: false,
       status: 'ENABLED',
       primaryImageAssetRef: null,
-      attributeSummary: [],
-      preparationSummary: [],
+      attributeFacts: [],
+      preparationFacts: {productionTag: null, profile: null, skuVariation: {varies: false}},
       inventoryDeductionSummary: {grain: 'SKU', mode: null, bomLineCount: null, consumptionUnitSnapshot: null},
       updatedAt: 0,
     };
 
     const markup = tableMarkup(item, {
-      'catalog-view:SKU-DRAFT-001': {rows: [sku], nextCursor: null, loaded: true, loading: false, error: null},
+      'catalog-view:SKU-DISABLED-001': {rows: [sku], nextCursor: null, loaded: true, loading: false, error: null},
     });
 
     expect(markup).toContain('商品未启用，规格暂不对外使用');

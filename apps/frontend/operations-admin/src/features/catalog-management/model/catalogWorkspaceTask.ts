@@ -2,7 +2,7 @@ export type CatalogLibraryKind =
   'TAG' | 'UNIT' | 'SKU_ATTRIBUTE' | 'SKU_ATTRIBUTE_VALUE' | 'PRODUCTION_TAG' | 'ATTRIBUTES' | 'ORDER_OPTIONS';
 
 export type CatalogCategoryAction = 'CREATE' | 'RENAME' | 'REPARENT' | 'MOVE_UP' | 'MOVE_DOWN' | 'DELETE';
-export type CatalogBatchAction = 'CATEGORY' | 'TAG' | 'STATUS' | 'ARCHIVE';
+export type CatalogBatchAction = 'CATEGORY' | 'TAG' | 'STATUS';
 export type CatalogCreatePrefill = {code?: string; name?: string; shapeKey?: string; categoryRef?: string};
 
 export type CatalogWorkspaceTask =

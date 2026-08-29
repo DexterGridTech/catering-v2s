@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceOperationsInvitationActionRequest;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceOperationsInvitationCreateRequest;
 import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.workspace.iam.api.WorkspaceOperationsCommandApi;
 import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts;
@@ -118,7 +119,10 @@ class OperationsWorkspaceInvitationOperationTest {
                 "13800000000",
                 "S17 tester",
                 ServiceNodeTypes.STORE,
-                "s17/store",
+                List.of(
+                        new OrganizationTaskPathLookup.TaskPathNode(UUID.randomUUID(), "s17", "S17", "GROUP"),
+                        new OrganizationTaskPathLookup.TaskPathNode(
+                                UUID.randomUUID(), "store", "Store", ServiceNodeTypes.STORE)),
                 List.of("S17 role"),
                 "PENDING",
                 1L,
