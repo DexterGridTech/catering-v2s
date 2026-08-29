@@ -3506,10 +3506,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 243,
+              "caseExpectedDbMs": 10376.1,
               "caseLocalActionMs": 750,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 23000
             }
           },
           "expected": {
@@ -3596,14 +3596,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 243,
+                "caseExpectedDbMs": 10376.1,
                 "caseLocalActionMs": 750,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 23000
               }
             }
           },
-          "expectedBusinessResult": "商品查找以左侧树形结果域（分类或生产标签）和当前结果域为准，并在失败后恢复原筛选。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-FIND\",\"journey\":\"查找成功\",\"controlKeys\":[\"CATALOG_TREE\",\"CATALOG_TREE_SEARCH\",\"CATALOG_LOCAL_SEARCH\",\"CATALOG_RESULT_TABLE\"],\"declaredActions\":[{\"actionId\":\"catalog-find-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"选择生产标签树节点\",\"在当前结果域搜索商品编码\",\"读取包含商品形态与生产信息的结果行\"],\"businessOracle\":[\"请求只带当前生产标签结果域\",\"结果行显示商品名、编码、分类、标签和十列业务事实\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":750,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "商品查找以左侧树形结果域（分类或生产标签）和当前结果域为准，并在失败后恢复原筛选。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-FIND\",\"journey\":\"查找成功\",\"controlKeys\":[\"CATALOG_TREE\",\"CATALOG_TREE_SEARCH\",\"CATALOG_LOCAL_SEARCH\",\"CATALOG_RESULT_TABLE\"],\"declaredActions\":[{\"actionId\":\"catalog-find-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"选择生产标签树节点\",\"在当前结果域搜索商品编码\",\"读取包含商品形态与生产信息的结果行\"],\"businessOracle\":[\"请求只带当前生产标签结果域\",\"结果行显示商品名、编码、分类、标签和十列业务事实\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4}]},\"timing\":{\"caseDbOperationUpperBound\":243,\"caseExpectedDbMs\":10376.1,\"caseLocalActionMs\":750,\"caseTimeoutMs\":23000}}"
         },
         {
           "caseId": "catalog-find-failure",
@@ -3691,10 +3691,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 243,
+              "caseExpectedDbMs": 10376.1,
               "caseLocalActionMs": 1000,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 23000
             }
           },
           "expected": {
@@ -3782,14 +3782,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 243,
+                "caseExpectedDbMs": 10376.1,
                 "caseLocalActionMs": 1000,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 23000
               }
             }
           },
-          "expectedBusinessResult": "商品查找以左侧树形结果域（分类或生产标签）和当前结果域为准，并在失败后恢复原筛选。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-FIND\",\"journey\":\"查找失败\",\"controlKeys\":[\"CATALOG_TREE\",\"CATALOG_LOCAL_SEARCH\",\"CATALOG_RESULT_TABLE\",\"CATALOG_WORKBENCH_PROBLEM\"],\"declaredActions\":[{\"actionId\":\"catalog-find-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"保留生产标签和关键词\",\"触发受控查询失败\",\"读取失败提示\",\"确认结果不被伪装成空列表\"],\"businessOracle\":[\"失败提示使用业务语言\",\"生产标签和关键词仍保留\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "商品查找以左侧树形结果域（分类或生产标签）和当前结果域为准，并在失败后恢复原筛选。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-FIND\",\"journey\":\"查找失败\",\"controlKeys\":[\"CATALOG_TREE\",\"CATALOG_LOCAL_SEARCH\",\"CATALOG_RESULT_TABLE\",\"CATALOG_WORKBENCH_PROBLEM\"],\"declaredActions\":[{\"actionId\":\"catalog-find-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"保留生产标签和关键词\",\"触发受控查询失败\",\"读取失败提示\",\"确认结果不被伪装成空列表\"],\"businessOracle\":[\"失败提示使用业务语言\",\"生产标签和关键词仍保留\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4}]},\"timing\":{\"caseDbOperationUpperBound\":243,\"caseExpectedDbMs\":10376.1,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":23000}}"
         },
         {
           "caseId": "catalog-find-recovery",
@@ -3882,10 +3882,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 289,
+              "caseExpectedDbMs": 12340.300000000001,
               "caseLocalActionMs": 1000,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 27000
             }
           },
           "expected": {
@@ -3978,14 +3978,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 289,
+                "caseExpectedDbMs": 12340.300000000001,
                 "caseLocalActionMs": 1000,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 27000
               }
             }
           },
-          "expectedBusinessResult": "商品查找以左侧树形结果域（分类或生产标签）和当前结果域为准，并在失败后恢复原筛选。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-FIND\",\"journey\":\"查找恢复\",\"controlKeys\":[\"CATALOG_TREE\",\"CATALOG_LOCAL_SEARCH\",\"CATALOG_WORKBENCH_RETRY\",\"CATALOG_RESULT_TABLE\"],\"declaredActions\":[{\"actionId\":\"catalog-find-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"点击重试\",\"读取恢复后的生产标签结果域\",\"展开一个有规格的父商品\",\"读取每个 SKU 独立子行\"],\"businessOracle\":[\"重试不清空当前生产标签结果域\",\"父商品与 SKU 子行共享十列表头且父选择不包含子 SKU\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "商品查找以左侧树形结果域（分类或生产标签）和当前结果域为准，并在失败后恢复原筛选。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-FIND\",\"journey\":\"查找恢复\",\"controlKeys\":[\"CATALOG_TREE\",\"CATALOG_LOCAL_SEARCH\",\"CATALOG_WORKBENCH_RETRY\",\"CATALOG_RESULT_TABLE\"],\"declaredActions\":[{\"actionId\":\"catalog-find-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"点击重试\",\"读取恢复后的生产标签结果域\",\"展开一个有规格的父商品\",\"读取每个 SKU 独立子行\"],\"businessOracle\":[\"重试不清空当前生产标签结果域\",\"父商品与 SKU 子行共享十列表头且父选择不包含子 SKU\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":289,\"caseExpectedDbMs\":12340.300000000001,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":27000}}"
         }
       ]
     },
@@ -4090,10 +4090,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 289,
+              "caseExpectedDbMs": 12340.300000000001,
               "caseLocalActionMs": 1000,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 27000
             }
           },
           "expected": {
@@ -4185,14 +4185,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 289,
+                "caseExpectedDbMs": 12340.300000000001,
                 "caseLocalActionMs": 1000,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 27000
               }
             }
           },
-          "expectedBusinessResult": "商品查看是纯业务详情，不把禁用表单当作详情；商品形态和空价格按业务语义呈现。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-VIEW\",\"journey\":\"查看成功\",\"controlKeys\":[\"CATALOG_ITEM_ROW\",\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_TABS\"],\"declaredActions\":[{\"actionId\":\"catalog-view-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"从列表打开商品\",\"读取首屏摘要\",\"查看规格、制作信息和库存与 BOM\",\"核对商品形态与价格单位\"],\"businessOracle\":[\"详情没有禁用输入控件\",\"合法未设置价格显示为未设置而非缺陷\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "商品查看是纯业务详情，不把禁用表单当作详情；商品形态和空价格按业务语义呈现。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-VIEW\",\"journey\":\"查看成功\",\"controlKeys\":[\"CATALOG_ITEM_ROW\",\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_TABS\"],\"declaredActions\":[{\"actionId\":\"catalog-view-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"从列表打开商品\",\"读取首屏摘要\",\"查看规格、制作信息和库存与 BOM\",\"核对商品形态与价格单位\"],\"businessOracle\":[\"详情没有禁用输入控件\",\"合法未设置价格显示为未设置而非缺陷\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":289,\"caseExpectedDbMs\":12340.300000000001,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":27000}}"
         },
         {
           "caseId": "catalog-view-failure",
@@ -4283,10 +4283,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 296,
+              "caseExpectedDbMs": 12639.2,
               "caseLocalActionMs": 750,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 27000
             }
           },
           "expected": {
@@ -4377,14 +4377,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 296,
+                "caseExpectedDbMs": 12639.2,
                 "caseLocalActionMs": 750,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 27000
               }
             }
           },
-          "expectedBusinessResult": "商品查看是纯业务详情，不把禁用表单当作详情；商品形态和空价格按业务语义呈现。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-VIEW\",\"journey\":\"查看失败\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_PROBLEM\",\"CATALOG_ITEM_PROBLEM_RETRY\"],\"declaredActions\":[{\"actionId\":\"catalog-view-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"触发详情读取失败\",\"读取持久错误面\",\"确认没有展示半套事实\"],\"businessOracle\":[\"错误面不暴露内部字段或技术编码\",\"失败不伪造商品详情\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":750,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "商品查看是纯业务详情，不把禁用表单当作详情；商品形态和空价格按业务语义呈现。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-VIEW\",\"journey\":\"查看失败\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_PROBLEM\",\"CATALOG_ITEM_PROBLEM_RETRY\"],\"declaredActions\":[{\"actionId\":\"catalog-view-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"触发详情读取失败\",\"读取持久错误面\",\"确认没有展示半套事实\"],\"businessOracle\":[\"错误面不暴露内部字段或技术编码\",\"失败不伪造商品详情\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":296,\"caseExpectedDbMs\":12639.2,\"caseLocalActionMs\":750,\"caseTimeoutMs\":27000}}"
         },
         {
           "caseId": "catalog-view-recovery",
@@ -4476,10 +4476,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 289,
+              "caseExpectedDbMs": 12340.300000000001,
               "caseLocalActionMs": 1000,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 27000
             }
           },
           "expected": {
@@ -4571,14 +4571,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 289,
+                "caseExpectedDbMs": 12340.300000000001,
                 "caseLocalActionMs": 1000,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 27000
               }
             }
           },
-          "expectedBusinessResult": "商品查看是纯业务详情，不把禁用表单当作详情；商品形态和空价格按业务语义呈现。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-VIEW\",\"journey\":\"查看恢复\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_PROBLEM_RETRY\",\"CATALOG_ITEM_TABS\"],\"declaredActions\":[{\"actionId\":\"catalog-view-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"点击重试\",\"读取完整业务详情\",\"关闭详情抽屉\",\"确认焦点回到原商品行\"],\"businessOracle\":[\"重试恢复原商品上下文\",\"关闭后焦点位置可继续操作\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "商品查看是纯业务详情，不把禁用表单当作详情；商品形态和空价格按业务语义呈现。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-VIEW\",\"journey\":\"查看恢复\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_PROBLEM_RETRY\",\"CATALOG_ITEM_TABS\"],\"declaredActions\":[{\"actionId\":\"catalog-view-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"点击重试\",\"读取完整业务详情\",\"关闭详情抽屉\",\"确认焦点回到原商品行\"],\"businessOracle\":[\"重试恢复原商品上下文\",\"关闭后焦点位置可继续操作\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":289,\"caseExpectedDbMs\":12340.300000000001,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":27000}}"
         }
       ]
     },
@@ -4690,10 +4690,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 315,
+              "caseExpectedDbMs": 13450.5,
               "caseLocalActionMs": 1250,
-              "caseTimeoutMs": 3000
+              "caseTimeoutMs": 30000
             }
           },
           "expected": {
@@ -4792,14 +4792,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 315,
+                "caseExpectedDbMs": 13450.5,
                 "caseLocalActionMs": 1250,
-                "caseTimeoutMs": 3000
+                "caseTimeoutMs": 30000
               }
             }
           },
-          "expectedBusinessResult": "新建商品只收集最小身份事实，分类使用树形选择，创建失败后可修正并继续。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-CREATE\",\"journey\":\"新建成功\",\"controlKeys\":[\"CATALOG_CREATE_OPEN\",\"CATALOG_CREATE_SHAPE\",\"CATALOG_CREATE_SUBMIT\",\"CATALOG_ITEM_EDIT_DRAWER\"],\"declaredActions\":[{\"actionId\":\"catalog-create-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"打开新建商品\",\"填写编码和名称\",\"在分类树中选择父子分类\",\"选择商品形态并创建\",\"读取新建商品编辑面\"],\"businessOracle\":[\"分类选择保留层级路径\",\"创建成功后进入编辑而不是伪装成已完成详情\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"createOperationsCatalogItem\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"createOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":3000}}"
+          "expectedBusinessResult": "新建商品只收集最小身份事实，分类使用树形选择，创建失败后可修正并继续。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-CREATE\",\"journey\":\"新建成功\",\"controlKeys\":[\"CATALOG_CREATE_OPEN\",\"CATALOG_CREATE_SHAPE\",\"CATALOG_CREATE_SUBMIT\",\"CATALOG_ITEM_EDIT_DRAWER\"],\"declaredActions\":[{\"actionId\":\"catalog-create-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"打开新建商品\",\"填写编码和名称\",\"在分类树中选择父子分类\",\"选择商品形态并创建\",\"读取新建商品编辑面\"],\"businessOracle\":[\"分类选择保留层级路径\",\"创建成功后进入编辑而不是伪装成已完成详情\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"createOperationsCatalogItem\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"createOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":315,\"caseExpectedDbMs\":13450.5,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":30000}}"
         },
         {
           "caseId": "catalog-create-failure",
@@ -4895,10 +4895,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 315,
+              "caseExpectedDbMs": 13450.5,
               "caseLocalActionMs": 750,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 29000
             }
           },
           "expected": {
@@ -4994,14 +4994,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 315,
+                "caseExpectedDbMs": 13450.5,
                 "caseLocalActionMs": 750,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 29000
               }
             }
           },
-          "expectedBusinessResult": "新建商品只收集最小身份事实，分类使用树形选择，创建失败后可修正并继续。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-CREATE\",\"journey\":\"新建失败\",\"controlKeys\":[\"CATALOG_CREATE_OPEN\",\"CATALOG_CREATE_SHAPE\",\"CATALOG_CREATE_SUBMIT\"],\"declaredActions\":[{\"actionId\":\"catalog-create-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"提交冲突的编码\",\"读取失败提示\",\"确认输入内容仍在表单中\"],\"businessOracle\":[\"失败提示定位到业务字段\",\"失败后事实未创建\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"createOperationsCatalogItem\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"createOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":750,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "新建商品只收集最小身份事实，分类使用树形选择，创建失败后可修正并继续。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-CREATE\",\"journey\":\"新建失败\",\"controlKeys\":[\"CATALOG_CREATE_OPEN\",\"CATALOG_CREATE_SHAPE\",\"CATALOG_CREATE_SUBMIT\"],\"declaredActions\":[{\"actionId\":\"catalog-create-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"提交冲突的编码\",\"读取失败提示\",\"确认输入内容仍在表单中\"],\"businessOracle\":[\"失败提示定位到业务字段\",\"失败后事实未创建\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"createOperationsCatalogItem\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"createOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":315,\"caseExpectedDbMs\":13450.5,\"caseLocalActionMs\":750,\"caseTimeoutMs\":29000}}"
         },
         {
           "caseId": "catalog-create-recovery",
@@ -5099,10 +5099,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 315,
+              "caseExpectedDbMs": 13450.5,
               "caseLocalActionMs": 1000,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 29000
             }
           },
           "expected": {
@@ -5200,14 +5200,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 315,
+                "caseExpectedDbMs": 13450.5,
                 "caseLocalActionMs": 1000,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 29000
               }
             }
           },
-          "expectedBusinessResult": "新建商品只收集最小身份事实，分类使用树形选择，创建失败后可修正并继续。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-CREATE\",\"journey\":\"新建恢复\",\"controlKeys\":[\"CATALOG_CREATE_OPEN\",\"CATALOG_CREATE_CATEGORY\",\"CATALOG_CREATE_SUBMIT\",\"CATALOG_ITEM_EDIT_DRAWER\"],\"declaredActions\":[{\"actionId\":\"catalog-create-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"修正编码\",\"保留分类树选择\",\"重新提交\",\"读取商品编辑区段\"],\"businessOracle\":[\"恢复不丢失分类选择\",\"成功 readback 后商品编码与形态一致\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"createOperationsCatalogItem\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"createOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "新建商品只收集最小身份事实，分类使用树形选择，创建失败后可修正并继续。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-CREATE\",\"journey\":\"新建恢复\",\"controlKeys\":[\"CATALOG_CREATE_OPEN\",\"CATALOG_CREATE_CATEGORY\",\"CATALOG_CREATE_SUBMIT\",\"CATALOG_ITEM_EDIT_DRAWER\"],\"declaredActions\":[{\"actionId\":\"catalog-create-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"修正编码\",\"保留分类树选择\",\"重新提交\",\"读取商品编辑区段\"],\"businessOracle\":[\"恢复不丢失分类选择\",\"成功 readback 后商品编码与形态一致\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"createOperationsCatalogItem\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"createOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":315,\"caseExpectedDbMs\":13450.5,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":29000}}"
         }
       ]
     },
@@ -5331,10 +5331,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 350,
+              "caseExpectedDbMs": 14945.000000000002,
               "caseLocalActionMs": 1250,
-              "caseTimeoutMs": 3000
+              "caseTimeoutMs": 33000
             }
           },
           "expected": {
@@ -5445,14 +5445,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 350,
+                "caseExpectedDbMs": 14945.000000000002,
                 "caseLocalActionMs": 1250,
-                "caseTimeoutMs": 3000
+                "caseTimeoutMs": 33000
               }
             }
           },
-          "expectedBusinessResult": "商品编辑是整单草稿，单一生产标签可设置/清除，意外关闭或刷新可恢复草稿与区段。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-EDIT\",\"journey\":\"编辑成功\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_EDIT_DRAWER\",\"CATALOG_ITEM_EDIT\",\"CATALOG_ITEM_TABS\",\"CATALOG_ITEM_PRODUCTION_TAGS\",\"CATALOG_ITEM_SAVE\"],\"declaredActions\":[{\"actionId\":\"catalog-edit-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"进入编辑\",\"设置一个生产标签\",\"修改制作信息与商品属性\",\"整单保存\",\"读取保存后的商品事实\"],\"businessOracle\":[\"商品最多一个生产标签\",\"保存 readback 只返回单一 productionTagRef\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"listOperationsCatalogUnits\",\"getOperationsProductionTags\",\"saveOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"listOperationsCatalogUnits\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsProductionTags\",\"maxRequestCount\":1},{\"operationId\":\"saveOperationsCatalogItem\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":3000}}"
+          "expectedBusinessResult": "商品编辑是整单草稿，单一生产标签可设置/清除，意外关闭或刷新可恢复草稿与区段。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-EDIT\",\"journey\":\"编辑成功\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_EDIT_DRAWER\",\"CATALOG_ITEM_EDIT\",\"CATALOG_ITEM_TABS\",\"CATALOG_ITEM_PRODUCTION_TAGS\",\"CATALOG_ITEM_SAVE\"],\"declaredActions\":[{\"actionId\":\"catalog-edit-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"进入编辑\",\"设置一个生产标签\",\"修改制作信息与商品属性\",\"整单保存\",\"读取保存后的商品事实\"],\"businessOracle\":[\"商品最多一个生产标签\",\"保存 readback 只返回单一 productionTagRef\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"listOperationsCatalogUnits\",\"getOperationsProductionTags\",\"saveOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"listOperationsCatalogUnits\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsProductionTags\",\"maxRequestCount\":1},{\"operationId\":\"saveOperationsCatalogItem\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":350,\"caseExpectedDbMs\":14945.000000000002,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":33000}}"
         },
         {
           "caseId": "catalog-edit-failure",
@@ -5555,10 +5555,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 386,
+              "caseExpectedDbMs": 16482.2,
               "caseLocalActionMs": 750,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 35000
             }
           },
           "expected": {
@@ -5661,14 +5661,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 386,
+                "caseExpectedDbMs": 16482.2,
                 "caseLocalActionMs": 750,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 35000
               }
             }
           },
-          "expectedBusinessResult": "商品编辑是整单草稿，单一生产标签可设置/清除，意外关闭或刷新可恢复草稿与区段。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-EDIT\",\"journey\":\"编辑失败\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_EDIT_DRAWER\",\"CATALOG_ITEM_EDIT\",\"CATALOG_ITEM_SAVE\",\"CATALOG_ITEM_PROBLEM\"],\"declaredActions\":[{\"actionId\":\"catalog-edit-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"提交版本已变化的草稿\",\"读取具体失败提示\",\"确认商品版本与生产标签未改变\"],\"businessOracle\":[\"版本冲突不自动覆盖\",\"失败后保留当前草稿供继续编辑\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"listOperationsCatalogUnits\",\"saveOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"listOperationsCatalogUnits\",\"maxRequestCount\":1},{\"operationId\":\"saveOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":750,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "商品编辑是整单草稿，单一生产标签可设置/清除，意外关闭或刷新可恢复草稿与区段。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-EDIT\",\"journey\":\"编辑失败\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_EDIT_DRAWER\",\"CATALOG_ITEM_EDIT\",\"CATALOG_ITEM_SAVE\",\"CATALOG_ITEM_PROBLEM\"],\"declaredActions\":[{\"actionId\":\"catalog-edit-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"提交版本已变化的草稿\",\"读取具体失败提示\",\"确认商品版本与生产标签未改变\"],\"businessOracle\":[\"版本冲突不自动覆盖\",\"失败后保留当前草稿供继续编辑\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"listOperationsCatalogUnits\",\"saveOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"listOperationsCatalogUnits\",\"maxRequestCount\":1},{\"operationId\":\"saveOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":386,\"caseExpectedDbMs\":16482.2,\"caseLocalActionMs\":750,\"caseTimeoutMs\":35000}}"
         },
         {
           "caseId": "catalog-edit-recovery",
@@ -5768,10 +5768,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 298,
+              "caseExpectedDbMs": 12724.6,
               "caseLocalActionMs": 1250,
-              "caseTimeoutMs": 3000
+              "caseTimeoutMs": 28000
             }
           },
           "expected": {
@@ -5871,14 +5871,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 298,
+                "caseExpectedDbMs": 12724.6,
                 "caseLocalActionMs": 1250,
-                "caseTimeoutMs": 3000
+                "caseTimeoutMs": 28000
               }
             }
           },
-          "expectedBusinessResult": "商品编辑是整单草稿，单一生产标签可设置/清除，意外关闭或刷新可恢复草稿与区段。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-EDIT\",\"journey\":\"草稿恢复\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_EDIT_DRAWER\",\"CATALOG_ITEM_EDIT\",\"CATALOG_DIRTY_CONTINUE\",\"CATALOG_DIRTY_DISCARD\"],\"declaredActions\":[{\"actionId\":\"catalog-edit-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"修改商品并刷新页面\",\"重新打开同一商品\",\"选择继续编辑\",\"核对原区段和字段值\",\"另一次选择放弃上次内容\"],\"businessOracle\":[\"恢复按商品编码+版本匹配\",\"放弃后回到服务器事实且不残留上次草稿\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"listOperationsCatalogUnits\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"listOperationsCatalogUnits\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":3000}}"
+          "expectedBusinessResult": "商品编辑是整单草稿，单一生产标签可设置/清除，意外关闭或刷新可恢复草稿与区段。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-EDIT\",\"journey\":\"草稿恢复\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_EDIT_DRAWER\",\"CATALOG_ITEM_EDIT\",\"CATALOG_DIRTY_CONTINUE\",\"CATALOG_DIRTY_DISCARD\"],\"declaredActions\":[{\"actionId\":\"catalog-edit-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"修改商品并刷新页面\",\"重新打开同一商品\",\"选择继续编辑\",\"核对原区段和字段值\",\"另一次选择放弃上次内容\"],\"businessOracle\":[\"恢复按商品编码+版本匹配\",\"放弃后回到服务器事实且不残留上次草稿\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"listOperationsCatalogUnits\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"listOperationsCatalogUnits\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":298,\"caseExpectedDbMs\":12724.6,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":28000}}"
         }
       ]
     },
@@ -6007,10 +6007,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 378,
+              "caseExpectedDbMs": 16140.6,
               "caseLocalActionMs": 1500,
-              "caseTimeoutMs": 3000
+              "caseTimeoutMs": 36000
             }
           },
           "expected": {
@@ -6126,14 +6126,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 378,
+                "caseExpectedDbMs": 16140.6,
                 "caseLocalActionMs": 1500,
-                "caseTimeoutMs": 3000
+                "caseTimeoutMs": 36000
               }
             }
           },
-          "expectedBusinessResult": "商品配置抽屉按字典复杂度提供六库导航、树形父子级联与返回编辑。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-CONFIG\",\"journey\":\"配置成功\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_EDIT_DRAWER\",\"CATALOG_ITEM_PRODUCTION_TAG_MANAGE\",\"CATALOG_DICTIONARY_DRAWER\",\"CATALOG_CONFIG_PRODUCTION_TAGS\",\"CATALOG_CONFIG_SEARCH\",\"CATALOG_CONFIG_STATUS\",\"CATALOG_DICTIONARY_CODE\",\"CATALOG_DICTIONARY_CREATE\"],\"declaredActions\":[{\"actionId\":\"catalog-config-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"打开商品编辑\",\"从制作信息进入商品元数据\",\"切换计量单位、规格维度和生产标签\",\"按名称或编码搜索并按状态筛选生产标签\",\"新建一个可用条目\",\"返回商品编辑\"],\"businessOracle\":[\"六库在同一配置抽屉内切换\",\"搜索和状态筛选返回完整的当前库结果\",\"配置完成后候选立即可用且草稿不丢\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"listOperationsCatalogUnits\",\"getOperationsProductionTags\",\"createOperationsProductionTag\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"listOperationsCatalogUnits\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsProductionTags\",\"maxRequestCount\":7},{\"operationId\":\"createOperationsProductionTag\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1500,\"caseTimeoutMs\":3000}}"
+          "expectedBusinessResult": "商品配置抽屉按字典复杂度提供六库导航、树形父子级联与返回编辑。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-CONFIG\",\"journey\":\"配置成功\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_EDIT_DRAWER\",\"CATALOG_ITEM_PRODUCTION_TAG_MANAGE\",\"CATALOG_DICTIONARY_DRAWER\",\"CATALOG_CONFIG_PRODUCTION_TAGS\",\"CATALOG_CONFIG_SEARCH\",\"CATALOG_CONFIG_STATUS\",\"CATALOG_DICTIONARY_CODE\",\"CATALOG_DICTIONARY_CREATE\"],\"declaredActions\":[{\"actionId\":\"catalog-config-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"打开商品编辑\",\"从制作信息进入商品元数据\",\"切换计量单位、规格维度和生产标签\",\"按名称或编码搜索并按状态筛选生产标签\",\"新建一个可用条目\",\"返回商品编辑\"],\"businessOracle\":[\"六库在同一配置抽屉内切换\",\"搜索和状态筛选返回完整的当前库结果\",\"配置完成后候选立即可用且草稿不丢\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"listOperationsCatalogUnits\",\"getOperationsProductionTags\",\"createOperationsProductionTag\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"listOperationsCatalogUnits\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsProductionTags\",\"maxRequestCount\":7},{\"operationId\":\"createOperationsProductionTag\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":378,\"caseExpectedDbMs\":16140.6,\"caseLocalActionMs\":1500,\"caseTimeoutMs\":36000}}"
         },
         {
           "caseId": "catalog-config-failure",
@@ -6244,10 +6244,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 353,
+              "caseExpectedDbMs": 15073.1,
               "caseLocalActionMs": 1000,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 33000
             }
           },
           "expected": {
@@ -6358,14 +6358,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 353,
+                "caseExpectedDbMs": 15073.1,
                 "caseLocalActionMs": 1000,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 33000
               }
             }
           },
-          "expectedBusinessResult": "商品配置抽屉按字典复杂度提供六库导航、树形父子级联与返回编辑。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-CONFIG\",\"journey\":\"配置失败\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_EDIT_DRAWER\",\"CATALOG_ITEM_PRODUCTION_TAG_MANAGE\",\"CATALOG_DICTIONARY_DRAWER\",\"CATALOG_CONFIG_PRODUCTION_TAGS\",\"CATALOG_DICTIONARY_CODE\",\"CATALOG_DICTIONARY_CREATE\"],\"declaredActions\":[{\"actionId\":\"catalog-config-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"打开商品编辑并进入商品元数据\",\"提交重复编码或非法精度\",\"读取字段级错误\",\"确认商品草稿与返回入口仍在\"],\"businessOracle\":[\"配置失败不清空商品编辑草稿\",\"错误只定位到当前配置任务\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"listOperationsCatalogUnits\",\"getOperationsProductionTags\",\"createOperationsProductionTag\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"listOperationsCatalogUnits\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsProductionTags\",\"maxRequestCount\":5},{\"operationId\":\"createOperationsProductionTag\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "商品配置抽屉按字典复杂度提供六库导航、树形父子级联与返回编辑。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-CONFIG\",\"journey\":\"配置失败\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_EDIT_DRAWER\",\"CATALOG_ITEM_PRODUCTION_TAG_MANAGE\",\"CATALOG_DICTIONARY_DRAWER\",\"CATALOG_CONFIG_PRODUCTION_TAGS\",\"CATALOG_DICTIONARY_CODE\",\"CATALOG_DICTIONARY_CREATE\"],\"declaredActions\":[{\"actionId\":\"catalog-config-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"打开商品编辑并进入商品元数据\",\"提交重复编码或非法精度\",\"读取字段级错误\",\"确认商品草稿与返回入口仍在\"],\"businessOracle\":[\"配置失败不清空商品编辑草稿\",\"错误只定位到当前配置任务\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"listOperationsCatalogUnits\",\"getOperationsProductionTags\",\"createOperationsProductionTag\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"listOperationsCatalogUnits\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsProductionTags\",\"maxRequestCount\":5},{\"operationId\":\"createOperationsProductionTag\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":353,\"caseExpectedDbMs\":15073.1,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":33000}}"
         },
         {
           "caseId": "catalog-config-recovery",
@@ -6477,10 +6477,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 384,
+              "caseExpectedDbMs": 16396.800000000003,
               "caseLocalActionMs": 1250,
-              "caseTimeoutMs": 3000
+              "caseTimeoutMs": 36000
             }
           },
           "expected": {
@@ -6592,14 +6592,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 384,
+                "caseExpectedDbMs": 16396.800000000003,
                 "caseLocalActionMs": 1250,
-                "caseTimeoutMs": 3000
+                "caseTimeoutMs": 36000
               }
             }
           },
-          "expectedBusinessResult": "商品配置抽屉按字典复杂度提供六库导航、树形父子级联与返回编辑。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-CONFIG\",\"journey\":\"配置恢复\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_EDIT_DRAWER\",\"CATALOG_ITEM_PRODUCTION_TAG_MANAGE\",\"CATALOG_DICTIONARY_DRAWER\",\"CATALOG_CONFIG_PRODUCTION_TAGS\",\"CATALOG_DICTIONARY_CODE\",\"CATALOG_DICTIONARY_CREATE\"],\"declaredActions\":[{\"actionId\":\"catalog-config-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"打开商品编辑并进入商品元数据\",\"修正配置条目\",\"保存并关闭配置\",\"直接继续编辑原区段\",\"读取原区段、触发控件焦点和新候选\"],\"businessOracle\":[\"关闭维护面板后父编辑保持打开且草稿不丢\",\"焦点回到原维护控件，停用条目不进入新候选但既有绑定仍可见\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"listOperationsCatalogUnits\",\"getOperationsProductionTags\",\"createOperationsProductionTag\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"listOperationsCatalogUnits\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsProductionTags\",\"maxRequestCount\":7},{\"operationId\":\"createOperationsProductionTag\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":3000}}"
+          "expectedBusinessResult": "商品配置抽屉按字典复杂度提供六库导航、树形父子级联与返回编辑。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-CONFIG\",\"journey\":\"配置恢复\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_EDIT_DRAWER\",\"CATALOG_ITEM_PRODUCTION_TAG_MANAGE\",\"CATALOG_DICTIONARY_DRAWER\",\"CATALOG_CONFIG_PRODUCTION_TAGS\",\"CATALOG_DICTIONARY_CODE\",\"CATALOG_DICTIONARY_CREATE\"],\"declaredActions\":[{\"actionId\":\"catalog-config-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"打开商品编辑并进入商品元数据\",\"修正配置条目\",\"保存并关闭配置\",\"直接继续编辑原区段\",\"读取原区段、触发控件焦点和新候选\"],\"businessOracle\":[\"关闭维护面板后父编辑保持打开且草稿不丢\",\"焦点回到原维护控件，停用条目不进入新候选但既有绑定仍可见\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"listOperationsCatalogUnits\",\"getOperationsProductionTags\",\"createOperationsProductionTag\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"listOperationsCatalogUnits\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsProductionTags\",\"maxRequestCount\":7},{\"operationId\":\"createOperationsProductionTag\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":384,\"caseExpectedDbMs\":16396.800000000003,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":36000}}"
         }
       ]
     },
@@ -6706,10 +6706,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 273,
+              "caseExpectedDbMs": 11657.1,
               "caseLocalActionMs": 1000,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 26000
             }
           },
           "expected": {
@@ -6803,14 +6803,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 273,
+                "caseExpectedDbMs": 11657.1,
                 "caseLocalActionMs": 1000,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 26000
               }
             }
           },
-          "expectedBusinessResult": "批量操作使用提交前摘要、提交中进度和逐项结果三态，部分失败不伪装成整批失败。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-BATCH\",\"journey\":\"批量全成功\",\"controlKeys\":[\"CATALOG_RESULT_TABLE\",\"CATALOG_BATCH_OPEN\",\"CATALOG_BATCH_MODAL\",\"CATALOG_BATCH_OUTCOME\"],\"declaredActions\":[{\"actionId\":\"catalog-batch-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"选择多个父商品\",\"查看提交前影响摘要\",\"提交批量操作\",\"读取成功数量和逐项结果\"],\"businessOracle\":[\"SKU 子行不可被批量选中\",\"结果按父商品逐项 readback\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"batchTransitionOperationsCatalogItemStatus\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"batchTransitionOperationsCatalogItemStatus\",\"maxRequestCount\":1,\"cardinality\":3}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "批量操作使用提交前摘要、提交中进度和逐项结果三态，部分失败不伪装成整批失败。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-BATCH\",\"journey\":\"批量全成功\",\"controlKeys\":[\"CATALOG_RESULT_TABLE\",\"CATALOG_BATCH_OPEN\",\"CATALOG_BATCH_MODAL\",\"CATALOG_BATCH_OUTCOME\"],\"declaredActions\":[{\"actionId\":\"catalog-batch-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"选择多个父商品\",\"查看提交前影响摘要\",\"提交批量操作\",\"读取成功数量和逐项结果\"],\"businessOracle\":[\"SKU 子行不可被批量选中\",\"结果按父商品逐项 readback\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"batchTransitionOperationsCatalogItemStatus\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"batchTransitionOperationsCatalogItemStatus\",\"maxRequestCount\":1,\"cardinality\":3}]},\"timing\":{\"caseDbOperationUpperBound\":273,\"caseExpectedDbMs\":11657.1,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":26000}}"
         },
         {
           "caseId": "catalog-batch-failure",
@@ -6909,10 +6909,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 317,
+              "caseExpectedDbMs": 13535.900000000001,
               "caseLocalActionMs": 1250,
-              "caseTimeoutMs": 3000
+              "caseTimeoutMs": 30000
             }
           },
           "expected": {
@@ -7011,14 +7011,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 317,
+                "caseExpectedDbMs": 13535.900000000001,
                 "caseLocalActionMs": 1250,
-                "caseTimeoutMs": 3000
+                "caseTimeoutMs": 30000
               }
             }
           },
-          "expectedBusinessResult": "批量操作使用提交前摘要、提交中进度和逐项结果三态，部分失败不伪装成整批失败。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-BATCH\",\"journey\":\"批量部分失败\",\"controlKeys\":[\"CATALOG_BATCH_MODAL\",\"CATALOG_BATCH_PROGRESS\",\"CATALOG_BATCH_OUTCOME\"],\"declaredActions\":[{\"actionId\":\"catalog-batch-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"用真实 owner 命令改变一个已选商品的版本\",\"提交仍持有旧版本的批量操作\",\"读取成功项与失败项\",\"读取失败原因\",\"确认成功项已从待选集合移除\"],\"businessOracle\":[\"逐项尽力而非整批原子\",\"未知失败不降级为普通业务失败\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"batchTransitionOperationsCatalogItemStatus\",\"saveOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"batchTransitionOperationsCatalogItemStatus\",\"maxRequestCount\":1,\"cardinality\":3},{\"operationId\":\"saveOperationsCatalogItem\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":3000}}"
+          "expectedBusinessResult": "批量操作使用提交前摘要、提交中进度和逐项结果三态，部分失败不伪装成整批失败。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-BATCH\",\"journey\":\"批量部分失败\",\"controlKeys\":[\"CATALOG_BATCH_MODAL\",\"CATALOG_BATCH_PROGRESS\",\"CATALOG_BATCH_OUTCOME\"],\"declaredActions\":[{\"actionId\":\"catalog-batch-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"用真实 owner 命令改变一个已选商品的版本\",\"提交仍持有旧版本的批量操作\",\"读取成功项与失败项\",\"读取失败原因\",\"确认成功项已从待选集合移除\"],\"businessOracle\":[\"逐项尽力而非整批原子\",\"未知失败不降级为普通业务失败\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"batchTransitionOperationsCatalogItemStatus\",\"saveOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"batchTransitionOperationsCatalogItemStatus\",\"maxRequestCount\":1,\"cardinality\":3},{\"operationId\":\"saveOperationsCatalogItem\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":317,\"caseExpectedDbMs\":13535.900000000001,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":30000}}"
         },
         {
           "caseId": "catalog-batch-recovery",
@@ -7111,10 +7111,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 273,
+              "caseExpectedDbMs": 11657.1,
               "caseLocalActionMs": 1000,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 26000
             }
           },
           "expected": {
@@ -7207,14 +7207,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 273,
+                "caseExpectedDbMs": 11657.1,
                 "caseLocalActionMs": 1000,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 26000
               }
             }
           },
-          "expectedBusinessResult": "批量操作使用提交前摘要、提交中进度和逐项结果三态，部分失败不伪装成整批失败。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-BATCH\",\"journey\":\"批量结果恢复\",\"controlKeys\":[\"CATALOG_BATCH_OUTCOME\",\"CATALOG_BATCH_REFRESH_ERROR\",\"CATALOG_RESULT_TABLE\"],\"declaredActions\":[{\"actionId\":\"catalog-batch-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"让列表刷新失败\",\"读取业务结果仍保留\",\"重试刷新\",\"核对结果域与逐项回执\"],\"businessOracle\":[\"刷新失败与业务执行结果分开\",\"重试不重复执行批量命令\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"batchTransitionOperationsCatalogItemStatus\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"batchTransitionOperationsCatalogItemStatus\",\"maxRequestCount\":1,\"cardinality\":3}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "批量操作使用提交前摘要、提交中进度和逐项结果三态，部分失败不伪装成整批失败。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-BATCH\",\"journey\":\"批量结果恢复\",\"controlKeys\":[\"CATALOG_BATCH_OUTCOME\",\"CATALOG_BATCH_REFRESH_ERROR\",\"CATALOG_RESULT_TABLE\"],\"declaredActions\":[{\"actionId\":\"catalog-batch-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"让列表刷新失败\",\"读取业务结果仍保留\",\"重试刷新\",\"核对结果域与逐项回执\"],\"businessOracle\":[\"刷新失败与业务执行结果分开\",\"重试不重复执行批量命令\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"batchTransitionOperationsCatalogItemStatus\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"batchTransitionOperationsCatalogItemStatus\",\"maxRequestCount\":1,\"cardinality\":3}]},\"timing\":{\"caseDbOperationUpperBound\":273,\"caseExpectedDbMs\":11657.1,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":26000}}"
         }
       ]
     },
@@ -7331,10 +7331,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 393,
+              "caseExpectedDbMs": 16781.100000000002,
               "caseLocalActionMs": 1250,
-              "caseTimeoutMs": 3000
+              "caseTimeoutMs": 37000
             }
           },
           "expected": {
@@ -7438,14 +7438,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 393,
+                "caseExpectedDbMs": 16781.100000000002,
                 "caseLocalActionMs": 1250,
-                "caseTimeoutMs": 3000
+                "caseTimeoutMs": 37000
               }
             }
           },
-          "expectedBusinessResult": "复制向导分步完成来源、选择、预检和执行，版本漂移回到预检且不产生半套写入。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-COPY\",\"journey\":\"复制成功\",\"controlKeys\":[\"CATALOG_COPY_OPEN\",\"CATALOG_COPY_DRAWER\",\"CATALOG_COPY_PREFLIGHT\",\"CATALOG_COPY_EXECUTE\"],\"declaredActions\":[{\"actionId\":\"catalog-copy-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"选择来源商品\",\"选择要复制的事实族\",\"完成预检\",\"执行复制\",\"读取目标商品完整事实\"],\"businessOracle\":[\"复制步骤顺序固定\",\"预检 token 与所有输入绑定\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsBrandCatalogCopyCandidates\",\"preflightOperationsBrandCatalogCopy\",\"executeOperationsBrandCatalogCopy\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsBrandCatalogCopyCandidates\",\"maxRequestCount\":3},{\"operationId\":\"preflightOperationsBrandCatalogCopy\",\"maxRequestCount\":3},{\"operationId\":\"executeOperationsBrandCatalogCopy\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":3000}}"
+          "expectedBusinessResult": "复制向导分步完成来源、选择、预检和执行，版本漂移回到预检且不产生半套写入。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-COPY\",\"journey\":\"复制成功\",\"controlKeys\":[\"CATALOG_COPY_OPEN\",\"CATALOG_COPY_DRAWER\",\"CATALOG_COPY_PREFLIGHT\",\"CATALOG_COPY_EXECUTE\"],\"declaredActions\":[{\"actionId\":\"catalog-copy-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"选择来源商品\",\"选择要复制的事实族\",\"完成预检\",\"执行复制\",\"读取目标商品完整事实\"],\"businessOracle\":[\"复制步骤顺序固定\",\"预检 token 与所有输入绑定\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsBrandCatalogCopyCandidates\",\"preflightOperationsBrandCatalogCopy\",\"executeOperationsBrandCatalogCopy\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsBrandCatalogCopyCandidates\",\"maxRequestCount\":3},{\"operationId\":\"preflightOperationsBrandCatalogCopy\",\"maxRequestCount\":3},{\"operationId\":\"executeOperationsBrandCatalogCopy\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":393,\"caseExpectedDbMs\":16781.100000000002,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":37000}}"
         },
         {
           "caseId": "catalog-copy-failure",
@@ -7553,10 +7553,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 437,
+              "caseExpectedDbMs": 18659.9,
               "caseLocalActionMs": 1250,
-              "caseTimeoutMs": 3000
+              "caseTimeoutMs": 40000
             }
           },
           "expected": {
@@ -7664,14 +7664,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 437,
+                "caseExpectedDbMs": 18659.9,
                 "caseLocalActionMs": 1250,
-                "caseTimeoutMs": 3000
+                "caseTimeoutMs": 40000
               }
             }
           },
-          "expectedBusinessResult": "复制向导分步完成来源、选择、预检和执行，版本漂移回到预检且不产生半套写入。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-COPY\",\"journey\":\"复制失败\",\"controlKeys\":[\"CATALOG_COPY_DRAWER\",\"CATALOG_COPY_PREFLIGHT\",\"CATALOG_COPY_PREFLIGHT_PROBLEM\"],\"declaredActions\":[{\"actionId\":\"catalog-copy-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"完成检查影响\",\"用真实 owner 命令变更目标版本\",\"使用过期检查结果执行\",\"读取版本漂移原因\",\"确认目标商品未写入半套配置\"],\"businessOracle\":[\"失败原因可理解\",\"版本漂移后写入数为零\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsBrandCatalogCopyCandidates\",\"preflightOperationsBrandCatalogCopy\",\"executeOperationsBrandCatalogCopy\",\"saveOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsBrandCatalogCopyCandidates\",\"maxRequestCount\":3},{\"operationId\":\"preflightOperationsBrandCatalogCopy\",\"maxRequestCount\":3},{\"operationId\":\"executeOperationsBrandCatalogCopy\",\"maxRequestCount\":1},{\"operationId\":\"saveOperationsCatalogItem\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":3000}}"
+          "expectedBusinessResult": "复制向导分步完成来源、选择、预检和执行，版本漂移回到预检且不产生半套写入。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-COPY\",\"journey\":\"复制失败\",\"controlKeys\":[\"CATALOG_COPY_DRAWER\",\"CATALOG_COPY_PREFLIGHT\",\"CATALOG_COPY_PREFLIGHT_PROBLEM\"],\"declaredActions\":[{\"actionId\":\"catalog-copy-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"完成检查影响\",\"用真实 owner 命令变更目标版本\",\"使用过期检查结果执行\",\"读取版本漂移原因\",\"确认目标商品未写入半套配置\"],\"businessOracle\":[\"失败原因可理解\",\"版本漂移后写入数为零\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsBrandCatalogCopyCandidates\",\"preflightOperationsBrandCatalogCopy\",\"executeOperationsBrandCatalogCopy\",\"saveOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsBrandCatalogCopyCandidates\",\"maxRequestCount\":3},{\"operationId\":\"preflightOperationsBrandCatalogCopy\",\"maxRequestCount\":3},{\"operationId\":\"executeOperationsBrandCatalogCopy\",\"maxRequestCount\":1},{\"operationId\":\"saveOperationsCatalogItem\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":437,\"caseExpectedDbMs\":18659.9,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":40000}}"
         },
         {
           "caseId": "catalog-copy-recovery",
@@ -7781,10 +7781,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 519,
+              "caseExpectedDbMs": 22161.300000000003,
               "caseLocalActionMs": 1250,
-              "caseTimeoutMs": 3000
+              "caseTimeoutMs": 47000
             }
           },
           "expected": {
@@ -7894,14 +7894,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 519,
+                "caseExpectedDbMs": 22161.300000000003,
                 "caseLocalActionMs": 1250,
-                "caseTimeoutMs": 3000
+                "caseTimeoutMs": 47000
               }
             }
           },
-          "expectedBusinessResult": "复制向导分步完成来源、选择、预检和执行，版本漂移回到预检且不产生半套写入。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-COPY\",\"journey\":\"复制恢复\",\"controlKeys\":[\"CATALOG_COPY_DRAWER\",\"CATALOG_COPY_PREFLIGHT\",\"CATALOG_COPY_PREFLIGHT_PROBLEM\",\"CATALOG_COPY_EXECUTE\",\"CATALOG_COPY_RESULT\"],\"declaredActions\":[{\"actionId\":\"catalog-copy-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"完成检查影响\",\"用真实 owner 命令变更目标版本并观察旧检查失效\",\"重新检查\",\"执行复制\",\"读取逐项结果与引用关系\"],\"businessOracle\":[\"恢复不会复用旧检查结果\",\"成功后来源与目标范围、引用关系可读\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsBrandCatalogCopyCandidates\",\"preflightOperationsBrandCatalogCopy\",\"executeOperationsBrandCatalogCopy\",\"saveOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsBrandCatalogCopyCandidates\",\"maxRequestCount\":4},{\"operationId\":\"preflightOperationsBrandCatalogCopy\",\"maxRequestCount\":4},{\"operationId\":\"executeOperationsBrandCatalogCopy\",\"maxRequestCount\":2},{\"operationId\":\"saveOperationsCatalogItem\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":3000}}"
+          "expectedBusinessResult": "复制向导分步完成来源、选择、预检和执行，版本漂移回到预检且不产生半套写入。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-COPY\",\"journey\":\"复制恢复\",\"controlKeys\":[\"CATALOG_COPY_DRAWER\",\"CATALOG_COPY_PREFLIGHT\",\"CATALOG_COPY_PREFLIGHT_PROBLEM\",\"CATALOG_COPY_EXECUTE\",\"CATALOG_COPY_RESULT\"],\"declaredActions\":[{\"actionId\":\"catalog-copy-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"完成检查影响\",\"用真实 owner 命令变更目标版本并观察旧检查失效\",\"重新检查\",\"执行复制\",\"读取逐项结果与引用关系\"],\"businessOracle\":[\"恢复不会复用旧检查结果\",\"成功后来源与目标范围、引用关系可读\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsBrandCatalogCopyCandidates\",\"preflightOperationsBrandCatalogCopy\",\"executeOperationsBrandCatalogCopy\",\"saveOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsBrandCatalogCopyCandidates\",\"maxRequestCount\":4},{\"operationId\":\"preflightOperationsBrandCatalogCopy\",\"maxRequestCount\":4},{\"operationId\":\"executeOperationsBrandCatalogCopy\",\"maxRequestCount\":2},{\"operationId\":\"saveOperationsCatalogItem\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":519,\"caseExpectedDbMs\":22161.300000000003,\"caseLocalActionMs\":1250,\"caseTimeoutMs\":47000}}"
         }
       ]
     },
@@ -8011,10 +8011,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 303,
+              "caseExpectedDbMs": 12938.1,
               "caseLocalActionMs": 1000,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 28000
             }
           },
           "expected": {
@@ -8111,14 +8111,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 303,
+                "caseExpectedDbMs": 12938.1,
                 "caseLocalActionMs": 1000,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 28000
               }
             }
           },
-          "expectedBusinessResult": "生命周期治理按 owner 影响事实控制动作，引用阻断时给出业务原因且不修改事实。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-GOVERNANCE\",\"journey\":\"治理成功\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_STATUS_ACTION\",\"CATALOG_LIFECYCLE_CONFIRM\"],\"declaredActions\":[{\"actionId\":\"catalog-governance-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"打开商品生命周期动作\",\"读取影响摘要\",\"确认停用或作废\",\"读取最新状态\"],\"businessOracle\":[\"动作来自 owner actionAvailability\",\"成功后状态和版本 readback 一致\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"transitionOperationsCatalogItemStatus\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"transitionOperationsCatalogItemStatus\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "生命周期治理按 owner 影响事实控制动作，引用阻断时给出业务原因且不修改事实。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-GOVERNANCE\",\"journey\":\"治理成功\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_STATUS_ACTION\",\"CATALOG_LIFECYCLE_CONFIRM\"],\"declaredActions\":[{\"actionId\":\"catalog-governance-success:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"打开商品生命周期动作\",\"读取影响摘要\",\"确认停用或作废\",\"读取最新状态\"],\"businessOracle\":[\"动作来自 owner actionAvailability\",\"成功后状态和版本 readback 一致\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"transitionOperationsCatalogItemStatus\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"transitionOperationsCatalogItemStatus\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":303,\"caseExpectedDbMs\":12938.1,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":28000}}"
         },
         {
           "caseId": "catalog-governance-failure",
@@ -8209,10 +8209,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 289,
+              "caseExpectedDbMs": 12340.300000000001,
               "caseLocalActionMs": 750,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 27000
             }
           },
           "expected": {
@@ -8303,14 +8303,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 289,
+                "caseExpectedDbMs": 12340.300000000001,
                 "caseLocalActionMs": 750,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 27000
               }
             }
           },
-          "expectedBusinessResult": "生命周期治理按 owner 影响事实控制动作，引用阻断时给出业务原因且不修改事实。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-GOVERNANCE\",\"journey\":\"治理被阻断\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_STATUS_ACTION\",\"CATALOG_ITEM_VOID_BLOCK_REASONS\"],\"declaredActions\":[{\"actionId\":\"catalog-governance-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"打开被 BOM 或套餐引用的商品动作\",\"读取引用影响\",\"确认作废没有入口且不发生状态更新\"],\"businessOracle\":[\"阻断原因显示被谁使用\",\"失败后版本、状态和引用不变\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":750,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "生命周期治理按 owner 影响事实控制动作，引用阻断时给出业务原因且不修改事实。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-GOVERNANCE\",\"journey\":\"治理被阻断\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_STATUS_ACTION\",\"CATALOG_ITEM_VOID_BLOCK_REASONS\"],\"declaredActions\":[{\"actionId\":\"catalog-governance-failure:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"打开被 BOM 或套餐引用的商品动作\",\"读取引用影响\",\"确认作废没有入口且不发生状态更新\"],\"businessOracle\":[\"阻断原因显示被谁使用\",\"失败后版本、状态和引用不变\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2}]},\"timing\":{\"caseDbOperationUpperBound\":289,\"caseExpectedDbMs\":12340.300000000001,\"caseLocalActionMs\":750,\"caseTimeoutMs\":27000}}"
         },
         {
           "caseId": "catalog-governance-recovery",
@@ -8407,10 +8407,10 @@
               ]
             },
             "timing": {
-              "caseDbOperationUpperBound": 0,
-              "caseExpectedDbMs": 0,
+              "caseDbOperationUpperBound": 303,
+              "caseExpectedDbMs": 12938.1,
               "caseLocalActionMs": 1000,
-              "caseTimeoutMs": 2000
+              "caseTimeoutMs": 28000
             }
           },
           "expected": {
@@ -8507,14 +8507,14 @@
                 ]
               },
               "timing": {
-                "caseDbOperationUpperBound": 0,
-                "caseExpectedDbMs": 0,
+                "caseDbOperationUpperBound": 303,
+                "caseExpectedDbMs": 12938.1,
                 "caseLocalActionMs": 1000,
-                "caseTimeoutMs": 2000
+                "caseTimeoutMs": 28000
               }
             }
           },
-          "expectedBusinessResult": "生命周期治理按 owner 影响事实控制动作，引用阻断时给出业务原因且不修改事实。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-GOVERNANCE\",\"journey\":\"治理恢复\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_STATUS_ACTION\",\"CATALOG_LIFECYCLE_CONFIRM\"],\"declaredActions\":[{\"actionId\":\"catalog-governance-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"fixture 解除阻断事实后重新打开动作\",\"确认影响摘要更新\",\"提交治理动作\",\"读取状态和列表徽标\"],\"businessOracle\":[\"候选状态来自最新 owner readback\",\"状态变化不隐式删除历史引用\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"transitionOperationsCatalogItemStatus\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"transitionOperationsCatalogItemStatus\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "生命周期治理按 owner 影响事实控制动作，引用阻断时给出业务原因且不修改事实。；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-CATALOG-LIBRARY-GOVERNANCE\",\"journey\":\"治理恢复\",\"controlKeys\":[\"CATALOG_ITEM_VIEW_DRAWER\",\"CATALOG_ITEM_STATUS_ACTION\",\"CATALOG_LIFECYCLE_CONFIRM\"],\"declaredActions\":[{\"actionId\":\"catalog-governance-recovery:journey\",\"kind\":\"USER_JOURNEY\"}],\"steps\":[\"fixture 解除阻断事实后重新打开动作\",\"确认影响摘要更新\",\"提交治理动作\",\"读取状态和列表徽标\"],\"businessOracle\":[\"候选状态来自最新 owner readback\",\"状态变化不隐式删除历史引用\"],\"network\":{\"required\":[\"getOperationsWorkspaceLoginEntry\",\"operationsWorkspacePasswordLogin\",\"getOperationsWorkspaceSessionEntry\",\"getOperationsCatalogShapeManifest\",\"getOperationsCatalogDictionary\",\"getOperationsCatalogCategoryCandidates\",\"getOperationsCatalogWorkbenchContext\",\"getOperationsCatalogNavigation\",\"getOperationsCatalogItems\",\"getOperationsCatalogItem\",\"transitionOperationsCatalogItemStatus\"],\"forbidden\":[],\"backgroundAllowed\":[\"getOperationsCatalogWorkbenchContext\"],\"requests\":[{\"operationId\":\"getOperationsWorkspaceLoginEntry\",\"maxRequestCount\":1},{\"operationId\":\"operationsWorkspacePasswordLogin\",\"maxRequestCount\":1},{\"operationId\":\"getOperationsWorkspaceSessionEntry\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogShapeManifest\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogDictionary\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogCategoryCandidates\",\"maxRequestCount\":2},{\"operationId\":\"getOperationsCatalogWorkbenchContext\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogNavigation\",\"maxRequestCount\":3},{\"operationId\":\"getOperationsCatalogItems\",\"maxRequestCount\":4},{\"operationId\":\"getOperationsCatalogItem\",\"maxRequestCount\":2},{\"operationId\":\"transitionOperationsCatalogItemStatus\",\"maxRequestCount\":1}]},\"timing\":{\"caseDbOperationUpperBound\":303,\"caseExpectedDbMs\":12938.1,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":28000}}"
         }
       ]
     }

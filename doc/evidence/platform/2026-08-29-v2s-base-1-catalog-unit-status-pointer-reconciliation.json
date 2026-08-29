@@ -1,0 +1,732 @@
+{
+  "schemaVersion": 1,
+  "kind": "base1-catalog-unit-status-pointer-reconciliation",
+  "scope": "base-1 catalog unit status generated response pointers",
+  "designBaseline": {
+    "file": "doc/plans/platform/2026-08-27-v2s-base-1-implementation-design-codex.md",
+    "beforeValues": [
+      "ENABLED",
+      "DISABLED"
+    ],
+    "statedAfterValues": [
+      "ENABLED",
+      "DISABLED",
+      "VOIDED"
+    ],
+    "pointerCount": 12,
+    "pointers": [
+      "CatalogUnitList.data.units[].status",
+      "CatalogUnitReadback.result.unit.status",
+      "CatalogItemPage.data.items[].salesUnit.status",
+      "CatalogItemPage.data.items[].baseMeasureUnit.status",
+      "CatalogItemDetail.data.item.salesUnit.status",
+      "CatalogItemDetail.data.item.baseMeasureUnit.status",
+      "CatalogItemDetail.data.item.skus[].salesUnit.status",
+      "CatalogItemDetail.data.item.skus[].baseMeasureUnit.status",
+      "CatalogItemSkuPage.data.items[].salesUnit.status",
+      "CatalogItemSkuPage.data.items[].baseMeasureUnit.status",
+      "CatalogItemSaveReadback.result.item.salesUnit.status",
+      "CatalogItemSaveReadback.result.item.baseMeasureUnit.status"
+    ]
+  },
+  "generator": {
+    "file": "scripts/generate/catalog-inventory-p1.mjs",
+    "sha256": "c93245d9f044cd989cfeb0fdf940cb78aa411e1ef527e2d5223e33611d36033b",
+    "dictionaryEntryStatusValues": [
+      "ENABLED",
+      "DISABLED",
+      "VOIDED"
+    ],
+    "catalogUnitAssignmentSchemaStatusValues": [
+      "ENABLED",
+      "DISABLED",
+      "VOIDED"
+    ],
+    "unitListAndReadbackBinding": {
+      "CatalogUnitList": "enumValues('dictionaryEntryStatus')",
+      "CatalogUnitReadback": "enumValues('dictionaryEntryStatus')",
+      "catalogUnitAssignmentSchema": [
+        "ENABLED",
+        "DISABLED",
+        "VOIDED"
+      ]
+    }
+  },
+  "generatedTypeSource": {
+    "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+    "sha256": "3a704171058be5c58733b4b6322d310b3a8d4cff856ecdd1df8e60fc49d0b813",
+    "aliases": {
+      "CatalogUnitList": {
+        "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+        "alias": "export type CatalogUnitList",
+        "exactAssignmentEnum": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "exactAssignmentEnumOccurrenceCount": 1,
+        "expectedAssignmentEnumOccurrenceCount": 1
+      },
+      "CatalogUnitReadback": {
+        "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+        "alias": "export type CatalogUnitReadback",
+        "exactAssignmentEnum": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "exactAssignmentEnumOccurrenceCount": 1,
+        "expectedAssignmentEnumOccurrenceCount": 1
+      },
+      "CatalogItemPage": {
+        "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+        "alias": "export type CatalogItemPage",
+        "exactAssignmentEnum": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "exactAssignmentEnumOccurrenceCount": 2,
+        "expectedAssignmentEnumOccurrenceCount": 2
+      },
+      "CatalogItemDetail": {
+        "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+        "alias": "export type CatalogItemDetail",
+        "exactAssignmentEnum": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "exactAssignmentEnumOccurrenceCount": 4,
+        "expectedAssignmentEnumOccurrenceCount": 4
+      },
+      "CatalogItemSkuPage": {
+        "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+        "alias": "export type CatalogItemSkuPage",
+        "exactAssignmentEnum": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "exactAssignmentEnumOccurrenceCount": 2,
+        "expectedAssignmentEnumOccurrenceCount": 2
+      },
+      "CatalogItemSaveReadback": {
+        "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+        "alias": "export type CatalogItemSaveReadback",
+        "exactAssignmentEnum": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "exactAssignmentEnumOccurrenceCount": 2,
+        "expectedAssignmentEnumOccurrenceCount": 2
+      }
+    }
+  },
+  "pointers": [
+    {
+      "pointer": "CatalogUnitList.data.units[].status",
+      "before": {
+        "values": [
+          "ENABLED",
+          "DISABLED"
+        ],
+        "provenance": {
+          "kind": "APPROVED_DESIGN_BASELINE_NOT_HISTORICAL_BYTE_SNAPSHOT",
+          "file": "doc/plans/platform/2026-08-27-v2s-base-1-implementation-design-codex.md",
+          "section": "catalog unit status declarations and the 12 generated response JSON pointers"
+        }
+      },
+      "after": {
+        "values": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "provenance": {
+          "kind": "CURRENT_REPOSITORY_BYTES",
+          "generator": {
+            "file": "scripts/generate/catalog-inventory-p1.mjs",
+            "declaration": "CatalogUnitList.data.units[].status",
+            "binding": "enumLabels.dictionaryEntryStatus",
+            "sha256": "c93245d9f044cd989cfeb0fdf940cb78aa411e1ef527e2d5223e33611d36033b"
+          },
+          "contract": {
+            "file": "contracts/openapi/components/catalog/catalog-dictionary.schemas.json",
+            "schema": "CatalogUnitList",
+            "jsonPath": "/components/schemas/CatalogUnitList/properties/data/properties/units/items/properties/status",
+            "sha256": "83fda73b2d51daefedc7c3292bbb453be3a63a545422e66dc82e0e2c82b934a6"
+          },
+          "generatedType": {
+            "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+            "alias": "export type CatalogUnitList",
+            "exactAssignmentEnum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "exactAssignmentEnumOccurrenceCount": 1,
+            "expectedAssignmentEnumOccurrenceCount": 1
+          }
+        }
+      },
+      "comparison": "EXACT_SET",
+      "status": "PASS"
+    },
+    {
+      "pointer": "CatalogUnitReadback.result.unit.status",
+      "before": {
+        "values": [
+          "ENABLED",
+          "DISABLED"
+        ],
+        "provenance": {
+          "kind": "APPROVED_DESIGN_BASELINE_NOT_HISTORICAL_BYTE_SNAPSHOT",
+          "file": "doc/plans/platform/2026-08-27-v2s-base-1-implementation-design-codex.md",
+          "section": "catalog unit status declarations and the 12 generated response JSON pointers"
+        }
+      },
+      "after": {
+        "values": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "provenance": {
+          "kind": "CURRENT_REPOSITORY_BYTES",
+          "generator": {
+            "file": "scripts/generate/catalog-inventory-p1.mjs",
+            "declaration": "CatalogUnitReadback.result.unit.status",
+            "binding": "enumLabels.dictionaryEntryStatus",
+            "sha256": "c93245d9f044cd989cfeb0fdf940cb78aa411e1ef527e2d5223e33611d36033b"
+          },
+          "contract": {
+            "file": "contracts/openapi/components/catalog/catalog-dictionary.schemas.json",
+            "schema": "CatalogUnitReadback",
+            "jsonPath": "/components/schemas/CatalogUnitReadback/properties/result/properties/unit/properties/status",
+            "sha256": "83fda73b2d51daefedc7c3292bbb453be3a63a545422e66dc82e0e2c82b934a6"
+          },
+          "generatedType": {
+            "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+            "alias": "export type CatalogUnitReadback",
+            "exactAssignmentEnum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "exactAssignmentEnumOccurrenceCount": 1,
+            "expectedAssignmentEnumOccurrenceCount": 1
+          }
+        }
+      },
+      "comparison": "EXACT_SET",
+      "status": "PASS"
+    },
+    {
+      "pointer": "CatalogItemPage.data.items[].salesUnit.status",
+      "before": {
+        "values": [
+          "ENABLED",
+          "DISABLED"
+        ],
+        "provenance": {
+          "kind": "APPROVED_DESIGN_BASELINE_NOT_HISTORICAL_BYTE_SNAPSHOT",
+          "file": "doc/plans/platform/2026-08-27-v2s-base-1-implementation-design-codex.md",
+          "section": "catalog unit status declarations and the 12 generated response JSON pointers"
+        }
+      },
+      "after": {
+        "values": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "provenance": {
+          "kind": "CURRENT_REPOSITORY_BYTES",
+          "generator": {
+            "file": "scripts/generate/catalog-inventory-p1.mjs",
+            "declaration": "catalogUnitAssignmentSchema.status",
+            "binding": "catalogUnitAssignmentSchema",
+            "sha256": "c93245d9f044cd989cfeb0fdf940cb78aa411e1ef527e2d5223e33611d36033b"
+          },
+          "contract": {
+            "file": "contracts/openapi/components/catalog/catalog-workbench.schemas.json",
+            "schema": "CatalogItemPage",
+            "jsonPath": "/components/schemas/CatalogItemPage/properties/data/properties/items/items/properties/salesUnit/properties/status",
+            "sha256": "155c6c03c2e1c2881fc627e8eb405b486b8a2a7ba75d472375143de84fe47d7b"
+          },
+          "generatedType": {
+            "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+            "alias": "export type CatalogItemPage",
+            "exactAssignmentEnum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "exactAssignmentEnumOccurrenceCount": 2,
+            "expectedAssignmentEnumOccurrenceCount": 2
+          }
+        }
+      },
+      "comparison": "EXACT_SET",
+      "status": "PASS"
+    },
+    {
+      "pointer": "CatalogItemPage.data.items[].baseMeasureUnit.status",
+      "before": {
+        "values": [
+          "ENABLED",
+          "DISABLED"
+        ],
+        "provenance": {
+          "kind": "APPROVED_DESIGN_BASELINE_NOT_HISTORICAL_BYTE_SNAPSHOT",
+          "file": "doc/plans/platform/2026-08-27-v2s-base-1-implementation-design-codex.md",
+          "section": "catalog unit status declarations and the 12 generated response JSON pointers"
+        }
+      },
+      "after": {
+        "values": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "provenance": {
+          "kind": "CURRENT_REPOSITORY_BYTES",
+          "generator": {
+            "file": "scripts/generate/catalog-inventory-p1.mjs",
+            "declaration": "catalogUnitAssignmentSchema.status",
+            "binding": "catalogUnitAssignmentSchema",
+            "sha256": "c93245d9f044cd989cfeb0fdf940cb78aa411e1ef527e2d5223e33611d36033b"
+          },
+          "contract": {
+            "file": "contracts/openapi/components/catalog/catalog-workbench.schemas.json",
+            "schema": "CatalogItemPage",
+            "jsonPath": "/components/schemas/CatalogItemPage/properties/data/properties/items/items/properties/baseMeasureUnit/properties/status",
+            "sha256": "155c6c03c2e1c2881fc627e8eb405b486b8a2a7ba75d472375143de84fe47d7b"
+          },
+          "generatedType": {
+            "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+            "alias": "export type CatalogItemPage",
+            "exactAssignmentEnum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "exactAssignmentEnumOccurrenceCount": 2,
+            "expectedAssignmentEnumOccurrenceCount": 2
+          }
+        }
+      },
+      "comparison": "EXACT_SET",
+      "status": "PASS"
+    },
+    {
+      "pointer": "CatalogItemDetail.data.item.salesUnit.status",
+      "before": {
+        "values": [
+          "ENABLED",
+          "DISABLED"
+        ],
+        "provenance": {
+          "kind": "APPROVED_DESIGN_BASELINE_NOT_HISTORICAL_BYTE_SNAPSHOT",
+          "file": "doc/plans/platform/2026-08-27-v2s-base-1-implementation-design-codex.md",
+          "section": "catalog unit status declarations and the 12 generated response JSON pointers"
+        }
+      },
+      "after": {
+        "values": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "provenance": {
+          "kind": "CURRENT_REPOSITORY_BYTES",
+          "generator": {
+            "file": "scripts/generate/catalog-inventory-p1.mjs",
+            "declaration": "catalogUnitAssignmentSchema.status",
+            "binding": "catalogUnitAssignmentSchema",
+            "sha256": "c93245d9f044cd989cfeb0fdf940cb78aa411e1ef527e2d5223e33611d36033b"
+          },
+          "contract": {
+            "file": "contracts/openapi/components/catalog/catalog-item.schemas.json",
+            "schema": "CatalogItemDetail",
+            "jsonPath": "/components/schemas/CatalogItemDetail/properties/data/properties/item/properties/salesUnit/properties/status",
+            "sha256": "6d246e0c59b5f5620fff02140c27bccb6174db30dd0a7c6ee923950e85355cb8"
+          },
+          "generatedType": {
+            "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+            "alias": "export type CatalogItemDetail",
+            "exactAssignmentEnum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "exactAssignmentEnumOccurrenceCount": 4,
+            "expectedAssignmentEnumOccurrenceCount": 4
+          }
+        }
+      },
+      "comparison": "EXACT_SET",
+      "status": "PASS"
+    },
+    {
+      "pointer": "CatalogItemDetail.data.item.baseMeasureUnit.status",
+      "before": {
+        "values": [
+          "ENABLED",
+          "DISABLED"
+        ],
+        "provenance": {
+          "kind": "APPROVED_DESIGN_BASELINE_NOT_HISTORICAL_BYTE_SNAPSHOT",
+          "file": "doc/plans/platform/2026-08-27-v2s-base-1-implementation-design-codex.md",
+          "section": "catalog unit status declarations and the 12 generated response JSON pointers"
+        }
+      },
+      "after": {
+        "values": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "provenance": {
+          "kind": "CURRENT_REPOSITORY_BYTES",
+          "generator": {
+            "file": "scripts/generate/catalog-inventory-p1.mjs",
+            "declaration": "catalogUnitAssignmentSchema.status",
+            "binding": "catalogUnitAssignmentSchema",
+            "sha256": "c93245d9f044cd989cfeb0fdf940cb78aa411e1ef527e2d5223e33611d36033b"
+          },
+          "contract": {
+            "file": "contracts/openapi/components/catalog/catalog-item.schemas.json",
+            "schema": "CatalogItemDetail",
+            "jsonPath": "/components/schemas/CatalogItemDetail/properties/data/properties/item/properties/baseMeasureUnit/properties/status",
+            "sha256": "6d246e0c59b5f5620fff02140c27bccb6174db30dd0a7c6ee923950e85355cb8"
+          },
+          "generatedType": {
+            "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+            "alias": "export type CatalogItemDetail",
+            "exactAssignmentEnum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "exactAssignmentEnumOccurrenceCount": 4,
+            "expectedAssignmentEnumOccurrenceCount": 4
+          }
+        }
+      },
+      "comparison": "EXACT_SET",
+      "status": "PASS"
+    },
+    {
+      "pointer": "CatalogItemDetail.data.item.skus[].salesUnit.status",
+      "before": {
+        "values": [
+          "ENABLED",
+          "DISABLED"
+        ],
+        "provenance": {
+          "kind": "APPROVED_DESIGN_BASELINE_NOT_HISTORICAL_BYTE_SNAPSHOT",
+          "file": "doc/plans/platform/2026-08-27-v2s-base-1-implementation-design-codex.md",
+          "section": "catalog unit status declarations and the 12 generated response JSON pointers"
+        }
+      },
+      "after": {
+        "values": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "provenance": {
+          "kind": "CURRENT_REPOSITORY_BYTES",
+          "generator": {
+            "file": "scripts/generate/catalog-inventory-p1.mjs",
+            "declaration": "catalogUnitAssignmentSchema.status",
+            "binding": "catalogUnitAssignmentSchema",
+            "sha256": "c93245d9f044cd989cfeb0fdf940cb78aa411e1ef527e2d5223e33611d36033b"
+          },
+          "contract": {
+            "file": "contracts/openapi/components/catalog/catalog-item.schemas.json",
+            "schema": "CatalogItemDetail",
+            "jsonPath": "/components/schemas/CatalogItemDetail/properties/data/properties/item/properties/skus/items/properties/salesUnit/properties/status",
+            "sha256": "6d246e0c59b5f5620fff02140c27bccb6174db30dd0a7c6ee923950e85355cb8"
+          },
+          "generatedType": {
+            "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+            "alias": "export type CatalogItemDetail",
+            "exactAssignmentEnum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "exactAssignmentEnumOccurrenceCount": 4,
+            "expectedAssignmentEnumOccurrenceCount": 4
+          }
+        }
+      },
+      "comparison": "EXACT_SET",
+      "status": "PASS"
+    },
+    {
+      "pointer": "CatalogItemDetail.data.item.skus[].baseMeasureUnit.status",
+      "before": {
+        "values": [
+          "ENABLED",
+          "DISABLED"
+        ],
+        "provenance": {
+          "kind": "APPROVED_DESIGN_BASELINE_NOT_HISTORICAL_BYTE_SNAPSHOT",
+          "file": "doc/plans/platform/2026-08-27-v2s-base-1-implementation-design-codex.md",
+          "section": "catalog unit status declarations and the 12 generated response JSON pointers"
+        }
+      },
+      "after": {
+        "values": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "provenance": {
+          "kind": "CURRENT_REPOSITORY_BYTES",
+          "generator": {
+            "file": "scripts/generate/catalog-inventory-p1.mjs",
+            "declaration": "catalogUnitAssignmentSchema.status",
+            "binding": "catalogUnitAssignmentSchema",
+            "sha256": "c93245d9f044cd989cfeb0fdf940cb78aa411e1ef527e2d5223e33611d36033b"
+          },
+          "contract": {
+            "file": "contracts/openapi/components/catalog/catalog-item.schemas.json",
+            "schema": "CatalogItemDetail",
+            "jsonPath": "/components/schemas/CatalogItemDetail/properties/data/properties/item/properties/skus/items/properties/baseMeasureUnit/properties/status",
+            "sha256": "6d246e0c59b5f5620fff02140c27bccb6174db30dd0a7c6ee923950e85355cb8"
+          },
+          "generatedType": {
+            "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+            "alias": "export type CatalogItemDetail",
+            "exactAssignmentEnum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "exactAssignmentEnumOccurrenceCount": 4,
+            "expectedAssignmentEnumOccurrenceCount": 4
+          }
+        }
+      },
+      "comparison": "EXACT_SET",
+      "status": "PASS"
+    },
+    {
+      "pointer": "CatalogItemSkuPage.data.items[].salesUnit.status",
+      "before": {
+        "values": [
+          "ENABLED",
+          "DISABLED"
+        ],
+        "provenance": {
+          "kind": "APPROVED_DESIGN_BASELINE_NOT_HISTORICAL_BYTE_SNAPSHOT",
+          "file": "doc/plans/platform/2026-08-27-v2s-base-1-implementation-design-codex.md",
+          "section": "catalog unit status declarations and the 12 generated response JSON pointers"
+        }
+      },
+      "after": {
+        "values": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "provenance": {
+          "kind": "CURRENT_REPOSITORY_BYTES",
+          "generator": {
+            "file": "scripts/generate/catalog-inventory-p1.mjs",
+            "declaration": "catalogUnitAssignmentSchema.status",
+            "binding": "catalogUnitAssignmentSchema",
+            "sha256": "c93245d9f044cd989cfeb0fdf940cb78aa411e1ef527e2d5223e33611d36033b"
+          },
+          "contract": {
+            "file": "contracts/openapi/components/catalog/catalog-item.schemas.json",
+            "schema": "CatalogItemSkuPage",
+            "jsonPath": "/components/schemas/CatalogItemSkuPage/properties/data/properties/items/items/properties/salesUnit/properties/status",
+            "sha256": "6d246e0c59b5f5620fff02140c27bccb6174db30dd0a7c6ee923950e85355cb8"
+          },
+          "generatedType": {
+            "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+            "alias": "export type CatalogItemSkuPage",
+            "exactAssignmentEnum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "exactAssignmentEnumOccurrenceCount": 2,
+            "expectedAssignmentEnumOccurrenceCount": 2
+          }
+        }
+      },
+      "comparison": "EXACT_SET",
+      "status": "PASS"
+    },
+    {
+      "pointer": "CatalogItemSkuPage.data.items[].baseMeasureUnit.status",
+      "before": {
+        "values": [
+          "ENABLED",
+          "DISABLED"
+        ],
+        "provenance": {
+          "kind": "APPROVED_DESIGN_BASELINE_NOT_HISTORICAL_BYTE_SNAPSHOT",
+          "file": "doc/plans/platform/2026-08-27-v2s-base-1-implementation-design-codex.md",
+          "section": "catalog unit status declarations and the 12 generated response JSON pointers"
+        }
+      },
+      "after": {
+        "values": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "provenance": {
+          "kind": "CURRENT_REPOSITORY_BYTES",
+          "generator": {
+            "file": "scripts/generate/catalog-inventory-p1.mjs",
+            "declaration": "catalogUnitAssignmentSchema.status",
+            "binding": "catalogUnitAssignmentSchema",
+            "sha256": "c93245d9f044cd989cfeb0fdf940cb78aa411e1ef527e2d5223e33611d36033b"
+          },
+          "contract": {
+            "file": "contracts/openapi/components/catalog/catalog-item.schemas.json",
+            "schema": "CatalogItemSkuPage",
+            "jsonPath": "/components/schemas/CatalogItemSkuPage/properties/data/properties/items/items/properties/baseMeasureUnit/properties/status",
+            "sha256": "6d246e0c59b5f5620fff02140c27bccb6174db30dd0a7c6ee923950e85355cb8"
+          },
+          "generatedType": {
+            "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+            "alias": "export type CatalogItemSkuPage",
+            "exactAssignmentEnum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "exactAssignmentEnumOccurrenceCount": 2,
+            "expectedAssignmentEnumOccurrenceCount": 2
+          }
+        }
+      },
+      "comparison": "EXACT_SET",
+      "status": "PASS"
+    },
+    {
+      "pointer": "CatalogItemSaveReadback.result.item.salesUnit.status",
+      "before": {
+        "values": [
+          "ENABLED",
+          "DISABLED"
+        ],
+        "provenance": {
+          "kind": "APPROVED_DESIGN_BASELINE_NOT_HISTORICAL_BYTE_SNAPSHOT",
+          "file": "doc/plans/platform/2026-08-27-v2s-base-1-implementation-design-codex.md",
+          "section": "catalog unit status declarations and the 12 generated response JSON pointers"
+        }
+      },
+      "after": {
+        "values": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "provenance": {
+          "kind": "CURRENT_REPOSITORY_BYTES",
+          "generator": {
+            "file": "scripts/generate/catalog-inventory-p1.mjs",
+            "declaration": "catalogUnitAssignmentSchema.status",
+            "binding": "catalogUnitAssignmentSchema",
+            "sha256": "c93245d9f044cd989cfeb0fdf940cb78aa411e1ef527e2d5223e33611d36033b"
+          },
+          "contract": {
+            "file": "contracts/openapi/components/catalog/catalog-item.schemas.json",
+            "schema": "CatalogItemSaveReadback",
+            "jsonPath": "/components/schemas/CatalogItemSaveReadback/properties/result/properties/item/properties/salesUnit/properties/status",
+            "sha256": "6d246e0c59b5f5620fff02140c27bccb6174db30dd0a7c6ee923950e85355cb8"
+          },
+          "generatedType": {
+            "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+            "alias": "export type CatalogItemSaveReadback",
+            "exactAssignmentEnum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "exactAssignmentEnumOccurrenceCount": 2,
+            "expectedAssignmentEnumOccurrenceCount": 2
+          }
+        }
+      },
+      "comparison": "EXACT_SET",
+      "status": "PASS"
+    },
+    {
+      "pointer": "CatalogItemSaveReadback.result.item.baseMeasureUnit.status",
+      "before": {
+        "values": [
+          "ENABLED",
+          "DISABLED"
+        ],
+        "provenance": {
+          "kind": "APPROVED_DESIGN_BASELINE_NOT_HISTORICAL_BYTE_SNAPSHOT",
+          "file": "doc/plans/platform/2026-08-27-v2s-base-1-implementation-design-codex.md",
+          "section": "catalog unit status declarations and the 12 generated response JSON pointers"
+        }
+      },
+      "after": {
+        "values": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ],
+        "provenance": {
+          "kind": "CURRENT_REPOSITORY_BYTES",
+          "generator": {
+            "file": "scripts/generate/catalog-inventory-p1.mjs",
+            "declaration": "catalogUnitAssignmentSchema.status",
+            "binding": "catalogUnitAssignmentSchema",
+            "sha256": "c93245d9f044cd989cfeb0fdf940cb78aa411e1ef527e2d5223e33611d36033b"
+          },
+          "contract": {
+            "file": "contracts/openapi/components/catalog/catalog-item.schemas.json",
+            "schema": "CatalogItemSaveReadback",
+            "jsonPath": "/components/schemas/CatalogItemSaveReadback/properties/result/properties/item/properties/baseMeasureUnit/properties/status",
+            "sha256": "6d246e0c59b5f5620fff02140c27bccb6174db30dd0a7c6ee923950e85355cb8"
+          },
+          "generatedType": {
+            "file": "apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts",
+            "alias": "export type CatalogItemSaveReadback",
+            "exactAssignmentEnum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ],
+            "exactAssignmentEnumOccurrenceCount": 2,
+            "expectedAssignmentEnumOccurrenceCount": 2
+          }
+        }
+      },
+      "comparison": "EXACT_SET",
+      "status": "PASS"
+    }
+  ],
+  "summary": {
+    "pointerCount": 12,
+    "passedCount": 12,
+    "beforeValues": [
+      "ENABLED",
+      "DISABLED"
+    ],
+    "afterValues": [
+      "ENABLED",
+      "DISABLED",
+      "VOIDED"
+    ],
+    "allExactSetComparisons": true
+  },
+  "evidenceDigest": "61bd8df92b50f4281d1620d29c4a148678e6bc4ff3c772c289afeaa65ca4fd66"
+}

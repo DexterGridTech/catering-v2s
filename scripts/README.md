@@ -129,11 +129,13 @@ Markdown，不会重新执行 seed。
 
 L2 框架、单一真相、fixture、进度、join、cleanup 与失败纪律以
 `doc/platform/browser-l2-execution-standard.md` 为唯一正本。仅在获得浏览器 L2 动态授权后，按
-`readiness → same-run P1 activation → generated-chain check → managed run` 运行；catalog 当前入口为：
+`readiness → same-run P1 activation → generated-chain check → same-run byte-binding finalize → managed run` 运行；catalog 当前入口为：
 
 ```bash
 node scripts/test/browser-l2-runtime.mjs readiness
 CATALOG_INVENTORY_L2_READINESS_MANIFEST=<readiness-manifest.json> node scripts/generate/catalog-inventory-p1.mjs --write --check
+# 此处继续执行专题批准的完整生成链；finalize 会先刷新同一 run 所拥有的两个 Vite，再绑定当前仓库字节。
+node scripts/test/browser-l2-runtime.mjs finalize
 node scripts/test/browser-l2-runtime.mjs run
 ```
 

@@ -31,3 +31,17 @@ test("static verification fails closed on a nonzero real-check result", () => {
     (error) => error.message === "R5_VERIFY_STATIC_FIRST_FAILURE:broken",
   );
 });
+
+test("TER tuples use the accepted commands, arguments, and marker contract", () => {
+  assert.deepEqual(verify.staticCommands.find(([label]) => label === "terminal-static"), [
+    "terminal-static",
+    "yarn",
+    ["workspace", "@catering-v2s/terminal", "run", "verify:static"],
+    ["TERMINAL_STATIC=PASS"],
+  ]);
+  assert.deepEqual(verify.runtimeCommands.find(([label]) => label === "terminal-verify"), [
+    "terminal-verify",
+    "yarn",
+    ["workspace", "@catering-v2s/terminal", "run", "verify"],
+  ]);
+});

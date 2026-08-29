@@ -368,24 +368,14 @@ public final class OperationsBusinessChannelController {
             @PathVariable UUID channelRef,
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody OwnerBindingUpdateRequest body) {
-        WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
         if (body == null || body.expectedVersion() == null)
             throw new InvalidEdgeRequestException("expectedVersion is required");
-        BusinessChannelReadback.ChannelCommandContext channel = businessChannels.readChannelCommandContext(
-                session.workspaceUuid(), session.groupWorkspaceKey(), channelRef);
-        UUID bindingRef = requireBindingRef(channel);
-        String nodeType = ownerNodeType(channel.ownerNodeType());
         return ExternalCollaborationWireMapper.binding(coordinator.deleteOperationsBinding(
-                new CollaborationCommandApi.DeleteOperationsBindingCommand(
-                        session.workspaceUuid(),
-                        session.groupWorkspaceKey(),
-                        bindingRef,
-                        body.expectedVersion(),
-                        session.contextVersion(),
-                        idempotencyKey(idempotencyKey),
-                        sessions.actor(session),
-                        grant(session, REQ_BINDING_DELETE, nodeType, ownerNodeId(channel.ownerNodeRef()))),
-                channel));
+                request,
+                groupWorkspaceKey,
+                channelRef,
+                body.expectedVersion(),
+                idempotencyKey(idempotencyKey)));
     }
 
     private BusinessChannelPage channels(

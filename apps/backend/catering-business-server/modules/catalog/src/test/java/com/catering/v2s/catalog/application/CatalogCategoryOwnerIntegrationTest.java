@@ -3793,16 +3793,26 @@ class CatalogCategoryOwnerIntegrationTest {
                         .asText());
         ObjectNode dimensionListRequest = MAPPER.createObjectNode();
         dimensionListRequest.putArray("itemCodes").add(itemCode);
+        JsonNode renamedAttributeSummary = service.readItems(
+                        SCOPE.toString(), BRAND, dimensionListRequest, "sku-attribute-name-summary")
+                .path("data")
+                .path("items")
+                .get(0);
+        assertEquals("口感", renamedAttributeSummary.path("specificationFacts").get(0).path("attributeName").asText());
         assertEquals(
-                "口感",
-                service.readItems(SCOPE.toString(), BRAND, dimensionListRequest, "sku-attribute-name-summary")
-                        .path("data")
-                        .path("items")
-                        .get(0)
-                        .path("specificationFacts")
-                        .get(0)
-                        .path("attributeName")
-                        .asText());
+                renamedAttributeDetail.path("specificationFacts"),
+                renamedAttributeSummary.path("specificationFacts"));
+        JsonNode skuPage = service.readItemSkus(
+                        SCOPE.toString(),
+                        BRAND,
+                        itemCode,
+                        MAPPER.createObjectNode().put("pageSize", 20),
+                        "sku-preparation-parity")
+                .path("data")
+                .path("items");
+        assertEquals(
+                renamedAttributeDetail.path("skus").get(0).path("preparationFacts"),
+                skuPage.get(0).path("preparationFacts"));
 
         ObjectNode outsideAxis = skuSave(itemCode, 2L, skuRef, "SWEET-SKU");
         ((ObjectNode) outsideAxis.path("sections").path("catalogDraft"))

@@ -577,7 +577,7 @@ export function useCatalogItemEditorWorkspaceState({
         setProblem(undefined);
         try {
           const dataNodeRef = requireOperationsScopeRef(queryContext);
-          const body = buildCatalogSkuVoidRequest(detail.item, dataNodeRef, itemCode, sku, detail.inventoryRules);
+          const body = buildCatalogSkuVoidRequest(detail.item, dataNodeRef, itemCode, sku);
           const readback = await saveSkuVoid({itemCode, body});
           const transitionReadback = requireCatalogSkuVoidTransitionReadback(
             readback.result.skuTransitions,

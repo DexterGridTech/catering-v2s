@@ -6,8 +6,12 @@ import test from 'node:test';
 import {
   L2_DATABASE_PATTERN,
   L2_NAMESPACE_PATTERN,
+  buildIncompleteExecutionManifest,
   buildL2SelectionManifest,
+  buildReadinessManifest,
+  buildFixtureVoidedSkuTransitions,
   catalogLibraryCaseIdentityPlan,
+  fixtureSkuFactsForItem,
   l2FixtureStageSuffix,
   loadL2ActivationCandidate,
   materializeL2TimingBudget,
@@ -17,12 +21,19 @@ import {
   requiredCatalogItemDetailVoidAvailability,
   requireActivatedCatalogLibraryExecution,
   resolveL2TerminalResults,
+  materializeFixtureVoidedSkuLifecycle,
+  repositoryRelativePath,
+  writeRepositoryByteBinding,
   validateCatalogLibraryCaseIdentityPlans,
   validateCatalogLibraryReadbackFactBindings,
+  validateFixtureVoidedSkuTransitionReadback,
+  validateFixtureSkuOwnership,
+  validateFixtureVisibleSkuReadback,
   validateL2CaseProgress,
   validateL2ContractDenominators,
   validateL2ObservedNetwork,
   validateNamespaceBinding,
+  validateRepositoryByteBinding,
 } from './browser-l2-runtime.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
@@ -440,7 +451,7 @@ test('browser L2 failure cleanup awaits remote cleanup and owns partial startup 
   assert.equal((runtimeSource.match(/const remoteErrors = await cleanupRemote\(/g) ?? []).length, 2);
   assert.match(
     runtimeSource,
-    /const started = \[\];[\s\S]*?error\.cleanupErrors = await stopOwnedProcesses\(started\)/,
+    /const started = \[\];[\s\S]*?error\.cleanupErrors = \[[\s\S]*?await stopOwnedProcesses\(started\)/,
   );
   assert.match(runtimeSource, /cleanupPrivateRunFiles,/);
 });
@@ -615,8 +626,49 @@ test('browser L2 interrupted runs have a managed cleanup recovery path', () => {
   assert.match(runtimeSource, /process\.once\('SIGINT', handleSignal\)/);
   assert.match(runtimeSource, /L2_RUNTIME_INTERRUPTED_\$\{interruptedSignal\}/);
   assert.match(runtimeSource, /if \(mode === 'cleanup'\) return cleanupCommand\(process\.argv\[3\]\)/);
-  assert.match(runtimeSource, /executionStatus: 'INCOMPLETE_FINALIZATION'/);
-  assert.match(runtimeSource, /brokenBoundary: 'L2_RUNTIME_FINALIZATION'/);
+  assert.match(runtimeSource, /executionStatus = 'INCOMPLETE_FINALIZATION'/);
+  assert.match(runtimeSource, /brokenBoundary = 'L2_RUNTIME_FINALIZATION'/);
+  assert.match(runtimeSource, /preflightComplete \? 'INCOMPLETE_FINALIZATION' : 'INCOMPLETE_PREFLIGHT'/);
+  assert.match(runtimeSource, /preflightComplete \? 'L2_RUNTIME_FINALIZATION' : 'L2_RUNTIME_PREFLIGHT'/);
+});
+
+test('browser L2 preflight failures emit run-bound execution evidence before business execution', () => {
+  const runDirectory = path.join(root, '.runtime/browser-l2/l2-preflight-manifest-focused');
+  const manifest = buildIncompleteExecutionManifest({
+    state: {
+      runDirectory,
+      sourceByteBindingPath: path.join(root, 'contracts/policy/catalog-inventory-l2-execution.json'),
+      identity: {runId: 'l2-preflight-manifest-focused'},
+      activeCaseIds: ['catalog-view-success'],
+    },
+    executionStatus: 'INCOMPLETE_PREFLIGHT',
+    firstFailure: 'L2_SOURCE_BYTE_BINDING_SOURCE_DRIFT:example',
+    lastKnownGood: 'RUN_CREDENTIALS_VALIDATED',
+    brokenBoundary: 'L2_RUNTIME_PREFLIGHT',
+    cleanup: 'PASS',
+    cleanupManifestPath: path.join(runDirectory, 'l2-cleanup-manifest.json'),
+  });
+  assert.equal(manifest.executionStatus, 'INCOMPLETE_PREFLIGHT');
+  assert.equal(manifest.selected, 1);
+  assert.equal(manifest.results, 0);
+  assert.deepEqual(manifest.activeCaseIds, ['catalog-view-success']);
+  assert.equal(manifest.sourceByteBindingPath, 'contracts/policy/catalog-inventory-l2-execution.json');
+  assert.equal(manifest.cleanupManifestPath, '.runtime/browser-l2/l2-preflight-manifest-focused/l2-cleanup-manifest.json');
+  assert.equal(manifest.brokenBoundary, 'L2_RUNTIME_PREFLIGHT');
+  assert.doesNotMatch(JSON.stringify(manifest), /\/Users\/|\/Volumes\//);
+});
+
+test('browser L2 finalizes bytes in-run and launches installed CLIs without package-manager mutation', () => {
+  assert.match(runtimeSource, /const viteCliPath = path\.join\(root, 'node_modules\/vite\/bin\/vite\.js'\)/);
+  assert.match(runtimeSource, /const playwrightCliPath = path\.join\(root, 'node_modules\/playwright\/cli\.js'\)/);
+  assert.match(runtimeSource, /mode === 'finalize'/);
+  assert.match(runtimeSource, /async function refreshLocalFrontendProcesses\(state\)/);
+  assert.match(runtimeSource, /state = await refreshLocalFrontendProcesses\(state\)/);
+  assert.match(runtimeSource, /GENERATED_CHAIN_COMPLETED_BEFORE_BYTE_BINDING/);
+  assert.match(runtimeSource, /BROWSER_L2_SOURCE_BYTE_BINDING_FINALIZE=PASS/);
+  assert.match(runtimeSource, /L2_SOURCE_BYTE_BINDING_AFTER_RUN:/);
+  assert.doesNotMatch(runtimeSource, /spawnManaged\([^\n]+\n\s*'yarn'/);
+  assert.doesNotMatch(runtimeSource, /spawn\(\s*'yarn'/);
 });
 
 test('browser L2 owner bootstrap uses the contract asset usage value', () => {
@@ -715,5 +767,285 @@ test('browser L2 keeps a legally unpriced SKU view fixture in draft instead of f
   assert.match(
     runtimeSource,
     /items\.push\(\{\s*itemCode,\s*itemName,\s*fixtureRef: row\.fixtureRef,\s*version: actualVersion,\s*status: baselineStatus,/,
+  );
+});
+
+test('browser L2 materializes terminal SKU facts through the owner lifecycle command', () => {
+  assert.match(runtimeSource, /status: sku\.status === 'VOIDED' \? 'DISABLED' : sku\.status \?\? 'ENABLED'/);
+  assert.match(runtimeSource, /export async function materializeFixtureVoidedSkuLifecycle/);
+  assert.match(runtimeSource, /fixtureSkuFactsForItem\(fixtureObjects, fixtureItem\)/);
+  assert.match(runtimeSource, /\$\{stagePrefix\}-sku-void-readback`,\s*'getOperationsCatalogItem'/);
+  assert.match(runtimeSource, /export function buildFixtureVoidedSkuTransitions/);
+  assert.match(runtimeSource, /function directSkuReference/);
+  assert.match(runtimeSource, /const skuRef = directSkuReference\(actualSku\)/);
+  assert.match(runtimeSource, /targetStatus: 'VOIDED', expectedVersion: actualSku\.version/);
+  assert.match(runtimeSource, /catalogDraft: \{name: itemName, shapeKey\}/);
+  assert.match(runtimeSource, /skuTransitions: transitions/);
+  assert.match(runtimeSource, /validateFixtureVoidedSkuTransitionReadback\(transitions, transitioned\.json, stagePrefix\)/);
+  assert.match(runtimeSource, /entry\.status !== 'VOIDED'/);
+  assert.match(runtimeSource, /expectedCatalogVersion: version/);
+});
+
+test('browser L2 terminal SKU fixture selection and transition payload are executable and item-scoped', () => {
+  const primaryRef = '11111111-1111-4111-8111-111111111111';
+  const fixtureObjects = [
+    {type: 'CatalogItem', code: 'PRIMARY', skuCodes: ['PRIMARY-VOID', 'PRIMARY-ACTIVE']},
+    {type: 'CatalogItem', code: 'EXTRA', skuCodes: ['EXTRA-VOID']},
+    {type: 'CatalogSku', code: 'PRIMARY-VOID', skuCode: 'PRIMARY-VOID', status: 'VOIDED'},
+    {type: 'CatalogSku', code: 'PRIMARY-ACTIVE', skuCode: 'PRIMARY-ACTIVE', status: 'ENABLED'},
+    {type: 'CatalogSku', code: 'EXTRA-VOID', skuCode: 'EXTRA-VOID', status: 'VOIDED'},
+  ];
+  const primarySkus = fixtureSkuFactsForItem(fixtureObjects, {code: 'PRIMARY', skuCodes: ['PRIMARY-VOID', 'PRIMARY-ACTIVE']});
+  assert.deepEqual(primarySkus.map(sku => sku.code), ['PRIMARY-VOID', 'PRIMARY-ACTIVE']);
+  assert.deepEqual(
+    buildFixtureVoidedSkuTransitions(
+      fixtureObjects,
+      {code: 'PRIMARY', skuCodes: ['PRIMARY-VOID', 'PRIMARY-ACTIVE']},
+      [{skuCode: 'PRIMARY-VOID', productSkuRef: primaryRef, version: 7}],
+      'primary',
+    ),
+    [{skuRef: primaryRef, targetStatus: 'VOIDED', expectedVersion: 7}],
+  );
+  assert.throws(
+    () =>
+      buildFixtureVoidedSkuTransitions(
+        fixtureObjects,
+        {code: 'PRIMARY', skuCodes: ['PRIMARY-VOID', 'PRIMARY-ACTIVE']},
+        [{skuCode: 'PRIMARY-VOID', productSkuRef: primaryRef}],
+        'primary',
+      ),
+    error => error.code === 'L2_OWNER_FIXTURE_VOIDED_SKU_READBACK_INVALID',
+  );
+  assert.throws(
+    () =>
+      buildFixtureVoidedSkuTransitions(
+        fixtureObjects,
+        {code: 'PRIMARY', skuCodes: ['PRIMARY-VOID', 'PRIMARY-ACTIVE']},
+        [{skuCode: 'PRIMARY-VOID', metadata: {ref: 'unrelated-ref'}, version: 7}],
+        'primary',
+      ),
+    error => error.code === 'L2_OWNER_FIXTURE_VOIDED_SKU_READBACK_INVALID',
+  );
+  const transitions = [{skuRef: primaryRef, targetStatus: 'VOIDED', expectedVersion: 7}];
+  assert.deepEqual(
+    validateFixtureVoidedSkuTransitionReadback(
+      transitions,
+      {
+        result: {
+          skuTransitions: [
+            {
+              skuRef: primaryRef,
+              targetStatus: 'VOIDED',
+              version: 8,
+              canVoid: false,
+              blockingReferences: [],
+              dependentFacts: [],
+              blockingReasons: [{label: '当前状态不支持作废', count: 1, relatedItemNames: []}],
+            },
+          ],
+        },
+      },
+      'primary',
+    ),
+    [
+      {
+        skuRef: primaryRef,
+        targetStatus: 'VOIDED',
+        version: 8,
+        canVoid: false,
+        blockingReferences: [],
+        dependentFacts: [],
+        blockingReasons: [{label: '当前状态不支持作废', count: 1, relatedItemNames: []}],
+      },
+    ],
+  );
+  assert.throws(
+    () =>
+      validateFixtureVoidedSkuTransitionReadback(
+        transitions,
+        {result: {skuTransitions: [{skuRef: primaryRef, targetStatus: 'DISABLED', version: 8, canVoid: false}]}},
+        'primary',
+      ),
+    error => error.code === 'L2_OWNER_FIXTURE_VOIDED_SKU_TRANSITION_READBACK_INVALID',
+  );
+  assert.throws(
+    () =>
+      buildFixtureVoidedSkuTransitions(
+        fixtureObjects,
+        {code: 'PRIMARY', skuCodes: ['PRIMARY-VOID', 'PRIMARY-ACTIVE']},
+        [{skuCode: 'PRIMARY-VOID', productSkuRef: 'primary-ref', version: 7}],
+        'primary',
+      ),
+    error => error.code === 'L2_OWNER_FIXTURE_VOIDED_SKU_READBACK_INVALID',
+  );
+  assert.throws(
+    () => validateFixtureSkuOwnership([...fixtureObjects, {type: 'CatalogSku', code: 'UNBOUND', status: 'VOIDED'}]),
+    error => error.code === 'L2_OWNER_FIXTURE_SKU_OWNERSHIP_UNBOUND',
+  );
+  assert.throws(
+    () => validateFixtureSkuOwnership([...fixtureObjects, {type: 'CatalogItem', code: 'DUPLICATE', skuCodes: ['EXTRA-VOID']}]),
+    error => error.code === 'L2_OWNER_FIXTURE_SKU_OWNERSHIP_DUPLICATE',
+  );
+  assert.throws(
+    () =>
+      validateFixtureSkuOwnership([
+        ...fixtureObjects,
+        {type: 'CatalogItem', code: 'MISSING', skuCodes: ['MISSING-SKU']},
+      ]),
+    error => error.code === 'L2_OWNER_FIXTURE_SKU_OWNERSHIP_DECLARED_MISSING',
+  );
+});
+
+test('browser L2 readiness evidence binds current repository bytes and exposes only repository-relative paths', () => {
+  const runDirectory = path.join(root, '.runtime/browser-l2/l2-source-byte-binding-focused');
+  const identity = {
+    runId: 'l2-source-byte-binding-focused',
+    namespace: 'v2s_l2_source_byte_binding_focused',
+    database: 'catering_v2s_l2_source_byte_binding_focused',
+    assetPrefix: 's3://catering-v2s-r5-assets/catering-v2s/l2/l2-source-byte-binding-focused/',
+  };
+  const sourceBinding = writeRepositoryByteBinding({runDirectory, identity});
+  const validation = validateRepositoryByteBinding(sourceBinding.path, {expectedRunId: identity.runId});
+  const binding = readJson('.runtime/browser-l2/l2-source-byte-binding-focused/repository-byte-binding.json');
+  assert.equal(validation.bindingDigest, sourceBinding.bindingDigest);
+  assert.equal(validation.fileCount, sourceBinding.fileCount);
+  assert.equal(validation.byteCount, sourceBinding.byteCount);
+  assert.deepEqual(binding.excludedFilePatterns, ['.DS_Store', '*.log', '*.apk', '*.aab', '*.keystore']);
+  assert.equal(
+    binding.files.some(file =>
+      file.path.split('/').some(segment => ['.expo', '.turbo', '.yarn', '.kotlin', '.vite', '.next', 'test-results', 'playwright-report'].includes(segment)) ||
+      file.path === '.DS_Store' ||
+      file.path.endsWith('.log') ||
+      /\.(apk|aab|keystore)$/.test(file.path),
+    ),
+    false,
+  );
+
+  const candidate = loadL2ActivationCandidate();
+  const activeCaseIds = [...candidate.approvedCaseIds];
+  const credentialsPath = path.join(runDirectory, 'credentials.env');
+  const ownerFixturePath = path.join(runDirectory, 'catalog-inventory-owner-fixture.json');
+  const manifest = buildReadinessManifest({
+    identity,
+    ports: {db: 15432, asset: 19000, spring: 18080, platform: 15173, operations: 15174},
+    candidate,
+    denominators: {activeCases: activeCaseIds.length, activeCaseIds},
+    timingReport: {activeCaseCount: activeCaseIds.length, fullRunTimeoutMs: 120000},
+    remote: {host: 'trusted-test-host', fingerprint: 'test-fingerprint', allowlistVersion: 'test-allowlist'},
+    processes: [{name: 'test-process', pid: 1, pgid: 1, startToken: 'test-start-token'}],
+    diagnostics: {
+      events: path.join(runDirectory, 'events.jsonl'),
+      dbEvents: path.join(runDirectory, 'db-events.jsonl'),
+      dictionary: path.join(runDirectory, 'statement-dictionary.json'),
+    },
+    credentialsPath,
+    ownerFixturePath,
+    sourceByteBinding: sourceBinding,
+    status: 'PASS',
+    business: 'PASS',
+    setupCleanup: 'PASS',
+    cleanup: 'PENDING_HELD',
+  });
+  assert.equal(manifest.credentialsFile, repositoryRelativePath(credentialsPath));
+  assert.equal(manifest.ownerFixturePath, repositoryRelativePath(ownerFixturePath));
+  assert.equal(manifest.repositoryByteBinding.path, sourceBinding.relativePath);
+  assert.doesNotMatch(JSON.stringify(manifest), /\/Users\/|\/Volumes\//);
+  assert.match(runtimeSource, /validateRepositoryByteBinding\(sourceByteBinding\.path/);
+  assert.match(runtimeSource, /state\.sourceByteBindingPath/);
+  assert.throws(
+    () => repositoryRelativePath(path.join(root, '..', 'foreign-worktree', 'credentials.env')),
+    error => error.code === 'L2_REPOSITORY_RELATIVE_PATH_REQUIRED',
+  );
+});
+
+test('browser L2 executes the real VIEW fixture terminal SKU lifecycle in owner request order', async () => {
+  const catalog = readJson('contracts/policy/catalog-inventory-fixture-catalog.json');
+  const fixture = catalog.testDatasets.find(entry => entry.fixtureId === 'FIXTURE-CATALOG-LIBRARY-VIEW');
+  assert.ok(fixture);
+  const fixtureItem = fixture.objects.find(entry => entry.type === 'CatalogItem');
+  assert.ok(fixtureItem);
+  const fixtureScaffold = {fixtureObjects: fixture.objects, fixtureBindings: new Map()};
+  const refs = {
+    'L2-VIEW-SKU-S': '11111111-1111-4111-8111-111111111111',
+    'L2-VIEW-SKU-M': '22222222-2222-4222-8222-222222222222',
+    'L2-VIEW-SKU-L': '33333333-3333-4333-8333-333333333333',
+  };
+  const calls = [];
+  const request = async (stage, operationId, pathParameters, options) => {
+    calls.push({stage, operationId, pathParameters, options});
+    if (operationId === 'getOperationsCatalogItem') {
+      return {
+        json: {
+          item: {
+            skus: Object.entries(refs).map(([skuCode, productSkuRef]) => ({skuCode, productSkuRef, version: 1})),
+          },
+        },
+      };
+    }
+    assert.equal(operationId, 'saveOperationsCatalogItem');
+    const transitions = options.body.skuTransitions;
+    assert.deepEqual(transitions, [
+      {skuRef: refs['L2-VIEW-SKU-L'], targetStatus: 'VOIDED', expectedVersion: 1},
+    ]);
+    return {
+      json: {
+        result: {
+          version: 2,
+          skuTransitions: [
+            {
+              skuRef: refs['L2-VIEW-SKU-L'],
+              targetStatus: 'VOIDED',
+              version: 2,
+              canVoid: false,
+              blockingReferences: [],
+              dependentFacts: [],
+              blockingReasons: [{label: '当前状态不支持作废', count: 1, relatedItemNames: []}],
+            },
+          ],
+        },
+      },
+    };
+  };
+  const version = await materializeFixtureVoidedSkuLifecycle({
+    stagePrefix: 'fixture-view',
+    itemCode: 'L2-VIEW-001',
+    itemName: fixtureItem.name,
+    shapeKey: fixtureItem.shapeKey,
+    fixtureScaffold,
+    fixtureItem,
+    version: 1,
+    request,
+    requestContext: {dataNodeRef: '44444444-4444-4444-8444-444444444444'},
+  });
+  assert.equal(version, 2);
+  assert.deepEqual(calls.map(call => call.operationId), [
+    'getOperationsCatalogItem',
+    'saveOperationsCatalogItem',
+  ]);
+  assert.equal(calls[1].options.body.sections.expectedCatalogVersion, 1);
+  assert.equal(fixtureScaffold.fixtureBindings.get('L2-VIEW-SKU-L').ref, refs['L2-VIEW-SKU-L']);
+  const visible = validateFixtureVisibleSkuReadback(
+    fixture.objects,
+    fixtureItem,
+    [
+      {skuCode: 'L2-VIEW-SKU-S', productSkuRef: refs['L2-VIEW-SKU-S'], version: 1},
+      {skuCode: 'L2-VIEW-SKU-M', productSkuRef: refs['L2-VIEW-SKU-M'], version: 1},
+    ],
+    'fixture-view-final',
+  );
+  assert.deepEqual(visible.map(entry => entry.sku.skuCode), ['L2-VIEW-SKU-S', 'L2-VIEW-SKU-M']);
+  assert.throws(
+    () =>
+      validateFixtureVisibleSkuReadback(
+        fixture.objects,
+        fixtureItem,
+        [
+          {skuCode: 'L2-VIEW-SKU-S', productSkuRef: refs['L2-VIEW-SKU-S'], version: 1},
+          {skuCode: 'L2-VIEW-SKU-M', productSkuRef: refs['L2-VIEW-SKU-M'], version: 1},
+          {skuCode: 'L2-VIEW-SKU-L', productSkuRef: refs['L2-VIEW-SKU-L'], version: 2},
+        ],
+        'fixture-view-final',
+      ),
+    error => error.code === 'L2_OWNER_ITEM_SKU_READBACK_INVALID',
   );
 });

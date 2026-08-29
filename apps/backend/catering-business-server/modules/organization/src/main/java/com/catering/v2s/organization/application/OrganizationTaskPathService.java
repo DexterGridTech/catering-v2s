@@ -58,13 +58,14 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
         if (ServiceNodeTypes.PROJECT.equals(targetType)) {
             return requireEnabledProjectTaskPath(workspaceUuid, key, targetId);
         }
+        if (ServiceNodeTypes.STORE.equals(targetType)) {
+            return requireStoreTaskPath(workspaceUuid, key, targetId, false);
+        }
         UUID groupId = groups.requireCommercialGroupRef(workspaceUuid, key);
         return switch (targetType) {
             case ServiceNodeTypes.GROUP -> groupPath(workspaceUuid, key, groupId, targetId);
             case ServiceNodeTypes.REGION -> nodePath(workspaceUuid, key, groupId, targetId, ServiceNodeTypes.REGION);
-            case ServiceNodeTypes.PROJECT -> nodePath(workspaceUuid, key, groupId, targetId, ServiceNodeTypes.PROJECT);
             case ServiceNodeTypes.HEAD_COMPANY -> headCompanyPath(workspaceUuid, key, groupId, targetId);
-            case ServiceNodeTypes.STORE -> storePath(workspaceUuid, key, groupId, targetId);
             default -> throw new TaskPathNotFoundException();
         };
     }
@@ -211,6 +212,62 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     }
 
     /**
+     * Store command scope has the same closed facts as the project path, with one explicitly allowed variation: the
+     * business-channel create path may target a disabled Store. Resolve the group, Store, project, and region in one
+     * owner statement so the authorization read does not fan out into separate group/store/node reads.
+     */
+    private TaskPath requireStoreTaskPath(
+            UUID workspaceUuid, String key, UUID targetId, boolean allowDisabledStore) {
+        String storeStatusPredicate = allowDisabledStore ? "" : " AND store.status='ENABLED'";
+        return jdbc.query(
+                "WITH group_fact AS (SELECT commercial_group_uuid AS group_id FROM"
+                        + " organization.commercial_group WHERE group_workspace_key=?), store_fact AS (SELECT"
+                        + " store.id AS store_id, store.project_id, store.code AS store_code, store.name AS store_name,"
+                        + " project.parent_id AS region_id, project.code AS project_code, project.name AS project_name,"
+                        + " region.code AS region_code, region.name AS region_name, group_fact.group_id FROM"
+                        + " organization.store store JOIN organization.organization_node project ON"
+                        + " project.id=store.project_id AND project.workspace_uuid=store.workspace_uuid AND"
+                        + " project.group_workspace_key=store.group_workspace_key AND project.node_type='PROJECT' AND"
+                        + " project.status='ENABLED' JOIN organization.organization_node region ON"
+                        + " region.id=project.parent_id AND region.workspace_uuid=project.workspace_uuid AND"
+                        + " region.group_workspace_key=project.group_workspace_key AND region.node_type='REGION' AND"
+                        + " region.status='ENABLED' CROSS JOIN group_fact WHERE store.id=? AND"
+                        + " store.workspace_uuid=? AND store.group_workspace_key=?"
+                        + storeStatusPredicate
+                        + ") SELECT store_id, project_id, store_code, store_name, region_id, project_code,"
+                        + " project_name, region_code, region_name, group_id FROM store_fact",
+                statement -> {
+                    statement.setString(1, key);
+                    statement.setObject(2, targetId);
+                    statement.setObject(3, workspaceUuid);
+                    statement.setString(4, key);
+                },
+                result -> {
+                    if (!result.next()) throw new TaskPathNotFoundException();
+                    UUID groupId = result.getObject("group_id", UUID.class);
+                    UUID regionId = result.getObject("region_id", UUID.class);
+                    UUID projectId = result.getObject("project_id", UUID.class);
+                    UUID storeId = result.getObject("store_id", UUID.class);
+                    String regionCode = result.getString("region_code");
+                    String regionName = result.getString("region_name");
+                    String projectCode = result.getString("project_code");
+                    String projectName = result.getString("project_name");
+                    String storeCode = result.getString("store_code");
+                    String storeName = result.getString("store_name");
+                    return new TaskPath(
+                            ServiceNodeTypes.STORE,
+                            storeId,
+                            List.of(groupId, regionId, projectId, storeId),
+                            regionCode + " " + regionName + " / " + projectCode + " " + projectName + " / "
+                                    + storeCode + " " + storeName,
+                            List.of(
+                                    new TaskPathNode(regionId, regionCode, regionName, ServiceNodeTypes.REGION),
+                                    new TaskPathNode(projectId, projectCode, projectName, ServiceNodeTypes.PROJECT),
+                                    new TaskPathNode(storeId, storeCode, storeName, ServiceNodeTypes.STORE)));
+                });
+    }
+
+    /**
      * Status-transition authority is the only command branch that may resolve a disabled persisted task target. Read,
      * session, and candidate callers remain enabled-only.
      */
@@ -230,11 +287,7 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     public TaskPath requireTaskPathAllowingDisabledTarget(
             UUID workspaceUuid, String key, String targetType, UUID targetId) {
         if (!ServiceNodeTypes.STORE.equals(targetType)) throw new TaskPathNotFoundException();
-        TaskPathRef target = new TaskPathRef(targetType, targetId);
-        TaskPath taskPath = resolveTaskPaths(workspaceUuid, key, List.of(target), true, false)
-                .get(target);
-        if (taskPath == null) throw new TaskPathNotFoundException();
-        return taskPath;
+        return requireStoreTaskPath(workspaceUuid, key, targetId, true);
     }
 
     /** Bounded enabled task-path resolution for authority, candidate, and session callers. */

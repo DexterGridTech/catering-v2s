@@ -7,12 +7,20 @@
   },
   "workspaces": [
     "apps/frontend/*",
-    "libraries/frontend/*"
+    "libraries/frontend/*",
+    "apps/terminal",
+    "apps/terminal/kernel/base/*",
+    "apps/terminal/ui/base/*",
+    "apps/terminal/ui/integration/*",
+    "apps/terminal/adapter/android/*",
+    "apps/terminal/assembly/android/*"
   ],
   "devDependencies": {
     "eslint": "9.39.5",
     "eslint-plugin-react-hooks": "7.0.1",
-    "prettier": "3.9.6"
+    "prettier": "3.9.6",
+    "turbo": "2.10.12",
+    "typescript": "~6.0.3"
   },
   "scripts": {
     "format:check": "prettier --check \"apps/frontend/**/*.{css,json,js,mjs,ts,tsx}\" \"libraries/frontend/**/*.{css,json,js,mjs,ts,tsx}\""

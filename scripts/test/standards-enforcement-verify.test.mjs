@@ -73,3 +73,17 @@ test("normal verification keeps the explicit local, foundation and Java test ent
     remote: true,
   })));
 });
+
+test("TER root verifier tuples are wired only after CP-7 closure", () => {
+  assert.deepEqual(verify.staticCommands.find(([label]) => label === "terminal-static"), [
+    "terminal-static",
+    "yarn",
+    ["workspace", "@catering-v2s/terminal", "run", "verify:static"],
+    ["TERMINAL_STATIC=PASS"],
+  ]);
+  assert.deepEqual(verify.runtimeCommands.find(([label]) => label === "terminal-verify"), [
+    "terminal-verify",
+    "yarn",
+    ["workspace", "@catering-v2s/terminal", "run", "verify"],
+  ]);
+});

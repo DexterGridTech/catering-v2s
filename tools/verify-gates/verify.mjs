@@ -36,6 +36,12 @@ const staticCommands = Object.freeze([
   ],
   ['backend-pmd-preserve-stack-trace', 'gradle', ['backendPmdPreserveStackTrace', '--no-daemon'], ['BUILD SUCCESSFUL']],
   ['backend-spotless-check', 'gradle', ['spotlessCheck', '--no-daemon'], ['BUILD SUCCESSFUL']],
+  [
+    'terminal-static',
+    'yarn',
+    ['workspace', '@catering-v2s/terminal', 'run', 'verify:static'],
+    ['TERMINAL_STATIC=PASS'],
+  ],
 ]);
 
 const runtimeCommands = [
@@ -151,6 +157,7 @@ const runtimeCommands = [
   ['U10-affected-l2', 'scripts/check/affected-l2', []],
   ['U11-dev-check', 'scripts/dev/check', []],
   ['U11-seed-dry-run', 'scripts/dev/seed', ['--profile', 'r5-full', '--dry-run']],
+  ['terminal-verify', 'yarn', ['workspace', '@catering-v2s/terminal', 'run', 'verify']],
 ];
 
 function fail(reason) {

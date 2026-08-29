@@ -6,18 +6,13 @@ const testSource = 'apps/frontend/*/src/tests/**';
 
 export default [
   {
-    ignores: [
-      '**/build/**',
-      '**/dist/**',
-      '**/node_modules/**',
-      generatedSource,
-      testSource,
-    ],
+    ignores: ['**/build/**', '**/dist/**', '**/node_modules/**', generatedSource, testSource],
   },
   {
     files: [
       'apps/frontend/*/src/**/*.{ts,tsx}',
       'libraries/frontend/admin-ui-foundation/src/**/*.{ts,tsx}',
+      'apps/terminal/**/src/**/*.{ts,tsx}',
     ],
     ignores: [generatedSource, testSource],
     languageOptions: {
@@ -42,7 +37,8 @@ export default [
           message: 'Feature code must consume the app-owned generated typed transport.',
         },
         {
-          selector: "CallExpression[callee.type='MemberExpression'][callee.object.name='window'][callee.property.name='fetch']",
+          selector:
+            "CallExpression[callee.type='MemberExpression'][callee.object.name='window'][callee.property.name='fetch']",
           message: 'Feature code must consume the app-owned generated typed transport.',
         },
         {

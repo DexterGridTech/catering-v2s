@@ -68,11 +68,6 @@
             "skuCode": "LATTE-SKU-M",
             "componentCode": "BEAN-001",
             "quantity": 18
-          },
-          {
-            "skuCode": "LATTE-SKU-L",
-            "componentCode": "BEAN-001",
-            "quantity": 24
           }
         ],
         "relations": [
@@ -162,7 +157,7 @@
             "from": "DINNER-SET-001",
             "to": "LATTE-001",
             "refKind": "SKU",
-            "refCode": "LATTE-SKU-M"
+            "refCode": "LATTE-SKU-S"
           }
         ],
         "constructedAt": "seed-definition",
@@ -839,6 +834,14 @@
       "MATERIAL": "物料",
       "SERVICE": "服务",
       "BENEFIT": "权益"
+    },
+    "tags": {
+      "RECOMMENDED": "推荐商品",
+      "SEASONAL": "当季推荐",
+      "SIGNATURE": "招牌推荐",
+      "LUNCH": "午餐常用",
+      "DINNER": "晚餐常用",
+      "TAKEOUT": "适合外卖"
     },
     "productionTags": {
       "HOT_KITCHEN": "热厨制作",
@@ -7563,6 +7566,22 @@
       "sequence": "after-create-before-readback",
       "usesReturnedAssetRefs": true
     },
+    "catalogLifecycle": {
+      "operationId": "saveOperationsCatalogItem",
+      "statusSource": "seedDatasets[*].entities.skus[].status",
+      "normalSaveStatuses": [
+        "ENABLED",
+        "DISABLED"
+      ],
+      "transitionStatuses": [
+        "VOIDED"
+      ],
+      "transitionRequestField": "skuTransitions",
+      "transitionSequence": "after-initial-save-before-final-readback",
+      "transitionReadbackField": "skuTransitions",
+      "compositeRelationSequence": "after-target-item-activation",
+      "compositeRelationRequirement": "ENABLED_TARGET_ITEM_AND_SKU"
+    },
     "fullCatalogParity": {
       "sourceDirectory": "../catering-server-v4/contracts/fixtures/formal-uat/complex-scenario/catalog/items",
       "expectedCatalogItemCount": 73,
@@ -7610,5 +7629,5 @@
     ],
     "seedExecutionNotAuthorized": true
   },
-  "fixtureDigest": "523d0bdfb126f36ced1ae87c7567c6c513bdbe085771c183665fa1e71bdeb6f4"
+  "fixtureDigest": "9fadc0d16f473be8e2cac449b1cf05a415784fb8f240a2033bf4e8d889ac4ce5"
 }

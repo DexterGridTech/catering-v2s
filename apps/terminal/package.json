@@ -1,5 +1,12 @@
 {
-  "name": "nextpos",
-  "version": "1.0.0",
-  "description": "Next Enterprise POS System with Layered Architecture"
+  "name": "@catering-v2s/terminal",
+  "private": true,
+  "scripts": {
+    "typecheck": "yarn --cwd ../.. turbo run typecheck --filter='./apps/terminal/**' --filter='!@catering-v2s/terminal'",
+    "test": "yarn --cwd ../.. turbo run test --filter='./apps/terminal/**' --filter='!@catering-v2s/terminal'",
+    "lint": "yarn --cwd ../.. turbo run lint --filter='./apps/terminal/**' --filter='!@catering-v2s/terminal'",
+    "clean": "yarn --cwd ../.. turbo run clean --filter='./apps/terminal/**' --filter='!@catering-v2s/terminal'",
+    "verify:static": "node ../../tools/terminal-skeleton/verify-static.mjs",
+    "verify": "node ../../tools/terminal-skeleton/verify.mjs"
+  }
 }

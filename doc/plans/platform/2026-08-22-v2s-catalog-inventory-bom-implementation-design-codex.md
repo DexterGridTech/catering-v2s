@@ -265,10 +265,12 @@ whole-save 的 inventory command 接收一次完整、已由 catalog 派生的 `
 | 盘点单位分支 | 所有 target 都有或都没有 counting unit；无盘点单位 readback 不能保留小数 |
 | 单位历史 | rename/disable 后已有 BOM/ledger snapshot 被当前定义覆盖；0.3567kg 得 357g |
 | 方式切换阻断 | 有历史 target 在 UI/readback 仍显示可自动切换，或 executor 静默切换成功 |
+| 跨商品规格引用 | 套餐新建组合引用缺少 `refCode`、引用不属于声明商品、或引用 `DISABLED/VOIDED` SKU 仍被 executor 提交；owner 应以 `ENABLED` SKU 才允许新绑定 |
+| 作废规格库存 owner | `VOIDED` SKU 仍带 BOM/库存 owner，或仅靠 whole-save 写入终态；应由 `skuTransitions` 完成终态，作废规格的库存 mode 必须为 `NONE` |
 
 ### 10b.4 同步项
 
-- P1 generator、generated fixture/schema、seed plan、executor、三条既有 static test 同一原子组更新。
+- P1 generator、generated fixture/schema、seed plan、executor、三条既有 static test 同一原子组更新；seed plan 必须把跨商品 SKU 引用的 owner/status 前置校验、作废 SKU 不得有 BOM owner 的前置校验、所有 composite target 的生命周期激活集合与普通 whole-save/terminal transition 的执行顺序一并声明。
 - executor readback 必须断言 owner identity、mode、definition status、rows/sign/quantity、unit snapshot、counting config、version，不以 HTTP 2xx 代替。
 - Node test 分母以 `test-health-entry-runner.mjs --node` 退出码为准；磁盘文件数不代替 runner 分母。
 

@@ -91,7 +91,9 @@ export function CatalogBatchActionModal({
       destroyOnHidden
     >
       <div
-        className={showingOutcome ? 'catalog-batch-task-modal catalog-batch-task-modal--outcome' : 'catalog-batch-task-modal'}
+        className={
+          showingOutcome ? 'catalog-batch-task-modal catalog-batch-task-modal--outcome' : 'catalog-batch-task-modal'
+        }
         aria-busy={submitting}
         {...testId(catalogTestIds.surface.batchTaskModal)}
       >
@@ -167,9 +169,7 @@ export function CatalogBatchActionModal({
             />
           </Form.Item>
         )}
-        {showingOutcome && (
-          <CatalogBatchOutcome results={results} refreshProblem={refreshProblem} onClose={onClose} />
-        )}
+        {showingOutcome && <CatalogBatchOutcome results={results} refreshProblem={refreshProblem} onClose={onClose} />}
       </div>
     </Modal>
   );

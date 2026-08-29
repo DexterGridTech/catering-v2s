@@ -24,6 +24,28 @@ export const LINEAR_REQUEST_CARDINALITY_BUDGET = Object.freeze({
 });
 export const REQUIRED_BATCH_CARDINALITIES = Object.freeze([1, 20, 100]);
 
+// Dexter decision 2026-08-29: the generic P3 <=20 ceiling does not fit
+// invitation and employment-assignment commands whose business fact is
+// inherently written across multiple tables. This remains an exact,
+// report-bound exception set; it is not a blanket ceiling increase or a
+// reclassification of unrelated operations.
+const INVITATION_ASSIGNMENT_P3_DECISION_REF =
+  'DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3';
+const INVITATION_ASSIGNMENT_P3_MEASURED_MAX_BY_OPERATION = Object.freeze({
+  createWorkspaceInvitation: 26,
+  reissueOperationsWorkspaceGroupInvitation: 29,
+  reissueOperationsWorkspaceHeadCompanyInvitation: 29,
+  reissueOperationsWorkspaceProjectInvitation: 28,
+  reissueOperationsWorkspaceRegionInvitation: 29,
+  reissueOperationsWorkspaceStoreInvitation: 28,
+  reissueWorkspaceInvitation: 30,
+  revokeOperationsWorkspaceGroupUserAssignment: 28,
+  revokeOperationsWorkspaceHeadCompanyUserAssignment: 28,
+  revokeOperationsWorkspaceProjectUserAssignment: 26,
+  revokeOperationsWorkspaceRegionUserAssignment: 28,
+  revokeOperationsWorkspaceStoreUserAssignment: 26,
+});
+
 const FORBIDDEN_PLACEHOLDER_TOKENS = new Set([
   'NULL',
   'SENTINEL',
@@ -54,14 +76,56 @@ export const CONTROLLED_BUDGET_EXCEPTION_DECISION_SCOPE = Object.freeze({
     'executeOperationsTemporaryCatalogItemPromotion',
   ]),
   'DEXTER-2026-08-26-BRAND_COPY_CLOSURE_BUDGET': Object.freeze(['executeOperationsBrandCatalogCopy']),
+  [INVITATION_ASSIGNMENT_P3_DECISION_REF]: Object.freeze(
+    Object.keys(INVITATION_ASSIGNMENT_P3_MEASURED_MAX_BY_OPERATION),
+  ),
 });
 
 // Source-owned controlled exception records.  Keep this in the budget
 // generator, not in the generated CP-05 report, so reclassification can project
 // the current approved record set without making the report a second source of
-// truth.  Empty is valid: implementation-agent exceptions are added only after
-// the operation-specific dual-admission proof exists.
-export const CONTROLLED_BUDGET_EXCEPTION_RECORDS = Object.freeze([]);
+// truth. Each record is deliberately operation-scoped and tied to the
+// three-run CP-05 calibration maxima; it does not authorize deleting business
+// facts to make a count fit the generic ceiling.
+export const CONTROLLED_BUDGET_EXCEPTION_RECORDS = Object.freeze(
+  Object.entries(INVITATION_ASSIGNMENT_P3_MEASURED_MAX_BY_OPERATION).map(([operationId, measuredMax]) => {
+    const isAssignmentRevocation = operationId.startsWith('revokeOperationsWorkspace');
+    return Object.freeze({
+      operationId,
+      decisionRef: INVITATION_ASSIGNMENT_P3_DECISION_REF,
+      authority: 'DEXTER',
+      from: 20,
+      to: measuredMax,
+      history: [
+        {
+          from: 20,
+          to: measuredMax,
+          reason:
+            'Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.',
+          decisionRef: INVITATION_ASSIGNMENT_P3_DECISION_REF,
+        },
+      ],
+      businessFactsPreserved: true,
+      businessFactsEvidence: [
+        isAssignmentRevocation
+          ? 'owner:workspace-iam:assignment-revocation-command'
+          : 'owner:workspace-iam:invitation-command',
+        'business-facts:owner-recheck-transaction-idempotency-lock-audit-authoritative-readback',
+        `measurement:cp05-three-run-max:${operationId}:${measuredMax}`,
+      ],
+      sharedMechanismsReused: true,
+      sharedMechanismsEvidence: [
+        'source:workspace-iam:shared-command-receipt-audit-lock-readback',
+        'measurement:cp05-three-run-exact-operation-set:238:unclassified-sql:0',
+      ],
+      rejectedAlternative:
+        '删除邀请或任职聚合的 owner 复核、事务、幂等回放、并发锁、typed problem、审计或权威 readback，以硬压到 20；该方案会丢失业务事实。',
+      costComparison:
+        '三轮受管 CP-05 已证明该 operation 的稳定上限；保留天然多表业务事实的成本高于通用 P3 计数上限，但没有可消除的共享 fan-out，不能以止血改写业务。',
+      narrowScope: operationId,
+    });
+  }),
+);
 
 const CONTROLLED_BUDGET_EXCEPTION_AUTHORITIES = new Set(['DEXTER', 'IMPLEMENTATION_AGENT']);
 

@@ -233,7 +233,7 @@ HTTP/DB join 与 cleanup 的证据。
      这三个文件各有一个职责，不能以环境变量、固定 24 常量或 runtime 覆盖替代。
 4. 退役 `apps/frontend/operations-admin/src/tests/l2/catalog-inventory.spec.ts` 的 `EXPECTED_ACTIVE_CASE_IDS` 以及 `scripts/test/browser-l2-runtime.mjs` 的 `CATALOG_LIBRARY_CASE_IDS`/派生默认参数等运行时复制集合；spec/runtime/self-test 都只读取 generated candidate 或 final execution profile，并从其 `enabledCaseIds` 显式传递。candidate exact-set 只由 P1 producer 声明，runtime 只验证，不重述。不得建立第三份 case list。
 5. 更新 generator red mutations：required field、single tag、retired positive field、fixture graph、operation budget/tag/binding、candidate/profile exact set、candidate digest/run binding 分别独立真红。
-6. 仅在此工作包的源验证通过后，按官方链重生：P1 → workspace command tokens → M1 → operation-handler-bindings → P3。每一步的 missing/extra 是生成源首败，不回填产物。
+6. 仅在此工作包的源验证通过后，按遵守输入依赖的官方链重生：P1 → operation-handler-bindings → workspace command tokens → M1 → P3。每一步的 missing/extra 是生成源首败，不回填产物。
 
 **静态失败条件**：生成后 fixture 仍旧 graph、readiness/run 从固定常量取得 24、candidate 被当 execution profile、最终 execution 缺 PASS held manifest 或 binding 不同、生成物与 source exact-set 不同、任一 red mutation 不红，均 FAIL。
 

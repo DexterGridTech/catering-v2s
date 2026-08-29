@@ -1,0 +1,24 @@
+{
+  "name": "@catering-v2s/ui-base-test-support",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@catering-v2s/kernel-base-test-support": "workspace:*",
+    "@catering-v2s/ui-base-automation": "workspace:*",
+    "@catering-v2s/ui-base-render": "workspace:*",
+    "@types/react": "~19.2.2",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "typescript": "~6.0.3"
+  },
+  "peerDependencies": {
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  }
+}

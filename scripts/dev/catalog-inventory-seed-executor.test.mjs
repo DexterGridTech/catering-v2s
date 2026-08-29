@@ -10,6 +10,23 @@ test('catalog seed obtains the diagnostic protocol from the managed runtime and 
   assert.doesNotMatch(source, /"X-Seed-|"X-Correlation-Id|V2S_SEED_REPORT_SECRET/);
 });
 
+test('catalog seed materializes terminal SKUs through the owner transition lifecycle', async () => {
+  const source = await readFile(new URL('./catalog-inventory-seed-executor.mjs', import.meta.url), 'utf8');
+  assert.match(source, /const canonicalInitialOwnerSaveDraft =/);
+  assert.match(source, /status === "VOIDED" \? \{\.\.\.sku, status: "DISABLED"\}/);
+  assert.match(source, /const canonicalOwnerSaveDraft =/);
+  assert.match(source, /draft\.skus = \(draft\.skus \?\? \[\]\)\.filter\(\(sku\) => sku\.status !== "VOIDED"\)/);
+  assert.match(source, /skuTransitions: transitions/);
+  assert.match(source, /targetStatus: "VOIDED"/);
+  assert.match(source, /transitionSequence !== "after-initial-save-before-final-readback"/);
+  assert.match(source, /draft\.compositeGroups = \[\]/);
+  assert.match(source, /compositeRelationSequence !== "after-target-item-activation"/);
+  assert.match(source, /sourceCompositeRelationTargetFixtureKeys/);
+  assert.match(source, /!sourceCompositeRelationTargetFixtureKeys\.has\(source\.fixtureKey\)/);
+  assert.match(source, /expectedTransitionCount: transitions\.length/);
+  assert.match(source, /expectedSkus = \(dataset\.entities\?\.skus \|\| \[\]\)\s+\.filter\(\(entry\) => entry\.status !== "VOIDED"\)/);
+});
+
 test('catalog seed resolves direct target refs from both list and catalog-detail readback shapes', async () => {
   const source = await readFile(new URL('./catalog-inventory-seed-executor.mjs', import.meta.url), 'utf8');
   assert.match(source, /const targetRefFromCatalogRule = \(row\) => row\?\.targetRef \?\? row\?\.directConfiguration\?\.targetRef \?\? null;/);

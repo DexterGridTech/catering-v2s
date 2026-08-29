@@ -60,6 +60,13 @@ L2 的真实启动、远端 namespace 创建/清理、凭据与 session 创建�
 | timeout | P1 timing report（基于已声明操作与拓扑成本） | runner 逐 case watchdog 使用报告值 | 人工加大 timeout、无依据全局 timeout |
 | 页面状态、草稿与控件级联 | 批准 IA 的 state/control 矩阵，应用真实 state owner | 通过用户动作和 readback 验证 | L2 自造状态、直接写 Redux/RTK/sessionStorage 绕过 Journey |
 
+repository byte binding 只覆盖可作为当前仓库输入的文件；managed runtime、build/cache/tool state、
+测试产物以及 `.DS_Store`、日志、安装包等瞬态/忽略文件不得进入 binding。当前 runner 的排除策略
+必须与仓内工具实际产生的 `.runtime`、`.expo`、`.turbo`、`.yarn`、`.kotlin`、`.vite`、`.next`、
+`test-results`、`playwright-report` 目录及 `.DS_Store`、`*.log`、`*.apk`、`*.aab`、`*.keystore`
+文件模式一致；binding 自身记录并校验该排除策略。这样运行期间瞬态日志被清理或重建不会伪装成
+产品字节漂移，同时真正的源、契约、生成物和配置变更仍会使 binding fail closed。
+
 **红线**：浏览器可见、元素存在、截图、HTTP 200 或 request 发出都不是业务 oracle。每个 case 的
 oracle 必须是批准的用户结果，例如 owner readback 值、业务错误文案、失败后事实未变、草稿恢复内容或
 焦点归还位置。每个写路径必须有相应负向 case，断言失败后 owner 事实不变。
@@ -80,19 +87,26 @@ node scripts/test/browser-l2-runtime.mjs readiness
 CATALOG_INVENTORY_L2_READINESS_MANIFEST=<readiness-manifest.json> \
   node scripts/generate/catalog-inventory-p1.mjs --write --check
 
-# 3. 按该 Journey 已批准的生成链继续核对；不得手写 generated output。
+# 3. 按该 Journey 已批准且遵守输入依赖的生成链继续核对；不得手写 generated output。
+# operation-handler-bindings 先刷新 workspace token 与 M1 共同消费的唯一 binding 输入。
+node scripts/generate/operation-handler-bindings.mjs --write --check
 node scripts/generate/catalog-inventory-workspace-command-tokens.mjs --write --check
 node scripts/generate/backend-performance-m1-command-execution-bindings.mjs --emit --check
-node scripts/generate/operation-handler-bindings.mjs --write --check
 node scripts/generate/catalog-inventory-p3-frontend.mjs
 node scripts/generate/catalog-inventory-p3-frontend.mjs --self-test
 
-# 4. 只由受管 runner 执行已经绑定的 active exact-set。
+# 4. 生成链稳定后，在同一 held run 上由 runner 刷新受管 Vite，再最终绑定当前仓库字节。
+node scripts/test/browser-l2-runtime.mjs finalize
+
+# 5. 只由受管 runner 执行已经绑定的 active exact-set。
 node scripts/test/browser-l2-runtime.mjs run
 ```
 
-具体生成器名称可由后续获批专题替换，但四个阶段不可省略：**readiness → same-run activation →
-generated-chain exact check → managed browser run**。readiness 必须为 `businessStatus=PASS`、
+具体生成器名称可由后续获批专题替换，但五个阶段不可省略：**readiness → same-run activation →
+generated-chain exact check → same-run frontend refresh and byte-binding finalize → managed browser run**。
+`finalize` 在写入 binding 前只停止并重启本 run 自己拥有的两个 Vite 进程，清除生成链对旧开发服务器
+留下的 HMR 队列；它不重建远端 namespace、不重跑 fixture，也不启动新的 browser run。浏览器执行结束后
+runner 还会再次校验同一 binding，任何运行期间的 repository drift 都会使 business 失败。readiness 必须为 `businessStatus=PASS`、
 `setupCleanupStatus=PASS`、`cleanupStatus=PENDING_HELD`、`lifecycle=HELD_FOR_BROWSER_L2_RUN`；
 run binding 必须同 runId、namespace、database、asset prefix，active case set 必须与 candidate 一字不差。
 任一条件不满足，runner 在浏览器 business 前失败。
@@ -164,4 +178,3 @@ completion/DB section、progress、secret binding 和 cleanup 的各自违反均
    testId、timeout 和 cleanup readback；
 4. 执行时仅用受管入口，持续报告每 case 的可观测进度，并分开报告 business/cleanup；
 5. 结束前以本标准第 7 节和批准 IA 逐项回读；静态、focused、Testcontainers、DEV、L2、UAT 的证据边界逐项写明。
-

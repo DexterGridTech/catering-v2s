@@ -29,6 +29,13 @@ const NODE_COLLECTIONS = Object.freeze({
   HEAD_COMPANY: ['organization', 'headCompanies'],
   STORE: ['organization', 'stores'],
 });
+const GROUP_SEED_CAPABILITIES = Object.freeze([
+  'BC-CONTRACT-CREATE', 'BC-CONTRACT-INVALIDATE', 'BC-IAM-GROUP-ROLE-REVOKE', 'BC-IAM-GROUP-INVITE',
+  'BC-ORG-BRAND-CREATE', 'BC-ORG-BRAND-STATUS', 'BC-ORG-HEAD-COMPANY-BRAND', 'BC-ORG-HEAD-COMPANY-CREATE',
+  'BC-ORG-HEAD-COMPANY-STATUS', 'BC-ORG-PROJECT-CREATE', 'BC-ORG-PROJECT-STATUS', 'BC-ORG-REGION-CREATE',
+  'BC-ORG-REGION-STATUS', 'BC-ORG-STORE-CREATE', 'BC-ORG-STORE-STATUS', 'BC-ORG-TENANT-CREATE',
+  'BC-ORG-TENANT-STATUS',
+]);
 
 export class FormalSeedFailure extends Error {
   constructor(code) { super(code); this.code = code; }
@@ -84,6 +91,41 @@ function indexByKey(values, code) {
   }
   return result;
 }
+
+/**
+ * The complete seed has two separately logged-in store principals.  Their
+ * shared store scope is a cross-stage fixture fact: the owner stage must leave
+ * the inventory role usable before the catalog stage can authenticate it.
+ * Validate the fact before any owner write so a terminal lifecycle state cannot
+ * silently make the later catalog component impossible.
+ */
+export function validateCatalogInventorySeedPrerequisite(fixture) {
+  const workspaceIam = fixture?.stableFixtures?.workspaceIam;
+  const roles = indexByKey(workspaceIam?.roles, 'SEED_ROLE_CATALOG_INVALID');
+  const assignments = indexByKey(workspaceIam?.assignments, 'SEED_ASSIGNMENT_CATALOG_INVALID');
+  const inventoryRole = roles.get('role-store-inventory');
+  if (inventoryRole?.status !== 'ENABLED' || !inventoryRole.actionCapabilityKeys?.includes('EDIT_STORE_INVENTORY')) {
+    fail('SEED_CATALOG_INVENTORY_ROLE_UNAVAILABLE');
+  }
+  const inventoryAssignment = assignments.get('asg-multi-inventory');
+  const storeAssignment = assignments.get('asg-single-store');
+  if (!inventoryAssignment || inventoryAssignment.role !== 'role-store-inventory'
+    || inventoryAssignment.visibleDataNode !== inventoryAssignment.node) {
+    fail('SEED_CATALOG_INVENTORY_ASSIGNMENT_INVALID');
+  }
+  if (!storeAssignment || storeAssignment.role !== 'role-store'
+    || storeAssignment.visibleDataNode !== storeAssignment.node
+    || storeAssignment.node !== inventoryAssignment.node) {
+    fail('SEED_CATALOG_INVENTORY_SCOPE_INVALID');
+  }
+  return Object.freeze({
+    inventoryRoleKey: inventoryRole.key,
+    inventoryAssignmentKey: inventoryAssignment.key,
+    storeAssignmentKey: storeAssignment.key,
+    dataNodeKey: inventoryAssignment.node,
+  });
+}
+
 function nodeByKey(fixture) {
   const result = new Map();
   for (const [nodeType, [first, second]] of Object.entries(NODE_COLLECTIONS)) {
@@ -156,11 +198,17 @@ export function resolveInvitationCreationPlan(fixture) {
 export function validateFormalSeedStaticInputs({fixture, registry}) {
   if (fixture?.profile?.id !== 'r5-full' || fixture?.profile?.version !== 1) fail('SEED_PROFILE_CONTRACT_INVALID');
   validateThreeStateSeedCoverage(fixture);
+  const groupRole = fixture?.stableFixtures?.workspaceIam?.roles?.find((entry) => entry.key === 'role-group');
+  if (!groupRole || GROUP_SEED_CAPABILITIES.some((capability) => !groupRole.actionCapabilityKeys?.includes(capability))) {
+    const missing = GROUP_SEED_CAPABILITIES.find((capability) => !groupRole?.actionCapabilityKeys?.includes(capability)) ?? 'role-group';
+    fail(`SEED_ROLE_CAPABILITY_MISSING:${missing}`);
+  }
+  const catalogInventoryPrerequisite = validateCatalogInventorySeedPrerequisite(fixture);
   const operations = Array.isArray(registry) ? registry : [];
   for (const operationId of ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'transitionWorkspaceRoleStatus', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract']) {
     if (operations.filter((entry) => entry.operationId === operationId).length !== 1) fail(`SEED_OPERATION_REGISTRY_MISSING:${operationId}`);
   }
-  return Object.freeze({invitationPlan: resolveInvitationCreationPlan(fixture)});
+  return Object.freeze({invitationPlan: resolveInvitationCreationPlan(fixture), catalogInventoryPrerequisite});
 }
 
 export function createProjectScopeSelector({initialContextVersion, select}) {
@@ -428,7 +476,7 @@ async function executeFormalSeed() {
     for (const definition of fixture.stableFixtures.extensionDefinitions) {
       const key = fixture.stableFixtures.groupWorkspaces.find((entry) => entry.key === definition.workspace).groupWorkspaceKey;
       const before = await request(`extension-read-${definition.key}`, 'getExtensionDefinition', {groupWorkspaceKey: key, entityType: definition.hostType}, {cookie: platformCookie});
-      const updated = await request(`extension-${definition.key}`, 'replaceExtensionDefinition', {groupWorkspaceKey: key, entityType: definition.hostType}, {cookie: platformCookie, body: {expectedVersion: requireValue(before.json?.revision, 'SEED_EXTENSION_REVISION'), definitions: definition.fields.map((field) => ({key: requireValue(field?.key, 'SEED_EXTENSION_DEFINITION_FIXTURE_INVALID'), label: requireValue(field?.label, 'SEED_EXTENSION_DEFINITION_FIXTURE_INVALID'), type: 'TEXT', required: false, options: []}))}});
+      const updated = await request(`extension-${definition.key}`, 'replaceExtensionDefinition', {groupWorkspaceKey: key, entityType: definition.hostType}, {cookie: platformCookie, body: {expectedVersion: requireValue(before.json?.revision, 'SEED_EXTENSION_REVISION'), definitions: definition.fields.map((field, displayOrder) => ({key: requireValue(field?.key, 'SEED_EXTENSION_DEFINITION_FIXTURE_INVALID'), label: requireValue(field?.label, 'SEED_EXTENSION_DEFINITION_FIXTURE_INVALID'), type: 'TEXT', required: false, options: [], status: 'ENABLED', displayOrder}))}});
       ids.extensionDefinition[`${definition.workspace}:${definition.hostType}`] = updated.json;
     }
     const extensionValuesFor = (workspace, hostType, fixtureValues) => {

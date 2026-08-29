@@ -20,6 +20,10 @@
       "excludedItemDenominator": 1,
       "mediaAssetDenominator": 34,
       "requiredOwnerScopes": ["HEAD_COMPANY", "STORE"],
+      "catalogLifecycle": {
+        "source": "contracts/policy/catalog-inventory-fixture-catalog.json#seedExecutionPlan.catalogLifecycle",
+        "rule": "seedDatasets[*].entities.skus[].status 中 ENABLED/DISABLED 只能进入普通 whole-save；VOIDED 必须先以 DISABLED 建立 SKU 事实，再经 saveOperationsCatalogItem.skuTransitions 作废，并以 skuTransitions readback 作为 terminal 状态证据；后续普通 whole-save 不得再次提交 VOIDED SKU。"
+      },
       "rule": "The extension is a required internal component of r5-full; its canonical source and loader remain separate, and its owner/API report must not be merged into the owner-command measurement report."
     },
     "namespaceSource": "V2S_DEV_NAMESPACE",
@@ -254,12 +258,12 @@
     },
     "workspaceIam": {
       "roles": [
-        {"key": "role-group", "name": "集团运营管理员", "status": "ENABLED", "serviceNodeType": "GROUP", "pageAccessKeys": ["PG-IAM-GROUP-USERS"], "actionCapabilityKeys": ["BC-CONTRACT-CREATE", "BC-CONTRACT-INVALIDATE", "BC-IAM-GROUP-ROLE-REVOKE", "BC-IAM-GROUP-INVITE", "BC-ORG-BRAND-CREATE", "BC-ORG-BRAND-STATUS", "BC-ORG-HEAD-COMPANY-BRAND", "BC-ORG-HEAD-COMPANY-CREATE", "BC-ORG-HEAD-COMPANY-STATUS", "BC-ORG-PROJECT-CREATE", "BC-ORG-PROJECT-STATUS", "BC-ORG-REGION-CREATE", "BC-ORG-STORE-CREATE", "BC-ORG-STORE-STATUS", "BC-ORG-TENANT-CREATE", "BC-ORG-TENANT-STATUS"], "visibleDataNodePolicy": "GROUP_SUBTREE"},
-        {"key": "role-region", "name": "大区运营负责人", "status": "ENABLED", "serviceNodeType": "REGION", "pageAccessKeys": ["PG-IAM-REGION-USERS"], "actionCapabilityKeys": ["BC-IAM-REGION-ROLE-REVOKE", "BC-IAM-REGION-INVITE"], "visibleDataNodePolicy": "REGION_SUBTREE"},
+        {"key": "role-group", "name": "集团运营管理员", "status": "ENABLED", "serviceNodeType": "GROUP", "pageAccessKeys": ["PG-IAM-GROUP-USERS"], "actionCapabilityKeys": ["BC-CONTRACT-CREATE", "BC-CONTRACT-INVALIDATE", "BC-IAM-GROUP-ROLE-REVOKE", "BC-IAM-GROUP-INVITE", "BC-ORG-BRAND-CREATE", "BC-ORG-BRAND-STATUS", "BC-ORG-HEAD-COMPANY-BRAND", "BC-ORG-HEAD-COMPANY-CREATE", "BC-ORG-HEAD-COMPANY-STATUS", "BC-ORG-PROJECT-CREATE", "BC-ORG-PROJECT-STATUS", "BC-ORG-REGION-CREATE", "BC-ORG-REGION-STATUS", "BC-ORG-STORE-CREATE", "BC-ORG-STORE-STATUS", "BC-ORG-TENANT-CREATE", "BC-ORG-TENANT-STATUS"], "visibleDataNodePolicy": "GROUP_SUBTREE"},
+        {"key": "role-region", "name": "大区运营负责人", "status": "DISABLED", "serviceNodeType": "REGION", "pageAccessKeys": ["PG-IAM-REGION-USERS"], "actionCapabilityKeys": ["BC-IAM-REGION-ROLE-REVOKE", "BC-IAM-REGION-INVITE"], "visibleDataNodePolicy": "REGION_SUBTREE"},
         {"key": "role-project", "name": "项目运营负责人", "status": "ENABLED", "serviceNodeType": "PROJECT", "pageAccessKeys": ["PG-IAM-PROJECT-USERS"], "actionCapabilityKeys": ["BC-IAM-PROJECT-ROLE-REVOKE", "BC-IAM-PROJECT-INVITE"], "visibleDataNodePolicy": "PROJECT"},
         {"key": "role-head-company", "name": "总公司商品管理员", "status": "ENABLED", "serviceNodeType": "HEAD_COMPANY", "pageAccessKeys": ["PG-IAM-HEAD-COMPANY-USERS", "PG-CATALOG-BRAND-ITEMS"], "actionCapabilityKeys": ["BC-IAM-HEAD-COMPANY-ROLE-REVOKE", "BC-IAM-HEAD-COMPANY-INVITE", "EDIT_HEAD_COMPANY_CATALOG"], "visibleDataNodePolicy": "HEAD_COMPANY"},
         {"key": "role-store", "name": "门店商品管理员", "status": "ENABLED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-IAM-STORE-USERS", "PG-CATALOG-STORE-ITEMS"], "actionCapabilityKeys": ["BC-IAM-STORE-ROLE-REVOKE", "BC-IAM-STORE-INVITE", "EDIT_STORE_CATALOG"], "visibleDataNodePolicy": "STORE"},
-        {"key": "role-store-inventory", "name": "门店库存管理员", "status": "DISABLED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"},
+        {"key": "role-store-inventory", "name": "门店库存管理员", "status": "ENABLED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"},
         {"key": "role-store-manager", "name": "门店经营主管", "status": "ENABLED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-IAM-STORE-USERS", "PG-CATALOG-STORE-ITEMS", "PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["BC-IAM-STORE-ROLE-REVOKE", "BC-IAM-STORE-INVITE", "EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"},
         {"key": "role-voided", "name": "作废门店库存管理员", "status": "VOIDED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"}
       ],
@@ -421,6 +425,7 @@
     "all 32 scenario prerequisite sets resolve without manual data",
     "all assignments cite completed invitation owner facts",
     "store contract states read OPERATING/PREPARING/NOT_OPERATING as designed",
+    "catalog SKU lifecycle statuses use the declared owner-command sequence and terminal transition readback",
     "second identical seed replays stable readbacks",
     "changed fixture payload with same key fails SEED_PROFILE_DRIFT",
     "dry-run planned count equals each stage receipt count and final owner readback count",

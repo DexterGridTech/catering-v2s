@@ -52,6 +52,8 @@ sourceRefs: ["doc/plans/platform/2026-08-29-v2s-terminal-skeleton-requirements-c
   ① 四个层都有内容，依赖图与设计一致（方向、闭包、无孤儿）；
   ② 全链**类型解析**通过（源码真实 import，`tsc` 走通整条纵切片）；
   ③ assembly 能**打包成功**（Metro 真实消费全部工作区包）。
-  **不启真机、不启浏览器、不验证任何 command / slice / 持久化 / 渲染 / 双屏 / 端口行为。**
+  批一另有一次性 Android 模拟器验收，证明本仓三级布局下的 Gradle 构建、adapter autolinking（含生成注册结果）、
+  应用启动与 bootstrap 诊断文本渲染；它不证明任何 Kotlin/native 能力或业务渲染行为，也不建设设备自动化。
+  **不启真机、不启浏览器、不验证任何 command / slice / 持久化 / 业务渲染 / 双屏 / 端口行为。**
   ⚠️ 原"双运行面 + 装 APK + 杀进程重启恢复原状"是**能力验收**口径，属包级细化阶段，
   不是骨架完成标准。**骨架跑通只证明接线，报告不得表述成"包都能用了"。**

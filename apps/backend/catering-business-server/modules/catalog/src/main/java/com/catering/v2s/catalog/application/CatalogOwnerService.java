@@ -4081,13 +4081,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                     ? storedOverride.path("profile")
                     : itemProfile;
             row.value().set("attributeFacts", arrayCopy(row.value().path("attributeValueRefs")));
-            ObjectNode preparationFacts = preparationFacts(
-                    productionTagReadback,
-                    effective,
-                    new DerivedSkuFacts(0, 0, 0, List.of(), "SKU", null, null),
-                    mapper.createObjectNode());
-            preparationFacts.with("skuVariation").put("varies", !java.util.Objects.equals(itemProfile, effective));
-            row.value().set("preparationFacts", preparationFacts);
+            row.value().set("preparationFacts", skuPreparationFacts(productionTagReadback, itemProfile, effective));
         }
     }
 
@@ -9730,6 +9724,20 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         return result;
     }
 
+    /** The detail and lazy SKU-page projections must expose the same owner-resolved SKU preparation fact. */
+    private ObjectNode skuPreparationFacts(
+            ProductionTagOwnerApi.ProductionTagReferenceReadback productionTag,
+            JsonNode itemProfile,
+            JsonNode effectivePreparation) {
+        ObjectNode result = preparationFacts(
+                productionTag,
+                effectivePreparation,
+                new DerivedSkuFacts(0, 0, 0, List.of(), "SKU", null, null),
+                mapper.createObjectNode());
+        result.with("skuVariation").put("varies", !java.util.Objects.equals(itemProfile, effectivePreparation));
+        return result;
+    }
+
     private boolean skuPreparationDiffers(JsonNode sections, JsonNode itemProfile) {
         JsonNode normalizedItem = itemProfile == null || itemProfile.isNull() ? null : itemProfile;
         JsonNode skus = sections.path("skus");
@@ -9948,6 +9956,18 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         ArrayNode skuDimensions = sku.putArray("dimensions");
         skuFacts.dimensions().forEach(skuDimensions::add);
         item.set("skuVariantDimensions", skuVariantDimensions(sections.path("skuVariantDimensions")));
+        JsonNode productionTagFact = sections.path("productionTagFact");
+        ProductionTagOwnerApi.ProductionTagReferenceReadback productionTagReadback = null;
+        if (productionTagFact.isObject()) {
+            UUID tagRef = nullableUuid(productionTagFact, "tagRef");
+            if (tagRef != null)
+                productionTagReadback = new ProductionTagOwnerApi.ProductionTagReferenceReadback(
+                        tagRef,
+                        productionTagFact.path("code").asText(""),
+                        productionTagFact.path("name").asText(""),
+                        productionTagFact.path("status").asText(""),
+                        productionTagFact.path("version").asLong(0));
+        }
         item.set(
                 "skus",
                 skuRows(
@@ -9956,6 +9976,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                         brandRef,
                         itemSalesUnitRef,
                         itemBaseMeasureUnitRef,
+                        sections.get("preparationProfile"),
+                        productionTagReadback,
                         unitDefinitions,
                         inboundBySku));
         putNullableLong(item, "standardSalePrice", sections.path("standardSalePrice"));
@@ -9978,18 +10000,6 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         item.set("compositeGroups", resolvedCompositeGroups.deepCopy());
         item.putObject("inventoryRules").putArray("nodes");
         setNullableJson(item, "preparationProfile", sections.get("preparationProfile"));
-        JsonNode productionTagFact = sections.path("productionTagFact");
-        ProductionTagOwnerApi.ProductionTagReferenceReadback productionTagReadback = null;
-        if (productionTagFact.isObject()) {
-            UUID tagRef = nullableUuid(productionTagFact, "tagRef");
-            if (tagRef != null)
-                productionTagReadback = new ProductionTagOwnerApi.ProductionTagReferenceReadback(
-                        tagRef,
-                        productionTagFact.path("code").asText(""),
-                        productionTagFact.path("name").asText(""),
-                        productionTagFact.path("status").asText(""),
-                        productionTagFact.path("version").asLong(0));
-        }
         item.set(
                 "preparationFacts",
                 preparationFacts(productionTagReadback, sections.get("preparationProfile"), skuFacts, sections));
@@ -10199,6 +10209,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             String brandRef,
             UUID itemSalesUnitRef,
             UUID itemBaseMeasureUnitRef,
+            JsonNode itemPreparationProfile,
+            ProductionTagOwnerApi.ProductionTagReferenceReadback productionTagReadback,
             Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> unitDefinitions,
             Map<UUID, List<SkuInboundReference>> inboundBySku) {
         ArrayNode result = mapper.createArrayNode();
@@ -10245,6 +10257,11 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             setNullableJson(target, "preparationOverride", sku.get("preparationOverride"));
             setNullableJson(target, "effectivePreparation", sku.get("effectivePreparation"));
             target.put("preparationSource", sku.path("preparationSource").asText("ITEM_DEFAULT"));
+            JsonNode effectivePreparation = sku.has("effectivePreparation")
+                    ? sku.get("effectivePreparation")
+                    : itemPreparationProfile;
+            target.set("preparationFacts", skuPreparationFacts(
+                    productionTagReadback, itemPreparationProfile, effectivePreparation));
             UUID salesOverride = nullableUuid(sku, "salesUnitOverrideRef");
             UUID baseOverride = nullableUuid(sku, "baseMeasureUnitOverrideRef");
             putNullableUuid(target, "salesUnitOverrideRef", salesOverride);
@@ -10731,11 +10748,16 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 rows.stream().mapToLong(ItemRow::version).max().orElse(0L));
     }
 
-    /** Rehydrates the established owner read shape from the SKU relation; catalog_item.sections never persists skus. */
+    /**
+     * Rehydrates the established owner read shape from owner relations; catalog_item.sections never persists these
+     * relational facts.  The list projection exposes the same specificationFacts family as detail, so axes must be
+     * loaded in the same bounded set-read rather than reconstructed from the smaller SKU attribute projection.
+     */
     private List<ItemRow> hydrateItemSummaryFacts(List<ItemRow> rows) {
         if (rows.isEmpty()) return rows;
         List<UUID> itemRefs = rows.stream().map(ItemRow::ref).toList();
         Map<UUID, ArrayNode> skusByItem = skuFacts.readByItemRefsForList(itemRefs);
+        Map<UUID, ArrayNode> axesByItem = skuVariantAxisFacts.readByItemRefs(itemRefs);
         Map<UUID, ArrayNode> imagesByItem = itemMediaFacts.readByItemRefs(itemRefs);
         Map<UUID, ArrayNode> attributeAssignmentsByItem = itemDefinitionFacts.readAttributeAssignments(itemRefs);
         List<UUID> nonSkuItemRefs = itemRefs.stream()
@@ -10754,6 +10776,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                     attributeAssignmentsByItem.getOrDefault(row.ref(), mapper.createArrayNode()));
             sections.set(
                     "orderOptionConfigs", orderOptionConfigsByItem.getOrDefault(row.ref(), mapper.createArrayNode()));
+            sections.set(
+                    "skuVariantDimensions", axesByItem.getOrDefault(row.ref(), mapper.createArrayNode()));
             sections.set("images", imagesByItem.getOrDefault(row.ref(), mapper.createArrayNode()));
             Map<String, JsonNode> references = referencesByItem.get(row.ref());
             sections.set(

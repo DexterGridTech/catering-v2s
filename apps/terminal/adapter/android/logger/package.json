@@ -1,0 +1,40 @@
+{
+  "name": "@catering-v2s/adapter-android-logger",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "node internal/module_scripts/test.js"
+  },
+  "dependencies": {
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@types/jest": "^29.2.1",
+    "@types/react": "~19.1.1",
+    "babel-preset-expo": "~55.0.8",
+    "eslint": "~9.39.4",
+    "eslint-config-universe": "^15.0.3",
+    "expo": "^57.0.17",
+    "jest": "^29.7.0",
+    "jest-expo": "~55.0.9",
+    "prettier": "^3.0.0",
+    "react-native": "0.82.1",
+    "typescript": "~6.0.3"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "roots": [
+      "<rootDir>/src"
+    ]
+  }
+}

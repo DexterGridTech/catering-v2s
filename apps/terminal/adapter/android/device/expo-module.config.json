@@ -1,0 +1,6 @@
+{
+  "platforms": ["android"],
+  "android": {
+    "modules": ["com.catering.v2s.terminal.adapter.android.device.TerminalDeviceModule"]
+  }
+}

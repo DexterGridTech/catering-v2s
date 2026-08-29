@@ -304,8 +304,11 @@ const businessLabel = (labels, code, kind) => {
   return label;
 };
 const categoryLabel = (code) => businessLabel(seedBusinessLabels.categories, code, "CATALOG_CATEGORY");
+const tagLabel = (code) => businessLabel(seedBusinessLabels.tags, code, "TAG");
 const productionTagLabel = (code) => businessLabel(seedBusinessLabels.productionTags, code, "PRODUCTION_TAG");
-const dictionaryLabel = (kind, code) => businessLabel(seedBusinessLabels.dictionary?.[kind], code, kind);
+const dictionaryLabel = (kind, code) => kind === "TAG"
+  ? tagLabel(code)
+  : businessLabel(seedBusinessLabels.dictionary?.[kind], code, kind);
 const unitLabel = (code) => businessLabel(seedBusinessLabels.units, code, "UNIT");
 const seedFactAssignmentFor = (itemCode) => catalogDefinitionSeed.itemAssignments.find((entry) => entry.itemCode === itemCode)
   ?? catalogDefinitionSeed.sourceItemAssignments.find((entry) => entry.itemCode === itemCode)
@@ -665,6 +668,31 @@ const canonicalDraft = (dataset, item, assetRefs, refs, assignmentOverride = nul
   return draft;
 };
 
+const canonicalVoidedSkus = (dataset) => (dataset.entities?.skus ?? [])
+  .filter((sku) => sku.status === "VOIDED");
+
+// A terminal SKU is materialized as DISABLED in the initial whole-save so the
+// owner can create its identity and facts.  The terminal state is then applied
+// only through the owner transition command, whose readback is the authoritative
+// evidence for the fixture's VOIDED fact.
+const canonicalInitialOwnerSaveDraft = (dataset, item, assetRefs, refs, assignmentOverride = null) => {
+  const draft = canonicalDraft(dataset, item, assetRefs, refs, assignmentOverride);
+  // Catalog items are created DISABLED.  New composite references require the
+  // target item (and, for a SKU reference, the target SKU) to be ENABLED, so
+  // keep the initial whole-save independent from the later relation pass.
+  draft.compositeGroups = [];
+  draft.skus = (draft.skus ?? []).map((sku) => sku.status === "VOIDED" ? {...sku, status: "DISABLED"} : sku);
+  return draft;
+};
+
+// Ordinary whole-saves after the lifecycle transition must never submit a
+// terminal SKU again.  The owner preserves the already-VOIDED row separately.
+const canonicalOwnerSaveDraft = (dataset, item, assetRefs, refs, assignmentOverride = null) => {
+  const draft = canonicalDraft(dataset, item, assetRefs, refs, assignmentOverride);
+  draft.skus = (draft.skus ?? []).filter((sku) => sku.status !== "VOIDED");
+  return draft;
+};
+
 const canonicalMaterialEntries = (seedDatasets = [], dependencyOrder = []) => {
   const byId = new Map(seedDatasets.map((dataset) => [dataset.fixtureId, dataset]));
   const order = dependencyOrder.length ? dependencyOrder : seedDatasets.map((dataset) => dataset.fixtureId);
@@ -744,6 +772,7 @@ const assertSeedBusinessLabels = (seedPlan) => {
   for (const source of seedPlan.sourceItems ?? []) sourceUnitAssignment(source);
   for (const assignment of catalogDefinitionSeed.itemAssignments) definitionAssignmentFor(assignment.itemCode);
   assertExactBusinessLabelSet("CATALOG_CATEGORY", catalogDefinitionSeed.categoryDefinitions.map((entry) => entry.code), seedBusinessLabels.categories);
+  assertExactBusinessLabelSet("TAG", catalogDefinitionSeed.tagDefinitions.map((entry) => entry.code), seedBusinessLabels.tags);
   assertExactBusinessLabelSet("PRODUCTION_TAG", catalogDefinitionSeed.productionTagDefinitions.map((entry) => entry.code), seedBusinessLabels.productionTags);
   assertExactBusinessLabelSet("SKU_ATTRIBUTE", references.attributes, seedBusinessLabels.dictionary?.SKU_ATTRIBUTE);
   assertExactBusinessLabelSet("SKU_ATTRIBUTE_VALUE", references.skuAttributeValues.map((entry) => entry.code), seedBusinessLabels.dictionary?.SKU_ATTRIBUTE_VALUE);
@@ -824,7 +853,18 @@ async function execute() {
   persist();
   try {
     if (process.env.CATALOG_INVENTORY_SEED_CONFIRMATION !== profile.runtime.confirmationValue) fail("EXPLICIT_CATALOG_INVENTORY_SEED_CONFIRMATION_REQUIRED");
-    if (!plan || plan.status !== "PASS" || plan.sourceItems?.length !== profile.parity.catalogItems || !Array.isArray(plan.eligibleSourceItems) || !Array.isArray(plan.excludedSourceItems) || !plan.eligibility?.eligibleByScope || plan.mediaPlan?.length !== profile.parity.mediaAssets || !Number.isInteger(plan.seedDatasetCount) || plan.seedDatasetCount < 5 || !Array.isArray(plan.seedDatasets) || plan.seedDatasets.length !== plan.seedDatasetCount || new Set(plan.seedDatasets.map((dataset) => dataset.fixtureId)).size !== plan.seedDatasetCount || !Array.isArray(plan.canonicalDependencyOrder)) fail("SEED_STATIC_PLAN_REQUIRED");
+    if (!plan || plan.status !== "PASS" || plan.sourceItems?.length !== profile.parity.catalogItems || !Array.isArray(plan.eligibleSourceItems) || !Array.isArray(plan.excludedSourceItems) || !Array.isArray(plan.sourceCompositeRelationTargetFixtureKeys) || !plan.eligibility?.eligibleByScope || plan.mediaPlan?.length !== profile.parity.mediaAssets || !Number.isInteger(plan.seedDatasetCount) || plan.seedDatasetCount < 5 || !Array.isArray(plan.seedDatasets) || plan.seedDatasets.length !== plan.seedDatasetCount || new Set(plan.seedDatasets.map((dataset) => dataset.fixtureId)).size !== plan.seedDatasetCount || !Array.isArray(plan.canonicalDependencyOrder)) fail("SEED_STATIC_PLAN_REQUIRED");
+    if (!plan.catalogLifecycle
+        || plan.catalogLifecycle.operationId !== "saveOperationsCatalogItem"
+        || plan.catalogLifecycle.statusSource !== "seedDatasets[*].entities.skus[].status"
+        || JSON.stringify(plan.catalogLifecycle.normalSaveStatuses) !== JSON.stringify(["ENABLED", "DISABLED"])
+        || JSON.stringify(plan.catalogLifecycle.transitionStatuses) !== JSON.stringify(["VOIDED"])
+        || plan.catalogLifecycle.transitionRequestField !== "skuTransitions"
+        || plan.catalogLifecycle.transitionSequence !== "after-initial-save-before-final-readback"
+        || plan.catalogLifecycle.transitionReadbackField !== "skuTransitions"
+        || plan.catalogLifecycle.compositeRelationSequence !== "after-target-item-activation"
+        || plan.catalogLifecycle.compositeRelationRequirement !== "ENABLED_TARGET_ITEM_AND_SKU")
+      fail("SEED_CATALOG_LIFECYCLE_POLICY_INVALID");
     assertSeedBusinessLabels(plan);
     if (plan.eligibleSourceItems.length + plan.excludedSourceItems.length !== plan.sourceItems.length) fail("SEED_ELIGIBILITY_PLAN_INVALID");
     ({manifest, credentials} = loadManagedRun());
@@ -1496,16 +1536,161 @@ async function execute() {
         body: {dataNodeRef: client.dataNodeRef, name: item.name, code: item.code, shapeKey: item.shapeKey, categoryRef: null},
         });
         const expectedCatalogVersion = itemVersion(create.json);
-        const catalogDraft = canonicalDraft(dataset, item, assetRefs, refs);
+        const catalogDraft = canonicalInitialOwnerSaveDraft(dataset, item, assetRefs, refs);
         const save = await request(`${client.scopeType}-canonical-save-${item.code}`, "saveOperationsCatalogItem", {itemCode: item.code}, {
           cookie: client.cookie,
           brandRef: client.brandRef,
           headers: catalogAssetBindGrantHeaders(catalogDraft),
           body: {dataNodeRef: client.dataNodeRef, itemCode: item.code, sections: {catalogDraft, inventoryRules: {nodes: []}, expectedCatalogVersion}},
         });
-        if (!itemResult(save.json)?.version) fail(`SEED_CANONICAL_SAVE_READBACK_MISSING:${client.scopeType}:${item.code}`);
+        const savedCatalogVersion = itemVersion(save.json);
+        if (!Number.isInteger(savedCatalogVersion) || savedCatalogVersion <= expectedCatalogVersion)
+          fail(`SEED_CANONICAL_SAVE_READBACK_MISSING:${client.scopeType}:${item.code}`);
+        canonicalVersions.set(canonicalItemKey(client, item.code), savedCatalogVersion);
+        let readback = await recordItemReadback(client, refs, item.code, `${client.scopeType}-canonical-${item.code}-initial`);
+        if (Number(readback?.version) !== savedCatalogVersion)
+          fail(`SEED_CANONICAL_INITIAL_READBACK_VERSION_INVALID:${client.scopeType}:${item.code}`);
+        const voidedSkus = canonicalVoidedSkus(dataset);
+        if (voidedSkus.length > 0) {
+          const transitions = voidedSkus.map((declared) => {
+            const actual = (readback.skus ?? []).find((sku) => sku.skuCode === declared.code);
+            if (!actual || actual.status !== "DISABLED") {
+              phase(`${client.scopeType}-canonical-sku-void-${item.code}-precondition`, "FAIL", {
+                operationId: "getOperationsCatalogItem",
+                itemCode: item.code,
+                skuCount: readback.skus?.length ?? 0,
+                expectedIntermediateStatus: "DISABLED",
+              });
+              fail(`SEED_CANONICAL_VOIDED_SKU_INITIAL_READBACK_INVALID:${client.scopeType}:${item.code}:${declared.code}`);
+            }
+            const skuVersion = Number(actual.version);
+            if (!Number.isInteger(skuVersion) || skuVersion <= 0)
+              fail(`SEED_CANONICAL_VOIDED_SKU_VERSION_INVALID:${client.scopeType}:${item.code}:${declared.code}`);
+            return {
+              skuRef: requiredUuid(actual.productSkuRef, `PRODUCT_SKU:${item.code}:${declared.code}:transition`),
+              targetStatus: "VOIDED",
+              expectedVersion: skuVersion,
+            };
+          });
+          const transitioned = await request(`${client.scopeType}-canonical-sku-void-${item.code}`, "saveOperationsCatalogItem", {itemCode: item.code}, {
+            cookie: client.cookie,
+            brandRef: client.brandRef,
+            body: {
+              dataNodeRef: client.dataNodeRef,
+              itemCode: item.code,
+              sections: {
+                catalogDraft: {name: item.name, shapeKey: item.shapeKey},
+                inventoryRules: {nodes: []},
+                expectedCatalogVersion: savedCatalogVersion,
+              },
+              skuTransitions: transitions,
+            },
+          });
+          const actualTransitions = itemResult(transitioned.json)?.skuTransitions;
+          if (!Array.isArray(actualTransitions) || actualTransitions.length !== transitions.length) {
+            phase(`${client.scopeType}-canonical-sku-void-${item.code}-readback`, "FAIL", {
+              operationId: "saveOperationsCatalogItem",
+              itemCode: item.code,
+              expectedTransitionCount: transitions.length,
+              actualTransitionCount: Array.isArray(actualTransitions) ? actualTransitions.length : null,
+            });
+            fail(`SEED_CANONICAL_SKU_VOID_READBACK_INVALID:${client.scopeType}:${item.code}`);
+          }
+          for (const expected of transitions) {
+            const actual = actualTransitions.find((entry) => entry?.skuRef === expected.skuRef);
+            if (!actual
+                || actual.targetStatus !== "VOIDED"
+                || actual.version !== expected.expectedVersion + 1
+                || actual.canVoid !== false
+                || !Array.isArray(actual.blockingReferences)
+                || !Array.isArray(actual.dependentFacts)
+                || !Array.isArray(actual.blockingReasons)) {
+              phase(`${client.scopeType}-canonical-sku-void-${item.code}-readback`, "FAIL", {
+                operationId: "saveOperationsCatalogItem",
+                itemCode: item.code,
+                targetStatus: actual?.targetStatus ?? null,
+                canVoid: actual?.canVoid ?? null,
+              });
+              fail(`SEED_CANONICAL_SKU_VOID_READBACK_INVALID:${client.scopeType}:${item.code}`);
+            }
+          }
+          const transitionedCatalogVersion = itemVersion(transitioned.json);
+          if (transitionedCatalogVersion !== savedCatalogVersion + 1)
+            fail(`SEED_CANONICAL_SKU_VOID_CATALOG_VERSION_INVALID:${client.scopeType}:${item.code}`);
+          canonicalVersions.set(canonicalItemKey(client, item.code), transitionedCatalogVersion);
+          phase(`${client.scopeType}-canonical-sku-void-${item.code}-readback`, "PASS", {
+            operationId: "saveOperationsCatalogItem",
+            itemCode: item.code,
+            transitionCount: transitions.length,
+            targetStatus: "VOIDED",
+            expectedCatalogVersion: savedCatalogVersion,
+            resultingCatalogVersion: transitionedCatalogVersion,
+          });
+          readback = await recordItemReadback(client, refs, item.code, `${client.scopeType}-canonical-${item.code}-after-void`);
+        }
+      }
+    }
+    // Catalog items are created DISABLED.  Activation is a public owner
+    // transition, not a status field in the whole-save draft.  Activate every
+    // canonical item before adding any composite relation so the target-side
+    // owner check observes ENABLED item/SKU facts.
+    for (const client of clients) {
+      const refs = refsFor(client);
+      for (const {item} of canonicalEntries) {
+        const expectedVersion = canonicalVersions.get(canonicalItemKey(client, item.code));
+        const enabled = await request(`${client.scopeType}-canonical-experience-enable-${item.code}`, "transitionOperationsCatalogItemStatus", {itemCode: item.code}, {
+          cookie: client.cookie,
+          brandRef: client.brandRef,
+          body: {
+            dataNodeRef: client.dataNodeRef,
+            itemCode: item.code,
+            targetStatus: catalogDefinitionSeed.experienceLifecycle.targetStatus,
+            expectedVersion,
+          },
+        });
+        const result = itemResult(enabled.json);
+        if (result?.status !== "ENABLED" || !result?.version)
+          fail(`SEED_CANONICAL_ITEM_ENABLE_READBACK_INVALID:${client.scopeType}:${item.code}`);
+        canonicalVersions.set(canonicalItemKey(client, item.code), itemVersion(enabled.json));
+        const readback = await recordItemReadback(client, refs, item.code, `${client.scopeType}-canonical-experience-enable-${item.code}`);
+        if (readback?.lifecycle?.status !== "ENABLED")
+          fail(`SEED_CANONICAL_ITEM_ENABLE_DETAIL_INVALID:${client.scopeType}:${item.code}`);
+      }
+    }
+    // A composite relation is a second whole-save pass.  It intentionally
+    // follows canonical activation and therefore cannot accidentally bind a
+    // DISABLED/VOIDED target merely because its opaque ref was available.
+    for (const client of clients) {
+      const refs = refsFor(client);
+      for (const {dataset, item} of canonicalEntries) {
+        const relations = (dataset.entities?.relations ?? []).filter((edge) =>
+          edge.from === item.code && edge.refKind === "SKU");
+        if (!relations.length) continue;
+        const catalogDraft = canonicalOwnerSaveDraft(dataset, item, assetRefs, refs);
+        const save = await request(`${client.scopeType}-canonical-composite-save-${item.code}`, "saveOperationsCatalogItem", {itemCode: item.code}, {
+          cookie: client.cookie,
+          brandRef: client.brandRef,
+          headers: catalogAssetBindGrantHeaders(catalogDraft),
+          body: {
+            dataNodeRef: client.dataNodeRef,
+            itemCode: item.code,
+            sections: {
+              catalogDraft,
+              inventoryRules: {nodes: []},
+              expectedCatalogVersion: canonicalVersions.get(canonicalItemKey(client, item.code)),
+            },
+          },
+        });
+        if (!itemResult(save.json)?.version)
+          fail(`SEED_CANONICAL_COMPOSITE_SAVE_READBACK_MISSING:${client.scopeType}:${item.code}`);
         canonicalVersions.set(canonicalItemKey(client, item.code), itemVersion(save.json));
-        const readback = await recordItemReadback(client, refs, item.code, `${client.scopeType}-canonical-${item.code}`);
+        await recordItemReadback(client, refs, item.code, `${client.scopeType}-canonical-composite-${item.code}`);
+      }
+    }
+    for (const client of clients) {
+      const refs = refsFor(client);
+      for (const {dataset, item} of canonicalEntries) {
+        const readback = await recordItemReadback(client, refs, item.code, `${client.scopeType}-canonical-${item.code}-final`);
         const detailData = detailReadbacks.get(`${client.scopeType}:${client.dataNodeRef}:${item.code}`);
         if (!detailData) fail(`SEED_DETAIL_READBACK_CONTEXT_MISSING:${client.scopeType}:${item.code}`);
         assertCanonicalCompositeReadback(client, refs, {dataset, item}, detailData, readback, `${client.scopeType}-canonical-${item.code}`);
@@ -1521,6 +1706,7 @@ async function execute() {
     }
     const sourceByKey = new Map(plan.sourceItems.map((item) => [item.fixtureKey, item]));
     const seedItems = plan.eligibleSourceItems;
+    const sourceCompositeRelationTargetFixtureKeys = new Set(plan.sourceCompositeRelationTargetFixtureKeys);
     const inventoryIndexByClient = new Map();
     const currentVersions = new Map();
     const clientItemKey = (client, itemCode) => `${client.scopeType}:${itemCode}`;
@@ -1675,7 +1861,7 @@ async function execute() {
       const refs = refsFor(client);
       const canonical = canonicalByCode.get(assignment.itemCode);
       if (!canonical) fail(`SEED_CATALOG_DEFINITION_ASSIGNMENT_ITEM_INVALID:${assignment.itemCode}`);
-      const draft = canonicalDraft(canonical.dataset, canonical.item, assetRefs, refs, assignment);
+      const draft = canonicalOwnerSaveDraft(canonical.dataset, canonical.item, assetRefs, refs, assignment);
       draft.tagRefs = assignment.tagCodes.map((code) => dictionaryRef(refs, "TAG", code));
       draft.salesUnitRef = unitRef(refs, assignment.salesUnitCode);
       draft.baseMeasureUnitRef = unitRef(refs, assignment.baseMeasureUnitCode);
@@ -1847,18 +2033,15 @@ async function execute() {
           fail(`SEED_CATEGORY_ASSIGNMENT_READBACK_INVALID:${client.scopeType}:${source.catalogItemCode}`);
         }
       }
-      for (const source of sourceItemsForClientScope(seedItems, client.scopeType)) {
-        if (!(source.compositeStructure?.componentGroups || []).length) continue;
-        const draft = convertSourceItem(source, assetRefs, refs, sourceByKey);
-        const save = await request(`${client.scopeType}-composite-save-${source.catalogItemCode}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {cookie: client.cookie, brandRef: client.brandRef, headers: catalogAssetBindGrantHeaders(draft), body: {dataNodeRef: client.dataNodeRef, itemCode: source.catalogItemCode, sections: {catalogDraft: draft, inventoryRules: {nodes: []}, expectedCatalogVersion: currentVersions.get(clientItemKey(client, source.catalogItemCode)) ?? 1}}});
-        if (!itemResult(save.json)?.version) fail(`SEED_COMPOSITE_SAVE_READBACK_MISSING:${source.catalogItemCode}`);
-        currentVersions.set(clientItemKey(client, source.catalogItemCode), itemVersion(save.json));
-      }
       // Lifecycle is not an executor-local status rewrite. The finite fixture
-      // declares which sellable source shapes should be enabled; every change
-      // still uses the public owner command and its activation validation.
+      // declares which sellable source shapes should be enabled. A source
+      // item used as a composite target is also activated, even when its shape
+      // is SERVICE/NON_SALE, because the owner rejects a new relation to a
+      // disabled target. Every change still uses the public owner command and
+      // its activation validation.
       for (const source of sourceItemsForClientScope(seedItems, client.scopeType)) {
-        if (!catalogDefinitionSeed.experienceLifecycle.activateSourceShapeKeys.includes(source.shapeKey)) continue;
+        if (!catalogDefinitionSeed.experienceLifecycle.activateSourceShapeKeys.includes(source.shapeKey)
+            && !sourceCompositeRelationTargetFixtureKeys.has(source.fixtureKey)) continue;
         const expectedVersion = currentVersions.get(clientItemKey(client, source.catalogItemCode));
         const enabled = await request(`${client.scopeType}-experience-enable-${source.catalogItemCode}`, "transitionOperationsCatalogItemStatus", {itemCode: source.catalogItemCode}, {
           cookie: client.cookie,
@@ -1880,6 +2063,16 @@ async function execute() {
         // verify the same response shape consumed by the catalog UI.
         if (readback?.lifecycle?.status !== "ENABLED")
           fail(`SEED_EXPERIENCE_ITEM_ENABLE_DETAIL_INVALID:${client.scopeType}:${source.catalogItemCode}`);
+      }
+      // New composite relations require an ENABLED target item and, when
+      // present, an ENABLED target SKU.  Attach source relations only after
+      // the complete source set has passed its owner lifecycle transition.
+      for (const source of sourceItemsForClientScope(seedItems, client.scopeType)) {
+        if (!(source.compositeStructure?.componentGroups || []).length) continue;
+        const draft = convertSourceItem(source, assetRefs, refs, sourceByKey);
+        const save = await request(`${client.scopeType}-composite-save-${source.catalogItemCode}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {cookie: client.cookie, brandRef: client.brandRef, headers: catalogAssetBindGrantHeaders(draft), body: {dataNodeRef: client.dataNodeRef, itemCode: source.catalogItemCode, sections: {catalogDraft: draft, inventoryRules: {nodes: []}, expectedCatalogVersion: currentVersions.get(clientItemKey(client, source.catalogItemCode)) ?? 1}}});
+        if (!itemResult(save.json)?.version) fail(`SEED_COMPOSITE_SAVE_READBACK_MISSING:${source.catalogItemCode}`);
+        currentVersions.set(clientItemKey(client, source.catalogItemCode), itemVersion(save.json));
       }
       if (client.scopeType !== "HEAD_COMPANY") {
         const {entries} = await readCompleteCollection({
@@ -1973,12 +2166,12 @@ async function execute() {
         const configured = await request(`${client.scopeType}-canonical-material-config-${item.code}`, "saveOperationsCatalogItem", {itemCode: item.code}, {
           cookie: client.cookie,
           brandRef: client.brandRef,
-          headers: catalogAssetBindGrantHeaders(canonicalDraft(dataset, item, assetRefs, refs)),
+          headers: catalogAssetBindGrantHeaders(canonicalOwnerSaveDraft(dataset, item, assetRefs, refs)),
           body: {
             dataNodeRef: client.dataNodeRef,
             itemCode: item.code,
             sections: {
-              catalogDraft: canonicalDraft(dataset, item, assetRefs, refs),
+              catalogDraft: canonicalOwnerSaveDraft(dataset, item, assetRefs, refs),
               inventoryRules: {nodes: [node]},
               expectedCatalogVersion: canonicalVersions.get(canonicalItemKey(client, item.code)) ?? 1,
             },
@@ -2203,12 +2396,12 @@ async function execute() {
           const save = await request(`${client.scopeType}-canonical-bom-${item.code}-${stageKey}`, "saveOperationsCatalogItem", {itemCode: item.code}, {
             cookie: client.cookie,
             brandRef: client.brandRef,
-          headers: catalogAssetBindGrantHeaders(canonicalDraft(dataset, item, assetRefs, refs)),
+          headers: catalogAssetBindGrantHeaders(canonicalOwnerSaveDraft(dataset, item, assetRefs, refs)),
           body: {
             dataNodeRef: client.dataNodeRef,
               itemCode: item.code,
               sections: {
-                catalogDraft: canonicalDraft(dataset, item, assetRefs, refs),
+                catalogDraft: canonicalOwnerSaveDraft(dataset, item, assetRefs, refs),
                 inventoryRules: replaceInventoryRule(current, rule),
                 expectedCatalogVersion: canonicalVersions.get(canonicalItemKey(client, item.code)) ?? 1,
               },
@@ -2574,7 +2767,14 @@ async function execute() {
         const actual = detailData?.item ?? detailData;
         if (actual?.code !== item.code || actual?.shapeKey !== item.shapeKey) fail(`SEED_CANONICAL_ITEM_READBACK_INVALID:${client.scopeType}:${item.code}`);
         if (dataset.fixtureId === "SEED-LATTE") {
-          const expectedSkus = (dataset.entities?.skus || []).map((entry) => entry.code).sort();
+          // VOIDED SKU rows are intentionally absent from the normal detail
+          // projection. Their terminal fact was already proven by the
+          // transition readback above; this final projection must contain only
+          // the non-terminal SKU rows.
+          const expectedSkus = (dataset.entities?.skus || [])
+            .filter((entry) => entry.status !== "VOIDED")
+            .map((entry) => entry.code)
+            .sort();
           const actualSkus = (actual.skus || []).map((entry) => entry.skuCode).sort();
           if (JSON.stringify(actualSkus) !== JSON.stringify(expectedSkus)) fail(`SEED_CANONICAL_LATTE_SKU_READBACK_INVALID:${client.scopeType}`);
         }

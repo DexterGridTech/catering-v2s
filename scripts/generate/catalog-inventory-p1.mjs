@@ -5535,7 +5535,6 @@ const seedDatasets = [
       bomLines: [
         {skuCode: 'LATTE-SKU-S', componentCode: 'BEAN-001', quantity: 14},
         {skuCode: 'LATTE-SKU-M', componentCode: 'BEAN-001', quantity: 18},
-        {skuCode: 'LATTE-SKU-L', componentCode: 'BEAN-001', quantity: 24},
       ],
       relations: [{from: 'LATTE-001', to: 'BEAN-001', refKind: 'BOM', refCode: 'BEAN-001'}],
     },
@@ -5545,7 +5544,7 @@ const seedDatasets = [
     purpose: '套餐跨商品引用并引用具体规格。',
     entities: {
       catalogItems: [{code: 'DINNER-SET-001', shapeKey: 'COMPOSITE', name: '双人晚餐套餐'}],
-      relations: [{from: 'DINNER-SET-001', to: 'LATTE-001', refKind: 'SKU', refCode: 'LATTE-SKU-M'}],
+      relations: [{from: 'DINNER-SET-001', to: 'LATTE-001', refKind: 'SKU', refCode: 'LATTE-SKU-S'}],
     },
   },
   {
@@ -5712,6 +5711,14 @@ const seedBusinessLabels = {
     MATERIAL: '物料',
     SERVICE: '服务',
     BENEFIT: '权益',
+  },
+  tags: {
+    RECOMMENDED: '推荐商品',
+    SEASONAL: '当季推荐',
+    SIGNATURE: '招牌推荐',
+    LUNCH: '午餐常用',
+    DINNER: '晚餐常用',
+    TAKEOUT: '适合外卖',
   },
   productionTags: {HOT_KITCHEN: '热厨制作', COLD_DISH: '冷菜制作', BEVERAGE: '饮品制作', PACKING: '打包处理'},
   dictionary: {
@@ -7831,6 +7838,17 @@ const fixtureCatalog = {
       sequence: 'after-create-before-readback',
       usesReturnedAssetRefs: true,
     },
+    catalogLifecycle: {
+      operationId: 'saveOperationsCatalogItem',
+      statusSource: 'seedDatasets[*].entities.skus[].status',
+      normalSaveStatuses: ['ENABLED', 'DISABLED'],
+      transitionStatuses: ['VOIDED'],
+      transitionRequestField: 'skuTransitions',
+      transitionSequence: 'after-initial-save-before-final-readback',
+      transitionReadbackField: 'skuTransitions',
+      compositeRelationSequence: 'after-target-item-activation',
+      compositeRelationRequirement: 'ENABLED_TARGET_ITEM_AND_SKU',
+    },
     fullCatalogParity: {
       sourceDirectory: mediaCatalog.sourceBindings.v4CatalogItemSources,
       expectedCatalogItemCount: mediaCatalog.coverage.v4CatalogItemCount,
@@ -7920,9 +7938,10 @@ const fixtureSchema = {
     seedBusinessLabels: {
       type: 'object',
       additionalProperties: false,
-      required: ['categories', 'productionTags', 'dictionary', 'optionGroups', 'units'],
+      required: ['categories', 'tags', 'productionTags', 'dictionary', 'optionGroups', 'units'],
       properties: {
         categories: {type: 'object', additionalProperties: {type: 'string'}},
+        tags: {type: 'object', additionalProperties: {type: 'string'}},
         productionTags: {type: 'object', additionalProperties: {type: 'string'}},
         dictionary: {
           type: 'object',
@@ -8038,6 +8057,30 @@ const fixtureSchema = {
           },
           ['operationId', 'transport', 'requestComponent', 'sequence', 'usesReturnedAssetRefs'],
         ),
+        catalogLifecycle: fixtureObject(
+          {
+            operationId: stringField('catalog lifecycle operation'),
+            statusSource: stringField('lifecycle status source'),
+            normalSaveStatuses: {type: 'array', minItems: 1, items: {type: 'string'}},
+            transitionStatuses: {type: 'array', minItems: 1, items: {type: 'string'}},
+            transitionRequestField: stringField('terminal transition request field'),
+            transitionSequence: stringField('terminal transition sequence'),
+            transitionReadbackField: stringField('terminal transition readback field'),
+            compositeRelationSequence: stringField('composite relation sequence'),
+            compositeRelationRequirement: stringField('composite relation requirement'),
+          },
+          [
+            'operationId',
+            'statusSource',
+            'normalSaveStatuses',
+            'transitionStatuses',
+            'transitionRequestField',
+            'transitionSequence',
+            'transitionReadbackField',
+            'compositeRelationSequence',
+            'compositeRelationRequirement',
+          ],
+        ),
         fullCatalogParity: fixtureObject(
           {
             sourceDirectory: stringField('v4 catalog source directory'),
@@ -8080,6 +8123,7 @@ const fixtureSchema = {
         'assetUpload',
         'catalogCreate',
         'catalogSave',
+        'catalogLifecycle',
         'fullCatalogParity',
         'cleanup',
         'readback',

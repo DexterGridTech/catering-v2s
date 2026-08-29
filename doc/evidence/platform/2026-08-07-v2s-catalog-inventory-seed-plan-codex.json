@@ -4,7 +4,7 @@
   "status": "PASS",
   "authority": "STATIC_PLAN_ONLY",
   "revision": "CATALOG_INVENTORY_P1_20260806",
-  "fixtureDigest": "1f7456807a946923fe4d7672aa590e28a7b488a3f34f62864ecdb6fbb817dc88",
+  "fixtureDigest": "9fadc0d16f473be8e2cac449b1cf05a415784fb8f240a2033bf4e8d889ac4ce5",
   "profile": "catalog-inventory",
   "mediaPlan": [
     {
@@ -6849,6 +6849,22 @@
       "scope": "STORE"
     }
   ],
+  "sourceCompositeRelationTargetFixtureKeys": [
+    "bevAmericano",
+    "bevLemonade",
+    "dessertCheesecake",
+    "dessertTiramisu",
+    "mainChicken",
+    "mainSalmon",
+    "pastaMushroom",
+    "pastaTomato",
+    "servicePackagingFee",
+    "sideMixedSalad",
+    "skuManagedCopyTarget",
+    "skuManagedItem",
+    "soupMushroom",
+    "standardPearlMilk"
+  ],
   "eligibility": {
     "sourceItemCount": 73,
     "eligibleItemCount": 72,
@@ -6894,7 +6910,7 @@
             "attributeValues": {
               "SIZE": "LARGE"
             },
-            "status": "ARCHIVED",
+            "status": "VOIDED",
             "mediaAssetKey": "coffee"
           }
         ],
@@ -6908,11 +6924,6 @@
             "skuCode": "LATTE-SKU-M",
             "componentCode": "BEAN-001",
             "quantity": 18
-          },
-          {
-            "skuCode": "LATTE-SKU-L",
-            "componentCode": "BEAN-001",
-            "quantity": 24
           }
         ],
         "relations": [
@@ -7002,7 +7013,7 @@
             "from": "DINNER-SET-001",
             "to": "LATTE-001",
             "refKind": "SKU",
-            "refCode": "LATTE-SKU-M"
+            "refCode": "LATTE-SKU-S"
           }
         ],
         "constructedAt": "seed-definition",
@@ -7702,7 +7713,7 @@
       "from": "DINNER-SET-001",
       "to": "LATTE-001",
       "refKind": "SKU",
-      "refCode": "LATTE-SKU-M"
+      "refCode": "LATTE-SKU-S"
     },
     {
       "from": "CAESAR-001",
@@ -7780,5 +7791,21 @@
     }
   },
   "noDirectDatabaseWrites": true,
-  "planDigest": "b6cd2df7365bd36205e1cfed07977a26f98dedc1885c0520227fc8559c707887"
+  "catalogLifecycle": {
+    "operationId": "saveOperationsCatalogItem",
+    "statusSource": "seedDatasets[*].entities.skus[].status",
+    "normalSaveStatuses": [
+      "ENABLED",
+      "DISABLED"
+    ],
+    "transitionStatuses": [
+      "VOIDED"
+    ],
+    "transitionRequestField": "skuTransitions",
+    "transitionSequence": "after-initial-save-before-final-readback",
+    "transitionReadbackField": "skuTransitions",
+    "compositeRelationSequence": "after-target-item-activation",
+    "compositeRelationRequirement": "ENABLED_TARGET_ITEM_AND_SKU"
+  },
+  "planDigest": "0fb7bd85ec11f0d6bf818c07a6b6ec3a24208f7f251480b9bda106d416e7c20c"
 }

@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ExternalCollaborationBusinessChannelCoordinator {
     private static final String IDEMPOTENCY_NAMESPACE = "external-collaboration-business-channel";
     private static final String REQ_BINDING_CREATE = "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_CREATE";
+    private static final String REQ_BINDING_DELETE = "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_DELETE";
     private static final String REQ_UPDATE_CHANNEL = "REQ_UPDATE_OPERATIONS_BUSINESS_CHANNEL";
 
     private final CollaborationCommandApi collaboration;
@@ -86,6 +87,42 @@ public class ExternalCollaborationBusinessChannelCoordinator {
                     command.actor()));
         }
         return result;
+    }
+
+    /** Resolve the delete command and its server-owned scope inside the cross-owner transaction. */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public CollaborationReadback.OwnerBinding deleteOperationsBinding(
+            EdgeRequestContext request,
+            String groupWorkspaceKey,
+            UUID channelRef,
+            long expectedVersion,
+            String idempotencyKey) {
+        if (sessions == null || organizationAuthorization == null || capabilityScopes == null) {
+            throw new IllegalStateException("operations binding coordinator dependencies are not configured");
+        }
+        WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
+        BusinessChannelReadback.ChannelCommandContext channel = businessChannelsRead.readChannelCommandContext(
+                session.workspaceUuid(), session.groupWorkspaceKey(), channelRef);
+        requireChannelContext(channel);
+        UUID bindingRef = channel.bindingRef();
+        if (bindingRef == null) throw new InvalidEdgeRequestException("business channel has no binding");
+        String nodeType = ownerNodeType(channel.ownerNodeType());
+        UUID nodeRef = ownerNodeId(channel.ownerNodeRef());
+        OrganizationTaskPathLookup.TaskPath ownerTaskPath = ServiceNodeTypes.STORE.equals(nodeType)
+                ? organizationAuthorization.resolveCommandTargetAllowingDisabledStore(session, nodeType, nodeRef)
+                : organizationAuthorization.resolveCommandTarget(session, nodeType, nodeRef);
+        AuditActor actor = sessions.actor(session);
+        CollaborationCommandApi.DeleteOperationsBindingCommand command =
+                new CollaborationCommandApi.DeleteOperationsBindingCommand(
+                        session.workspaceUuid(),
+                        session.groupWorkspaceKey(),
+                        bindingRef,
+                        expectedVersion,
+                        session.contextVersion(),
+                        idempotencyKey,
+                        actor,
+                        grant(session, REQ_BINDING_DELETE, nodeType, nodeRef, ownerTaskPath));
+        return deleteOperationsBinding(command, channel);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

@@ -57,6 +57,9 @@ const assertPlan = (input) => {
   }
   const knownCodes = new Set(objectDataset.keys());
   const datasetForCode = (code) => datasetIds.has(code) ? code : objectDataset.get(code);
+  const skuByCode = new Map(
+    seedDatasets.flatMap((dataset) => (dataset.entities?.skus ?? []).map((sku) => [sku.code, {...sku, dataset: dataset.fixtureId}])),
+  );
   const datasetDependencies = new Set();
   const dependencyEdges = [];
   const addDependency = (dependent, prerequisite, reason) => {
@@ -70,6 +73,14 @@ const assertPlan = (input) => {
   // resolvable, and the source node depends on the target node being available.
   for (const edge of relations) {
     if (!edge.from || !edge.to || !datasetForCode(edge.from) || !datasetForCode(edge.to)) fail("SEED_RELATION_DANGLING", `${edge.from}->${edge.to}`);
+    if (edge.refKind === "SKU") {
+      if (!edge.refCode) fail("SEED_SKU_RELATION_REF_MISSING", `${edge.from}->${edge.to}`);
+      const sku = skuByCode.get(edge.refCode);
+      if (!sku) fail("SEED_SKU_RELATION_REF_DANGLING", `${edge.from}->${edge.refCode}`);
+      if (sku.dataset !== datasetForCode(edge.to)) fail("SEED_SKU_RELATION_OWNER_MISMATCH", `${edge.from}->${edge.to}:${edge.refCode}`);
+      const status = sku.status ?? "ENABLED";
+      if (status !== "ENABLED") fail("SEED_SKU_RELATION_TARGET_NOT_ENABLED", `${edge.from}->${edge.refCode}:${status}`);
+    }
     addDependency(datasetForCode(edge.from), datasetForCode(edge.to), `relation:${edge.refKind || "UNKNOWN"}`);
   }
   // BOM rows are part of the same canonical graph.  They are required to be
@@ -77,10 +88,20 @@ const assertPlan = (input) => {
   // execution order in the loader.  Fail closed if a row has no corresponding
   // relation or points at a non-existent owner/component.
   for (const dataset of seedDatasets) {
+    const skusByCode = new Map((dataset.entities?.skus ?? []).map((sku) => [sku.code, sku]));
     for (const line of dataset.entities?.bomLines ?? []) {
       const owner = datasetForCode(line.ownerCode || dataset.entities.catalogItems?.[0]?.code || line.skuCode);
       const component = datasetForCode(line.componentCode);
       if (!owner || !component) fail("SEED_BOM_REFERENCE_DANGLING", `${dataset.fixtureId}:${line.ownerCode || line.skuCode}->${line.componentCode}`);
+      const skuOwnerCode = line.ownerKind === "SKU" || line.skuCode
+        ? line.skuCode || line.ownerCode
+        : null;
+      if (skuOwnerCode) {
+        const skuOwner = skusByCode.get(skuOwnerCode);
+        if (!skuOwner) fail("SEED_BOM_OWNER_SKU_DANGLING", `${dataset.fixtureId}:${skuOwnerCode}`);
+        if ((skuOwner.status ?? "ENABLED") === "VOIDED")
+          fail("SEED_VOIDED_SKU_BOM_FORBIDDEN", `${dataset.fixtureId}:${skuOwnerCode}`);
+      }
       const relationExists = relations.some((edge) => edge.from === (line.ownerCode || dataset.entities.catalogItems?.[0]?.code || line.skuCode) && edge.to === line.componentCode);
       if (!relationExists) fail("SEED_BOM_RELATION_MISSING", `${dataset.fixtureId}:${line.ownerCode || line.skuCode}->${line.componentCode}`);
       addDependency(owner, component, `bom:${line.ownerKind || "SKU"}`);
@@ -135,6 +156,37 @@ const assertPlan = (input) => {
     sourceItems,
     (item) => shapeRules.get(item.shapeKey)?.createAllowed === true,
   );
+  const sourceByFixtureKey = new Map(sourceItems.map((item) => [item.fixtureKey, item]));
+  const sourceCompositeRelationTargetFixtureKeys = [...new Set(
+    eligibleSourceItems.flatMap((source) => (source.compositeStructure?.componentGroups ?? [])
+      .flatMap((group) => (group.components ?? []).map((component) => component.componentFixtureKey))),
+  )].sort();
+  for (const fixtureKey of sourceCompositeRelationTargetFixtureKeys) {
+    const target = sourceByFixtureKey.get(fixtureKey);
+    if (!target) fail("SEED_SOURCE_COMPOSITE_TARGET_DANGLING", fixtureKey);
+    if (shapeRules.get(target.shapeKey)?.createAllowed !== true)
+      fail("SEED_SOURCE_COMPOSITE_TARGET_NOT_ELIGIBLE", `${fixtureKey}:${target.shapeKey}`);
+  }
+
+  const catalogLifecycle = fixture.seedExecutionPlan.catalogLifecycle;
+  const declaredSkuStatuses = new Set(
+    seedDatasets.flatMap((dataset) => dataset.entities?.skus ?? [])
+      .map((sku) => sku.status ?? "ENABLED"),
+  );
+  const sameArray = (actual, expected) => Array.isArray(actual) && JSON.stringify(actual) === JSON.stringify(expected);
+  if (!catalogLifecycle
+      || catalogLifecycle.operationId !== fixture.seedExecutionPlan.catalogSave.operationId
+      || catalogLifecycle.statusSource !== "seedDatasets[*].entities.skus[].status"
+      || !sameArray(catalogLifecycle.normalSaveStatuses, ["ENABLED", "DISABLED"])
+      || !sameArray(catalogLifecycle.transitionStatuses, ["VOIDED"])
+      || catalogLifecycle.transitionRequestField !== "skuTransitions"
+      || catalogLifecycle.transitionSequence !== "after-initial-save-before-final-readback"
+      || catalogLifecycle.transitionReadbackField !== "skuTransitions"
+      || catalogLifecycle.compositeRelationSequence !== "after-target-item-activation"
+      || catalogLifecycle.compositeRelationRequirement !== "ENABLED_TARGET_ITEM_AND_SKU"
+      || [...declaredSkuStatuses].some((status) => !catalogLifecycle.normalSaveStatuses.includes(status) && !catalogLifecycle.transitionStatuses.includes(status))
+      || (declaredSkuStatuses.has("VOIDED") && !catalogLifecycle.transitionStatuses.includes("VOIDED")))
+    fail("SEED_CATALOG_LIFECYCLE_POLICY_INVALID");
 
   const requiredOps = new Set([...profile.operations, fixture.seedExecutionPlan.catalogCreate.operationId, fixture.seedExecutionPlan.catalogSave.operationId, ...fixture.seedExecutionPlan.readback.map((x) => x.operationId)]);
   const availableOps = new Set(registry.operations.map((op) => op.operationId));
@@ -155,6 +207,7 @@ const assertPlan = (input) => {
     eligibleSourceItems,
     excludedSourceItems,
     sourceDependencyEdges,
+    sourceCompositeRelationTargetFixtureKeys,
     eligibility: {sourceItemCount: sourceItems.length, eligibleItemCount: eligibleSourceItems.length, excludedItemCount: excludedSourceItems.length, eligibleByScope},
     seedDatasetCount: expectedSeedDatasetCount,
     seedDatasets,
@@ -166,7 +219,8 @@ const assertPlan = (input) => {
     parity: profile.parity,
     ownerScopes: profile.ownerScopes,
     noDirectDatabaseWrites: true,
-    planDigest: sha256(JSON.stringify({mediaPlan, sourceItems, eligibleSourceItems, excludedSourceItems, sourceDependencyEdges, seedDatasets, dependencyEdges, relations, order})),
+    catalogLifecycle,
+    planDigest: sha256(JSON.stringify({mediaPlan, sourceItems, eligibleSourceItems, excludedSourceItems, sourceDependencyEdges, sourceCompositeRelationTargetFixtureKeys, seedDatasets, dependencyEdges, relations, order, catalogLifecycle})),
   };
 };
 
@@ -179,9 +233,12 @@ const runSelfTest = () => {
   ];
   const cases = [
     ["MISSING_RELATION_EDGE", () => assertPlan({...fixture, seedDatasets: fixture.seedDatasets.map((d) => ({...d, entities: {...d.entities, relations: d.fixtureId === "SEED-DINNER-SET" ? [{from: "DINNER-SET-001", to: "MISSING-001", refKind: "SKU", refCode: "LATTE-SKU-M"}] : d.entities.relations}}))})],
+    ["SKU_RELATION_TARGET_NOT_ENABLED", () => assertPlan({...fixture, seedDatasets: fixture.seedDatasets.map((d) => d.fixtureId === "SEED-DINNER-SET" ? {...d, entities: {...d.entities, relations: [{from: "DINNER-SET-001", to: "LATTE-001", refKind: "SKU", refCode: "LATTE-SKU-M"}]}} : d)})],
     ["RELATION_CYCLE", () => assertPlan({...fixture, seedDatasets: fixture.seedDatasets.map((d) => ({...d, entities: {...d.entities, relations: d.fixtureId === "SEED-DINNER-SET" ? [{from: "DINNER-SET-001", to: "LATTE-001"}, {from: "LATTE-001", to: "DINNER-SET-001"}] : d.entities.relations}}))})],
     ["MEDIA_DIGEST", () => { const original = mediaCatalog.assets.coffee.sha256; mediaCatalog.assets.coffee.sha256 = "0".repeat(64); try { assertPlan(fixture); } finally { mediaCatalog.assets.coffee.sha256 = original; } }],
     ["SAVE_OPERATION", () => { const old = fixture.seedExecutionPlan.catalogSave.operationId; fixture.seedExecutionPlan.catalogSave.operationId = "missingSave"; try { assertPlan(fixture); } finally { fixture.seedExecutionPlan.catalogSave.operationId = old; } }],
+    ["CATALOG_LIFECYCLE", () => { const old = fixture.seedExecutionPlan.catalogLifecycle.transitionStatuses; fixture.seedExecutionPlan.catalogLifecycle.transitionStatuses = []; try { assertPlan(fixture); } finally { fixture.seedExecutionPlan.catalogLifecycle.transitionStatuses = old; } }],
+    ["VOIDED_SKU_BOM", () => assertPlan({...fixture, seedDatasets: fixture.seedDatasets.map((d) => d.fixtureId === "SEED-LATTE" ? {...d, entities: {...d.entities, bomLines: [...(d.entities.bomLines ?? []), {skuCode: "LATTE-SKU-L", componentCode: "BEAN-001", quantity: 24}]}} : d)})],
     ["V4_COUNT", () => assertPlan({...fixture, revision: fixture.revision, seedDatasets: fixture.seedDatasets}) && (() => { const old = profile.parity.catalogItems; profile.parity.catalogItems = 72; try { assertPlan(fixture); } finally { profile.parity.catalogItems = old; } })()],
     ["SOURCE_RELATION_DANGLING", () => sourceDependencyEdgesFor([{...sourceGraphFixture[0], compositeStructure: {componentGroups: [{components: [{componentFixtureKey: "missing"}]}]}}], () => true)],
     ["SOURCE_RELATION_CROSS_SCOPE", () => sourceDependencyEdgesFor([{...sourceGraphFixture[0], headquarterTemplate: true}, sourceGraphFixture[1]], () => true)]

@@ -6,3 +6,12 @@ build/
 dist/
 coverage/
 *.log
+.expo/
+.turbo/
+**/android/build/
+**/android/app/build/
+**/android/.gradle/
+*.apk
+*.aab
+*.keystore
+**/.kotlin/

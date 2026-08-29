@@ -704,7 +704,12 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                     TemplateCommandProjection template = readTemplateCommandProjection(
                             command.workspaceUuid(), command.groupWorkspaceKey(), command.templateRef());
                     requireEnabledTemplate(template.status());
-                    validateTemplateProvider(template, command.workspaceUuid(), command.groupWorkspaceKey());
+                    CollaborationReadback.Tree collaborationTree = BusinessChannelPolicy.EXTERNAL.equals(
+                                    template.accessKind())
+                            ? collaborationCatalog.readTree(command.workspaceUuid(), command.groupWorkspaceKey())
+                            : null;
+                    validateTemplateProvider(
+                            template, command.workspaceUuid(), command.groupWorkspaceKey(), collaborationTree);
                     BusinessChannelPolicy.validateTemplateTarget(
                             template.operatorKind(),
                             template.projectRef().toString(),
@@ -746,7 +751,11 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                                     change("bindingRef", null, command.bindingRef()),
                                     change("status", null, initialStatus)));
                     StatusFacts facts = statusFacts(
-                            command.workspaceUuid(), command.groupWorkspaceKey(), List.of(), List.of(created));
+                            command.workspaceUuid(),
+                            command.groupWorkspaceKey(),
+                            List.of(),
+                            List.of(created),
+                            collaborationTree);
                     return channel(channelRow(created, facts));
                 });
     }
@@ -1011,13 +1020,32 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
 
     private void validateTemplateProvider(
             TemplateCommandProjection template, UUID workspaceUuid, String groupWorkspaceKey) {
+        validateTemplateProvider(template, workspaceUuid, groupWorkspaceKey, null);
+    }
+
+    private void validateTemplateProvider(
+            TemplateCommandProjection template,
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            CollaborationReadback.Tree preloadedTree) {
         BusinessChannelPolicy.validateTemplate(
                 template.accessKind(),
                 template.operatorKind(),
                 template.orderKind(),
                 template.dineInForm(),
                 template.providerCode(),
-                providerFor(template.accessKind(), template.providerCode(), workspaceUuid, groupWorkspaceKey));
+                preloadedTree == null
+                        ? providerFor(template.accessKind(), template.providerCode(), workspaceUuid, groupWorkspaceKey)
+                        : providerFromTree(preloadedTree, template.providerCode()));
+    }
+
+    private static CollaborationReadback.ProviderProfile providerFromTree(
+            CollaborationReadback.Tree tree, String providerCode) {
+        if (tree == null || providerCode == null) return null;
+        return tree.providerProfiles().stream()
+                .filter(provider -> Objects.equals(provider.providerCode(), providerCode))
+                .findFirst()
+                .orElse(null);
     }
 
     private CollaborationReadback.OwnerBinding readBinding(
@@ -1390,6 +1418,15 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
             String groupWorkspaceKey,
             List<TemplateProjection> templates,
             List<ChannelProjection> channels) {
+        return statusFacts(workspaceUuid, groupWorkspaceKey, templates, channels, null);
+    }
+
+    private StatusFacts statusFacts(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            List<TemplateProjection> templates,
+            List<ChannelProjection> channels,
+            CollaborationReadback.Tree preloadedTree) {
         String workspaceStatus = workspaceStatuses.requireStatus(workspaceUuid, groupWorkspaceKey);
         LinkedHashSet<UUID> organizationRefs = new LinkedHashSet<>();
         for (TemplateProjection template : templates) {
@@ -1411,7 +1448,9 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
         Map<String, CollaborationReadback.ProviderProfile> providers = new HashMap<>();
         Map<String, CollaborationReadback.ExternalSystem> externalSystems = new HashMap<>();
         if (needsCollaborationTree) {
-            CollaborationReadback.Tree tree = collaborationCatalog.readTree(workspaceUuid, groupWorkspaceKey);
+            CollaborationReadback.Tree tree = preloadedTree == null
+                    ? collaborationCatalog.readTree(workspaceUuid, groupWorkspaceKey)
+                    : preloadedTree;
             if (tree != null) {
                 for (CollaborationReadback.ProviderProfile provider : tree.providerProfiles()) {
                     providers.put(provider.providerCode(), provider);

@@ -337,6 +337,7 @@ describe('catalog management runtime model contracts', () => {
         images: [],
         identifiers: [],
         preparationProfile: null,
+        productionTagRef: null,
         categoryRef: null,
         attributeAssignments: [],
         orderOptionConfigs: [],
@@ -356,9 +357,14 @@ describe('catalog management runtime model contracts', () => {
       name: '拿铁',
       shapeKey: 'STANDARD_SALE_COUNTED',
       images: [],
-      preparationProfile: null,
+      productionTagRef: null,
       categoryRef: null,
     });
+    expect(request.sections.catalogDraft).not.toHaveProperty('attributeAssignments');
+    expect(request.sections.catalogDraft).not.toHaveProperty('orderOptionConfigs');
+    expect(request.sections.catalogDraft).not.toHaveProperty('identifiers');
+    expect(request.sections.catalogDraft).not.toHaveProperty('preparationProfile');
+    expect(request.sections.catalogDraft).not.toHaveProperty('tagRefs');
     expect(request.sections.catalogDraft).not.toHaveProperty('skus');
   });
 

@@ -57,7 +57,7 @@ npx skills list --global --json
 | 命令 | 账号 | 证据档位 |
 |---|---|---|
 | `npx create-expo-app@latest` | 否 | **已实测**（无 `~/.expo` 的机器上跑通，只生成匿名遥测 id） |
-| `npx create-expo-module@latest` | **`UNVERIFIED`** | 两台机器均未取得成功退出码（§8.1 阻断项）；**不得借用没有成功闭包的运行来证明"不需要账号"** |
+| `npx create-expo-module@latest` | 否 | `RESOLVED_BY_CP0_EVIDENCE`：scratch 相对目标路径已取得成功退出码；账号边界与入仓规范化边界分开，CP-4 仍须复跑并规范化 |
 | `npx expo install` / `start` / `prebuild` / `run:android` | 否 | **推论**（均为本地命令），未逐条实测 |
 | `eas build` / `eas submit` / EAS Workflows | **是** | 本批不使用 |
 
@@ -102,20 +102,37 @@ Codex 不得引入任何需要登录的命令；某步若绕不开账号，**停
 且 `react-native-reanimated@4.5.1` 的 peer 是 `"0.83 - 0.86"`，而 Reanimated 已裁定采纳（`T-12`）。
 RN 0.87 需要 SDK 58。**这不是我们手工钉的，是 `latest` 自己的值。**
 
-⚠️ **动工前重新验证 npm age gate（外部时效事实，`UNVERIFIED`）。**
-当前机器 Yarn 4.17.0 的默认 `npmMinimalAgeGate=1440`，
-直接安装会得到 `YN0016: expo@npm:~57.0.18: All versions satisfying "~57.0.18" are quarantined`。
-**本文不写任何绕过方式** —— 供应链保护的取舍归 Dexter；
-实施前请重新验证当时的实际情况并回报。
+**npm age gate 的实施口径已由 Dexter 于 2026-08-29 裁定：什么最新装什么。**
+当前机器 Yarn 4.17.0 的默认 `npmMinimalAgeGate=1440`，直接安装在当时曾得到
+`YN0016: expo@npm:~57.0.18: All versions satisfying "~57.0.18" are quarantined`；
+本批允许为已授权的 latest 解析/install 使用进程级
+`YARN_NPM_MINIMAL_AGE_GATE=0`，但不得写入仓库配置、改用旧快照或替代 package manager。
+每次运行仍须记录当时默认值、实际命令、环境变量、解析版本、退出码与 cleanup；
+该决定不改变供应链保护的持久配置。
+
+⚠️ **UI/assembly app 的版本源拆成两个集合，并以同一份精确 template 版本证据为键。**
+
+- **集合 A · 模板已提供**：`expo`、`expo-status-bar`、`react`、`react-native`、`typescript`、
+  `@types/react`。这些值直接以该精确 `expo-template-blank-typescript` 的发布 raw manifest 为权威，
+  不再重复运行 `expo install`“确认”模板自己已经写入的值。
+- **集合 B · UI 专有**：`react-dom`、`react-native-web`、`react-native-reanimated`、
+  `react-native-worklets`、NativeWind、Tailwind CSS、React Native Reusables，以及未来新增的 UI 专有包。
+  这些不在模板 raw manifest 中，必须在同一个 scratch app 内由 `npx expo install` 取得 SDK-aware 映射；
+  在成功取得前标记 `UI_EXPO_SDK_MAPPING=BLOCKED`，不得手写快照或把 raw manifest 冒充为解析结果。
+
+`UI_VERSION_SOURCE` 只在集合 A 已解析、集合 B 仍阻断时写作 `PARTIAL`；不消费集合 B 的 UI 空骨架可以
+继续使用集合 A。任何声明或源码消费集合 B 的包仍受该阻断约束。若 latest template 版本发生滚动，
+必须以新 template 版本为键重新取得 A、B 两组证据，禁止 A 用旧快照而 B 用新解析。
 
 ⚠️ **`npx expo install` 只在装了 `expo` 的包里可用。**
 它会先读本包的 Expo SDK 版本，**包内没有 `expo` 就直接报错退出**
 （`Cannot determine the project's Expo SDK version because the module 'expo' is not installed'`）。
 
 ⇒ 分工：
-- **`ui/**` · `adapter/**` · `assembly/**`**：走 `npx expo install`，不手写版本；
-- **`kernel/**`（9 个，零 Expo）**：`expo install` 用不了，**按本表手写版本**。
-  这不违反上一条 —— 它们本来就不装任何 Expo/RN 依赖。
+- **`ui/**` · `assembly/**`**：集合 A 消费 app template raw manifest；声明或消费集合 B 时走 `npx expo install`；
+- **`adapter/**` 是独立例外**：其 Expo/RN/Jest 等外部开发依赖以本次 `expo-module-template@latest` 的 raw manifest 为源，
+  不消费 app template 集合 A/B；CP-4 可为 TER 的 TypeScript 统一版本，但不得把 app template 版本表误套到 adapter；
+- **`kernel/**`（9 个，零 Expo）**：`expo install` 用不了，且按本表不声明任何 Expo/RN/React 依赖。
 
 ---
 
@@ -523,14 +540,15 @@ expo-module 配置），**必须由官方脚手架产出**：
 
 | 层 | 命令 | 证据档位 |
 |---|---|---|
-| `adapter/android/*` | `npx create-expo-module@latest`（**非 local**） | ⚠️ **`UNVERIFIED`**，见下 |
+| `adapter/android/*` | `npx create-expo-module@latest`（**非 local**） | `RESOLVED_BY_CP0_EVIDENCE`；入仓规范化仍待 CP-4 |
 | `assembly/android/pos-desktop` | `npx create-expo-app@latest <path> --template blank-typescript --no-agents-md --no-install` | 已实测（2026-08-29，exit 0） |
 
 ⚠️ **两条都用 `latest`，不要固定到具体版本**（§3）。
 `--no-agents-md` 已实测有效（不再生成 `AGENTS.md` / `CLAUDE.md` / `.claude/`），
 但 **`.git` 与 `LICENSE` 仍会生成**，按下面的清理表处理。
 
-🔴 **`create-expo-module` 在两台机器上都未取得可复跑的成功闭包，这是实施阻断项。**
+历史阻断记录：此前两次运行都未取得可复跑的成功闭包；该事实仍作为首败证据保留，
+但不再代表当前状态。
 
 - Claude 侧（2026-08-29）：跑出了产物树，但进程超时转后台后被终止，**从未取得退出码**。
   此前文档写"已实测"是**过度声称，现予撤回**。
@@ -539,9 +557,19 @@ expo-module 配置），**必须由官方脚手架产出**：
   以 `spawn pod ENOENT` 失败；`--no-example --platform android --package-manager yarn`
   路径同样未取得完整闭包。
 
-⇒ **动工前先解决这一条**，产出：可复跑的精确命令、解析到的 CLI 版本、原始产物树、退出码，
-以及从原始产物规范化为 TER 三级布局的**逐项规则**。
-**在此之前不要开始建 adapter 包**；若始终跑不通，作为阻断项回报，不要自行猜测落盘结构。
+可执行性补充：`create-expo-module` 必须在 scratch 目录中执行，并把目标写成相对路径（例如先
+`cd "$TER_SCRATCH"`，再传 `adapter-android-persist-kv`）。CLI 以 `INIT_CWD` 为基准执行
+`path.join(INIT_CWD, target)`；从仓根传绝对目标会把产物重写到仓内，随后 Yarn 报 workspace 边界错误。
+该行为与模板内容无关，CP-0 证据必须同时保留绝对目标首败和相对目标成功/失败的退出码。
+
+截至 2026-08-29，Codex CP-0 evidence 已取得相对目标的 module exit 0、原始树与 cleanup，
+因此上述 module 阻断已解除；历史首败仍作为路径约束保留。UI/assembly 的集合 A raw manifest 已解析，
+集合 B 的 SDK-aware 映射按 Dexter 的 latest/process-local age-gate 口径取得并记录；
+若该受控命令仍失败，必须保留首败并按 §13.2 停机，不得用快照或替代包管理器回填。
+
+⇒ CP-0 已产出可复跑的精确命令、解析到的 CLI 版本、原始产物树、退出码与 cleanup；
+adapter 入仓前仍必须按 CP-4 详设把原始产物规范化为 TER 三级布局，并保留逐项规则。
+若 CP-4 重新运行同一官方 source 失败，才恢复 `BLOCKED_CREATE_EXPO_MODULE`，不得猜测落盘结构。
 
 ⛔ **不接受照着别的工程抄原生工程目录。**
 
@@ -550,7 +578,8 @@ expo-module 配置），**必须由官方脚手架产出**：
 `create-expo-module` 产出的是带 Kotlin/Swift + Gradle 的原生模块，
 `create-expo-app` 产出的是 app，两者都不是库。
 `ui/**` 是库包，形态与 `libraries/frontend/admin-ui-foundation` 同类，按 §8.3 手写。
-用 `npx expo install` 装它的 RN / NativeWind / RNR / Reanimated 依赖。
+集合 A 的 React/RN/TypeScript 版本从 CP-0 的 template raw manifest 取值；只有声明或消费集合 B 时，
+才用同一 scratch app 的 `npx expo install` 取得 SDK-aware 版本，不得把未成功的解析写成已验证。
 
 创建后必须：① 调整为 §4.1 的三重命名；② 用 `npx expo install` 对齐 §3 版本基线；
 ③ 记录实际用的路径与命令。
@@ -650,13 +679,14 @@ expo-module 配置），**必须由官方脚手架产出**：
 **不再开 `"./moduleName"` / `"./dependencies"` 子路径** —— 那是绕过 package root 的旁路，
 正是 §9.0 废弃的东西。`exports` 只保留主入口。
 
-### 9.2 三条检查，构成完整闭包
+### 9.2 四条检查，构成完整闭包
 
 | # | 检查 | 证明了什么 | 命令 |
 |---|---|---|---|
 | 1 | **图比对** | 依赖图与设计一致：方向、闭包、无孤儿、无多余；`package.json` 与 `dependencies.ts` 与 spec 三者相符 | 一个脚本，读文件不编译，秒级 |
 | 2 | **类型解析** | 每条依赖边**在 TS 层真解析得到**（因为 `dependencies.ts` 真 import 了主入口） | 逐包 `tsc --noEmit`，经 turbo 拓扑序 |
 | 3 | **打包** | **Metro 真能打包 assembly 入口可达的那一批工作区包** | 在 assembly 跑 `npx expo export --platform android` |
+| 4 | **设备运行**（一次性验收，**不进 `verify`**） | **Gradle 构建 · adapter module 的 autolinking · 应用启动 · bootstrap 真的渲染出 14 个 moduleName**；同时保留 autolinking 生成的 registry/package list 或等价 Gradle 生成输出，并核对包含 `com.catering.v2s.terminal.adapter.android.persistkv.TerminalPersistKvModule` | 在 assembly 跑 `npx expo run:android`（模拟器即可） |
 
 ⚠️ **第 3 条不碰打包器就抓不到的失败，只有它能抓；但它的证明范围严格限于"入口可达集合"。**
 
@@ -678,17 +708,36 @@ import 到 TER 的包，一个空白 App 照样导出成功（实测约 3.35 秒
 ⚠️ **`expo export` 的证明口径只能写成"Metro 能打包这个入口可达集合"** ——
 不得因为 assembly 能导出就声称"消费了全部工作区包"。
 
+⚠️ **第 4 条是批一的一次性验收产物，不是 `verify` 的一部分。**
+首次 Gradle 构建是分钟到十几分钟级，进 `verify` 会毁掉快循环 ——
+`verify` 仍然只有静态门 + 逐包 `tsc` + `expo export` 三段。
+
+**为什么必须加这一条**：`expo export` 只证明 Metro 能打包 JS，
+**它不碰 Gradle、不碰 autolinking、不碰启动**。
+而 adapter 是带 Kotlin 的 expo-module，**autolinking 在 Yarn workspaces + hoisted
+`node_modules` + 本仓三级嵌套布局下能否被发现，是 RN monorepo 的经典坑位**。
+批一是纵切片，存在意义就是在复制之前暴露结构性未知 ——
+**这条坑位现在发现改一个包，批二发现改五个。**
+
+它一次性关掉四个缺口：monorepo 布局下的 Gradle 构建 · adapter module 的 autolinking ·
+JS bundle 真的能执行（打包成功不等于运行不崩）· bootstrap 真的够到了 14 个包
+（`expo export` 只证明可解析，不证明运行时真跑到）。
+
+⚠️ **只加这一条，不加别的设备验证** —— 双屏、杀进程重启、任何能力验证仍然不做。
+
 ⚠️ **没有每包一条的 echo 测试。**
 包内为空时，"每包一条断言"要么是 `expect(true)` 式占位，要么是手抄常量表 ——
 两者都不构成证据。**每包的独立验证由第 2 条（逐包 `tsc`）承担**，它是真的。
 
 ### 9.3 不做的
 
-启真机 · 装 APK · 启浏览器 · 任何 command / slice / 持久化 / 渲染 / 双屏 / 端口行为的验证 ·
-原生模块的构建与原生测试。
+启浏览器 · 双屏 · 杀进程重启 · 任何 command / slice / 持久化 / 端口行为的验证 ·
+adapter 原生**能力**的实现与测试。
 
-⚠️ **`expo export` 成功 ≠ 原生模块可构建。** 本批**不主张** adapter 的原生侧已接通 ——
-Kotlin 侧只要求 source set 形态存在，不要求编译或运行。
+⚠️ **主张边界只能往前挪一格。** 加了 §9.2 第 4 条之后，可以说
+**Gradle 构建 · autolinking · 应用启动 · bootstrap 渲染已证明**；
+**仍然不能说 adapter 的 Kotlin 能力可用** —— 因为根本还没有能力，
+Kotlin 侧只有一个最小注册类。
 交付表述必须与此一致，不得把"22 个包都建好了"说成"22 个包都能用了"。
 
 ## 10 · 本批必须建成的门
@@ -729,7 +778,7 @@ Kotlin 侧只要求 source set 形态存在，不要求编译或运行。
 | Expo MCP Server | 远端托管 + 必须 OAuth；能力由 `ui.base.automation` 覆盖 |
 | `host-runtime` 中间层 | **永久不建** —— 组装是组装包的职责（§7.2） |
 | adapter 共享包（interfaces / 事件名 / 错误码） | 每个 module 自带自己的（§7.3） |
-| 浏览器 / 真机测试基建 | 骨架只验解析闭包（§9.3） |
+| 浏览器测试基建 · 设备**自动化**测试基建 | 骨架的设备验收是**一次人工跑通 + 留证**（§9.2 第 4 条），不建自动化基建 |
 | 任何包的能力实现与能力验证 | 本批只建骨架 |
 
 ---
@@ -745,10 +794,10 @@ Kotlin 侧只要求 source set 形态存在，不要求编译或运行。
 4. **`create-expo-module` 的可复跑闭包证据**（§8.1 的阻断项）：精确命令、CLI 解析版本、
    原始产物树、退出码、规范化为三级布局的逐项规则；
 5. 六道门 + 每道门的**正负控制**记录（红夹具变红 + 真实树变绿）；
-6. §9.2 三条检查的运行输出：图比对、逐包 `tsc`、assembly `expo export`；
+6. §9.2 四条检查的运行输出与证据：图比对、逐包 `tsc`、assembly `expo export`，以及 CP-7 一次性 Android 模拟器验收（Gradle/autolinking/启动/bootstrap 渲染）；设备步骤不进入 `verify`；
 7. 实施记录：每包的 `plannedKind`、派生出的真实依赖图、各包创建路径与命令、
-   **与本文任何偏差的说明**、以及**本批未证明的事项清单**（至少含：原生模块未构建、
-   无任何能力被验证）。
+   **与本文任何偏差的说明**、以及**本批未证明的事项清单**（至少含：adapter Kotlin/native
+   能力未实现、未测试；无任何能力被验证）。
 
 ### 12.2 判据
 
@@ -758,6 +807,7 @@ Kotlin 侧只要求 source set 形态存在，不要求编译或运行。
 |---|---|---|---|
 | 1 | 四个层都有内容，且**全链类型解析通过** | `turbo run typecheck --filter='./apps/terminal/**'` | 某层为空；或某条依赖边解析不到 |
 | 2 | **assembly 能打包**，且**入口可达集合 = 当前批次包集合** | 在 assembly 包内 `npx expo export --platform android`，并由 §10 图门第 ② 条断言可达集合 | 打包失败；或打包成功但入口根本没 import 到 TER 的包（空白 App 也能导出） |
+| 2b | **`npx expo run:android` 在模拟器上跑通**：Gradle 构建成功、adapter autolinking 生成结果包含 `com.catering.v2s.terminal.adapter.android.persistkv.TerminalPersistKvModule`、应用启动、屏上出现 14 个 moduleName | 一次性人工执行 + 保存 autolinking 生成 registry/package list 或等价 Gradle 输出、截图/启动日志/adb 身份留证（**不进 `verify`**） | 构建失败（多半是 autolinking 在本仓布局下没被发现）；生成结果缺该 Module；启动即崩；或屏上少于 14 个 |
 | 3 | 依赖图与规格逐项相符，闭包 = 当前批次包数（批 1 = 14，批 2 后 = 22），无孤儿无多余 | §10 图比对门 | 图漂移但各处自洽 |
 | 4 | TER 的工作区成员**恰好等于当前批次包数** | `yarn workspaces list --json` 过滤 `apps/terminal/` 前缀后计数 | `example/` 或残留包混进来 |
 | 5 | 六道门**正负控制都通过**（红夹具变红 + 真实树变绿） | §10 | 只验了红夹具；或某门在真实树上是红的 |
@@ -777,16 +827,18 @@ Kotlin 侧只要求 source set 形态存在，不要求编译或运行。
 1. **先读规范正本**：`doc/platform/terminal-coding-standard.md`。本文不复述规则，冲突时以正本为准。
 2. **`skeleton-graph.ts` 是规格的唯一载体**，也是骨架期 `plannedKind` 的唯一载体 ——
    包内不再复制 `plannedKind`。
-3. **依赖版本**：`ui/**` · `adapter/**` · `assembly/**` 走 `npx expo install`；
-   **`kernel/**` 例外** —— 包内没有 `expo`，该命令用不了。
-   **版本取实施当时 `latest` 模板与 Expo CLI 的实际解析结果**（§3）——
-   §3 的表是 2026-08-29 快照，**不是要钉死的值**，与实际不符时以实际为准并说明。
+3. **依赖版本**：集合 A（模板已提供的 `expo`、`expo-status-bar`、`react`、`react-native`、
+   `typescript`、`@types/react`）直接取实施当时精确 `latest` template 的 raw manifest；集合 B（UI 专有包）
+   必须取同一 scratch app 的 `npx expo install` SDK-aware 解析结果。若 template 滚动，A/B 必须以新 template
+   版本为键一起重取；§3 的表只是快照，不是输入。
 4. **创建路径分两类**：`kernel/**` 与 `ui/**` **手工建**；
    `adapter/**` 与 `assembly/**` **走官方脚手架**，不抄目录。
 5. **两条最容易被顺手违反的边界**：
    ① `kernel/**` 不装 Expo / RN / React；
    ② 骨架只验解析闭包，不下钻到任何包的能力。
-6. **`create-expo-module` 是实施阻断项**（§8.1）—— 未取得可复跑闭包前不要开建 adapter 包。
-7. **动工前重新验证一次 npm age gate**（§3）—— 它是外部时效事实，会随时间变化。
+6. **`create-expo-module` 的历史实施阻断已由 CP-0 evidence 解除**（§8.1）；CP-4 仍不得绕过
+   official source、scratch 相对目标路径、原始树与 cleanup 证据，复跑失败则重新阻断 adapter 入仓。
+7. **每次 latest 解析/install 都记录 npm age gate 的当前默认值与已授权的进程级覆盖**（§3）；
+   不把临时覆盖写入仓库，也不因等待隔离期而改用旧版本或替代 package manager。
 8. **遇到本文与实际不符**，**停下来说明，不要自行选一个做法继续**。
 9. 开放点已标注（§5.1 workspaces 通配方式）；其余按规范正本推导，仍不明确的回 Dexter。

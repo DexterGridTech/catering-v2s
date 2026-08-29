@@ -1,0 +1,29 @@
+{
+  "name": "@catering-v2s/ui-base-admin-shell",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*",
+    "@catering-v2s/kernel-base-runtime": "workspace:*",
+    "@catering-v2s/kernel-base-state": "workspace:*",
+    "@catering-v2s/kernel-base-ui-state": "workspace:*",
+    "@catering-v2s/ui-base-primitives": "workspace:*",
+    "@catering-v2s/ui-base-render": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "typescript": "~6.0.3"
+  }
+}

@@ -116,6 +116,7 @@
       "additionalProperties": false,
       "required": [
         "categories",
+        "tags",
         "productionTags",
         "dictionary",
         "optionGroups",
@@ -123,6 +124,12 @@
       ],
       "properties": {
         "categories": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "tags": {
           "type": "object",
           "additionalProperties": {
             "type": "string"
@@ -422,6 +429,7 @@
         "assetUpload",
         "catalogCreate",
         "catalogSave",
+        "catalogLifecycle",
         "fullCatalogParity",
         "cleanup",
         "readback",
@@ -531,6 +539,65 @@
             "usesReturnedAssetRefs": {
               "type": "boolean",
               "description": "returned refs used"
+            }
+          }
+        },
+        "catalogLifecycle": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "statusSource",
+            "normalSaveStatuses",
+            "transitionStatuses",
+            "transitionRequestField",
+            "transitionSequence",
+            "transitionReadbackField",
+            "compositeRelationSequence",
+            "compositeRelationRequirement"
+          ],
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "description": "catalog lifecycle operation"
+            },
+            "statusSource": {
+              "type": "string",
+              "description": "lifecycle status source"
+            },
+            "normalSaveStatuses": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            },
+            "transitionStatuses": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            },
+            "transitionRequestField": {
+              "type": "string",
+              "description": "terminal transition request field"
+            },
+            "transitionSequence": {
+              "type": "string",
+              "description": "terminal transition sequence"
+            },
+            "transitionReadbackField": {
+              "type": "string",
+              "description": "terminal transition readback field"
+            },
+            "compositeRelationSequence": {
+              "type": "string",
+              "description": "composite relation sequence"
+            },
+            "compositeRelationRequirement": {
+              "type": "string",
+              "description": "composite relation requirement"
             }
           }
         },

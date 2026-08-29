@@ -752,7 +752,1516 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
   }
 ] as const;
 
-export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {} as const;
+export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
+  "addOperationsOrganizationHeadCompanyBrandAuthorization": {
+    "kind": "FIXED",
+    "max": 19,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 19,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "cancelOperationsWorkspaceGroupInvitation": {
+    "kind": "FIXED",
+    "max": 22,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 22,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "cancelOperationsWorkspaceHeadCompanyInvitation": {
+    "kind": "FIXED",
+    "max": 22,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 22,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "cancelOperationsWorkspaceProjectInvitation": {
+    "kind": "FIXED",
+    "max": 21,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 21,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "cancelOperationsWorkspaceRegionInvitation": {
+    "kind": "FIXED",
+    "max": 22,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 22,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "cancelOperationsWorkspaceStoreInvitation": {
+    "kind": "FIXED",
+    "max": 21,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 21,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "changeCurrentWorkspacePassword": {
+    "kind": "FIXED",
+    "max": 10,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 10,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsBusinessChannel": {
+    "kind": "FIXED",
+    "max": 19,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 19,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsBusinessChannelTemplate": {
+    "kind": "FIXED",
+    "max": 21,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 21,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsContract": {
+    "kind": "FIXED",
+    "max": 19,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 19,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsOrganizationBrand": {
+    "kind": "FIXED",
+    "max": 19,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 19,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsOrganizationHeadCompany": {
+    "kind": "FIXED",
+    "max": 19,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 19,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsOrganizationProject": {
+    "kind": "FIXED",
+    "max": 24,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 24,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsOrganizationRegion": {
+    "kind": "FIXED",
+    "max": 23,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 23,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsOrganizationStore": {
+    "kind": "FIXED",
+    "max": 21,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 21,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsOrganizationTenant": {
+    "kind": "FIXED",
+    "max": 19,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 19,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsOwnerBinding": {
+    "kind": "FIXED",
+    "max": 22,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 22,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsWorkspaceGroupInvitation": {
+    "kind": "FIXED",
+    "max": 21,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 21,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsWorkspaceHeadCompanyInvitation": {
+    "kind": "FIXED",
+    "max": 21,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 21,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsWorkspaceProjectInvitation": {
+    "kind": "FIXED",
+    "max": 20,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 20,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsWorkspaceRegionInvitation": {
+    "kind": "FIXED",
+    "max": 21,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 21,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createOperationsWorkspaceStoreInvitation": {
+    "kind": "FIXED",
+    "max": 20,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 20,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "deleteOperationsOwnerBinding": {
+    "kind": "FIXED",
+    "max": 22,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 22,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsBusinessChannelDetail": {
+    "kind": "FIXED",
+    "max": 12,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 12,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsBusinessChannelTemplates": {
+    "kind": "FIXED",
+    "max": 11,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 11,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsContract": {
+    "kind": "FIXED",
+    "max": 9,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 9,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsContractCandidates": {
+    "kind": "FIXED",
+    "max": 9,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 9,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsContractExtensionDefinition": {
+    "kind": "FIXED",
+    "max": 8,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 8,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsContracts": {
+    "kind": "FIXED",
+    "max": 9,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 9,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsEntityAuditHistory": {
+    "kind": "FIXED",
+    "max": 7,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 7,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsExternalCapabilityDictionary": {
+    "kind": "FIXED",
+    "max": 7,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 7,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsExternalProviderCandidates": {
+    "kind": "FIXED",
+    "max": 7,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 7,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsFixedStoreContracts": {
+    "kind": "FIXED",
+    "max": 9,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 9,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsOrganizationBrand": {
+    "kind": "FIXED",
+    "max": 8,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 8,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsOrganizationBrands": {
+    "kind": "FIXED",
+    "max": 8,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 8,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsOrganizationBusinessEntityExtensionDefinition": {
+    "kind": "FIXED",
+    "max": 8,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 8,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsOrganizationCandidates": {
+    "kind": "FIXED",
+    "max": 7,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 7,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsOrganizationHeadCompanies": {
+    "kind": "FIXED",
+    "max": 8,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 8,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsOrganizationHeadCompany": {
+    "kind": "FIXED",
+    "max": 10,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 10,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsOrganizationHierarchy": {
+    "kind": "FIXED",
+    "max": 9,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 9,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsOrganizationHierarchyExtensionDefinition": {
+    "kind": "FIXED",
+    "max": 8,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 8,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsOrganizationStore": {
+    "kind": "FIXED",
+    "max": 13,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 13,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsOrganizationStoreExtensionDefinition": {
+    "kind": "FIXED",
+    "max": 8,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 8,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsOrganizationStores": {
+    "kind": "FIXED",
+    "max": 14,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 14,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsOrganizationTenant": {
+    "kind": "FIXED",
+    "max": 8,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 8,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsOrganizationTenants": {
+    "kind": "FIXED",
+    "max": 8,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 8,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsOwnerBindingDetail": {
+    "kind": "FIXED",
+    "max": 15,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 15,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsProjectBusinessChannels": {
+    "kind": "FIXED",
+    "max": 11,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 11,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsStoreBusinessChannels": {
+    "kind": "FIXED",
+    "max": 13,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 13,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsStoreBusinessChannelTemplateCandidates": {
+    "kind": "FIXED",
+    "max": 13,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 13,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsStoreProfile": {
+    "kind": "FIXED",
+    "max": 11,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 11,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceGroupInvitationCandidates": {
+    "kind": "FIXED",
+    "max": 14,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 14,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceGroupInvitations": {
+    "kind": "FIXED",
+    "max": 15,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 15,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceGroupUser": {
+    "kind": "FIXED",
+    "max": 19,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 19,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceGroupUserAccount": {
+    "kind": "FIXED",
+    "max": 18,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 18,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceHeadCompanyInvitationCandidates": {
+    "kind": "FIXED",
+    "max": 13,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 13,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceHeadCompanyInvitations": {
+    "kind": "FIXED",
+    "max": 15,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 15,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceHeadCompanyUser": {
+    "kind": "FIXED",
+    "max": 19,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 19,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceHeadCompanyUserAccount": {
+    "kind": "FIXED",
+    "max": 18,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 18,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceLoginEntry": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceProjectInvitationCandidates": {
+    "kind": "FIXED",
+    "max": 11,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 11,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceProjectInvitations": {
+    "kind": "FIXED",
+    "max": 13,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 13,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceProjectUser": {
+    "kind": "FIXED",
+    "max": 17,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 17,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceProjectUserAccount": {
+    "kind": "FIXED",
+    "max": 16,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 16,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceRegionInvitationCandidates": {
+    "kind": "FIXED",
+    "max": 12,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 12,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceRegionInvitations": {
+    "kind": "FIXED",
+    "max": 14,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 14,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceRegionUser": {
+    "kind": "FIXED",
+    "max": 18,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 18,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceRegionUserAccount": {
+    "kind": "FIXED",
+    "max": 17,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 17,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceSessionEntry": {
+    "kind": "FIXED",
+    "max": 11,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 11,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceStoreInvitationCandidates": {
+    "kind": "FIXED",
+    "max": 12,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 12,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceStoreInvitations": {
+    "kind": "FIXED",
+    "max": 13,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 13,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceStoreUser": {
+    "kind": "FIXED",
+    "max": 18,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 18,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceStoreUserAccount": {
+    "kind": "FIXED",
+    "max": 16,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 16,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "invalidateOperationsContract": {
+    "kind": "FIXED",
+    "max": 18,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 18,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "operationsWorkspaceLogout": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "operationsWorkspacePasswordLogin": {
+    "kind": "FIXED",
+    "max": 22,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 22,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "reissueOperationsWorkspaceGroupInvitation": {
+    "kind": "FIXED",
+    "max": 29,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 29,
+        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
+        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "reissueOperationsWorkspaceHeadCompanyInvitation": {
+    "kind": "FIXED",
+    "max": 29,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 29,
+        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
+        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "reissueOperationsWorkspaceProjectInvitation": {
+    "kind": "FIXED",
+    "max": 28,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 28,
+        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
+        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "reissueOperationsWorkspaceRegionInvitation": {
+    "kind": "FIXED",
+    "max": 29,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 29,
+        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
+        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "reissueOperationsWorkspaceStoreInvitation": {
+    "kind": "FIXED",
+    "max": 28,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 28,
+        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
+        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "removeOperationsOrganizationHeadCompanyBrandAuthorization": {
+    "kind": "FIXED",
+    "max": 20,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 20,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "revokeOperationsWorkspaceGroupUserAssignment": {
+    "kind": "FIXED",
+    "max": 28,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 28,
+        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
+        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "revokeOperationsWorkspaceHeadCompanyUserAssignment": {
+    "kind": "FIXED",
+    "max": 28,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 28,
+        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
+        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "revokeOperationsWorkspaceProjectUserAssignment": {
+    "kind": "FIXED",
+    "max": 26,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 26,
+        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
+        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "revokeOperationsWorkspaceRegionUserAssignment": {
+    "kind": "FIXED",
+    "max": 28,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 28,
+        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
+        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "revokeOperationsWorkspaceStoreUserAssignment": {
+    "kind": "FIXED",
+    "max": 26,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 26,
+        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
+        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "selectOperationsWorkspaceSessionContext": {
+    "kind": "FIXED",
+    "max": 16,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 16,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "selectOperationsWorkspaceSessionDataNode": {
+    "kind": "FIXED",
+    "max": 15,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 15,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "sendOperationsWorkspaceOtp": {
+    "kind": "FIXED",
+    "max": 10,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 10,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "transitionOperationsBusinessChannelStatus": {
+    "kind": "FIXED",
+    "max": 23,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 23,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "transitionOperationsBusinessChannelTemplateStatus": {
+    "kind": "FIXED",
+    "max": 23,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 23,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "transitionOperationsOrganizationBrandStatus": {
+    "kind": "FIXED",
+    "max": 23,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 23,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "transitionOperationsOrganizationHeadCompanyStatus": {
+    "kind": "FIXED",
+    "max": 20,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 20,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "transitionOperationsOrganizationNodeStatus": {
+    "kind": "FIXED",
+    "max": 23,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 23,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "transitionOperationsOrganizationStoreStatus": {
+    "kind": "FIXED",
+    "max": 17,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 17,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "transitionOperationsOrganizationTenantStatus": {
+    "kind": "FIXED",
+    "max": 23,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 23,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "updateOperationsBusinessChannel": {
+    "kind": "FIXED",
+    "max": 23,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 23,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "updateOperationsBusinessChannelTemplate": {
+    "kind": "FIXED",
+    "max": 23,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 23,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "updateOperationsCommercialGroup": {
+    "kind": "FIXED",
+    "max": 24,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 24,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "updateOperationsContract": {
+    "kind": "FIXED",
+    "max": 21,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 21,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "updateOperationsOrganizationBrand": {
+    "kind": "FIXED",
+    "max": 21,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 21,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "updateOperationsOrganizationHeadCompany": {
+    "kind": "FIXED",
+    "max": 21,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 21,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "updateOperationsOrganizationNode": {
+    "kind": "FIXED",
+    "max": 22,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 22,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "updateOperationsOrganizationStore": {
+    "kind": "FIXED",
+    "max": 20,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 20,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "updateOperationsOrganizationTenant": {
+    "kind": "FIXED",
+    "max": 21,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 21,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "verifyOperationsWorkspaceOtp": {
+    "kind": "FIXED",
+    "max": 21,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 21,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  }
+} as const;
 
 export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "addOperationsOrganizationHeadCompanyBrandAuthorization": "addOperationsOrganizationHeadCompanyBrandAuthorization",
@@ -1418,7 +2927,7 @@ export type OrganizationStoreSortDirection = "ASC" | "DESC";
 
 export type OrganizationStoreSortKey = "NAME" | "CODE" | "UPDATED_AT";
 
-export type OrganizationStoreStatus = "ENABLED" | "DISABLED";
+export type OrganizationStoreStatus = "ENABLED" | "DISABLED" | "VOIDED";
 
 export type OrganizationStoreStatusRequest = {
   targetStatus: OrganizationStoreStatus;

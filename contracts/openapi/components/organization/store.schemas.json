@@ -460,7 +460,8 @@
         "type": "string",
         "enum": [
           "ENABLED",
-          "DISABLED"
+          "DISABLED",
+          "VOIDED"
         ]
       },
       "OrganizationStoreStatusRequest": {

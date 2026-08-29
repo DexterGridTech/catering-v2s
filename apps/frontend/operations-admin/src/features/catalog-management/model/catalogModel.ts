@@ -606,7 +606,6 @@ export function buildCatalogSkuVoidRequest(
   dataNodeRef: Uuid,
   itemCode: string,
   sku: Pick<CatalogSkuRow, 'productSkuRef' | 'version'>,
-  inventoryRules: CatalogInventoryRules = {nodes: []},
 ): CatalogItemSaveRequest {
   return {
     dataNodeRef,
@@ -616,42 +615,12 @@ export function buildCatalogSkuVoidRequest(
       catalogDraft: {
         name: item.name,
         shapeKey: item.shapeKey,
-        categoryRef: item.categoryRef,
-        attributeAssignments: item.attributeAssignments.map(assignment => ({
-          definitionRef: assignment.definitionRef,
-          textValue: assignment.textValue,
-          optionRefs: assignment.optionRefs,
-        })),
-        orderOptionConfigs: item.orderOptionConfigs.map(config => ({
-          definitionRef: config.definitionRef,
-          displayOrder: config.displayOrder,
-          required: config.required,
-          minSelectionCount: config.minSelectionCount,
-          maxSelectionCount: config.maxSelectionCount,
-          values: config.values.map(value => ({
-            definitionValueRef: value.definitionValueRef,
-            defaultValue: value.defaultValue,
-            extraPrice: value.extraPrice,
-            expectedBomVersion: value.bomVersion ?? 0,
-            preparationEffect: value.preparationEffect
-              ? {
-                  instruction: value.preparationEffect.instruction,
-                  preparationSecondsDelta: value.preparationEffect.preparationSecondsDelta,
-                }
-              : null,
-          })),
-        })),
-        images: item.images,
-        identifiers: item.identifiers.map(identifier => ({
-          identifierType: identifier.identifierType,
-          identifierValue: identifier.identifierValue,
-        })),
-        productionTagRef: item.productionTagRef,
-        preparationProfile: item.preparationProfile,
-        tagRefs: item.tagRefs,
+        images: [...item.images],
+        productionTagRef: item.productionTagRef ?? null,
+        categoryRef: item.categoryRef ?? null,
       },
       expectedCatalogVersion: item.version,
-      inventoryRules: {nodes: inventoryRules.nodes.map(catalogInventoryRuleToDraft)},
+      inventoryRules: {nodes: []},
     },
   };
 }

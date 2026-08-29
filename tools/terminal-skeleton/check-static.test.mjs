@@ -1,0 +1,444 @@
+import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {
+  repoRoot,
+  skeletonGraphPath,
+  readSkeletonSpec,
+  projectSkeletonGraph,
+  moduleNameToPackageName,
+  moduleNameToRelativePath,
+} from './graph-model.mjs';
+import {runStaticChecks} from './check-static.mjs';
+
+const toolDirectory = path.dirname(fileURLToPath(import.meta.url));
+const checkStaticPath = path.join(toolDirectory, 'check-static.mjs');
+const spec = readSkeletonSpec(skeletonGraphPath);
+const batchOne = projectSkeletonGraph(spec, 1);
+const batchTwo = projectSkeletonGraph(spec, 2);
+
+assert.equal(Object.keys(spec.graph).length, 22, 'the literal skeleton specification has 22 nodes');
+assert.equal(Object.keys(batchOne).length, 14, 'batch one projects 14 nodes');
+assert.equal(Object.keys(batchTwo).length, 22, 'batch two projects 22 nodes');
+assert.equal(moduleNameToPackageName('assembly.android.pos-desktop'), '@catering-v2s/assembly-android-pos-desktop');
+assert.equal(moduleNameToRelativePath('kernel.base.contracts'), 'apps/terminal/kernel/base/contracts');
+
+const help = spawnSync(process.execPath, [checkStaticPath, '--help'], {cwd: repoRoot, encoding: 'utf8'});
+assert.equal(help.status, 0, help.stderr);
+assert.match(help.stdout, /six TER static rule gates/);
+
+const realStatic = spawnSync(process.execPath, [checkStaticPath], {cwd: repoRoot, encoding: 'utf8'});
+assert.equal(realStatic.status, 0, realStatic.stderr);
+assert.match(realStatic.stdout, /RULE_GATES=6/);
+assert.match(realStatic.stdout, /SUPPORT_CHECKS=1/);
+for (const rule of [
+  'GRAPH_COMPARISON',
+  'TRIPLE_NAMING',
+  'DEPENDENCY_DIRECTION',
+  'DEPENDENCY_DECLARATION_COMPLETENESS',
+  'TR01_REDUCER_BOUNDARY',
+  'KERNEL_PLATFORM_INDEPENDENCE',
+]) {
+  assert.match(realStatic.stdout, new RegExp(`RULE_${rule}=PASS`));
+}
+assert.match(realStatic.stdout, /SCAFFOLD_HYGIENE=PASS/);
+
+const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'terminal-skeleton-static-'));
+try {
+  fs.cpSync(repoRoot, fixtureRoot, {
+    recursive: true,
+    filter(source) {
+      const relative = path.relative(repoRoot, source);
+      if (!relative) return true;
+      const segments = relative.split(path.sep);
+      return !['.git', '.runtime', 'node_modules'].includes(segments[0]) && !segments.includes('.turbo');
+    },
+  });
+  const adapterRoot = path.join(fixtureRoot, 'apps/terminal/adapter/android/persist-kv');
+  const cleanReport = runStaticChecks({root: fixtureRoot, batch: 2});
+  assert.ok(cleanReport.results.every(result => result.status === 'PASS'));
+  assert.equal(cleanReport.hygiene.status, 'PASS', cleanReport.hygiene.error);
+
+  function gate(report, name) {
+    const result = report.results.find(candidate => candidate.name === name);
+    assert.ok(result, `static report must contain ${name}`);
+    return result;
+  }
+
+  function assertGateVector(report, failingNames = []) {
+    const failing = new Set(failingNames);
+    for (const result of report.results) {
+      assert.equal(
+        result.status,
+        failing.has(result.name) ? 'FAIL' : 'PASS',
+        `${result.name} status drifted during a red-control mutation`,
+      );
+    }
+    assert.equal(report.hygiene.status, 'PASS', report.hygiene.error);
+  }
+
+  function withTextMutation(filePath, mutate, assertion) {
+    const original = fs.readFileSync(filePath, 'utf8');
+    try {
+      fs.writeFileSync(filePath, mutate(original));
+      assertion(runStaticChecks({root: fixtureRoot, batch: 2}));
+    } finally {
+      fs.writeFileSync(filePath, original);
+    }
+  }
+
+  function withJsonMutation(filePath, mutate, assertion) {
+    const original = fs.readFileSync(filePath, 'utf8');
+    try {
+      const value = JSON.parse(original);
+      mutate(value);
+      fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
+      assertion(runStaticChecks({root: fixtureRoot, batch: 2}));
+    } finally {
+      fs.writeFileSync(filePath, original);
+    }
+  }
+
+  function withMutations(changes, assertion) {
+    const originals = changes.map(change => ({...change, original: fs.readFileSync(change.filePath, 'utf8')}));
+    try {
+      for (const change of originals) fs.writeFileSync(change.filePath, change.mutate(change.original));
+      assertion(runStaticChecks({root: fixtureRoot, batch: 2}));
+    } finally {
+      for (const change of originals) fs.writeFileSync(change.filePath, change.original);
+    }
+  }
+
+  fs.writeFileSync(path.join(adapterRoot, '.prettierrc'), '{}\n');
+  const nestedMetadataReport = runStaticChecks({root: fixtureRoot, batch: 2});
+  assert.equal(nestedMetadataReport.hygiene.status, 'FAIL');
+  assert.match(nestedMetadataReport.hygiene.error, /adapter\/android\/persist-kv\/\.prettierrc/);
+  fs.rmSync(path.join(adapterRoot, '.prettierrc'));
+
+  fs.mkdirSync(path.join(adapterRoot, 'node_modules'));
+  const nestedNodeModulesReport = runStaticChecks({root: fixtureRoot, batch: 2});
+  assert.equal(nestedNodeModulesReport.hygiene.status, 'FAIL');
+  assert.match(nestedNodeModulesReport.hygiene.error, /adapter\/android\/persist-kv\/node_modules/);
+  fs.rmSync(path.join(adapterRoot, 'node_modules'), {recursive: true, force: true});
+
+  const gitignorePath = path.join(fixtureRoot, '.gitignore');
+  const gitignore = fs.readFileSync(gitignorePath, 'utf8').replace(/^\.turbo\/\n?/m, '');
+  fs.writeFileSync(gitignorePath, gitignore);
+  const missingIgnoreReport = runStaticChecks({root: fixtureRoot, batch: 2});
+  assert.equal(missingIgnoreReport.hygiene.status, 'FAIL');
+  assert.match(missingIgnoreReport.hygiene.error, /missing \.gitignore entry \.turbo\//);
+
+  fs.writeFileSync(gitignorePath, fs.readFileSync(path.join(repoRoot, '.gitignore'), 'utf8'));
+  const bootstrapPath = path.join(
+    fixtureRoot,
+    'apps/terminal/assembly/android/pos-desktop/src/skeletonBootstrap.ts',
+  );
+  const bootstrapSource = fs.readFileSync(bootstrapPath, 'utf8');
+  fs.writeFileSync(
+    bootstrapPath,
+    bootstrapSource
+      .replace("import {moduleName as uiBaseRender} from '@catering-v2s/ui-base-render';\n", '')
+      .replace('  uiBaseRender,\n', ''),
+  );
+  const missingBootstrapImportReport = runStaticChecks({root: fixtureRoot, batch: 2});
+  const missingBootstrapImportGate = missingBootstrapImportReport.results.find(
+    result => result.name === 'graph-comparison',
+  );
+  assert.equal(missingBootstrapImportGate.status, 'FAIL');
+  assert.match(missingBootstrapImportGate.error, /assembly bootstrap workspace roots/);
+  fs.writeFileSync(bootstrapPath, bootstrapSource);
+
+  const uiTestSupportDependenciesPath = path.join(
+    fixtureRoot,
+    'apps/terminal/ui/base/test-support/src/dependencies.ts',
+  );
+  const uiTestSupportDependenciesSource = fs.readFileSync(uiTestSupportDependenciesPath, 'utf8');
+  fs.writeFileSync(
+    uiTestSupportDependenciesPath,
+    uiTestSupportDependenciesSource.replace(
+      "import {moduleName as render} from '@catering-v2s/ui-base-render';\n" +
+        "import {moduleName as automation} from '@catering-v2s/ui-base-automation';\n" +
+        "import {moduleName as kernelTestSupport} from '@catering-v2s/kernel-base-test-support';\n\n",
+      '',
+    ),
+  );
+  const missingDependencyImportsReport = runStaticChecks({root: fixtureRoot, batch: 2});
+  const missingDependencyImportsGate = missingDependencyImportsReport.results.find(
+    result => result.name === 'graph-comparison',
+  );
+  assert.equal(missingDependencyImportsGate.status, 'FAIL');
+  assert.match(missingDependencyImportsGate.error, /ui\.base\.test-support source imports/);
+  fs.writeFileSync(uiTestSupportDependenciesPath, uiTestSupportDependenciesSource);
+
+  const appPath = path.join(fixtureRoot, 'apps/terminal/assembly/android/pos-desktop/App.tsx');
+  const appSource = fs.readFileSync(appPath, 'utf8');
+  fs.writeFileSync(
+    appPath,
+    appSource.replace("import {skeletonModuleNames} from './src/skeletonBootstrap';\n", ''),
+  );
+  const missingAppEdgeReport = runStaticChecks({root: fixtureRoot, batch: 2});
+  const missingAppEdgeGate = missingAppEdgeReport.results.find(result => result.name === 'graph-comparison');
+  assert.equal(missingAppEdgeGate.status, 'FAIL');
+  assert.match(missingAppEdgeGate.error, /assembly App\.tsx/);
+  fs.writeFileSync(appPath, appSource);
+
+  const contractsPackagePath = path.join(
+    fixtureRoot,
+    'apps/terminal/kernel/base/contracts/package.json',
+  );
+  withJsonMutation(
+    contractsPackagePath,
+    packageJson => {
+      packageJson.name = '@catering-v2s/kernel-base-contracts-renamed';
+    },
+    report => {
+      assertGateVector(report, ['triple-naming']);
+      assert.equal(gate(report, 'triple-naming').status, 'FAIL');
+      assert.match(gate(report, 'triple-naming').error, /kernel\.base\.contracts package name/);
+    },
+  );
+
+  const contractsModuleNamePath = path.join(
+    fixtureRoot,
+    'apps/terminal/kernel/base/contracts/src/moduleName.ts',
+  );
+  withTextMutation(
+    contractsModuleNamePath,
+    source => source.replace("'kernel.base.contracts'", "'kernel.base.contracts.drift'"),
+    report => {
+      assertGateVector(report, ['triple-naming']);
+      assert.match(gate(report, 'triple-naming').error, /src\/moduleName\.ts/);
+    },
+  );
+
+  const uiRenderPackagePath = path.join(
+    fixtureRoot,
+    'apps/terminal/ui/base/render/package.json',
+  );
+  withJsonMutation(
+    uiRenderPackagePath,
+    packageJson => {
+      packageJson.dependencies['@catering-v2s/kernel-base-contracts'] = 'workspace:*';
+    },
+    report => {
+      assertGateVector(report, ['graph-comparison']);
+      assert.match(gate(report, 'graph-comparison').error, /ui\.base\.render/);
+    },
+  );
+
+  const persistPackagePath = path.join(
+    fixtureRoot,
+    'apps/terminal/adapter/android/persist-kv/package.json',
+  );
+  const persistDependenciesPath = path.join(
+    fixtureRoot,
+    'apps/terminal/adapter/android/persist-kv/src/dependencies.ts',
+  );
+  const fixtureGraphPath = path.join(fixtureRoot, 'apps/terminal/skeleton-graph.ts');
+  const originalPersistPackage = fs.readFileSync(persistPackagePath, 'utf8');
+  const originalPersistDependencies = fs.readFileSync(persistDependenciesPath, 'utf8');
+  const originalFixtureGraph = fs.readFileSync(fixtureGraphPath, 'utf8');
+  try {
+    const persistPackage = JSON.parse(originalPersistPackage);
+    persistPackage.dependencies['@catering-v2s/kernel-base-platform-ports'] = undefined;
+    delete persistPackage.dependencies['@catering-v2s/kernel-base-platform-ports'];
+    persistPackage.dependencies['@catering-v2s/kernel-base-contracts'] = 'workspace:*';
+    fs.writeFileSync(persistPackagePath, `${JSON.stringify(persistPackage, null, 2)}\n`);
+    fs.writeFileSync(
+      persistDependenciesPath,
+      originalPersistDependencies
+        .replaceAll('@catering-v2s/kernel-base-platform-ports', '@catering-v2s/kernel-base-contracts')
+        .replaceAll('platformPorts', 'contracts'),
+    );
+    const persistGraphPattern =
+      /('adapter\.android\.persist-kv':\s*\{[\s\S]*?dependencies:\s*)\['kernel\.base\.platform-ports'\]/;
+    assert.match(originalFixtureGraph, persistGraphPattern);
+    fs.writeFileSync(
+      fixtureGraphPath,
+      originalFixtureGraph.replace(persistGraphPattern, "$1['kernel.base.contracts']"),
+    );
+    const directionReport = runStaticChecks({root: fixtureRoot, batch: 2});
+    assertGateVector(directionReport, ['dependency-direction']);
+    assert.equal(gate(directionReport, 'dependency-direction').status, 'FAIL');
+    assert.match(gate(directionReport, 'dependency-direction').error, /adapter\.android\.persist-kv/);
+  } finally {
+    fs.writeFileSync(persistPackagePath, originalPersistPackage);
+    fs.writeFileSync(persistDependenciesPath, originalPersistDependencies);
+    fs.writeFileSync(fixtureGraphPath, originalFixtureGraph);
+  }
+
+  const kernelTestSupportPackagePath = path.join(
+    fixtureRoot,
+    'apps/terminal/kernel/base/test-support/package.json',
+  );
+  const kernelTestSupportDependenciesPath = path.join(
+    fixtureRoot,
+    'apps/terminal/kernel/base/test-support/src/dependencies.ts',
+  );
+  withMutations(
+    [
+      {
+        filePath: kernelTestSupportPackagePath,
+        mutate: source => {
+          const packageJson = JSON.parse(source);
+          delete packageJson.devDependencies['@catering-v2s/kernel-base-runtime'];
+          packageJson.devDependencies['@catering-v2s/ui-base-primitives'] = 'workspace:*';
+          return `${JSON.stringify(packageJson, null, 2)}\n`;
+        },
+      },
+      {
+        filePath: kernelTestSupportDependenciesPath,
+        mutate: source =>
+          source
+            .replace(
+              "import {moduleName as runtime} from '@catering-v2s/kernel-base-runtime';",
+              "import {moduleName as uiBasePrimitives} from '@catering-v2s/ui-base-primitives';",
+            )
+            .replace('[contracts, state, runtime]', '[contracts, state, uiBasePrimitives]'),
+      },
+      {
+        filePath: fixtureGraphPath,
+        mutate: source => {
+          const pattern =
+            /('kernel\.base\.test-support':\s*\{[\s\S]*?devDependencies:\s*)\[[^\]]*\]/;
+          assert.match(source, pattern);
+          return source.replace(
+            pattern,
+            "$1['kernel.base.contracts', 'kernel.base.platform-ports', 'kernel.base.state', 'ui.base.primitives']",
+          );
+        },
+      },
+    ],
+    report => {
+      assertGateVector(report, ['dependency-direction']);
+      assert.equal(gate(report, 'dependency-direction').status, 'FAIL');
+      assert.match(gate(report, 'dependency-direction').error, /kernel\.base\.test-support/);
+    },
+  );
+
+  const contractsDependenciesPath = path.join(
+    fixtureRoot,
+    'apps/terminal/kernel/base/contracts/src/dependencies.ts',
+  );
+  withTextMutation(
+    fixtureGraphPath,
+    source => {
+      const pattern = /('kernel\.base\.contracts':\s*\{[\s\S]*?dependencies:\s*)\[\]/;
+      assert.match(source, pattern);
+      return source.replace(pattern, "$1['kernel.base.unknown']");
+    },
+    report => {
+      assertGateVector(report, ['graph-comparison']);
+      assert.match(gate(report, 'graph-comparison').error, /unknown workspace module/);
+    },
+  );
+  withMutations(
+    [
+      {
+        filePath: contractsPackagePath,
+        mutate: source => {
+          const packageJson = JSON.parse(source);
+          packageJson.dependencies = {
+            ...(packageJson.dependencies ?? {}),
+            '@catering-v2s/kernel-base-platform-ports': 'workspace:*',
+          };
+          return `${JSON.stringify(packageJson, null, 2)}\n`;
+        },
+      },
+      {
+        filePath: contractsDependenciesPath,
+        mutate: source =>
+          source.replace(
+            'export const dependencyModuleNames = [] as const;',
+            "import {moduleName as platformPorts} from '@catering-v2s/kernel-base-platform-ports';\n\n" +
+              'export const dependencyModuleNames = [platformPorts] as const;',
+          ),
+      },
+      {
+        filePath: fixtureGraphPath,
+        mutate: source => {
+          const pattern = /('kernel\.base\.contracts':\s*\{[\s\S]*?dependencies:\s*)\[\]/;
+          assert.match(source, pattern);
+          return source.replace(pattern, "$1['kernel.base.platform-ports']");
+        },
+      },
+    ],
+    report => {
+      assertGateVector(report, ['graph-comparison']);
+      assert.match(gate(report, 'graph-comparison').error, /dependency graph cycle/);
+    },
+  );
+
+  const primitivesDependenciesPath = path.join(
+    fixtureRoot,
+    'apps/terminal/ui/base/primitives/src/dependencies.ts',
+  );
+  withTextMutation(
+    primitivesDependenciesPath,
+    source =>
+      `import {moduleName as undeclaredContracts} from '@catering-v2s/kernel-base-contracts';\n${source}`,
+    report => {
+      assertGateVector(report, ['graph-comparison', 'dependency-declaration-completeness']);
+      assert.equal(gate(report, 'dependency-declaration-completeness').status, 'FAIL');
+      assert.match(gate(report, 'dependency-declaration-completeness').error, /ui\.base\.primitives/);
+    },
+  );
+
+  withTextMutation(
+    primitivesDependenciesPath,
+    source => source.replace(
+      "@catering-v2s/ui-base-automation'",
+      "@catering-v2s/ui-base-automation/src/index'",
+    ),
+    report => {
+      assertGateVector(report, ['graph-comparison']);
+      assert.match(gate(report, 'graph-comparison').error, /non-root workspace import/);
+    },
+  );
+
+  const renderDependenciesPath = path.join(
+    fixtureRoot,
+    'apps/terminal/ui/base/render/src/dependencies.ts',
+  );
+  withTextMutation(
+    renderDependenciesPath,
+    source => `${source}\nexport function forbiddenDispatchProbe() { dispatchAction(); }\n`,
+    report => {
+      assertGateVector(report, ['tr01-reducer-boundary']);
+      assert.equal(gate(report, 'tr01-reducer-boundary').status, 'FAIL');
+      assert.match(gate(report, 'tr01-reducer-boundary').error, /ui\/base\/render/);
+    },
+  );
+
+  withJsonMutation(
+    contractsPackagePath,
+    packageJson => {
+      packageJson.dependencies = {
+        ...(packageJson.dependencies ?? {}),
+        react: '19.2.3',
+      };
+    },
+    report => {
+      assertGateVector(report, ['kernel-platform-independence']);
+      assert.equal(gate(report, 'kernel-platform-independence').status, 'FAIL');
+      assert.match(gate(report, 'kernel-platform-independence').error, /kernel\.base\.contracts/);
+    },
+  );
+
+  withTextMutation(
+    contractsDependenciesPath,
+    source => `import 'react';\n${source}`,
+    report => {
+      assertGateVector(report, ['kernel-platform-independence']);
+      assert.equal(gate(report, 'kernel-platform-independence').status, 'FAIL');
+      assert.match(gate(report, 'kernel-platform-independence').error, /kernel\.base\.contracts/);
+    },
+  );
+} finally {
+  fs.rmSync(fixtureRoot, {recursive: true, force: true});
+}
+
+console.log('TERMINAL_SKELETON_MODEL_TEST=PASS');
