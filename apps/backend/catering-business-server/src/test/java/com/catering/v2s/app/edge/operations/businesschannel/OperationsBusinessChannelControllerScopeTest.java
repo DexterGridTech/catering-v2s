@@ -120,7 +120,7 @@ class OperationsBusinessChannelControllerScopeTest {
                         fixture.projectId,
                         fixture.selectedStoreId.toString(),
                         null,
-                        20,
+                        50,
                         null,
                         null))
                 .thenReturn(new BusinessChannelReadback.TemplatePage(List.of(), null, 0L));
@@ -136,7 +136,7 @@ class OperationsBusinessChannelControllerScopeTest {
                         fixture.projectId,
                         fixture.selectedStoreId.toString(),
                         null,
-                        20,
+                        50,
                         null,
                         null);
         verify(fixture.authorization, never()).resolveSelectedProjectScope(any(), any());

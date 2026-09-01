@@ -20,6 +20,7 @@ BATCH1_IMPLEMENTATION_AUTHORIZED_BY=DEXTER_2026_08_29
 BATCH2_IMPLEMENTATION_AUTHORIZED_BY=DEXTER_2026_08_29
 IMPLEMENTATION_ENTRY_REQUIRES=CLAUDE_TARGETED_RECHECK_GO
 DEVICE_ACCEPTANCE_AUTHORIZED=CP7_ONE_TIME_ANDROID_EMULATOR_ONLY
+FINAL_DEVICE_RECHECK_DIRECTED=DEXTER_2026_08_29
 CURRENT_DELIVERY=批一与批二骨架已实施；本文件同时保留批一设计步骤与最终 22 包收口证据
 ```
 
@@ -34,10 +35,11 @@ Roadmap 中其他 R 的状态；批二已由 Dexter 同一授权直接开放，�
 - `UNVERIFIED_REQUIRES_EVIDENCE`：上游明确的实施阻断；临时实验不能替代指定落点的可复跑证据。
 - `DEXTER_DECISION`：若执行到该分支，需要 Dexter 对供应链或范围作选择。
 
-批一 CP-7 的模拟器证据已经证明当时 14 包投影下的 Gradle 构建、adapter autolinking、应用启动和
-bootstrap 渲染。批二 CP-8 又证明最终 22 包的静态关系、逐包 typecheck 与 Metro export；CP-8
-没有重新运行设备，因此不能把批二的四个新增 adapter 的设备行为升级为已证明。两批都不得表述为
-adapter Kotlin 能力可用、真机可运行或任何终端能力已实现。
+批一 CP-7 的模拟器证据先证明了当时 14 包投影下的 Gradle 构建、adapter autolinking、应用启动和
+bootstrap 渲染。批二 CP-8 初始记录随后证明最终 22 包的静态关系、逐包 typecheck 与 Metro export；
+在 Dexter 直接要求补齐最终证明后，最终 22 包树的模拟器复核又证明了 5/5 adapter autolinking、
+Gradle/APK/Activity/JS main 启动与 22 个 bootstrap 名称渲染。两批都不得表述为 adapter Kotlin
+能力可用、真机可运行或任何终端业务能力已实现。
 
 ## 1 · 真实目标与方案比较
 
@@ -449,9 +451,10 @@ CP-7 分三步且顺序不可交换：
 runtime commands；runtime tuple 在本批只由 focused catalog test 与 TER 自己的 `verify` 证明形状和行为。
 
 批二不会由脚本自动开启。该历史步骤的批一条件已经由 Dexter 授权与批一证据满足；
-批二实施和最终收口见下方 CP-8。由于 Dexter 明确要求 TER 专用验证，本轮没有运行仓级
-`scripts/verify`（包括 `--validate-only`）；仓级 tuple 的源码形状由 focused 代码测试保留，
-不把未运行仓级入口表述成已执行证据。
+批二实施和最终收口见下方 CP-8。由于 Dexter 明确要求 TER 专用验证，本轮没有完成授权的仓级
+`scripts/verify`（包括 `--validate-only`）；后续文案扫描曾因 shell quoting 失误触发一次事故性
+静态首败，记录在 CP-8 证据中且不作为验收证据。仓级 tuple 的源码形状由 focused 代码测试保留，
+不把未完成授权验收的仓级入口表述成已执行证据。
 
 ### CP-8 · 批二八包落地与最终 22 包收口（实施记录）
 
@@ -475,9 +478,10 @@ CP-8 在批一验收通过及 Dexter 直接授权后完成，顺序如下：
    lint/clean executable=0、Metro 647 modules、`TERMINAL_VERIFY_CLEANUP=PASS`、
    `TERMINAL_VERIFY=PASS`，总耗时 20 秒；逐包退出码与完整输出在
    `.runtime/terminal-skeleton/batch-2/typecheck-all-per-package.log` 和 `ter-verify.log`。
-5. 批一 CP-7 的模拟器证据仍只覆盖当时 14 包投影；CP-8 不重复设备运行，因此不把四个新增
-   adapter 的 Gradle/autolinking/启动行为升级为已证明。Kotlin 能力与所有终端能力仍为
-   `UNVERIFIED`。
+5. CP-8 初始实施记录保留批一 CP-7 的 14 包设备证据边界；随后按 Dexter 的最终证明要求，
+   在最终 22 包树上补做一次独立模拟器复核。该复核的 Gradle/autolinking/启动/bootstrap
+   结果见 `doc/evidence/platform/terminal-skeleton/batch-2/cp8-batch2-skeleton-codex.md` 的
+   final-device addendum；它不升级 Kotlin 能力或任何终端业务能力，二者仍为 `UNVERIFIED`。
 
 CP-8 完成后的可审计结果为：
 
@@ -488,7 +492,8 @@ FINAL_TER_PACKAGE_COUNT=22
 FINAL_TER_TYPECHECK=22_OF_22
 FINAL_TER_METRO=647_MODULES
 TER_VERIFY=PASS
-TER_ROOT_VERIFY=NOT_RUN_BY_DEXTER_TER_ONLY_AUTHORIZATION
+TER_ROOT_VERIFY_AUTHORIZED_RUN=NOT_PERFORMED
+TER_ROOT_VERIFY_ACCIDENTAL_ATTEMPT=STATIC_FIRST_FAIL_NOT_EVIDENCE
 ```
 
 ## 5 · operation / path / face / 集合形态
@@ -560,7 +565,8 @@ TER 构建规格，因此无需修改；这是明确反例，不是“无影响�
 | `terminal-skeleton-static-red-controls` | 同上 | mktemp 副本逐门单一变异 | 逐个执行 gate | 每个对应 gate 非 0，真实树仍绿 |
 | `terminal-skeleton-type-resolution` | TER `verify.mjs` | 当前投影 workspace 包（最终 22） | Turbo 拓扑 typecheck | 任务 exact-set 且全部 exit 0 |
 | `terminal-skeleton-entry-bundle` | TER `verify.mjs` | App/Bootstrap 真实入口 | Expo Android export | 可达集合 exact-set 且 Metro exit 0（最终 647 modules） |
-| `terminal-skeleton-device-acceptance` | CP-7 人工验收记录 | Android 模拟器 + assembly | `npx expo run:android` | **批一一次性证据**：Gradle 构建；autolinking 生成结果含 `com.catering.v2s.terminal.adapter.android.persistkv.TerminalPersistKvModule`；应用启动；屏上出现 14 个 moduleName；截图/日志/adb 身份与生成结果路径留证；不代表批二设备行为 |
+| `terminal-skeleton-device-acceptance` | CP-7 人工验收记录 | Android 模拟器 + assembly | `npx expo run:android` | **批一历史一次性证据**：Gradle 构建；autolinking 生成结果含 `com.catering.v2s.terminal.adapter.android.persistkv.TerminalPersistKvModule`；应用启动；屏上出现 14 个 moduleName；截图/日志/adb 身份与生成结果路径留证 |
+| `terminal-skeleton-final-device-recheck` | CP-8 final-device evidence addendum | Android 模拟器 `emulator-5554` + final assembly | `npx expo run:android --no-install --device Pixel_Tablet` | 最终 22 包树：Gradle BUILD SUCCESSFUL；5/5 adapter autolinking；APK 安装与 Activity 启动；JS main 无 fatal/JS error；屏上 22/22 moduleName；截图、UI hierarchy、adb 身份、生成物清理留证；不代表 Kotlin 或业务能力 |
 | `terminal-skeleton-marker-failure` | Node focused tests | 子命令受控失败 | 调用两条入口 | 失败入口不打印自己的 PASS marker |
 | `terminal-skeleton-scaffold-hygiene` | `tools/terminal-skeleton/check-static.test.mjs` | 真实树 + mktemp 文件副本 | 加嵌套元数据；删一条 ignore 规则 | 单列 `SCAFFOLD_HYGIENE` 红/绿，不改变 `RULE_GATES=6` |
 
@@ -573,7 +579,7 @@ TER 构建规格，因此无需修改；这是明确反例，不是“无影响�
 | create-expo-module 完整闭包 | `RESOLVED_BY_CP0_EVIDENCE`：显式 latest 官方 source 在 scratch 以相对目标路径 exit 0；原始树、退出码、cleanup 已记录 | CP-4 仍须按规范化表证明入仓形态；不把 scratch 成功升级为 adapter 已完成 | 把 scratch 探针升级为入仓完成、猜模板、使用隐式 fallback |
 | create-expo-module 入仓规范化闭包 | `VERIFIED`：批一 persist-kv 与批二四个 adapter 均完成规范化；四个批二 native scratch diff=0 | 保留官方 native 形态，继续由 hygiene 与静态门约束 | 把 scratch 成功升级为能力实现 |
 | npm age gate | `DEXTER_DECISION`：Dexter 2026-08-29 裁定“什么最新装什么”；age gate 不再构成等待阻断 | 仅以进程级 `YARN_NPM_MINIMAL_AGE_GATE=0` 运行本次 latest 解析/install，记录覆盖与退出码；仓库配置不变 | 把临时覆盖写入 `.yarnrc.yml`、改用旧快照或替代 package manager |
-| Android Gradle 与 autolinking | `PARTIALLY_VERIFIED`：CP-7 已证明批一 14 包投影；批二四个新增 adapter 未重复设备运行 | 不把批二新增 adapter 的设备行为升级为已证明；如需证明须另行授权设备运行 | 把批一设备证据扩展到批二，或把 Metro 当设备证据 |
+| Android Gradle 与 autolinking | `VERIFIED`：最终 22 包模拟器复核的 Gradle 输出列出并编译 5 个 TER adapter，APK 安装/Activity 启动成功；UI 与 logcat 证据见 final-device addendum | 仅主张本仓布局下最终树的 Gradle、autolinking、启动与 bootstrap 渲染；不升级为 Kotlin/业务能力 | 把设备成功升级为 Kotlin 能力、业务行为或真机证据 |
 | Kotlin 能力 | `UNVERIFIED`：只有最小 Module 注册类，没有能力实现 | 保留官方注册形态；设备验收通过后仍不升级为能力可用 | 把 Gradle 编译/启动升级为 Kotlin 能力验证 |
 | 真实 22 包 typecheck/Metro | `VERIFIED`：TER-only verify 22/22 typecheck、Expo export 647 modules | 保持“Metro 可打包入口可达集合”边界，不升级为设备或能力行为 | 在未读日志时声称设备或能力完成 |
 | Turbo 实际任务列表 | `VERIFIED`：TER-only verify dry-run 为 22/22/22，test executable=5，lint/clean=0 | 继续只执行 TER filters，保持 frontend/library/aggregate 排除 | 推测 filter 不触发 frontend |
@@ -693,14 +699,25 @@ FINAL_TER_TYPECHECK=22_OF_22_PASS
 FINAL_TER_METRO=PASS_647_MODULES
 TER_VERIFY=PASS_20_SECONDS
 TER_VERIFY_CLEANUP=PASS
-TER_ROOT_VERIFY=NOT_RUN_BY_DEXTER_TER_ONLY_AUTHORIZATION
+FINAL_ANDROID_DEVICE=PASS
+FINAL_GRADLE_BUILD=PASS
+FINAL_AUTOLINKED_ADAPTERS=5_OF_5
+FINAL_APP_START=PASS
+FINAL_BOOTSTRAP_RENDER=22_OF_22
+FINAL_ANDROID_GENERATED_CLEANUP=PASS
+TER_ROOT_VERIFY_AUTHORIZED_RUN=NOT_PERFORMED
+TER_ROOT_VERIFY_ACCIDENTAL_ATTEMPT=STATIC_FIRST_FAIL_NOT_EVIDENCE
 ```
+
+这里的 `FINAL_TER_TYPECHECK=22_OF_22_PASS` 只表示 22 个包根及其声明的跨包 import 可解析并编译，
+是跨包类型解析证据，不是终端业务类型或 adapter 能力正确性的证明。
 
 批二的逐包形态、真实命令、退出码、Metro 输出、脚手架重跑和清理证据集中在
 `doc/evidence/platform/terminal-skeleton/batch-2/cp8-batch2-skeleton-codex.md`。该证据与
-批一 CP-7 模拟器附录分开：批一设备证据只覆盖 14 包投影；最终 22 包没有再次运行设备。
+批一 CP-7 模拟器附录分开；在 CP-8 初始记录之后，已补做一次最终 22 包树的模拟器运行，
+其 Gradle、5/5 adapter autolinking、APK 安装、Activity 启动、JS main 执行与 22 个
+`moduleName` 渲染证据见该 evidence 的「Final 22-package Android emulator acceptance addendum」。
 
-当前仍未证明或未授权的边界：四个新增 adapter 的设备行为、Kotlin 能力、任何 adapter/terminal
-业务能力、双屏/杀进程恢复、DEV、reset、seed、浏览器 L2、UAT、部署、EAS，以及仓级
-`scripts/verify` 执行。TER-only `verify` 已按 Dexter 指令完成；root tuple 源码仍保留，但本轮
-没有把未运行仓级入口写成运行证据。
+当前仍未证明或未授权的边界：Kotlin 能力、任何 adapter/terminal 业务能力、双屏/杀进程恢复、
+DEV、reset、seed、浏览器 L2、UAT、部署、EAS，以及仓级 `scripts/verify` 的授权验收。TER-only
+`verify` 已按 Dexter 指令完成；root tuple 源码仍保留，但本轮没有把未完成授权验收的仓级入口写成运行证据。

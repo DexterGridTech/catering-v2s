@@ -45,7 +45,7 @@ class MinioAssetObjectStorageTest {
                         Duration.ofMillis(250));
                 assertThrows(
                         AssetObjectStorageUnavailableException.class,
-                        () -> storage.exists("tenant/static/a".repeat(64) + ".png"));
+                        () -> storage.exists("tenant/static/" + "a".repeat(64) + ".png"));
             });
         }
     }
@@ -64,7 +64,7 @@ class MinioAssetObjectStorageTest {
                         Duration.ofMillis(250));
                 assertThrows(
                         AssetObjectStorageUnavailableException.class,
-                        () -> storage.exists("tenant/static/b".repeat(64) + ".png"));
+                        () -> storage.exists("tenant/static/" + "b".repeat(64) + ".png"));
             });
         }
     }
@@ -156,7 +156,7 @@ class MinioAssetObjectStorageTest {
         MinioAssetObjectStorage storage =
                 new MinioAssetObjectStorage(client, "test-assets", "https://assets.test", "tenant/");
 
-        assertFalse(storage.exists("tenant/static/a".repeat(64) + ".png"));
+        assertFalse(storage.exists("tenant/static/" + "a".repeat(64) + ".png"));
 
         InOrder order = inOrder(client);
         order.verify(client).bucketExists(any(BucketExistsArgs.class));

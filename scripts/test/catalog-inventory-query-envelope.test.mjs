@@ -367,6 +367,39 @@ test('CatalogItemDetail declares the material role that its owner actually retur
   );
 });
 
+test('catalog attribute readbacks expose owner-resolved option labels without widening the save contract', () => {
+  const detailAssignment =
+    openApi.components.schemas.CatalogItemDetail.properties.data.properties.item.properties.attributeAssignments.items;
+  const detailFacts = openApi.components.schemas.CatalogItemDetail.properties.data.properties.item.properties.attributeFacts.items;
+  const pageFacts = openApi.components.schemas.CatalogItemPage.properties.data.properties.items.items.properties.attributeFacts.items;
+  const saveAssignment =
+    openApi.components.schemas.CatalogItemSaveReadback.properties.result.properties.item.properties.attributeAssignments.items;
+  const owner = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemDefinitionFacts.java',
+  );
+  const saveOwner = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
+  );
+
+  for (const schema of [detailAssignment, detailFacts, pageFacts]) {
+    assert.ok(schema.properties.selectedOptionNames);
+    assert.deepEqual(schema.required, [
+      'definitionRef',
+      'code',
+      'name',
+      'valueType',
+      'textValue',
+      'optionRefs',
+      'selectedOptionNames',
+    ]);
+  }
+  assert.equal(saveAssignment.properties.selectedOptionNames, undefined);
+  assert.match(owner, /option_row\.name/);
+  assert.match(owner, /assignment\.withArray\("selectedOptionNames"\)\.add\(optionName\)/);
+  assert.match(saveOwner, /private ArrayNode saveAttributeAssignments\(JsonNode value\)/);
+  assert.match(saveOwner, /copy\.remove\("selectedOptionNames"\)/);
+});
+
 test('every catalog-management GET consumer preserves its generated strict response type', () => {
   const queryConsumers = [
     [
@@ -448,14 +481,14 @@ test('every catalog-management GET consumer preserves its generated strict respo
   );
 });
 
-test('catalog void-and-rebuild copy explains released codes without hiding history', () => {
+test('catalog dictionary delete copy keeps history without starting a rebuild', () => {
   const drawer = read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawerState.tsx');
   const modal = read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryAtomModals.tsx');
-  for (const source of [drawer, modal]) {
-    assert.equal(source.includes('旧编码不会释放'), false);
-    assert.match(source, /历史记录会保留/);
-    assert.match(source, /复用/);
-  }
+  assert.match(drawer, /删除后会保留历史记录/);
+  assert.match(drawer, /不会自动创建新记录/);
+  assert.match(drawer, /确认删除/);
+  assert.doesNotMatch(drawer, /作废并重建|作废并继续重建|setCreatingKind\(dictionaryKind\)/);
+  assert.doesNotMatch(modal, /正在重建作废记录|旧编码|重建/);
 });
 
 test('unit list declares its owner limit problem in the source and materialized contract', () => {

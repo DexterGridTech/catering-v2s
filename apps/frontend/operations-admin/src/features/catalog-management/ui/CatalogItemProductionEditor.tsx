@@ -1,4 +1,4 @@
-import {Alert, Button, Card, Input, InputNumber, Modal, Radio, Select, Space, Typography} from 'antd';
+import {Alert, Button, Card, Flex, Input, InputNumber, Modal, Radio, Select, Space, Typography} from 'antd';
 import type {UIEvent} from 'react';
 import {useEffect, useMemo, useState} from 'react';
 import {useCursorCandidates} from '@catering-v2s/admin-ui-foundation';
@@ -73,18 +73,19 @@ export function PreparationProfileEditor({
       <Typography.Text type="secondary">{description}</Typography.Text>
       {showProductionTag ? (
         <div>
-          <Space size={8}>
+          <Flex align="center" gap="small" wrap style={{width: '100%'}}>
             <Typography.Text strong>生产标签</Typography.Text>
             {onOpenProductionTags && (
               <Button
                 size="small"
                 onClick={onOpenProductionTags}
+                style={{marginInlineStart: 'auto'}}
                 {...testId(catalogTestIds.static.itemProductionTagManage)}
               >
                 维护生产标签
               </Button>
             )}
-          </Space>
+          </Flex>
           <Select
             allowClear
             value={selectedTagRef}

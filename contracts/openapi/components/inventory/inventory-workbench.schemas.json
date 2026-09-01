@@ -261,10 +261,6 @@
               "timing": {
                 "type": "string",
                 "description": "design-bound field"
-              },
-              "status": {
-                "type": "string",
-                "description": "design-bound field"
               }
             },
             "required": [
@@ -274,8 +270,7 @@
               "ownerScope",
               "quantity",
               "consumptionUnitSnapshot",
-              "timing",
-              "status"
+              "timing"
             ]
           }
         },
@@ -549,7 +544,6 @@
                   "skuCode",
                   "itemName",
                   "skuName",
-                  "status",
                   "consumptionUnitSnapshot"
                 ],
                 "properties": {
@@ -592,14 +586,6 @@
                       "null"
                     ],
                     "description": "optional component SKU name"
-                  },
-                  "status": {
-                    "type": "string",
-                    "enum": [
-                      "ENABLED",
-                      "DISABLED"
-                    ],
-                    "description": "component catalog status"
                   },
                   "consumptionUnitSnapshot": {
                     "type": "object",

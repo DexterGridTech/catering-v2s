@@ -31,7 +31,9 @@ const TEMPORARY_PROMOTION_USER_VISIBLE_COPY = {
     materialRole: '物料角色',
   } as Record<string, string>,
   blockedReasons: {
+    NOT_TEMPORARY_ITEM: '当前商品不是外部订单临时商品，不能转正。',
     VERSION_CONFLICT: '商品资料已有更新，请重新检查。',
+    SHAPE_DISABLED: '当前商品形态暂不支持转正，请调整商品形态。',
     MATERIAL_ROLE_REQUIRED: '选择原材料、半成品或包装物时，请填写物料角色。',
     DUPLICATE_CODE: '商品编码已被使用，请修改后重新检查。',
   } as Record<string, string>,

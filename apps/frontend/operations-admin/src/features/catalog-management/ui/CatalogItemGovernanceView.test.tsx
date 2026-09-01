@@ -4,7 +4,7 @@ import type {CatalogDetail} from '../model/catalogModel';
 import {CatalogItemGovernanceView} from './CatalogItemGovernanceView';
 
 function detailWithVoidReasons(
-  blockingReasons: Array<{label: string; count: number; relatedItemNames: string[]}>,
+  blockingReasons: Array<{reasonCode: string; count: number; relatedItemNames: string[]}>,
 ): CatalogDetail {
   return {
     item: {shapeKey: 'SKU_MANAGED', lifecycle: {status: 'DISABLED'}},
@@ -19,13 +19,31 @@ describe('CatalogItemGovernanceView', () => {
   it('shows the owner-provided reason for a SKU parent instead of a generic void warning', () => {
     const markup = renderToStaticMarkup(
       <CatalogItemGovernanceView
-        detail={detailWithVoidReasons([{label: '包含规格', count: 3, relatedItemNames: []}])}
+        detail={detailWithVoidReasons([{reasonCode: 'HAS_SKUS', count: 3, relatedItemNames: []}])}
       />,
     );
 
     expect(markup).toContain('包含规格（3项）');
+    expect(markup).toContain('当前商品仍存在以下配置，需先处理后才能作废：');
     expect(markup).not.toContain('当前商品暂不能作废。');
     expect(markup).toContain('没有与其他商品的关联');
+  });
+
+  it('separates item configuration blockers from the zero relationship count', () => {
+    const markup = renderToStaticMarkup(
+      <CatalogItemGovernanceView
+        detail={detailWithVoidReasons([
+          {reasonCode: 'HAS_IDENTIFIERS', count: 2, relatedItemNames: []},
+          {reasonCode: 'HAS_PRODUCTION_TAG', count: 1, relatedItemNames: []},
+        ])}
+      />,
+    );
+
+    expect(markup).toContain('商品关联（0）');
+    expect(markup).toContain('没有与其他商品的关联');
+    expect(markup).toContain('当前商品仍存在以下配置，需先处理后才能作废：');
+    expect(markup).toContain('已设置条码与标识（2项）');
+    expect(markup).toContain('已设置生产标签');
   });
 
   it('does not turn a missing owner availability fact into a false void prohibition', () => {

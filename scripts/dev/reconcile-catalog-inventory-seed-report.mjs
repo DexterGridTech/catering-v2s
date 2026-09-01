@@ -51,6 +51,8 @@ export function reconcileCatalogSeedReport({catalogManifest, managedDevManifest}
     startedAt: catalogManifest.startedAt,
     finishedAt: new Date().toISOString(),
     status: catalogManifest.business,
+    businessStatus: catalogManifest.business,
+    cleanupStatus: catalogManifest.cleanup,
     calls,
     events: completions,
     nonApiStages,

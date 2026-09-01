@@ -80,6 +80,29 @@ export function CatalogWorkbenchItemList({
   onOpenDetail,
   loadSkuPage,
 }: Props) {
+  const selectionSummary = selectedRows.length > 0 && (
+    <Space size={8} style={{margin: 0}} {...testId(catalogTestIds.static.inventorySelectionSummary)}>
+      <Typography.Text type="secondary">已选择 {selectedRows.length} 项</Typography.Text>
+      {canWrite && (
+        <Dropdown
+          menu={{
+            items: [
+              {key: 'CATEGORY', label: '批量改分类'},
+              {key: 'TAG', label: '批量改标签'},
+              {key: 'STATUS', label: '批量改状态'},
+            ],
+            onClick: ({key}) => onBatchAction(key as CatalogBatchAction),
+          }}
+        >
+          <Button {...testId(catalogTestIdControls.batch.action)}>批量操作</Button>
+        </Dropdown>
+      )}
+      <Button type="link" size="small" onClick={onClearSelection}>
+        取消选择
+      </Button>
+    </Space>
+  );
+
   return (
     <div style={{minWidth: 0, flex: 1}}>
       <Card size="small" style={{marginBottom: 12}} title={`当前结果域：${resultLabel}`}>
@@ -143,35 +166,18 @@ export function CatalogWorkbenchItemList({
       </Card>
       <Card
         size="small"
-        title="商品列表"
+        title={
+          <div style={{display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', minWidth: 0}}>
+            <span>商品列表</span>
+            {selectionSummary}
+          </div>
+        }
         extra={
           <Button type="text" onClick={onRefresh} {...testId(catalogTestIdControls.workbench.refresh)}>
             刷新
           </Button>
         }
       >
-        {selectedRows.length > 0 && (
-          <Space size={8} style={{marginBottom: 12}} {...testId(catalogTestIds.static.inventorySelectionSummary)}>
-            <Typography.Text type="secondary">已选择 {selectedRows.length} 项</Typography.Text>
-            {canWrite && (
-              <Dropdown
-                menu={{
-                  items: [
-                    {key: 'CATEGORY', label: '批量改分类'},
-                    {key: 'TAG', label: '批量改标签'},
-                    {key: 'STATUS', label: '批量改状态'},
-                  ],
-                  onClick: ({key}) => onBatchAction(key as CatalogBatchAction),
-                }}
-              >
-                <Button {...testId(catalogTestIdControls.batch.action)}>批量操作</Button>
-              </Dropdown>
-            )}
-            <Button type="link" size="small" onClick={onClearSelection}>
-              取消选择
-            </Button>
-          </Space>
-        )}
         <div {...testId(catalogTestIds.surface.skuRows)}>
           <CatalogItemListTable
             tableTestId={catalogTestIds.surface.itemTable}

@@ -1,5 +1,6 @@
 package com.catering.v2s.fulfillment.production.application.operations;
 
+import com.catering.v2s.app.edge.generated.wire.CatalogInventoryWireEnums;
 import com.catering.v2s.app.edge.generated.wire.ProductionTagReadback;
 import com.catering.v2s.app.edge.generated.wire.ProductionTagUpdateRequest;
 import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
@@ -50,7 +51,7 @@ public class UpdateOperationsProductionTagOperation {
                         readback.code(),
                         readback.name(),
                         new ProductionTagReadback.Result.OwnerScope("PRODUCTION_TAG", REVISION),
-                        readback.status(),
+                        CatalogInventoryWireEnums.DictionaryEntryStatus.valueOf(readback.status()),
                         readback.version()),
                 readback.version());
     }

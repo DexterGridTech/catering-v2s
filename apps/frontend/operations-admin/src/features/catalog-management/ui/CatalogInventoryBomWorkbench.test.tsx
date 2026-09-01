@@ -243,6 +243,26 @@ describe('catalog inventory and BOM workbench rules', () => {
     expect(markup).not.toContain('（已保存）');
   });
 
+  it('distinguishes a new empty BOM line from a saved target whose business name is missing', () => {
+    const bom = node('SKU', 'BOM');
+    bom.bom!.lines.push({
+      targetRef: '' as Uuid,
+      itemRef: '' as Uuid,
+      productSkuRef: null,
+      itemCode: '',
+      skuCode: null,
+      itemName: '',
+      skuName: null,
+      lineSign: 'POSITIVE',
+      quantity: '',
+      consumptionUnitSnapshot: unit,
+    });
+
+    const markup = renderWorkbench([bom]);
+    expect(markup).toContain('新增耗用项');
+    expect(markup).not.toContain('耗用商品名称暂时无法读取');
+  });
+
   it('never presents a historical code copied into a BOM name field as the product name', () => {
     const bom = node('SKU', 'BOM');
     bom.bom!.lines.push({

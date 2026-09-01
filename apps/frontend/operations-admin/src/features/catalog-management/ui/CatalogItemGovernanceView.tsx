@@ -1,7 +1,7 @@
 import {Alert, Button, Descriptions, Space, Typography} from 'antd';
 import {adminWideDetailDescriptionsProps, NameCodeText, testId} from '@catering-v2s/admin-ui-foundation';
 import type {CatalogDetail} from '../model/catalogModel';
-import {catalogEnumLabel} from '../model/catalogManifestLabels';
+import {catalogEnumLabel, catalogVoidBlockReasonLabel} from '../model/catalogManifestLabels';
 import type {CatalogManifest} from '../model/catalogItemSurfaceTypes';
 import {catalogTestIds} from '../catalogTestIds';
 import {CatalogFactSectionView} from './CatalogFactSectionBoundary';
@@ -82,9 +82,10 @@ export function CatalogItemGovernanceView({
             description={
               blockingReasons.length ? (
                 <Space direction="vertical" size={2} style={{display: 'flex'}}>
+                  <Typography.Text>当前商品仍存在以下配置，需先处理后才能作废：</Typography.Text>
                   {blockingReasons.map(reason => (
-                    <Typography.Text key={`${reason.label}:${reason.count}`}>
-                      {reason.label}
+                    <Typography.Text key={`${reason.reasonCode}:${reason.count}`}>
+                      {catalogVoidBlockReasonLabel(reason.reasonCode)}
                       {reason.count > 1 ? `（${reason.count}项）` : ''}
                       {reason.relatedItemNames.length ? `：${reason.relatedItemNames.join('、')}` : ''}
                     </Typography.Text>

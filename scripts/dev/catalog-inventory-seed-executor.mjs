@@ -591,6 +591,29 @@ const sourceItemsForClientScope = (sourceItems, scopeType) =>
 const sourceCatalogCodesForClientScope = (sourceItems, scopeType) =>
   sourceItemsForClientScope(sourceItems, scopeType)
     .map((source) => String(source.catalogItemCode ?? source.code));
+const expectedCategoryNavigationCounts = (sourceItems, scopeType, categoryDefinitions) => {
+  const definitions = new Map(categoryDefinitions.map((definition) => [String(definition.code), definition]));
+  const counts = new Map(
+    categoryDefinitions.map((definition) => [String(definition.code), {directCount: 0, count: 0}]),
+  );
+  for (const source of sourceItemsForClientScope(sourceItems, scopeType)) {
+    if (!source.categoryKey) continue;
+    const categoryCode = String(source.categoryKey);
+    if (!definitions.has(categoryCode)) fail(`SEED_CATEGORY_DEFINITION_MISSING:${categoryCode}`);
+    counts.get(categoryCode).directCount += 1;
+    const visited = new Set();
+    let current = categoryCode;
+    while (current !== null) {
+      if (visited.has(current)) fail(`SEED_CATEGORY_DEFINITION_CYCLE:${categoryCode}`);
+      visited.add(current);
+      const category = definitions.get(current);
+      if (!category) fail(`SEED_CATEGORY_DEFINITION_MISSING:${current}`);
+      counts.get(current).count += 1;
+      current = category.parentCode === null ? null : String(category.parentCode);
+    }
+  }
+  return counts;
+};
 const expectedCatalogListCodesForClientScope = (sourceItems, canonicalEntries, scopeType) =>
   new Set([
     ...sourceCatalogCodesForClientScope(sourceItems, scopeType),
@@ -2090,23 +2113,43 @@ async function execute() {
       const nav = await request(`${client.scopeType}-navigation-readback`, "getOperationsCatalogNavigation", {}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef}});
       const navigationData = nav.json?.data ?? nav.json;
       if (navigationData?.tree === undefined && navigationData?.shapeCounts === undefined) fail(`SEED_NAVIGATION_READBACK_INVALID:${client.scopeType}`);
-      const expectedCategoryCounts = new Map();
-      for (const source of sourceItemsForClientScope(seedItems, client.scopeType)) {
-        if (source.categoryKey) expectedCategoryCounts.set(String(source.categoryKey), (expectedCategoryCounts.get(String(source.categoryKey)) ?? 0) + 1);
-      }
-      const actualCategoryCounts = new Map((navigationData?.tree ?? []).map((row) => [String(row.code), Number(row.count ?? 0)]));
-      for (const [categoryCode, expectedCount] of expectedCategoryCounts) {
-        const actualCount = actualCategoryCounts.get(categoryCode);
-        if (actualCount !== expectedCount) {
+      const expectedCategoryCounts = expectedCategoryNavigationCounts(
+        seedItems,
+        client.scopeType,
+        catalogDefinitionSeed.categoryDefinitions,
+      );
+      const actualCategoryRows = navigationData?.tree ?? [];
+      const actualCategoryCounts = new Map(actualCategoryRows.map((row) => [String(row.code), row]));
+      for (const [categoryCode, expected] of expectedCategoryCounts) {
+        const actual = actualCategoryCounts.get(categoryCode);
+        const actualCount = Number(actual?.count ?? 0);
+        const actualDirectCount = Number(actual?.directCount ?? 0);
+        const actualCountSemantics = actual?.countSemantics ?? null;
+        if (actualCount !== expected.count
+            || actualDirectCount !== expected.directCount
+            || actualCountSemantics !== "SELF_AND_DESCENDANTS") {
           phase(`${client.scopeType}-category-count-readback-${categoryCode}`, "FAIL", {
             operationId: "getOperationsCatalogNavigation",
             categoryCode,
-            expectedCount,
-            actualCount: actualCount ?? null,
-            countSource: "catalog_item_category",
+            expectedCount: expected.count,
+            expectedDirectCount: expected.directCount,
+            expectedCountSemantics: "SELF_AND_DESCENDANTS",
+            actualCount: actual?.count ?? null,
+            actualDirectCount: actual?.directCount ?? null,
+            actualCountSemantics,
+            countSource: "catalog_item_category_self_and_descendants",
           });
           fail(`SEED_CATEGORY_COUNT_READBACK_INVALID:${client.scopeType}:${categoryCode}`);
         }
+      }
+      if (actualCategoryRows.length !== expectedCategoryCounts.size || actualCategoryCounts.size !== expectedCategoryCounts.size) {
+        phase(`${client.scopeType}-category-count-readback-shape`, "FAIL", {
+          operationId: "getOperationsCatalogNavigation",
+          expectedCategoryCount: expectedCategoryCounts.size,
+          actualCategoryRowCount: actualCategoryRows.length,
+          actualCategoryUniqueCount: actualCategoryCounts.size,
+        });
+        fail(`SEED_CATEGORY_COUNT_READBACK_INVALID:${client.scopeType}:SHAPE`);
       }
       const {entries: itemRows, total: itemTotal} = await readCompleteCollection({
         stage: `${client.scopeType}-items-readback`,
@@ -2254,6 +2297,85 @@ async function execute() {
         }
         inventoryIndexByClient.set(client.scopeType, index);
       }
+    }
+    // The editor's new-BOM-row picker consumes this owner collection directly.
+    // Inventory target existence alone is not enough: a target must also carry
+    // the catalog-derived component capability, remain enabled, and expose a
+    // complete consumption-unit snapshot. Read the complete candidate set from
+    // the same scope after configuration so seed PASS proves the exact path the
+    // browser uses, rather than only proving that a target row was created.
+    for (const client of clients) {
+      const index = inventoryIndexByClient.get(client.scopeType) || new Map();
+      const expectedCandidates = [];
+      const addExpectedCandidate = (itemCode, itemName) => {
+        const targetRef = index.get(keyForTarget(itemCode, null));
+        if (!targetRef) fail(`SEED_INVENTORY_CANDIDATE_TARGET_MISSING:${client.scopeType}:${itemCode}`);
+        expectedCandidates.push({itemCode, itemName, targetRef});
+      };
+      for (const {item} of canonicalMaterialEntries(plan.seedDatasets, plan.canonicalDependencyOrder))
+        addExpectedCandidate(item.code, item.name);
+      for (const source of sourceItemsForClientScope(seedItems, client.scopeType)) {
+        const materialRule = (source.inventoryBomRules || []).find(
+          rule => source.shapeKey === "MATERIAL" && rule.mode === "INDEPENDENT_STOCK" && rule.independentStock,
+        );
+        if (materialRule) addExpectedCandidate(source.catalogItemCode, source.name);
+      }
+      const {entries: candidateRows, total: candidateTotal} = await readCompleteCollection({
+        stage: `${client.scopeType}-inventory-consumption-target-candidates-readback`,
+        operationId: "getOperationsInventoryConsumptionTargetCandidates",
+        client,
+        queryParameters: {dataNodeRef: client.dataNodeRef, pageSize: 100},
+        entriesField: "items",
+        continuationField: "nextCursor",
+        identityOf: row => row?.targetRef,
+        failurePrefix: `SEED_INVENTORY_CANDIDATE_PAGE:${client.scopeType}`,
+      });
+      const expectedByTargetRef = new Map(expectedCandidates.map(candidate => [candidate.targetRef, candidate]));
+      const candidateFactsMatch = candidateRows.every(row => {
+        const expected = expectedByTargetRef.get(row?.targetRef);
+        const unit = row?.consumptionUnitSnapshot;
+        return Boolean(
+          expected
+            && row.itemCode === expected.itemCode
+            && row.itemName === expected.itemName
+            && row.productSkuRef == null
+            && row.skuCode == null
+            && row.skuName == null
+            && typeof row.itemRef === "string"
+            && typeof unit?.unitRef === "string"
+            && unit.unitRef.length > 0
+            && typeof unit.code === "string"
+            && unit.code.length > 0
+            && typeof unit.name === "string"
+            && unit.name.length > 0
+            && typeof unit.unitDimension === "string"
+            && Number.isInteger(Number(unit.precision))
+        );
+      });
+      const candidateReadback = {
+        expectedCount: expectedCandidates.length,
+        actualCount: candidateRows.length,
+        ownerTotalMatches: candidateTotal === expectedCandidates.length,
+        candidateSetMatches: sameStringSet(
+          candidateRows.map(row => row?.targetRef),
+          expectedCandidates.map(candidate => candidate.targetRef),
+        ),
+        candidateFactsMatch,
+      };
+      if (!candidateReadback.ownerTotalMatches || !candidateReadback.candidateSetMatches || !candidateReadback.candidateFactsMatch) {
+        phase(`${client.scopeType}-inventory-consumption-target-candidates-readback-diagnostic`, "FAIL", {
+          operationId: "getOperationsInventoryConsumptionTargetCandidates",
+          ...candidateReadback,
+        });
+        fail(`SEED_INVENTORY_CANDIDATE_READBACK_INVALID:${client.scopeType}`);
+      }
+      phase(`${client.scopeType}-inventory-consumption-target-candidates-readback`, "PASS", {
+        operationId: "getOperationsInventoryConsumptionTargetCandidates",
+        expectedCount: expectedCandidates.length,
+        actualCount: candidateRows.length,
+        candidateSetMatches: true,
+        candidateFactsMatch: true,
+      });
     }
     // Exercise the real owner normalization path on a canonical material:
     // 0.3567 kg must become 356 g because the consumption unit declares
@@ -2890,7 +3012,7 @@ async function execute() {
     phase("SEED_BUSINESS", "FAIL", {reason: firstFailure});
     phase("SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", persistentSeedProcess: false, destructiveCleanupOwner: "r5-reset", resetRequiredBeforeRerun: true});
   }
-  const report = {...buildSeedReport({runId, managedDevRunId: manifest.runId, measurement, seedProfile: profile.profile, startedAt, finishedAt: new Date().toISOString(), status: business, calls, events: readManagedDiagnosticEvents(manifest), firstFailure}), schemaVersion: 2, kind: "catalog-inventory-seed-report", profile: profile.profile, planDigest: plan.planDigest, business, cleanup, phases, noDirectDatabaseWrites: true, mediaAssets: plan.mediaPlan.length, sourceItems: plan.sourceItems.length, createdItems: plan.eligibleSourceItems?.length ?? 0, excludedItems: plan.excludedSourceItems ?? []};
+  const report = {...buildSeedReport({runId, managedDevRunId: manifest.runId, measurement, seedProfile: profile.profile, startedAt, finishedAt: new Date().toISOString(), status: business, businessStatus: business, cleanupStatus: cleanup, calls, events: readManagedDiagnosticEvents(manifest), firstFailure}), schemaVersion: 2, kind: "catalog-inventory-seed-report", profile: profile.profile, planDigest: plan.planDigest, business, cleanup, phases, noDirectDatabaseWrites: true, mediaAssets: plan.mediaPlan.length, sourceItems: plan.sourceItems.length, createdItems: plan.eligibleSourceItems?.length ?? 0, excludedItems: plan.excludedSourceItems ?? []};
   writeSeedReportPair(reportPath, report);
   launcherLog("EXECUTE_FINISHED", {business, firstFailure});
   persist();
@@ -2913,6 +3035,19 @@ const selfTest = () => {
   if (!headExpectedCodes.has("HEAD-ONLY") || headExpectedCodes.has("STORE-ONLY") || !headExpectedCodes.has("BOTH-SCOPES")
     || storeExpectedCodes.has("HEAD-ONLY") || !storeExpectedCodes.has("STORE-ONLY") || !storeExpectedCodes.has("BOTH-SCOPES"))
     fail("SEED_LIST_SCOPE_EXPECTATION_INVALID");
+  const categoryCountFixture = [
+    {catalogItemCode: "DIRECT-PARENT", headquarterTemplate: false, categoryKey: "PARENT"},
+    {catalogItemCode: "CHILD", headquarterTemplate: false, categoryKey: "CHILD"},
+  ];
+  const categoryCounts = expectedCategoryNavigationCounts(categoryCountFixture, "STORE", [
+    {code: "ROOT", parentCode: null},
+    {code: "PARENT", parentCode: "ROOT"},
+    {code: "CHILD", parentCode: "PARENT"},
+  ]);
+  if (categoryCounts.get("PARENT").directCount !== 1 || categoryCounts.get("PARENT").count !== 2
+    || categoryCounts.get("ROOT").directCount !== 0 || categoryCounts.get("ROOT").count !== 2
+    || categoryCounts.get("CHILD").directCount !== 1 || categoryCounts.get("CHILD").count !== 1)
+    fail("SEED_CATEGORY_COUNT_EXPECTATION_INVALID");
   const checks = [
     ["SESSION_WIRE_LEGACY_DATA_NODE_ID", () => dataNodeFromSession({scopeContext: {store: {dataNodeRef: "legacy-id"}}, dataNodeCandidates: [{dataNodeType: "STORE", dataNodeRef: "legacy-id"}], contextVersion: 7}, "STORE", "different-ref")],
     ["NO_CONFIRMATION", () => { if ("" !== profile.runtime.confirmationValue) fail("EXPLICIT_CATALOG_INVENTORY_SEED_CONFIRMATION_REQUIRED"); }],

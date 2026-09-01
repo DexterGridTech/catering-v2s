@@ -59,7 +59,8 @@ final class BackendPerformanceOperationCoverage {
             "transitionPlatformExternalSystemStatus",
             "transitionPlatformGroupWorkspaceStatus",
             "transitionWorkspaceAccountStatus",
-            "transitionWorkspaceRoleStatus");
+            "transitionWorkspaceRoleStatus",
+            "transitionOperationsProductionTagStatus");
     private static final Set<String> STRICT_DICTIONARY_REQUESTS = Set.of("reorderOperationsCatalogDictionaryEntry");
     private static final Set<String> NORMAL_RECIPE_OPERATIONS = Set.of(
             "selectOperationsWorkspaceSessionContext",
@@ -895,7 +896,14 @@ final class BackendPerformanceOperationCoverage {
 
     private static Map<String, Object> requestBody(Route route, BackendAcceptanceTest.Fixture fixture) {
         if (STATUS_TRANSITIONS.contains(route.operationId())) {
-            return Map.of("targetStatus", "DISABLED", "expectedVersion", 1);
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("targetStatus", "DISABLED");
+            body.put("expectedVersion", 1);
+            if (route.operationId().equals("transitionOperationsProductionTagStatus")) {
+                body.put("tagCode", "CP05-COVERAGE-MISSING-TAG");
+                body.put("dataNodeRef", fixture.storeId().toString());
+            }
+            return body;
         }
         if (STRICT_DICTIONARY_REQUESTS.contains(route.operationId())) {
             return Map.of(

@@ -513,16 +513,30 @@ public class CatalogInventoryCoordinator {
                 ? catalogItemAssetRefs(
                         scope.dataNodeId().toString(), scope.brandRef(), command.itemCode(), context.requestId())
                 : readback.projection().previousAssetRefs();
-        CatalogInventoryProjection projection = readback.projection() == null
-                ? catalogInventoryProjection(
-                        scope.dataNodeId().toString(),
-                        scope.brandRef(),
-                        request.path("itemCode").asText(),
-                        context.requestId())
-                : catalogInventoryProjection(scope.dataNodeId().toString(), scope.brandRef(), readback.projection());
-        JsonNode inventoryReadback = coordinateReplaceInventoryRules(context, request, projection, idempotencyKey);
+        JsonNode inventoryReadback = null;
+        if (!isSkuLifecycleOnlySave(request)) {
+            CatalogInventoryProjection projection = readback.projection() == null
+                    ? catalogInventoryProjection(
+                            scope.dataNodeId().toString(),
+                            scope.brandRef(),
+                            request.path("itemCode").asText(),
+                            context.requestId())
+                    : catalogInventoryProjection(
+                            scope.dataNodeId().toString(), scope.brandRef(), readback.projection());
+            inventoryReadback = coordinateReplaceInventoryRules(context, request, projection, idempotencyKey);
+        }
         settleWorkspaceCatalogAssets(context, request, previousAssetRefs, idempotencyKey, submittedBindings);
         return mergeInventorySaveReadback(readback, inventoryReadback);
+    }
+
+    /**
+     * SKU lifecycle transitions retire their own inventory definitions inside the catalog owner's REQUIRED transaction.
+     * The transition envelope explicitly cannot carry inventory changes, so running the generic whole-item inventory
+     * replacement here would only reread and rewrite unchanged rules after the retirement.
+     */
+    private boolean isSkuLifecycleOnlySave(ObjectNode request) {
+        JsonNode transitions = request.path("skuTransitions");
+        return transitions.isArray() && !transitions.isEmpty();
     }
 
     private CatalogOwnerApi.CatalogItemSaveReadback mergeInventorySaveReadback(
@@ -534,8 +548,11 @@ public class CatalogInventoryCoordinator {
                 inventoryRules = inventoryReadback == null
                         ? null
                         : inventoryReadback.path("data").path("inventoryRules");
-            if (inventoryRules == null || !inventoryRules.isObject())
-                inventoryRules = mapper.createObjectNode().putArray("nodes");
+            if (inventoryRules == null || !inventoryRules.isObject()) {
+                ObjectNode emptyInventoryRules = mapper.createObjectNode();
+                emptyInventoryRules.putArray("nodes");
+                inventoryRules = emptyInventoryRules;
+            }
             if (root.path("result") instanceof ObjectNode result) {
                 result.set("inventoryRules", inventoryRules.deepCopy());
             } else throw new IllegalStateException("catalog save readback result is not an object");
@@ -1765,9 +1782,9 @@ public class CatalogInventoryCoordinator {
                 if (data.path("item").isObject()) {
                     ((ObjectNode) data.path("item")).set("inventoryRules", completedRules.deepCopy());
                     enrichOrderOptionBomVersions(data.path("item"), completedRules.path("nodes"));
-                    ArrayNode targetFacts = inventoryTargetFacts(completedRules.path("nodes"));
-                    enrichSkuVoidAvailability(data.path("item"), targetFacts);
-                    enrichCatalogItemVoidAvailability(data, targetFacts);
+                    // Inventory-owned definitions are retirement facts, not catalog void blockers.  Only active
+                    // inbound BOM references returned by the inventory owner may disable a SKU's void action.
+                    enrichSkuVoidAvailability(data.path("item"), dataNodeRef, brandRef, requestId);
                 }
             }
         }
@@ -1919,30 +1936,6 @@ public class CatalogInventoryCoordinator {
         }
     }
 
-    private ArrayNode inventoryTargetFacts(JsonNode inventoryNodes) {
-        ArrayNode facts = mapper.createArrayNode();
-        if (!inventoryNodes.isArray()) return facts;
-        inventoryNodes.forEach(node -> {
-            JsonNode owner = node.path("owner");
-            JsonNode direct = node.path("directConfiguration");
-            if (direct.isObject() && direct.hasNonNull("targetRef")) {
-                ObjectNode fact = facts.addObject()
-                        .put("targetRef", direct.path("targetRef").asText())
-                        .put("factKind", "INVENTORY_TARGET")
-                        .put("reasonLabel", "已配置库存对象");
-                if (owner.hasNonNull("productSkuRef"))
-                    fact.put("productSkuRef", owner.path("productSkuRef").asText());
-            }
-            if (node.path("bom").path("lines").isArray())
-                node.path("bom").path("lines").forEach(line -> facts.addObject()
-                        .put("targetRef", line.path("targetRef").asText())
-                        .put("factKind", "INVENTORY_BOM")
-                        .put("reasonLabel", "已配置用料")
-                        .put("productSkuRef", owner.path("productSkuRef").asText("")));
-        });
-        return facts;
-    }
-
     /**
      * BOM optimistic concurrency is an owner readback fact, not a user-visible control. Every definition value gets an
      * explicit version; the absence of an owner row is the verified initial version zero, never a guessed overwrite.
@@ -1971,22 +1964,46 @@ public class CatalogInventoryCoordinator {
         });
     }
 
-    /** Inventory owns stock/BOM references; merge only the typed SKU blocking facts into the catalog read model. */
-    private void enrichSkuVoidAvailability(JsonNode itemNode, JsonNode inventoryNodes) {
-        if (!(itemNode instanceof ObjectNode item) || !item.path("skus").isArray() || !inventoryNodes.isArray()) return;
-        java.util.Map<String, java.util.List<JsonNode>> blockers = new java.util.LinkedHashMap<>();
-        inventoryNodes.forEach(node -> {
-            String skuRef = node.path("productSkuRef").asText("");
-            String targetRef = node.path("targetRef").asText("");
-            if (!skuRef.isBlank() && !targetRef.isBlank())
-                blockers.computeIfAbsent(skuRef, ignored -> new java.util.ArrayList<>())
-                        .add(node);
+    /**
+     * Inventory owns stock/BOM references; merge only active inbound BOM facts into the catalog SKU read model. A SKU's
+     * own target/BOM definitions are lifecycle facts to retire, not reasons to block its catalog void action.
+     */
+    private void enrichSkuVoidAvailability(JsonNode itemNode, String dataNodeRef, String brandRef, String requestId) {
+        if (!(itemNode instanceof ObjectNode item) || !item.path("skus").isArray()) return;
+        List<UUID> skuRefs = new ArrayList<>();
+        item.path("skus").forEach(value -> {
+            if (value instanceof ObjectNode sku) {
+                String skuRef = requiredOpaqueTaskRef(sku, "productSkuRef", "catalog SKU detail");
+                skuRefs.add(UUID.fromString(skuRef));
+            }
         });
+        List<JsonNode> dependencyReadbacks =
+                inventory.catalogSkuVoidDependenciesByRefs(dataNodeRef, brandRef, skuRefs, requestId);
+        Map<String, JsonNode> dependenciesBySkuRef = new LinkedHashMap<>();
+        if (dependencyReadbacks != null) {
+            dependencyReadbacks.forEach(readback -> {
+                String subjectRef =
+                        readback == null ? "" : readback.path("subjectRef").asText("");
+                if (!subjectRef.isBlank()) dependenciesBySkuRef.put(subjectRef, readback);
+            });
+        }
         item.path("skus").forEach(value -> {
             if (!(value instanceof ObjectNode sku)) return;
-            String skuRef = sku.path("productSkuRef").asText("");
-            java.util.List<JsonNode> rows = blockers.getOrDefault(skuRef, java.util.List.of());
-            if (rows.isEmpty()) return;
+            String skuRef = requiredOpaqueTaskRef(sku, "productSkuRef", "catalog SKU detail");
+            JsonNode dependencies = dependenciesBySkuRef.get(skuRef);
+            if (dependencies == null) {
+                String reason = "商品规格库存关联暂时无法确认";
+                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 503, /* format-wrap */ reason);
+            }
+            JsonNode inbound = dependencies.path("inboundBomReferences");
+            if (!inbound.isArray()) {
+                throw new CatalogOwnerApi.Problem(
+                        "RESULT_UNKNOWN",
+                        503,
+                        /* format-wrap */
+                        "商品规格库存关联暂时无法确认");
+            }
+            if (inbound.isEmpty()) return;
             ObjectNode availability = sku.path("voidAvailability").isObject()
                     ? (ObjectNode) sku.path("voidAvailability")
                     : sku.putObject("voidAvailability");
@@ -1999,105 +2016,70 @@ public class CatalogInventoryCoordinator {
             ArrayNode reasons = availability.path("blockingReasons").isArray()
                     ? (ArrayNode) availability.path("blockingReasons")
                     : availability.putArray("blockingReasons");
-            java.util.Map<String, java.util.Set<String>> targetRefsByReason = new java.util.LinkedHashMap<>();
-            for (JsonNode row : rows) {
-                String targetRef = row.path("targetRef").asText();
-                String factKind = row.path("factKind").asText("");
-                String reasonLabel = row.path("reasonLabel").asText("");
-                // spotless:off
-                if (factKind.isBlank())
-                    throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存作废限制事实缺少类型");
-                // spotless:on
-                if (!reasonLabel.isBlank())
-                    targetRefsByReason
-                            .computeIfAbsent(reasonLabel, ignored -> new java.util.LinkedHashSet<>())
-                            .add(targetRef);
-                boolean known = false;
-                for (JsonNode reference : references)
-                    if (targetRef.equals(reference.path("referenceRef").asText())) {
-                        known = true;
-                        break;
-                    }
-                if (known) continue;
-                references.addObject().put("referenceKind", "INVENTORY_TARGET").put("referenceRef", targetRef);
-                facts.addObject().put("factKind", factKind).put("factRef", targetRef);
+            long count = 0L;
+            List<String> sourceNames = new ArrayList<>();
+            for (JsonNode row : inbound) {
+                if (!row.isObject()
+                        || !row.path("sourceName").isTextual()
+                        || row.path("sourceName").asText().isBlank()
+                        || !row.path("count").canConvertToLong()
+                        || row.path("count").asLong() < 1) {
+                    throw new CatalogOwnerApi.Problem(
+                            "RESULT_UNKNOWN",
+                            503,
+                            /* format-wrap */
+                            "商品规格库存关联暂时无法确认");
+                }
+                String sourceRef = firstInboundSourceRef(row);
+                if (sourceRef.isBlank()) {
+                    throw new CatalogOwnerApi.Problem(
+                            "RESULT_UNKNOWN",
+                            503,
+                            /* format-wrap */
+                            "商品规格库存关联暂时无法确认");
+                }
+                addUniqueReference(references, "INVENTORY_BOM", sourceRef);
+                addUniqueFact(facts, "INVENTORY_BOM_INBOUND_REFERENCE", sourceRef);
+                count += row.path("count").asLong();
+                sourceNames.add(row.path("sourceName").asText());
             }
-            appendInventoryVoidBlockingReasons(reasons, targetRefsByReason);
+            upsertVoidReason(reasons, "USED_BY_INVENTORY_BOM", count, sourceNames);
             availability.put("canVoid", false);
         });
     }
 
-    /**
-     * Catalog owns the item lifecycle, but inventory owns the target/BOM facts that can keep that item from being
-     * voided. The detail edge must expose the same blocking identity that the command-side owner judgement sees.
-     */
-    private void enrichCatalogItemVoidAvailability(ObjectNode data, JsonNode inventoryNodes) {
-        ObjectNode action = data.path("actionAvailability").isObject()
-                ? (ObjectNode) data.path("actionAvailability")
-                : data.putObject("actionAvailability");
-        ObjectNode availability = action.path("voidAvailability").isObject()
-                ? (ObjectNode) action.path("voidAvailability")
-                : action.putObject("voidAvailability");
-        ArrayNode references = availability.path("blockingReferences").isArray()
-                ? (ArrayNode) availability.path("blockingReferences")
-                : availability.putArray("blockingReferences");
-        ArrayNode facts = availability.path("dependentFacts").isArray()
-                ? (ArrayNode) availability.path("dependentFacts")
-                : availability.putArray("dependentFacts");
-        ArrayNode reasons = availability.path("blockingReasons").isArray()
-                ? (ArrayNode) availability.path("blockingReasons")
-                : availability.putArray("blockingReasons");
-        java.util.Map<String, java.util.Set<String>> targetRefsByReason = new java.util.LinkedHashMap<>();
-        if (!inventoryNodes.isArray()) return;
-        inventoryNodes.forEach(node -> {
-            String targetRef = node.path("targetRef").asText("");
-            if (targetRef.isBlank()) return;
-            String factKind = node.path("factKind").asText("");
-            String reasonLabel = node.path("reasonLabel").asText("");
-            // spotless:off
-            if (factKind.isBlank())
-                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存作废限制事实缺少类型");
-            // spotless:on
-            if (!reasonLabel.isBlank())
-                targetRefsByReason
-                        .computeIfAbsent(reasonLabel, ignored -> new java.util.LinkedHashSet<>())
-                        .add(targetRef);
-            boolean known = false;
-            for (JsonNode reference : references) {
-                if (targetRef.equals(reference.path("referenceRef").asText(""))) {
-                    known = true;
-                    break;
-                }
-            }
-            if (known) return;
-            references.addObject().put("referenceKind", "INVENTORY_TARGET").put("referenceRef", targetRef);
-            facts.addObject().put("factKind", factKind).put("factRef", targetRef);
-        });
-        appendInventoryVoidBlockingReasons(reasons, targetRefsByReason);
-        if (references.size() > 0) availability.put("canVoid", false);
+    private static String firstInboundSourceRef(JsonNode row) {
+        if (row.path("sourceItemRef").isTextual())
+            return row.path("sourceItemRef").asText();
+        if (row.path("sourceSkuRef").isTextual())
+            return row.path("sourceSkuRef").asText();
+        if (row.path("sourceOptionValueRef").isTextual())
+            return row.path("sourceOptionValueRef").asText();
+        return "";
     }
 
-    /**
-     * Direct stock targets and BOM consumption are different user-visible blocking facts. Both item and SKU detail
-     * projections consume this single helper so inventory cannot disable a void action without preserving the business
-     * reason that the inventory definition supplied.
-     */
-    private static void appendInventoryVoidBlockingReasons(
-            ArrayNode reasons, java.util.Map<String, java.util.Set<String>> targetRefsByReason) {
-        targetRefsByReason.forEach((label, targetRefs) -> {
-            boolean present = false;
-            for (JsonNode reason : reasons) {
-                if (label.equals(reason.path("label").asText())) {
-                    present = true;
-                    break;
-                }
+    private static void addUniqueReference(ArrayNode references, String kind, String referenceRef) {
+        for (JsonNode reference : references)
+            if (referenceRef.equals(reference.path("referenceRef").asText())) return;
+        references.addObject().put("referenceKind", kind).put("referenceRef", referenceRef);
+    }
+
+    private static void addUniqueFact(ArrayNode facts, String kind, String factRef) {
+        for (JsonNode fact : facts) if (factRef.equals(fact.path("factRef").asText())) return;
+        facts.addObject().put("factKind", kind).put("factRef", factRef);
+    }
+
+    private static void upsertVoidReason(
+            ArrayNode reasons, String reasonCode, long count, List<String> relatedItemNames) {
+        for (JsonNode reason : reasons) {
+            if (reasonCode.equals(reason.path("reasonCode").asText())) {
+                ((ObjectNode) reason).put("count", reason.path("count").asLong() + count);
+                return;
             }
-            if (!present)
-                reasons.addObject()
-                        .put("label", label)
-                        .put("count", targetRefs.size())
-                        .putArray("relatedItemNames");
-        });
+        }
+        ObjectNode reason = reasons.addObject().put("reasonCode", reasonCode).put("count", count);
+        ArrayNode names = reason.putArray("relatedItemNames");
+        relatedItemNames.forEach(names::add);
     }
 
     private String requiredOpaqueTaskRef(JsonNode source, String key, String subject) {
@@ -2201,7 +2183,6 @@ public class CatalogInventoryCoordinator {
             if (!sourceItemRef.isBlank() && uniqueRefs.add(sourceItemRef)) itemRefs.add(sourceItemRef);
         });
         java.util.Map<String, String> names = new java.util.HashMap<>();
-        java.util.Map<String, String> statuses = new java.util.HashMap<>();
         if (!itemRefs.isEmpty()) {
             ObjectNode lookup = mapper.createObjectNode();
             lookup.set("itemRefs", itemRefs);
@@ -2212,7 +2193,6 @@ public class CatalogInventoryCoordinator {
                 if (!itemRef.isBlank()) {
                     names.put(
                             itemRef, item.path("name").asText(item.path("code").asText()));
-                    statuses.put(itemRef, item.path("status").asText("ACTIVE"));
                 }
             });
         }
@@ -2221,9 +2201,6 @@ public class CatalogInventoryCoordinator {
             String sourceItemRef = row.path("sourceItemRef").asText("");
             String sourceCode = row.path("sourceCode").asText("");
             row.put("sourceName", names.getOrDefault(sourceItemRef, sourceCode));
-            row.put(
-                    "status",
-                    statuses.getOrDefault(sourceItemRef, row.path("status").asText("ACTIVE")));
             row.putObject("ownerScope")
                     .put("ownerType", "DATA_NODE")
                     .put("ownerRef", dataNodeRef)

@@ -20,8 +20,14 @@ class OperationsCatalogInventoryControllerRouteTest {
                     "/workbench/context",
                     "readCatalogWorkbenchContext"),
             new ReadRoute("getOperationsCatalogNavigation", "navigation", "/navigation", "readCatalogNavigation"),
+            new ReadRoute(
+                    "getOperationsCatalogCategoryCandidates",
+                    "categoryCandidates",
+                    "/category-candidates",
+                    "readCatalogCategoryCandidates"),
             new ReadRoute("getOperationsCatalogItems", "items", "/items", "readCatalogItems"),
             new ReadRoute("getOperationsCatalogItem", "item", "/items/{itemCode}", "readCatalogItem"),
+            new ReadRoute("getOperationsCatalogItemSkus", "itemSkus", "/items/{itemCode}/skus", "readCatalogItemSkus"),
             new ReadRoute(
                     "getOperationsCatalogDictionary",
                     "dictionary",
@@ -93,7 +99,7 @@ class OperationsCatalogInventoryControllerRouteTest {
             new ReadRoute("listOperationsCatalogUnits", "catalogUnits", "/units", "listUnitDefinitions"));
 
     @Test
-    void twentyReadRoutesHaveOneExplicitControllerAndCoordinatorBinding() throws Exception {
+    void twentyTwoReadRoutesHaveOneExplicitControllerAndCoordinatorBinding() throws Exception {
         Set<String> expectedControllerMethods =
                 READ_ROUTES.stream().map(ReadRoute::controllerMethod).collect(java.util.stream.Collectors.toSet());
         Set<String> actualControllerMethods = Arrays.stream(

@@ -10,7 +10,7 @@ import {
 /**
  * One configuration spatial shell with two approved placements: the workbench
  * owns the first-level task, while an editor may host exactly one second-level
- * metadata child task. Controller/query state and all library commands stay
+ * configuration child task. Controller/query state and all library commands stay
  * outside so the surface never becomes a second state owner.
  */
 export function CatalogConfigurationDrawerSurface({
@@ -36,7 +36,7 @@ export function CatalogConfigurationDrawerSurface({
 }) {
   return (
     <Drawer
-      title={presentation === 'EDITOR_CHILD' ? '维护商品元数据' : '商品配置'}
+      title={presentation === 'EDITOR_CHILD' ? '维护商品基础数据' : '商品配置'}
       open={open}
       onClose={onRequestClose}
       afterOpenChange={visible => {
@@ -53,11 +53,14 @@ export function CatalogConfigurationDrawerSurface({
       {...adminWideDrawerSurfaceProps}
       styles={{
         ...adminWideDrawerSurfaceProps.styles,
-        body: {...adminWideDrawerSurfaceProps.styles.body, overflowY: 'hidden'},
+        body: {...adminWideDrawerSurfaceProps.styles.body, overflowY: 'hidden', padding: '0 24px'},
       }}
     >
-      <div {...testId(catalogTestIds.static.dictionaryDrawer)}>
-        <Flex style={{height: '100%', minHeight: 0}}>
+      <div
+        {...testId(catalogTestIds.static.dictionaryDrawer)}
+        style={{height: '100%', minHeight: 0, overflow: 'hidden'}}
+      >
+        <Flex style={{height: '100%', minHeight: 0, padding: '24px 0'}}>
           <CatalogConfigurationLibraryNavigation
             currentLibrary={currentLibrary}
             onSelect={onSelectLibrary}
@@ -65,8 +68,9 @@ export function CatalogConfigurationDrawerSurface({
           />
           <div
             id="catalog-configuration-content"
-            role="region"
-            aria-label={presentation === 'EDITOR_CHILD' ? '商品元数据内容' : '商品配置内容'}
+            role="tabpanel"
+            aria-label={presentation === 'EDITOR_CHILD' ? '商品基础数据内容' : '商品配置内容'}
+            aria-labelledby={`catalog-configuration-tab-${currentLibrary}`}
             style={{flex: '1 1 auto', minWidth: 0, minHeight: 0, overflowY: 'auto', paddingLeft: 24}}
           >
             <Typography.Paragraph type="secondary" style={{marginBottom: 16}}>

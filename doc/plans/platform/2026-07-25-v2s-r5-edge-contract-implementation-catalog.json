@@ -89,15 +89,19 @@
     },
     {
       "path": "contracts/openapi-source/business-channel.schemas.json",
-      "sha256": "780cf513cb63a36fc789db50508af32efec90e026c29aaeb362cc58a8cb96c32"
+      "sha256": "ec1feea08f6b30ffe5063cf3b78158286fac8ec83417fbaac2dee7259271aa5a"
+    },
+    {
+      "path": "contracts/openapi-source/sales-menu.schemas.json",
+      "sha256": "5dafcc6e87aec7208ca5a47154bc8a1ff30724f8a5fa5ee877e1ce4aff270aca"
     }
   ],
   "denominator": {
-    "scenarios": 33,
-    "operations": 180,
+    "scenarios": 34,
+    "operations": 210,
     "faces": {
       "platform-admin": 61,
-      "operations-admin": 107,
+      "operations-admin": 137,
       "public": 12
     },
     "owners": [
@@ -109,7 +113,8 @@
       "platform-workspace",
       "collaboration",
       "business-channel",
-      "workspace-iam"
+      "workspace-iam",
+      "sales-menu"
     ]
   },
   "exactnessPolicy": {
@@ -589,7 +594,37 @@
     "transitionOperationsBusinessChannelStatus": [
       "VERSION_CONFLICT",
       "VOIDED_RECORD_IMMUTABLE"
-    ]
+    ],
+    "getOperationsSalesMenus": ["SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CHANNEL_INELIGIBLE"],
+    "getOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CHANNEL_INELIGIBLE"],
+    "getOperationsSalesMenuDraftSections": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
+    "getOperationsSalesMenuDraftItems": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
+    "getOperationsSalesMenuDraftItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
+    "getOperationsSalesMenuPublishedSections": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
+    "getOperationsSalesMenuPublishedItems": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED"],
+    "getOperationsSalesMenuPublishedItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED"],
+    "getOperationsSalesMenuItemCandidates": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
+    "getOperationsSalesMenuPublicationPreview": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
+    "getOperationsSalesMenuOperationRecords": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
+    "createOperationsSalesMenu": ["SALES_MENU_CHANNEL_INELIGIBLE", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "copyOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "renameOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "archiveOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "setOperationsSalesMenuActivation": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CHANNEL_INELIGIBLE", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "updateOperationsSalesMenuSchedule": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_SCHEDULE_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "createOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "renameOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "deleteOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_SECTION_NOT_EMPTY", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "moveOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_MOVE_BOUNDARY", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "addOperationsSalesMenuItems": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_ITEM_REFERENCE_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "updateOperationsSalesMenuItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_ITEM_REFERENCE_INVALID", "SALES_MENU_SKU_REFERENCE_INVALID", "SALES_MENU_PRICE_REQUIRED", "SALES_MENU_CONSTRAINT_INVALID", "SALES_MENU_ASSET_INVALID", "SALES_MENU_ASSET_TARGET_MISMATCH", "SALES_MENU_ASSET_LIFECYCLE_CONFLICT", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "deleteOperationsSalesMenuItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "moveOperationsSalesMenuItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_MOVE_BOUNDARY", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "stageOperationsSalesMenuAsset": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CAPABILITY_REQUIRED", "SALES_MENU_ASSET_INVALID", "SALES_MENU_ASSET_TARGET_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "releaseOperationsSalesMenuStagedAsset": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CAPABILITY_REQUIRED", "SALES_MENU_ASSET_INVALID", "SALES_MENU_ASSET_TARGET_MISMATCH", "SALES_MENU_ASSET_LIFECYCLE_CONFLICT", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "publishOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_STORE_DISABLED", "SALES_MENU_CHANNEL_DISABLED", "SALES_MENU_CHANNEL_INELIGIBLE", "SALES_MENU_DRAFT_INVALID", "SALES_MENU_ITEM_REFERENCE_INVALID", "SALES_MENU_SKU_REFERENCE_INVALID", "SALES_MENU_PRICE_REQUIRED", "SALES_MENU_SCHEDULE_INVALID", "SALES_MENU_CONSTRAINT_INVALID", "SALES_MENU_ASSET_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "setOperationsSalesMenuItemSoldOut": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED", "SALES_MENU_MANUAL_REASON_REQUIRED", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"],
+    "restoreOperationsSalesMenuItemSale": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT"]
   },
   "operationErrorSelectionRules": {
     "default": "operation errorSetRef plus operationErrorAugmentations[operationId]",
@@ -8754,6 +8789,36 @@
       ],
       "queryParameters": [
         {
+          "name": "usage",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "SALES_MENU"
+            ]
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        {
           "name": "sortKey",
           "in": "query",
           "required": false,
@@ -8891,6 +8956,119 @@
       "expectedVersion": "REQUIRED",
       "errorSetRef": "OWNER_COMMAND",
       "focusedTestId": "edge.transitionOperationsBusinessChannelStatus"
+    },
+    {
+      "operationId": "getOperationsSalesMenus",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": ["R5-SALES-MENU"],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "storeRef"],
+      "queryParameters": [
+        {"name": "channelRef", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}},
+        {"name": "query", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 160}},
+        {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}},
+        {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 100}}
+      ],
+      "requestSchema": "NoBody", "responseSchema": "SalesMenuPage", "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenus"
+    },
+    {
+      "operationId": "getOperationsSalesMenu",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}",
+      "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"],
+      "queryParameters": [{"name": "channelRef", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}],
+      "requestSchema": "NoBody", "responseSchema": "SalesMenuDetail", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenu"
+    },
+    {
+      "operationId": "getOperationsSalesMenuDraftSections", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "SalesMenuSectionList", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuDraftSections"
+    },
+    {
+      "operationId": "getOperationsSalesMenuDraftItems", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesSectionRef"], "queryParameters": [{"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 100}}], "requestSchema": "NoBody", "responseSchema": "SalesMenuItemPage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuDraftItems"
+    },
+    {
+      "operationId": "getOperationsSalesMenuDraftItem", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "SalesMenuDraftItemView", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuDraftItem"
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublishedSections", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "SalesMenuPublishedSectionList", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuPublishedSections"
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublishedItems", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesSectionRef"], "queryParameters": [{"name": "channelRef", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}, {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 100}}], "requestSchema": "NoBody", "responseSchema": "SalesMenuPublishedItemPage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuPublishedItems"
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublishedItem", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef"], "queryParameters": [{"name": "channelRef", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}], "requestSchema": "NoBody", "responseSchema": "SalesMenuPublishedItemView", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuPublishedItem"
+    },
+    {
+      "operationId": "getOperationsSalesMenuItemCandidates", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/item-candidates", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [{"name": "categoryRef", "in": "query", "required": false, "schema": {"type": "string", "format": "uuid"}}, {"name": "query", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 160}}, {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 100}}], "requestSchema": "NoBody", "responseSchema": "SalesMenuCandidatePage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuItemCandidates"
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublicationPreview", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [{"name": "channelRef", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}], "requestSchema": "NoBody", "responseSchema": "SalesMenuPublicationPreview", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuPublicationPreview"
+    },
+    {
+      "operationId": "getOperationsSalesMenuOperationRecords", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [{"name": "channelRef", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}, {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 100}}], "requestSchema": "NoBody", "responseSchema": "SalesMenuOperationRecordPage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuOperationRecords"
+    },
+    {
+      "operationId": "createOperationsSalesMenu", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "SalesMenuCreateRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.createOperationsSalesMenu"
+    },
+    {
+      "operationId": "copyOperationsSalesMenu", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "SalesMenuCopyRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.copyOperationsSalesMenu"
+    },
+    {
+      "operationId": "renameOperationsSalesMenu", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/name", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "SalesMenuRenameRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.renameOperationsSalesMenu"
+    },
+    {
+      "operationId": "archiveOperationsSalesMenu", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/archive", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "SalesMenuArchiveRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.archiveOperationsSalesMenu"
+    },
+    {
+      "operationId": "setOperationsSalesMenuActivation", "method": "PUT", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "channelRef"], "queryParameters": [], "requestSchema": "SalesMenuActivationRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.setOperationsSalesMenuActivation"
+    },
+    {
+      "operationId": "updateOperationsSalesMenuSchedule", "method": "PUT", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "SalesMenuScheduleUpdateRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.updateOperationsSalesMenuSchedule"
+    },
+    {
+      "operationId": "createOperationsSalesMenuSection", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "SalesMenuSectionCreateRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.createOperationsSalesMenuSection"
+    },
+    {
+      "operationId": "renameOperationsSalesMenuSection", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesSectionRef"], "queryParameters": [], "requestSchema": "SalesMenuSectionRenameRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.renameOperationsSalesMenuSection"
+    },
+    {
+      "operationId": "deleteOperationsSalesMenuSection", "method": "DELETE", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesSectionRef"], "queryParameters": [], "requestSchema": "SalesMenuDeleteRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.deleteOperationsSalesMenuSection"
+    },
+    {
+      "operationId": "moveOperationsSalesMenuSection", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/move", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesSectionRef"], "queryParameters": [], "requestSchema": "SalesMenuSectionMoveRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.moveOperationsSalesMenuSection"
+    },
+    {
+      "operationId": "addOperationsSalesMenuItems", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesSectionRef"], "queryParameters": [], "requestSchema": "SalesMenuItemsAddRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.addOperationsSalesMenuItems"
+    },
+    {
+      "operationId": "updateOperationsSalesMenuItem", "method": "PUT", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef"], "queryParameters": [], "requestSchema": "SalesMenuItemUpdateRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.updateOperationsSalesMenuItem"
+    },
+    {
+      "operationId": "deleteOperationsSalesMenuItem", "method": "DELETE", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef"], "queryParameters": [], "requestSchema": "SalesMenuDeleteRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.deleteOperationsSalesMenuItem"
+    },
+    {
+      "operationId": "moveOperationsSalesMenuItem", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef"], "queryParameters": [], "requestSchema": "SalesMenuItemMoveRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.moveOperationsSalesMenuItem"
+    },
+    {
+      "operationId": "stageOperationsSalesMenuAsset", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef"], "queryParameters": [], "requestSchema": "SalesMenuAssetStageRequest", "responseSchema": "SalesMenuAssetStageReadback", "successStatus": "201", "requestContentType": "multipart/form-data", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.stageOperationsSalesMenuAsset"
+    },
+    {
+      "operationId": "releaseOperationsSalesMenuStagedAsset", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef", "assetRef"], "queryParameters": [], "requestSchema": "SalesMenuAssetReleaseRequest", "responseSchema": "SalesMenuAssetReleaseReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.releaseOperationsSalesMenuStagedAsset"
+    },
+    {
+      "operationId": "publishOperationsSalesMenu", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "SalesMenuPublishRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.publishOperationsSalesMenu"
+    },
+    {
+      "operationId": "setOperationsSalesMenuItemSoldOut", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef", "channelRef"], "queryParameters": [], "requestSchema": "SalesMenuManualSoldOutRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.setOperationsSalesMenuItemSoldOut"
+    },
+    {
+      "operationId": "restoreOperationsSalesMenuItemSale", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef", "channelRef"], "queryParameters": [], "requestSchema": "SalesMenuManualRestoreRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.restoreOperationsSalesMenuItemSale"
     }
   ],
   "scenarioOperationCrosswalk": [
@@ -13141,6 +13319,52 @@
     },
     "ExternalProviderCandidatePage": {
       "ref": "ExternalProviderCandidatePage"
+    },
+    "SalesMenuSchedule": { "ref": "SalesMenuSchedule" },
+    "SalesMenuActivation": { "ref": "SalesMenuActivation" },
+    "SalesMenuSummary": { "ref": "SalesMenuSummary" },
+    "SalesMenuDetail": { "ref": "SalesMenuDetail" },
+    "SalesMenuSectionView": { "ref": "SalesMenuSectionView" },
+    "SalesMenuSectionList": { "ref": "SalesMenuSectionList" },
+    "SalesMenuSkuPrice": { "ref": "SalesMenuSkuPrice" },
+    "SalesMenuSaleContent": { "ref": "SalesMenuSaleContent" },
+    "SalesMenuOrderingConstraints": { "ref": "SalesMenuOrderingConstraints" },
+    "SalesMenuDisplayMedia": { "ref": "SalesMenuDisplayMedia" },
+    "SalesMenuDraftItemView": { "ref": "SalesMenuDraftItemView" },
+    "SalesMenuItemPage": { "ref": "SalesMenuItemPage" },
+    "InventoryAvailabilityFact": { "ref": "InventoryAvailabilityFact" },
+    "ManualSaleStatusFact": { "ref": "ManualSaleStatusFact" },
+    "SalesMenuPublishedItemView": { "ref": "SalesMenuPublishedItemView" },
+    "SalesMenuPublishedSectionList": { "ref": "SalesMenuPublishedSectionList" },
+    "SalesMenuPublishedItemPage": { "ref": "SalesMenuPublishedItemPage" },
+    "SalesMenuItemCandidate": { "ref": "SalesMenuItemCandidate" },
+    "SalesMenuCandidatePage": { "ref": "SalesMenuCandidatePage" },
+    "SalesMenuPublicationBlocker": { "ref": "SalesMenuPublicationBlocker" },
+    "SalesMenuPublicationPreview": { "ref": "SalesMenuPublicationPreview" },
+    "SalesMenuOperationRecord": { "ref": "SalesMenuOperationRecord" },
+    "SalesMenuOperationRecordPage": { "ref": "SalesMenuOperationRecordPage" },
+    "SalesMenuAssetTargetReadback": { "ref": "SalesMenuAssetTargetReadback" },
+    "SalesMenuAssetStageRequest": { "ref": "SalesMenuAssetStageRequest" },
+    "SalesMenuAssetStageReadback": { "ref": "SalesMenuAssetStageReadback" },
+    "SalesMenuAssetReleaseRequest": { "ref": "SalesMenuAssetReleaseRequest" },
+    "SalesMenuAssetReleaseReadback": { "ref": "SalesMenuAssetReleaseReadback" },
+    "SalesMenuCreateRequest": { "ref": "SalesMenuCreateRequest" },
+    "SalesMenuCopyRequest": { "ref": "SalesMenuCopyRequest" },
+    "SalesMenuArchiveRequest": { "ref": "SalesMenuArchiveRequest" },
+    "SalesMenuRenameRequest": { "ref": "SalesMenuRenameRequest" },
+    "SalesMenuActivationRequest": { "ref": "SalesMenuActivationRequest" },
+    "SalesMenuScheduleUpdateRequest": { "ref": "SalesMenuScheduleUpdateRequest" },
+    "SalesMenuSectionCreateRequest": { "ref": "SalesMenuSectionCreateRequest" },
+    "SalesMenuSectionRenameRequest": { "ref": "SalesMenuSectionRenameRequest" },
+    "SalesMenuSectionMoveRequest": { "ref": "SalesMenuSectionMoveRequest" },
+    "SalesMenuDeleteRequest": { "ref": "SalesMenuDeleteRequest" },
+    "SalesMenuItemsAddRequest": { "ref": "SalesMenuItemsAddRequest" },
+    "SalesMenuItemUpdateRequest": { "ref": "SalesMenuItemUpdateRequest" },
+    "SalesMenuItemMoveRequest": { "ref": "SalesMenuItemMoveRequest" },
+    "SalesMenuPublishRequest": { "ref": "SalesMenuPublishRequest" },
+    "SalesMenuManualSoldOutRequest": { "ref": "SalesMenuManualSoldOutRequest" },
+    "SalesMenuManualRestoreRequest": { "ref": "SalesMenuManualRestoreRequest" },
+    "SalesMenuCommandReadback": { "ref": "SalesMenuCommandReadback" }
     }
   },
   "componentReferenceClosure": {
@@ -13191,11 +13415,12 @@
     },
     "BusinessChannelPage": {
       "removeProperties": [
-        "nextCursor",
         "total"
       ],
       "required": [
-        "items"
+        "items",
+        "cursor",
+        "nextCursor"
       ],
       "properties": {
         "items": {
@@ -13203,6 +13428,16 @@
           "items": {
             "$ref": "#/components/schemas/BusinessChannelView"
           }
+        },
+        "cursor": {
+          "type": "string",
+          "maxLength": 512,
+          "nullable": true
+        },
+        "nextCursor": {
+          "type": "string",
+          "maxLength": 512,
+          "nullable": true
         }
       }
     },
@@ -14512,10 +14747,10 @@
     "status": "MATERIALIZED",
     "pipeline": "R24_P3C",
     "sourceOperationCount": 148,
-    "operationCount": 180,
+    "operationCount": 210,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 107,
+      "operations-admin": 137,
       "public": 12
     }
   }

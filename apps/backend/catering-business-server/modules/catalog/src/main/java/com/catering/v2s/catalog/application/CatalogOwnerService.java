@@ -667,7 +667,13 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         if (replay != null) return catalogItemCommandReadback(replay);
         try (var ownerCommand = OwnerOperationDiagnostics.beginCommand()) {
             ObjectNode result = transitionItem(
-                    context, scope.dataNodeId().toString(), scope.brandRef(), context.requestId(), request, prechecked);
+                    context,
+                    scope.dataNodeId().toString(),
+                    scope.brandRef(),
+                    context.requestId(),
+                    request,
+                    prechecked,
+                    idempotencyKey);
             saveTypedReceipt(
                     scope.dataNodeId().toString(),
                     scope.brandRef(),
@@ -714,11 +720,11 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         JsonNode replay = replay(dataNodeRef, receiptKey, BATCH_STATUS_OPERATION_ID, scopedRequest);
         if (replay != null) return batchStatusReadback(replay, command.items());
 
-        BatchStatusPreloadedFacts preloaded = loadBatchStatusFacts(
-                context, dataNodeRef, brandRef, command.targetStatus(), command.items());
+        BatchStatusPreloadedFacts preloaded =
+                loadBatchStatusFacts(context, dataNodeRef, brandRef, command.targetStatus(), command.items());
         List<CatalogOwnerApi.CatalogItemBatchStatusTransitionResult> results = command.items().stream()
-                .map(item ->
-                        executeBatchStatusItem(context, dataNodeRef, brandRef, command.targetStatus(), item, preloaded))
+                .map(item -> executeBatchStatusItem(
+                        context, dataNodeRef, brandRef, command.targetStatus(), item, preloaded, receiptKey))
                 .toList();
         ObjectNode response = batchStatusResponse(context.requestId(), results);
         saveReceipt(dataNodeRef, receiptKey, BATCH_STATUS_OPERATION_ID, scopedRequest, response);
@@ -731,17 +737,18 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             String brandRef,
             String targetStatus,
             CatalogOwnerApi.CatalogItemBatchStatusTransitionItem item,
-            BatchStatusPreloadedFacts preloaded) {
+            BatchStatusPreloadedFacts preloaded,
+            String receiptKey) {
         String itemCode = preloaded.itemCodes().get(item.itemRef());
         try {
             if (transactions == null) {
                 return executeBatchStatusItemInTransaction(
-                        context, dataNodeRef, brandRef, targetStatus, item, preloaded, itemCode);
+                        context, dataNodeRef, brandRef, targetStatus, item, preloaded, itemCode, receiptKey);
             }
             TransactionTemplate itemTransaction = new TransactionTemplate(transactions);
             itemTransaction.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
             return itemTransaction.execute(status -> executeBatchStatusItemInTransaction(
-                    context, dataNodeRef, brandRef, targetStatus, item, preloaded, itemCode));
+                    context, dataNodeRef, brandRef, targetStatus, item, preloaded, itemCode, receiptKey));
         } catch (RuntimeException failure) {
             return batchItemFailureOrThrow(item.itemRef(), itemCode, failure);
         }
@@ -778,8 +785,20 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             String targetStatus,
             CatalogOwnerApi.CatalogItemBatchStatusTransitionItem item,
             BatchStatusPreloadedFacts preloaded,
-            String itemCode) {
+            String itemCode,
+            String receiptKey) {
         try (var ownerCommand = OwnerOperationDiagnostics.beginCommand()) {
+            if ("VOIDED".equals(targetStatus) && preloaded.voidedFactsPreloaded()) {
+                long nextVersion = transitionBatchVoidedItemState(
+                        context, dataNodeRef, brandRef, item, preloaded, receiptKey + "|item|" + item.itemRef());
+                return new CatalogOwnerApi.CatalogItemBatchStatusTransitionResult(
+                        item.itemRef(),
+                        itemCode,
+                        CatalogOwnerApi.CatalogItemBatchStatusTransitionOutcome.SUCCEEDED,
+                        null,
+                        null,
+                        nextVersion);
+            }
             ItemRow current = lockBatchStatusItem(dataNodeRef, brandRef, targetStatus, item.itemRef(), preloaded);
             long nextVersion = transitionItemState(
                     context,
@@ -791,7 +810,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                     targetStatus,
                     true,
                     null,
-                    preloaded);
+                    preloaded,
+                    receiptKey + "|item|" + item.itemRef());
             return new CatalogOwnerApi.CatalogItemBatchStatusTransitionResult(
                     item.itemRef(),
                     itemCode,
@@ -800,6 +820,56 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                     null,
                     nextVersion);
         }
+    }
+
+    /**
+     * Compact VOID item path. The receipt transaction already owns the batch-start catalog-item advisory locks and
+     * re-read the scoped rows after that linearization point. The inventory owner performs its own current-row
+     * validation and retirement in one statement; the final catalog CAS remains the per-item authoritative recheck.
+     */
+    private long transitionBatchVoidedItemState(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            String dataNodeRef,
+            String brandRef,
+            CatalogOwnerApi.CatalogItemBatchStatusTransitionItem item,
+            BatchStatusPreloadedFacts preloaded,
+            String inventoryIdempotencyKey) {
+        ItemRow current = preloaded.scopedItems().get(item.itemRef());
+        if (current == null) {
+            if (preloaded.itemCodes().containsKey(item.itemRef())) {
+                throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "商品不属于当前数据范围");
+            }
+            throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "商品不存在");
+        }
+        if ("VOIDED".equals(current.status())) return current.version();
+        if (item.expectedVersion() != current.version()) {
+            throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "商品版本已变化");
+        }
+        if (itemReferencedByOtherItems(dataNodeRef, brandRef, current, preloaded)) {
+            String reason = "商品仍被其他商品引用，不能作废";
+            throw new CatalogOwnerApi.Problem("REFERENCE_BLOCKS_VOID", 422, reason);
+        }
+        if (hasItemDependencies(current, null, preloaded)) {
+            String reason = "商品仍有依赖事实，不能作废";
+            throw new CatalogOwnerApi.Problem("DEPENDENT_FACTS_BLOCK_VOID", 422, reason);
+        }
+        requireItemRetirementUnreferenced(context, current, preloaded, inventoryIdempotencyKey);
+        lockCatalogAssetRefs(json(current.sectionsJson()));
+        List<Long> versions = jdbc.query(
+                "UPDATE catalog.catalog_item SET status=?,version=version+1,updated_at_epoch_millis=? "
+                        + "WHERE item_ref=? AND data_node_ref=? AND brand_ref=? AND version=? AND status <> 'VOIDED' "
+                        + "RETURNING version",
+                (result, rowNumber) -> result.getLong(1),
+                "VOIDED",
+                now(),
+                current.ref(),
+                dataNodeRef,
+                brandRef,
+                item.expectedVersion());
+        if (versions.size() != 1) {
+            throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "商品版本已变化");
+        }
+        return versions.get(0);
     }
 
     private List<CatalogOwnerApi.CatalogItemBatchStatusTransitionItem> validateBatchStatusCommand(
@@ -862,9 +932,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             }
         }
 
-        boolean voidedFactsPreloaded =
-                "VOIDED".equals(targetStatus) && transactions != null && inventory != null && !scopedRows.isEmpty();
-        Map<UUID, InventoryOwnerApi.CatalogReferenceDependenciesReadback> inventoryDependencies = Map.of();
+        boolean voidedFactsPreloaded = "VOIDED".equals(targetStatus) && inventory != null && !scopedRows.isEmpty();
+        Map<UUID, InventoryOwnerApi.CatalogVoidDependencyReadback> inventoryDependencies = Map.of();
         Map<UUID, List<InboundItemReference>> inboundReferences = Map.of();
         Map<UUID, Boolean> identifierPresence = Map.of();
         if (voidedFactsPreloaded) {
@@ -883,12 +952,13 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             }
             scopedRefs = new ArrayList<>(scopedRows.keySet());
             if (!scopedRefs.isEmpty()) {
-                inventoryDependencies = inventory.catalogReferenceDependenciesByRefs(
-                                context, "CATALOG_ITEM", scopedRefs)
+                inventoryDependencies = inventory
+                        .catalogVoidDependenciesByRefs(
+                                context, InventoryOwnerApi.CatalogVoidSubjectKind.CATALOG_ITEM, scopedRefs)
                         .stream()
                         .filter(java.util.Objects::nonNull)
                         .collect(java.util.stream.Collectors.toMap(
-                                InventoryOwnerApi.CatalogReferenceDependenciesReadback::reference,
+                                value -> value.subject().ref(),
                                 value -> value,
                                 (left, right) -> left,
                                 LinkedHashMap::new));
@@ -1226,7 +1296,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.TemporaryPromotionExecuteCommand command,
             String idempotencyKey) {
-        return executeTemporaryCatalogItemPromotionWithProjection(context, command, idempotencyKey).readback();
+        return executeTemporaryCatalogItemPromotionWithProjection(context, command, idempotencyKey)
+                .readback();
     }
 
     @Override
@@ -1359,16 +1430,14 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
     }
 
     /** The coordinator's replay input is the same typed catalog projection that the first execution produced. */
-    private ObjectNode temporaryPromotionReceipt(
-            ObjectNode response, CatalogTemporaryPromotionProjection projection) {
+    private ObjectNode temporaryPromotionReceipt(ObjectNode response, CatalogTemporaryPromotionProjection projection) {
         ObjectNode stored = response.deepCopy();
         ObjectNode marker = stored.putObject(TEMPORARY_PROMOTION_PROJECTION_FIELD)
                 .put("sourceItemRef", projection.sourceItemRef().toString())
                 .put("sourceMeasureMode", projection.sourceMeasureMode())
                 .put("targetItemRef", projection.targetItemRef().toString())
                 .put("targetItemCode", projection.targetItemCode());
-        if (projection.targetBaseMeasureUnit() == null)
-            marker.putNull("targetBaseMeasureUnit");
+        if (projection.targetBaseMeasureUnit() == null) marker.putNull("targetBaseMeasureUnit");
         else marker.set("targetBaseMeasureUnit", mapper.valueToTree(projection.targetBaseMeasureUnit()));
         ArrayNode skus = marker.putArray("targetSkus");
         projection.targetSkus().entrySet().stream()
@@ -1377,8 +1446,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                     CatalogTemporaryPromotionSkuFact fact = entry.getValue();
                     ObjectNode sku = skus.addObject().put("skuCode", entry.getKey());
                     sku.put("productSkuRef", fact.productSkuRef().toString());
-                    if (fact.baseMeasureUnit() == null)
-                        sku.putNull("baseMeasureUnit");
+                    if (fact.baseMeasureUnit() == null) sku.putNull("baseMeasureUnit");
                     else sku.set("baseMeasureUnit", mapper.valueToTree(fact.baseMeasureUnit()));
                 });
         ArrayNode optionValueRefs = marker.putArray("optionValueRefs");
@@ -1399,8 +1467,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         String sourceMeasureMode = requiredTemporaryPromotionReceiptText(marker, "sourceMeasureMode");
         UUID targetItemRef = requiredTemporaryPromotionReceiptUuid(marker, "targetItemRef");
         String targetItemCode = requiredTemporaryPromotionReceiptText(marker, "targetItemCode");
-        InventoryOwnerApi.UnitSnapshot targetBaseMeasureUnit = temporaryPromotionUnitSnapshot(
-                marker.get("targetBaseMeasureUnit"), "targetBaseMeasureUnit");
+        InventoryOwnerApi.UnitSnapshot targetBaseMeasureUnit =
+                temporaryPromotionUnitSnapshot(marker.get("targetBaseMeasureUnit"), "targetBaseMeasureUnit");
         JsonNode skuNodes = marker.get("targetSkus");
         if (skuNodes == null || !skuNodes.isArray())
             throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "临时转正回执缺少 SKU 事实投影");
@@ -1463,8 +1531,9 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
 
     private InventoryOwnerApi.UnitSnapshot temporaryPromotionUnitSnapshot(JsonNode node, String field) {
         if (node == null || node.isNull()) return null;
-        if (!node.isObject())
+        if (!node.isObject()) {
             throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "临时转正回执单位事实无效：" + field);
+        }
         UUID ref = requiredTemporaryPromotionReceiptUuid(node, "unitRef");
         String code = requiredTemporaryPromotionReceiptText(node, "code");
         String name = requiredTemporaryPromotionReceiptText(node, "name");
@@ -1519,7 +1588,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 data.path("sourceVersion").asLong(),
                 data.path("formalCodeAvailable").asBoolean(),
                 textValues(data.path("requiredFields")),
-                textValues(data.path("blockedReasons")),
+                temporaryPromotionBlockingReasonCodes(data.path("blockedReasons")),
                 List.copyOf(changes),
                 data.path("preflightDigest").asText(),
                 data.path("canPromote").asBoolean());
@@ -1679,6 +1748,21 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         return List.copyOf(result);
     }
 
+    private static List<CatalogOwnerApi.TemporaryPromotionBlockingReasonCode> temporaryPromotionBlockingReasonCodes(
+            JsonNode values) {
+        List<CatalogOwnerApi.TemporaryPromotionBlockingReasonCode> result = new ArrayList<>();
+        if (!values.isArray()) return List.of();
+        for (JsonNode value : values) {
+            try {
+                result.add(CatalogOwnerApi.TemporaryPromotionBlockingReasonCode.valueOf(value.asText()));
+            } catch (IllegalArgumentException failure) {
+                String message = "临时转正阻断原因代码无效";
+                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, message, failure);
+            }
+        }
+        return List.copyOf(result);
+    }
+
     private JsonNode executeWrite(
             String operationId,
             String dataNodeRef,
@@ -1723,7 +1807,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                                 request,
                                 coordinationSnapshot == null
                                         ? null
-                                        : new TransitionItemPrecheck(coordinationSnapshot.current(), null));
+                                        : new TransitionItemPrecheck(coordinationSnapshot.current(), null),
+                                receiptKey);
                         case "createOperationsCatalogCategory" -> createCategory(
                                 dataNodeRef, brandRef, requestId, request);
                         case "updateOperationsCatalogCategory" -> updateCategory(
@@ -3475,7 +3560,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                         + "subtree.root_category_ref,child.category_ref FROM category_subtree subtree JOIN "
                         + "visible_categories child ON child.parent_category_ref=subtree.category_ref), direct_counts "
                         + "AS (SELECT relation.category_ref,"
-                        + "COUNT(*) AS direct_count "
+                        + "COUNT(DISTINCT item.item_ref) AS direct_count "
                         + "FROM catalog.catalog_item_category relation JOIN catalog.catalog_item item ON "
                         + "item.item_ref=relation.item_ref "
                         + "WHERE item.data_node_ref=? AND item.brand_ref=? AND item.status <> 'VOIDED' "
@@ -3487,19 +3572,23 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                         + "ON item.item_ref=relation.item_ref AND item.data_node_ref=? AND item.brand_ref=? "
                         + "AND item.status <> 'VOIDED'), subtree_sizes AS (SELECT root_category_ref,"
                         + "COUNT(DISTINCT category_ref) AS subtree_size FROM category_subtree "
-                        + "GROUP BY root_category_ref), blocking_stats AS (SELECT root_category_ref,"
+                        + "GROUP BY root_category_ref), subtree_counts AS (SELECT root_category_ref,"
+                        + "COUNT(DISTINCT item_ref) AS subtree_count FROM blocking_items GROUP BY root_category_ref), "
+                        + "blocking_stats AS (SELECT root_category_ref,"
                         + "COUNT(DISTINCT item_ref) AS blocking_reference_count,"
                         + "COALESCE(jsonb_agg(jsonb_build_object('referenceKind','CATALOG_ITEM','referenceRef',"
                         + "item_ref,'code',code,'name',name,'direction','INBOUND') ORDER BY code),"
                         + "'[]'::jsonb) AS blocking_reference_facts FROM blocking_items "
                         + "GROUP BY root_category_ref) "
                         + "SELECT c.category_ref,c.code,c.name,c.parent_category_ref,c.version,c.display_order,"
-                        + "COALESCE(direct_counts.direct_count,0),COALESCE(subtree_sizes.subtree_size,1),"
+                        + "COALESCE(direct_counts.direct_count,0),COALESCE(subtree_counts.subtree_count,0),"
+                        + "COALESCE(subtree_sizes.subtree_size,1),"
                         + "COALESCE(blocking_stats.blocking_reference_count,0),"
                         + "COALESCE(blocking_stats.blocking_reference_facts,'[]'::jsonb) "
                         + "FROM visible_categories c LEFT JOIN category_order ordered ON "
                         + "ordered.category_ref=c.category_ref LEFT JOIN direct_counts ON "
                         + "direct_counts.category_ref=c.category_ref "
+                        + "LEFT JOIN subtree_counts ON subtree_counts.root_category_ref=c.category_ref "
                         + "LEFT JOIN subtree_sizes ON subtree_sizes.root_category_ref=c.category_ref "
                         + "LEFT JOIN blocking_stats ON blocking_stats.root_category_ref=c.category_ref "
                         + "ORDER BY ordered.order_path NULLS LAST,c.parent_category_ref NULLS FIRST,"
@@ -3516,8 +3605,9 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                     while (result.next()) {
                         String categoryRef = result.getObject(1, UUID.class).toString();
                         long directCount = result.getLong(7);
-                        long subtreeSize = result.getLong(8);
-                        long blockingCount = result.getLong(9);
+                        long count = result.getLong(8);
+                        long subtreeSize = result.getLong(9);
+                        long blockingCount = result.getLong(10);
                         ObjectNode node = tree.addObject()
                                 .put("categoryRef", categoryRef)
                                 .put("code", result.getString(2))
@@ -3529,13 +3619,15 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                             node.put(
                                     "parentCategoryRef",
                                     result.getObject(4, UUID.class).toString());
-                        node.put("count", directCount).put("countSemantics", "SELF_ONLY");
+                        node.put("count", count)
+                                .put("directCount", directCount)
+                                .put("countSemantics", "SELF_AND_DESCENDANTS");
                         ObjectNode deletion = node.putObject("deletionAvailability");
                         deletion.put("canDelete", blockingCount == 0)
                                 .put("subtreeSize", subtreeSize)
                                 .put("blockingReferenceCount", blockingCount);
                         try {
-                            JsonNode blockingReferenceFacts = mapper.readTree(result.getString(10));
+                            JsonNode blockingReferenceFacts = mapper.readTree(result.getString(11));
                             deletion.putObject("blockingReferences")
                                     .put("count", blockingCount)
                                     .set(
@@ -4435,9 +4527,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 .put("canDisable", "ENABLED".equals(row.status()));
         JsonNode inventoryVoidDependencies =
                 requireInventoryVoidDependencies(dataNodeRef, brandRef, row.ref(), requestId);
-        long stockTargetCount =
-                inventoryVoidDependencies.path("stockTargetCount").asLong(0);
-        long productBomCount = inventoryVoidDependencies.path("productBomCount").asLong(0);
+        List<InventoryInboundVoidReference> inventoryInboundReferences =
+                inventoryInboundVoidReferences(inventoryVoidDependencies);
         ItemVoidCatalogFacts catalogFacts = itemVoidCatalogFacts(sections);
         ObjectNode voidAvailability = action.putObject("voidAvailability");
         ArrayNode blockingReferences = voidAvailability.putArray("blockingReferences");
@@ -4455,8 +4546,18 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 .addObject()
                 .put("factKind", "CATALOG_ITEM_INBOUND_REFERENCE")
                 .put("factRef", reference.itemRef().toString()));
+        inventoryInboundReferences.forEach(reference -> {
+            blockingReferences
+                    .addObject()
+                    .put("referenceKind", "INVENTORY_BOM")
+                    .put("referenceRef", reference.sourceRef().toString());
+            dependentFacts
+                    .addObject()
+                    .put("factKind", "INVENTORY_BOM_INBOUND_REFERENCE")
+                    .put("factRef", reference.sourceRef().toString());
+        });
         ArrayNode blockingReasons = appendItemVoidBlockingReasons(
-                voidAvailability, row, catalogFacts, inboundReferences, stockTargetCount, productBomCount);
+                voidAvailability, row, catalogFacts, inboundReferences, inventoryInboundReferences);
         // The user-visible blocking reasons are the sole truth for an item void decision.  Do not derive a
         // second boolean from partial detail facts: that previously allowed canVoid=false with no explanation.
         voidAvailability.put("canVoid", blockingReasons.isEmpty());
@@ -5463,13 +5564,6 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         List<UUID> orderedSkuRefs = new ArrayList<>(archivedSkuRefs);
         Map<UUID, List<SkuInboundReference>> catalogReferencesBySku =
                 skuInboundReferencesByRefs(dataNodeRef, brandRef, orderedSkuRefs);
-        Map<UUID, InventoryOwnerApi.CatalogReferenceDependenciesReadback> inventoryDependenciesBySku =
-                inventory.catalogReferenceDependenciesByRefs(commandContext, "PRODUCT_SKU", orderedSkuRefs).stream()
-                        .collect(java.util.stream.Collectors.toMap(
-                                InventoryOwnerApi.CatalogReferenceDependenciesReadback::reference,
-                                value -> value,
-                                (left, right) -> left,
-                                LinkedHashMap::new));
         for (UUID skuRef : orderedSkuRefs) {
             List<SkuInboundReference> catalogReferences = catalogReferencesBySku.getOrDefault(skuRef, List.of());
             if (!catalogReferences.isEmpty()) {
@@ -5478,18 +5572,11 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                         "REFERENCE_BLOCKS_VOID", 422, "该规格已被套餐内容使用，暂不能作废");
                 // spotless:on
             }
-            InventoryOwnerApi.CatalogReferenceDependenciesReadback dependencies =
-                    inventoryDependenciesBySku.get(skuRef);
-            if (dependencies == null) {
-                throw new CatalogOwnerApi.Problem(
-                        "REFERENCE_MAPPING_UNRESOLVED", 422, "SKU inventory dependency readback is missing");
-            }
-            if (dependencies.hasDependentFacts()) {
-                // spotless:off
-                throw new CatalogOwnerApi.Problem(
-                        "REFERENCE_BLOCKS_VOID", 422, "该规格存在库存记录或用料，暂不能作废");
-                // spotless:on
-            }
+            inventory.retireCatalogVoidInventoryDefinitions(
+                    commandContext,
+                    new InventoryOwnerApi.CatalogVoidSubject(
+                            InventoryOwnerApi.CatalogVoidSubjectKind.PRODUCT_SKU, skuRef),
+                    commandContext.requestId() + "|sku-inventory|" + skuRef);
         }
     }
 
@@ -5611,7 +5698,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                     .put("canVoid", false);
             result.putArray("blockingReferences");
             result.putArray("dependentFacts");
-            appendVoidBlockingReason(result.putArray("blockingReasons"), "当前状态不支持作废", 1, List.of());
+            appendVoidBlockingReason(result.putArray("blockingReasons"), "ALREADY_VOIDED", 1, List.of());
         });
         return itemSaveReadback(requestId, dataNodeRef, brandRef, current.code(), expectedCatalogVersion + 1, readback);
     }
@@ -6017,7 +6104,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             String brandRef,
             String requestId,
             ObjectNode request,
-            TransitionItemPrecheck prechecked) {
+            TransitionItemPrecheck prechecked,
+            String idempotencyKey) {
         String code = required(request, "itemCode");
         long expected = requiredLong(request, "expectedVersion", 1);
         String target = required(request, "targetStatus");
@@ -6033,7 +6121,10 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 expected,
                 target,
                 false,
-                prechecked == null ? null : prechecked.hasIdentifiers());
+                prechecked == null ? null : prechecked.hasIdentifiers(),
+                null,
+                (idempotencyKey == null || idempotencyKey.isBlank() ? requestId : idempotencyKey) + "|inventory|"
+                        + current.ref());
         return itemCommand(requestId, current.ref(), target, nextVersion);
     }
 
@@ -6056,6 +6147,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 expected,
                 target,
                 sameStateIsNoOp,
+                null,
                 null,
                 null);
     }
@@ -6080,6 +6172,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 target,
                 sameStateIsNoOp,
                 knownHasIdentifiers,
+                null,
                 null);
     }
 
@@ -6093,7 +6186,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             String target,
             boolean sameStateIsNoOp,
             Boolean knownHasIdentifiers,
-            BatchStatusPreloadedFacts batchFacts) {
+            BatchStatusPreloadedFacts batchFacts,
+            String inventoryIdempotencyKey) {
         if (sameStateIsNoOp && target.equals(current.status())) return current.version();
         if ("VOIDED".equals(current.status()))
             throw new CatalogOwnerApi.Problem("VOIDED_RECORD_IMMUTABLE", 409, "已作废记录不可修改");
@@ -6101,7 +6195,6 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             throw new CatalogOwnerApi.Problem(("VERSION_CONFLICT"), (409), ("商品版本已变化"));
         }
         if ("ENABLED".equals(target) && !"ENABLED".equals(current.status())) validateItemActivation(current);
-        if ("VOIDED".equals(target)) requireItemRetirementUnreferenced(commandContext, current, batchFacts);
         if ("VOIDED".equals(target) && itemReferencedByOtherItems(dataNodeRef, brandRef, current, batchFacts)) {
             throw new CatalogOwnerApi.Problem(
                     ("REFERENCE_BLOCKS_VOID"),
@@ -6116,6 +6209,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                     /* format-wrap */
                     ("商品仍有依赖事实，不能作废"));
         }
+        if ("VOIDED".equals(target))
+            requireItemRetirementUnreferenced(commandContext, current, batchFacts, inventoryIdempotencyKey);
         if ("VOIDED".equals(target)) lockCatalogAssetRefs(json(current.sectionsJson()));
         if (jdbc.update(
                         "UPDATE catalog.catalog_item SET status=?, version=version+1, updated_at_epoch_millis=? WHERE "
@@ -6136,7 +6231,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
     private void requireItemRetirementUnreferenced(
             WorkspaceExecutionContext<CatalogAuthorizationScope> commandContext,
             ItemRow current,
-            BatchStatusPreloadedFacts batchFacts) {
+            BatchStatusPreloadedFacts batchFacts,
+            String inventoryIdempotencyKey) {
         if (commandContext == null || inventory == null) {
             throw new CatalogOwnerApi.Problem(
                     "REFERENCE_MAPPING_UNRESOLVED",
@@ -6144,31 +6240,32 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                     "item void requires the catalog execution context and inventory owner API");
         }
         if (batchFacts != null && batchFacts.voidedFactsPreloaded()) {
-            InventoryOwnerApi.CatalogReferenceDependenciesReadback dependencies =
+            InventoryOwnerApi.CatalogVoidDependencyReadback dependencies =
                     batchFacts.inventoryDependencies().get(current.ref());
             if (dependencies == null) {
                 throw new CatalogOwnerApi.Problem(
                         "REFERENCE_MAPPING_UNRESOLVED", 422, "item inventory dependency readback is missing");
             }
-            if (dependencies.hasDependentFacts()) {
+            if (dependencies.hasInboundBomReferences()) {
+                String dependencySources = inventoryVoidDependencySources(dependencies);
                 throw new CatalogOwnerApi.Problem(
                         "REFERENCE_BLOCKS_VOID",
                         422,
                         /* format-wrap */
-                        "商品仍被库存事实引用，不能作废：" + inventoryDependencySources(dependencies));
+                        "商品仍被库存 BOM 引用，不能作废：" + dependencySources);
             }
+            InventoryOwnerApi.CatalogVoidSubject subject = new InventoryOwnerApi.CatalogVoidSubject(
+                    InventoryOwnerApi.CatalogVoidSubjectKind.CATALOG_ITEM, current.ref());
+            inventory.retireCatalogVoidInventoryDefinitionsForBatch(commandContext, subject, inventoryIdempotencyKey);
             return;
         }
-        lockCatalogItemRefs(List.of(current.ref()));
-        InventoryOwnerApi.CatalogReferenceDependenciesReadback dependencies = inventory.catalogReferenceDependencies(
-                commandContext, "CATALOG_ITEM", current.ref().toString());
-        if (dependencies.hasDependentFacts()) {
-            throw new CatalogOwnerApi.Problem(
-                    "REFERENCE_BLOCKS_VOID",
-                    422,
-                    /* format-wrap */
-                    "商品仍被库存事实引用，不能作废：" + inventoryDependencySources(dependencies));
-        }
+        // Use the same set-based owner command for a single item and a batch item. It preserves the owner transaction,
+        // idempotency receipt, admission checks, and final readback without reintroducing per-row round trips.
+        inventory.retireCatalogVoidInventoryDefinitionsForBatch(
+                commandContext,
+                new InventoryOwnerApi.CatalogVoidSubject(
+                        InventoryOwnerApi.CatalogVoidSubjectKind.CATALOG_ITEM, current.ref()),
+                inventoryIdempotencyKey);
     }
 
     private void validateItemActivation(ItemRow row) {
@@ -6243,7 +6340,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 + "catalog.catalog_category category SET name=?,version=category.version+1,updated_at_epoch_millis=? "
                 + "FROM current_category current WHERE category.category_ref=current.category_ref AND "
                 + "current.version=? AND NOT EXISTS (SELECT 1 FROM prior_receipt) RETURNING category.category_ref,"
-                + "category.code,category.name,category.parent_category_ref,category.version,category.display_order), "
+                + "category.code,category.name,category.status,category.parent_category_ref,category.version,"
+                + "category.display_order), "
                 + "category_subtree(category_ref) AS (SELECT category_ref FROM updated_category UNION ALL SELECT "
                 + "child.category_ref FROM catalog.catalog_category child JOIN category_subtree parent ON "
                 + "child.parent_category_ref=parent.category_ref WHERE child.data_node_ref=? AND child.brand_ref=? "
@@ -6261,7 +6359,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 + "relation ON relation.category_ref=subtree.category_ref LEFT JOIN catalog.catalog_item item ON "
                 + "item.item_ref=relation.item_ref AND item.data_node_ref=? AND item.brand_ref=? AND item.status <> "
                 + "'VOIDED'), response AS (SELECT jsonb_build_object('categoryRef',category.category_ref,'code',"
-                + "category.code,'name',category.name,'parentCategoryRef',category.parent_category_ref,'version',"
+                + "category.code,'name',category.name,'status',category.status,'parentCategoryRef',"
+                + "category.parent_category_ref,'version',"
                 + "category.version,'displayOrder',category.display_order,'deletionAvailability',jsonb_build_object("
                 + "'canDelete',availability.blocking_reference_count=0,'subtreeSize',availability.subtree_size,"
                 + "'blockingReferenceCount',availability.blocking_reference_count,'blockingReferences',"
@@ -6404,8 +6503,9 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 + "updated_at_epoch_millis=plan.updated_at FROM move_plan plan WHERE plan.validation_code IS NULL "
                 + "AND NOT EXISTS (SELECT 1 FROM prior_receipt) AND (category.category_ref=plan.current_category_ref "
                 + "OR category.category_ref=plan.previous_ref OR category.category_ref=plan.next_ref) RETURNING "
-                + "category.category_ref,category.code,category.name,category.parent_category_ref,category.version,"
-                + "category.display_order), updated_current AS MATERIALIZED (SELECT category.* FROM updated_categories "
+                + "category.category_ref,category.code,category.name,category.status,category.parent_category_ref,"
+                + "category.version,category.display_order), updated_current AS MATERIALIZED (SELECT category.* FROM "
+                + "updated_categories "
                 + "category JOIN move_plan plan ON category.category_ref=plan.current_category_ref), "
                 + "readback_subtree(category_ref) AS (SELECT category_ref FROM updated_current UNION ALL SELECT "
                 + "child.category_ref FROM locked_categories child JOIN readback_subtree parent ON "
@@ -6422,8 +6522,10 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 + "LEFT JOIN catalog.catalog_item_category relation ON relation.category_ref=subtree.category_ref "
                 + "LEFT JOIN catalog.catalog_item item ON item.item_ref=relation.item_ref AND item.data_node_ref=? "
                 + "AND item.brand_ref=? AND item.status <> 'VOIDED'), response AS (SELECT jsonb_build_object("
-                + "'categoryRef',category.category_ref,'code',category.code,'name',category.name,'parentCategoryRef',"
-                + "category.parent_category_ref,'version',category.version,'displayOrder',category.display_order,"
+                + "'categoryRef',category.category_ref,'code',category.code,'name',category.name,'status',"
+                + "category.status,'parentCategoryRef',category.parent_category_ref,'version',category.version,"
+                + "'displayOrder',"
+                + "category.display_order,"
                 + "'deletionAvailability',jsonb_build_object('canDelete',availability.blocking_reference_count=0,"
                 + "'subtreeSize',availability.subtree_size,'blockingReferenceCount',"
                 + "availability.blocking_reference_count,'blockingReferences',"
@@ -6974,6 +7076,12 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 .collect(java.util.stream.Collectors.joining(", "));
     }
 
+    private static String inventoryVoidDependencySources(InventoryOwnerApi.CatalogVoidDependencyReadback dependencies) {
+        return dependencies.inboundBomReferences().stream()
+                .map(reference -> reference.sourceName() + " x" + reference.count())
+                .collect(java.util.stream.Collectors.joining(", "));
+    }
+
     private static String inventoryDependencyLabel(String tableName) {
         if ("stock_target".equals(tableName)) return "库存对象";
         if ("stock_bom".equals(tableName)) return "BOM";
@@ -6993,9 +7101,9 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         if (expectedSourceVersion < 0)
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "expectedSourceVersion is required");
         ArrayNode blockedReasons = mapper.createArrayNode();
-        if (!temporary) blockedReasons.add("当前商品不是外部订单临时商品");
+        if (!temporary) blockedReasons.add("NOT_TEMPORARY_ITEM");
         if (expectedSourceVersion != row.version()) blockedReasons.add("VERSION_CONFLICT");
-        if (rule.visibleButDisabled()) blockedReasons.add(rule.disabledReason());
+        if (rule.visibleButDisabled()) blockedReasons.add("SHAPE_DISABLED");
         String materialRole = optional(request, "materialRole");
         if ("MATERIAL".equals(shapeKey) && (materialRole == null || materialRole.isBlank()))
             blockedReasons.add("MATERIAL_ROLE_REQUIRED");
@@ -7103,8 +7211,9 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 String skuCode = sku.path("skuCode").asText("");
                 if (skuCode.isBlank()) continue;
                 UUID productSkuRef = nullableUuid(sku, "productSkuRef");
-                if (productSkuRef == null)
+                if (productSkuRef == null) {
                     throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "转正商品 SKU 引用缺失");
+                }
                 if (targetSkuFacts.put(
                                 skuCode,
                                 new CatalogTemporaryPromotionSkuFact(
@@ -7112,39 +7221,32 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                                         temporaryPromotionUnitSnapshot(
                                                 sku.get("baseMeasureUnitSnapshot"),
                                                 "targetSkus[].baseMeasureUnitSnapshot")))
-                        != null)
+                        != null) {
                     throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "转正商品包含重复 SKU 编码");
+                }
             }
         return new CatalogTemporaryPromotionProjection(
                 sourceItemRef,
                 sourceMeasureMode,
                 targetItemRef,
                 targetItemCode,
-                temporaryPromotionUnitSnapshot(
-                        targetSections.get("baseMeasureUnitSnapshot"), "targetBaseMeasureUnit"),
+                temporaryPromotionUnitSnapshot(targetSections.get("baseMeasureUnitSnapshot"), "targetBaseMeasureUnit"),
                 targetSkuFacts,
                 optionValueRefs);
     }
 
     private ObjectNode promotionExecute(String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
-        return promotionExecuteWithProjection(dataNodeRef, brandRef, requestId, request, null).response();
+        return promotionExecuteWithProjection(dataNodeRef, brandRef, requestId, request, null)
+                .response();
     }
 
     private PromotionExecution promotionExecute(
-            String dataNodeRef,
-            String brandRef,
-            String requestId,
-            ObjectNode request,
-            ItemRow prechecked) {
+            String dataNodeRef, String brandRef, String requestId, ObjectNode request, ItemRow prechecked) {
         return promotionExecuteWithProjection(dataNodeRef, brandRef, requestId, request, prechecked);
     }
 
     private PromotionExecution promotionExecuteWithProjection(
-            String dataNodeRef,
-            String brandRef,
-            String requestId,
-            ObjectNode request,
-            ItemRow prechecked) {
+            String dataNodeRef, String brandRef, String requestId, ObjectNode request, ItemRow prechecked) {
         String code = required(request, "itemCode");
         long expected = requiredLong(request, "expectedVersion", -1);
         long expectedSourceVersion = requiredLong(request, "expectedSourceVersion", -1);
@@ -7184,8 +7286,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                     ("正式商品编码已存在或已被历史记录占用"));
         }
         TemporaryPromotionSourceFacts sourceFacts = temporaryPromotionSourceFacts(dataNodeRef, brandRef, row);
-        ObjectNode promotedSections = promotedSections(
-                row, sourceFacts.sections(), rule, materialRole, optional(request, "shortName"));
+        ObjectNode promotedSections =
+                promotedSections(row, sourceFacts.sections(), rule, materialRole, optional(request, "shortName"));
         ArrayNode promotedCategoryRefs = categoryRefs(promotedSections);
         ArrayNode promotedCompositeGroups = compositeGroups(promotedSections);
         ArrayNode promotedSkuVariantDimensions =
@@ -8065,11 +8167,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         JsonNode categoryRef = sections.path("categoryRef");
         if (categoryRef.isTextual() && !categoryRef.asText().isBlank()) item.put("categoryRef", categoryRef.asText());
         else item.putNull("categoryRef");
-        item.set(
-                "attributeAssignments",
-                sections.path("attributeAssignments").isArray()
-                        ? sections.path("attributeAssignments").deepCopy()
-                        : mapper.createArrayNode());
+        item.set("attributeAssignments", saveAttributeAssignments(sections.path("attributeAssignments")));
         item.set(
                 "orderOptionConfigs",
                 orderOptionConfigs == null ? mapper.createArrayNode() : orderOptionConfigs.deepCopy());
@@ -8170,7 +8268,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             String code,
             long version,
             ArrayNode skuTransitions) {
-        ItemRow row = requireItem(dataNodeRef, brandRef, code);
+        ItemRow row = requireItemIdentity(dataNodeRef, brandRef, code);
         JsonNode sections = json(row.sectionsJson());
         ObjectNode node = mapper.createObjectNode()
                 .put("revision", CatalogOwnerTypes.REVISION)
@@ -8180,8 +8278,12 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 .put("itemRef", row.ref().toString())
                 .put("code", row.code())
                 .put("version", version);
-        UUID salesUnitRef = nullableUuid(sections, "salesUnitRef");
-        UUID baseMeasureUnitRef = nullableUuid(sections, "baseMeasureUnitRef");
+        ItemUnitRefs storedUnitRefs = itemUnitRefsByItemRefs(List.of(row.ref())).get(row.ref());
+        UUID salesUnitRef =
+                storedUnitRefs == null ? nullableUuid(sections, "salesUnitRef") : storedUnitRefs.salesUnitRef();
+        UUID baseMeasureUnitRef = storedUnitRefs == null
+                ? nullableUuid(sections, "baseMeasureUnitRef")
+                : storedUnitRefs.baseMeasureUnitRef();
         Set<UUID> unitRefs = new LinkedHashSet<>();
         if (salesUnitRef != null) unitRefs.add(salesUnitRef);
         if (baseMeasureUnitRef != null) unitRefs.add(baseMeasureUnitRef);
@@ -8190,22 +8292,27 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         putNullableUuid(item, "salesUnitRef", salesUnitRef);
         putNullableUuid(item, "baseMeasureUnitRef", baseMeasureUnitRef);
         setStoredUnitAssignment(
-                item, "salesUnit", salesUnitRef, sections.path("salesUnitSnapshot"), "ITEM_DEFAULT", unitDefinitions);
+                item,
+                "salesUnit",
+                salesUnitRef,
+                storedUnitRefs == null
+                        ? sections.path("salesUnitSnapshot")
+                        : mapper.valueToTree(storedUnitRefs.salesUnitSnapshot()),
+                "ITEM_DEFAULT",
+                unitDefinitions);
         setStoredUnitAssignment(
                 item,
                 "baseMeasureUnit",
                 baseMeasureUnitRef,
-                sections.path("baseMeasureUnitSnapshot"),
+                storedUnitRefs == null
+                        ? sections.path("baseMeasureUnitSnapshot")
+                        : mapper.valueToTree(storedUnitRefs.baseMeasureUnitSnapshot()),
                 "ITEM_DEFAULT",
                 unitDefinitions);
         JsonNode categoryRef = sections.path("categoryRef");
         if (categoryRef.isTextual() && !categoryRef.asText().isBlank()) item.put("categoryRef", categoryRef.asText());
         else item.putNull("categoryRef");
-        item.set(
-                "attributeAssignments",
-                sections.path("attributeAssignments").isArray()
-                        ? sections.path("attributeAssignments").deepCopy()
-                        : mapper.createArrayNode());
+        item.set("attributeAssignments", saveAttributeAssignments(sections.path("attributeAssignments")));
         item.set(
                 "orderOptionConfigs",
                 sections.path("orderOptionConfigs").isArray()
@@ -8314,31 +8421,76 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             ItemRow row,
             ItemVoidCatalogFacts catalogFacts,
             List<InboundItemReference> inboundReferences,
-            long stockTargetCount,
-            long productBomCount) {
+            List<InventoryInboundVoidReference> inventoryInboundReferences) {
         ArrayNode reasons = voidAvailability.putArray("blockingReasons");
         // spotless:off
         if (catalogFacts.skuCount() > 0)
-            appendVoidBlockingReason(reasons, "包含规格", catalogFacts.skuCount(), List.of());
+            appendVoidBlockingReason(reasons, "HAS_SKUS", catalogFacts.skuCount(), List.of());
         // spotless:on
         if (catalogFacts.identifierCount() > 0)
-            appendVoidBlockingReason(reasons, "已设置条码与标识", catalogFacts.identifierCount(), List.of());
-        if (catalogFacts.hasProductionTag()) appendVoidBlockingReason(reasons, "已设置生产标签", 1, List.of());
+            appendVoidBlockingReason(reasons, "HAS_IDENTIFIERS", catalogFacts.identifierCount(), List.of());
+        if (catalogFacts.hasProductionTag()) appendVoidBlockingReason(reasons, "HAS_PRODUCTION_TAG", 1, List.of());
         if (!inboundReferences.isEmpty())
             appendVoidBlockingReason(
                     reasons,
-                    "被其他商品使用",
+                    "USED_BY_OTHER_ITEM",
                     inboundReferences.size(),
                     inboundReferences.stream().map(InboundItemReference::name).toList());
-        // spotless:off
-        if (stockTargetCount > 0)
-            appendVoidBlockingReason(reasons, "已配置库存对象", stockTargetCount, List.of());
-        if (productBomCount > 0) appendVoidBlockingReason(reasons, "已配置用料", productBomCount, List.of());
-        if ("VOIDED".equals(row.status()))
-            appendVoidBlockingReason(reasons, "当前状态不支持作废", 1, List.of());
-        // spotless:on
+        long inventoryBomReferenceCount = inventoryInboundReferences.stream()
+                .mapToLong(InventoryInboundVoidReference::count)
+                .sum();
+        if (inventoryBomReferenceCount > 0)
+            appendVoidBlockingReason(
+                    reasons,
+                    "USED_BY_INVENTORY_BOM",
+                    inventoryBomReferenceCount,
+                    inventoryInboundReferences.stream()
+                            .map(InventoryInboundVoidReference::sourceName)
+                            .toList());
+        if ("VOIDED".equals(row.status())) appendVoidBlockingReason(reasons, "ALREADY_VOIDED", 1, List.of());
         return reasons;
     }
+
+    private List<InventoryInboundVoidReference> inventoryInboundVoidReferences(JsonNode dependencies) {
+        JsonNode rows = dependencies == null ? null : dependencies.path("inboundBomReferences");
+        if (!rows.isArray()) {
+            throw new CatalogOwnerApi.Problem(
+                    "RESULT_UNKNOWN",
+                    503,
+                    /* format-wrap */
+                    "商品库存关联暂时无法确认");
+        }
+        List<InventoryInboundVoidReference> references = new ArrayList<>();
+        for (JsonNode row : rows) {
+            if (!row.isObject()
+                    || !row.path("sourceName").isTextual()
+                    || row.path("sourceName").asText().isBlank()
+                    || !row.path("count").canConvertToLong()
+                    || row.path("count").asLong() < 1) {
+                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 503, "商品库存关联暂时无法确认");
+            }
+            String sourceRef = row.path("sourceItemRef").asText("");
+            if (sourceRef.isBlank()) sourceRef = row.path("sourceSkuRef").asText("");
+            if (sourceRef.isBlank())
+                sourceRef = row.path("sourceOptionValueRef").asText("");
+            try {
+                references.add(new InventoryInboundVoidReference(
+                        UUID.fromString(sourceRef),
+                        row.path("sourceName").asText(),
+                        row.path("count").asLong()));
+            } catch (IllegalArgumentException failure) {
+                throw new CatalogOwnerApi.Problem(
+                        "RESULT_UNKNOWN",
+                        503,
+                        /* format-wrap */
+                        "商品库存关联暂时无法确认",
+                        failure);
+            }
+        }
+        return List.copyOf(references);
+    }
+
+    private record InventoryInboundVoidReference(UUID sourceRef, String sourceName, long count) {}
 
     private record ItemVoidCatalogFacts(int skuCount, int identifierCount, boolean hasProductionTag) {
         private boolean hasDependentFacts() {
@@ -8347,8 +8499,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
     }
 
     private static void appendVoidBlockingReason(
-            ArrayNode reasons, String label, long count, List<String> relatedItemNames) {
-        ObjectNode reason = reasons.addObject().put("label", label).put("count", count);
+            ArrayNode reasons, String reasonCode, long count, List<String> relatedItemNames) {
+        ObjectNode reason = reasons.addObject().put("reasonCode", reasonCode).put("count", count);
         ArrayNode names = reason.putArray("relatedItemNames");
         relatedItemNames.stream()
                 .filter(name -> name != null && !name.isBlank())
@@ -8362,7 +8514,10 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
     private boolean itemReferencedByOtherItems(
             String scope, String brand, ItemRow current, BatchStatusPreloadedFacts batchFacts) {
         if (batchFacts != null && batchFacts.voidedFactsPreloaded())
-            return !batchFacts.inboundReferences().getOrDefault(current.ref(), List.of()).isEmpty();
+            return !batchFacts
+                    .inboundReferences()
+                    .getOrDefault(current.ref(), List.of())
+                    .isEmpty();
         return itemReferencedByOtherItems(scope, brand, current);
     }
 
@@ -9660,9 +9815,26 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         return mapper.createArrayNode();
     }
 
+    /**
+     * Save readback intentionally keeps the write contract's identity/value fields only. The detail/list read model
+     * adds owner-resolved option labels for display, but those labels are not part of the persisted draft or save wire.
+     */
+    private ArrayNode saveAttributeAssignments(JsonNode value) {
+        ArrayNode result = mapper.createArrayNode();
+        if (value == null || !value.isArray()) return result;
+        String invalidEntryMessage = "商品属性读回格式无效";
+        for (JsonNode entry : value) {
+            if (!entry.isObject()) throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, invalidEntryMessage);
+            ObjectNode copy = (ObjectNode) entry.deepCopy();
+            copy.remove("selectedOptionNames");
+            result.add(copy);
+        }
+        return result;
+    }
+
     private ArrayNode specificationFacts(JsonNode sections) {
         JsonNode axes = sections.path("skuVariantDimensions");
-        if (axes.isArray() && !axes.isEmpty()) return arrayCopy(axes);
+        if (axes.isArray() && !axes.isEmpty()) return specificationFactsFromAxes(axes);
         Map<String, ObjectNode> byAttribute = new LinkedHashMap<>();
         JsonNode skus = sections.path("skus");
         if (skus.isArray())
@@ -9701,6 +9873,26 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             }
         ArrayNode result = mapper.createArrayNode();
         byAttribute.values().forEach(result::add);
+        return result;
+    }
+
+    /** The summary contract deliberately omits the axis-level order; axis order remains in skuVariantDimensions. */
+    private ArrayNode specificationFactsFromAxes(JsonNode axes) {
+        ArrayNode result = mapper.createArrayNode();
+        axes.forEach(axis -> {
+            ObjectNode fact = result.addObject()
+                    .put("attributeRef", axis.path("attributeRef").asText(""))
+                    .put("attributeCode", axis.path("attributeCode").asText(""))
+                    .put("attributeName", axis.path("attributeName").asText(""));
+            ArrayNode values = fact.putArray("values");
+            if (axis.path("values").isArray())
+                axis.path("values").forEach(value -> values.addObject()
+                        .put("valueRef", value.path("valueRef").asText(""))
+                        .put("valueCode", value.path("valueCode").asText(""))
+                        .put("valueLabel", value.path("valueLabel").asText(""))
+                        .put("displayOrder", value.path("displayOrder").asInt(0))
+                        .put("status", value.path("status").asText("")));
+        });
         return result;
     }
 
@@ -10108,9 +10300,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         JsonNode axes = sections.path("skuVariantDimensions");
         if (axes.isArray())
             for (JsonNode axis : axes) dimensions.add(axis.path("attributeName").asText(""));
-        // List projection intentionally does not load the separate axis relation.  SKU facts already carry the
-        // owner-resolved attribute business names needed for the list's specification column, so recover the same
-        // ordered distinct labels from that one set-read instead of issuing a second page query.
+        // Axis names come from the owner relation when available. The SKU-derived fallback is retained only for
+        // malformed/legacy rows that have SKU attributes but no axis relation.
         if (dimensions.isEmpty() && skus.isArray()) {
             LinkedHashSet<String> labels = new LinkedHashSet<>();
             for (JsonNode sku : skus)
@@ -10257,11 +10448,11 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             setNullableJson(target, "preparationOverride", sku.get("preparationOverride"));
             setNullableJson(target, "effectivePreparation", sku.get("effectivePreparation"));
             target.put("preparationSource", sku.path("preparationSource").asText("ITEM_DEFAULT"));
-            JsonNode effectivePreparation = sku.has("effectivePreparation")
-                    ? sku.get("effectivePreparation")
-                    : itemPreparationProfile;
-            target.set("preparationFacts", skuPreparationFacts(
-                    productionTagReadback, itemPreparationProfile, effectivePreparation));
+            JsonNode effectivePreparation =
+                    sku.has("effectivePreparation") ? sku.get("effectivePreparation") : itemPreparationProfile;
+            target.set(
+                    "preparationFacts",
+                    skuPreparationFacts(productionTagReadback, itemPreparationProfile, effectivePreparation));
             UUID salesOverride = nullableUuid(sku, "salesUnitOverrideRef");
             UUID baseOverride = nullableUuid(sku, "baseMeasureUnitOverrideRef");
             putNullableUuid(target, "salesUnitOverrideRef", salesOverride);
@@ -10298,11 +10489,11 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             if (!inbound.isEmpty())
                 appendVoidBlockingReason(
                         blockingReasons,
-                        "被套餐内容使用",
+                        "USED_BY_PACKAGE",
                         inbound.size(),
                         inbound.stream().map(SkuInboundReference::ownerName).toList());
             if ("VOIDED".equals(sku.path("status").asText("ENABLED")))
-                appendVoidBlockingReason(blockingReasons, "当前状态不支持作废", 1, List.of());
+                appendVoidBlockingReason(blockingReasons, "ALREADY_VOIDED", 1, List.of());
             // canVoid and its business explanation are one owner judgement. Do not emit a disabled SKU action
             // without the fact that explains it to an operator.
             voidAvailability.put("canVoid", blockingReasons.isEmpty());
@@ -10750,14 +10941,17 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
 
     /**
      * Rehydrates the established owner read shape from owner relations; catalog_item.sections never persists these
-     * relational facts.  The list projection exposes the same specificationFacts family as detail, so axes must be
-     * loaded in the same bounded set-read rather than reconstructed from the smaller SKU attribute projection.
+     * relational facts. The list projection reads the SKU-axis relation in one set-based batch so its
+     * specificationFacts projection preserves the authoritative axis membership, order and dictionary status used by
+     * the detail projection. Reconstructing axes from SKU assignments would omit configured-but-unused values and lose
+     * the axis-level display order.
      */
     private List<ItemRow> hydrateItemSummaryFacts(List<ItemRow> rows) {
         if (rows.isEmpty()) return rows;
         List<UUID> itemRefs = rows.stream().map(ItemRow::ref).toList();
-        Map<UUID, ArrayNode> skusByItem = skuFacts.readByItemRefsForList(itemRefs);
-        Map<UUID, ArrayNode> axesByItem = skuVariantAxisFacts.readByItemRefs(itemRefs);
+        CatalogSkuFacts.ListReadback listReadback = skuFacts.readByItemRefsForList(itemRefs);
+        Map<UUID, ArrayNode> skusByItem = listReadback.skusByItem();
+        Map<UUID, ArrayNode> axesByItem = listReadback.axesByItem();
         Map<UUID, ArrayNode> imagesByItem = itemMediaFacts.readByItemRefs(itemRefs);
         Map<UUID, ArrayNode> attributeAssignmentsByItem = itemDefinitionFacts.readAttributeAssignments(itemRefs);
         List<UUID> nonSkuItemRefs = itemRefs.stream()
@@ -10771,13 +10965,12 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         for (ItemRow row : rows) {
             ObjectNode sections = (ObjectNode) json(row.sectionsJson()).deepCopy();
             sections.set("skus", skusByItem.getOrDefault(row.ref(), mapper.createArrayNode()));
+            sections.set("skuVariantDimensions", axesByItem.getOrDefault(row.ref(), mapper.createArrayNode()));
             sections.set(
                     "attributeAssignments",
                     attributeAssignmentsByItem.getOrDefault(row.ref(), mapper.createArrayNode()));
             sections.set(
                     "orderOptionConfigs", orderOptionConfigsByItem.getOrDefault(row.ref(), mapper.createArrayNode()));
-            sections.set(
-                    "skuVariantDimensions", axesByItem.getOrDefault(row.ref(), mapper.createArrayNode()));
             sections.set("images", imagesByItem.getOrDefault(row.ref(), mapper.createArrayNode()));
             Map<String, JsonNode> references = referencesByItem.get(row.ref());
             sections.set(
@@ -11066,24 +11259,21 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                     if (!(valueNode instanceof ObjectNode value)) continue;
                     UUID valueRef = nullableUuid(value, "definitionValueRef");
                     JsonNode storedEffect = valueRef == null ? null : optionEffects.get(valueRef);
+                    // The list projection already receives the normalized effect from the same relation query as the
+                    // option config.  Preserve that value when this hydrator intentionally has no separate effect
+                    // map; detail hydration still replaces it with the combined preparation readback.
+                    if (storedEffect == null && value.has("preparationEffect")) continue;
                     if (storedEffect == null || !storedEffect.isObject()) {
                         value.putNull("preparationEffect");
                         continue;
                     }
-                    ObjectNode effect = mapper.createObjectNode()
-                            .put("definitionValueRef", valueRef.toString())
-                            .put("optionGroupDisplayOrder", groupOrder)
-                            .put(
-                                    "optionValueDisplayOrder",
-                                    value.path("displayOrder").asInt(0));
-                    if (storedEffect.has("instruction"))
-                        effect.set(
-                                "instruction", storedEffect.get("instruction").deepCopy());
-                    if (storedEffect.has("preparationSecondsDelta"))
-                        effect.set(
-                                "preparationSecondsDelta",
-                                storedEffect.get("preparationSecondsDelta").deepCopy());
-                    value.set("preparationEffect", effect);
+                    value.set(
+                            "preparationEffect",
+                            itemDefinitionFacts.normalizedPreparationEffect(
+                                    valueRef,
+                                    groupOrder,
+                                    value.path("displayOrder").asInt(0),
+                                    storedEffect));
                 }
             }
         }
@@ -11156,8 +11346,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                     "productionTagRef",
                     values.getOrDefault(CatalogItemReferenceFacts.PRODUCTION_TAG, mapper.nullNode()));
             sections.set(
-                    "tagRefs",
-                    values.getOrDefault(CatalogItemReferenceFacts.CATALOG_TAG, mapper.createArrayNode()));
+                    "tagRefs", values.getOrDefault(CatalogItemReferenceFacts.CATALOG_TAG, mapper.createArrayNode()));
         }
         if (!saveContainsField(request, "salesUnitRef") || !saveContainsField(request, "baseMeasureUnitRef")) {
             ItemUnitRefs units = itemUnitRefsByItemRefs(List.of(itemRef)).get(itemRef);
@@ -13239,7 +13428,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
     private record BatchStatusPreloadedFacts(
             Map<UUID, ItemRow> scopedItems,
             Map<UUID, String> itemCodes,
-            Map<UUID, InventoryOwnerApi.CatalogReferenceDependenciesReadback> inventoryDependencies,
+            Map<UUID, InventoryOwnerApi.CatalogVoidDependencyReadback> inventoryDependencies,
             Map<UUID, List<InboundItemReference>> inboundReferences,
             Map<UUID, Boolean> identifierPresence,
             boolean voidedFactsPreloaded) {}
@@ -13567,8 +13756,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
     private record TemporaryPromotionSourceFacts(
             ObjectNode sections, CatalogItemDefinitionFacts.TemporaryPromotionFacts definitionFacts) {}
 
-    private record PromotionExecution(
-            ObjectNode response, CatalogTemporaryPromotionProjection projection) {}
+    private record PromotionExecution(ObjectNode response, CatalogTemporaryPromotionProjection projection) {}
 
     private record Receipt(String operationId, String requestHash, JsonNode response) {}
 }

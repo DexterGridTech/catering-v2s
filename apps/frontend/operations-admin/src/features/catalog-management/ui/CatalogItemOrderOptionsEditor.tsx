@@ -4,6 +4,7 @@ import {
   Checkbox,
   Col,
   Divider,
+  Flex,
   Input,
   InputNumber,
   Modal,
@@ -38,6 +39,7 @@ export function CatalogItemOrderOptionsEditor({
   brandRef,
   onChange,
   onDirty,
+  onOpenOrderOptionLibrary,
   lockedNotice,
 }: {
   locked: boolean;
@@ -47,6 +49,7 @@ export function CatalogItemOrderOptionsEditor({
   brandRef?: string;
   onChange: (next: CatalogOrderOptionConfig[]) => void;
   onDirty: () => void;
+  onOpenOrderOptionLibrary: () => void;
   lockedNotice: ReactNode;
 }) {
   const [selectedDefinitionRef, setSelectedDefinitionRef] = useState<string>();
@@ -166,18 +169,28 @@ export function CatalogItemOrderOptionsEditor({
     });
   return (
     <Space direction="vertical" style={{display: 'flex'}} size="middle">
-      <Button
-        type="primary"
-        onClick={() => {
-          setPendingDefinitionRefs([]);
-          setAddOpen(true);
-        }}
-        disabled={!availableDefinitions.length}
-        loading={query.isFetching || candidateQuery.isFetching}
-        {...testId(catalogTestIds.static.itemOrderOptionLibraryAdd)}
-      >
-        添加点单选项
-      </Button>
+      <Flex align="center" gap="small" wrap style={{width: '100%'}}>
+        <Button
+          type="primary"
+          onClick={() => {
+            setPendingDefinitionRefs([]);
+            setAddOpen(true);
+          }}
+          disabled={!availableDefinitions.length}
+          loading={query.isFetching || candidateQuery.isFetching}
+          {...testId(catalogTestIds.static.itemOrderOptionLibraryAdd)}
+        >
+          添加点单选项
+        </Button>
+        <Button
+          size="small"
+          onClick={onOpenOrderOptionLibrary}
+          style={{marginInlineStart: 'auto'}}
+          {...testId(catalogTestIds.static.itemOrderOptionLibraryManage)}
+        >
+          维护点单选项
+        </Button>
+      </Flex>
       <Modal
         title="添加点单选项"
         open={addOpen}

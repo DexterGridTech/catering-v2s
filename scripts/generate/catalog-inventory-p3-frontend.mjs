@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {readCatalogInventoryOpenApi} from '../lib/catalog-inventory-openapi.mjs';
@@ -367,13 +368,23 @@ function generatedOutputs() {
       `export const CATALOG_INVENTORY_REVISION = ${JSON.stringify(catalog.revision)} as const;\nexport const CATALOG_INVENTORY_PROBLEM_CODES = ${JSON.stringify(typedProblemCodes)} as const;\nexport type CatalogInventoryProblemCode = (typeof CATALOG_INVENTORY_PROBLEM_CODES)[number];`,
     )
     .replace(`: {headers?: never};`, `: {headers?: FaceOperationContracts[I]["headers"]};`);
-  fs.writeFileSync(path.join(outputDir, 'catalog-inventory-edge.ts'), generatedEdgeText);
+  writeGeneratedOutput(path.join(outputDir, 'catalog-inventory-edge.ts'), generatedEdgeText);
   const generatedRtkText = generatedRtkWithExactStaticTags().replace(
     'CatalogInventoryEnvelope, CatalogInventoryOperationId',
     'CatalogInventoryEnvelope, CatalogQueryEnvelope, CatalogInventoryOperationId',
   );
-  fs.writeFileSync(path.join(outputDir, 'catalog-inventory-edge.rtk.ts'), generatedRtkText);
+  writeGeneratedOutput(path.join(outputDir, 'catalog-inventory-edge.rtk.ts'), generatedRtkText);
   console.log(`CATALOG_INVENTORY_P3_FRONTEND_GENERATED operations=${operations.length} revision=${catalog.revision}`);
+}
+
+function writeGeneratedOutput(filePath, content) {
+  try {
+    if (fs.readFileSync(filePath, 'utf8') === content) return false;
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+  fs.writeFileSync(filePath, content);
+  return true;
 }
 
 function expectPolicyFailure(mutatedPolicy, expectedCode) {
@@ -387,6 +398,25 @@ function expectPolicyFailure(mutatedPolicy, expectedCode) {
 }
 
 function selfTest() {
+  const idempotenceScratch = fs.mkdtempSync(path.join(os.tmpdir(), 'catalog-inventory-p3-frontend-'));
+  try {
+    const idempotenceTarget = path.join(idempotenceScratch, 'generated.ts');
+    fs.writeFileSync(idempotenceTarget, 'stable generated output\n');
+    const before = fs.statSync(idempotenceTarget);
+    if (writeGeneratedOutput(idempotenceTarget, 'stable generated output\n') !== false)
+      throw new Error('P3_GENERATED_OUTPUT_NOT_IDEMPOTENT');
+    const unchanged = fs.statSync(idempotenceTarget);
+    if (unchanged.ino !== before.ino || unchanged.mtimeMs !== before.mtimeMs)
+      throw new Error('P3_GENERATED_OUTPUT_METADATA_CHANGED_ON_NOOP');
+    if (writeGeneratedOutput(idempotenceTarget, 'changed generated output\n') !== true)
+      throw new Error('P3_GENERATED_OUTPUT_CHANGE_NOT_WRITTEN');
+    if (fs.readFileSync(idempotenceTarget, 'utf8') !== 'changed generated output\n')
+      throw new Error('P3_GENERATED_OUTPUT_CHANGE_WRONG');
+  } finally {
+    fs.rmSync(idempotenceScratch, {recursive: true, force: true});
+  }
+  console.log('P3_GENERATED_OUTPUT_IDEMPOTENCE=PASS');
+
   const conditionalObjectType = tsType({
     type: 'object',
     additionalProperties: false,

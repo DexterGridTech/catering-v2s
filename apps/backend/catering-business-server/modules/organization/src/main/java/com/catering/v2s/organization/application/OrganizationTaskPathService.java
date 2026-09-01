@@ -216,8 +216,7 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
      * business-channel create path may target a disabled Store. Resolve the group, Store, project, and region in one
      * owner statement so the authorization read does not fan out into separate group/store/node reads.
      */
-    private TaskPath requireStoreTaskPath(
-            UUID workspaceUuid, String key, UUID targetId, boolean allowDisabledStore) {
+    private TaskPath requireStoreTaskPath(UUID workspaceUuid, String key, UUID targetId, boolean allowDisabledStore) {
         String storeStatusPredicate = allowDisabledStore ? "" : " AND store.status='ENABLED'";
         return jdbc.query(
                 "WITH group_fact AS (SELECT commercial_group_uuid AS group_id FROM"
@@ -258,8 +257,8 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                             ServiceNodeTypes.STORE,
                             storeId,
                             List.of(groupId, regionId, projectId, storeId),
-                            regionCode + " " + regionName + " / " + projectCode + " " + projectName + " / "
-                                    + storeCode + " " + storeName,
+                            regionCode + " " + regionName + " / " + projectCode + " " + projectName + " / " + storeCode
+                                    + " " + storeName,
                             List.of(
                                     new TaskPathNode(regionId, regionCode, regionName, ServiceNodeTypes.REGION),
                                     new TaskPathNode(projectId, projectCode, projectName, ServiceNodeTypes.PROJECT),

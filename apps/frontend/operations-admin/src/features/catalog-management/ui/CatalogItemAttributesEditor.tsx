@@ -1,10 +1,10 @@
-import {Button, Card, Checkbox, Input, Modal, Select, Space, Tag} from 'antd';
+import {Button, Card, Checkbox, Flex, Input, Modal, Select, Space, Tag} from 'antd';
 import {testId} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState, type ReactNode} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import {wireUuid} from '../../../app/api/wireUuid';
-import type {CatalogAttributeAssignment} from '../model/catalogModel';
+import type {CatalogAttributeAssignment, CatalogAttributeAssignmentReadback} from '../model/catalogModel';
 import {catalogTestIds} from '../catalogTestIds';
 import {catalogFieldWidth} from './catalogFieldWidths';
 import {AttributeAssignmentsReadOnly, EmptySection} from './CatalogItemReadOnlyPresenters';
@@ -12,11 +12,12 @@ import {AttributeAssignmentsReadOnly, EmptySection} from './CatalogItemReadOnlyP
 type Props = {
   locked: boolean;
   values: CatalogAttributeAssignment[];
-  readOnlyValues: CatalogAttributeAssignment[];
+  readOnlyValues: CatalogAttributeAssignmentReadback[];
   scopeRef?: string;
   brandRef?: string;
   onChange: (next: CatalogAttributeAssignment[]) => void;
   onDirty: () => void;
+  onOpenAttributeLibrary: () => void;
   lockedNotice: ReactNode;
 };
 
@@ -29,6 +30,7 @@ export function CatalogItemAttributesEditor({
   brandRef,
   onChange,
   onDirty,
+  onOpenAttributeLibrary,
   lockedNotice,
 }: Props) {
   const [addOpen, setAddOpen] = useState(false);
@@ -98,18 +100,28 @@ export function CatalogItemAttributesEditor({
   };
   return (
     <Space direction="vertical" style={{display: 'flex'}}>
-      <Button
-        type="primary"
-        onClick={() => {
-          setPendingDefinitionRefs([]);
-          setAddOpen(true);
-        }}
-        disabled={!availableDefinitions.length}
-        loading={query.isFetching || candidateQuery.isFetching}
-        {...testId(catalogTestIds.static.itemAttributeLibraryAdd)}
-      >
-        添加商品属性
-      </Button>
+      <Flex align="center" gap="small" wrap style={{width: '100%'}}>
+        <Button
+          type="primary"
+          onClick={() => {
+            setPendingDefinitionRefs([]);
+            setAddOpen(true);
+          }}
+          disabled={!availableDefinitions.length}
+          loading={query.isFetching || candidateQuery.isFetching}
+          {...testId(catalogTestIds.static.itemAttributeLibraryAdd)}
+        >
+          添加商品属性
+        </Button>
+        <Button
+          size="small"
+          onClick={onOpenAttributeLibrary}
+          style={{marginInlineStart: 'auto'}}
+          {...testId(catalogTestIds.static.itemAttributeLibraryManage)}
+        >
+          维护商品属性
+        </Button>
+      </Flex>
       <Modal
         title="添加商品属性"
         open={addOpen}

@@ -53,7 +53,8 @@ public class BatchTransitionOperationsCatalogItemStatusOperation {
         }
         CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback readback = catalog.transitionCatalogItemStatuses(
                 context,
-                new CatalogOwnerApi.CatalogItemBatchStatusTransitionCommand(request.targetStatus(), items),
+                new CatalogOwnerApi.CatalogItemBatchStatusTransitionCommand(
+                        request.targetStatus().name(), items),
                 invocation.idempotencyKey());
         List<CatalogItemBatchStatusTransitionReadback.ResultsItem> results = readback.results().stream()
                 .map(item -> new CatalogItemBatchStatusTransitionReadback.ResultsItem(

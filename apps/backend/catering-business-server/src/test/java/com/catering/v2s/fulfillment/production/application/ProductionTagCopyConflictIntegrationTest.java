@@ -66,7 +66,7 @@ class ProductionTagCopyConflictIntegrationTest {
     @Test
     void allTargetConflictsAreNotReportedAsCommittedCopy() {
         ObjectNode request = MAPPER.createObjectNode();
-        request.putArray("productionTagRefs").add(SOURCE_TAG.toString());
+        request.putArray("productionTagDefinitionRefs").add(SOURCE_TAG.toString());
         JsonNode preflight = service.preflightCopy(
                 SOURCE_SCOPE.toString(),
                 TARGET_SCOPE.toString(),
@@ -100,7 +100,9 @@ class ProductionTagCopyConflictIntegrationTest {
         insertTag(secondSource, SOURCE_SCOPE, "TAG-B");
         insertTag(UUID.randomUUID(), TARGET_SCOPE, "TAG-B");
         ObjectNode request = MAPPER.createObjectNode();
-        request.putArray("productionTagRefs").add(SOURCE_TAG.toString()).add(secondSource.toString());
+        request.putArray("productionTagDefinitionRefs")
+                .add(SOURCE_TAG.toString())
+                .add(secondSource.toString());
         JsonNode preflight = service.preflightCopy(
                 SOURCE_SCOPE.toString(),
                 TARGET_SCOPE.toString(),
@@ -114,7 +116,7 @@ class ProductionTagCopyConflictIntegrationTest {
 
         DatabaseOperationTracker.Snapshot snapshot;
         try (var measurement = DatabaseOperationTracker.open(new DatabaseOperationTracker.Options(
-                "production-copy-metrics-key".getBytes(java.nio.charset.StandardCharsets.UTF_8), false, true))) {
+                "production-copy-metrics-key".getBytes(java.nio.charset.StandardCharsets.UTF_8), true, true))) {
             JsonNode readback = service.copy(
                     SOURCE_SCOPE.toString(),
                     TARGET_SCOPE.toString(),
@@ -130,14 +132,13 @@ class ProductionTagCopyConflictIntegrationTest {
             snapshot = measurement.snapshot();
         }
 
-        assertEquals(
-                1,
-                snapshot.operations().stream()
-                        .filter(operation -> "BATCH".equals(operation.kind())
-                                && "EXECUTE_BATCH".equals(operation.action())
-                                && operation.section() == DatabaseOperationTracker.Section.OWNER_WRITE
-                                && operation.batchSize() == 2)
-                        .count());
+        long ownerBatchCount = snapshot.operations().stream()
+                .filter(operation -> "BATCH".equals(operation.kind())
+                        && "EXECUTE_BATCH".equals(operation.action())
+                        && operation.section() == DatabaseOperationTracker.Section.OWNER_WRITE
+                        && operation.batchSize() == 2)
+                .count();
+        assertEquals(1, ownerBatchCount, () -> "operations=" + snapshot.operations());
     }
 
     @Test
@@ -220,15 +221,14 @@ class ProductionTagCopyConflictIntegrationTest {
     private static void insertTag(UUID ref, UUID scope, String code) {
         jdbc.update(
                 "INSERT INTO "
-                        + "fulfillment_production.production_tag_definition(tag_ref,data_node_ref,brand_ref,code,tag_ki"
-                        + "nd,name,status,v"
-                        + "ersion,created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,'Tag "
-                        + "A','ENABLED',1,1,1)",
+                        + "fulfillment_production.production_tag_definition("
+                        + "tag_ref,data_node_ref,brand_ref,code,name,status,version,"
+                        + "created_at_epoch_millis,updated_at_epoch_millis) "
+                        + "VALUES(?,?,?,?,'Tag A','ENABLED',1,1,1)",
                 ref,
                 scope.toString(),
                 "BRAND",
-                code,
-                "PRODUCTION");
+                code);
     }
 
     private static OperationsOwnerScopeGrant grant() {

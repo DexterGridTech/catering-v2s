@@ -3,12 +3,12 @@ package com.catering.v2s.catalog.application.operations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.catering.v2s.app.edge.generated.wire.CatalogInventoryWireEnums;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemTransitionRequest;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
@@ -48,7 +48,9 @@ class TransitionOperationsCatalogItemStatusOperationTest {
 
         var response = fixture.operation().execute(fixture.invocation());
 
-        assertEquals("VOIDED", response.result().status());
+        assertEquals(
+                CatalogInventoryWireEnums.CatalogItemStatus.VOIDED,
+                response.result().status());
         verify(fixture.catalog())
                 .transitionCatalogItemStatus(
                         eq(fixture.context()),
@@ -97,7 +99,8 @@ class TransitionOperationsCatalogItemStatusOperationTest {
         } else {
             when(catalog.transitionCatalogItemStatus(any(), any(), any())).thenReturn(readback);
         }
-        CatalogItemTransitionRequest request = new CatalogItemTransitionRequest(itemCode, 7L, "VOIDED", dataNodeRef);
+        CatalogItemTransitionRequest request = new CatalogItemTransitionRequest(
+                itemCode, 7L, CatalogInventoryWireEnums.CatalogItemStatus.VOIDED, dataNodeRef);
         TransitionOperationsCatalogItemStatusOperation.Invocation invocation =
                 new TransitionOperationsCatalogItemStatusOperation.Invocation(
                         request, "session", "BRAND", "correlation", "void-request", itemCode, "void-key");
@@ -143,23 +146,24 @@ class TransitionOperationsCatalogItemStatusOperationTest {
                 .thenReturn(new com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts(
                         session, UUID.randomUUID(), "STORE", dataNodeRef));
         WorkspaceCapabilityScopeResolver capabilities = mock(WorkspaceCapabilityScopeResolver.class);
-        when(capabilities.resolveGeneratedOperation(
-                        any(), eq(token.requirementId()), eq(token.capabilityFor("STORE")), any()))
-                .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
-                        WorkspaceCapabilityScopeResolver.Decision.ALLOW,
-                        token.capabilityFor("STORE"),
-                        new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
-                                workspaceId,
-                                "transition-operation-test",
-                                "STORE",
-                                dataNodeRef,
-                                "STORE",
-                                dataNodeRef,
-                                List.of(dataNodeRef))));
+        when(capabilities.resolveGeneratedCatalogOperation(
+                        any(), eq(token.requirementId()), eq(token.capabilityFor("STORE")), any(), any()))
+                .thenReturn(new WorkspaceCapabilityScopeResolver.CatalogScopeResolution(
+                        new WorkspaceCapabilityScopeResolver.ScopeResolution(
+                                WorkspaceCapabilityScopeResolver.Decision.ALLOW,
+                                token.capabilityFor("STORE"),
+                                new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
+                                        workspaceId,
+                                        "transition-operation-test",
+                                        "STORE",
+                                        dataNodeRef,
+                                        "STORE",
+                                        dataNodeRef,
+                                        List.of(dataNodeRef))),
+                        new CatalogScopeLookup.CatalogBrandJudgment(
+                                "BRAND", "TEST_ORGANIZATION_JUDGMENT", "TEST_REVISION"),
+                        null));
         CatalogScopeLookup catalogScopes = mock(CatalogScopeLookup.class);
-        when(catalogScopes.resolveCatalogBrand(any(), anyString(), eq("STORE"), eq(dataNodeRef), any()))
-                .thenReturn(new CatalogScopeLookup.CatalogBrandJudgment(
-                        "BRAND", "TEST_ORGANIZATION_JUDGMENT", "TEST_REVISION"));
         CommandExecutionContextResolver resolver =
                 new CommandExecutionContextResolver(capabilities, catalogScopes, sessions);
         WorkspaceExecutionContext<CatalogAuthorizationScope> context = resolver.resolveCatalog(

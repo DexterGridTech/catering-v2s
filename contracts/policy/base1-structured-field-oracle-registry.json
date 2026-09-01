@@ -3675,7 +3675,8 @@
               "version": 1,
               "displayOrder": 0,
               "count": 0,
-              "countSemantics": "SELF_ONLY",
+              "directCount": 0,
+              "countSemantics": "SELF_AND_DESCENDANTS",
               "deletionAvailability": {
                 "canDelete": true,
                 "subtreeSize": 1,

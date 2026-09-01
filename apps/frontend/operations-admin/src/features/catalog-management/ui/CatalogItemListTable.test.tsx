@@ -9,7 +9,7 @@ import {
   catalogTableColumnWidths,
   type CatalogTableRow,
 } from './CatalogItemListTable';
-import type {CatalogItemSummary} from '../model/catalogModel';
+import type {CatalogAttributeAssignmentReadback, CatalogItemSummary} from '../model/catalogModel';
 import type {Uuid} from '../../../app/api/generated/catalog-inventory-edge';
 import {catalogTestIdControls} from '../catalogTestIds';
 import {catalogVoidBlockReason} from './CatalogItemEditorFieldPresentation';
@@ -85,6 +85,19 @@ describe('catalog item table cell presentation', () => {
       '制作说明：先煮面',
     ]);
     expect(catalogCellBusinessLines(facts).join('')).not.toContain('还有');
+  });
+
+  it('labels the preparation display name in item rows', () => {
+    const markup = tableMarkup({
+      ...itemRow('PREPARATION-NAME-001', false),
+      preparationFacts: {
+        productionTag: null,
+        profile: {productionDisplayName: '制作测试名', estimatedPreparationSeconds: null, preparationNotes: null},
+        skuVariation: {varies: false},
+      },
+    });
+
+    expect(markup).toContain('制作名称：制作测试名');
   });
 
   it('removes empty values before applying the fixed four-line business limit', () => {
@@ -167,6 +180,35 @@ describe('catalog item table cell presentation', () => {
     expect(skuMarkup).toContain('border-inline-start:1px solid #e6f4ff');
   });
 
+  it('renders owner-resolved attribute values in item rows instead of option counts', () => {
+    const attributeFacts: CatalogAttributeAssignmentReadback[] = [
+      {
+        definitionRef: '00000000-0000-0000-0000-000000000021' as Uuid,
+        code: 'ALLERGEN',
+        name: '过敏原',
+        valueType: 'MULTI_SELECT',
+        textValue: null,
+        optionRefs: ['00000000-0000-0000-0000-000000000022' as Uuid, '00000000-0000-0000-0000-000000000023' as Uuid],
+        selectedOptionNames: ['花生', '牛奶'],
+      },
+      {
+        definitionRef: '00000000-0000-0000-0000-000000000024' as Uuid,
+        code: 'SPICE_LEVEL',
+        name: '辣度',
+        valueType: 'SINGLE_SELECT',
+        textValue: null,
+        optionRefs: ['00000000-0000-0000-0000-000000000025' as Uuid],
+        selectedOptionNames: ['不辣'],
+      },
+    ];
+
+    const markup = tableMarkup({...itemRow('ATTRIBUTE-001', false), attributeFacts});
+
+    expect(markup).toContain('过敏原：花生、牛奶');
+    expect(markup).toContain('辣度：不辣');
+    expect(markup).not.toContain('已设置（');
+  });
+
   it('uses the owner supplied void reasons instead of falsely calling all blocks generic dependencies', () => {
     expect(
       catalogVoidBlockReason({
@@ -174,11 +216,11 @@ describe('catalog item table cell presentation', () => {
         blockingReferences: [],
         dependentFacts: [],
         blockingReasons: [
-          {label: '包含规格', count: 3, relatedItemNames: []},
-          {label: '已配置库存对象', count: 1, relatedItemNames: []},
+          {reasonCode: 'HAS_SKUS', count: 3, relatedItemNames: []},
+          {reasonCode: 'USED_BY_INVENTORY_BOM', count: 1, relatedItemNames: []},
         ],
       }),
-    ).toBe('包含规格（3项）、已配置库存对象，暂不能作废。');
+    ).toBe('包含规格（3项）、被其他商品用料引用，暂不能作废。');
     expect(
       catalogVoidBlockReason({canVoid: false, blockingReferences: [], dependentFacts: [], blockingReasons: []}),
     ).toBe('作废限制信息暂时无法确认，请刷新后重试。');
@@ -194,7 +236,7 @@ describe('catalog item table cell presentation', () => {
   });
 
   it('makes a parent disabled state visible beside an enabled SKU instead of leaving two apparently conflicting tags', () => {
-    const item = {...itemRow('SKU-DISABLED-001', true), status: 'DISABLED'};
+    const item = {...itemRow('SKU-DISABLED-001', true), status: 'DISABLED' as const};
     const sku = {
       productSkuRef: '00000000-0000-0000-0000-000000000002',
       skuCode: 'SKU-DISABLED-SMALL',

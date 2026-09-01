@@ -1,5 +1,6 @@
 package com.catering.v2s.catalog.application.operations;
 
+import com.catering.v2s.app.edge.generated.wire.CatalogInventoryWireEnums;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemCommandReadback;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemCreateRequest;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
@@ -62,7 +63,7 @@ public class CreateOperationsCatalogItemOperation {
                 new CatalogItemCommandReadback.Result(
                         value.operation(),
                         UUID.fromString(value.resourceRef()),
-                        value.status(),
+                        CatalogInventoryWireEnums.CatalogItemStatus.valueOf(value.status()),
                         value.version(),
                         owners,
                         new CatalogItemCommandReadback.Result.ActionAvailability(

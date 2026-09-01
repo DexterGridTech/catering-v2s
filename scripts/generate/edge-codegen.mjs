@@ -21,7 +21,6 @@ const adminCatalogPath = "contracts/catalog/admin-catalog.json";
 const frontendManifestPath = "contracts/policy/frontend-asset-carryover-manifest.json";
 const reportPath = "doc/evidence/platform/r5-u01-edge-placement-resolution.json";
 const problemComponentPath = "contracts/openapi/components/common/problem.schemas.json";
-const canonicalOperationCount = 180;
 const targets = {
   errorsJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/EdgeProblemCode.java",
   r3CompatibilityJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CommercialGroupProblemCode.java",
@@ -46,7 +45,10 @@ function fail(code, detail = "") { const error = new Error(`${code}${detail ? `:
 function read(relative, base = root) { return JSON.parse(fs.readFileSync(path.join(base, relative), "utf8")); }
 function normalized(value) { return JSON.stringify(value, null, 2) + "\n"; }
 function assertCanonicalOperationIdentity(catalog) {
-  if (catalog.operations.length !== canonicalOperationCount) fail("R5_EDGE_BUDGET_OPERATION_COUNT", catalog.operations.length);
+  const expectedOperationCount = catalog?.denominator?.operations;
+  if (!Number.isInteger(expectedOperationCount) || catalog.operations.length !== expectedOperationCount) {
+    fail("R5_EDGE_BUDGET_OPERATION_COUNT", `${catalog.operations.length}:${expectedOperationCount}`);
+  }
   const seen = new Set();
   for (const operation of catalog.operations) {
     if (seen.has(operation.operationId)) fail("R5_EDGE_BUDGET_OPERATION_DUPLICATE", operation.operationId);
@@ -109,8 +111,10 @@ function openApiOperation(base, catalogOperation, reportOperation) {
   if (!sameSet(queryParameters.map((parameter) => parameter.name), (catalogOperation.queryParameters || []).map((parameter) => parameter.name))) {
     fail("R5_EDGE_CODEGEN_OPENAPI_QUERY_PARAMETER_DRIFT", catalogOperation.operationId);
   }
+  const requestBody = localReference(pathDocument, operation.requestBody, "requestBodies", `${catalogOperation.operationId}:requestBody`);
+  const requestContentType = catalogOperation.requestSchema === "NoBody" ? null : (catalogOperation.requestContentType || "application/json");
   const requestSchema = openApiSchemaName(
-    localReference(pathDocument, operation.requestBody, "requestBodies", `${catalogOperation.operationId}:requestBody`)?.content?.["application/json"]?.schema,
+    requestContentType ? requestBody?.content?.[requestContentType]?.schema : undefined,
     "NoBody",
     `${catalogOperation.operationId}:request`,
   );
@@ -141,7 +145,7 @@ function openApiOperation(base, catalogOperation, reportOperation) {
       pathParameters,
       queryParameters,
       headerParameters,
-      requestRequired: localReference(pathDocument, operation.requestBody, "requestBodies", `${catalogOperation.operationId}:requestBody`)?.required === true,
+      requestRequired: requestBody?.required === true,
       requiresSession: operation.security.length > 0,
     },
   };
@@ -1019,6 +1023,27 @@ function selfTest() {
       if (error.code !== "R5_EDGE_STATIC_BUDGET_RETIRED") throw error;
     }
     fs.writeFileSync(path.join(scratch, catalogPath), normalized(read(catalogPath, root)));
+    const denominatorCatalog = read(catalogPath, scratch);
+    denominatorCatalog.denominator.operations += 1;
+    fs.writeFileSync(path.join(scratch, catalogPath), normalized(denominatorCatalog));
+    try {
+      load(scratch);
+      fail("R5_EDGE_CODEGEN_OPERATION_DENOMINATOR_RED_NOT_DETECTED");
+    } catch (error) {
+      const code = error.code || error.message;
+      if (!["R5_EDGE_CODEGEN_OPERATION_COUNT", "R5_EDGE_MATERIALIZED_OPERATION_DENOMINATOR_INVALID"].includes(code)) throw error;
+    }
+    fs.writeFileSync(path.join(scratch, catalogPath), normalized(read(catalogPath, root)));
+    const reportPathDocument = read(reportPath, scratch);
+    reportPathDocument.operations.pop();
+    fs.writeFileSync(path.join(scratch, reportPath), normalized(reportPathDocument));
+    try {
+      load(scratch);
+      fail("R5_EDGE_CODEGEN_REPORT_DENOMINATOR_RED_NOT_DETECTED");
+    } catch (error) {
+      if (error.code !== "R5_EDGE_CODEGEN_OPERATION_COUNT") throw error;
+    }
+    fs.writeFileSync(path.join(scratch, reportPath), fs.readFileSync(path.join(root, reportPath)));
     const capabilityRequirementCatalogSource = fs.readFileSync(path.join(scratch, targets.workspaceCapabilityRequirementCatalogJava), "utf8");
     for (const capability of ["EDIT_HEAD_COMPANY_CATALOG", "EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"]) {
       if (!capabilityRequirementCatalogSource.includes(`WorkspaceAuthorizationCatalog.CapabilityKeys.${capability}`)) {
@@ -1207,7 +1232,7 @@ function selfTest() {
     bodyRequest.required = false;
     fs.writeFileSync(path.join(scratch, bodyPathFile), normalized(bodyPathDocument));
     try { checkOutputs(scratch); fail("R5_EDGE_REQUEST_REQUIRED_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_TS_OPERATION_CONTRACT_MISSING") throw error; }
-    process.stdout.write("R5_EDGE_CODEGEN_EDIT_CAPABILITY_CONSTANT=PASS\nR5_EDGE_CODEGEN_SELF_TEST=PASS\nRED=R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT,R5_EDGE_CODEGEN_OPENAPI_SECURITY_REQUIRED,R5_EDGE_WIRE_UNTYPED_MAP,R5_EDGE_CODEGEN_DRIFT,R5_EDGE_WIRE_MANUAL_FILE,R5_EDGE_TS_GENERATED_DRIFT,R5_EDGE_RTK_ENDPOINT_MISSING,R5_EDGE_RTK_REQUEST_HELPER_MISSING,R5_EDGE_TS_OPERATION_CONTRACT_MISSING,R5_EDGE_TS_UNTYPED_DTO,R5_ADMIN_CATALOG_PAGE_SET_DRIFT,R5_ADMIN_CATALOG_ACTION_SET_DRIFT,R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT,R5_ADMIN_CATALOG_PAGE_KIND_SET_DRIFT,R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT,R5_ADMIN_CATALOG_UX_DRIFT,R5_ADMIN_CATALOG_ACTION_BINDING_DRIFT,R5_ADMIN_CATALOG_NAVIGATION_BINDING_DRIFT,R5_ADMIN_CATALOG_ROLE_HOME_INVALID,R5_ADMIN_CATALOG_ROLE_HOME_WORKSPACE_REQUIREMENT_RED,R5_EDGE_TS_FACE_CATALOG_LEAK,R5_EDGE_TS_PROBLEM_CODE_FACE_DRIFT,R5_EDGE_WIRE_REFERENCE_FRAGMENT_MISSING,R5_EDGE_CODEGEN_OPENAPI_SUCCESS_STATUS_DRIFT,P3_C_PAGE_KEY_REQUEST,R5_EDGE_REQUEST_REQUIRED\n");
+    process.stdout.write("R5_EDGE_CODEGEN_EDIT_CAPABILITY_CONSTANT=PASS\nR5_EDGE_CODEGEN_SELF_TEST=PASS\nRED=R5_EDGE_CODEGEN_OPERATION_DENOMINATOR,R5_EDGE_CODEGEN_REPORT_DENOMINATOR,R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT,R5_EDGE_CODEGEN_OPENAPI_SECURITY_REQUIRED,R5_EDGE_WIRE_UNTYPED_MAP,R5_EDGE_CODEGEN_DRIFT,R5_EDGE_WIRE_MANUAL_FILE,R5_EDGE_TS_GENERATED_DRIFT,R5_EDGE_RTK_ENDPOINT_MISSING,R5_EDGE_RTK_REQUEST_HELPER_MISSING,R5_EDGE_TS_OPERATION_CONTRACT_MISSING,R5_EDGE_TS_UNTYPED_DTO,R5_ADMIN_CATALOG_PAGE_SET_DRIFT,R5_ADMIN_CATALOG_ACTION_SET_DRIFT,R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT,R5_ADMIN_CATALOG_PAGE_KIND_SET_DRIFT,R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT,R5_ADMIN_CATALOG_UX_DRIFT,R5_ADMIN_CATALOG_ACTION_BINDING_DRIFT,R5_ADMIN_CATALOG_NAVIGATION_BINDING_DRIFT,R5_ADMIN_CATALOG_ROLE_HOME_INVALID,R5_ADMIN_CATALOG_ROLE_HOME_WORKSPACE_REQUIREMENT_RED,R5_EDGE_TS_FACE_CATALOG_LEAK,R5_EDGE_TS_PROBLEM_CODE_FACE_DRIFT,R5_EDGE_WIRE_REFERENCE_FRAGMENT_MISSING,R5_EDGE_CODEGEN_OPENAPI_SUCCESS_STATUS_DRIFT,P3_C_PAGE_KEY_REQUEST,R5_EDGE_REQUEST_REQUIRED\n");
   } finally { fs.rmSync(scratch, { recursive: true, force: true }); }
 }
 try {

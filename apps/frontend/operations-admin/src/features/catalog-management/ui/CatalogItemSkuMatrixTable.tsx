@@ -442,7 +442,7 @@ export function CatalogItemSkuMatrixTable({
         columns={columns}
         dataSource={skus}
         scroll={{x: Math.max(1618, 1458 + dimensions.length * 160)}}
-        locale={{emptyText: '请先维护规格属性和可选值，再生成规格'}}
+        locale={{emptyText: '请先选择规格属性和可选值'}}
       />
     </Space>
   );

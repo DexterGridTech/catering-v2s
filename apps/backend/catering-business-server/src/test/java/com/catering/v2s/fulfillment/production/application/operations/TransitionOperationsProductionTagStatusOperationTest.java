@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.catering.v2s.app.edge.generated.wire.CatalogInventoryWireEnums;
 import com.catering.v2s.app.edge.generated.wire.ProductionTagTransitionRequest;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
@@ -40,7 +41,8 @@ class TransitionOperationsProductionTagStatusOperationTest {
                 .thenReturn(true);
         var operation = new TransitionOperationsProductionTagStatusOperation(contexts, productionTags, catalog);
         var invocation = new TransitionOperationsProductionTagStatusOperation.Invocation(
-                new ProductionTagTransitionRequest("HOT", 7L, "VOIDED", dataNodeRef),
+                new ProductionTagTransitionRequest(
+                        "HOT", 7L, CatalogInventoryWireEnums.DictionaryEntryStatus.VOIDED, dataNodeRef),
                 "session",
                 "BRAND",
                 "correlation",
@@ -84,21 +86,22 @@ class TransitionOperationsProductionTagStatusOperationTest {
                 .thenReturn(new com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts(
                         session, UUID.randomUUID(), "STORE", dataNodeRef));
         WorkspaceCapabilityScopeResolver capabilities = mock(WorkspaceCapabilityScopeResolver.class);
-        when(capabilities.resolveGeneratedOperation(any(), any(), any(), any()))
-                .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
-                        WorkspaceCapabilityScopeResolver.Decision.ALLOW,
-                        token.capabilityFor("STORE"),
-                        new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
-                                workspaceId,
-                                "production-tag-test",
-                                "STORE",
-                                dataNodeRef,
-                                "STORE",
-                                dataNodeRef,
-                                List.of(dataNodeRef))));
+        when(capabilities.resolveGeneratedCatalogOperation(any(), any(), any(), any(), any()))
+                .thenReturn(new WorkspaceCapabilityScopeResolver.CatalogScopeResolution(
+                        new WorkspaceCapabilityScopeResolver.ScopeResolution(
+                                WorkspaceCapabilityScopeResolver.Decision.ALLOW,
+                                token.capabilityFor("STORE"),
+                                new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
+                                        workspaceId,
+                                        "production-tag-test",
+                                        "STORE",
+                                        dataNodeRef,
+                                        "STORE",
+                                        dataNodeRef,
+                                        List.of(dataNodeRef))),
+                        new CatalogScopeLookup.CatalogBrandJudgment("BRAND", "TEST", "REVISION"),
+                        null));
         CatalogScopeLookup scopes = mock(CatalogScopeLookup.class);
-        when(scopes.resolveCatalogBrand(any(), any(), any(), any(), any()))
-                .thenReturn(new CatalogScopeLookup.CatalogBrandJudgment("BRAND", "TEST", "REVISION"));
         return new CommandExecutionContextResolver(capabilities, scopes, sessions)
                 .resolveCatalog(
                         "session",

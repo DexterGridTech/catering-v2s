@@ -9,7 +9,7 @@ import type {
 } from '../../../app/api/generated/catalog-inventory-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
 import {requireOperationsScopeRef} from '../../../app/routing/model';
-import {CATALOG_TAB_LABELS, catalogTabLabel} from '../model/catalogTabLabels';
+import {CATALOG_TAB_LABELS, catalogEditorTabIsAllowed, catalogViewTabLabel} from '../model/catalogTabLabels';
 import {copyScopeTabKey} from './LocalCatalogCopyDrawer';
 import {
   buildCatalogBatchSaveRequest,
@@ -48,6 +48,8 @@ import {
   type CatalogBatchResult,
   type CatalogNavigation,
   type CopyPreflight,
+  type CatalogSkuRow,
+  type CatalogSkuVariantDimension,
 } from '../model/catalogModel';
 import {CatalogBatchOutcome} from './CatalogBatchOutcome';
 import {temporaryPromotionBlockedReasonLabel, temporaryPromotionFieldLabel} from './CatalogTemporaryPromotionTask';
@@ -75,7 +77,7 @@ const batchRow = (index: number, outcome: CatalogBatchResult['outcome']): Catalo
 });
 
 describe('catalog management runtime model contracts', () => {
-  it('keeps the nine tab labels in one frontend source and uses the decided reference label', () => {
+  it('keeps view tab labels in one source while excluding reference facts from the editor', () => {
     expect(Object.keys(CATALOG_TAB_LABELS).sort()).toEqual(
       [
         'attributes',
@@ -89,7 +91,9 @@ describe('catalog management runtime model contracts', () => {
         'sku-specifications-pricing',
       ].sort(),
     );
-    expect(catalogTabLabel('governance')).toBe('关联与依赖（只读）');
+    expect(catalogViewTabLabel('governance')).toBe('引用关系');
+    expect(catalogEditorTabIsAllowed('governance')).toBe(false);
+    expect(catalogEditorTabIsAllowed('inventory-bom')).toBe(true);
     expect(Object.values(CATALOG_TAB_LABELS)).not.toContain('治理与引用');
   });
 
@@ -186,7 +190,7 @@ describe('catalog management runtime model contracts', () => {
   });
 
   it('merges only the owner-confirmed voided SKU into the local draft', () => {
-    const rows = [
+    const rows: CatalogSkuRow[] = [
       {
         productSkuRef: testUuid('sku-1'),
         skuCode: 'SKU-1',
@@ -221,7 +225,7 @@ describe('catalog management runtime model contracts', () => {
       canVoid: false,
       blockingReferences: [],
       dependentFacts: [],
-      blockingReasons: [{label: '当前状态不支持作废', count: 1, relatedItemNames: []}],
+      blockingReasons: [{reasonCode: 'ALREADY_VOIDED', count: 1, relatedItemNames: []}],
     });
     expect(merged[0]).toMatchObject({
       productSkuRef: 'sku-1',
@@ -232,7 +236,7 @@ describe('catalog management runtime model contracts', () => {
         canVoid: false,
         blockingReferences: [],
         dependentFacts: [],
-        blockingReasons: [{label: '当前状态不支持作废', count: 1, relatedItemNames: []}],
+        blockingReasons: [{reasonCode: 'ALREADY_VOIDED', count: 1, relatedItemNames: []}],
       },
     });
     expect(merged[1]).toEqual(rows[1]);
@@ -255,13 +259,13 @@ describe('catalog management runtime model contracts', () => {
         canVoid: false,
         blockingReferences: [],
         dependentFacts: [],
-        blockingReasons: [{label: '已配置库存对象', count: 1, relatedItemNames: []}],
+        blockingReasons: [{reasonCode: 'USED_BY_INVENTORY_BOM', count: 1, relatedItemNames: []}],
       }),
-    ).toMatchObject({canVoid: false, blockingReasons: [{label: '已配置库存对象', count: 1}]});
+    ).toMatchObject({canVoid: false, blockingReasons: [{reasonCode: 'USED_BY_INVENTORY_BOM', count: 1}]});
   });
 
   it('accepts only the exact complete owner SKU void transition and never changes a draft for an unknown result', () => {
-    const rows = [
+    const rows: CatalogSkuRow[] = [
       {
         productSkuRef: testUuid('sku-void-1'),
         skuCode: 'SKU-VOID-1',
@@ -288,7 +292,7 @@ describe('catalog management runtime model contracts', () => {
           canVoid: false,
           blockingReferences: [],
           dependentFacts: [],
-          blockingReasons: [{label: '当前状态不支持作废', count: 1, relatedItemNames: []}],
+          blockingReasons: [{reasonCode: 'ALREADY_VOIDED', count: 1, relatedItemNames: []}],
         },
       ],
       requestedSkuRef,
@@ -430,7 +434,8 @@ describe('catalog management runtime model contracts', () => {
         version: 1,
         displayOrder: 0,
         count: 0,
-        countSemantics: 'SELF_ONLY',
+        directCount: 0,
+        countSemantics: 'SELF_AND_DESCENDANTS',
         deletionAvailability: {
           canDelete: true,
           subtreeSize: 1,
@@ -446,7 +451,8 @@ describe('catalog management runtime model contracts', () => {
         version: 1,
         displayOrder: 1,
         count: 0,
-        countSemantics: 'SELF_ONLY',
+        directCount: 0,
+        countSemantics: 'SELF_AND_DESCENDANTS',
         deletionAvailability: {
           canDelete: true,
           subtreeSize: 1,
@@ -515,6 +521,7 @@ describe('catalog management runtime model contracts', () => {
             productionTagRef: null,
             tags: [],
             tagRefs: ['00000000-0000-4000-8000-000000000002'],
+            status: 'ENABLED',
             specificationFacts: [],
             orderOptionFacts: [],
             attributeFacts: [],
@@ -677,7 +684,7 @@ describe('catalog management runtime model contracts', () => {
   });
 
   it('generates the SKU matrix from enabled values while preserving rows by ref-set', () => {
-    const existing = {
+    const existing: CatalogSkuRow = {
       productSkuRef: testUuid('sku-red-small'),
       skuCode: 'SKU-001',
       skuName: '手工名称',
@@ -712,7 +719,7 @@ describe('catalog management runtime model contracts', () => {
       ...skuUnitDefaults,
       mediaRefs: [testUuid('asset-1')],
     };
-    const stoppedValueRow = {
+    const stoppedValueRow: CatalogSkuRow = {
       ...existing,
       productSkuRef: testUuid('sku-green-large'),
       skuCode: 'SKU-010',
@@ -742,7 +749,7 @@ describe('catalog management runtime model contracts', () => {
       ],
       isDefault: false,
     };
-    const archivedRow = {
+    const archivedRow: CatalogSkuRow = {
       ...existing,
       productSkuRef: testUuid('sku-archived'),
       skuCode: 'SKU-011',
@@ -751,7 +758,7 @@ describe('catalog management runtime model contracts', () => {
       status: 'VOIDED',
       isDefault: false,
     };
-    const dimensions = [
+    const dimensions: CatalogSkuVariantDimension[] = [
       {
         attributeRef: testUuid('attr-color'),
         attributeCode: 'COLOR',
@@ -800,7 +807,7 @@ describe('catalog management runtime model contracts', () => {
   });
 
   it('reports every SKU matrix cell issue without treating item pricing as SKU pricing', () => {
-    const row = {
+    const row: CatalogSkuRow = {
       productSkuRef: testUuid(''),
       skuCode: '',
       skuName: '',
@@ -1396,7 +1403,8 @@ describe('catalog management runtime model contracts', () => {
             version: 3,
             displayOrder: 0,
             count: 2,
-            countSemantics: 'SELF_ONLY',
+            directCount: 1,
+            countSemantics: 'SELF_AND_DESCENDANTS',
             deletionAvailability: {
               canDelete: false,
               subtreeSize: 2,
@@ -1444,7 +1452,9 @@ describe('catalog management runtime model contracts', () => {
       name: '根类',
       version: 3,
       displayOrder: 0,
-      countSemantics: 'SELF_ONLY',
+      count: 2,
+      directCount: 1,
+      countSemantics: 'SELF_AND_DESCENDANTS',
       deletionAvailability: {
         canDelete: false,
         subtreeSize: 2,

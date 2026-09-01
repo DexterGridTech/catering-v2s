@@ -15,7 +15,7 @@ const actionSource = fs.readFileSync(
   'utf8',
 );
 
-test('inventory detail reuses current change summary and keeps paged zones lazy', () => {
+test('inventory detail reuses current change summary and renders every zone directly', () => {
   assert.doesNotMatch(source, /useGetOperationsInventoryTargetChangeSummaryQuery/);
   assert.doesNotMatch(source, /getOperationsInventoryTargetChangeSummary/);
   assert.doesNotMatch(source, /changesToday|changes7d|changes30d/);
@@ -30,7 +30,7 @@ test('inventory detail reuses current change summary and keeps paged zones lazy'
     ['Ledger', 'ledger', 'ledger'],
   ]) {
     assert.match(source, new RegExp(`getOperationsInventoryTarget${operation}`));
-    assert.match(source, new RegExp(`skip: !zoneLoaded\\('${zone}'\\)`));
+    assert.match(source, /\{skip: !open\}/);
     assert.match(source, new RegExp(`${variable}\\.currentData`));
     assert.match(source, new RegExp(`onRetry=\\{\\(\\) => void ${variable}\\.refetch\\(\\)\\}`));
   }
@@ -40,20 +40,26 @@ test('inventory detail reuses current change summary and keeps paged zones lazy'
   assert.doesNotMatch(source, /refreshAll|onListChanged|onCompleted/);
   assert.match(source, /maskClosable=\{!action\}/);
   assert.match(source, /keyboard=\{!action\}/);
+  assert.doesNotMatch(source, /Collapse/);
+  assert.doesNotMatch(source, /expandedZones|zoneLoaded|handleZoneChange/);
+  assert.match(source, /zoneItems\.map\(item =>/);
 });
 
 test('inventory content tab refresh re-reads every open read model without resetting action state', () => {
   assert.match(pageSource, /useRefreshVersion\(operationsContentTabRefreshSignal\)/);
   assert.match(pageSource, /void refetchNavigation\(\)/);
-  assert.match(pageSource, /void refetchManifest\(\)/);
   assert.match(pageSource, /void refetchList\(\)/);
   assert.match(source, /useRefreshVersion\(operationsContentTabRefreshSignal\)/);
   assert.match(source, /void refetchCurrent\(\)/);
-  assert.match(source, /if \(historyLoaded\) void refetchHistory\(\)/);
-  assert.match(source, /if \(referencesLoaded\) void refetchReferences\(\)/);
-  assert.match(source, /if \(ledgerLoaded\) void refetchLedger\(\)/);
-  assert.match(source, /if \(diagnosticsLoaded\) void refetchDiagnostics\(\)/);
-  assert.match(source, /form state remain untouched/);
+  assert.match(source, /void refetchHistory\(\)/);
+  assert.match(source, /void refetchReferences\(\)/);
+  assert.match(source, /void refetchLedger\(\)/);
+  assert.doesNotMatch(source, /if \(historyLoaded\)|if \(referencesLoaded\)|if \(ledgerLoaded\)/);
+  assert.doesNotMatch(
+    source,
+    /diagnosticsLoaded|refetchDiagnostics|useGetOperationsInventoryTargetDiagnosticsQuery|getOperationsInventoryTargetDiagnostics/,
+  );
+  assert.match(source, /action-modal form state/);
 });
 
 test('inventory action drawer uses the shared close and draft lifecycle', () => {

@@ -1,4 +1,4 @@
-import {Button, Space, Typography} from 'antd';
+import {Button, theme} from 'antd';
 import {testId} from '@catering-v2s/admin-ui-foundation';
 import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 import type {CatalogLibraryKind} from '../model/catalogWorkspaceTask';
@@ -24,39 +24,63 @@ export function CatalogConfigurationLibraryNavigation({
   onSelect: (library: CatalogConfigurationLibrary) => void;
   contentId: string;
 }) {
+  const {token} = theme.useToken();
+
   return (
     <nav
       aria-label="商品配置分类"
       style={{
-        width: 184,
-        flex: '0 0 184px',
-        alignSelf: 'flex-start',
+        width: 172,
+        flex: '0 0 172px',
+        alignSelf: 'stretch',
         position: 'sticky',
         top: 0,
-        borderRight: '1px solid var(--ant-color-border-secondary)',
-        paddingRight: 12,
+        borderInlineEnd: `1px solid ${token.colorBorderSecondary}`,
       }}
       {...testId(catalogTestIds.static.dictionaryTabs)}
     >
-      <Typography.Text strong style={{display: 'block', margin: '4px 8px 12px'}}>
-        商品配置
-      </Typography.Text>
-      <Space direction="vertical" size={4} style={{display: 'flex'}}>
+      <div
+        role="tablist"
+        aria-orientation="vertical"
+        style={{display: 'flex', flexDirection: 'column', gap: token.margin}}
+      >
         {libraries.map(library => (
           <Button
             key={library.key}
-            type={currentLibrary === library.key ? 'primary' : 'text'}
+            id={`catalog-configuration-tab-${library.key}`}
+            type="text"
             block
-            style={{textAlign: 'left'}}
+            role="tab"
+            aria-selected={currentLibrary === library.key}
             {...testId(catalogTestIdControls.config.library(library.key))}
             aria-current={currentLibrary === library.key ? 'page' : undefined}
             aria-controls={contentId}
             onClick={() => onSelect(library.key)}
+            style={{
+              appearance: 'none',
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              width: '100%',
+              minHeight: token.controlHeight,
+              padding: `${token.paddingXS}px ${token.paddingLG}px`,
+              border: 0,
+              borderRadius: 0,
+              borderInlineEnd: `${token.lineWidthBold}px solid ${
+                currentLibrary === library.key ? token.colorPrimary : 'transparent'
+              }`,
+              background: 'transparent',
+              color: currentLibrary === library.key ? token.colorPrimary : token.colorText,
+              cursor: 'pointer',
+              font: 'inherit',
+              textAlign: 'left',
+              transition: `color ${token.motionDurationSlow}`,
+            }}
           >
             {library.label}
           </Button>
         ))}
-      </Space>
+      </div>
     </nav>
   );
 }

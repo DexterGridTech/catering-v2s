@@ -219,8 +219,8 @@ class CatalogAssetGlobalReferenceTest {
                 "INSERT INTO "
                         + "catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,is_default,status,display_ord"
                         + "er,v"
-                        + "ariant_combination_digest) VALUES(?,?, 'SKU-ASSET', 'SKU asset', true, 'ENABLED', 0, "
-                        + "'asset-media')",
+                        + "ariant_combination_digest,updated_at_epoch_millis) VALUES(?,?, "
+                        + "'SKU-ASSET', 'SKU asset', true, 'ENABLED', 0, 'asset-media', 1)",
                 skuRef,
                 itemRef);
         jdbc.update(

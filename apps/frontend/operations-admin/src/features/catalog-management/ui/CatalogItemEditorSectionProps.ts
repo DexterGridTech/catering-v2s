@@ -37,7 +37,7 @@ export type CatalogItemEditorSectionProps = {
   onStageSkuMedia: (file: File, skuEditorId: string, replaceAssetRef?: string, retryId?: string) => Promise<void>;
   onRemoveSkuMedia: (skuEditorId: string, assetRef: string) => Promise<void>;
   onRemoveSkuStagedMedia: (id: string) => void;
-  onOpenConfig: (library: CatalogLibraryKind, focusTestId: string) => void;
+  onOpenConfig: (library: CatalogLibraryKind, focusTestId: string, parentEntryRef?: string) => void;
   basicDraft: CatalogEditorDraftSlice<CatalogItemBasicDraft>;
   productionDraft: CatalogEditorDraftSlice<CatalogItemProductionDraft>;
   attributeAssignmentsDraft: CatalogAttributeAssignment[];

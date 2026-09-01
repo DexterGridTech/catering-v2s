@@ -95,7 +95,7 @@ class CatalogBatchStatusTransitionIntegrationTest {
                 "UPDATE catalog.catalog_item SET sections='{" + "\"standardSalePrice\":100"
                         + "}'::jsonb WHERE item_ref=?",
                 committedRef);
-        // JSON null is a persisted malformed owner fact. Enabling it reaches the owner JSON decoder and
+        // JSON null is a persisted malformed owner fact. Voiding it reaches the owner JSON decoder and
         // produces RESULT_UNKNOWN, which is a request-level failure rather than an item business outcome.
         jdbc.update("UPDATE catalog.catalog_item SET sections='null'::jsonb WHERE item_ref=?", brokenRef);
         String key = "batch-unknown-item-key";
@@ -104,14 +104,14 @@ class CatalogBatchStatusTransitionIntegrationTest {
                 CatalogOwnerApi.Problem.class,
                 () -> batch(
                         BRAND,
-                        "ENABLED",
+                        "VOIDED",
                         List.of(
                                 new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(committedRef, 1L),
                                 new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(brokenRef, 1L)),
                         key));
 
         assertEquals("RESULT_UNKNOWN", failure.code());
-        assertEquals("ENABLED", status(committedRef));
+        assertEquals("VOIDED", status(committedRef));
         assertEquals(2L, version(committedRef));
         assertEquals("DISABLED", status(brokenRef));
         assertEquals(1L, version(brokenRef));

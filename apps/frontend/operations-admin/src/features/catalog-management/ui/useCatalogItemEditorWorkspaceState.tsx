@@ -12,7 +12,6 @@ import type {
 } from '../model/catalogModel';
 import {
   buildCatalogSkuVoidRequest,
-  catalogDetailImageRefs,
   catalogFormValidationIssue,
   mergeCatalogSkuVoidReadback,
   requireCatalogSkuVoidTransitionReadback,
@@ -37,6 +36,7 @@ import {
 import {catalogUiProblemFeedback} from '../model/catalogUiProblemFeedback';
 import {catalogFieldLabel} from '../model/catalogManifestLabels';
 import type {CatalogLibraryKind} from '../model/catalogWorkspaceTask';
+import {catalogEditorTabIsAllowed} from '../model/catalogTabLabels';
 import {
   catalogEditorCanClose,
   catalogEditorChildCloseResult,
@@ -78,10 +78,10 @@ function deniedFieldLabel(manifest: CatalogManifest | undefined, fieldKey: strin
 }
 
 /**
- * Typed UI-state hook for the editor workspace. Server reads, commands and
- * accidental-close/page-refresh recovery remain owned by
- * useCatalogItemEditorSession. Metadata maintenance is deliberately not a
- * recovery path: it remains an in-place child task of the open editor.
+ * Typed UI-state hook for the editor workspace. Server reads and commands are
+ * owned by useCatalogItemEditorSession; the editor draft exists only while
+ * this drawer session is open. Configuration maintenance remains an in-place child
+ * task of the open editor.
  */
 export function useCatalogItemEditorWorkspaceState({
   itemCode,
@@ -95,7 +95,6 @@ export function useCatalogItemEditorWorkspaceState({
 }: CatalogItemDrawerProps) {
   void initialMode;
   void surface;
-  const mode = 'edit' as const;
   const [problem, setProblem] = useState<string>();
   const drawerOperationInstanceId = useRef<string | undefined>(undefined);
   const problemRef = useRef<HTMLDivElement | null>(null);
@@ -115,20 +114,10 @@ export function useCatalogItemEditorWorkspaceState({
   );
   const pendingConfigurationFocusTestId = useRef<string | undefined>(undefined);
   const [form] = Form.useForm<{displayName: string; shortName?: string}>();
-  const onDraftDiagnostic = useCallback((event: {phase: string; outcome: string; itemCode?: string}) => {
-    operationsLogger.info({
-      event: 'catalog.item.editor.draft.recovery',
-      phase: event.phase,
-      outcome: event.outcome,
-      operationId: 'catalog-item-editor',
-      operationInstanceId: drawerOperationInstanceId.current,
-    });
-  }, []);
   const session = useCatalogItemEditorSession({
     itemCode,
     scopeRef: queryContext.scopeRef,
     brandRef,
-    onDraftDiagnostic,
   });
   const {
     detailQuery,
@@ -154,28 +143,8 @@ export function useCatalogItemEditorWorkspaceState({
     setActiveSection,
     setSectionError,
     resetSectionState,
-    restoreCandidate,
-    restoreStatus,
-    restoreProblem,
-    persist: persistDraft,
-    clear: clearDraft,
-    acceptRestore,
-    discardRestore,
-    dismissRestore,
   } = session.draft;
   const activeTab = draft.activeTab;
-  const persistCurrentDraft = useCallback(
-    () =>
-      persistDraft({
-        ...draft,
-        mode,
-        activeTab,
-        formValues: form.getFieldsValue(),
-        mediaDraft: draft.mediaDraft.map(({file: _file, ...asset}) => asset),
-        skuStagedMedia: draft.skuStagedMedia.map(({file: _file, ...asset}) => asset),
-      }),
-    [activeTab, draft, form, mode, persistDraft],
-  );
   const setDraftField = useCallback(
     <K extends keyof CatalogItemDraftSnapshot>(key: K, next: SetStateAction<CatalogItemDraftSnapshot[K]>) => {
       updateField(key, next, draftFieldSections[key]);
@@ -185,6 +154,7 @@ export function useCatalogItemEditorWorkspaceState({
   const setActiveTab = useCallback(
     (next: SetStateAction<string>) => {
       const value = typeof next === 'function' ? next(activeTab) : next;
+      if (!catalogEditorTabIsAllowed(value)) return;
       setDraftField('activeTab', value);
       setActiveSection(draftSection(value));
     },
@@ -290,16 +260,12 @@ export function useCatalogItemEditorWorkspaceState({
     diagnosticOperationId: 'catalog-item-editor',
     onDiagnosticEvent: onLifecycleDiagnostic,
   });
-  useEffect(() => {
-    if (!itemCode || !detail || !lifecycleDirty || restoreCandidate) return;
-    persistCurrentDraft();
-  }, [detail, itemCode, lifecycleDirty, persistCurrentDraft, restoreCandidate]);
   const openCatalogConfig = useCallback(
-    (library: CatalogLibraryKind, triggerTestId: string) => {
+    (library: CatalogLibraryKind, triggerTestId: string, parentEntryRef?: string) => {
       if (!itemCode) return;
       // Configuration is an editor child task. It must not persist, close or
       // rehydrate the item draft: the parent remains the sole draft owner.
-      dispatchConfigurationTask({type: 'OPEN_CONFIG', library, triggerTestId});
+      dispatchConfigurationTask({type: 'OPEN_CONFIG', library, triggerTestId, parentEntryRef});
     },
     [itemCode],
   );
@@ -316,43 +282,11 @@ export function useCatalogItemEditorWorkspaceState({
   }, []);
   const requestClose = useCallback(() => {
     if (!catalogEditorCanClose(configurationTask)) {
-      setProblem('请先完成或关闭商品元数据维护，再关闭商品编辑。');
+      setProblem('请先完成或关闭商品基础数据维护，再关闭商品编辑。');
       return;
     }
     requestEditorClose();
   }, [configurationTask, requestEditorClose]);
-  const applyRecoveredDraft = useCallback(
-    (snapshot: CatalogItemDraftSnapshot) => {
-      form.setFieldsValue(snapshot.formValues);
-      replaceDraft({
-        ...snapshot,
-        contentScrollTop: snapshot.contentScrollTop ?? 0,
-        mediaDraft: snapshot.mediaDraft.map(asset => ({
-          ...asset,
-          file: undefined,
-          status: asset.status === 'UPLOADING' ? 'FAILED' : asset.status,
-        })),
-        skuStagedMedia: snapshot.skuStagedMedia.map(asset => ({
-          ...asset,
-          file: undefined,
-          status: asset.status === 'UPLOADING' ? 'FAILED' : asset.status,
-        })),
-      });
-      setLifecycleDirty(true);
-      operationsLogger.info({
-        event: 'catalog.item.editor.draft.recovery_applied',
-        phase: 'DRAFT_RECOVERY',
-        outcome: 'SUCCEEDED',
-        operationId: 'catalog-item-editor',
-        operationInstanceId: drawerOperationInstanceId.current,
-      });
-    },
-    [form, replaceDraft, setLifecycleDirty],
-  );
-  const restoreDraft = useCallback(() => {
-    const snapshot = acceptRestore();
-    if (snapshot) applyRecoveredDraft(snapshot);
-  }, [acceptRestore, applyRecoveredDraft]);
   const contentTabRefreshVersion = useRefreshVersion(operationsContentTabRefreshSignal);
   const lastContentTabRefreshVersion = useRef(contentTabRefreshVersion);
   const refetchDetail = detailQuery.refetch;
@@ -440,7 +374,9 @@ export function useCatalogItemEditorWorkspaceState({
       setProblem(message);
       return;
     }
-    const visibleTabs = new Set(detail.tabs.filter(tab => tab.visible).map(tab => tab.tabKey));
+    const visibleTabs = new Set(
+      detail.tabs.filter(tab => tab.visible && catalogEditorTabIsAllowed(tab.tabKey)).map(tab => tab.tabKey),
+    );
     if (visibleTabs.has('identifiers')) {
       const invalidIndex = identifierDraft.findIndex(entry => !entry.identifierType || !entry.identifierValue.trim());
       if (invalidIndex >= 0) {
@@ -529,7 +465,6 @@ export function useCatalogItemEditorWorkspaceState({
     setProblem(undefined);
     try {
       await saveWholeDraft({itemCode, detail, visibleTabs, formValues: values});
-      clearDraft();
       resetSectionState();
       markSavedForHydration();
       resetLifecycle();
@@ -708,10 +643,7 @@ export function useCatalogItemEditorWorkspaceState({
     closeConfiguration,
     afterConfigurationClose,
     detail,
-    detailImageRefs: detail ? catalogDetailImageRefs(detail.item) : [],
     detailQuery,
-    discardRestore,
-    dismissRestore,
     lifecycleSubmitting,
     manifest,
     mediaProblem,
@@ -720,10 +652,6 @@ export function useCatalogItemEditorWorkspaceState({
     releaseCloseFailed,
     releasingBeforeClose,
     requestClose,
-    restoreCandidate,
-    restoreDraft,
-    restoreProblem,
-    restoreStatus,
     setActiveTab,
     setContentScrollTop,
     submit,

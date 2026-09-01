@@ -1,5 +1,6 @@
 package com.catering.v2s.fulfillment.production.application.operations;
 
+import com.catering.v2s.app.edge.generated.wire.CatalogInventoryWireEnums;
 import com.catering.v2s.app.edge.generated.wire.ProductionTagReadback;
 import com.catering.v2s.app.edge.generated.wire.ProductionTagTransitionRequest;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
@@ -38,7 +39,7 @@ public class TransitionOperationsProductionTagStatusOperation {
                 invocation.correlationId(),
                 invocation.requestId());
         ProductionTagTransitionRequest request = invocation.request();
-        if ("VOIDED".equals(request.targetStatus())) {
+        if (request.targetStatus() == CatalogInventoryWireEnums.DictionaryEntryStatus.VOIDED) {
             var tagRef = productionTags.resolveProductionTagRef(context, invocation.tagCode());
             if (catalog.productionTagReferenced(
                     context.ownerScope().dataNodeId().toString(),
@@ -58,7 +59,7 @@ public class TransitionOperationsProductionTagStatusOperation {
                 new ProductionTagOwnerApi.TransitionTagStatusCommand(
                         invocation.tagCode(),
                         requiredLong(request.expectedVersion(), "expectedVersion"),
-                        request.targetStatus()),
+                        request.targetStatus().name()),
                 invocation.idempotencyKey());
         return new ProductionTagReadback(
                 REVISION,
@@ -68,7 +69,7 @@ public class TransitionOperationsProductionTagStatusOperation {
                         readback.code(),
                         readback.name(),
                         new ProductionTagReadback.Result.OwnerScope("PRODUCTION_TAG", REVISION),
-                        readback.status(),
+                        CatalogInventoryWireEnums.DictionaryEntryStatus.valueOf(readback.status()),
                         readback.version()),
                 readback.version());
     }

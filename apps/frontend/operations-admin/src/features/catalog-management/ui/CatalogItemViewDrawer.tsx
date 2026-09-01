@@ -32,7 +32,6 @@ export function CatalogItemViewDrawer({
   canWriteCatalog,
   onEdit,
   onCopy,
-  onVoidAndRebuild,
   onClose,
 }: CatalogItemDrawerProps) {
   const [viewedItemCode, setViewedItemCode] = useState(itemCode);
@@ -113,8 +112,6 @@ export function CatalogItemViewDrawer({
         outcome: 'SUCCEEDED',
         operationId: CATALOG_INVENTORY_OPERATION_IDS.transitionOperationsCatalogItemStatus,
       });
-      if (targetStatus === 'VOIDED')
-        onVoidAndRebuild?.({code: detail.item.code, name: detail.item.name, shapeKey: detail.item.shapeKey});
     } catch (error) {
       setProblem(catalogUiProblemFeedback(error, '商品状态更新未完成，请重试。').message);
     }
@@ -125,7 +122,7 @@ export function CatalogItemViewDrawer({
     setPendingStatus(targetStatus);
   };
 
-  const voidAndRebuild = () => {
+  const markItemDeleted = () => {
     if (!detail?.actionAvailability.voidAvailability?.canVoid) return;
     setPendingStatus('VOIDED');
   };
@@ -180,11 +177,11 @@ export function CatalogItemViewDrawer({
                 key: 'void',
                 danger: true,
                 label: (
-                  <span {...testId(catalogTestIds.static.itemVoidAndRebuild)}>
+                  <span {...testId(catalogTestIds.static.itemVoid)}>
                     <span {...testId(catalogTestIds.control.statusVoid)}>标记删除</span>
                   </span>
                 ),
-                onClick: voidAndRebuild,
+                onClick: markItemDeleted,
               }
             : null,
           {
@@ -279,21 +276,21 @@ export function CatalogItemViewDrawer({
       )}
       <Modal
         open={Boolean(pendingStatus && detail)}
-        title={pendingStatus === 'VOIDED' ? `作废并重建“${detail?.item.name ?? ''}”` : `${pendingStatusLabel}商品？`}
+        title={`${pendingStatusLabel}商品？`}
         onCancel={() => setPendingStatus(undefined)}
         onOk={() => {
           const targetStatus = pendingStatus;
           setPendingStatus(undefined);
           if (targetStatus) void changeStatus(targetStatus);
         }}
-        okText={pendingStatus === 'VOIDED' ? '作废并继续重建' : `确认${pendingStatusLabel}`}
+        okText={`确认${pendingStatusLabel}`}
         cancelText="取消"
         okButtonProps={testId(catalogTestIds.control.lifecycleConfirmYes)}
         cancelButtonProps={testId(catalogTestIds.control.lifecycleConfirmNo)}
         {...testId(catalogTestIds.surface.lifecycleConfirm)}
       >
         {pendingStatus === 'VOIDED'
-          ? '旧商品会保留历史记录，并打开新的创建流程。'
+          ? '商品会保留历史记录并标记为删除；如需新建商品，请返回商品列表重新创建。'
           : `将把商品“${detail?.item.name ?? ''}”的状态改为“${pendingStatusLabel}”，不会清空商品信息。`}
       </Modal>
       {detail && (

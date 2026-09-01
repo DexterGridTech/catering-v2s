@@ -150,6 +150,7 @@ export type DescriptorFieldRendererProps = {
   slots?: Partial<Record<DomainControlKind, DescriptorFieldSlot>>;
   optionLoading?: boolean;
   optionError?: string;
+  hideLabel?: boolean;
 };
 
 export function DescriptorFieldRenderer({
@@ -163,6 +164,7 @@ export function DescriptorFieldRenderer({
   slots,
   optionLoading = false,
   optionError,
+  hideLabel = false,
 }: DescriptorFieldRendererProps) {
   return (
     <Space
@@ -172,7 +174,7 @@ export function DescriptorFieldRenderer({
       data-field-key={field.fieldKey}
       data-control-kind={field.controlKind}
     >
-      <Typography.Text strong>{field.label}</Typography.Text>
+      {!hideLabel && <Typography.Text strong>{field.label}</Typography.Text>}
       {renderDescriptorControl({
         field,
         value,

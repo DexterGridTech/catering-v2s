@@ -29,7 +29,6 @@ export function CatalogDictionaryAtomModals({
   creationForm,
   creationFormTestId,
   creationSubmitting,
-  rebuildCode,
   nameFieldLabel,
   codeFieldLabel,
   unitDimensionOptions,
@@ -60,7 +59,6 @@ export function CatalogDictionaryAtomModals({
   creationForm: FormInstance<FormValues>;
   creationFormTestId?: {'data-testid': string};
   creationSubmitting: boolean;
-  rebuildCode?: string;
   nameFieldLabel: string;
   codeFieldLabel: string;
   unitDimensionOptions: Array<{value: NonNullable<FormValues['unitDimension']>; label: string}>;
@@ -112,16 +110,6 @@ export function CatalogDictionaryAtomModals({
             />
           )}
           <Form form={creationForm} layout="vertical" onValuesChange={onCreationValuesChange} {...creationFormTestId}>
-            {rebuildCode && (
-              <Alert
-                type="warning"
-                showIcon
-                title="正在重建作废记录"
-                description={`旧编码 ${rebuildCode} 的历史记录会保留；作废后该编码可在没有其他有效记录占用时复用。`}
-                style={{marginBottom: 12}}
-                {...testId(catalogTestIds.static.dictionaryRebuildNotice)}
-              />
-            )}
             <Typography.Paragraph type="secondary">
               {creationKind === 'SKU_ATTRIBUTE_VALUE'
                 ? '新增的可选值会归属到当前选中的规格维度。'

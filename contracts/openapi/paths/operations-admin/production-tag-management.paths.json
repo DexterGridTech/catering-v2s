@@ -107,7 +107,8 @@
                 "DISABLED",
                 "VOIDED"
               ],
-              "description": "optional production tag lifecycle status filter"
+              "description": "optional production tag lifecycle status filter",
+              "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
             }
           },
           {

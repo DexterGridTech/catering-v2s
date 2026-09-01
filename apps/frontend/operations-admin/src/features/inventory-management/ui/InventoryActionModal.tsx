@@ -38,6 +38,8 @@ import {requireOperationsScopeRef, type OperationsPageContext} from '../../../ap
 import {
   envelopeResult,
   inventoryConversionLabel,
+  inventorySelectableUnitSnapshots,
+  inventoryStockStateLabel,
   inventoryUnitLabel,
   jsonBody,
   type InventoryCurrentView,
@@ -194,37 +196,14 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
   const quantity = Form.useWatch('quantity', form);
   const selectedUnitRef = Form.useWatch('countingUnitRef', form);
   const direction = Form.useWatch('direction', form);
-  const unitListRequest = useMemo(
-    () =>
-      catalogInventoryRtkRequest.listOperationsCatalogUnits(
-        {},
-        {
-          query: {
-            ...(queryContext.scopeRef ? {dataNodeRef: wireUuid(queryContext.scopeRef)} : {}),
-            includeInactive: false,
-          },
-        },
-      ),
-    [queryContext],
-  );
-  const unitList = operationsRtk.useListOperationsCatalogUnitsQuery(unitListRequest, {skip: !open || !current});
   const inputUnits = useMemo(() => {
     if (!current) return [];
-    const snapshots = new Map(
-      [
-        current.target.consumptionUnitSnapshot,
-        current.target.countingUnitSnapshot,
-        ...(unitList.currentData?.data.units ?? []),
-      ]
-        .filter((value): value is NonNullable<typeof value> => Boolean(value))
-        .map(value => [value.unitRef, value]),
-    );
-    return [...snapshots.values()].map<InventoryInputUnitOption>(value => ({
+    return inventorySelectableUnitSnapshots(current).map<InventoryInputUnitOption>(value => ({
       label: inventoryUnitLabel(value),
       value: value.unitRef,
       precision: value.precision,
     }));
-  }, [current, unitList.currentData]);
+  }, [current]);
   const selectedInputUnit = inputUnits.find(option => option.value === selectedUnitRef);
   const sourcePrecision =
     selectedInputUnit?.precision ??
@@ -507,7 +486,7 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
               {key: 'before', label: '变更前', children: result.before},
               {key: 'change', label: '变更量', children: result.change},
               {key: 'after', label: '变更后', children: result.after},
-              {key: 'state', label: '库存状态', children: result.stockState},
+              {key: 'state', label: '库存状态', children: inventoryStockStateLabel(result.stockState)},
               {key: 'ledger', label: '流水号', children: result.ledgerEntryRef},
               {key: 'version', label: '对象版本', children: result.version},
             ]}
@@ -640,7 +619,7 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
                   type="info"
                   showIcon
                   title="正在调整独立库存配置"
-                  description="只调整阈值、负库存策略、盘点单位与换算，不修改实际余额或 BOM。盘点单位只能从单位库选择，余额始终按消耗单位记录。"
+                  description="只调整阈值、负库存策略、盘点单位与换算，不修改实际余额或 BOM。盘点单位只能使用当前商品或 SKU 已配置的单位，余额始终按消耗单位记录。"
                   style={{marginBottom: 16}}
                 />
                 <Form.Item label="允许负库存" name="allowNegative" valuePropName="checked">
@@ -663,7 +642,7 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
                   <Select
                     options={inputUnits}
                     allowClear
-                    placeholder="可选：选择单位库中的同维度盘点单位"
+                    placeholder="可选：选择当前商品或 SKU 已配置的单位"
                     {...testId('inventory-config-counting-unit')}
                   />
                 </Form.Item>

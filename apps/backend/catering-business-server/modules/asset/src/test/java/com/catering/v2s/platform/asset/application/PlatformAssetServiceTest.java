@@ -790,7 +790,7 @@ class PlatformAssetServiceTest {
 
     @Test
     void databaseUniquenessIsScopedToTheCatalogAssetWorkspaceWhilePhysicalBytesRemainShared() {
-        String key = "tenant-prod/static/a".repeat(64) + ".png";
+        String key = "tenant-prod/static/" + "a".repeat(64) + ".png";
         insertStagedAsset(UUID.randomUUID(), "GROUP_WORKSPACE_LOGO", key);
         insertStagedAsset(UUID.randomUUID(), "GROUP_WORKSPACE_LOGO", key);
         insertStagedAsset(UUID.randomUUID(), "CATALOG_ITEM_IMAGE", key, workspaceId);
@@ -819,7 +819,7 @@ class PlatformAssetServiceTest {
 
     @Test
     void catalogStageAndActiveRefCannotBeClaimedOrDiscardedByAnotherWorkspace() {
-        byte[] firstPng = png(0xff7c3aed);
+        byte[] firstPng = png(0xffc026d3);
         var staged = assets.stageCatalogContent(
                 workspaceId,
                 "asset-flow",

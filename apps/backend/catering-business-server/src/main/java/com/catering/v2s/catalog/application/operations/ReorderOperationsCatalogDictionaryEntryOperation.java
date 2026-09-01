@@ -2,6 +2,7 @@ package com.catering.v2s.catalog.application.operations;
 
 import com.catering.v2s.app.edge.generated.wire.CatalogDictionaryEntryReorderRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogDictionaryView;
+import com.catering.v2s.app.edge.generated.wire.CatalogInventoryWireEnums;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
@@ -74,7 +75,7 @@ public class ReorderOperationsCatalogDictionaryEntryOperation {
                 value.code(),
                 value.name(),
                 value.parentEntryRef(),
-                value.status(),
+                CatalogInventoryWireEnums.DictionaryEntryStatus.valueOf(value.status()),
                 value.ownerType(),
                 uuid(value.ownerRef()),
                 uuid(value.brandRef()),

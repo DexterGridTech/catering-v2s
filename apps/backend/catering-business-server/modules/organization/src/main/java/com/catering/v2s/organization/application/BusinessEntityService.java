@@ -600,8 +600,7 @@ public class BusinessEntityService
         String type = entityType(entityType);
         final OrganizationEntityReadback knownOwnerFact;
         if (ServiceNodeTypes.HEAD_COMPANY.equals(type)) {
-            knownOwnerFact = requireHeadCompanyOwnerFact(
-                    ownerScopeGrant, workspaceUuid, groupWorkspaceKey, id);
+            knownOwnerFact = requireHeadCompanyOwnerFact(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, id);
         } else {
             knownOwnerFact = null;
         }
@@ -663,9 +662,8 @@ public class BusinessEntityService
             OrganizationEntityReadback knownOwnerFact) {
         String type = entityType(entityType);
         String table = table(type);
-        OrganizationEntityReadback before = knownOwnerFact == null
-                ? requireEntity(type, workspaceUuid, groupWorkspaceKey, id)
-                : knownOwnerFact;
+        OrganizationEntityReadback before =
+                knownOwnerFact == null ? requireEntity(type, workspaceUuid, groupWorkspaceKey, id) : knownOwnerFact;
         requireMutable(before.status());
         ensureAvailable(type, workspaceUuid, groupWorkspaceKey, id, code, name);
         if (ServiceNodeTypes.HEAD_COMPANY.equals(type))
@@ -744,8 +742,8 @@ public class BusinessEntityService
             ExtensionSubmission submission,
             AuditActor actor,
             OrganizationEntityReadback before) {
-        ExtensionValues extensions = extensionValuesForUpdate(
-                workspaceUuid, groupWorkspaceKey, before.extensionValues(), submission);
+        ExtensionValues extensions =
+                extensionValuesForUpdate(workspaceUuid, groupWorkspaceKey, before.extensionValues(), submission);
         long now = time.currentEpochMillis();
         OrganizationEntityReadback updated = OwnerOperationDiagnostics.readback(() -> jdbc.query(
                 "UPDATE organization.head_company SET code=?, name=?, legal_name=?, credit_code=?, remark=?, "
@@ -2954,8 +2952,8 @@ public class BusinessEntityService
         String current = extensionJson(currentValues);
         ExtensionDefinitionReadback definition;
         try {
-            definition = definitions.requireDefinition(
-                    workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.HEAD_COMPANY);
+            definition =
+                    definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.HEAD_COMPANY);
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (submission != null && !submission.fields().isEmpty()) throw new OrganizationValidationException(absent);
             return new ExtensionValues(current, 0L);

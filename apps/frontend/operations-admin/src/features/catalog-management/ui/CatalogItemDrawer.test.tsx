@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {describe, expect, it, vi} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
+import {Provider} from 'react-redux';
 import {collectCursorPages} from '@catering-v2s/admin-ui-foundation';
 import type {Uuid} from '../../../app/api/generated/catalog-inventory-edge';
 import {
@@ -17,6 +18,7 @@ import {
 } from '../model/catalogIdentificationPreparationFeedback';
 import {PreparationProfileEditor} from './CatalogItemProductionEditor';
 import {
+  AttributeAssignmentsReadOnly,
   PreparationProfileReadOnly,
   PreparationVariationSummary,
   CompositeGroupsReadOnly,
@@ -31,6 +33,7 @@ import {
   type CatalogCompositeGroupDraft,
 } from '../model/catalogItemEditorDraftAdapters';
 import {catalogUiProblemFeedback} from '../model/catalogUiProblemFeedback';
+import {operationsStore} from '../../../app/state/OperationsStore';
 import {CatalogItemCompositeEditor} from './CatalogItemCompositeEditor';
 
 // The focused surfaces below do not mount ProList. Keep its unrelated CJS
@@ -297,6 +300,24 @@ describe('catalog identification and preparation editor boundaries', () => {
     expect(production).toContain('productionDraft.onChange({selectedProductionTagRef: next})');
   });
 
+  it('uses a semantic responsive layout for basic facts and keeps the editor header text-only', () => {
+    const basic = readFileSync(new URL('./CatalogItemBasicEditor.tsx', import.meta.url), 'utf8');
+    const workspace = readFileSync(new URL('./CatalogItemEditorWorkspace.tsx', import.meta.url), 'utf8');
+    const state = readFileSync(new URL('./useCatalogItemEditorWorkspaceState.tsx', import.meta.url), 'utf8');
+
+    expect(basic).toContain('title="基本信息"');
+    expect(basic).toContain('title="销售与计量"');
+    expect(basic).toContain('maxWidth: 720');
+    expect(basic).toContain('<Row gutter={[16, 0]} align="top">');
+    expect(basic).toContain('<Col xs={24} md={12}>');
+    expect(basic).toContain('<Col xs={24} sm={8}>');
+    expect(basic).toContain("style={catalogFieldWidth('full')}");
+    expect(workspace).not.toContain('CatalogAssetPreview');
+    expect(workspace).not.toContain('detailImageRefs');
+    expect(workspace).not.toContain('itemDrawerThumbnail');
+    expect(state).not.toContain('detailImageRefs');
+  });
+
   it('keeps first-level task ownership in the workbench and gives SKU sub-editors stable identity', () => {
     const drawerSource = readFileSync(new URL('./CatalogItemDrawer.tsx', import.meta.url), 'utf8');
     const editorSource = readFileSync(new URL('./CatalogItemSkuSpecificationsEditor.tsx', import.meta.url), 'utf8');
@@ -310,7 +331,7 @@ describe('catalog identification and preparation editor boundaries', () => {
     expect(editorSource).not.toMatch(/updateSku\((?:identifierModalIndex|preparationModalIndex)/);
   });
 
-  it('keeps the editor open when maintaining metadata and retires the transition-persistence path', () => {
+  it('keeps the editor open when maintaining basic data and retires the transition-persistence path', () => {
     const workspace = readFileSync(new URL('./CatalogItemEditorWorkspace.tsx', import.meta.url), 'utf8');
     const state = readFileSync(new URL('./useCatalogItemEditorWorkspaceState.tsx', import.meta.url), 'utf8');
     const dictionaryState = readFileSync(new URL('./CatalogDictionaryDrawerState.tsx', import.meta.url), 'utf8');
@@ -346,9 +367,72 @@ describe('catalog identification and preparation editor boundaries', () => {
     expect(dictionaryState).toContain('onAfterClose?: () => void');
     expect(dictionaryState).toContain('onAfterClose={onAfterClose}');
     expect(configurationSurface).toContain('if (!visible && !open) onAfterClose?.();');
+    expect(dictionaryState).not.toContain('useShellInteractionLock');
+    expect(dictionaryState).toContain('configurationLifecycleDirty: lifecycle.dirty');
+    expect(dictionaryState).toContain('if (!configurationDirty)');
     expect(coordinator).not.toContain('onOpenCatalogConfig');
     expect(content).not.toContain('商品编辑已暂停');
     expect(content).not.toContain('继续编辑');
+  });
+
+  it('keeps product drafts transient and uses only the dirty guard for close protection', () => {
+    const draft = readFileSync(new URL('../model/useCatalogItemDraft.ts', import.meta.url), 'utf8');
+    const session = readFileSync(new URL('../model/useCatalogItemEditorSession.ts', import.meta.url), 'utf8');
+    const state = readFileSync(new URL('./useCatalogItemEditorWorkspaceState.tsx', import.meta.url), 'utf8');
+    const workspace = readFileSync(new URL('./CatalogItemEditorWorkspace.tsx', import.meta.url), 'utf8');
+
+    expect(draft).not.toContain('sessionStorage');
+    expect(draft).not.toContain('restoreCandidate');
+    expect(session).not.toContain('onDraftDiagnostic');
+    expect(state).not.toContain('persistCurrentDraft');
+    expect(state).not.toContain('restoreCandidate');
+    expect(state).not.toContain('clearDraft');
+    expect(state).toContain("dirtyMessage: '商品编辑内容尚未保存。'");
+    expect(state).toContain('dirtyGuardTestIds');
+    expect(state).toContain('replaceDraft(emptyCatalogItemDraftSnapshot())');
+    expect(workspace).not.toContain('itemDraftRestorePrompt');
+    expect(workspace).not.toContain('恢复编辑');
+    expect(workspace).not.toContain('<Modal');
+  });
+
+  it('keeps SKU setup automatic with one attribute-library maintenance entry', () => {
+    const editor = readFileSync(new URL('./CatalogItemSkuSpecificationsEditor.tsx', import.meta.url), 'utf8');
+    const basicEditor = readFileSync(new URL('./CatalogItemBasicEditor.tsx', import.meta.url), 'utf8');
+    const attributesEditor = readFileSync(new URL('./CatalogItemAttributesEditor.tsx', import.meta.url), 'utf8');
+    const orderOptionsEditor = readFileSync(new URL('./CatalogItemOrderOptionsEditor.tsx', import.meta.url), 'utf8');
+    const productionEditor = readFileSync(new URL('./CatalogItemProductionEditor.tsx', import.meta.url), 'utf8');
+    const assembler = readFileSync(new URL('./CatalogItemEditorSectionAssembler.tsx', import.meta.url), 'utf8');
+    const descriptorPicker = readFileSync(new URL('./CatalogDescriptorPicker.tsx', import.meta.url), 'utf8');
+    const matrix = readFileSync(new URL('./CatalogItemSkuMatrixTable.tsx', import.meta.url), 'utf8');
+    const testIds = readFileSync(new URL('../catalogTestIds.ts', import.meta.url), 'utf8');
+
+    expect(editor).toContain('规格组合会自动生成');
+    expect(editor).toContain('维护规格属性');
+    expect(editor).toContain('actionsPlacement="after-label"');
+    expect(basicEditor).toContain('actionsPlacement="after-label"');
+    expect(basicEditor).toContain('actionsAlign="end"');
+    expect(attributesEditor).toContain('维护商品属性');
+    expect(attributesEditor).toContain('itemAttributeLibraryManage');
+    expect(attributesEditor).toContain("style={{marginInlineStart: 'auto'}}");
+    expect(assembler).toContain("onOpenAttributeLibrary={() => onOpenConfig('ATTRIBUTES'");
+    expect(orderOptionsEditor).toContain('维护点单选项');
+    expect(orderOptionsEditor).toContain('itemOrderOptionLibraryManage');
+    expect(orderOptionsEditor).toContain("style={{marginInlineStart: 'auto'}}");
+    expect(assembler).toContain("onOpenConfig('ORDER_OPTIONS', catalogTestIds.static.itemOrderOptionLibraryManage)");
+    expect(editor).toContain('width="100%"');
+    expect(editor).not.toContain('生成规格');
+    expect(editor).not.toContain('维护属性值');
+    expect(editor).not.toContain('onOpenValueDictionary');
+    expect(editor).not.toContain('regenerateMatrix');
+    expect(assembler).not.toContain('onOpenValueDictionary=');
+    expect(descriptorPicker).toContain("<div style={{display: 'block', width}}");
+    expect(descriptorPicker).toContain("actionsAlign?: 'start' | 'end'");
+    expect(descriptorPicker).toContain('<Flex align="end"');
+    expect(descriptorPicker).not.toContain('<Space align="end"');
+    expect(productionEditor).toContain("style={{marginInlineStart: 'auto'}}");
+    expect(matrix).toContain('请先选择规格属性和可选值');
+    expect(matrix).not.toContain('再生成规格');
+    expect(testIds).not.toContain('itemSkuMatrixRegenerate');
   });
 
   it('keeps the saved-product view free of SKU governance controls', () => {
@@ -397,6 +481,13 @@ describe('catalog identification and preparation editor boundaries', () => {
     expect(source).toContain('excludeItemCode: currentItemCode');
     expect(source).toContain('currentItemCode,');
     expect(source).toContain('const selectableItems = candidateState.items');
+    expect(source).toContain('<Select');
+    expect(source).toContain('showSearch');
+    expect(source).toContain('filterOption={false}');
+    expect(source).toContain('onPopupScroll={candidateState.onPopupScroll}');
+    expect(source).toContain('onOpenChange={setOpen}');
+    expect(source).not.toContain('CompositeCandidateSelectionModal');
+    expect(source).not.toContain('title="选择套餐内容"');
     expect(source).not.toContain('filter(item => item.code !== currentItemCode)');
   });
 
@@ -504,7 +595,44 @@ describe('catalog identification and preparation editor boundaries', () => {
     expect(itemOnly).toBe('');
     expect(optionOnly).toContain('data-preparation-layout="OPTIONS"');
     expect(skuAndOptions).toContain('data-preparation-layout="SKU_AND_OPTIONS"');
+    expect(skuAndOptions).toContain('点单选项');
+    expect(skuAndOptions).toContain('加冰');
+    expect(skuAndOptions).toContain('最后加冰');
+    expect(skuAndOptions).toContain('10 秒');
     expect(skuAndOptions).toContain('去点单选项维护');
+    expect(skuAndOptions).not.toContain('已设置制作变化');
+  });
+
+  it('renders the selected product attribute content instead of a selection count', () => {
+    const markup = renderToStaticMarkup(
+      <AttributeAssignmentsReadOnly
+        values={[
+          {
+            definitionRef: uuid('attribute-allergen'),
+            code: 'ALLERGEN',
+            name: '过敏原',
+            valueType: 'MULTI_SELECT',
+            textValue: null,
+            optionRefs: [uuid('attribute-peanut'), uuid('attribute-milk')],
+            selectedOptionNames: ['花生', '牛奶'],
+          },
+          {
+            definitionRef: uuid('attribute-spice'),
+            code: 'SPICE',
+            name: '辣度',
+            valueType: 'SINGLE_SELECT',
+            textValue: null,
+            optionRefs: [uuid('attribute-mild')],
+            selectedOptionNames: ['不辣'],
+          },
+        ]}
+      />,
+    );
+
+    expect(markup).toContain('花生、牛奶');
+    expect(markup).toContain('不辣');
+    expect(markup).not.toContain('已选择');
+    expect(markup).not.toContain('2 项');
   });
 
   it('makes inherit, full override, clear, and add-only option changes explicit', () => {
@@ -723,21 +851,23 @@ describe('catalog identification and preparation editor boundaries', () => {
       },
     ];
     const markup = renderToStaticMarkup(
-      <CatalogItemCompositeEditor
-        mode="edit"
-        shapeKey="COMPOSITE"
-        values={values}
-        readOnlyValues={[]}
-        onChange={() => undefined}
-        onDirty={() => undefined}
-        queryContext={{
-          groupWorkspaceKey: 'workspace-test',
-          expectedContextVersion: 1,
-          scopeRef: uuid('00000000-0000-4000-8000-000000000001'),
-        }}
-        version={1}
-        createDraftRowId={prefix => `${prefix}-new`}
-      />,
+      <Provider store={operationsStore}>
+        <CatalogItemCompositeEditor
+          mode="edit"
+          shapeKey="COMPOSITE"
+          values={values}
+          readOnlyValues={[]}
+          onChange={() => undefined}
+          onDirty={() => undefined}
+          queryContext={{
+            groupWorkspaceKey: 'workspace-test',
+            expectedContextVersion: 1,
+            scopeRef: uuid('00000000-0000-4000-8000-000000000001'),
+          }}
+          version={1}
+          createDraftRowId={prefix => `${prefix}-new`}
+        />
+      </Provider>,
     );
 
     expect(markup).toContain('套餐分组');
@@ -747,6 +877,9 @@ describe('catalog identification and preparation editor boundaries', () => {
     expect(markup).toContain('默认内容');
     const source = readFileSync(new URL('./CatalogItemCompositeEditor.tsx', import.meta.url), 'utf8');
     expect(source).not.toContain('scroll={{x: 1336}}');
-    expect(source).toContain('title="选择套餐内容"');
+    expect(source).toContain('<Row gutter={24} align="top">');
+    expect(source).toContain('<Col flex="280px">');
+    expect(source).toContain("aria-current={active ? 'page' : undefined}");
+    expect(source).not.toContain('CompositeCandidateSelectionModal');
   });
 });

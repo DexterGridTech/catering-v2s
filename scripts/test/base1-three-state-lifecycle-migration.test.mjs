@@ -64,15 +64,25 @@ function assertBusinessChannelCodeAvailabilityPredicates(source) {
   const templateStart = source.indexOf('private void ensureTemplateCodeAvailable(');
   const channelStart = source.indexOf('private void ensureChannelCodeAvailable(');
   const countStart = source.indexOf('private long count(');
+  const projectionStart = source.indexOf('private TemplateCommandProjection readTemplateCommandProjection(');
+  const projectionEnd = source.indexOf('\n    private ChannelRow readChannelRow(', projectionStart);
+  const createStart = source.indexOf('public BusinessChannelReadback.Channel createChannel(');
   assert.ok(templateStart >= 0, 'missing template code availability owner');
   assert.ok(channelStart > templateStart, 'missing channel code availability owner');
   assert.ok(countStart > channelStart, 'missing owner count helper after code availability checks');
+  assert.ok(projectionStart >= 0, 'missing channel availability projection');
+  assert.ok(projectionEnd > projectionStart, 'missing channel availability projection boundary');
+  assert.ok(createStart >= 0, 'missing channel create owner');
   const templateCheck = source.slice(templateStart, channelStart);
   const channelCheck = source.slice(channelStart, countStart);
+  const projection = source.slice(projectionStart, projectionEnd);
+  const create = source.slice(createStart, projectionStart);
   assert.match(templateCheck, /status <> 'VOIDED'/, 'template code reuse excludes VOIDED rows');
-  assert.match(channelCheck, /status <> 'VOIDED'/, 'channel code reuse excludes VOIDED rows');
+  assert.match(projection, /channel\.status <> 'VOIDED'/, 'channel code reuse excludes VOIDED rows');
+  assert.match(projection, /channel_code_in_use/, 'channel availability is part of the locked template projection');
   assert.match(templateCheck, /DUPLICATE_CODE/, 'template duplicate remains typed');
   assert.match(channelCheck, /DUPLICATE_CODE/, 'channel duplicate remains typed');
+  assert.match(create, /ensureChannelCodeAvailable\(template\.channelCodeInUse\(\)\)/);
 }
 
 const EXPECTED_DUPLICATE_LABELS = [

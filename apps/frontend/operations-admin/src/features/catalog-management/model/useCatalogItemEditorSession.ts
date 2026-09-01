@@ -24,20 +24,20 @@ import {
 } from './catalogItemEditorDraftAdapters';
 import {buildCatalogItemSaveRequest} from './catalogItemSaveRequest';
 import {catalogUiProblemFeedback} from './catalogUiProblemFeedback';
+import {catalogEditorTabIsAllowed} from './catalogTabLabels';
 import {useCatalogItemDraft} from './useCatalogItemDraft';
 
 type Props = {
   itemCode?: string;
   scopeRef?: string;
   brandRef?: string;
-  onDraftDiagnostic?: (event: {phase: string; outcome: string; itemCode?: string}) => void;
 };
 
 /**
- * The single editor-session owner for server reads and the recoverable whole-item draft.
+ * The single editor-session owner for server reads and the in-memory whole-item draft.
  * It deliberately owns no drawer/section/modal state and renders no JSX.
  */
-export function useCatalogItemEditorSession({itemCode, scopeRef, brandRef, onDraftDiagnostic}: Props) {
+export function useCatalogItemEditorSession({itemCode, scopeRef, brandRef}: Props) {
   const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
   const detailRequest = useMemo(
     () =>
@@ -67,13 +67,7 @@ export function useCatalogItemEditorSession({itemCode, scopeRef, brandRef, onDra
   const manifest = manifestQuery.currentData?.data;
   const mediaLimits = useMemo(() => decodeCatalogMediaLimits(manifest), [manifest]);
   const draft = useCatalogItemDraft<CatalogItemDraftSnapshot>({
-    scopeRef,
-    brandRef,
-    itemCode,
-    baselineVersion: detail?.item.version,
-    open: Boolean(itemCode),
     initialPayload: emptyCatalogItemDraftSnapshot(),
-    onDiagnostic: onDraftDiagnostic,
   });
   const replaceDraft = draft.replace;
   const initializedDraftItem = useRef<string | undefined>(undefined);
@@ -126,10 +120,9 @@ export function useCatalogItemEditorSession({itemCode, scopeRef, brandRef, onDra
         });
         return {kind: 'SKIPPED' as const};
       }
-      const firstVisibleTab = detail.tabs.find(tab => tab.visible)?.tabKey;
-      const nextActiveTab = detail.tabs.some(tab => tab.tabKey === activeTab && tab.visible)
-        ? activeTab
-        : (firstVisibleTab ?? 'basic');
+      const editorTabs = detail.tabs.filter(tab => tab.visible && catalogEditorTabIsAllowed(tab.tabKey));
+      const firstVisibleTab = editorTabs[0]?.tabKey;
+      const nextActiveTab = editorTabs.some(tab => tab.tabKey === activeTab) ? activeTab : (firstVisibleTab ?? 'basic');
       const imageRefs = catalogDetailImageRefs(detail.item);
       replaceDraft({
         mode: 'edit',

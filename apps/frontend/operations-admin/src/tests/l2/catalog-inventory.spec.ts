@@ -1594,7 +1594,7 @@ async function confirmCatalogLifecycle(page: Page, label: string, facts: OwnerCa
   const dialog = page.getByRole('dialog').filter({hasText: label}).last();
   await expect(dialog).toBeVisible();
   const confirm = await requireControl(page, 'CATALOG_LIFECYCLE_CONFIRM', facts);
-  await expect(confirm).toHaveAccessibleName(new RegExp(`确认${label}|${label}并继续重建`));
+  await expect(confirm).toHaveAccessibleName(`确认${label}`);
   await confirm.click();
 }
 
@@ -2695,7 +2695,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       const governanceFailureDrawer = await openCatalogItem(page, facts, 'CATALOG_ITEM_VIEW_DRAWER');
       await openTab(governanceFailureDrawer, 'governance');
       await openCatalogStatusActions(page, facts);
-      const governanceAction = page.getByTestId(catalogTestIds.static.itemVoidAndRebuild);
+      const governanceAction = page.getByTestId(catalogTestIds.static.itemVoid);
       await expect(governanceAction).toHaveCount(0);
       const blockedReason = await requireControl(page, 'CATALOG_ITEM_VOID_BLOCK_REASONS', facts);
       await expect(blockedReason).toContainText('被其他商品使用');

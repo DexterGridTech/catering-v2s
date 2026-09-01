@@ -1,6 +1,6 @@
 import {Space, Tabs, Tooltip, Typography} from 'antd';
 import type {CatalogDetail} from '../model/catalogModel';
-import {catalogEditorTabLabel} from '../model/catalogTabLabels';
+import {catalogEditorTabIsAllowed, catalogEditorTabLabel} from '../model/catalogTabLabels';
 import {draftSection} from '../model/catalogItemEditorDraftAdapters';
 import type {CatalogItemDraftSectionState} from '../model/useCatalogItemDraft';
 import type {CatalogItemEditorSectionProps} from './CatalogItemEditorSectionProps';
@@ -30,7 +30,7 @@ export function CatalogItemEditorTabs({
       activeKey={activeTab}
       onChange={onActiveTabChange}
       items={detail.tabs
-        .filter(tab => tab.visible)
+        .filter(tab => tab.visible && catalogEditorTabIsAllowed(tab.tabKey))
         .map(tab => ({
           key: tab.tabKey,
           label:

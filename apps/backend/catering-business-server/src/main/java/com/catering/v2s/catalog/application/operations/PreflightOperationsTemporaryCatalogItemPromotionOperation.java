@@ -1,5 +1,6 @@
 package com.catering.v2s.catalog.application.operations;
 
+import com.catering.v2s.app.edge.generated.wire.CatalogInventoryWireEnums;
 import com.catering.v2s.app.edge.generated.wire.TemporaryPromotionPreflight;
 import com.catering.v2s.app.edge.generated.wire.TemporaryPromotionPreflightRequest;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
@@ -81,7 +82,10 @@ public class PreflightOperationsTemporaryCatalogItemPromotionOperation {
                         value.sourceVersion(),
                         value.formalCodeAvailable(),
                         value.requiredFields(),
-                        value.blockedReasons(),
+                        value.blockedReasons().stream()
+                                .map(reason -> CatalogInventoryWireEnums.TemporaryPromotionBlockingReasonCode.valueOf(
+                                        reason.name()))
+                                .toList(),
                         changes,
                         value.preflightDigest(),
                         value.canPromote()));

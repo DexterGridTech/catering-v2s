@@ -5,10 +5,10 @@ import type {CatalogLibraryKind} from './catalogWorkspaceTask';
  * return token or persisted value: the still-open editor remains their owner.
  */
 export type CatalogEditorChildTask =
-  {kind: 'NONE'} | {kind: 'CONFIG'; library: CatalogLibraryKind; triggerTestId: string};
+  {kind: 'NONE'} | {kind: 'CONFIG'; library: CatalogLibraryKind; triggerTestId: string; parentEntryRef?: string};
 
 export type CatalogEditorChildTaskAction =
-  {type: 'OPEN_CONFIG'; library: CatalogLibraryKind; triggerTestId: string} | {type: 'CLOSE'};
+  {type: 'OPEN_CONFIG'; library: CatalogLibraryKind; triggerTestId: string; parentEntryRef?: string} | {type: 'CLOSE'};
 
 export const initialCatalogEditorChildTask: CatalogEditorChildTask = {kind: 'NONE'};
 
@@ -37,5 +37,10 @@ export function catalogEditorChildTaskReducer(
 ): CatalogEditorChildTask {
   if (action.type === 'CLOSE') return initialCatalogEditorChildTask;
   if (state.kind !== 'NONE') throw new Error(`CATALOG_EDITOR_CHILD_TASK_CLOSE_REQUIRED:${state.kind}`);
-  return {kind: 'CONFIG', library: action.library, triggerTestId: action.triggerTestId};
+  return {
+    kind: 'CONFIG',
+    library: action.library,
+    triggerTestId: action.triggerTestId,
+    ...(action.parentEntryRef ? {parentEntryRef: action.parentEntryRef} : {}),
+  };
 }

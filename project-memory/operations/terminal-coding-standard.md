@@ -12,7 +12,7 @@ consumerFaces: ["all"]
 owners: ["platform","frontend-platform"]
 impacts: ["governance","architecture"]
 triggers: ["task-start","implementation","review"]
-assertions: ["TERMINAL_STANDARD_SINGLE_SOURCE","TERMINAL_STANDARD_POINTERS_ONLY","TERMINAL_NINE_HARD_RULES","TERMINAL_TRIPLE_NAMING_DERIVED","TERMINAL_PORT_REGISTRY_WITH_DEFAULTS"]
+assertions: ["TERMINAL_STANDARD_SINGLE_SOURCE","TERMINAL_STANDARD_POINTERS_ONLY","TERMINAL_TEN_HARD_RULES","TERMINAL_TRIPLE_NAMING_DERIVED","TERMINAL_PORT_REGISTRY_WITH_DEFAULTS","TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README"]
 sourceRefs: ["doc/platform/terminal-coding-standard.md"]
 ---
 
@@ -24,12 +24,12 @@ sourceRefs: ["doc/platform/terminal-coding-standard.md"]
 - `TERMINAL_STANDARD_POINTERS_ONLY`：项目记忆、skill、评审文档**只写"见正本"**，不复述规则内容。
   通用工作纪律（`currentData`/`isFetching`、`initiate` 义务、同一事实一个住址、幂等键、
   否定式全称命题、finding 带业务场景、动笔前查五处）由正本 §0 指针引用前端规范，同样不复述。
-- `TERMINAL_NINE_HARD_RULES`：九条硬规则编号稳定为 `TR-01`…`TR-09`（门的名字、红夹具、
+- `TERMINAL_TEN_HARD_RULES`：十条硬规则编号稳定为 `TR-01`…`TR-10`（门的名字、红夹具、
   review checklist 都引用该编号）：
   reducer 只能 actor 调用 · 「什么都没做」不得返回成功 · 跨包读只走 selector ·
   持久化必须有正反双断言重启测试 · 端口禁 `Record<string,unknown>`/`any` ·
   foundations 不得触达 store/网络/平台 API · 集合先声明形态 ·
-  调试面编译期剔除 · 包的 owner/toolkit 归属与 slice 命名。
+  调试面编译期剔除 · 包的 owner/toolkit 归属与 slice 命名 · **每个包必须有中文 README**。
   ⚠️ **本条只列规则标题，不复述内容** —— 规则细节（含骨架阶段的 `plannedKind` 例外）
   一律以正本为准，避免记忆随规范漂移。
 - `TERMINAL_TRIPLE_NAMING_DERIVED`：目录路径 → `moduleName`（点连）→ npm 包名（连字符 + scope）
@@ -37,3 +37,8 @@ sourceRefs: ["doc/platform/terminal-coding-standard.md"]
 - `TERMINAL_PORT_REGISTRY_WITH_DEFAULTS`：`PlatformPorts` 无可选字段；
   没人注册就用**声明处自带的零依赖默认实例**；默认分「可用」与「不可用（typed 能力不可用）」两类；
   **不得为了让 web 像真机而给默认实现加戏**。
+- `TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README`（`TR-10`）：`apps/terminal/**` 下**每一个 workspace 包**
+  在实施收口时必须交付包根 `README.md`，**中文**，至少覆盖**定位 / 作用 / 结构 / 用法**四项，
+  并有「在这个包上迭代时」一节。**这是所有 TER 包的长期要求，不是某一批的临时动作。**
+  ⚠️ 判据不是"文件存在"：**README 与源码不一致按 finding 处理**，包 review 必须实际读它并对照公开面。
+  细则与反例见正本 `TR-10`；已落地范例是 `apps/terminal/kernel/base/contracts/README.md`。

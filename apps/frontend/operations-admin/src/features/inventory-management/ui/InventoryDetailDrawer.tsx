@@ -1,4 +1,4 @@
-import {Alert, Button, Card, Collapse, Descriptions, Drawer, Empty, Skeleton, Space, Table, Tag} from 'antd';
+import {Alert, Button, Card, Descriptions, Drawer, Empty, Skeleton, Space, Table, Tag} from 'antd';
 import {
   adminWideDetailDescriptionsProps,
   adminWideDrawerSurfaceProps,
@@ -24,12 +24,16 @@ import {
 import {
   envelopeData,
   inventoryConversionLabel,
+  inventoryDeductionTimingLabel,
+  inventoryOperationLabel,
+  inventoryReasonLabel,
+  inventoryReferenceSourceKindLabel,
+  inventoryShapeLabel,
+  inventoryStockStateLabel,
   inventoryAuthorityLabel,
   inventoryUnitLabel,
-  shouldRequestInventoryDiagnostics,
   type CursorPage,
   type InventoryCurrentView,
-  type InventoryDiagnostics,
   type InventoryHistoryEntry,
   type InventoryLedgerEntry,
   type InventoryReference,
@@ -41,7 +45,6 @@ type Props = {
   queryContext: OperationsPageContext;
   onClose: () => void;
 };
-type InventoryZone = 'current' | 'changes' | 'history' | 'references' | 'ledger' | 'diagnostics';
 
 function ZoneProblem({title, onRetry}: {title: string; onRetry: () => void}) {
   return (
@@ -60,7 +63,6 @@ function ZoneProblem({title, onRetry}: {title: string; onRetry: () => void}) {
 
 export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose}: Props) {
   const [action, setAction] = useState<InventoryActionKind>();
-  const [expandedZones, setExpandedZones] = useState<string[]>(['current']);
   const historyCursorState = useCursorStack({resetKey: targetRef ?? ''});
   const referenceCursorState = useCursorStack({resetKey: targetRef ?? ''});
   const ledgerCursorState = useCursorStack({resetKey: targetRef ?? ''});
@@ -69,15 +71,9 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
   const contentTabRefreshVersion = useRefreshVersion(operationsContentTabRefreshSignal);
   useOverlayLock(open);
   useEffect(() => {
-    setExpandedZones(['current']);
     setAction(undefined);
     actionTriggerRef.current = null;
   }, [targetRef]);
-  const zoneLoaded = (zone: InventoryZone) => (zone === 'current' ? open : open && expandedZones.includes(zone));
-  const historyLoaded = zoneLoaded('history');
-  const referencesLoaded = zoneLoaded('references');
-  const ledgerLoaded = zoneLoaded('ledger');
-  const diagnosticsLoaded = zoneLoaded('diagnostics');
   const path = targetRef ? {targetRef: wireUuid(targetRef)} : undefined;
   const historyCursor = historyCursorState.cursor ?? '';
   const referenceCursor = referenceCursorState.cursor ?? '';
@@ -93,7 +89,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
           historyCursor ? {query: {pageSize: 20, cursor: historyCursor}} : {query: {pageSize: 20}},
         )
       : skipToken,
-    {skip: !zoneLoaded('history')},
+    {skip: !open},
   );
   const references = operationsRtk.useGetOperationsInventoryTargetConsumptionReferencesQuery(
     path
@@ -102,7 +98,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
           referenceCursor ? {query: {pageSize: 20, cursor: referenceCursor}} : {query: {pageSize: 20}},
         )
       : skipToken,
-    {skip: !zoneLoaded('references')},
+    {skip: !open},
   );
   const ledger = operationsRtk.useGetOperationsInventoryTargetLedgerQuery(
     path
@@ -111,44 +107,25 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
           ledgerCursor ? {query: {pageSize: 20, cursor: ledgerCursor}} : {query: {pageSize: 20}},
         )
       : skipToken,
-    {skip: !zoneLoaded('ledger')},
-  );
-  const diagnostics = operationsRtk.useGetOperationsInventoryTargetDiagnosticsQuery(
-    path ? catalogInventoryRtkRequest.getOperationsInventoryTargetDiagnostics(path) : skipToken,
-    {skip: !shouldRequestInventoryDiagnostics(diagnosticsLoaded)},
+    {skip: !open},
   );
   const refetchCurrent = current.refetch;
   const refetchHistory = history.refetch;
   const refetchReferences = references.refetch;
   const refetchLedger = ledger.refetch;
-  const refetchDiagnostics = diagnostics.refetch;
   useEffect(() => {
     if (!open || contentTabRefreshVersion === 0) return;
-    // Re-read only the zones already open. Pagination cursors and action-modal
-    // form state remain untouched, so a content refresh cannot discard edits.
+    // Every detail zone is visible. Re-read all of them while preserving
+    // pagination cursors and action-modal form state.
     void refetchCurrent();
-    if (historyLoaded) void refetchHistory();
-    if (referencesLoaded) void refetchReferences();
-    if (ledgerLoaded) void refetchLedger();
-    if (diagnosticsLoaded) void refetchDiagnostics();
-  }, [
-    contentTabRefreshVersion,
-    diagnosticsLoaded,
-    historyLoaded,
-    ledgerLoaded,
-    open,
-    refetchCurrent,
-    refetchDiagnostics,
-    refetchHistory,
-    refetchLedger,
-    refetchReferences,
-    referencesLoaded,
-  ]);
+    void refetchHistory();
+    void refetchReferences();
+    void refetchLedger();
+  }, [contentTabRefreshVersion, open, refetchCurrent, refetchHistory, refetchLedger, refetchReferences]);
   const currentView = envelopeData<InventoryCurrentView>(current.currentData);
   const historyPage = envelopeData<CursorPage<InventoryHistoryEntry>>(history.currentData);
   const referencePage = envelopeData<CursorPage<InventoryReference>>(references.currentData);
   const ledgerPage = envelopeData<CursorPage<InventoryLedgerEntry>>(ledger.currentData);
-  const diagnosticsView = envelopeData<InventoryDiagnostics>(diagnostics.currentData);
   const periodChanges = useMemo(() => {
     if (!currentView) return [];
     return [
@@ -170,7 +147,6 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
     actionTriggerRef.current = trigger;
     setAction(nextAction);
   };
-  const handleZoneChange = (keys: string | string[]) => setExpandedZones(Array.isArray(keys) ? keys : [keys]);
   const title = currentView ? (
     <Space size={4}>
       库存对象详情：
@@ -186,7 +162,6 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
   const zoneItems = [
     {
       key: 'current',
-      label: '① 当前状态',
       children: (
         <Card size="small" title="① 当前状态" {...testId('inventory-zone-current')}>
           <Space direction="vertical" size={12} style={{display: 'flex'}}>
@@ -212,7 +187,11 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                     '非 SKU 对象'
                   ),
                 },
-                {key: 'shape', label: '对象形态', children: currentView?.target.productShape},
+                {
+                  key: 'shape',
+                  label: '对象形态',
+                  children: inventoryShapeLabel(currentView?.target.productShape),
+                },
                 {
                   key: 'balance',
                   label: '当前库存',
@@ -238,7 +217,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                               : 'green'
                         }
                       >
-                        {currentView.stockState}
+                        {inventoryStockStateLabel(currentView.stockState)}
                       </Tag>
                       {currentView.stale && <Tag>数据陈旧</Tag>}
                       {currentView.unknown && <Tag>未知</Tag>}
@@ -274,9 +253,13 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                 pagination={false}
                 dataSource={currentView.recentChanges}
                 columns={[
-                  {title: '最近变化', dataIndex: 'changeType'},
+                  {
+                    title: '最近变化',
+                    dataIndex: 'changeType',
+                    render: (value: string) => inventoryOperationLabel(value),
+                  },
                   {title: '数量', dataIndex: 'quantity'},
-                  {title: '来源', dataIndex: 'source'},
+                  {title: '来源', dataIndex: 'source', render: (value: string) => inventoryOperationLabel(value)},
                   {title: '时间', dataIndex: 'occurredAt', render: (value: number) => new Date(value).toLocaleString()},
                 ]}
               />
@@ -289,7 +272,6 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
     },
     {
       key: 'changes',
-      label: '② 库存变化',
       children: (
         <Card size="small" title="② 库存变化" {...testId('inventory-zone-changes')}>
           <Space direction="vertical" size={12} style={{display: 'flex'}}>
@@ -313,7 +295,6 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
     },
     {
       key: 'history',
-      label: '③ 盘点与库存增加历史',
       children: (
         <Card size="small" title="③ 盘点与库存增加历史" {...testId('inventory-zone-business-history')}>
           {history.error ? (
@@ -330,7 +311,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                 pagination={false}
                 dataSource={historyPage.entries}
                 columns={[
-                  {title: '动作', dataIndex: 'action'},
+                  {title: '动作', dataIndex: 'action', render: (value: string) => inventoryOperationLabel(value)},
                   {title: '数量', dataIndex: 'quantity'},
                   {title: '变更前', dataIndex: 'beforeQuantity'},
                   {title: '变更后', dataIndex: 'afterQuantity'},
@@ -349,7 +330,6 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
     },
     {
       key: 'references',
-      label: '④ 关联商品与扣减规则',
       children: (
         <Card size="small" title="④ 关联商品与扣减规则" {...testId('inventory-zone-consumption-references')}>
           {references.error ? (
@@ -368,7 +348,12 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                 columns={[
                   {
                     title: '来源对象',
-                    render: (_, row) => <NameCodeText name={row.sourceName ?? row.sourceKind} code={row.sourceCode} />,
+                    render: (_, row) => (
+                      <NameCodeText
+                        name={row.sourceName || inventoryReferenceSourceKindLabel(row.sourceKind)}
+                        code={row.sourceCode}
+                      />
+                    ),
                   },
                   {
                     title: '来源层级',
@@ -382,8 +367,11 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                       </>
                     ),
                   },
-                  {title: '时机', dataIndex: 'timing'},
-                  {title: '状态', dataIndex: 'status'},
+                  {
+                    title: '时机',
+                    dataIndex: 'timing',
+                    render: (value: string) => inventoryDeductionTimingLabel(value),
+                  },
                 ]}
               />
               <CursorPagination
@@ -398,7 +386,6 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
     },
     {
       key: 'ledger',
-      label: '⑤ 全部变化记录',
       children: (
         <Card size="small" title="⑤ 全部变化记录" {...testId('inventory-zone-ledger')}>
           {ledger.error ? (
@@ -415,8 +402,8 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                 pagination={false}
                 dataSource={ledgerPage.entries}
                 columns={[
-                  {title: '来源', dataIndex: 'source'},
-                  {title: '原因', dataIndex: 'reasonCode'},
+                  {title: '来源', dataIndex: 'source', render: (value: string) => inventoryOperationLabel(value)},
+                  {title: '原因', dataIndex: 'reasonCode', render: (value: string) => inventoryReasonLabel(value)},
                   {title: '变更前', dataIndex: 'beforeQuantity'},
                   {title: '变化量', dataIndex: 'changeQuantity'},
                   {title: '变更后', dataIndex: 'afterQuantity'},
@@ -433,46 +420,6 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
         </Card>
       ),
     },
-    ...[
-      {
-        key: 'diagnostics',
-        label: '⑥ 高级诊断',
-        children: (
-          <Card size="small" title="⑥ 高级诊断" {...testId('inventory-zone-diagnostics')}>
-            {diagnostics.error ? (
-              <ZoneProblem title="高级诊断" onRetry={() => void diagnostics.refetch()} />
-            ) : diagnostics.isFetching && !diagnostics.currentData ? (
-              <Skeleton active />
-            ) : !diagnosticsView ? (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无诊断数据" />
-            ) : (
-              <>
-                {diagnosticsView.warnings.length > 0 && (
-                  <Alert
-                    type="warning"
-                    showIcon
-                    title="诊断提示"
-                    description={diagnosticsView.warnings.map(entry => `${entry.code}：${entry.message}`).join('；')}
-                    style={{marginBottom: 12}}
-                  />
-                )}
-                <Table
-                  size="small"
-                  rowKey="queryName"
-                  pagination={false}
-                  dataSource={diagnosticsView.queries}
-                  columns={[
-                    {title: '查询', dataIndex: 'queryName'},
-                    {title: '数据库操作数', dataIndex: 'databaseOperationCount'},
-                    {title: '耗时(ms)', dataIndex: 'durationMillis'},
-                  ]}
-                />
-              </>
-            )}
-          </Card>
-        ),
-      },
-    ],
   ];
 
   return (
@@ -531,7 +478,13 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
           />
         )}
         {!identityBlocked && currentView && (
-          <Collapse activeKey={expandedZones} onChange={handleZoneChange} items={zoneItems} />
+          <Space direction="vertical" size={12} style={{display: 'flex'}}>
+            {zoneItems.map(item => (
+              <div key={item.key} style={{width: '100%'}}>
+                {item.children}
+              </div>
+            ))}
+          </Space>
         )}
       </Drawer>
       <InventoryActionModal

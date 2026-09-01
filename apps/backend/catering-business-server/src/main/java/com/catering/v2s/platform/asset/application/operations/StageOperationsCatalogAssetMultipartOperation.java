@@ -1,6 +1,7 @@
 package com.catering.v2s.platform.asset.application.operations;
 
 import com.catering.v2s.app.edge.generated.wire.CatalogAssetStageRequest;
+import com.catering.v2s.app.edge.generated.wire.CatalogInventoryWireEnums;
 import com.catering.v2s.app.edge.generated.wire.StagedCatalogAsset;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
@@ -53,7 +54,7 @@ public class StageOperationsCatalogAssetMultipartOperation {
                 new StagedCatalogAsset.Result(
                         readback.assetRef(),
                         readback.bindGrant(),
-                        readback.status(),
+                        CatalogInventoryWireEnums.AssetStatus.valueOf(readback.status()),
                         readback.mediaType(),
                         readback.contentDigest(),
                         null,

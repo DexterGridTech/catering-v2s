@@ -79,6 +79,33 @@ const APPROVED = [
     futureAcceptanceEvidence: "schema-scoped credential design、权限矩阵、跨 schema command/read/FK 回归",
     decisionSource: [{"path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md", "anchor": "## 11. HANDOFF 初始生产化欠账"}],
   },
+  {
+    id: "DIAGNOSTIC_RETENTION_POLICY",
+    currentBoundary: "S2 诊断事件已结构化输出，但保留期未按部署环境裁定",
+    deferredReason: "当前仍是本地/受管非生产诊断边界",
+    risk: "无界增长或过短保留导致缺证",
+    activationTrigger: "NON_LOCAL_OBSERVABILITY_DEPLOYMENT_ENABLED",
+    futureAcceptanceEvidence: "环境级保留策略、清理证明、故障回放证据",
+    decisionSource: [{"path": "doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md", "anchor": "## D1 ｜常驻可观测性架构"}],
+  },
+  {
+    id: "DIAGNOSTIC_ACCESS_SUBJECTS",
+    currentBoundary: "S2 诊断日志访问主体与权限未按部署环境裁定",
+    deferredReason: "当前无生产日志平台与访问角色",
+    risk: "敏感诊断被越权读取",
+    activationTrigger: "NON_LOCAL_OBSERVABILITY_DEPLOYMENT_ENABLED",
+    futureAcceptanceEvidence: "访问主体、最小权限、审计与撤销证据",
+    decisionSource: [{"path": "doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md", "anchor": "## D1 ｜常驻可观测性架构"}],
+  },
+  {
+    id: "DIAGNOSTIC_COST_SAMPLING",
+    currentBoundary: "S2 诊断成本采样/限流未按部署流量裁定",
+    deferredReason: "当前无生产流量，静态事件保持常开",
+    risk: "高流量下日志成本不可控",
+    activationTrigger: "PRODUCTION_TRAFFIC_ENABLED",
+    futureAcceptanceEvidence: "采样策略、成本基线、关键失败不丢失与恢复证据",
+    decisionSource: [{"path": "doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md", "anchor": "## D1 ｜常驻可观测性架构"}],
+  },
 ];
 
 function assert(condition, code, details = "") {
@@ -128,7 +155,7 @@ function validateDecisionSources(row, {verifySources = true} = {}) {
 }
 
 function validateRows(rows, {verifySources = true, compareApproved = true} = {}) {
-  assert(rows.length === 7, "HANDOFF_ROW_COUNT_INVALID");
+  assert(rows.length === 10, "HANDOFF_ROW_COUNT_INVALID");
   const ids = rows.map(({id}) => id);
   assert(new Set(ids).size === ids.length, "HANDOFF_ID_DUPLICATE");
   for (const row of rows) {
@@ -160,7 +187,7 @@ function expectFail(name, mutate, expectedCode, {verifySources = false} = {}) {
 
 function selfTest() {
   validateRows(clone(APPROVED), {verifySources: true, compareApproved: true});
-  process.stdout.write("FIXTURE=seven-approved-rows; EXPECTED=PASS; ACTUAL=PASS\n");
+  process.stdout.write("FIXTURE=ten-approved-rows; EXPECTED=PASS; ACTUAL=PASS\n");
   expectFail("vague-trigger", (rows) => { rows[0].activationTrigger = "WHEN_NEEDED"; }, "HANDOFF_APPROVED_DENOMINATOR_MISMATCH");
   expectFail("compound-trigger", (rows) => { rows[0].activationTrigger = "CI_PROVIDER_SELECTED_AND_ENABLED"; }, "HANDOFF_TRIGGER_COMPOUND_FORBIDDEN");
   expectFail("missing-threshold-trigger", (rows) => { rows[0].activationTrigger = "TEAM_GT_N"; }, "HANDOFF_APPROVED_DENOMINATOR_MISMATCH");

@@ -45,15 +45,13 @@ public class OrganizationCommandService
     }
 
     /** Compatibility constructor for owner tests that inject a workspace-presence predicate. */
-    public OrganizationCommandService(JdbcTemplate jdbcTemplate, BiPredicate<UUID, String> workspaces, TimeProvider time) {
+    public OrganizationCommandService(
+            JdbcTemplate jdbcTemplate, BiPredicate<UUID, String> workspaces, TimeProvider time) {
         this(jdbcTemplate, time, null, new CommercialGroupCommandReceiptService(jdbcTemplate, time));
     }
 
     public OrganizationCommandService(
-            JdbcTemplate jdbcTemplate,
-            Object workspaces,
-            TimeProvider time,
-            ExtensionDefinitionLookup definitions) {
+            JdbcTemplate jdbcTemplate, Object workspaces, TimeProvider time, ExtensionDefinitionLookup definitions) {
         this(jdbcTemplate, time, definitions, new CommercialGroupCommandReceiptService(jdbcTemplate, time));
     }
 
@@ -342,15 +340,7 @@ public class OrganizationCommandService
             CommercialGroupReadback current) {
         ExtensionValues extensions =
                 extensionValues(workspaceUuid, groupWorkspaceKey, valuesJson(current.extensionValues()), requested);
-        return updateOnce(
-                workspaceUuid,
-                groupWorkspaceKey,
-                code,
-                name,
-                expectedVersion,
-                extensions,
-                actor,
-                current);
+        return updateOnce(workspaceUuid, groupWorkspaceKey, code, name, expectedVersion, extensions, actor, current);
     }
 
     private CommercialGroupReadback updateOnce(
@@ -364,15 +354,7 @@ public class OrganizationCommandService
             CommercialGroupReadback current) {
         ExtensionValues extensions =
                 extensionValues(workspaceUuid, groupWorkspaceKey, valuesJson(current.extensionValues()), submission);
-        return updateOnce(
-                workspaceUuid,
-                groupWorkspaceKey,
-                code,
-                name,
-                expectedVersion,
-                extensions,
-                actor,
-                current);
+        return updateOnce(workspaceUuid, groupWorkspaceKey, code, name, expectedVersion, extensions, actor, current);
     }
 
     /** The owner write returns the complete row so its authoritative readback does not reread the group. */

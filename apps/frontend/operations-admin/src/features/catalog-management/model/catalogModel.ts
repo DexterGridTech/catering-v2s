@@ -14,13 +14,52 @@ import type {
   Uuid,
 } from '../../../app/api/generated/catalog-inventory-edge';
 
+/** Lifecycle values are closed by the catalog owner and by the wire contract. */
+export type CatalogLifecycleStatus = 'ENABLED' | 'DISABLED' | 'VOIDED';
+
+export type CatalogVoidBlockReasonCode =
+  | 'HAS_SKUS'
+  | 'HAS_IDENTIFIERS'
+  | 'HAS_PRODUCTION_TAG'
+  | 'USED_BY_OTHER_ITEM'
+  | 'USED_BY_INVENTORY_BOM'
+  | 'ALREADY_VOIDED'
+  | 'USED_BY_PACKAGE';
+
+export function catalogLifecycleStatus(value: unknown): CatalogLifecycleStatus {
+  const status = typeof value === 'string' ? value : '';
+  if (status === 'ENABLED' || status === 'DISABLED' || status === 'VOIDED') return status;
+  throw new Error('INVALID_CATALOG_LIFECYCLE_STATUS');
+}
+
+function catalogVoidBlockReasonCode(value: JsonValue | undefined): CatalogVoidBlockReasonCode {
+  const reasonCode = text(value);
+  if (
+    reasonCode === 'HAS_SKUS' ||
+    reasonCode === 'HAS_IDENTIFIERS' ||
+    reasonCode === 'HAS_PRODUCTION_TAG' ||
+    reasonCode === 'USED_BY_OTHER_ITEM' ||
+    reasonCode === 'USED_BY_INVENTORY_BOM' ||
+    reasonCode === 'ALREADY_VOIDED' ||
+    reasonCode === 'USED_BY_PACKAGE'
+  )
+    return reasonCode;
+  throw new Error('INVALID_CATALOG_VOID_BLOCK_REASON_CODE');
+}
+
 export type CatalogCategoryPathNode = {categoryRef: Uuid; code: string; name: string};
 export type CatalogTagFact = {tagRef: Uuid; code: string; name: string};
 export type CatalogSpecificationFact = {
   attributeRef: Uuid;
   attributeCode: string;
   attributeName: string;
-  values: Array<{valueRef: Uuid; valueCode: string; valueLabel: string; displayOrder: number; status: string}>;
+  values: Array<{
+    valueRef: Uuid;
+    valueCode: string;
+    valueLabel: string;
+    displayOrder: number;
+    status: CatalogLifecycleStatus;
+  }>;
 };
 export type CatalogBusinessReference = {
   referenceKind: string;
@@ -30,7 +69,7 @@ export type CatalogBusinessReference = {
   direction: string;
 };
 export type CatalogPreparationFacts = {
-  productionTag: {tagRef: Uuid; code: string; name: string; status: string; owner: string} | null;
+  productionTag: {tagRef: Uuid; code: string; name: string; status: CatalogLifecycleStatus; owner: string} | null;
   profile: CatalogPreparationProfile | null;
   skuVariation: {varies: boolean};
 };
@@ -49,14 +88,14 @@ export type CatalogItemSummary = {
   tags: CatalogTagFact[];
   tagRefs: Uuid[];
   shapeKey: string;
-  status: string;
+  status: CatalogLifecycleStatus;
   source: string;
   skuEnabledCount: number;
   skuNonArchivedCount: number;
   skuTotalCount: number;
   specificationFacts: CatalogSpecificationFact[];
   orderOptionFacts: CatalogOrderOptionConfig[];
-  attributeFacts: CatalogAttributeAssignment[];
+  attributeFacts: CatalogAttributeAssignmentReadback[];
   preparationFacts: CatalogPreparationFacts;
   standardSalePrice?: number;
   standardSalePriceMin?: number;
@@ -106,7 +145,7 @@ export function isCatalogBatchRowSelectable(row: Pick<CatalogItemSummary, 'statu
   return row.status !== 'VOIDED' && row.source !== 'TEMPORARY';
 }
 
-export type CatalogDictionaryLabel = {entryRef: Uuid; name: string; status: string};
+export type CatalogDictionaryLabel = {entryRef: Uuid; name: string; status: CatalogLifecycleStatus};
 
 export function decodeCatalogDictionaryLabels(response: CatalogDictionaryView | undefined): CatalogDictionaryLabel[] {
   return (
@@ -124,6 +163,7 @@ export type CatalogNavigation = {
     version: number;
     displayOrder: number;
     count: number;
+    directCount: number;
     countSemantics: 'SELF_ONLY' | 'SELF_AND_DESCENDANTS';
     deletionAvailability: CatalogCategoryDeletionAvailability;
   }>;
@@ -132,7 +172,14 @@ export type CatalogNavigation = {
   /** Enabled catalog tags are a bounded navigation branch, with their matching item counts. */
   tags: Array<{tagRef: Uuid; code: string; name: string; count: number}>;
   /** Production tags are a separate item-level navigation branch; counts are distinct parent products. */
-  productionTags: Array<{tagRef: Uuid; code: string; name: string; status: string; owner: string; count: number}>;
+  productionTags: Array<{
+    tagRef: Uuid;
+    code: string;
+    name: string;
+    status: CatalogLifecycleStatus;
+    owner: string;
+    count: number;
+  }>;
   /** Optional until the navigation owner exposes the unclassified aggregate. */
   uncategorizedCount?: number;
   generation: number;
@@ -181,7 +228,11 @@ export type CatalogVoidAvailability = {
   blockingReferences: Array<{referenceKind: string; referenceRef: Uuid}>;
   dependentFacts: Array<{factKind: string; factRef: Uuid}>;
   /** Owner-backed business facts that explain every disabled void action. */
-  blockingReasons: Array<{label: string; count: number; relatedItemNames: string[]}>;
+  blockingReasons: Array<{
+    reasonCode: CatalogVoidBlockReasonCode;
+    count: number;
+    relatedItemNames: string[];
+  }>;
 };
 
 /** A missing or malformed shape manifest must never enable a local-copy scope. */
@@ -257,7 +308,7 @@ export type CatalogDetailItem = {
   baseMeasureUnitRef: Uuid | null;
   salesUnit: CatalogUnitAssignment | null;
   baseMeasureUnit: CatalogUnitAssignment | null;
-  attributeAssignments: CatalogAttributeAssignment[];
+  attributeAssignments: CatalogAttributeAssignmentReadback[];
   orderOptionConfigs: CatalogOrderOptionConfig[];
   identifiers: CatalogIdentifier[];
   skuVariantDimensions: CatalogSkuVariantDimension[];
@@ -269,9 +320,9 @@ export type CatalogDetailItem = {
   preparationProfile: CatalogPreparationProfile | null;
   specificationFacts: CatalogSpecificationFact[];
   orderOptionFacts: CatalogOrderOptionConfig[];
-  attributeFacts: CatalogAttributeAssignment[];
+  attributeFacts: CatalogAttributeAssignmentReadback[];
   preparationFacts: CatalogPreparationFacts;
-  lifecycle: {status: string; version: number; source: string};
+  lifecycle: {status: CatalogLifecycleStatus; version: number; source: string};
   source: string;
   externalIdentity: CatalogExternalIdentity;
   version: number;
@@ -289,7 +340,13 @@ export type CatalogDetail = {
     direction: string;
   }>;
   inventoryRules: CatalogInventoryRules;
-  productionTags: Array<{code: string; tagRef: Uuid; name: string; status: string; owner: string}>;
+  productionTags: Array<{
+    code: string;
+    tagRef: Uuid;
+    name: string;
+    status: CatalogLifecycleStatus;
+    owner: string;
+  }>;
   compositeGroups: CatalogCompositeGroup[];
   actionAvailability: {
     canEdit: boolean;
@@ -315,6 +372,11 @@ export type CatalogAttributeAssignment = {
   valueType: 'TEXT' | 'SINGLE_SELECT' | 'MULTI_SELECT';
   textValue: string | null;
   optionRefs: Uuid[];
+  /** Present on owner readback; draft payloads intentionally omit this display-only projection. */
+  selectedOptionNames?: string[];
+};
+export type CatalogAttributeAssignmentReadback = CatalogAttributeAssignment & {
+  selectedOptionNames: string[];
 };
 export type CatalogOrderOptionConfig = {
   definitionRef: Uuid;
@@ -367,7 +429,7 @@ export type CatalogCompositeComponent = {
   unit: string;
   default: boolean;
   extraPrice: number | null;
-  status: string;
+  status: CatalogLifecycleStatus;
   displayOrder: number;
 };
 export type CatalogCompositeGroup = {
@@ -409,13 +471,13 @@ export type CatalogSkuListRow = {
     valueCode: string;
     valueLabel: string;
     displayOrder: number;
-    status: string;
+    status: CatalogLifecycleStatus;
   }>;
   standardSalePrice: number | null;
   salesUnit: CatalogUnitAssignment | null;
   baseMeasureUnit: CatalogUnitAssignment | null;
   isDefault: boolean;
-  status: string;
+  status: CatalogLifecycleStatus;
   primaryImageAssetRef: Uuid | null;
   inventoryDeductionSummary: CatalogInventoryDeductionSummary;
   attributeFacts: CatalogSkuAttributeValueRef[];
@@ -479,13 +541,19 @@ export type CatalogSkuAttributeValueRef = {
   valueCode: string;
   valueLabel: string;
   displayOrder: number;
-  status: string;
+  status: CatalogLifecycleStatus;
 };
 export type CatalogSkuVariantDimension = {
   attributeRef: Uuid;
   attributeCode: string;
   attributeName: string;
-  values: Array<{valueRef: Uuid; valueCode: string; valueLabel: string; displayOrder: number; status: string}>;
+  values: Array<{
+    valueRef: Uuid;
+    valueCode: string;
+    valueLabel: string;
+    displayOrder: number;
+    status: CatalogLifecycleStatus;
+  }>;
 };
 export type CatalogSkuRow = {
   productSkuRef: Uuid;
@@ -500,7 +568,7 @@ export type CatalogSkuRow = {
   preparationSource: 'ITEM_DEFAULT' | 'SKU_OVERRIDE';
   standardSalePrice: number | null;
   isDefault: boolean;
-  status: string;
+  status: CatalogLifecycleStatus;
   version: number;
   updatedAt: number;
   mediaRefs: Uuid[];
@@ -962,7 +1030,13 @@ export type CatalogWorkbenchContext = {
   actionAvailability: {canCreate: boolean; canEdit: boolean; canCopy: boolean; reasons: string[]};
 };
 
-export type CopyCandidate = {code: string; name: string; shapeKey: string; status: string; version: number};
+export type CopyCandidate = {
+  code: string;
+  name: string;
+  shapeKey: string;
+  status: CatalogLifecycleStatus;
+  version: number;
+};
 export type BrandCopyScope = {ownerType: string; ownerRef: Uuid; brandRef: Uuid};
 export type CatalogCopyReferenceMapping = {
   objectType: string;
@@ -1215,6 +1289,7 @@ export function decodeNavigation(envelope: CatalogDataEnvelope | undefined): Cat
         version: integer(row.version),
         displayOrder: integer(row.displayOrder),
         count: integer(row.count),
+        directCount: integer(row.directCount),
         countSemantics: row.countSemantics === 'SELF_AND_DESCENDANTS' ? 'SELF_AND_DESCENDANTS' : 'SELF_ONLY',
         deletionAvailability: {
           canDelete: truth(deletion.canDelete),
@@ -1245,7 +1320,7 @@ export function decodeNavigation(envelope: CatalogDataEnvelope | undefined): Cat
       tagRef: readUuid(row.tagRef),
       code: text(row.code),
       name: text(row.name),
-      status: text(row.status),
+      status: catalogLifecycleStatus(row.status),
       owner: text(row.owner),
       count: integer(row.count),
     })),
@@ -1285,13 +1360,13 @@ export function decodeSkuListPage(envelope: CatalogDataEnvelope | undefined): {
         valueCode: text(attribute.valueCode),
         valueLabel: text(attribute.valueLabel),
         displayOrder: integer(attribute.displayOrder),
-        status: text(attribute.status),
+        status: catalogLifecycleStatus(attribute.status),
       })),
       standardSalePrice: row.standardSalePrice === null ? null : (optionalNumber(row.standardSalePrice) ?? null),
       salesUnit: decodeUnitAssignment(row.salesUnit),
       baseMeasureUnit: decodeUnitAssignment(row.baseMeasureUnit),
       isDefault: truth(row.isDefault),
-      status: text(row.status),
+      status: catalogLifecycleStatus(row.status),
       primaryImageAssetRef: readOptionalUuid(row.primaryImageAssetRef) ?? null,
       inventoryDeductionSummary: decodeInventoryDeductionSummary(row.inventoryDeductionSummary),
       attributeFacts: requiredRecordArray(row.attributeFacts, 'attributeFacts', 'CatalogItemSkuPage').map(
@@ -1303,7 +1378,7 @@ export function decodeSkuListPage(envelope: CatalogDataEnvelope | undefined): {
           valueCode: text(attribute.valueCode),
           valueLabel: text(attribute.valueLabel),
           displayOrder: integer(attribute.displayOrder),
-          status: text(attribute.status),
+          status: catalogLifecycleStatus(attribute.status),
         }),
       ),
       preparationFacts: requirePreparationFacts(row.preparationFacts, 'CatalogItemSkuPage'),
@@ -1433,14 +1508,9 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
       baseMeasureUnitRef: readOptionalUuid(item.baseMeasureUnitRef) ?? null,
       salesUnit: decodeUnitAssignment(item.salesUnit),
       baseMeasureUnit: decodeUnitAssignment(item.baseMeasureUnit),
-      attributeAssignments: recordArray(item.attributeAssignments).map(row => ({
-        definitionRef: readUuid(row.definitionRef),
-        code: text(row.code),
-        name: text(row.name),
-        valueType: text(row.valueType) as CatalogAttributeAssignment['valueType'],
-        textValue: optionalText(row.textValue) ?? null,
-        optionRefs: readUuidArray(row.optionRefs),
-      })),
+      attributeAssignments: recordArray(item.attributeAssignments).map(row =>
+        decodeAttributeAssignmentReadback(row, 'detail.item.attributeAssignments'),
+      ),
       orderOptionConfigs: recordArray(item.orderOptionConfigs).map(row => ({
         definitionRef: readUuid(row.definitionRef),
         name: text(row.name),
@@ -1461,14 +1531,9 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
       })),
       specificationFacts: requireSpecificationFacts(item.specificationFacts, 'detail.item.specificationFacts'),
       orderOptionFacts: requireOrderOptionFacts(item.orderOptionFacts, 'detail.item.orderOptionFacts'),
-      attributeFacts: requiredRecordArray(item.attributeFacts, 'attributeFacts', 'detail.item').map(row => ({
-        definitionRef: readUuid(row.definitionRef),
-        code: text(row.code),
-        name: text(row.name),
-        valueType: text(row.valueType) as CatalogAttributeAssignment['valueType'],
-        textValue: row.textValue === null ? null : (optionalText(row.textValue) ?? null),
-        optionRefs: readUuidArray(row.optionRefs),
-      })),
+      attributeFacts: requiredRecordArray(item.attributeFacts, 'attributeFacts', 'detail.item').map(row =>
+        decodeAttributeAssignmentReadback(row, 'detail.item.attributeFacts'),
+      ),
       preparationFacts: requirePreparationFacts(item.preparationFacts, 'detail.item.preparationFacts'),
       identifiers: decodeIdentifiers(item.identifiers),
       skuVariantDimensions: itemSkuDimensions,
@@ -1479,7 +1544,7 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
       compositeGroups: itemCompositeGroups.length ? itemCompositeGroups : rootCompositeGroups,
       preparationProfile: decodePreparationProfile(item.preparationProfile),
       lifecycle: {
-        status: text(lifecycle.status) || text(item.status),
+        status: catalogLifecycleStatus(lifecycle.status || item.status),
         version: integer(lifecycle.version) || integer(item.version),
         source: text(lifecycle.source) || text(item.source),
       },
@@ -1506,7 +1571,7 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
       code: text(row.code),
       tagRef: readUuid(row.tagRef),
       name: text(row.name),
-      status: text(row.status),
+      status: catalogLifecycleStatus(row.status),
       owner: text(row.owner),
     })),
     compositeGroups: rootCompositeGroups.length ? rootCompositeGroups : itemCompositeGroups,
@@ -1558,7 +1623,7 @@ export function decodeCandidates(envelope: CatalogInventoryEnvelope | undefined)
     code: text(row.code),
     name: text(row.name),
     shapeKey: text(row.shapeKey),
-    status: text(row.status),
+    status: catalogLifecycleStatus(row.status),
     version: integer(row.version),
   }));
 }
@@ -1697,21 +1762,16 @@ function decodeItemSummary(row: Record<string, JsonValue>): CatalogItemSummary {
     tags: requireCatalogTags(row.tags, 'itemPage.item.tags'),
     tagRefs: readUuidArray(row.tagRefs),
     shapeKey: text(row.shapeKey),
-    status: text(row.status),
+    status: catalogLifecycleStatus(row.status),
     source: text(row.source),
     skuEnabledCount: integer(row.skuEnabledCount),
     skuNonArchivedCount: integer(row.skuNonArchivedCount),
     skuTotalCount: integer(row.skuTotalCount),
     specificationFacts: requireSpecificationFacts(row.specificationFacts, 'itemPage.item.specificationFacts'),
     orderOptionFacts: requireOrderOptionFacts(row.orderOptionFacts, 'itemPage.item.orderOptionFacts'),
-    attributeFacts: requiredRecordArray(row.attributeFacts, 'attributeFacts', 'itemPage.item').map(entry => ({
-      definitionRef: readUuid(entry.definitionRef),
-      code: text(entry.code),
-      name: text(entry.name),
-      valueType: text(entry.valueType) as CatalogAttributeAssignment['valueType'],
-      textValue: entry.textValue === null ? null : (optionalText(entry.textValue) ?? null),
-      optionRefs: readUuidArray(entry.optionRefs),
-    })),
+    attributeFacts: requiredRecordArray(row.attributeFacts, 'attributeFacts', 'itemPage.item').map(entry =>
+      decodeAttributeAssignmentReadback(entry, 'itemPage.item.attributeFacts'),
+    ),
     preparationFacts: requirePreparationFacts(row.preparationFacts, 'itemPage.item.preparationFacts'),
     standardSalePrice: optionalNumber(row.standardSalePrice),
     standardSalePriceMin: optionalNumber(row.standardSalePriceMin),
@@ -1821,7 +1881,7 @@ function decodeSkuVariantDimensions(value: JsonValue | undefined): CatalogSkuVar
       valueCode: text(entry.valueCode),
       valueLabel: text(entry.valueLabel),
       displayOrder: integer(entry.displayOrder),
-      status: text(entry.status),
+      status: catalogLifecycleStatus(entry.status),
     })),
   }));
 }
@@ -1876,7 +1936,7 @@ function decodeSpecificationFacts(value: JsonValue | undefined): CatalogSpecific
       valueCode: text(entry.valueCode),
       valueLabel: text(entry.valueLabel),
       displayOrder: integer(entry.displayOrder),
-      status: text(entry.status),
+      status: catalogLifecycleStatus(entry.status),
     })),
   }));
 }
@@ -1893,7 +1953,7 @@ function decodePreparationFacts(value: JsonValue | undefined): CatalogPreparatio
         tagRef: readUuid(productionTagRow.tagRef),
         code: text(productionTagRow.code),
         name: text(productionTagRow.name),
-        status: text(productionTagRow.status),
+        status: catalogLifecycleStatus(productionTagRow.status),
         owner: text(productionTagRow.owner),
       }
     : null;
@@ -1968,12 +2028,12 @@ export function decodeCatalogVoidAvailability(value: JsonValue | undefined): Cat
   )
     throw new Error('INVALID_CATALOG_VOID_AVAILABILITY');
   const blockingReasons = recordArray(availability.blockingReasons).map(entry => ({
-    label: text(entry.label),
+    reasonCode: catalogVoidBlockReasonCode(entry.reasonCode),
     count: integer(entry.count),
     relatedItemNames: recordArray(entry.relatedItemNames).map(text).filter(Boolean),
   }));
   if (
-    blockingReasons.some(reason => !reason.label.trim() || reason.count <= 0) ||
+    blockingReasons.some(reason => !reason.reasonCode.trim() || reason.count <= 0) ||
     (availability.canVoid === false && blockingReasons.length === 0)
   )
     throw new Error('INVALID_CATALOG_VOID_AVAILABILITY');
@@ -2010,7 +2070,7 @@ function decodeSkuRows(value: JsonValue | undefined): CatalogSkuRow[] {
       valueCode: text(entry.valueCode),
       valueLabel: text(entry.valueLabel),
       displayOrder: integer(entry.displayOrder),
-      status: text(entry.status),
+      status: catalogLifecycleStatus(entry.status),
     })),
     identifiers: decodeIdentifiers(row.identifiers),
     preparationOverride: decodePreparationOverride(row.preparationOverride),
@@ -2018,7 +2078,7 @@ function decodeSkuRows(value: JsonValue | undefined): CatalogSkuRow[] {
     preparationSource: text(row.preparationSource) as CatalogSkuRow['preparationSource'],
     standardSalePrice: typeof row.standardSalePrice === 'number' ? row.standardSalePrice : null,
     isDefault: truth(row.isDefault),
-    status: text(row.status),
+    status: catalogLifecycleStatus(row.status),
     version: integer(row.version),
     updatedAt: integer(row.updatedAt),
     mediaRefs: readUuidArray(row.mediaRefs),
@@ -2074,7 +2134,7 @@ function decodeCompositeGroups(value: JsonValue | undefined): CatalogCompositeGr
       unit: text(entry.unit),
       default: truth(entry.default),
       extraPrice: typeof entry.extraPrice === 'number' ? entry.extraPrice : null,
-      status: text(entry.status),
+      status: catalogLifecycleStatus(entry.status),
       displayOrder: integer(entry.displayOrder),
     })),
   }));
@@ -2142,4 +2202,28 @@ function truth(value: JsonValue | undefined): boolean {
 }
 function textArray(value: JsonValue | undefined): string[] {
   return Array.isArray(value) ? value.flatMap(entry => (typeof entry === 'string' ? [entry] : [])) : [];
+}
+
+function requiredTextArray(value: JsonValue | undefined, field: string, boundary: string): string[] {
+  if (!Array.isArray(value)) throw new Error(`CATALOG_REQUIRED_FIELD_MISSING:${boundary}.${field}`);
+  return textArray(value);
+}
+
+function decodeAttributeAssignmentReadback(
+  row: Record<string, JsonValue>,
+  boundary: string,
+): CatalogAttributeAssignmentReadback {
+  const optionRefs = readUuidArray(row.optionRefs);
+  const selectedOptionNames = requiredTextArray(row.selectedOptionNames, 'selectedOptionNames', boundary);
+  if (optionRefs.length !== selectedOptionNames.length)
+    throw new Error(`CATALOG_ATTRIBUTE_OPTION_FACT_MISMATCH:${boundary}`);
+  return {
+    definitionRef: readUuid(row.definitionRef),
+    code: text(row.code),
+    name: text(row.name),
+    valueType: text(row.valueType) as CatalogAttributeAssignment['valueType'],
+    textValue: row.textValue === null ? null : (optionalText(row.textValue) ?? null),
+    optionRefs,
+    selectedOptionNames,
+  };
 }

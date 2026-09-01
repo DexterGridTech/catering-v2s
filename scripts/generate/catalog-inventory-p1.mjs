@@ -656,10 +656,38 @@ const enumLabels = {
 const enumLabelEntries = Object.entries(enumLabels).flatMap(([kind, values]) =>
   Object.entries(values).map(([value, label]) => ({kind, value, label})),
 );
+// Closed values are protocol facts.  They are kept separate from display
+// labels so a user-facing dictionary can never become the source of a wire
+// value, and so code-defined reasons do not leak into the manifest as copy.
+const closedEnumValues = {
+  catalogVoidBlockingReasonCode: [
+    'HAS_SKUS',
+    'HAS_IDENTIFIERS',
+    'HAS_PRODUCTION_TAG',
+    'USED_BY_OTHER_ITEM',
+    'USED_BY_INVENTORY_BOM',
+    'ALREADY_VOIDED',
+    'USED_BY_PACKAGE',
+  ],
+  temporaryPromotionBlockingReasonCode: [
+    'NOT_TEMPORARY_ITEM',
+    'VERSION_CONFLICT',
+    'SHAPE_DISABLED',
+    'MATERIAL_ROLE_REQUIRED',
+    'DUPLICATE_CODE',
+  ],
+  copyCompatibilityResult: ['BLOCKED', 'CREATE', 'REUSE', 'REUSE_OR_CREATE'],
+  ownerCommitStatus: ['COMMITTED'],
+  copyOwnerStatus: ['COMMITTED', 'CONFLICT'],
+  copyMappingStatus: ['BLOCKED', 'CREATE', 'REUSE', 'REUSE_OR_CREATE', 'REWRITE'],
+  assetStatus: ['STAGED', 'ACTIVE', 'RELEASED'],
+};
 const enumValues = kind =>
   kind === 'copyCompatibilityReasonCode'
     ? [...copyPolicy.compatibilityReasonCodes]
-    : Object.keys(enumLabels[kind] || {});
+    : closedEnumValues[kind]
+      ? [...closedEnumValues[kind]]
+      : Object.keys(enumLabels[kind] || {});
 const capabilityValues = enumValues('usageCapability');
 
 const modeRules = [
@@ -934,10 +962,10 @@ const fieldDescriptors = [
     fieldKey: 'skuVariantAttribute',
     dataPath: 'skuVariantDimensions[].attributeRef',
     label: '规格属性',
-    controlKind: 'select',
+    controlKind: 'multiSelect',
     tabKey: 'sku-specifications-pricing',
     admittedShapes: ['SKU_VARIANT_SALE_COUNTED'],
-    helpText: '选择该商品用于生成规格组合的规格属性。',
+    helpText: '选择一个或多个用于生成规格组合的规格属性。',
     optionSourceRef: endpointSource({
       operationId: 'getOperationsCatalogDictionary',
       path: {dictionaryKind: 'SKU_ATTRIBUTE'},
@@ -2017,6 +2045,20 @@ const placement = {
 writeDigested('contracts/catalog/catalog-inventory-edge-placement.json', placement, 'placementDigest');
 
 const stringField = description => ({type: 'string', description});
+const javaEnumTypeByKind = {
+  catalogItemStatus: 'CatalogInventoryWireEnums.CatalogItemStatus',
+  skuStatus: 'CatalogInventoryWireEnums.SkuStatus',
+  dictionaryEntryStatus: 'CatalogInventoryWireEnums.DictionaryEntryStatus',
+  assetStatus: 'CatalogInventoryWireEnums.AssetStatus',
+  catalogVoidBlockingReasonCode: 'CatalogInventoryWireEnums.CatalogVoidBlockingReasonCode',
+  temporaryPromotionBlockingReasonCode: 'CatalogInventoryWireEnums.TemporaryPromotionBlockingReasonCode',
+};
+const enumField = (kind, description, nullable = false) => ({
+  type: nullable ? ['string', 'null'] : 'string',
+  enum: nullable ? [...enumValues(kind), null] : enumValues(kind),
+  description,
+  ...(javaEnumTypeByKind[kind] ? {'x-java-enum': javaEnumTypeByKind[kind]} : {}),
+});
 const uuidField = description => ({type: 'string', format: 'uuid', description});
 const uuidReferenceExceptions = new Set(['sourceOrderRef', 'sourceRecordRef', 'sourceItemRef']);
 const uuidReferenceCollections = new Set(['mediaRefs']);
@@ -2156,11 +2198,11 @@ const voidBlockingReasonsSchema = description => {
     description,
     typedEntry(
       {
-        label: {...stringField('business reason label'), minLength: 1},
+        reasonCode: enumField('catalogVoidBlockingReasonCode', 'closed owner reason code'),
         count: {...integerField('number of facts represented by the reason'), minimum: 1},
         relatedItemNames: arrayField('related catalog item names', stringField('catalog item name')),
       },
-      ['label', 'count', 'relatedItemNames'],
+      ['reasonCode', 'count', 'relatedItemNames'],
     ),
   );
   return reasons;
@@ -2474,7 +2516,7 @@ const requestFieldMap = {
     tagRef: uuidField('catalog tag'),
     productionTagRef: uuidField('production tag'),
     includeSubCategories: {type: 'boolean', description: 'include descendants'},
-    status: stringField('lifecycle status'),
+    status: enumField('catalogItemStatus', 'catalog item lifecycle status'),
     source: stringField('catalog source'),
     candidateUsage: stringField('owner-defined candidate usage'),
     excludeItemCode: stringField('item code excluded by the owner-defined candidate usage'),
@@ -2558,11 +2600,7 @@ const requestFieldMap = {
     },
     dimension: stringField('optional unit dimension filter'),
     query: stringField('server-side unit name or code search'),
-    status: {
-      type: 'string',
-      enum: ['ENABLED', 'DISABLED', 'VOIDED'],
-      description: 'optional unit lifecycle status filter',
-    },
+    status: enumField('dictionaryEntryStatus', 'optional unit lifecycle status filter'),
   },
   CatalogCategoryCandidateQuery: {
     dataNodeRef: uuidField('selected data node'),
@@ -2622,7 +2660,7 @@ const requestFieldMap = {
     dataNodeRef: uuidField('selected data node'),
     unitRef: uuidField('unit reference'),
     expectedVersion: integerField('expected version'),
-    targetStatus: {type: 'string', enum: enumValues('dictionaryEntryStatus'), description: 'target lifecycle status'},
+    targetStatus: enumField('dictionaryEntryStatus', 'target lifecycle status'),
   },
   CatalogAttributeDefinitionListQuery: {
     dataNodeRef: uuidField('selected data node'),
@@ -2679,7 +2717,7 @@ const requestFieldMap = {
     dataNodeRef: uuidField('selected data node'),
     definitionRef: uuidField('attribute definition reference'),
     expectedVersion: integerField('expected version'),
-    targetStatus: {type: 'string', enum: enumValues('dictionaryEntryStatus'), description: 'target lifecycle status'},
+    targetStatus: enumField('dictionaryEntryStatus', 'target lifecycle status'),
   },
   CatalogOrderOptionDefinitionListQuery: {
     dataNodeRef: uuidField('selected data node'),
@@ -2748,20 +2786,16 @@ const requestFieldMap = {
     dataNodeRef: uuidField('selected data node'),
     definitionRef: uuidField('ordering option definition reference'),
     expectedVersion: integerField('expected version'),
-    targetStatus: {type: 'string', enum: enumValues('dictionaryEntryStatus'), description: 'target lifecycle status'},
+    targetStatus: enumField('dictionaryEntryStatus', 'target lifecycle status'),
   },
   CatalogItemTransitionRequest: {
     itemCode: stringField('catalog item code'),
     expectedVersion: integerField('expected version'),
-    targetStatus: {type: 'string', enum: enumValues('catalogItemStatus'), description: 'target lifecycle status'},
+    targetStatus: enumField('catalogItemStatus', 'target lifecycle status'),
   },
   CatalogItemBatchStatusTransitionRequest: {
     dataNodeRef: uuidField('selected data node'),
-    targetStatus: {
-      type: 'string',
-      enum: enumValues('catalogItemStatus'),
-      description: 'one lifecycle status applied to every item in this batch',
-    },
+    targetStatus: enumField('catalogItemStatus', 'one lifecycle status applied to every item in this batch'),
     items: {
       type: 'array',
       minItems: 1,
@@ -2801,18 +2835,14 @@ const requestFieldMap = {
     dataNodeRef: uuidField('selected data node'),
     categoryRef: uuidField('category reference'),
     expectedVersion: integerField('expected version'),
-    targetStatus: {type: 'string', enum: enumValues('dictionaryEntryStatus'), description: 'target lifecycle status'},
+    targetStatus: enumField('dictionaryEntryStatus', 'target lifecycle status'),
   },
   CatalogDictionaryQuery: {
     dataNodeRef: uuidField('selected data node'),
     dictionaryKind: stringField('dictionary kind'),
     parentEntryRef: {type: ['string', 'null'], format: 'uuid', description: 'optional parent SKU attribute opaque ref'},
     query: stringField('server-side dictionary name or code search'),
-    status: {
-      type: 'string',
-      enum: ['ENABLED', 'DISABLED', 'VOIDED'],
-      description: 'optional dictionary lifecycle status filter',
-    },
+    status: enumField('dictionaryEntryStatus', 'optional dictionary lifecycle status filter'),
     cursor: stringField('cursor'),
     pageSize: integerField('page size'),
   },
@@ -2840,17 +2870,13 @@ const requestFieldMap = {
     dictionaryKind: stringField('dictionary kind'),
     entryCode: stringField('entry code'),
     expectedVersion: integerField('expected version'),
-    targetStatus: stringField('target lifecycle status'),
+    targetStatus: enumField('dictionaryEntryStatus', 'dictionary entry lifecycle target status'),
   },
   ProductionTagQuery: {
     dataNodeRef: uuidField('selected data node'),
     usage: {type: 'string', enum: ['MANAGEMENT', 'BINDABLE_CANDIDATE'], description: 'tag list purpose'},
     query: stringField('server-side tag search'),
-    status: {
-      type: 'string',
-      enum: ['ENABLED', 'DISABLED', 'VOIDED'],
-      description: 'optional production tag lifecycle status filter',
-    },
+    status: enumField('dictionaryEntryStatus', 'optional production tag lifecycle status filter'),
     cursor: stringField('cursor'),
     pageSize: integerField('page size'),
   },
@@ -2867,7 +2893,7 @@ const requestFieldMap = {
   ProductionTagTransitionRequest: {
     tagCode: stringField('tag code'),
     expectedVersion: integerField('expected version'),
-    targetStatus: stringField('target lifecycle status'),
+    targetStatus: enumField('dictionaryEntryStatus', 'production tag lifecycle target status'),
   },
   LocalCopyCandidateQuery: {
     dataNodeRef: uuidField('selected data node'),
@@ -3094,7 +3120,7 @@ const catalogUnitAssignmentSchema = {
       description: 'unit category',
     },
     precision: {type: 'integer', minimum: 0, description: 'decimal places; zero means whole numbers'},
-    status: {type: 'string', enum: ['ENABLED', 'DISABLED', 'VOIDED'], description: 'unit lifecycle status'},
+    status: enumField('dictionaryEntryStatus', 'unit lifecycle status'),
     inheritanceSource: {
       type: 'string',
       enum: ['ITEM_DEFAULT', 'SKU_OVERRIDE'],
@@ -3147,7 +3173,7 @@ const specificationFactSchema = typedEntry(
           valueCode: stringField('specification value code'),
           valueLabel: stringField('specification value name'),
           displayOrder: integerField('specification value display order'),
-          status: stringField('specification value status'),
+          status: enumField('dictionaryEntryStatus', 'specification value lifecycle status'),
         },
         ['valueRef', 'valueCode', 'valueLabel', 'displayOrder', 'status'],
       ),
@@ -3164,7 +3190,7 @@ const skuAttributeValueFactSchema = typedEntry(
     valueCode: stringField('specification value code'),
     valueLabel: stringField('specification value name'),
     displayOrder: integerField('specification value display order'),
-    status: stringField('specification value status'),
+    status: enumField('dictionaryEntryStatus', 'specification value lifecycle status'),
   },
   [
     'attributeRef',
@@ -3186,7 +3212,7 @@ const preparationFactsSchema = typedEntry(
         tagRef: uuidField('production tag reference'),
         code: stringField('production tag code'),
         name: stringField('production tag name'),
-        status: stringField('production tag status'),
+        status: enumField('dictionaryEntryStatus', 'production tag lifecycle status'),
         owner: stringField('production tag owner'),
       },
       required: ['tagRef', 'code', 'name', 'status', 'owner'],
@@ -3415,6 +3441,18 @@ const attributeAssignmentSchema = typedEntry(
   },
   ['definitionRef', 'code', 'name', 'valueType', 'textValue', 'optionRefs'],
 );
+const attributeAssignmentReadbackSchema = typedEntry(
+  {
+    definitionRef: uuidField('attribute definition reference'),
+    code: stringField('attribute code'),
+    name: stringField('attribute name'),
+    valueType: {type: 'string', enum: ['TEXT', 'SINGLE_SELECT', 'MULTI_SELECT'], description: 'attribute value type'},
+    textValue: {type: ['string', 'null'], description: 'text value for a text attribute'},
+    optionRefs: arrayField('selected attribute choices', uuidField('attribute option reference')),
+    selectedOptionNames: arrayField('selected attribute choice names', stringField('attribute option name')),
+  },
+  ['definitionRef', 'code', 'name', 'valueType', 'textValue', 'optionRefs', 'selectedOptionNames'],
+);
 const orderOptionConfigSchema = typedEntry(
   {
     definitionRef: uuidField('ordering option definition reference'),
@@ -3503,11 +3541,7 @@ const responseFieldMap = {
               definitionRef: uuidField('attribute definition reference'),
               code: stringField('attribute code'),
               name: stringField('attribute name'),
-              status: {
-                type: 'string',
-                enum: enumValues('dictionaryEntryStatus'),
-                description: 'attribute lifecycle status',
-              },
+              status: enumField('dictionaryEntryStatus', 'attribute lifecycle status'),
               valueType: {
                 type: 'string',
                 enum: ['TEXT', 'SINGLE_SELECT', 'MULTI_SELECT'],
@@ -3543,11 +3577,7 @@ const responseFieldMap = {
             definitionRef: uuidField('attribute definition reference'),
             code: stringField('attribute code'),
             name: stringField('attribute name'),
-            status: {
-              type: 'string',
-              enum: enumValues('dictionaryEntryStatus'),
-              description: 'attribute lifecycle status',
-            },
+            status: enumField('dictionaryEntryStatus', 'attribute lifecycle status'),
             valueType: {
               type: 'string',
               enum: ['TEXT', 'SINGLE_SELECT', 'MULTI_SELECT'],
@@ -3585,11 +3615,7 @@ const responseFieldMap = {
               definitionRef: uuidField('ordering option definition reference'),
               code: stringField('ordering option business code'),
               name: stringField('ordering option name'),
-              status: {
-                type: 'string',
-                enum: enumValues('dictionaryEntryStatus'),
-                description: 'ordering option lifecycle status',
-              },
+              status: enumField('dictionaryEntryStatus', 'ordering option lifecycle status'),
               selectionMode: {type: 'string', enum: ['SINGLE', 'MULTIPLE'], description: 'customer selection mode'},
               values: arrayField(
                 'customer options',
@@ -3641,11 +3667,7 @@ const responseFieldMap = {
             definitionRef: uuidField('ordering option definition reference'),
             code: stringField('ordering option business code'),
             name: stringField('ordering option name'),
-            status: {
-              type: 'string',
-              enum: enumValues('dictionaryEntryStatus'),
-              description: 'ordering option lifecycle status',
-            },
+            status: enumField('dictionaryEntryStatus', 'ordering option lifecycle status'),
             selectionMode: {type: 'string', enum: ['SINGLE', 'MULTIPLE'], description: 'customer selection mode'},
             values: arrayField(
               'customer options',
@@ -3709,11 +3731,7 @@ const responseFieldMap = {
                 description: 'unit category',
               },
               precision: {type: 'integer', minimum: 0, description: 'decimal places; zero means whole numbers'},
-              status: {
-                type: 'string',
-                enum: enumValues('dictionaryEntryStatus'),
-                description: 'whether the unit can be selected for new configurations',
-              },
+              status: enumField('dictionaryEntryStatus', 'whether the unit can be selected for new configurations'),
               isReferenced: {type: 'boolean', description: 'whether any current catalog fact uses the unit'},
               version: integerField('unit definition version'),
             },
@@ -3789,7 +3807,7 @@ const responseFieldMap = {
                     valueCode: stringField('specification value code'),
                     valueLabel: stringField('specification value name'),
                     displayOrder: integerField('specification value display order'),
-                    status: stringField('specification value status'),
+                    status: enumField('dictionaryEntryStatus', 'specification value lifecycle status'),
                   },
                   [
                     'attributeRef',
@@ -3811,7 +3829,7 @@ const responseFieldMap = {
               salesUnit: catalogUnitAssignmentSchema,
               baseMeasureUnit: catalogUnitAssignmentSchema,
               isDefault: booleanField('whether this is the default SKU'),
-              status: stringField('SKU lifecycle status'),
+              status: enumField('skuStatus', 'SKU lifecycle status'),
               primaryImageAssetRef: {type: ['string', 'null'], format: 'uuid', description: 'primary SKU image'},
               inventoryDeductionSummary: inventoryDeductionSummarySchema,
               attributeFacts: arrayField('typed SKU attribute value facts', skuAttributeValueFactSchema),
@@ -3863,7 +3881,6 @@ const responseFieldMap = {
               skuCode: {type: ['string', 'null'], description: 'optional component SKU code'},
               itemName: stringField('component item name'),
               skuName: {type: ['string', 'null'], description: 'optional component SKU name'},
-              status: {type: 'string', enum: ['ENABLED', 'DISABLED'], description: 'component catalog status'},
               consumptionUnitSnapshot: unitSnapshotSchema,
             },
             [
@@ -3874,7 +3891,6 @@ const responseFieldMap = {
               'skuCode',
               'itemName',
               'skuName',
-              'status',
               'consumptionUnitSnapshot',
             ],
           ),
@@ -3902,11 +3918,7 @@ const responseFieldMap = {
               description: 'unit category',
             },
             precision: {type: 'integer', minimum: 0, description: 'decimal places; zero means whole numbers'},
-            status: {
-              type: 'string',
-              enum: enumValues('dictionaryEntryStatus'),
-              description: 'whether the unit can be selected for new configurations',
-            },
+            status: enumField('dictionaryEntryStatus', 'whether the unit can be selected for new configurations'),
             version: integerField('unit definition version'),
           },
           ['unitRef', 'code', 'name', 'unitDimension', 'precision', 'status', 'version'],
@@ -3923,7 +3935,7 @@ const responseFieldMap = {
       {
         operation: stringField('operation'),
         resourceRef: uuidField('resource reference'),
-        status: stringField('result status'),
+        status: enumField('catalogItemStatus', 'catalog item lifecycle result status'),
         version: integerField('new version'),
       },
       ['operation', 'status'],
@@ -3968,14 +3980,17 @@ const responseFieldMap = {
         inventoryRules: inventoryRulesReadbackSchema,
         productionTags: arrayField(
           'saved production tags',
-          typedEntry({code: stringField('tag code'), status: stringField('status')}, ['code', 'status']),
+          typedEntry(
+            {code: stringField('tag code'), status: enumField('dictionaryEntryStatus', 'production tag lifecycle status')},
+            ['code', 'status'],
+          ),
         ),
         skuTransitions: arrayField(
           'SKU lifecycle transition judgments',
           typedEntry(
             {
               skuRef: uuidField('SKU opaque reference'),
-              targetStatus: {type: 'string', enum: ['VOIDED'], description: 'terminal SKU lifecycle target'},
+              targetStatus: {...enumField('skuStatus', 'terminal SKU lifecycle target'), enum: ['VOIDED']},
               version: integerField('new SKU version'),
               canVoid: booleanField('whether the SKU was voided'),
               blockingReferences: arrayField(
@@ -3992,17 +4007,7 @@ const responseFieldMap = {
                   'factRef',
                 ]),
               ),
-              blockingReasons: arrayField(
-                'user-visible reasons the SKU cannot be voided',
-                typedEntry(
-                  {
-                    label: stringField('business reason label'),
-                    count: integerField('number of facts represented by the reason'),
-                    relatedItemNames: arrayField('related catalog item names', stringField('catalog item name')),
-                  },
-                  ['label', 'count', 'relatedItemNames'],
-                ),
-              ),
+              blockingReasons: voidBlockingReasonsSchema('user-visible reasons the SKU cannot be voided'),
             },
             ['skuRef', 'targetStatus', 'version', 'canVoid', 'blockingReferences', 'dependentFacts', 'blockingReasons'],
           ),
@@ -4021,7 +4026,7 @@ const responseFieldMap = {
         categoryRef: {type: 'string', format: 'uuid', description: 'category opaque ref'},
         code: stringField('category business code'),
         name: stringField('category name'),
-        status: {type: 'string', enum: enumValues('dictionaryEntryStatus'), description: 'category lifecycle status'},
+        status: enumField('dictionaryEntryStatus', 'category lifecycle status'),
         parentCategoryRef: {type: ['string', 'null'], format: 'uuid', description: 'parent category opaque ref'},
         version: integerField('version'),
         displayOrder: integerField('sibling display order'),
@@ -4048,7 +4053,7 @@ const responseFieldMap = {
         dictionaryKind: stringField('dictionary kind'),
         code: stringField('entry code'),
         name: stringField('entry name'),
-        status: stringField('status'),
+        status: enumField('dictionaryEntryStatus', 'dictionary entry lifecycle status'),
         parentEntryRef: {type: ['string', 'null'], format: 'uuid', description: 'parent SKU attribute opaque ref'},
         version: integerField('version'),
       },
@@ -4065,7 +4070,7 @@ const responseFieldMap = {
         code: stringField('tag code'),
         name: stringField('tag name'),
         ownerScope: objectField('tag owner scope'),
-        status: stringField('status'),
+        status: enumField('dictionaryEntryStatus', 'production tag lifecycle status'),
         version: integerField('version'),
       },
       ['tagRef', 'code', 'name', 'status'],
@@ -4139,7 +4144,7 @@ const responseFieldMap = {
       {
         assetRef: uuidField('asset ref'),
         bindGrant: stringField('one-time staged asset bind proof; transient client memory only, never a catalog field'),
-        status: stringField('asset status'),
+        status: enumField('assetStatus', 'staged catalog asset lifecycle status'),
         mediaType: stringField('media type'),
         contentDigest: stringField('content digest'),
       },
@@ -4214,7 +4219,7 @@ const applyDefinitionFactsToCatalogItemDetail = detailSchema => {
         tagRef: uuidField('production tag reference'),
         code: stringField('production tag code'),
         name: stringField('production tag name'),
-        status: stringField('production tag status'),
+        status: enumField('dictionaryEntryStatus', 'production tag lifecycle status'),
         owner: stringField('production tag owner'),
       },
       ['tagRef', 'code', 'name', 'status', 'owner'],
@@ -4263,7 +4268,7 @@ const applyDefinitionFactsToCatalogItemDetail = detailSchema => {
   item.properties.baseMeasureUnit = catalogUnitAssignmentSchema;
   item.properties.identifiers = arrayField('catalog item identifiers', identifierReadbackSchema);
   item.properties.preparationProfile = nullablePreparationProfileReadbackSchema;
-  item.properties.attributeAssignments = arrayField('product attribute assignments', attributeAssignmentSchema);
+  item.properties.attributeAssignments = arrayField('product attribute assignments', attributeAssignmentReadbackSchema);
   item.properties.orderOptionConfigs = arrayField('product ordering option settings', orderOptionConfigSchema);
   item.properties.specificationFacts = arrayField(
     'typed SKU specification definition and value facts',
@@ -4273,7 +4278,7 @@ const applyDefinitionFactsToCatalogItemDetail = detailSchema => {
     'typed ordering option definition and value facts',
     orderOptionConfigSchema,
   );
-  item.properties.attributeFacts = arrayField('typed product attribute assignment facts', attributeAssignmentSchema);
+  item.properties.attributeFacts = arrayField('typed product attribute assignment facts', attributeAssignmentReadbackSchema);
   item.properties.preparationFacts = preparationFactsSchema;
   const skuItems = item.properties.skus?.items;
   if (skuItems?.properties) {
@@ -4417,7 +4422,7 @@ const applySingleCategoryToCatalogItemPage = pageSchema => {
     'typed ordering option definition and value facts',
     orderOptionConfigSchema,
   );
-  item.properties.attributeFacts = arrayField('typed product attribute assignment facts', attributeAssignmentSchema);
+  item.properties.attributeFacts = arrayField('typed product attribute assignment facts', attributeAssignmentReadbackSchema);
   item.properties.preparationFacts = preparationFactsSchema;
   item.properties.productionTagRef = {
     type: ['string', 'null'],
@@ -4534,6 +4539,66 @@ for (const entry of operationMetadata) {
     };
   }
 }
+
+const schemaAtPath = (schema, path, label) => {
+  let current = schema;
+  for (const segment of path.split('.')) {
+    const isArray = segment.endsWith('[]');
+    const key = isArray ? segment.slice(0, -2) : segment;
+    current = current?.properties?.[key];
+    if (!current) throw new Error(`P1_SCHEMA_POINTER_MISSING:${label}:${path}`);
+    if (isArray) current = current.items;
+    if (!current) throw new Error(`P1_SCHEMA_POINTER_ITEMS_MISSING:${label}:${path}`);
+  }
+  return current;
+};
+const applyClosedEnumAtPath = (schemaName, path, kind, label = `${schemaName}.${path}`) => {
+  const field = schemaAtPath(componentSchemas[schemaName], path, label);
+  const nullable = Array.isArray(field.type) && field.type.includes('null');
+  Object.assign(field, enumField(kind, field.description || label, nullable));
+};
+const applyClosedEnumToArrayItems = (schemaName, path, kind, label = `${schemaName}.${path}`) => {
+  const array = schemaAtPath(componentSchemas[schemaName], path, label);
+  if (array.type !== 'array' || !array.items) throw new Error(`P1_SCHEMA_ARRAY_EXPECTED:${label}`);
+  array.items = enumField(kind, array.items.description || label);
+};
+
+// The coverage registry intentionally keeps field names generic.  These are
+// the owning semantic pointers; patch them here so an unrelated `status`
+// field can never widen or collapse another lifecycle domain by name alone.
+const closedStatusPointers = [
+  ['CatalogNavigationView', 'data.productionTags[].status', 'dictionaryEntryStatus'],
+  ['CatalogItemPage', 'data.items[].status', 'catalogItemStatus'],
+  ['CatalogItemPage', 'data.items[].specificationFacts[].values[].status', 'dictionaryEntryStatus'],
+  ['CatalogItemPage', 'data.items[].preparationFacts.productionTag.status', 'dictionaryEntryStatus'],
+  ['CatalogItemDetail', 'data.item.skuVariantDimensions[].values[].status', 'dictionaryEntryStatus'],
+  ['CatalogItemDetail', 'data.item.skus[].attributeValueRefs[].status', 'dictionaryEntryStatus'],
+  ['CatalogItemDetail', 'data.item.skus[].status', 'skuStatus'],
+  ['CatalogItemDetail', 'data.item.compositeGroups[].components[].status', 'catalogItemStatus'],
+  ['CatalogItemDetail', 'data.item.lifecycle.status', 'catalogItemStatus'],
+  ['CatalogItemDetail', 'data.item.specificationFacts[].values[].status', 'dictionaryEntryStatus'],
+  ['CatalogItemDetail', 'data.item.preparationFacts.productionTag.status', 'dictionaryEntryStatus'],
+  ['CatalogItemDetail', 'data.compositeGroups[].components[].status', 'catalogItemStatus'],
+  ['CatalogItemDetail', 'data.productionTags[].status', 'dictionaryEntryStatus'],
+  ['CatalogDictionaryView', 'data.entries[].status', 'dictionaryEntryStatus'],
+  ['ProductionTagPage', 'data.entries[].status', 'dictionaryEntryStatus'],
+  ['CatalogItemSkuPage', 'data.items[].attributeValueRefs[].status', 'dictionaryEntryStatus'],
+  ['CatalogItemSkuPage', 'data.items[].status', 'skuStatus'],
+  ['CatalogItemSkuPage', 'data.items[].attributeFacts[].status', 'dictionaryEntryStatus'],
+  ['CatalogItemSkuPage', 'data.items[].preparationFacts.productionTag.status', 'dictionaryEntryStatus'],
+  ['LocalCopyCandidatePage', 'data.items[].status', 'catalogItemStatus'],
+  ['BrandCopyCandidatePage', 'data.items[].status', 'catalogItemStatus'],
+  ['CatalogItemSaveRequest', 'sections.catalogDraft.skuVariantDimensions[].values[].status', 'dictionaryEntryStatus'],
+  ['CatalogItemSaveRequest', 'sections.catalogDraft.skus[].attributeValueRefs[].status', 'dictionaryEntryStatus'],
+  ['CatalogItemSaveRequest', 'sections.catalogDraft.skus[].status', 'skuStatus'],
+  ['CatalogItemSaveRequest', 'sections.catalogDraft.compositeGroups[].components[].status', 'catalogItemStatus'],
+  ['CatalogItemSaveReadback', 'result.productionTags[].status', 'dictionaryEntryStatus'],
+  ['CatalogDictionaryEntryReadback', 'result.status', 'dictionaryEntryStatus'],
+  ['ProductionTagReadback', 'result.status', 'dictionaryEntryStatus'],
+  ['StagedCatalogAsset', 'result.status', 'assetStatus'],
+  ['CatalogItemCommandReadback', 'result.status', 'catalogItemStatus'],
+  ['CatalogItemCommandReadback', 'result.ownerReadbacks[].status', 'ownerCommitStatus'],
+];
 componentSchemas.CatalogCategoryCandidatePage = {
   type: 'object',
   additionalProperties: false,
@@ -4926,6 +4991,29 @@ const assertGeneratedCatalogUserVisibleVocabulary = values => {
   );
   if (offending.length) throw new Error(`P1_CATALOG_USER_VISIBLE_TECHNICAL_VOCABULARY:${offending.join('|')}`);
 };
+
+// Apply semantic closed sets only after every operation-owned schema has been
+// materialized and the long-lived detail/save projections have been patched.
+// This keeps the pointer registry authoritative without depending on object
+// construction order in the generator.
+for (const [schemaName, path, kind] of closedStatusPointers) applyClosedEnumAtPath(schemaName, path, kind);
+for (const [schemaName, path] of [
+  ['LocalCopyPreflight', 'data.mappingPreview[].status'],
+  ['BrandCatalogCopyPreflight', 'mappingPreview[].status'],
+]) applyClosedEnumAtPath(schemaName, path, 'copyMappingStatus');
+for (const [schemaName, path] of [
+  ['LocalCopyReadback', 'data.ownerReadbacks[].status'],
+  ['BrandCatalogCopyReadback', 'data.ownerReadbacks[].status'],
+]) applyClosedEnumAtPath(schemaName, path, 'copyOwnerStatus');
+applyClosedEnumAtPath('LocalCopyPreflight', 'data.compatibilityResults[].result', 'copyCompatibilityResult');
+applyClosedEnumAtPath('BrandCatalogCopyPreflight', 'compatibilityResults[].result', 'copyCompatibilityResult');
+applyClosedEnumToArrayItems('TemporaryPromotionPreflight', 'data.blockedReasons', 'temporaryPromotionBlockingReasonCode');
+const skuTransitionTargetStatus = schemaAtPath(
+  componentSchemas.CatalogItemSaveRequest,
+  'skuTransitions[].targetStatus',
+  'CatalogItemSaveRequest.skuTransitions[].targetStatus',
+);
+Object.assign(skuTransitionTargetStatus, enumField('skuStatus', 'terminal SKU lifecycle target'), {enum: ['VOIDED']});
 const catalogDefinitionSelfTest = () => {
   assertRequiredArraysUnique(componentSchemas, 'components.schemas');
   validateIdentifierRulesForSelfTest(identifierRules);
@@ -5005,13 +5093,13 @@ const catalogDefinitionSelfTest = () => {
   assertSchemaPropertyPresent(voidAvailability, 'blockingReasons', 'detail.actionAvailability.voidAvailability');
   assertRequiredSchemaProperty(voidAvailability, 'blockingReasons', 'detail.actionAvailability.voidAvailability');
   const blockingReason = voidAvailability.properties.blockingReasons.items;
-  for (const field of ['label', 'count', 'relatedItemNames'])
+  for (const field of ['reasonCode', 'count', 'relatedItemNames'])
     assertRequiredSchemaProperty(blockingReason, field, 'detail.actionAvailability.voidAvailability.blockingReasons');
   const skuVoidAvailability = detailSku.properties.voidAvailability;
   assertSchemaPropertyPresent(skuVoidAvailability, 'blockingReasons', 'detail.sku.voidAvailability');
   assertRequiredSchemaProperty(skuVoidAvailability, 'blockingReasons', 'detail.sku.voidAvailability');
   const skuBlockingReason = skuVoidAvailability.properties.blockingReasons.items;
-  for (const field of ['label', 'count', 'relatedItemNames'])
+  for (const field of ['reasonCode', 'count', 'relatedItemNames'])
     assertRequiredSchemaProperty(skuBlockingReason, field, 'detail.sku.voidAvailability.blockingReasons');
   const skuTransition = componentSchemas.CatalogItemSaveReadback.properties.result.properties.skuTransitions.items;
   assertSchemaPropertyPresent(skuTransition, 'blockingReasons', 'save.skuTransitions');
@@ -5022,7 +5110,11 @@ const catalogDefinitionSelfTest = () => {
     ['save.skuTransitions', skuTransition],
   ]) {
     const reason = schema.properties.blockingReasons.items;
-    if (reason.properties.label.minLength !== 1 || reason.properties.count.minimum !== 1)
+    if (
+      !Array.isArray(reason.properties.reasonCode.enum) ||
+      JSON.stringify(reason.properties.reasonCode.enum) !== JSON.stringify(enumValues('catalogVoidBlockingReasonCode')) ||
+      reason.properties.count.minimum !== 1
+    )
       throw new Error(`P1_VOID_REASON_ENTRY_CONSTRAINT_MISSING:${label}`);
     const disablesWithoutReason = schema.allOf?.some(
       branch =>
@@ -5030,6 +5122,35 @@ const catalogDefinitionSelfTest = () => {
     );
     if (!disablesWithoutReason) throw new Error(`P1_VOID_REASON_CLOSURE_MISSING:${label}`);
   }
+  const reasonMutation = cloneJson(voidAvailability);
+  delete reasonMutation.properties.blockingReasons.items.properties.reasonCode;
+  expectSelfTestFailure('void-reason-code-closed-set', () => {
+    if (!Array.isArray(reasonMutation.properties.blockingReasons.items.properties.reasonCode?.enum))
+      throw new Error('missing closed reason code');
+  });
+  for (const [schemaName, path, kind] of closedStatusPointers) {
+    const field = schemaAtPath(componentSchemas[schemaName], path, `${schemaName}.${path}`);
+    const expected = enumValues(kind);
+    if (JSON.stringify(field.enum) !== JSON.stringify(expected))
+      throw new Error(`P1_CATALOG_CLOSED_ENUM_DRIFT:${schemaName}.${path}`);
+  }
+  const promotionReasons = schemaAtPath(componentSchemas.TemporaryPromotionPreflight, 'data.blockedReasons', 'temporary promotion');
+  if (
+    promotionReasons.type !== 'array' ||
+    JSON.stringify(promotionReasons.items?.enum) !== JSON.stringify(enumValues('temporaryPromotionBlockingReasonCode'))
+  )
+    throw new Error('P1_TEMPORARY_PROMOTION_REASON_CODE_SCHEMA_INVALID');
+  const statusMutation = cloneJson(componentSchemas.CatalogItemDetail);
+  delete statusMutation.properties.data.properties.item.properties.lifecycle.properties.status.enum;
+  expectSelfTestFailure('catalog-item-status-closed-set', () => {
+    if (!Array.isArray(statusMutation.properties.data.properties.item.properties.lifecycle.properties.status.enum))
+      throw new Error('missing closed lifecycle status');
+  });
+  if (
+    JSON.stringify(skuTransitionTargetStatus.enum) !== JSON.stringify(['VOIDED']) ||
+    skuTransitionTargetStatus['x-java-enum'] !== 'CatalogInventoryWireEnums.SkuStatus'
+  )
+    throw new Error('P1_SKU_TRANSITION_TARGET_STATUS_SCHEMA_INVALID');
   for (const field of ['attributeFacts', 'preparationFacts']) {
     assertSchemaPropertyPresent(skuPageItem, field, `sku.page.item.${field}`);
     assertRequiredSchemaProperty(skuPageItem, field, `sku.page.item.${field}`);
@@ -7860,6 +7981,10 @@ const fixtureCatalog = {
       {operationId: 'getOperationsCatalogItem', purpose: 'created item and mediaRefs'},
       {operationId: 'getOperationsCatalogNavigation', purpose: 'tree and counts'},
       {operationId: 'getOperationsInventoryTargets', purpose: 'inventory targets'},
+      {
+        operationId: 'getOperationsInventoryConsumptionTargetCandidates',
+        purpose: 'BOM candidate picker eligibility and owner names',
+      },
     ],
     cleanup: {
       seed: {
@@ -10020,6 +10145,7 @@ function emitJavaRecord(name, schema) {
     }
     const type = schemaType(fieldSchema);
     if (type === 'string') {
+      if (typeof fieldSchema['x-java-enum'] === 'string') return fieldSchema['x-java-enum'];
       // Multipart staging preserves a stream; JSON/base64 or an intermediate byte array are not valid M1 transport.
       if (fieldSchema.format === 'uuid') return 'java.util.UUID';
       return fieldSchema.format === 'binary'
@@ -10086,6 +10212,22 @@ for (const entry of backendWireEntries)
     path.join(BACKEND_WIRE_SOURCE_ROOT, ...BACKEND_WIRE_PACKAGE.split('.'), entry.name + '.java'),
     entry.source,
   );
+writeText(
+  path.join(BACKEND_WIRE_SOURCE_ROOT, ...BACKEND_WIRE_PACKAGE.split('.'), 'CatalogInventoryWireEnums.java'),
+  'package ' +
+    BACKEND_WIRE_PACKAGE +
+    ';\n\n' +
+    '/** Generated closed protocol values for catalog-inventory lifecycle facts; do not edit. */\n' +
+    'public final class CatalogInventoryWireEnums {\n' +
+    '  public enum CatalogItemStatus { ENABLED, DISABLED, VOIDED }\n' +
+    '  public enum SkuStatus { ENABLED, DISABLED, VOIDED }\n' +
+    '  public enum DictionaryEntryStatus { ENABLED, DISABLED, VOIDED }\n' +
+    '  public enum AssetStatus { STAGED, ACTIVE, RELEASED }\n' +
+    '  public enum CatalogVoidBlockingReasonCode { HAS_SKUS, HAS_IDENTIFIERS, HAS_PRODUCTION_TAG, USED_BY_OTHER_ITEM, USED_BY_INVENTORY_BOM, ALREADY_VOIDED, USED_BY_PACKAGE }\n' +
+    '  public enum TemporaryPromotionBlockingReasonCode { NOT_TEMPORARY_ITEM, VERSION_CONFLICT, SHAPE_DISABLED, MATERIAL_ROLE_REQUIRED, DUPLICATE_CODE }\n' +
+    '  private CatalogInventoryWireEnums() {}\n' +
+    '}\n',
+);
 writeText(
   path.join(BACKEND_WIRE_SOURCE_ROOT, ...BACKEND_WIRE_PACKAGE.split('.'), 'CanonicalJsonDocument.java'),
   'package ' +

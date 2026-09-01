@@ -1,6 +1,11 @@
 import {describe, expect, it} from 'vitest';
 import type {CatalogOrderOptionDefinitionList, Uuid} from '../../../app/api/generated/catalog-inventory-edge';
-import {hydrateOrderOptionDefinitionValues, serializeOrderOptionDefinitionValues} from './catalogDefinitionForm';
+import {
+  hydrateOrderOptionDefinitionValues,
+  orderOptionMaterialRefs,
+  orderOptionMaterialsFromRefs,
+  serializeOrderOptionDefinitionValues,
+} from './catalogDefinitionForm';
 
 const uuid = (value: string) => value as Uuid;
 const gramSnapshot = {
@@ -55,6 +60,15 @@ describe('order option definition form values', () => {
           {materialItemRef: '00000000-0000-4000-8000-000000000022'},
         ],
       },
+    ]);
+  });
+
+  it('adapts the single multi-select value to the existing material request shape', () => {
+    const materials = [{materialItemRef: 'material-a'}, {materialItemRef: 'material-b'}, {}];
+    expect(orderOptionMaterialRefs(materials)).toEqual(['material-a', 'material-b']);
+    expect(orderOptionMaterialsFromRefs(['material-a', 'material-b'])).toEqual([
+      {materialItemRef: 'material-a'},
+      {materialItemRef: 'material-b'},
     ]);
   });
 });

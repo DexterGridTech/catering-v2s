@@ -1,10 +1,8 @@
-import {Alert, Button, Descriptions, Drawer, Modal, Skeleton, Space, Tag} from 'antd';
+import {Alert, Button, Descriptions, Drawer, Skeleton, Space, Tag} from 'antd';
 import {useEffect, useRef} from 'react';
 import {adminWideDrawerSurfaceProps, NameCodeText, testId} from '@catering-v2s/admin-ui-foundation';
 import {catalogEnumLabel} from '../model/catalogManifestLabels';
-import {catalogEditorTabLabel} from '../model/catalogTabLabels';
 import type {CatalogItemDrawerProps} from '../model/catalogItemSurfaceTypes';
-import {CatalogAssetPreview} from './CatalogAssetPreview';
 import {catalogTestIds} from '../catalogTestIds';
 import {useCatalogItemEditorWorkspaceState} from './useCatalogItemEditorWorkspaceState';
 import {CatalogItemEditorTabs} from './CatalogItemEditorTabs';
@@ -30,16 +28,6 @@ export function CatalogItemEditorWorkspace(props: CatalogItemDrawerProps) {
       title={
         detail ? (
           <Space>
-            {state.detailImageRefs[0] && (
-              <CatalogAssetPreview
-                assetRef={state.detailImageRefs[0]}
-                alt={`${detail.item.name}主图`}
-                width={40}
-                height={40}
-                preview={false}
-                testId={catalogTestIds.static.itemDrawerThumbnail}
-              />
-            )}
             <NameCodeText name={detail.item.name} code={detail.item.code} />
             <span>· 编辑商品</span>
             <Tag>{catalogEnumLabel(manifest, 'shapeKey', detail.item.shapeKey)}</Tag>
@@ -145,64 +133,10 @@ export function CatalogItemEditorWorkspace(props: CatalogItemDrawerProps) {
           </div>
         )}
       </div>
-      <Modal
-        open={Boolean(state.restoreCandidate || state.restoreProblem)}
-        title={
-          state.restoreStatus === 'RECOVERABLE'
-            ? `检测到${detail?.item.name ?? '该商品'}的未保存内容`
-            : state.restoreStatus === 'STALE_SERVER_VERSION'
-              ? '发现较早的编辑内容'
-              : '上次编辑内容无法恢复'
-        }
-        onCancel={state.requestClose}
-        closable
-        maskClosable={false}
-        keyboard
-        footer={
-          state.restoreStatus === 'RECOVERABLE' ? (
-            <Space>
-              <Button onClick={state.discardRestore} {...testId(catalogTestIds.control.dirtyDiscard)}>
-                放弃未保存内容
-              </Button>
-              <Button onClick={state.requestClose}>关闭</Button>
-              <Button type="primary" onClick={state.restoreDraft} {...testId(catalogTestIds.control.dirtyRestore)}>
-                恢复编辑
-              </Button>
-            </Space>
-          ) : state.restoreStatus === 'STALE_SERVER_VERSION' ? (
-            <Space>
-              <Button onClick={state.discardRestore} {...testId(catalogTestIds.control.dirtyDiscard)}>
-                放弃旧草稿
-              </Button>
-              <Button type="primary" onClick={state.dismissRestore} {...testId(catalogTestIds.control.dirtyContinue)}>
-                查看最新内容
-              </Button>
-            </Space>
-          ) : (
-            <Button type="primary" onClick={state.discardRestore} {...testId(catalogTestIds.control.dirtyDiscard)}>
-              放弃并继续
-            </Button>
-          )
-        }
-        {...testId(catalogTestIds.static.itemDraftRestorePrompt)}
-      >
-        {state.restoreStatus === 'RECOVERABLE' ? (
-          <p>
-            上次停留在“
-            {catalogEditorTabLabel(state.restoreCandidate?.sectionState?.activeSection ?? 'basic')}
-            ”，恢复后可继续完成该区段。
-          </p>
-        ) : state.restoreStatus === 'STALE_SERVER_VERSION' ? (
-          <p>
-            商品资料已有更新，旧编辑内容已保留但不能直接覆盖当前资料。你可以查看最新内容，或放弃这份旧草稿后重新编辑。
-          </p>
-        ) : (
-          <p>{state.restoreProblem}</p>
-        )}
-      </Modal>
       <CatalogDictionaryDrawer
         open={state.configurationTask.kind === 'CONFIG'}
         initialKind={state.configurationTask.kind === 'CONFIG' ? state.configurationTask.library : undefined}
+        parentEntryRef={state.configurationTask.kind === 'CONFIG' ? state.configurationTask.parentEntryRef : undefined}
         queryContext={props.queryContext}
         brandRef={props.brandRef}
         canWrite={props.canWriteCatalog}

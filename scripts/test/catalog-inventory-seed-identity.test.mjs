@@ -175,7 +175,7 @@ test("seed writes and verifies the single relational category reference", () => 
   assert.match(executor, /SEED_CATEGORY_ASSIGNMENT_READBACK_INVALID/);
   assert.match(executor, /expectedCategoryRef,\s*actualCategoryRef/);
   assert.match(executor, /SEED_CATEGORY_COUNT_READBACK_INVALID/);
-  assert.match(executor, /countSource: "catalog_item_category"/);
+  assert.match(executor, /countSource: "catalog_item_category_self_and_descendants"/);
   assert.doesNotMatch(executor, /categoryRefs: source\.categoryKey/);
   assert.doesNotMatch(executor, /categoryRefs: \[\]/);
 });

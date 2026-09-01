@@ -76,7 +76,7 @@ export function CatalogWorkbenchToolbar({
       </Space>
       <Space wrap>
         <Button onClick={onOpenConfig} {...testId(catalogTestIdControls.workbench.openConfig)}>
-          商品元数据
+          商品基础数据
         </Button>
         {surface === 'store' && canWrite && canBrandCopy && (
           <Button onClick={onOpenBrandCopy} {...testId(catalogTestIdControls.workbench.openBrandCopy)}>

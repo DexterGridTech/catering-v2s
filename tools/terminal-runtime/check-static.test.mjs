@@ -1,0 +1,189 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+import {
+  RUNTIME_RULE_NAMES,
+  RUNTIME_SUPPORT_CHECK_COUNT,
+  repoRoot,
+  runtimeRoot,
+  skeletonGraphPath,
+  runRuntimeStaticChecks,
+} from './check-static.mjs';
+
+const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'terminal-runtime-static-'));
+const fixtureGraphPath = path.join(fixtureRoot, 'skeleton-graph.ts');
+
+function rule(report, name) {
+  const result = report.results.find(candidate => candidate.name === name);
+  assert.ok(result, `runtime static report must contain ${name}`);
+  return result;
+}
+
+function assertVector(report, failingRules = [], supportStatus = 'PASS') {
+  const expectedFailures = new Set(failingRules);
+  for (const result of report.results) {
+    assert.equal(
+      result.status,
+      expectedFailures.has(result.name) ? 'FAIL' : 'PASS',
+      `${result.name} status drifted during targeted mutation: ${result.error ?? ''}`,
+    );
+  }
+  assert.equal(report.support.status, supportStatus, report.support.error);
+}
+
+function withMutation(relativePath, mutate, assertion) {
+  const filePath = path.join(fixtureRoot, relativePath);
+  const original = fs.readFileSync(filePath, 'utf8');
+  try {
+    fs.writeFileSync(filePath, mutate(original));
+    assertion(runRuntimeStaticChecks({runtimePackageRoot: fixtureRoot, graphPath: fixtureGraphPath}));
+  } finally {
+    fs.writeFileSync(filePath, original);
+  }
+}
+
+function removeRuntimePlannedKind(source) {
+  return source.replace(
+    /('kernel\.base\.runtime': \{\n\s+batch: 1,\n)\s+plannedKind: '[^']+',\n/,
+    '$1',
+  );
+}
+
+try {
+  fs.cpSync(runtimeRoot, fixtureRoot, {
+    recursive: true,
+    filter(source) {
+      return !source.split(path.sep).includes('node_modules');
+    },
+  });
+  fs.copyFileSync(skeletonGraphPath, fixtureGraphPath);
+  fs.writeFileSync(fixtureGraphPath, removeRuntimePlannedKind(fs.readFileSync(fixtureGraphPath, 'utf8')));
+
+  // The restart gate deliberately checks only for an authored cross-runtime recovery case.
+  // This compact fixture is not executed by the checker; it makes that required evidence explicit.
+  fs.writeFileSync(
+    path.join(fixtureRoot, 'test', 'runtime-recovery.test.ts'),
+    [
+      "import {createRuntime} from '../src/index'",
+      "const sharedStorage = new Map()",
+      "const firstRuntime = createRuntime({instanceMode: 'MASTER', plainStorage: sharedStorage})",
+      "const secondRuntime = createRuntime({instanceMode: 'SLAVE', plainStorage: sharedStorage})",
+      "void firstRuntime; void secondRuntime; void sharedStorage; // instanceMode recovery",
+      '',
+    ].join('\n'),
+  );
+
+  assert.deepEqual(RUNTIME_RULE_NAMES, [
+    'context-exact-set',
+    'command-mount-shape',
+    'owner-kind',
+    'restart-positive',
+    'ledger-record-shape',
+  ]);
+  assert.equal(RUNTIME_SUPPORT_CHECK_COUNT, 1);
+
+  const cleanReport = runRuntimeStaticChecks({runtimePackageRoot: fixtureRoot, graphPath: fixtureGraphPath});
+  assertVector(cleanReport);
+
+  withMutation(
+    'src/types/module.ts',
+    source => source.replace(
+      '  installPeerDispatchGateway: (gateway: PeerDispatchGateway) => void\n',
+      '',
+    ),
+    report => {
+      assertVector(report, ['context-exact-set']);
+      assert.match(rule(report, 'context-exact-set').error, /RuntimeModuleContext/);
+    },
+  );
+
+  withMutation(
+    'src/foundations/defineActor.ts',
+    source => source.replace(
+      '  definition: CommandDefinition<TPayload>,\n',
+      '  definition: string,\n',
+    ),
+    report => {
+      assertVector(report, ['command-mount-shape']);
+      assert.match(rule(report, 'command-mount-shape').error, /onCommand first parameter/);
+    },
+  );
+
+  withMutation(
+    'src/types/actor.ts',
+    source => source.replace(
+      '  readonly [actorCommandHandlerDefinitionBrand]: true\n',
+      '',
+    ),
+    report => {
+      assertVector(report, ['command-mount-shape']);
+      assert.match(rule(report, 'command-mount-shape').error, /ActorCommandHandlerDefinition/);
+    },
+  );
+
+  const graphOriginal = fs.readFileSync(fixtureGraphPath, 'utf8');
+  try {
+    fs.writeFileSync(
+      fixtureGraphPath,
+      graphOriginal.replace(
+        "  'kernel.base.runtime': {\n    batch: 1,\n",
+        "  'kernel.base.runtime': {\n    batch: 1,\n    plannedKind: 'owner',\n",
+      ),
+    );
+    const report = runRuntimeStaticChecks({runtimePackageRoot: fixtureRoot, graphPath: fixtureGraphPath});
+    assertVector(report, ['owner-kind']);
+    assert.match(rule(report, 'owner-kind').error, /plannedKind/);
+  } finally {
+    fs.writeFileSync(fixtureGraphPath, graphOriginal);
+  }
+
+  withMutation(
+    'src/features/slices/runtimeInstanceMode.ts',
+    source => source.replace("persistIntent: 'owner-only'", "persistIntent: 'never'"),
+    report => {
+      assertVector(report, ['restart-positive']);
+      assert.match(rule(report, 'restart-positive').error, /owner-only/);
+    },
+  );
+
+  withMutation(
+    'src/types/requestLedger.ts',
+    source => source.replace(
+      '  commands: readonly CommandExecutionObservation[]\n',
+      '  commands: readonly CommandExecutionObservation[]\n  readonly payload: StateJsonValue\n',
+    ),
+    report => {
+      assertVector(report, ['ledger-record-shape']);
+      assert.match(rule(report, 'ledger-record-shape').error, /RequestExecutionRecord/);
+    },
+  );
+
+  withMutation(
+    'src/application/createInternalRuntimeModule.ts',
+    source => source.replace(
+      "      {name: `${moduleName}.cleanup-request-ledger`, visibility: 'internal' as const},\n",
+      '',
+    ),
+    report => {
+      assertVector(report, ['command-mount-shape']);
+      assert.match(rule(report, 'command-mount-shape').error, /internal command declarations/);
+    },
+  );
+
+  withMutation(
+    'src/index.ts',
+    source => source.replace("export {createRuntime} from './application/createRuntime'\n", ''),
+    report => {
+      assertVector(report, [], 'FAIL');
+      assert.match(report.support.error, /createRuntime/);
+    },
+  );
+} finally {
+  fs.rmSync(fixtureRoot, {recursive: true, force: true});
+}
+
+assert.equal(fs.existsSync(fixtureRoot), false, 'runtime static fixture must be cleaned');
+console.log('RUNTIME_MODEL_CLEANUP=PASS');
+console.log('TERMINAL_RUNTIME_STATIC_MODEL_TEST=PASS');

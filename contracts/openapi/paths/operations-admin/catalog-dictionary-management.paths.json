@@ -402,7 +402,8 @@
                 "DISABLED",
                 "VOIDED"
               ],
-              "description": "optional dictionary lifecycle status filter"
+              "description": "optional dictionary lifecycle status filter",
+              "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
             }
           },
           {
@@ -1437,7 +1438,8 @@
                 "DISABLED",
                 "VOIDED"
               ],
-              "description": "optional unit lifecycle status filter"
+              "description": "optional unit lifecycle status filter",
+              "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
             }
           }
         ]

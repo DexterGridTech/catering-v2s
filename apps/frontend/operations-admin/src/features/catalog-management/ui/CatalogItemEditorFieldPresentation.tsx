@@ -1,7 +1,7 @@
 import {Alert, Card, Space, Typography} from 'antd';
 import type {ReactNode} from 'react';
 import type {CatalogDetail} from '../model/catalogModel';
-import {catalogFieldLabel} from '../model/catalogManifestLabels';
+import {catalogFieldLabel, catalogVoidBlockReasonLabel} from '../model/catalogManifestLabels';
 import type {CatalogManifest} from '../model/catalogItemSurfaceTypes';
 
 const CATALOG_DENIED_FIELD_LABELS: Record<string, string> = {
@@ -35,7 +35,9 @@ export function catalogVoidBlockReason(
   const reasons = availability?.blockingReasons ?? [];
   if (reasons.length)
     return `${reasons
-      .map(reason => `${reason.label}${reason.count > 1 ? `（${reason.count}项）` : ''}`)
+      .map(
+        reason => `${catalogVoidBlockReasonLabel(reason.reasonCode)}${reason.count > 1 ? `（${reason.count}项）` : ''}`,
+      )
       .join('、')}，暂不能作废。`;
   return '作废限制信息暂时无法确认，请刷新后重试。';
 }

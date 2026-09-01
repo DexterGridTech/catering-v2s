@@ -211,13 +211,13 @@ class CatalogCategoryOwnerIntegrationTest {
                 jdbc.queryForObject(
                         "SELECT parent_category_ref::text FROM catalog.catalog_category WHERE category_ref=?",
                         String.class,
-                        third.path("categoryRef").asText()),
+                        UUID.fromString(third.path("categoryRef").asText())),
                 "the rejected move does not mutate the existing three-level branch");
         assertNull(
                 jdbc.queryForObject(
                         "SELECT parent_category_ref::text FROM catalog.catalog_category WHERE category_ref=?",
                         String.class,
-                        movableRoot.path("categoryRef").asText()),
+                        UUID.fromString(movableRoot.path("categoryRef").asText())),
                 "the rejected move does not mutate the moving root");
         assertFalse(movableChild.path("categoryRef").asText().isBlank(), "the move guard uses a real subtree");
     }
@@ -407,6 +407,10 @@ class CatalogCategoryOwnerIntegrationTest {
         JsonNode after = category(navigation(), categoryRef);
         assertEquals(before.path("count").asLong() + 1, after.path("count").asLong());
         assertEquals(
+                before.path("directCount").asLong() + 1,
+                after.path("directCount").asLong());
+        assertEquals("SELF_AND_DESCENDANTS", after.path("countSemantics").asText());
+        assertEquals(
                 inactiveBefore + 1,
                 smartView(navigationData(), "INACTIVE").path("count").asLong(),
                 "停用商品必须进入未启用商品集合");
@@ -417,6 +421,40 @@ class CatalogCategoryOwnerIntegrationTest {
                         .path("item")
                         .path("categoryRef")
                         .asText());
+    }
+
+    @Test
+    void navigationCategoryCountMatchesTheDescendantCategorySelectionScope() {
+        JsonNode root = create("NAV-AGGREGATE-ROOT", "navigation aggregate root", null);
+        JsonNode child = create(
+                "NAV-AGGREGATE-CHILD",
+                "navigation aggregate child",
+                root.path("categoryRef").asText());
+        String itemCode = generatedCatalogCode("NAV-AGGREGATE-ITEM");
+        write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", itemCode)
+                        .put("name", "navigation aggregate item")
+                        .put("shapeKey", "STANDARD_SALE_COUNTED")
+                        .put("categoryRef", child.path("categoryRef").asText()));
+
+        JsonNode rootNode = category(navigation(), root.path("categoryRef").asText());
+        JsonNode childNode = category(navigation(), child.path("categoryRef").asText());
+        assertEquals(1, rootNode.path("count").asLong());
+        assertEquals(0, rootNode.path("directCount").asLong());
+        assertEquals(1, childNode.path("count").asLong());
+        assertEquals(1, childNode.path("directCount").asLong());
+        assertEquals("SELF_AND_DESCENDANTS", rootNode.path("countSemantics").asText());
+
+        ObjectNode query = MAPPER.createObjectNode()
+                .put("categoryRef", root.path("categoryRef").asText())
+                .put("includeSubCategories", true)
+                .put("pageSize", 20);
+        JsonNode page = service.readItems(SCOPE.toString(), BRAND, query, "navigation-descendant-scope")
+                .path("data");
+        assertEquals(1, page.path("total").asLong());
+        assertEquals(itemCode, page.path("items").path(0).path("code").asText());
     }
 
     @Test
@@ -475,7 +513,7 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
-    void itemVoidRejectsAnItemStillReferencedOnlyByInventory() {
+    void itemVoidRetiresItsOwnInventoryDefinitionsInsteadOfBlockingTheItem() {
         String itemCode = generatedCatalogCode("INVENTORY-ITEM-GUARD");
         JsonNode created = write(
                 "createOperationsCatalogItem",
@@ -503,27 +541,22 @@ class CatalogCategoryOwnerIntegrationTest {
                 .path("data")
                 .path("actionAvailability")
                 .path("voidAvailability");
-        assertFalse(voidAvailability.path("canVoid").asBoolean());
-        assertTrue(
-                java.util.stream.StreamSupport.stream(
-                                voidAvailability.path("blockingReasons").spliterator(), false)
-                        .anyMatch(
-                                reason -> "已配置库存对象".equals(reason.path("label").asText())
-                                        && reason.path("count").asLong() == 1L),
-                "详情必须直接表达 inventory owner 的作废阻断，而不是泛化为关联");
-
-        CatalogOwnerApi.Problem blocked = assertThrows(
-                CatalogOwnerApi.Problem.class,
-                () -> write(
-                        "transitionOperationsCatalogItemStatus",
-                        MAPPER.createObjectNode()
-                                .put("itemCode", itemCode)
-                                .put("expectedVersion", created.path("version").asLong())
-                                .put("targetStatus", "VOIDED")));
-        assertEquals("REFERENCE_BLOCKS_VOID", blocked.code());
+        assertTrue(voidAvailability.path("canVoid").asBoolean());
+        write(
+                "transitionOperationsCatalogItemStatus",
+                MAPPER.createObjectNode()
+                        .put("itemCode", itemCode)
+                        .put("expectedVersion", created.path("version").asLong())
+                        .put("targetStatus", "VOIDED"));
+        assertEquals(
+                "VOIDED",
+                jdbc.queryForObject("SELECT status FROM catalog.catalog_item WHERE item_ref=?", String.class, itemRef));
         assertEquals(
                 "DISABLED",
-                jdbc.queryForObject("SELECT status FROM catalog.catalog_item WHERE item_ref=?", String.class, itemRef));
+                jdbc.queryForObject(
+                        "SELECT definition_status FROM inventory.stock_target WHERE item_ref=?",
+                        String.class,
+                        itemRef));
     }
 
     @Test
@@ -586,7 +619,7 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
-    void skuVoidIsBlockedByAnInventoryReferenceWithoutChangingTheSku() {
+    void skuVoidRetiresItsOwnInventoryDefinitionInsteadOfBlockingTheSku() {
         String itemCode = generatedCatalogCode("SKU-INVENTORY-GUARD");
         JsonNode created = write(
                 "createOperationsCatalogItem",
@@ -618,23 +651,29 @@ class CatalogCategoryOwnerIntegrationTest {
                 itemCode,
                 "GUARDED-SKU");
 
-        CatalogOwnerApi.Problem blocked = assertThrows(
-                CatalogOwnerApi.Problem.class,
-                () -> write(
-                        "saveOperationsCatalogItem",
-                        skuVoidSave(itemCode, saved.path("version").asLong(), before, skuRef, skuVersion)));
-        assertEquals("REFERENCE_BLOCKS_VOID", blocked.code());
+        JsonNode voided = write(
+                "saveOperationsCatalogItem",
+                skuVoidSave(itemCode, saved.path("version").asLong(), before, skuRef, skuVersion));
         assertEquals(
-                "ENABLED",
+                "VOIDED",
+                voided.path("skuTransitions").path(0).path("targetStatus").asText());
+        assertEquals(
+                "VOIDED",
                 jdbc.queryForObject(
                         "SELECT status FROM catalog.catalog_sku WHERE product_sku_ref=?", String.class, skuRef));
         assertEquals(
-                saved.path("version").asLong(),
+                saved.path("version").asLong() + 1,
                 jdbc.queryForObject("SELECT version FROM catalog.catalog_item WHERE item_ref=?", Long.class, itemRef));
+        assertEquals(
+                "DISABLED",
+                jdbc.queryForObject(
+                        "SELECT definition_status FROM inventory.stock_target WHERE product_sku_ref=?",
+                        String.class,
+                        skuRef));
     }
 
     @Test
-    void skuRetirementBatchKeepsEachInventoryBlockerAttributedToItsSku() {
+    void skuRetirementBatchRetiresOwnInventoryDefinitionsAndKeepsCatalogBlockerAttribution() {
         String itemCode = generatedCatalogCode("SKU-BATCH-GUARD");
         UUID itemRef = UUID.randomUUID();
         UUID ownerItemRef = UUID.randomUUID();
@@ -682,19 +721,12 @@ class CatalogCategoryOwnerIntegrationTest {
         assertFalse(catalogBlocked.getMessage().contains(ownerItemRef.toString()));
         ObjectNode batchVoid = skuVoidSaveMany(
                 itemCode, before.path("version").asLong(), before, List.of(inventoryBlockedSkuRef, freeSkuRef), 1L);
-        CatalogOwnerApi.Problem blocked =
-                assertThrows(CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", batchVoid));
-        assertEquals("REFERENCE_BLOCKS_VOID", blocked.code());
-        assertEquals("该规格存在库存记录或用料，暂不能作废", blocked.getMessage());
-        assertFalse(blocked.getMessage().contains(inventoryBlockedSkuRef.toString()));
-        assertEquals(
-                "ENABLED",
-                jdbc.queryForObject(
-                        "SELECT status FROM catalog.catalog_sku WHERE product_sku_ref=?", String.class, freeSkuRef));
-        jdbc.update("DELETE FROM inventory.stock_target WHERE product_sku_ref=?", inventoryBlockedSkuRef);
-
         JsonNode succeeded = write("saveOperationsCatalogItem", batchVoid);
         assertEquals(2, succeeded.path("skuTransitions").size());
+        assertEquals(
+                "VOIDED",
+                jdbc.queryForObject(
+                        "SELECT status FROM catalog.catalog_sku WHERE product_sku_ref=?", String.class, freeSkuRef));
         assertEquals(
                 "VOIDED",
                 jdbc.queryForObject(
@@ -702,9 +734,11 @@ class CatalogCategoryOwnerIntegrationTest {
                         String.class,
                         inventoryBlockedSkuRef));
         assertEquals(
-                "VOIDED",
+                "DISABLED",
                 jdbc.queryForObject(
-                        "SELECT status FROM catalog.catalog_sku WHERE product_sku_ref=?", String.class, freeSkuRef));
+                        "SELECT definition_status FROM inventory.stock_target WHERE product_sku_ref=?",
+                        String.class,
+                        inventoryBlockedSkuRef));
     }
 
     @Test
@@ -722,7 +756,7 @@ class CatalogCategoryOwnerIntegrationTest {
         ObjectNode draft = save.putObject("sections")
                 .put("expectedCatalogVersion", created.path("version").asLong())
                 .putObject("catalogDraft");
-        draft.putObject("preparationProfile").putArray("productionTagRefs").add(tagRef.toString());
+        draft.put("productionTagRef", tagRef.toString());
         write("saveOperationsCatalogItem", save);
 
         assertFalse(jdbc.queryForObject(
@@ -882,6 +916,72 @@ class CatalogCategoryOwnerIntegrationTest {
                         new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {}));
         assertEquals(100, listItem.path("standardSalePriceMin").asInt());
         assertEquals(300, listItem.path("standardSalePriceMax").asInt());
+    }
+
+    @Test
+    void itemReadbacksProjectSelectedAttributeNamesWithoutWideningTheSaveReadback() {
+        UUID firstOptionRef = UUID.randomUUID();
+        UUID secondOptionRef = UUID.randomUUID();
+        String definitionCode = generatedCatalogCode("READBACK-ATTRIBUTE");
+        CatalogOwnerApi.AttributeDefinitionReadback definition = service.createAttributeDefinition(
+                context("createOperationsCatalogAttributeDefinition", SCOPE, "attribute-readback-definition"),
+                new CatalogOwnerApi.AttributeDefinitionCreateCommand(
+                        definitionCode,
+                        "展示属性",
+                        "MULTI_SELECT",
+                        List.of(
+                                new CatalogOwnerApi.AttributeDefinitionOption(firstOptionRef, "第一项", 0),
+                                new CatalogOwnerApi.AttributeDefinitionOption(secondOptionRef, "第二项", 1))),
+                "attribute-readback-definition-key");
+        String itemCode = generatedCatalogCode("ATTRIBUTE-READBACK");
+        JsonNode created = write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", itemCode)
+                        .put("name", "attribute readback")
+                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
+        ObjectNode request = MAPPER.createObjectNode().put("itemCode", itemCode);
+        ObjectNode draft = request.putObject("sections")
+                .put("expectedCatalogVersion", created.path("version").asLong())
+                .putObject("catalogDraft");
+        draft.putArray("attributeAssignments")
+                .addObject()
+                .put("definitionRef", definition.definitionRef().toString())
+                .putArray("optionRefs")
+                .add(firstOptionRef.toString())
+                .add(secondOptionRef.toString());
+
+        JsonNode saved = write("saveOperationsCatalogItem", request);
+        JsonNode savedAssignment =
+                saved.path("item").path("attributeAssignments").get(0);
+        assertFalse(savedAssignment.has("selectedOptionNames"));
+
+        JsonNode detail = service.readItem(SCOPE.toString(), BRAND, itemCode, "attribute-readback-detail")
+                .path("data")
+                .path("item");
+        JsonNode detailAssignment = detail.path("attributeAssignments").get(0);
+        assertEquals(
+                List.of("第一项", "第二项"),
+                MAPPER.convertValue(
+                        detailAssignment.path("selectedOptionNames"),
+                        new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {}));
+        assertEquals(
+                List.of("第一项", "第二项"),
+                MAPPER.convertValue(
+                        detail.path("attributeFacts").get(0).path("selectedOptionNames"),
+                        new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {}));
+
+        ObjectNode listRequest = MAPPER.createObjectNode();
+        listRequest.putArray("itemCodes").add(itemCode);
+        JsonNode listItem = service.readItems(SCOPE.toString(), BRAND, listRequest, "attribute-readback-list")
+                .path("data")
+                .path("items")
+                .get(0);
+        assertEquals(
+                List.of("第一项", "第二项"),
+                MAPPER.convertValue(
+                        listItem.path("attributeFacts").get(0).path("selectedOptionNames"),
+                        new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {}));
     }
 
     @Test
@@ -1185,8 +1285,8 @@ class CatalogCategoryOwnerIntegrationTest {
                 "INSERT INTO "
                         + "catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,is_default,status,display_ord"
                         + "er,v"
-                        + "ariant_combination_digest) VALUES(?,?, 'DUPLICATE-CODE', 'first', true, 'ENABLED', 0, "
-                        + "'digest-first')",
+                        + "ariant_combination_digest,updated_at_epoch_millis) VALUES(?,?, 'DUPLICATE-CODE', 'first', "
+                        + "true, 'ENABLED', 0, 'digest-first', 1)",
                 UUID.randomUUID(),
                 probeItemRef);
         assertThrows(
@@ -1195,8 +1295,9 @@ class CatalogCategoryOwnerIntegrationTest {
                         "INSERT INTO "
                                 + "catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,is_default,status,dis"
                                 + "play"
-                                + "_order,variant_combination_digest) VALUES(?,?, 'DUPLICATE-CODE', 'second', false, "
-                                + "'ENABLED', 1, 'digest-second')",
+                                + "_order,variant_combination_digest,updated_at_epoch_millis) VALUES(?,?, "
+                                + "'DUPLICATE-CODE', "
+                                + "'second', false, 'ENABLED', 1, 'digest-second', 1)",
                         UUID.randomUUID(),
                         probeItemRef));
         assertEquals(
@@ -1830,7 +1931,7 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
-    void categoryStatusTransitionReturnsCanonicalReadbackAndReplaysOnlyAfterOwnerFactRecheck() {
+    void categoryStatusTransitionReturnsCanonicalReadbackAndReplaysOnlyAfterOwnerFactRecheck() throws Exception {
         JsonNode root = create("VOID-ROOT", "void root", null);
         ObjectNode request = MAPPER.createObjectNode()
                 .put("categoryRef", root.path("categoryRef").asText())
@@ -1848,7 +1949,10 @@ class CatalogCategoryOwnerIntegrationTest {
         JsonNode replay =
                 writeFull("transitionOperationsCatalogCategoryStatus", request, "void-replay", "void-replay-key");
         JsonNode replayResult = replay.path("result");
-        assertEquals(result, replayResult);
+        // command_receipt.response is JSONB: PostgreSQL may reorder object fields, and Jackson may choose a
+        // different integral node type after the persisted response is parsed. Compare the JSON value, not those
+        // transport representations, while retaining an exact deep comparison of every field and nested value.
+        assertEquals(MAPPER.readTree(result.toString()), MAPPER.readTree(replayResult.toString()));
 
         CatalogOwnerApi.Problem mismatchedReplay = assertThrows(
                 CatalogOwnerApi.Problem.class,
@@ -1906,7 +2010,14 @@ class CatalogCategoryOwnerIntegrationTest {
         write(
                 "saveOperationsCatalogItem",
                 itemUnitSave(itemCode, created.path("version").asLong(), each, each));
-        UUID componentItemRef = UUID.randomUUID();
+        JsonNode componentItem = write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", "COMPONENT-01")
+                        .put("name", "inventory component")
+                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
+        UUID componentItemRef =
+                UUID.fromString(componentItem.path("resourceRef").asText());
         UUID componentTargetRef = UUID.randomUUID();
         insertStockTargetWithUnits(
                 componentTargetRef,
@@ -2009,7 +2120,6 @@ class CatalogCategoryOwnerIntegrationTest {
         draft.put("name", "batch category inventory").put("shapeKey", "STANDARD_SALE_COUNTED");
         putItemUnitRefs(draft, each, each);
         draft.putArray("images");
-        draft.putObject("preparationProfile").putArray("productionTagRefs");
         draft.putArray("categoryRefs").add(category.path("categoryRef").asText());
         ArrayNode submittedInventoryNodes = MAPPER.createArrayNode();
         ObjectNode submittedInventoryNode = submittedInventoryNodes.addObject();
@@ -2561,6 +2671,12 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("code", componentCode)
                         .put("name", "composite component")
                         .put("shapeKey", "STANDARD_SALE_COUNTED"));
+        JsonNode componentEnabled = write(
+                "transitionOperationsCatalogItemStatus",
+                MAPPER.createObjectNode()
+                        .put("itemCode", componentCode)
+                        .put("expectedVersion", component.path("version").asLong())
+                        .put("targetStatus", "ENABLED"));
         String ownerCode = generatedCatalogCode("COMPOSITE-OWNER");
         JsonNode owner = write(
                 "createOperationsCatalogItem",
@@ -2593,7 +2709,7 @@ class CatalogCategoryOwnerIntegrationTest {
                                 .put("itemCode", componentCode)
                                 .put(
                                         "expectedVersion",
-                                        component.path("version").asLong())
+                                        componentEnabled.path("version").asLong())
                                 .put("targetStatus", "VOIDED")));
         assertEquals("REFERENCE_BLOCKS_VOID", blocked.code());
     }
@@ -2770,7 +2886,8 @@ class CatalogCategoryOwnerIntegrationTest {
         UUID ownerSkuRef = UUID.randomUUID();
         jdbc.update(
                 "INSERT INTO catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,is_default,status,"
-                        + "display_order,variant_combination_digest) VALUES(?,?,?, ?,true,'ENABLED',0,?)",
+                        + "display_order,variant_combination_digest,updated_at_epoch_millis) "
+                        + "VALUES(?,?,?, ?,true,'ENABLED',0,?,1)",
                 ownerSkuRef,
                 ownerItemRef,
                 "OWNER-SKU",
@@ -2787,7 +2904,8 @@ class CatalogCategoryOwnerIntegrationTest {
         UUID currentSkuRef = UUID.randomUUID();
         jdbc.update(
                 "INSERT INTO catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,is_default,status,"
-                        + "display_order,variant_combination_digest) VALUES(?,?,?, ?,true,'ENABLED',0,?)",
+                        + "display_order,variant_combination_digest,updated_at_epoch_millis) "
+                        + "VALUES(?,?,?, ?,true,'ENABLED',0,?,1)",
                 currentSkuRef,
                 currentItemRef,
                 "CURRENT-SKU",
@@ -2842,8 +2960,8 @@ class CatalogCategoryOwnerIntegrationTest {
                 "INSERT INTO "
                         + "catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,is_default,status,display_ord"
                         + "er,v"
-                        + "ariant_combination_digest) VALUES(?,?, 'LINK-SKU', 'linked SKU', true, 'ENABLED', 0, "
-                        + "'link-sku')",
+                        + "ariant_combination_digest,updated_at_epoch_millis) VALUES(?,?, 'LINK-SKU', 'linked SKU', "
+                        + "true, 'ENABLED', 0, 'link-sku', 1)",
                 referencedSkuRef,
                 referencedItemRef);
         ObjectNode save = MAPPER.createObjectNode().put("itemCode", currentItemCode);
@@ -3133,8 +3251,9 @@ class CatalogCategoryOwnerIntegrationTest {
         assertTrue(
                 java.util.stream.StreamSupport.stream(
                                 availability.path("blockingReasons").spliterator(), false)
-                        .anyMatch(reason -> "包含规格".equals(reason.path("label").asText())
-                                && reason.path("count").asLong() == 1L),
+                        .anyMatch(reason ->
+                                "HAS_SKUS".equals(reason.path("reasonCode").asText())
+                                        && reason.path("count").asLong() == 1L),
                 "不可作废的 SKU 父商品必须返回同一条可见阻断原因");
     }
 
@@ -3203,7 +3322,12 @@ class CatalogCategoryOwnerIntegrationTest {
 
         RecordingJdbcTemplate recordingJdbc = new RecordingJdbcTemplate(dataSource());
         CatalogOwnerService recordingService = new CatalogOwnerService(
-                recordingJdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L, mock(CatalogAssetReferenceLock.class));
+                recordingJdbc,
+                MAPPER,
+                (TimeProvider) () -> 1_785_000_000_000L,
+                mock(CatalogAssetReferenceLock.class),
+                null,
+                new InventoryOwnerService(recordingJdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L));
         JsonNode detail = recordingService
                 .readItem(SCOPE.toString(), BRAND, itemCode, "qg10-sku-detail")
                 .path("data")
@@ -3222,13 +3346,13 @@ class CatalogCategoryOwnerIntegrationTest {
                                         .path("blockingReasons")
                                         .spliterator(),
                                 false)
-                        .anyMatch(
-                                reason -> "被套餐内容使用".equals(reason.path("label").asText())
-                                        && reason.path("count").asLong() == 1L
-                                        && "SKU inbound owner"
-                                                .equals(reason.path("relatedItemNames")
-                                                        .path(0)
-                                                        .asText())),
+                        .anyMatch(reason -> "USED_BY_PACKAGE"
+                                        .equals(reason.path("reasonCode").asText())
+                                && reason.path("count").asLong() == 1L
+                                && "SKU inbound owner"
+                                        .equals(reason.path("relatedItemNames")
+                                                .path(0)
+                                                .asText())),
                 "不可作废的规格必须返回同一条可见阻断原因");
         assertFalse(skuDetail(detail, secondSkuRef)
                 .path("voidAvailability")
@@ -3507,7 +3631,13 @@ class CatalogCategoryOwnerIntegrationTest {
                         .path("skus")
                         .get(0))
                 .put("skuName", "中杯拿铁");
-        write("saveOperationsCatalogItem", componentSkuSave);
+        JsonNode componentSaved = write("saveOperationsCatalogItem", componentSkuSave);
+        write(
+                "transitionOperationsCatalogItemStatus",
+                MAPPER.createObjectNode()
+                        .put("itemCode", componentCode)
+                        .put("expectedVersion", componentSaved.path("version").asLong())
+                        .put("targetStatus", "ENABLED"));
 
         String parentCode = generatedCatalogCode("COMPOSITE-SKU-PARENT");
         JsonNode parent = write(
@@ -3600,6 +3730,12 @@ class CatalogCategoryOwnerIntegrationTest {
                             .put("name", componentCode)
                             .put("shapeKey", "STANDARD_SALE_COUNTED"));
             componentRefs.add(component.path("resourceRef").asText());
+            write(
+                    "transitionOperationsCatalogItemStatus",
+                    MAPPER.createObjectNode()
+                            .put("itemCode", componentCode)
+                            .put("expectedVersion", component.path("version").asLong())
+                            .put("targetStatus", "ENABLED"));
         }
         String parentCode = generatedCatalogCode("COMPOSITE-PARENT");
         JsonNode parent = write(
@@ -3798,10 +3934,15 @@ class CatalogCategoryOwnerIntegrationTest {
                 .path("data")
                 .path("items")
                 .get(0);
-        assertEquals("口感", renamedAttributeSummary.path("specificationFacts").get(0).path("attributeName").asText());
         assertEquals(
-                renamedAttributeDetail.path("specificationFacts"),
-                renamedAttributeSummary.path("specificationFacts"));
+                "口感",
+                renamedAttributeSummary
+                        .path("specificationFacts")
+                        .get(0)
+                        .path("attributeName")
+                        .asText());
+        assertEquals(
+                renamedAttributeDetail.path("specificationFacts"), renamedAttributeSummary.path("specificationFacts"));
         JsonNode skuPage = service.readItemSkus(
                         SCOPE.toString(),
                         BRAND,
@@ -4150,9 +4291,8 @@ class CatalogCategoryOwnerIntegrationTest {
                 "INSERT INTO "
                         + "catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,is_default,status,display_ord"
                         + "er,v"
-                        + "ariant_combination_digest) VALUES(?,?, 'DIGEST-EXISTING', 'digest existing', true, "
-                        + "'ENABLED', "
-                        + "0, 'same-combination')",
+                        + "ariant_combination_digest,updated_at_epoch_millis) VALUES(?,?, 'DIGEST-EXISTING', "
+                        + "'digest existing', true, 'ENABLED', 0, 'same-combination', 1)",
                 existingSkuRef,
                 itemRef);
 
@@ -4573,7 +4713,8 @@ class CatalogCategoryOwnerIntegrationTest {
     private static void insertQG10Sku(UUID itemRef, UUID skuRef, String skuCode, boolean isDefault, String digest) {
         jdbc.update(
                 "INSERT INTO catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,is_default,status,"
-                        + "display_order,variant_combination_digest) VALUES(?,?,?,? ,?,'ENABLED',0,?)",
+                        + "display_order,variant_combination_digest,updated_at_epoch_millis) "
+                        + "VALUES(?,?,?,? ,?,'ENABLED',0,?,1)",
                 skuRef,
                 itemRef,
                 skuCode,
@@ -4904,7 +5045,7 @@ class CatalogCategoryOwnerIntegrationTest {
 
     private static JsonNode smartView(JsonNode navigation, String key) {
         for (JsonNode view : navigation.path("smartViews"))
-            if (key.equals(view.path("key").asText())) return view;
+            if (key.equals(view.path("viewKey").asText())) return view;
         throw new AssertionError("smart view not found: " + key);
     }
 

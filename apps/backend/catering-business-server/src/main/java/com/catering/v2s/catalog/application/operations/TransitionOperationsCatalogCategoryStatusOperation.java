@@ -44,7 +44,7 @@ public class TransitionOperationsCatalogCategoryStatusOperation {
                                 request.categoryRef(),
                                 CreateOperationsCatalogCategoryOperation.requiredLong(
                                         request.expectedVersion(), "expectedVersion"),
-                                request.targetStatus()),
+                                request.targetStatus().name()),
                         invocation.idempotencyKey()));
     }
 

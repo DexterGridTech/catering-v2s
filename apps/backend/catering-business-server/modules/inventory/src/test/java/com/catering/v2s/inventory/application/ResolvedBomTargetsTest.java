@@ -11,12 +11,14 @@ import static org.mockito.Mockito.when;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementSetter;
-import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.ResultSetExtractor;
 
 class ResolvedBomTargetsTest {
     @Test
@@ -26,12 +28,15 @@ class ResolvedBomTargetsTest {
         List<UUID> submitted = new ArrayList<>();
         for (int index = 0; index < 10; index++) submitted.add(UUID.randomUUID());
         UUID missing = submitted.get(7);
-        List<UUID> resolved =
-                submitted.stream().filter(ref -> !ref.equals(missing)).toList();
+        Map<UUID, ResolvedBomTargets.TargetFact> resolved = new LinkedHashMap<>();
+        submitted.stream()
+                .filter(ref -> !ref.equals(missing))
+                .forEach(ref ->
+                        resolved.put(ref, new ResolvedBomTargets.TargetFact("ENABLED", true, UUID.randomUUID())));
         when(jdbc.query(
                         eq(ResolvedBomTargets.STATEMENT_TEMPLATE),
                         any(PreparedStatementSetter.class),
-                        any(RowMapper.class)))
+                        any(ResultSetExtractor.class)))
                 .thenReturn(resolved);
 
         ResolvedBomTargets targets = ResolvedBomTargets.load(jdbc, "scope", "brand", submitted);
@@ -44,6 +49,6 @@ class ResolvedBomTargetsTest {
                 .query(
                         eq(ResolvedBomTargets.STATEMENT_TEMPLATE),
                         any(PreparedStatementSetter.class),
-                        any(RowMapper.class));
+                        any(ResultSetExtractor.class));
     }
 }

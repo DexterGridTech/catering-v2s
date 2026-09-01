@@ -169,6 +169,14 @@ function successContentType(operation) {
   if (operation.responseSchema === "BinaryAssetContent") return "application/octet-stream";
   return "application/json";
 }
+function requestContentType(operation) {
+  if (operation.requestSchema === "NoBody") return null;
+  const contentType = operation.requestContentType || "application/json";
+  if (!["application/json", "multipart/form-data"].includes(contentType)) {
+    fail("R5_EDGE_REQUEST_MEDIA_TYPE_INVALID", `${operation.operationId}:${contentType}`);
+  }
+  return contentType;
+}
 function operationErrors(operation, catalog) {
   const selection = catalog.operationErrorSelectionRules[operation.operationId];
   if (selection?.mode === "REPLACE_BASE_WITH_AUGMENTATION") return catalog.operationErrorAugmentations[operation.operationId] || [];
@@ -229,7 +237,8 @@ function operationDocument(operation, catalog, requirements, pathFile) {
       fail("R5_EDGE_AUTHORIZATION_MODE_UNRESOLVED", operation.operationId);
     }
   }
-  if (operation.requestSchema !== "NoBody") document.requestBody = { required: true, content: { "application/json": { schema: { $ref: `#/components/schemas/${operation.requestSchema}` } } } };
+  const requestType = requestContentType(operation);
+  if (requestType) document.requestBody = { required: true, content: { [requestType]: { schema: { $ref: `#/components/schemas/${operation.requestSchema}` } } } };
   return document;
 }
 function collectSourceSchemas(catalog) {

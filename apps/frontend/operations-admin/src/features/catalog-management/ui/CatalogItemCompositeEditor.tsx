@@ -1,4 +1,4 @@
-import {Alert, Button, Card, Col, Input, InputNumber, Modal, Row, Select, Space, Switch, Typography} from 'antd';
+import {Alert, Button, Card, Col, Input, InputNumber, Row, Select, Space, Switch, Tag, theme, Typography} from 'antd';
 import {useEffect, useMemo, useState, type ReactNode} from 'react';
 import {NameCodeText, testId, useCursorCandidates} from '@catering-v2s/admin-ui-foundation';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
@@ -63,6 +63,73 @@ export function CatalogItemCompositeEditor(props: CatalogItemCompositeEditorProp
   );
 }
 
+type CatalogItemCandidate = ReturnType<typeof decodeItems>['items'][number];
+
+function useCompositeCandidateCandidates({
+  open,
+  currentItemCode,
+  queryContext,
+  brandRef,
+}: {
+  open: boolean;
+  currentItemCode?: string;
+  queryContext: OperationsPageProps['queryContext'];
+  brandRef?: string;
+}) {
+  const [keyword, setKeyword] = useState('');
+  const candidateState = useCursorCandidates<CatalogItemCandidate>({
+    queryText: keyword,
+    resetKey: `composite-candidate|${queryContext.scopeRef ?? ''}|${brandRef ?? ''}|${currentItemCode ?? ''}`,
+    pageSize: 20,
+    keyOf: item => item.itemRef,
+  });
+  const {acceptPage, cursor, debouncedQueryText, pageSize} = candidateState;
+  const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
+  const request = useMemo(
+    () =>
+      catalogInventoryRtkRequest.getOperationsCatalogItems(
+        {},
+        {
+          query: {
+            dataNodeRef: wireUuid(queryContext.scopeRef ?? ''),
+            ...(debouncedQueryText ? {keyword: debouncedQueryText} : {}),
+            ...(cursor ? {cursor} : {}),
+            candidateUsage: 'COMPOSITE_COMPONENT',
+            excludeItemCode: currentItemCode,
+            pageSize,
+          },
+          headers,
+        },
+      ),
+    [cursor, currentItemCode, debouncedQueryText, headers, pageSize, queryContext.scopeRef],
+  );
+  const query = operationsRtk.useGetOperationsCatalogItemsQuery(request, {
+    skip: !open || !queryContext.scopeRef,
+  });
+  useEffect(() => {
+    if (!query.currentData) return;
+    const page = decodeItems(query.currentData);
+    acceptPage(page.items, {
+      pageSize,
+      total: page.total,
+      nextCursor: page.cursor,
+    });
+  }, [acceptPage, pageSize, query.currentData]);
+  const error = query.isError ? '可选商品暂时无法加载，请稍后重试。' : undefined;
+  return {
+    ...candidateState,
+    keyword,
+    setKeyword,
+    loading: query.isLoading || query.isFetching,
+    error,
+    hasLoaded: Boolean(query.currentData),
+    retry: query.refetch,
+    loadNext: () => candidateState.loadNext(query.isFetching),
+    onPopupScroll: (event: Parameters<typeof candidateState.onPopupScroll>[0]) =>
+      candidateState.onPopupScroll(event, query.isFetching),
+  };
+}
+
 function CompositeCandidatePicker({
   manifest,
   value,
@@ -73,7 +140,7 @@ function CompositeCandidatePicker({
   testIdValue,
 }: {
   manifest?: CatalogManifest;
-  value: {name: string; code: string};
+  value: {name: string; code: string; itemRef: CatalogCompositeComponent['itemRef']};
   currentItemCode?: string;
   queryContext: OperationsPageProps['queryContext'];
   brandRef?: string;
@@ -81,138 +148,85 @@ function CompositeCandidatePicker({
   testIdValue: string;
 }) {
   const [open, setOpen] = useState(false);
-  return (
-    <>
-      <Button
-        block
-        style={{textAlign: 'left', height: 'auto', minHeight: 32, whiteSpace: 'normal'}}
-        onClick={() => setOpen(true)}
-        {...testId(testIdValue)}
-      >
-        {value.name ? catalogBusinessName(value.name, value.code, '商品名称暂时无法读取') : '选择商品'}
+  const candidateState = useCompositeCandidateCandidates({open, currentItemCode, queryContext, brandRef});
+  const selectedValue = value.code && value.itemRef ? String(value.itemRef) : undefined;
+  const selectableItems = candidateState.items;
+  const options = [
+    ...(selectedValue && !selectableItems.some(item => String(item.itemRef) === selectedValue)
+      ? [
+          {
+            value: selectedValue,
+            label: (
+              <NameCodeText
+                name={catalogBusinessName(value.name, value.code, '商品名称暂时无法读取')}
+                code={value.code}
+              />
+            ),
+          },
+        ]
+      : []),
+    ...selectableItems.map(item => ({
+      value: String(item.itemRef),
+      label: (
+        <div>
+          <NameCodeText name={catalogBusinessName(item.name, item.code, '商品名称暂时无法读取')} code={item.code} />
+          <Typography.Text type="secondary" style={{fontSize: 12}}>
+            {catalogEnumLabel(manifest, 'shapeKey', item.shapeKey)}
+          </Typography.Text>
+        </div>
+      ),
+    })),
+  ];
+  const notFoundContent = candidateState.error ? (
+    <Space direction="vertical" size={4} style={{display: 'flex', padding: 8}}>
+      <Typography.Text type="danger">{candidateState.error}</Typography.Text>
+      <Button size="small" type="link" onClick={candidateState.retry}>
+        重试
       </Button>
-      {open ? (
-        <CompositeCandidateSelectionModal
-          manifest={manifest}
-          currentItemCode={currentItemCode}
-          queryContext={queryContext}
-          brandRef={brandRef}
-          onSelect={item => {
-            onSelect(item);
-            setOpen(false);
-          }}
-          onCancel={() => setOpen(false)}
-          testIdValue={testIdValue}
+    </Space>
+  ) : candidateState.loading ? (
+    <Typography.Text type="secondary">候选加载中…</Typography.Text>
+  ) : !candidateState.hasLoaded ? (
+    <Typography.Text type="secondary">正在加载候选商品…</Typography.Text>
+  ) : (
+    <Typography.Text type="secondary">暂无可选择的商品</Typography.Text>
+  );
+  return (
+    <Space direction="vertical" size={4} style={{display: 'flex'}}>
+      <Select
+        showSearch
+        filterOption={false}
+        value={selectedValue}
+        searchValue={candidateState.keyword}
+        onSearch={candidateState.setKeyword}
+        onOpenChange={setOpen}
+        loading={candidateState.loading}
+        options={options}
+        notFoundContent={notFoundContent}
+        onPopupScroll={candidateState.onPopupScroll}
+        onChange={itemRef => {
+          const item = selectableItems.find(candidate => String(candidate.itemRef) === String(itemRef));
+          if (!item) return;
+          onSelect({itemCode: item.code, itemName: item.name, itemRef: item.itemRef});
+          candidateState.setKeyword('');
+        }}
+        placeholder="选择商品"
+        style={{width: '100%'}}
+        {...testId(testIdValue)}
+      />
+      {candidateState.error ? (
+        <Alert
+          type="error"
+          showIcon
+          message={candidateState.error}
+          action={
+            <Button size="small" type="link" onClick={candidateState.retry}>
+              重试
+            </Button>
+          }
         />
       ) : null}
-    </>
-  );
-}
-
-function CompositeCandidateSelectionModal({
-  manifest,
-  currentItemCode,
-  queryContext,
-  brandRef,
-  onSelect,
-  onCancel,
-  testIdValue,
-}: Omit<Parameters<typeof CompositeCandidatePicker>[0], 'value'> & {onCancel: () => void}) {
-  const [keyword, setKeyword] = useState('');
-  const candidateState = useCursorCandidates<ReturnType<typeof decodeItems>['items'][number]>({
-    queryText: keyword,
-    resetKey: `composite-candidate|${queryContext.scopeRef ?? ''}|${brandRef ?? ''}`,
-    pageSize: 20,
-    keyOf: item => item.itemRef,
-  });
-  const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
-  const itemRequest = useMemo(
-    () =>
-      catalogInventoryRtkRequest.getOperationsCatalogItems(
-        {},
-        {
-          query: {
-            dataNodeRef: wireUuid(queryContext.scopeRef ?? ''),
-            ...(candidateState.debouncedQueryText ? {keyword: candidateState.debouncedQueryText} : {}),
-            ...(candidateState.cursor ? {cursor: candidateState.cursor} : {}),
-            candidateUsage: 'COMPOSITE_COMPONENT',
-            excludeItemCode: currentItemCode,
-            pageSize: candidateState.pageSize,
-          },
-          headers,
-        },
-      ),
-    [
-      candidateState.cursor,
-      candidateState.debouncedQueryText,
-      candidateState.pageSize,
-      currentItemCode,
-      headers,
-      queryContext.scopeRef,
-    ],
-  );
-  const itemsQuery = operationsRtk.useGetOperationsCatalogItemsQuery(itemRequest, {skip: !open});
-  const page = decodeItems(itemsQuery.currentData);
-  const acceptCandidatePage = candidateState.acceptPage;
-  const candidatePageSize = candidateState.pageSize;
-  useEffect(() => {
-    if (!itemsQuery.currentData) return;
-    acceptCandidatePage(page.items, {
-      pageSize: candidatePageSize,
-      total: page.total,
-      nextCursor: page.cursor,
-    });
-  }, [acceptCandidatePage, candidatePageSize, itemsQuery.currentData, page.cursor, page.items, page.total]);
-  const selectableItems = candidateState.items;
-  return (
-    <Modal open title="选择套餐内容" width={720} footer={null} onCancel={onCancel}>
-      <Space direction="vertical" size={12} style={{display: 'flex'}}>
-        <Typography.Text type="secondary">先选择商品；如该商品有规格，可在下一步选择规格。</Typography.Text>
-        <Input.Search
-          autoFocus
-          allowClear
-          placeholder="按商品名称或编码搜索"
-          value={keyword}
-          onChange={event => setKeyword(event.target.value)}
-          loading={itemsQuery.isLoading || itemsQuery.isFetching}
-        />
-        {itemsQuery.isError ? <Alert type="error" showIcon message="可选商品暂时无法加载，请稍后重试。" /> : null}
-        {!itemsQuery.isError && selectableItems.length === 0 ? (
-          <Typography.Text type="secondary">暂无可选择的商品</Typography.Text>
-        ) : (
-          <Space direction="vertical" size={4} style={{display: 'flex'}}>
-            {selectableItems.map(item => (
-              <Button
-                key={item.itemRef}
-                block
-                style={{height: 'auto', minHeight: 48, textAlign: 'left', whiteSpace: 'normal'}}
-                onClick={() => {
-                  onSelect({itemCode: item.code, itemName: item.name, itemRef: item.itemRef});
-                }}
-                {...testId(catalogTestIdControls.edit.related(testIdValue, `item-${item.code}`))}
-              >
-                <NameCodeText
-                  name={catalogBusinessName(item.name, item.code, '商品名称暂时无法读取')}
-                  code={item.code}
-                />
-                <Typography.Text type="secondary" style={{display: 'block', fontSize: 12}}>
-                  {catalogEnumLabel(manifest, 'shapeKey', item.shapeKey)}
-                </Typography.Text>
-              </Button>
-            ))}
-          </Space>
-        )}
-        {candidateState.nextCursor ? (
-          <Button
-            onClick={() => candidateState.loadNext(itemsQuery.isFetching)}
-            loading={itemsQuery.isFetching}
-            {...testId(catalogTestIdControls.edit.related(testIdValue, 'next'))}
-          >
-            继续加载商品
-          </Button>
-        ) : null}
-      </Space>
-    </Modal>
+    </Space>
   );
 }
 
@@ -352,7 +366,7 @@ function CompositeComponentsTable({
               <Typography.Text strong>商品</Typography.Text>
               <CompositeCandidatePicker
                 manifest={manifest}
-                value={{name: component.itemName, code: component.itemCode}}
+                value={{name: component.itemName, code: component.itemCode, itemRef: component.itemRef}}
                 currentItemCode={currentItemCode}
                 queryContext={queryContext}
                 brandRef={brandRef}
@@ -530,6 +544,7 @@ function CompositeGroupsEditor({
   version: number;
   createDraftRowId: (prefix: string) => string;
 }) {
+  const {token} = theme.useToken();
   // Select the first existing group during the initial render as well as after
   // subsequent draft changes.  An effect-only default leaves the detail pane
   // blank for the first paint and makes the user think the selected group has
@@ -611,32 +626,65 @@ function CompositeGroupsEditor({
       </Button>
       {values.length === 0 && <EmptySection text="未维护套餐分组" />}
       {values.length > 0 && (
-        <Space align="start" size={12} style={{display: 'flex'}}>
-          <Card size="small" title="套餐分组" style={{width: 240, flex: '0 0 240px'}}>
-            <Space direction="vertical" size={4} style={{display: 'flex'}}>
-              {values.map((group, index) => (
-                <Button
-                  key={group.editorId}
-                  type={group.editorId === selectedGroupId ? 'primary' : 'text'}
-                  style={{height: 'auto', minHeight: 48, textAlign: 'left', whiteSpace: 'normal'}}
-                  onClick={() => setSelectedGroupId(group.editorId)}
-                >
-                  <Typography.Text ellipsis={{tooltip: group.groupName || '未命名分组'}}>
-                    {group.groupName || `套餐分组 ${index + 1}`}
-                  </Typography.Text>
-                  <br />
-                  <Typography.Text type="secondary" style={{fontSize: 12}}>
-                    {({FIXED: '固定包含', SINGLE: '单选', MULTIPLE: '多选'} as Record<string, string>)[
-                      group.selectionRule
-                    ] ?? '未设置'}
-                    {' · '}
-                    {group.components.length} 项内容
-                  </Typography.Text>
-                </Button>
-              ))}
-            </Space>
-          </Card>
-          <div style={{flex: 1, minWidth: 0}}>
+        <Row gutter={24} align="top">
+          <Col flex="280px">
+            <Card size="small" title="套餐分组" style={{height: '100%'}}>
+              <nav aria-label="选择套餐分组">
+                <div style={{display: 'grid', gap: 8}}>
+                  {values.map((group, index) => {
+                    const active = group.editorId === selectedGroupId;
+                    const selectionLabel =
+                      ({FIXED: '固定包含', SINGLE: '单选', MULTIPLE: '多选'} as Record<string, string>)[
+                        group.selectionRule
+                      ] ?? '未设置';
+                    return (
+                      <button
+                        key={group.editorId}
+                        type="button"
+                        aria-current={active ? 'page' : undefined}
+                        aria-label={`${group.groupName || `套餐分组 ${index + 1}`}，${selectionLabel}，${
+                          group.components.length
+                        } 项内容`}
+                        onClick={() => setSelectedGroupId(group.editorId)}
+                        style={{
+                          appearance: 'none',
+                          width: '100%',
+                          minHeight: 64,
+                          padding: '10px 12px',
+                          border: `1px solid ${active ? token.colorPrimaryBorder : token.colorBorderSecondary}`,
+                          borderInlineStart: `3px solid ${active ? token.colorPrimary : 'transparent'}`,
+                          borderRadius: token.borderRadius,
+                          background: active ? token.colorPrimaryBg : token.colorBgContainer,
+                          color: token.colorText,
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          font: 'inherit',
+                        }}
+                        {...testId(catalogTestIdControls.edit.dynamic('composite-group', 'select', group.editorId))}
+                      >
+                        <span style={{display: 'grid', gap: 5, minWidth: 0}}>
+                          <span style={{display: 'flex', alignItems: 'center', gap: 6, minWidth: 0}}>
+                            <Typography.Text
+                              strong
+                              ellipsis={{tooltip: group.groupName || '未命名分组'}}
+                              style={{minWidth: 0, flex: 1}}
+                            >
+                              {group.groupName || `套餐分组 ${index + 1}`}
+                            </Typography.Text>
+                            <Tag color={active ? 'blue' : undefined} style={{marginInlineEnd: 0}}>
+                              {selectionLabel}
+                            </Tag>
+                          </span>
+                          <Typography.Text type="secondary">{group.components.length} 项内容</Typography.Text>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </nav>
+            </Card>
+          </Col>
+          <Col flex="1 1 0" style={{minWidth: 0}}>
             {(selectedGroupId ? values.filter(group => group.editorId === selectedGroupId) : []).map(group => {
               const groupIndex = values.findIndex(entry => entry.editorId === group.editorId);
               return (
@@ -644,6 +692,7 @@ function CompositeGroupsEditor({
                   key={group.editorId}
                   size="small"
                   title={`套餐分组 ${groupIndex + 1}`}
+                  {...testId(catalogTestIdControls.edit.dynamic('composite-group', 'detail', group.editorId))}
                   extra={
                     <Space size={2}>
                       <Button size="small" disabled={groupIndex === 0} onClick={() => moveGroup(group.editorId, -1)}>
@@ -775,8 +824,8 @@ function CompositeGroupsEditor({
                 </Card>
               );
             })}
-          </div>
-        </Space>
+          </Col>
+        </Row>
       )}
     </Space>
   );

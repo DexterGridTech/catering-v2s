@@ -189,3 +189,10 @@ Dexter 裁定它是**通用 UI 约定**,已进 `frontend-coding-standard.md` §3
   **这次真的坏在它上面 · 漏了不报错 · 评审者必然要做这个判断**。
 - **新增判据一律不进本文** —— 送去它该在的正本。
 - `agent-operating-model.md` §8 与 `cs-review` skill 指向本文,不再各自带清单。
+
+## 5 · 评审产物命名归属
+
+- 外部 Claude 创建的评审文件使用 `-claude` 后缀，继续遵守 `CLAUDE.md` 的写入边界；
+- Codex 创建的文件一律使用 `-codex` 后缀，包括 Codex 作者 intake、reconciliation，以及由 Codex 调度的 `INDEPENDENT_SUBAGENT` review；
+- 子 agent 的独立性由文件内 `reviewerKind=INDEPENDENT_SUBAGENT`、轮次、盲审声明和输入清单证明，不由后缀证明；
+- 本约定只约束后续新建文件，历史文件不回改名。这样文件名能直接表达外部 Claude 与 Codex 侧产物归属，同时不新造第三套后缀。

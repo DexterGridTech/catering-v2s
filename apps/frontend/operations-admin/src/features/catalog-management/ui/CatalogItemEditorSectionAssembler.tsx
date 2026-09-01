@@ -13,14 +13,9 @@ import {CatalogItemOrderOptionsEditor} from './CatalogItemOrderOptionsEditor';
 import {CatalogItemProductionEditor} from './CatalogItemProductionEditor';
 import {CatalogItemInventoryBomEditor} from './CatalogItemInventoryBomEditor';
 import {CatalogItemCompositeEditor} from './CatalogItemCompositeEditor';
-import {CatalogItemGovernanceEditor} from './CatalogItemGovernanceEditor';
 import {EmptySection} from './CatalogItemReadOnlyPresenters';
 import type {CatalogItemEditorSectionProps} from './CatalogItemEditorSectionProps';
-import {
-  catalogCategorySummary,
-  deniedFieldLabel,
-  useCatalogItemEditorFieldPresentation,
-} from './CatalogItemEditorFieldPresentation';
+import {catalogCategorySummary, useCatalogItemEditorFieldPresentation} from './CatalogItemEditorFieldPresentation';
 
 export function CatalogItemEditorSectionAssembler({
   tabKey,
@@ -153,8 +148,7 @@ export function CatalogItemEditorSectionAssembler({
         brandRef={brandRef}
         version={detail.item.version}
         createDraftRowId={createDraftRowId}
-        onOpenDictionary={kind => onOpenConfig(kind, catalogTestIds.static.skuAttributeCreate)}
-        onOpenValueDictionary={() => onOpenConfig('SKU_ATTRIBUTE_VALUE', catalogTestIds.static.skuAttributeValueCreate)}
+        onOpenDictionary={(kind, triggerTestId) => onOpenConfig(kind, triggerTestId)}
         unitOptions={unitOptions}
         onDimensionsChange={onSkuVariantDimensionsChange}
         onSkusChange={onSkusChange}
@@ -183,6 +177,7 @@ export function CatalogItemEditorSectionAssembler({
         brandRef={brandRef}
         onChange={onAttributeAssignmentsChange}
         onDirty={onDirty}
+        onOpenAttributeLibrary={() => onOpenConfig('ATTRIBUTES', catalogTestIds.static.itemAttributeLibraryManage)}
         lockedNotice={locked('attributeAssignments')}
       />
     );
@@ -196,6 +191,9 @@ export function CatalogItemEditorSectionAssembler({
         brandRef={brandRef}
         onChange={onOrderOptionConfigsChange}
         onDirty={onDirty}
+        onOpenOrderOptionLibrary={() =>
+          onOpenConfig('ORDER_OPTIONS', catalogTestIds.static.itemOrderOptionLibraryManage)
+        }
         lockedNotice={locked('orderOptionConfigs')}
       />
     );
@@ -250,14 +248,6 @@ export function CatalogItemEditorSectionAssembler({
         currentItemCode={currentItemCode}
         version={detail.item.version}
         createDraftRowId={createDraftRowId}
-      />
-    );
-  if (tabKey === 'governance')
-    return (
-      <CatalogItemGovernanceEditor
-        detail={detail}
-        manifest={manifest}
-        deniedFieldLabel={fieldKey => deniedFieldLabel(manifest, fieldKey)}
       />
     );
   return <EmptySection text="当前页暂不支持编辑。" />;

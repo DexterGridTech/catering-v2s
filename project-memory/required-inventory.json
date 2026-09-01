@@ -4377,9 +4377,10 @@
       "requiredAssertions": [
         "TERMINAL_STANDARD_SINGLE_SOURCE",
         "TERMINAL_STANDARD_POINTERS_ONLY",
-        "TERMINAL_NINE_HARD_RULES",
+        "TERMINAL_TEN_HARD_RULES",
         "TERMINAL_TRIPLE_NAMING_DERIVED",
-        "TERMINAL_PORT_REGISTRY_WITH_DEFAULTS"
+        "TERMINAL_PORT_REGISTRY_WITH_DEFAULTS",
+        "TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README"
       ],
       "assertionSources": [
         {
@@ -4393,9 +4394,9 @@
           "anchor": "## 6 · 维护约定"
         },
         {
-          "assertionKey": "TERMINAL_NINE_HARD_RULES",
+          "assertionKey": "TERMINAL_TEN_HARD_RULES",
           "path": "doc/platform/terminal-coding-standard.md",
-          "anchor": "## 1 · 九条硬规则（`TR-01` … `TR-09`）"
+          "anchor": "## 1 · 十条硬规则（`TR-01` … `TR-10`）"
         },
         {
           "assertionKey": "TERMINAL_TRIPLE_NAMING_DERIVED",
@@ -4406,6 +4407,11 @@
           "assertionKey": "TERMINAL_PORT_REGISTRY_WITH_DEFAULTS",
           "path": "doc/platform/terminal-coding-standard.md",
           "anchor": "## 3 · 能力端口的形状"
+        },
+        {
+          "assertionKey": "TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README",
+          "path": "doc/platform/terminal-coding-standard.md",
+          "anchor": "### `TR-10` · 每个包必须有中文 `README.md`，说清定位、作用、结构、用法"
         }
       ],
       "sourceRefs": [

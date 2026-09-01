@@ -53,6 +53,27 @@ function readVariable(sourceFile, variableName) {
   throw new Error(`Missing literal variable ${variableName} in ${skeletonGraphPath}`);
 }
 
+function rootFromGraphPath(graphPath) {
+  const graphDirectory = path.dirname(graphPath);
+  if (path.basename(graphDirectory) === 'terminal' && path.basename(path.dirname(graphDirectory)) === 'apps') {
+    return path.resolve(graphDirectory, '../..');
+  }
+  return repoRoot;
+}
+
+function realizedModuleKind(moduleName, graphPath) {
+  if (moduleName !== 'kernel.base.runtime') return null;
+  const root = rootFromGraphPath(graphPath);
+  const manifestPath = path.join(
+    root,
+    'apps/terminal/kernel/base/runtime/src/application/createInternalRuntimeModule.ts',
+  );
+  if (!fs.existsSync(manifestPath)) return null;
+  const source = fs.readFileSync(manifestPath, 'utf8');
+  const match = source.match(/\bkind\s*:\s*['"](owner|toolkit)['"]\s+as\s+const\b/);
+  return match ? match[1] : null;
+}
+
 export function readSkeletonSpec(graphPath = skeletonGraphPath) {
   const sourceText = fs.readFileSync(graphPath, 'utf8');
   const sourceFile = ts.createSourceFile(graphPath, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
@@ -69,6 +90,14 @@ export function readSkeletonSpec(graphPath = skeletonGraphPath) {
       throw new Error(`${moduleName} has an invalid entry`);
     if (!Number.isInteger(entry.batch) || ![1, 2].includes(entry.batch))
       throw new Error(`${moduleName} has an invalid batch`);
+    const manifestKind = realizedModuleKind(moduleName, graphPath);
+    if (entry.plannedKind !== undefined && manifestKind !== null) {
+      throw new Error(`${moduleName} must not declare both plannedKind and manifest kind`);
+    }
+    if (entry.plannedKind === undefined && manifestKind === null) {
+      throw new Error(`${moduleName} has neither plannedKind nor manifest kind`);
+    }
+    entry.plannedKind = entry.plannedKind ?? manifestKind;
     if (!['toolkit', 'owner'].includes(entry.plannedKind)) throw new Error(`${moduleName} has an invalid plannedKind`);
     for (const field of ['dependencies', 'devDependencies']) {
       if (!Array.isArray(entry[field]) || entry[field].some(value => typeof value !== 'string')) {

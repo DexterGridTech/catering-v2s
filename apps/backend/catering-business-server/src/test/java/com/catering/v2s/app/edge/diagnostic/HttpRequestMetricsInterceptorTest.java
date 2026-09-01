@@ -87,7 +87,7 @@ class HttpRequestMetricsInterceptorTest {
                 "012345678901234567890123",
                 "v2s_l2_catalog_run",
                 events.toString());
-        MockHttpServletRequest request = request("X-L2", "getPlatformAdminPage");
+        MockHttpServletRequest request = request("X-L2", "getPlatformAdminPage", "l2-run-1234");
         request.addHeader("X-L2-Secret", "012345678901234567890123");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -240,7 +240,11 @@ class HttpRequestMetricsInterceptorTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         interceptor.preHandle(request, response, new Object());
-        interceptor.afterCompletion(request, response, new Object(), new IllegalStateException("do-not-publish"));
+        IllegalStateException failure = new IllegalStateException("do-not-publish");
+        StackTraceElement externalFrame =
+                new StackTraceElement("com.external.gateway.Client", "call", "Client.java", 1);
+        failure.setStackTrace(new StackTraceElement[] {externalFrame});
+        interceptor.afterCompletion(request, response, new Object(), failure);
 
         String event = Files.readString(events);
         assertTrue(event.contains("\"observationError\":\"REQUEST_EXCEPTION\""));
@@ -418,11 +422,15 @@ class HttpRequestMetricsInterceptorTest {
     }
 
     private static MockHttpServletRequest request(String prefix, String operationId) {
+        return request(prefix, operationId, "run-test-1234");
+    }
+
+    private static MockHttpServletRequest request(String prefix, String operationId, String runId) {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/platform/admin-users");
         request.setAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, "/api/platform/admin-users");
         request.addHeader(prefix + "-Operation-Id", operationId);
         request.addHeader(prefix + "-Route-Template", "/api/platform/admin-users");
-        request.addHeader(prefix + "-Run-Id", "run-test-1234");
+        request.addHeader(prefix + "-Run-Id", runId);
         return request;
     }
 }

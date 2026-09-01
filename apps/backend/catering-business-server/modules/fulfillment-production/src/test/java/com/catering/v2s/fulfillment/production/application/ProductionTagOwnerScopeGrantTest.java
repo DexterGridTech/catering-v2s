@@ -3,7 +3,6 @@ package com.catering.v2s.fulfillment.production.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -182,23 +181,24 @@ class ProductionTagOwnerScopeGrantTest {
                 .thenReturn(new com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts(
                         session, UUID.randomUUID(), "STORE", targetId));
         WorkspaceCapabilityScopeResolver capabilities = mock(WorkspaceCapabilityScopeResolver.class);
-        when(capabilities.resolveGeneratedOperation(
-                        any(), eq(token.requirementId()), eq(token.capabilityFor("STORE")), any()))
-                .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
-                        WorkspaceCapabilityScopeResolver.Decision.ALLOW,
-                        "EDIT_STORE_INVENTORY",
-                        new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
-                                workspaceId,
-                                "production-owner-test",
-                                "STORE",
-                                targetId,
-                                "STORE",
-                                targetId,
-                                List.of(targetId))));
+        when(capabilities.resolveGeneratedCatalogOperation(
+                        any(), eq(token.requirementId()), eq(token.capabilityFor("STORE")), any(), any()))
+                .thenReturn(new WorkspaceCapabilityScopeResolver.CatalogScopeResolution(
+                        new WorkspaceCapabilityScopeResolver.ScopeResolution(
+                                WorkspaceCapabilityScopeResolver.Decision.ALLOW,
+                                token.capabilityFor("STORE"),
+                                new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
+                                        workspaceId,
+                                        "production-owner-test",
+                                        "STORE",
+                                        targetId,
+                                        "STORE",
+                                        targetId,
+                                        List.of(targetId))),
+                        new CatalogScopeLookup.CatalogBrandJudgment(
+                                "brand", "TEST_ORGANIZATION_JUDGMENT", "TEST_REVISION"),
+                        null));
         CatalogScopeLookup catalogScopes = mock(CatalogScopeLookup.class);
-        when(catalogScopes.resolveCatalogBrand(any(), anyString(), eq("STORE"), eq(targetId), any()))
-                .thenReturn(new CatalogScopeLookup.CatalogBrandJudgment(
-                        "brand", "TEST_ORGANIZATION_JUDGMENT", "TEST_REVISION"));
         return new CommandExecutionContextResolver(capabilities, catalogScopes, sessions)
                 .resolveCatalog(
                         "typed-context-session",

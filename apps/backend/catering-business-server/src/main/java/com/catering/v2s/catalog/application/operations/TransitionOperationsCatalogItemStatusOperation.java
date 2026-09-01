@@ -40,7 +40,7 @@ public class TransitionOperationsCatalogItemStatusOperation {
                         new CatalogOwnerApi.CatalogItemStatusTransitionCommand(
                                 invocation.itemCode(),
                                 requiredLong(request.expectedVersion(), "expectedVersion"),
-                                request.targetStatus()),
+                                request.targetStatus().name()),
                         invocation.idempotencyKey()));
     }
 

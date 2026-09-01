@@ -11,6 +11,7 @@ import com.catering.v2s.app.edge.externalcollaboration.ExternalCollaborationBusi
 import com.catering.v2s.app.edge.generated.wire.ExternalCollaborationTree;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingUpdateRequest;
+import com.catering.v2s.app.edge.generated.wire.ProviderProfileViewEnablementStatus;
 import com.catering.v2s.app.edge.platform.session.PlatformSessionResolver;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.audit.contract.AuditActor;
@@ -156,13 +157,16 @@ class PlatformExternalCollaborationControllerTest {
                         "LOCAL_ONLY",
                         "AVAILABLE");
         when(fixture.catalogSource.externalSystems()).thenReturn(List.of(system));
+        when(fixture.catalogSource.externalSystem("SYSTEM-A")).thenReturn(system);
         when(fixture.catalogSource.providerProfiles()).thenReturn(List.of(provider));
 
         var result = fixture.controller.capabilityDictionary(fixture.request);
 
         assertEquals("SYSTEM-A", result.externalSystems().get(0).externalSystemCode());
         assertEquals("PROVIDER-A", result.providerProfiles().get(0).providerCode());
-        assertEquals("DISABLED", result.providerProfiles().get(0).enablementStatus());
+        assertEquals(
+                ProviderProfileViewEnablementStatus.DISABLED,
+                result.providerProfiles().get(0).enablementStatus());
         verify(fixture.sessions).requireRead(fixture.request);
     }
 

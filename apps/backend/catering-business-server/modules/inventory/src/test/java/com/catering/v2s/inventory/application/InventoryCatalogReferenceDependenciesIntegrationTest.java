@@ -143,6 +143,7 @@ class InventoryCatalogReferenceDependenciesIntegrationTest {
     void consumptionReferencesAreFilteredByPostgresAndExposeTheRepresentativePlan() {
         UUID targetRef = UUID.randomUUID();
         UUID sourceItemRef = UUID.randomUUID();
+        UUID unitRef = UUID.randomUUID();
         insertTarget(targetRef, SCOPE, BRAND, UUID.randomUUID(), UUID.randomUUID(), "QG12-TARGET", "QG12-SKU");
         insertBomWithRows(
                 SCOPE,
@@ -151,7 +152,11 @@ class InventoryCatalogReferenceDependenciesIntegrationTest {
                 UUID.randomUUID(),
                 "QG12-SOURCE",
                 "QG12-SOURCE-SKU",
-                "[{\"targetRef\":\"" + targetRef + "\",\"quantity\":\"2\",\"unit\":\"KG\"}]");
+                "[{\"targetRef\":\""
+                        + targetRef
+                        + "\",\"quantity\":\"2\",\"unit\":\"KG\",\"consumptionUnitSnapshot\":{\"unitRef\":\""
+                        + unitRef
+                        + "\",\"code\":\"GRAM\",\"name\":\"克\",\"unitDimension\":\"WEIGHT\",\"precision\":0}}]");
         insertBomWithRows(
                 SCOPE,
                 BRAND,
@@ -178,6 +183,20 @@ class InventoryCatalogReferenceDependenciesIntegrationTest {
         assertEquals(1, actual.path("entries").size());
         assertEquals(
                 "QG12-SOURCE", actual.path("entries").path(0).path("sourceCode").asText());
+        assertEquals(
+                unitRef.toString(),
+                actual.path("entries")
+                        .path(0)
+                        .path("consumptionUnitSnapshot")
+                        .path("unitRef")
+                        .asText());
+        assertEquals(
+                "GRAM",
+                actual.path("entries")
+                        .path(0)
+                        .path("consumptionUnitSnapshot")
+                        .path("code")
+                        .asText());
         assertEquals(1L, actual.path("total").asLong());
 
         List<String> plan = jdbc.query(
@@ -185,7 +204,7 @@ class InventoryCatalogReferenceDependenciesIntegrationTest {
                         + "SELECT sb.item_ref,sb.item_code,sb.sku_code,sb.option_value_code,"
                         + "entry->>'nodeType' AS source_kind,COALESCE(entry->>'quantity',"
                         + "entry->>'quantityPerUnit','0') AS quantity,COALESCE(entry->>'unit','') AS unit,"
-                        + "entry->>'timing' AS timing,COALESCE(entry->>'status','ACTIVE') AS status,ord,"
+                        + "entry->>'timing' AS timing,ord,"
                         + "COUNT(*) OVER() AS total FROM inventory.stock_bom sb "
                         + "CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(sb.rows)='array' "
                         + "THEN sb.rows ELSE '[]'::jsonb END) WITH ORDINALITY AS e(entry,ord) "
@@ -196,7 +215,7 @@ class InventoryCatalogReferenceDependenciesIntegrationTest {
                         + "jsonb_build_object('targetRef',to_jsonb(CAST(? AS text)))) "
                         + "AND COALESCE(entry->>'targetRef',entry->>'componentTargetRef')=?"
                         + ") SELECT item_ref,item_code,sku_code,option_value_code,source_kind,quantity,unit,"
-                        + "timing,status,total FROM expanded ORDER BY item_code,sku_code NULLS FIRST,ord "
+                        + "timing,total FROM expanded ORDER BY item_code,sku_code NULLS FIRST,ord "
                         + "LIMIT ? OFFSET ?",
                 (result, rowNumber) -> result.getString(1),
                 SCOPE.toString(),
@@ -366,31 +385,28 @@ class InventoryCatalogReferenceDependenciesIntegrationTest {
                 .thenReturn(new WorkspaceCommandAuthorizationFacts(session, UUID.randomUUID(), "STORE", SCOPE));
         WorkspaceCapabilityScopeResolver capabilities =
                 org.mockito.Mockito.mock(WorkspaceCapabilityScopeResolver.class);
-        org.mockito.Mockito.when(capabilities.resolveGeneratedOperation(
+        org.mockito.Mockito.when(capabilities.resolveGeneratedCatalogOperation(
                         org.mockito.ArgumentMatchers.any(),
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.any(),
                         org.mockito.ArgumentMatchers.any()))
-                .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
-                        WorkspaceCapabilityScopeResolver.Decision.ALLOW,
-                        token.capabilityFor("STORE"),
-                        new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
-                                workspaceId,
-                                "inventory-dependency-test",
-                                "STORE",
-                                SCOPE,
-                                "STORE",
-                                SCOPE,
-                                List.of(SCOPE))));
+                .thenReturn(new WorkspaceCapabilityScopeResolver.CatalogScopeResolution(
+                        new WorkspaceCapabilityScopeResolver.ScopeResolution(
+                                WorkspaceCapabilityScopeResolver.Decision.ALLOW,
+                                token.capabilityFor("STORE"),
+                                new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
+                                        workspaceId,
+                                        "inventory-dependency-test",
+                                        "STORE",
+                                        SCOPE,
+                                        "STORE",
+                                        SCOPE,
+                                        List.of(SCOPE))),
+                        new CatalogScopeLookup.CatalogBrandJudgment(
+                                BRAND, "TEST_ORGANIZATION_JUDGMENT", "TEST_REVISION"),
+                        null));
         CatalogScopeLookup catalogScopes = org.mockito.Mockito.mock(CatalogScopeLookup.class);
-        org.mockito.Mockito.when(catalogScopes.resolveCatalogBrand(
-                        org.mockito.ArgumentMatchers.any(),
-                        org.mockito.ArgumentMatchers.anyString(),
-                        org.mockito.ArgumentMatchers.anyString(),
-                        org.mockito.ArgumentMatchers.any(),
-                        org.mockito.ArgumentMatchers.any()))
-                .thenReturn(new CatalogScopeLookup.CatalogBrandJudgment(
-                        BRAND, "TEST_ORGANIZATION_JUDGMENT", "TEST_REVISION"));
         return new CommandExecutionContextResolver(capabilities, catalogScopes, sessions)
                 .resolveCatalog(
                         "dependency-test-session",

@@ -150,6 +150,10 @@
           "type": "integer"
         },
         {
+          "path": "tree[].directCount",
+          "type": "integer"
+        },
+        {
           "path": "tree[].countSemantics",
           "type": "string",
           "enum": [
@@ -878,6 +882,11 @@
           "itemFormat": "uuid"
         },
         {
+          "path": "items[].attributeFacts[].selectedOptionNames",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
           "path": "items[].preparationFacts",
           "type": "object"
         },
@@ -1137,7 +1146,7 @@
           "itemType": "object"
         },
         {
-          "path": "item.skus[].voidAvailability.blockingReasons[].label",
+          "path": "item.skus[].voidAvailability.blockingReasons[].reasonCode",
           "type": "string"
         },
         {
@@ -1909,6 +1918,11 @@
           "itemFormat": "uuid"
         },
         {
+          "path": "item.attributeAssignments[].selectedOptionNames",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
           "path": "item.orderOptionConfigs",
           "type": "array",
           "itemType": "object"
@@ -2338,7 +2352,7 @@
           "itemType": "object"
         },
         {
-          "path": "actionAvailability.voidAvailability.blockingReasons[].label",
+          "path": "actionAvailability.voidAvailability.blockingReasons[].reasonCode",
           "type": "string"
         },
         {
@@ -2944,6 +2958,11 @@
           "type": "array",
           "itemType": "string",
           "itemFormat": "uuid"
+        },
+        {
+          "path": "item.attributeFacts[].selectedOptionNames",
+          "type": "array",
+          "itemType": "string"
         },
         {
           "path": "item.preparationFacts",
@@ -6083,10 +6102,6 @@
           "type": "string"
         },
         {
-          "path": "entries[].status",
-          "type": "string"
-        },
-        {
           "path": "cursor",
           "type": "string"
         },
@@ -6365,14 +6380,6 @@
           "type": [
             "string",
             "null"
-          ]
-        },
-        {
-          "path": "items[].status",
-          "type": "string",
-          "enum": [
-            "ENABLED",
-            "DISABLED"
           ]
         },
         {

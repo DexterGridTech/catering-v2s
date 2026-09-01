@@ -188,7 +188,13 @@ test('definition library preserves every material, searches candidates by cursor
     catalogDefinitionLibraries,
     /onPopupScroll=\{event =>\s*onMaterialCandidatePopupScroll\(event,\s*inventoryQuery\.isFetching\)/,
   );
-  assert.match(catalogDefinitionLibraries, /<Form\.List name=\{\[field\.name, 'materials'\]\}/);
+  assert.match(
+    catalogDefinitionLibraries,
+    /name=\{\[field\.name, 'materials'\]\}[\s\S]*orderOptionMaterialRefs[\s\S]*orderOptionMaterialsFromRefs/,
+  );
+  assert.match(catalogDefinitionLibraries, /<Select[\s\S]*mode="multiple"[\s\S]*style=\{\{width: '100%'\}\}/);
+  assert.doesNotMatch(catalogDefinitionLibraries, /<Form\.List name=\{\[field\.name, 'materials'\]\}/);
+  assert.doesNotMatch(catalogDefinitionLibraries, /添加原料商品/);
   assert.doesNotMatch(catalogDefinitionLibraries, /pageSize:\s*200/);
 
   for (const operationId of ['preflightOperationsBrandCatalogCopy', 'executeOperationsBrandCatalogCopy']) {

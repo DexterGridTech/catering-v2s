@@ -2,6 +2,7 @@ package com.catering.v2s.catalog.application.operations;
 
 import com.catering.v2s.app.edge.generated.wire.CatalogCategoryCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogCategoryReadback;
+import com.catering.v2s.app.edge.generated.wire.CatalogInventoryWireEnums;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
@@ -71,7 +72,7 @@ public class CreateOperationsCatalogCategoryOperation {
                         value.categoryRef(),
                         value.code(),
                         value.name(),
-                        value.status(),
+                        CatalogInventoryWireEnums.DictionaryEntryStatus.valueOf(value.status()),
                         value.parentCategoryRef(),
                         value.version(),
                         value.displayOrder(),

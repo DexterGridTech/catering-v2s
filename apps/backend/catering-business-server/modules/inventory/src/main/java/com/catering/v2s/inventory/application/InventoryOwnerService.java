@@ -609,7 +609,13 @@ public class InventoryOwnerService implements InventoryOwnerApi {
 
     private static InventoryOwnerApi.UnitSnapshot unitSnapshot(java.sql.ResultSet result, int firstColumn)
             throws java.sql.SQLException {
-        UUID ref = result.getObject(firstColumn, UUID.class);
+        String refValue = result.getString(firstColumn);
+        UUID ref;
+        try {
+            ref = refValue == null ? null : UUID.fromString(refValue);
+        } catch (IllegalArgumentException failure) {
+            return null;
+        }
         String code = result.getString(firstColumn + 1);
         String name = result.getString(firstColumn + 2);
         String dimension = result.getString(firstColumn + 3);
@@ -1852,6 +1858,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             node.put("itemCode", row.itemCode())
                     .put("itemName", display.itemName())
                     .put("mode", "DIRECT")
+                    .put("componentEligible", row.componentEligible())
                     .putNull("disabledReason");
             node.putArray("allowedModes").add("NONE").add("DIRECT").add("BOM");
             node.put("defaultMode", "DIRECT");
@@ -1998,27 +2005,40 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     public JsonNode catalogItemVoidDependencies(String scope, String brand, String itemRef, String requestId) {
         requireScope(scope, brand);
         UUID catalogItemRef = opaqueRef(itemRef, "itemRef");
-        long targetCount = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND item_ref=?",
-                Long.class,
-                scope,
-                brand,
-                catalogItemRef);
-        long bomCount = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=?",
-                Long.class,
-                scope,
-                brand,
-                catalogItemRef);
-        ObjectNode result = mapper.createObjectNode()
-                .put("itemRef", catalogItemRef.toString())
-                .put("hasDependentFacts", targetCount > 0 || bomCount > 0)
-                .put("stockTargetCount", targetCount)
-                .put("productBomCount", bomCount);
-        ArrayNode facts = result.putArray("dependentFacts");
-        if (targetCount > 0) facts.addObject().put("factKind", "StockTarget").put("count", targetCount);
-        if (bomCount > 0) facts.addObject().put("factKind", "ProductBom").put("count", bomCount);
-        return result;
+        return catalogVoidDependencyJson(catalogVoidDependenciesReadback(
+                scope, brand, new CatalogVoidSubject(CatalogVoidSubjectKind.CATALOG_ITEM, catalogItemRef)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public JsonNode catalogSkuVoidDependencies(String scope, String brand, String skuRef, String requestId) {
+        requireScope(scope, brand);
+        UUID productSkuRef = opaqueRef(skuRef, "productSkuRef");
+        return catalogVoidDependencyJson(catalogVoidDependenciesReadback(
+                scope, brand, new CatalogVoidSubject(CatalogVoidSubjectKind.PRODUCT_SKU, productSkuRef)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<JsonNode> catalogSkuVoidDependenciesByRefs(
+            String scope, String brand, List<UUID> skuRefs, String requestId) {
+        requireScope(scope, brand);
+        List<UUID> ordered = skuRefs == null
+                ? List.of()
+                : skuRefs.stream().filter(Objects::nonNull).distinct().sorted().toList();
+        if (ordered.isEmpty()) return List.of();
+        Map<UUID, CatalogVoidDependencyReadback> readbacks =
+                catalogVoidDependenciesReadbacks(scope, brand, CatalogVoidSubjectKind.PRODUCT_SKU, ordered);
+        return ordered.stream()
+                .map(ref -> {
+                    CatalogVoidDependencyReadback readback = readbacks.get(ref);
+                    if (readback == null) {
+                        String reason = "inventory SKU void dependency readback is missing";
+                        throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, reason);
+                    }
+                    return (JsonNode) catalogVoidDependencyJson(readback);
+                })
+                .toList();
     }
 
     @Override
@@ -2029,19 +2049,300 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         String dataNodeRef = scope.dataNodeId().toString();
         requireScope(dataNodeRef, scope.brandRef());
         UUID catalogItemRef = opaqueRef(itemRef, "itemRef");
-        long targetCount = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND item_ref=?",
-                Long.class,
+        CatalogVoidDependencyReadback judgement = catalogVoidDependenciesReadback(
                 dataNodeRef,
                 scope.brandRef(),
-                catalogItemRef);
-        long bomCount = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=?",
-                Long.class,
+                new CatalogVoidSubject(CatalogVoidSubjectKind.CATALOG_ITEM, catalogItemRef));
+        return new CatalogItemVoidDependencyReadback(
+                judgement.hasInboundBomReferences(),
+                judgement.ownedActiveStockTargetCount(),
+                judgement.ownedActiveProductBomCount());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CatalogVoidDependencyReadback catalogVoidDependencies(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context, CatalogVoidSubject subject) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog", null);
+        requireScope(scope.dataNodeId().toString(), scope.brandRef());
+        requireCatalogVoidSubject(subject);
+        return catalogVoidDependenciesReadback(scope.dataNodeId().toString(), scope.brandRef(), subject);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CatalogVoidDependencyReadback> catalogVoidDependenciesByRefs(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            CatalogVoidSubjectKind kind,
+            List<UUID> references) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog", null);
+        requireScope(scope.dataNodeId().toString(), scope.brandRef());
+        if (kind == null) {
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "catalog void subject kind is required");
+        }
+        List<UUID> ordered = references == null
+                ? List.of()
+                : references.stream()
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .sorted()
+                        .toList();
+        if (ordered.isEmpty()) return List.of();
+        Map<UUID, CatalogVoidDependencyReadback> readbacks =
+                catalogVoidDependenciesReadbacks(scope.dataNodeId().toString(), scope.brandRef(), kind, ordered);
+        return ordered.stream()
+                .map(ref -> {
+                    CatalogVoidDependencyReadback readback = readbacks.get(ref);
+                    if (readback == null)
+                        throw new InventoryOwnerApi.Problem(
+                                "REFERENCE_MAPPING_UNRESOLVED", 422, "inventory void dependency readback is missing");
+                    return readback;
+                })
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public CatalogVoidInventoryRetirementReadback retireCatalogVoidInventoryDefinitions(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            CatalogVoidSubject subject,
+            String idempotencyKey) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog", null);
+        requireScope(scope.dataNodeId().toString(), scope.brandRef());
+        requireCatalogVoidSubject(subject);
+        String key = requireIdempotencyKey(idempotencyKey);
+        String dataNodeRef = scope.dataNodeId().toString();
+        ObjectNode request = mapper.createObjectNode()
+                .put("subjectKind", subject.kind().name())
+                .put("subjectRef", subject.ref().toString());
+        JsonNode receiptRequest = typedReceiptRequest(request, dataNodeRef, scope.brandRef());
+        CatalogVoidInventoryRetirementReadback replay = replayTyped(
+                dataNodeRef,
+                key,
+                "retireCatalogVoidInventoryDefinitions",
+                receiptRequest,
+                CatalogVoidInventoryRetirementReadback.class);
+        if (replay != null) return replay;
+
+        lockCatalogVoidSubjectRows(dataNodeRef, scope.brandRef(), subject);
+        CatalogVoidDependencyReadback judgement =
+                catalogVoidDependenciesReadback(dataNodeRef, scope.brandRef(), subject);
+        if (judgement.hasInboundBomReferences()) {
+            throw new InventoryOwnerApi.Problem(
+                    "REFERENCE_BLOCKS_VOID",
+                    422,
+                    /* format-wrap */
+                    "库存 BOM 仍引用该对象：" + inboundReferenceSummary(judgement));
+        }
+
+        String ownerColumn = catalogVoidOwnerColumn(subject.kind());
+        int retiredTargets = jdbc.update(
+                "UPDATE inventory.stock_target SET definition_status='DISABLED',version=version+1,"
+                        + "updated_at_epoch_millis=? WHERE data_node_ref=? AND brand_ref=? AND "
+                        + ownerColumn + "=? AND definition_status='ENABLED'",
+                time.currentEpochMillis(),
                 dataNodeRef,
                 scope.brandRef(),
-                catalogItemRef);
-        return new CatalogItemVoidDependencyReadback(targetCount > 0 || bomCount > 0, targetCount, bomCount);
+                subject.ref());
+        int retiredBoms = jdbc.update(
+                "UPDATE inventory.stock_bom SET definition_status='DISABLED',version=version+1,"
+                        + "updated_at_epoch_millis=? WHERE data_node_ref=? AND brand_ref=? AND "
+                        + ownerColumn + "=? AND definition_status='ENABLED'",
+                time.currentEpochMillis(),
+                dataNodeRef,
+                scope.brandRef(),
+                subject.ref());
+        long remaining = countActiveOwnedDefinitions(dataNodeRef, scope.brandRef(), subject);
+        if (remaining != 0L) {
+            throw new InventoryOwnerApi.Problem(
+                    "RESULT_UNKNOWN",
+                    500,
+                    /* format-wrap */
+                    "库存 owner 退休后仍存在启用定义");
+        }
+        CatalogVoidInventoryRetirementReadback result =
+                new CatalogVoidInventoryRetirementReadback(subject, retiredTargets, retiredBoms, remaining);
+        saveTypedReceipt(dataNodeRef, key, "retireCatalogVoidInventoryDefinitions", receiptRequest, result);
+        return result;
+    }
+
+    /**
+     * Retires one catalog item's own inventory definitions inside a batch item transaction. The catalog owner holds the
+     * batch-start item locks and supplies the immutable graph judgement; this owner still rechecks its current
+     * inventory rows in the write statement. The statement also writes the nested owner receipt, so the optimized path
+     * removes round trips without removing owner idempotency or the final readback.
+     */
+    @Override
+    @Transactional
+    public CatalogVoidInventoryRetirementReadback retireCatalogVoidInventoryDefinitionsForBatch(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            CatalogVoidSubject subject,
+            String idempotencyKey) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog", null);
+        requireScope(scope.dataNodeId().toString(), scope.brandRef());
+        requireCatalogVoidSubject(subject);
+        String key = requireIdempotencyKey(idempotencyKey);
+        if (subject.kind() != CatalogVoidSubjectKind.CATALOG_ITEM) {
+            return retireCatalogVoidInventoryDefinitions(context, subject, key);
+        }
+
+        String dataNodeRef = scope.dataNodeId().toString();
+        String operation = "retireCatalogVoidInventoryDefinitions";
+        ObjectNode request = mapper.createObjectNode()
+                .put("subjectKind", subject.kind().name())
+                .put("subjectRef", subject.ref().toString());
+        JsonNode receiptRequest = typedReceiptRequest(request, dataNodeRef, scope.brandRef());
+        String requestHash = hash(receiptRequest);
+        String inboundSql = "inbound_rows";
+        CatalogVoidBatchSqlOutcome outcome = jdbc.queryForObject(
+                "WITH receipt_lock AS MATERIALIZED ("
+                        + "SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)),hashtext(CAST(? AS text)))"
+                        + "), prior_receipt AS MATERIALIZED ("
+                        + "SELECT operation_id,request_hash,response::text AS response "
+                        + "FROM inventory.command_receipt CROSS JOIN receipt_lock "
+                        + "WHERE data_node_ref=? AND idempotency_key=?"
+                        + "), owned_targets AS MATERIALIZED ("
+                        + "SELECT target.target_ref,target.item_ref,target.definition_status "
+                        + "FROM inventory.stock_target target CROSS JOIN receipt_lock "
+                        + "WHERE target.data_node_ref=? AND target.brand_ref=? AND target.item_ref=? "
+                        + "FOR UPDATE"
+                        + "), owned_boms AS MATERIALIZED ("
+                        + "SELECT bom.bom_ref,bom.definition_status "
+                        + "FROM inventory.stock_bom bom CROSS JOIN receipt_lock "
+                        + "WHERE bom.data_node_ref=? AND bom.brand_ref=? AND bom.item_ref=? "
+                        + "FOR UPDATE"
+                        + "), "
+                        + inboundSql + " AS MATERIALIZED ("
+                        + "SELECT bom.bom_ref,ot.target_ref,ot.definition_status AS target_status,"
+                        + "bom.item_code AS source_code,source_item.name AS source_name "
+                        + "FROM inventory.stock_bom bom CROSS JOIN receipt_lock "
+                        + "CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(bom.rows)='array' "
+                        + "THEN bom.rows ELSE '[]'::jsonb END) AS e(entry) "
+                        + "JOIN owned_targets ot ON ot.target_ref::text=COALESCE(e.entry->>'targetRef',"
+                        + "e.entry->>'componentTargetRef') "
+                        + "LEFT JOIN catalog.catalog_item source_item ON source_item.item_ref=bom.item_ref "
+                        + "AND source_item.data_node_ref=? AND source_item.brand_ref=? "
+                        + "WHERE bom.data_node_ref=? AND bom.brand_ref=? AND bom.definition_status='ENABLED' "
+                        + "AND bom.item_ref IS DISTINCT FROM ? "
+                        + "AND NOT EXISTS (SELECT 1 FROM prior_receipt) "
+                        + "FOR UPDATE OF bom"
+                        + "), retired_targets AS ("
+                        + "UPDATE inventory.stock_target target SET definition_status='DISABLED',"
+                        + "version=target.version+1,updated_at_epoch_millis=? "
+                        + "WHERE target.target_ref IN (SELECT target_ref FROM owned_targets) "
+                        + "AND target.definition_status='ENABLED' "
+                        + "AND NOT EXISTS (SELECT 1 FROM " + inboundSql + ") "
+                        + "AND NOT EXISTS (SELECT 1 FROM prior_receipt) "
+                        + "RETURNING target.target_ref"
+                        + "), retired_boms AS ("
+                        + "UPDATE inventory.stock_bom bom SET definition_status='DISABLED',"
+                        + "version=bom.version+1,updated_at_epoch_millis=? "
+                        + "WHERE bom.bom_ref IN (SELECT bom_ref FROM owned_boms) "
+                        + "AND bom.definition_status='ENABLED' "
+                        + "AND NOT EXISTS (SELECT 1 FROM " + inboundSql + ") "
+                        + "AND NOT EXISTS (SELECT 1 FROM prior_receipt) "
+                        + "RETURNING bom.bom_ref"
+                        + "), outcome AS ("
+                        + "SELECT "
+                        + "(SELECT COUNT(*) FROM " + inboundSql + ") AS inbound_count,"
+                        + "COALESCE((SELECT bool_and(target_status='ENABLED' "
+                        + "AND NULLIF(BTRIM(source_code),'') IS NOT NULL "
+                        + "AND NULLIF(BTRIM(source_name),'') IS NOT NULL) FROM " + inboundSql + "),TRUE) "
+                        + "AS inbound_resolvable,"
+                        + "COALESCE((SELECT string_agg(DISTINCT COALESCE(NULLIF(BTRIM(source_name),''),"
+                        + "NULLIF(BTRIM(source_code),''),'未知商品'),', ') FROM " + inboundSql + "),'') "
+                        + "AS inbound_summary,"
+                        + "(SELECT COUNT(*) FROM retired_targets) AS retired_target_count,"
+                        + "(SELECT COUNT(*) FROM retired_boms) AS retired_bom_count,"
+                        + "((SELECT COUNT(*) FROM owned_targets WHERE definition_status='ENABLED') "
+                        + "- (SELECT COUNT(*) FROM retired_targets) + "
+                        + "(SELECT COUNT(*) FROM owned_boms WHERE definition_status='ENABLED') "
+                        + "- (SELECT COUNT(*) FROM retired_boms)) AS remaining_count"
+                        + "), response_payload AS ("
+                        + "SELECT jsonb_build_object('subject',jsonb_build_object('kind',CAST(? AS text),"
+                        + "'ref',CAST(? AS text)),'retiredStockTargetCount',retired_target_count,"
+                        + "'retiredProductBomCount',retired_bom_count,"
+                        + "'remainingActiveOwnedDefinitionCount',remaining_count) AS response "
+                        + "FROM outcome WHERE inbound_count=0 AND inbound_resolvable AND remaining_count=0 "
+                        + "AND NOT EXISTS (SELECT 1 FROM prior_receipt)"
+                        + "), written_receipt AS ("
+                        + "INSERT INTO inventory.command_receipt(receipt_ref,data_node_ref,idempotency_key,"
+                        + "operation_id,request_hash,response,created_at_epoch_millis) "
+                        + "SELECT ?,?,?,?,?,response,? FROM response_payload "
+                        + "RETURNING response::text AS response"
+                        + ") SELECT outcome.inbound_count,outcome.inbound_resolvable,outcome.inbound_summary,"
+                        + "outcome.retired_target_count,outcome.retired_bom_count,outcome.remaining_count,"
+                        + "prior_receipt.operation_id,prior_receipt.request_hash,prior_receipt.response,"
+                        + "written_receipt.response FROM outcome LEFT JOIN prior_receipt ON TRUE "
+                        + "LEFT JOIN written_receipt ON TRUE",
+                (result, rowNumber) -> new CatalogVoidBatchSqlOutcome(
+                        result.getLong(1),
+                        result.getBoolean(2),
+                        result.getString(3),
+                        result.getLong(4),
+                        result.getLong(5),
+                        result.getLong(6),
+                        result.getString(7),
+                        result.getString(8),
+                        result.getString(9),
+                        result.getString(10)),
+                "inventory-receipt",
+                key,
+                dataNodeRef,
+                key,
+                dataNodeRef,
+                scope.brandRef(),
+                subject.ref(),
+                dataNodeRef,
+                scope.brandRef(),
+                subject.ref(),
+                dataNodeRef,
+                scope.brandRef(),
+                dataNodeRef,
+                scope.brandRef(),
+                subject.ref(),
+                time.currentEpochMillis(),
+                time.currentEpochMillis(),
+                subject.kind().name(),
+                subject.ref().toString(),
+                UUID.randomUUID(),
+                dataNodeRef,
+                key,
+                operation,
+                requestHash,
+                time.currentEpochMillis());
+
+        if (outcome.priorOperation() != null) {
+            if (!operation.equals(outcome.priorOperation()) || !requestHash.equals(outcome.priorRequestHash())) {
+                throw new InventoryOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他请求");
+            }
+            if (outcome.priorResponse() == null) {
+                throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存作废回执缺少响应");
+            }
+            try {
+                return mapper.treeToValue(json(outcome.priorResponse()), CatalogVoidInventoryRetirementReadback.class);
+            } catch (Exception failure) {
+                String reason = "幂等回执与当前 owner readback 不兼容";
+                throw new InventoryOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, reason, failure);
+            }
+        }
+        if (outcome.inboundCount() > 0L) {
+            if (!outcome.inboundResolvable()) {
+                String reason = "库存 BOM 引用了无法唯一解析的库存对象";
+                throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, reason);
+            }
+            String summary =
+                    outcome.inboundSummary() == null || outcome.inboundSummary().isBlank()
+                            ? "库存 BOM"
+                            : outcome.inboundSummary();
+            String reason = "库存 BOM 仍引用该对象：" + summary;
+            throw new InventoryOwnerApi.Problem("REFERENCE_BLOCKS_VOID", 422, reason);
+        }
+        if (outcome.remainingCount() != 0L || outcome.writtenResponse() == null) {
+            throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存 owner 退休后仍存在启用定义");
+        }
+        return new CatalogVoidInventoryRetirementReadback(
+                subject, outcome.retiredTargetCount(), outcome.retiredBomCount(), outcome.remainingCount());
     }
 
     @Override
@@ -2110,6 +2411,279 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                     while (result.next()) counts.put(result.getObject(1, UUID.class), result.getLong(2));
                     return counts;
                 });
+    }
+
+    private void requireCatalogVoidSubject(InventoryOwnerApi.CatalogVoidSubject subject) {
+        if (subject == null || subject.kind() == null || subject.ref() == null) {
+            throw new InventoryOwnerApi.Problem(
+                    "REFERENCE_MAPPING_UNRESOLVED", 422, "catalog void subject is required");
+        }
+    }
+
+    private static String catalogVoidOwnerColumn(InventoryOwnerApi.CatalogVoidSubjectKind kind) {
+        return switch (kind) {
+            case CATALOG_ITEM -> "item_ref";
+            case PRODUCT_SKU -> "product_sku_ref";
+            case OPTION_VALUE -> throw new InventoryOwnerApi.Problem(
+                    "REFERENCE_MAPPING_UNRESOLVED", 422, "option value is not a catalog void subject");
+        };
+    }
+
+    private InventoryOwnerApi.CatalogVoidDependencyReadback catalogVoidDependenciesReadback(
+            String scope, String brand, InventoryOwnerApi.CatalogVoidSubject subject) {
+        Map<UUID, InventoryOwnerApi.CatalogVoidDependencyReadback> readbacks =
+                catalogVoidDependenciesReadbacks(scope, brand, subject.kind(), List.of(subject.ref()));
+        InventoryOwnerApi.CatalogVoidDependencyReadback result = readbacks.get(subject.ref());
+        if (result == null)
+            throw new InventoryOwnerApi.Problem(
+                    "REFERENCE_MAPPING_UNRESOLVED", 422, "inventory void dependency readback is missing");
+        return result;
+    }
+
+    /**
+     * Reads the complete owner/component projection in one scoped set-based query. The query intentionally does not
+     * reuse the generic declared-reference scanner: item/SKU ownership, disabled-target detection, owner exclusion and
+     * source identity are all part of this lifecycle judgement's invariant.
+     */
+    private Map<UUID, InventoryOwnerApi.CatalogVoidDependencyReadback> catalogVoidDependenciesReadbacks(
+            String scope, String brand, InventoryOwnerApi.CatalogVoidSubjectKind kind, Collection<UUID> subjects) {
+        List<UUID> orderedSubjects = subjects == null
+                ? List.of()
+                : subjects.stream().filter(Objects::nonNull).distinct().sorted().toList();
+        if (orderedSubjects.isEmpty()) return Map.of();
+        String ownerColumn = catalogVoidOwnerColumn(kind);
+        UUID[] subjectRefs = orderedSubjects.toArray(UUID[]::new);
+        String sql = "WITH input AS (SELECT ?::text AS scope, ?::text AS brand, ?::uuid[] AS subject_refs), "
+                + "owned_targets AS ("
+                + "SELECT target.target_ref,target.definition_status,target.item_ref,target.product_sku_ref "
+                + "FROM inventory.stock_target target CROSS JOIN input "
+                + "WHERE target.data_node_ref=input.scope AND target.brand_ref=input.brand "
+                + "AND target." + ownerColumn + "=ANY(input.subject_refs)), "
+                + "owned_boms AS ("
+                + "SELECT bom.bom_ref,bom.definition_status,bom.item_ref,bom.product_sku_ref,bom.option_value_ref "
+                + "FROM inventory.stock_bom bom CROSS JOIN input "
+                + "WHERE bom.data_node_ref=input.scope AND bom.brand_ref=input.brand "
+                + "AND bom." + ownerColumn + "=ANY(input.subject_refs)), "
+                + "inbound AS ("
+                + "SELECT ot." + ownerColumn + " AS subject_ref,bom.bom_ref,bom.item_ref,bom.product_sku_ref,"
+                + "bom.option_value_ref,ot.target_ref,bom.item_code,source_item.name,ot.definition_status "
+                + "FROM inventory.stock_bom bom CROSS JOIN input "
+                + "CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(bom.rows)='array' "
+                + "THEN bom.rows ELSE '[]'::jsonb END) AS e(entry) "
+                + "JOIN owned_targets ot ON ot.target_ref::text=COALESCE(e.entry->>'targetRef',"
+                + "e.entry->>'componentTargetRef') "
+                + "LEFT JOIN catalog.catalog_item source_item ON source_item.item_ref=bom.item_ref "
+                + "AND source_item.data_node_ref=input.scope AND source_item.brand_ref=input.brand "
+                + "WHERE bom.data_node_ref=input.scope AND bom.brand_ref=input.brand "
+                + "AND bom.definition_status='ENABLED' "
+                + "AND "
+                + (kind == InventoryOwnerApi.CatalogVoidSubjectKind.CATALOG_ITEM
+                        ? "bom.item_ref IS DISTINCT FROM ot.item_ref"
+                        : "bom.product_sku_ref IS DISTINCT FROM ot.product_sku_ref")
+                + ") "
+                + "SELECT 'TARGET' AS fact_kind,target.target_ref AS fact_ref,target." + ownerColumn
+                + " AS subject_ref,target.definition_status,NULL::uuid AS source_item_ref,NULL::uuid AS source_sku_ref,"
+                + "NULL::uuid AS source_option_value_ref,target.target_ref AS target_ref,NULL::text AS source_code,"
+                + "NULL::text AS source_name,target.definition_status AS matched_target_status "
+                + "FROM owned_targets target "
+                + "UNION ALL SELECT 'BOM',bom.bom_ref,bom." + ownerColumn
+                + ",bom.definition_status,NULL::uuid,NULL::uuid,NULL::uuid,NULL::uuid,NULL::text,NULL::text,NULL::text "
+                + "FROM owned_boms bom "
+                + "UNION ALL SELECT 'INBOUND',inbound.bom_ref,inbound.subject_ref,'ENABLED',"
+                + "inbound.item_ref,inbound.product_sku_ref,inbound.option_value_ref,inbound.target_ref,"
+                + "inbound.item_code,inbound.name,inbound.definition_status FROM inbound "
+                + "ORDER BY subject_ref,fact_kind,fact_ref";
+        List<VoidDependencyFact> facts = jdbc.query(
+                sql,
+                statement -> {
+                    statement.setString(1, scope);
+                    statement.setString(2, brand);
+                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", subjectRefs));
+                },
+                (result, rowNumber) -> new VoidDependencyFact(
+                        result.getString(1),
+                        result.getObject(2, UUID.class),
+                        result.getObject(3, UUID.class),
+                        result.getString(4),
+                        result.getObject(5, UUID.class),
+                        result.getObject(6, UUID.class),
+                        result.getObject(7, UUID.class),
+                        result.getObject(8, UUID.class),
+                        result.getString(9),
+                        result.getString(10),
+                        result.getString(11)));
+
+        Map<UUID, VoidDependencyAccumulator> accumulators = new LinkedHashMap<>();
+        orderedSubjects.forEach(ref -> accumulators.put(
+                ref, new VoidDependencyAccumulator(new InventoryOwnerApi.CatalogVoidSubject(kind, ref))));
+        for (VoidDependencyFact fact : facts) {
+            VoidDependencyAccumulator accumulator = accumulators.get(fact.subjectRef());
+            if (accumulator == null) {
+                throw new InventoryOwnerApi.Problem(
+                        "REFERENCE_MAPPING_UNRESOLVED",
+                        422,
+                        /* format-wrap */
+                        "库存作废判断返回了未知 subject");
+            }
+            switch (fact.factKind()) {
+                case "TARGET" -> {
+                    accumulator.ownedTargetRefsAllStatus.add(fact.factRef());
+                    if ("ENABLED".equals(fact.definitionStatus())) {
+                        accumulator.ownedActiveTargetRefs.add(fact.factRef());
+                    } else {
+                        accumulator.ownedDisabledTargetRefs.add(fact.factRef());
+                    }
+                }
+                case "BOM" -> {
+                    if ("ENABLED".equals(fact.definitionStatus())) accumulator.ownedActiveProductBomCount++;
+                }
+                case "INBOUND" -> {
+                    if (!"ENABLED".equals(fact.matchedTargetStatus())) {
+                        throw new InventoryOwnerApi.Problem(
+                                "REFERENCE_MAPPING_UNRESOLVED",
+                                422,
+                                /* format-wrap */
+                                "库存 BOM 引用了非当前启用库存对象");
+                    }
+                    if (fact.sourceCode() == null
+                            || fact.sourceCode().isBlank()
+                            || fact.sourceName() == null
+                            || fact.sourceName().isBlank())
+                        throw new InventoryOwnerApi.Problem(
+                                "REFERENCE_MAPPING_UNRESOLVED",
+                                422,
+                                /* format-wrap */
+                                "库存 BOM 引用的来源商品无法唯一解析");
+                    CatalogVoidInboundKey key = new CatalogVoidInboundKey(
+                            fact.sourceItemRef(),
+                            fact.sourceSkuRef(),
+                            fact.sourceOptionValueRef(),
+                            fact.targetRef(),
+                            fact.sourceCode(),
+                            fact.sourceName());
+                    accumulator.inboundCounts.merge(key, 1L, Long::sum);
+                }
+                default -> throw new InventoryOwnerApi.Problem(
+                        "RESULT_UNKNOWN",
+                        500,
+                        /* format-wrap */
+                        "库存作废判断返回了未知 fact 类型");
+            }
+        }
+        Map<UUID, InventoryOwnerApi.CatalogVoidDependencyReadback> result = new LinkedHashMap<>();
+        accumulators.forEach((ref, accumulator) -> result.put(ref, accumulator.readback()));
+        return Map.copyOf(result);
+    }
+
+    private ObjectNode catalogVoidDependencyJson(InventoryOwnerApi.CatalogVoidDependencyReadback readback) {
+        ObjectNode result = mapper.createObjectNode()
+                .put("subjectKind", readback.subject().kind().name())
+                .put("subjectRef", readback.subject().ref().toString())
+                .put(
+                        "itemRef",
+                        readback.subject().kind() == InventoryOwnerApi.CatalogVoidSubjectKind.CATALOG_ITEM
+                                ? readback.subject().ref().toString()
+                                : "")
+                .put("hasDependentFacts", readback.hasInboundBomReferences())
+                .put("stockTargetCount", readback.ownedActiveStockTargetCount())
+                .put("productBomCount", readback.ownedActiveProductBomCount());
+        ArrayNode targetRefs = result.putArray("ownedTargetRefsAllStatus");
+        readback.ownedTargetRefsAllStatus().stream().sorted().forEach(ref -> targetRefs.add(ref.toString()));
+        ArrayNode activeTargetRefs = result.putArray("ownedActiveTargetRefs");
+        readback.ownedActiveTargetRefs().stream().sorted().forEach(ref -> activeTargetRefs.add(ref.toString()));
+        ArrayNode disabledTargetRefs = result.putArray("ownedDisabledTargetRefs");
+        readback.ownedDisabledTargetRefs().stream().sorted().forEach(ref -> disabledTargetRefs.add(ref.toString()));
+        ArrayNode references = result.putArray("inboundBomReferences");
+        readback.inboundBomReferences().forEach(reference -> references
+                .addObject()
+                .put("sourceKind", reference.sourceKind().name())
+                .put(
+                        "sourceItemRef",
+                        reference.sourceItemRef() == null
+                                ? null
+                                : reference.sourceItemRef().toString())
+                .put(
+                        "sourceSkuRef",
+                        reference.sourceSkuRef() == null
+                                ? null
+                                : reference.sourceSkuRef().toString())
+                .put(
+                        "sourceOptionValueRef",
+                        reference.sourceOptionValueRef() == null
+                                ? null
+                                : reference.sourceOptionValueRef().toString())
+                .put("targetRef", reference.targetRef().toString())
+                .put("sourceCode", reference.sourceCode())
+                .put("sourceName", reference.sourceName())
+                .put("count", reference.count()));
+        ArrayNode facts = result.putArray("dependentFacts");
+        readback.inboundBomReferences().forEach(reference -> facts.addObject()
+                .put("factKind", "INVENTORY_BOM")
+                .put("factRef", reference.targetRef().toString())
+                .put("count", reference.count()));
+        return result;
+    }
+
+    private String inboundReferenceSummary(InventoryOwnerApi.CatalogVoidDependencyReadback readback) {
+        return readback.inboundBomReferences().stream()
+                .map(reference -> reference.sourceName() + " x" + reference.count())
+                .collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    private void lockCatalogVoidSubjectRows(String scope, String brand, InventoryOwnerApi.CatalogVoidSubject subject) {
+        String ownerColumn = catalogVoidOwnerColumn(subject.kind());
+        jdbc.query(
+                "SELECT target_ref FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND " + ownerColumn
+                        + "=? ORDER BY target_ref FOR UPDATE",
+                (result, rowNumber) -> result.getObject(1, UUID.class),
+                scope,
+                brand,
+                subject.ref());
+        jdbc.query(
+                "SELECT bom_ref FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND " + ownerColumn
+                        + "=? ORDER BY bom_ref FOR UPDATE",
+                (result, rowNumber) -> result.getObject(1, UUID.class),
+                scope,
+                brand,
+                subject.ref());
+        List<UUID> ownedTargetRefs = jdbc.query(
+                "SELECT target_ref FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND " + ownerColumn
+                        + "=? ORDER BY target_ref",
+                (result, rowNumber) -> result.getObject(1, UUID.class),
+                scope,
+                brand,
+                subject.ref());
+        if (ownedTargetRefs.isEmpty()) return;
+        String placeholders = String.join(",", Collections.nCopies(ownedTargetRefs.size(), "?"));
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(scope);
+        arguments.add(brand);
+        arguments.addAll(ownedTargetRefs.stream().map(UUID::toString).toList());
+        jdbc.query(
+                "SELECT bom.bom_ref FROM inventory.stock_bom bom CROSS JOIN LATERAL jsonb_array_elements("
+                        + "CASE WHEN jsonb_typeof(bom.rows)='array' THEN bom.rows ELSE '[]'::jsonb END) e(entry) "
+                        + "WHERE bom.data_node_ref=? AND bom.brand_ref=? AND bom.definition_status='ENABLED' AND "
+                        + "COALESCE(e.entry->>'targetRef',e.entry->>'componentTargetRef') IN (" + placeholders + ") "
+                        + "ORDER BY bom.bom_ref FOR UPDATE",
+                (result, rowNumber) -> result.getObject(1, UUID.class),
+                arguments.toArray());
+    }
+
+    private long countActiveOwnedDefinitions(String scope, String brand, InventoryOwnerApi.CatalogVoidSubject subject) {
+        String ownerColumn = catalogVoidOwnerColumn(subject.kind());
+        Long count = jdbc.queryForObject(
+                "SELECT (SELECT COUNT(*) FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND "
+                        + ownerColumn + "=? AND definition_status='ENABLED') + "
+                        + "(SELECT COUNT(*) FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND "
+                        + ownerColumn + "=? AND definition_status='ENABLED')",
+                Long.class,
+                scope,
+                brand,
+                subject.ref(),
+                scope,
+                brand,
+                subject.ref());
+        return count == null ? 0L : count;
     }
 
     @Override
@@ -2738,6 +3312,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         List<RuleFact> targets = loadRuleTargetFacts(scope, brand, itemRef);
         List<RuleFact> boms = loadRuleBomFacts(scope, brand, itemRef);
         Map<UUID, TargetRow> bomComponentTargets = loadSubmittedBomComponentTargets(scope, brand, submitted);
+        ResolvedBomTargets resolvedBomTargets =
+                ResolvedBomTargets.load(jdbc, scope, brand, submittedBomTargetRefs(submitted));
         Map<String, RuleFact> targetByIdentity = factsByIdentity(targets);
         Map<String, RuleFact> bomByIdentity = factsByIdentity(boms);
         LinkedHashSet<String> allKeys = new LinkedHashSet<>();
@@ -2792,7 +3368,12 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 }
                 validateDirectConfiguration(node.path("directConfiguration"), supplied);
             } else if ("BOM".equals(requestedMode)) {
-                validateBomLines(identity, node.path("bom").path("lines"), bom, bomComponentTargets);
+                validateBomLines(
+                        identity,
+                        node.path("bom").path("lines"),
+                        bom == null ? null : bom.rows(),
+                        bomComponentTargets,
+                        resolvedBomTargets);
             } else if (!"NONE".equals(requestedMode)) {
                 String detail = "库存扣减方式不在当前契约闭集内";
                 throw new InventoryOwnerApi.Problem("INVENTORY_DEDUCTION_MODE_NOT_ALLOWED", 422, detail);
@@ -2813,7 +3394,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             if ("DIRECT".equals(mode)) {
                 saveDirectDefinition(scope, brand, itemCode, measureMode, identity, target, node);
             } else if ("BOM".equals(mode)) {
-                saveBomDefinition(scope, brand, itemCode, identity, bom, node, bomComponentTargets);
+                saveBomDefinition(scope, brand, itemCode, identity, bom, node, bomComponentTargets, resolvedBomTargets);
             }
         }
         boolean noInventoryDefinitions = submitted.values().stream()
@@ -2902,14 +3483,18 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     }
 
     private void validateBomLines(
-            OwnerIdentity owner, JsonNode rawLines, RuleFact existingBom, Map<UUID, TargetRow> componentTargets) {
+            OwnerIdentity owner,
+            JsonNode rawLines,
+            JsonNode existingRows,
+            Map<UUID, TargetRow> componentTargets,
+            ResolvedBomTargets resolvedTargets) {
         if (!rawLines.isArray() || rawLines.isEmpty())
             throw new InventoryOwnerApi.Problem("INVENTORY_BOM_EMPTY", 422, "BOM 不能为空");
         LinkedHashSet<UUID> refs = new LinkedHashSet<>();
         for (JsonNode rawLine : rawLines) {
             if (!(rawLine instanceof ObjectNode line))
                 throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM 行必须为对象");
-            UUID targetRef = requiredOpaqueRef(line, "targetRef");
+            UUID targetRef = requiredBomTargetRef(line);
             if (!refs.add(targetRef)) {
                 String detail = "BOM 组件不能重复";
                 throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, detail);
@@ -2923,14 +3508,28 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, detail);
             }
         }
+        Set<UUID> existingRefs = existingBomTargetRefs(existingRows);
         for (UUID targetRef : refs) {
             TargetRow component = componentTargets.get(targetRef);
-            if (component == null
-                    || !"ENABLED".equals(component.definitionStatus())
-                    || !component.componentEligible()
-                    || component.consumptionUnitSnapshot() == null) {
-                String detail = "BOM 组件必须是已有且单位快照完整的启用库存对象";
-                throw new InventoryOwnerApi.Problem("INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE", 422, detail);
+            if (component == null) {
+                throw new InventoryOwnerApi.Problem(
+                        "INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE",
+                        422,
+                        /* format-wrap */
+                        "BOM 组件必须是当前范围内已有且可用的库存对象");
+            }
+            resolvedTargets.requireResolved(targetRef);
+            if (!existingRefs.contains(targetRef)) {
+                if (!"ENABLED".equals(component.definitionStatus())
+                        || !component.componentEligible()
+                        || component.consumptionUnitSnapshot() == null) {
+                    throw new InventoryOwnerApi.Problem(
+                            "INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE",
+                            422,
+                            /* format-wrap */
+                            "BOM 组件必须是当前范围内已有且可用的库存对象");
+                }
+                resolvedTargets.requireNewAdmission(targetRef);
             }
             if (owner.itemRef().equals(component.itemRef())
                     && java.util.Objects.equals(owner.productSkuRef(), component.productSkuRef())) {
@@ -2948,10 +3547,85 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             JsonNode lines = node.path("bom").path("lines");
             if (!lines.isArray()) continue;
             for (JsonNode raw : lines) {
-                if (raw instanceof ObjectNode line) refs.add(requiredOpaqueRef(line, "targetRef"));
+                if (raw instanceof ObjectNode line) refs.add(requiredBomTargetRef(line));
             }
         }
-        return loadTargetsByRefs(scope, brand, refs, false);
+        return loadTargetsByRefs(scope, brand, refs, false, false);
+    }
+
+    private List<UUID> submittedBomTargetRefs(Map<String, ObjectNode> submitted) {
+        LinkedHashSet<UUID> refs = new LinkedHashSet<>();
+        for (ObjectNode node : submitted.values()) {
+            if (!"BOM".equals(node.path("mode").asText("NONE"))) continue;
+            JsonNode lines = node.path("bom").path("lines");
+            if (!lines.isArray()) continue;
+            for (JsonNode raw : lines) {
+                if (!(raw instanceof ObjectNode line))
+                    throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM 行必须为对象");
+                refs.add(requiredBomTargetRef(line));
+            }
+        }
+        return List.copyOf(refs);
+    }
+
+    private static UUID requiredBomTargetRef(ObjectNode line) {
+        String target = optional(line, "targetRef");
+        String legacy = optional(line, "componentTargetRef");
+        if ((target == null || target.isBlank()) && (legacy == null || legacy.isBlank())) {
+            throw new InventoryOwnerApi.Problem(
+                    "REFERENCE_MAPPING_UNRESOLVED",
+                    422,
+                    /* format-wrap */
+                    "BOM 组件必须选择已有库存对象");
+        }
+        if (target != null && !target.isBlank() && legacy != null && !legacy.isBlank() && !target.equals(legacy)) {
+            throw new InventoryOwnerApi.Problem(
+                    "REFERENCE_MAPPING_UNRESOLVED",
+                    422,
+                    /* format-wrap */
+                    "BOM 组件引用不一致");
+        }
+        try {
+            return UUID.fromString(target == null || target.isBlank() ? legacy : target);
+        } catch (IllegalArgumentException failure) {
+            throw new InventoryOwnerApi.Problem(
+                    "REFERENCE_MAPPING_UNRESOLVED",
+                    422,
+                    /* format-wrap */
+                    "BOM 组件库存对象不存在",
+                    failure);
+        }
+    }
+
+    private static Set<UUID> existingBomTargetRefs(JsonNode existingRows) {
+        if (existingRows == null || !existingRows.isArray()) return Set.of();
+        LinkedHashSet<UUID> refs = new LinkedHashSet<>();
+        existingRows.forEach(raw -> {
+            if (!(raw instanceof ObjectNode line)) {
+                throw new InventoryOwnerApi.Problem(
+                        "REFERENCE_MAPPING_UNRESOLVED",
+                        500,
+                        /* format-wrap */
+                        "库存 BOM 行不是有效对象");
+            }
+            refs.add(requiredBomTargetRef(line));
+        });
+        return Set.copyOf(refs);
+    }
+
+    private static JsonNode existingBomLine(JsonNode existingRows, UUID targetRef) {
+        if (existingRows == null || !existingRows.isArray()) return null;
+        for (JsonNode raw : existingRows) {
+            if (!(raw instanceof ObjectNode line)) {
+                throw new InventoryOwnerApi.Problem(
+                        "REFERENCE_MAPPING_UNRESOLVED",
+                        500,
+                        /* format-wrap */
+                        "库存 BOM 行不是有效对象");
+            }
+            if (targetRef.equals(requiredBomTargetRef(line))) return line;
+        }
+        return null;
     }
 
     private void enforceModeSwitchGuard(
@@ -3104,9 +3778,16 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             OwnerIdentity owner,
             RuleFact current,
             JsonNode node,
-            Map<UUID, TargetRow> componentTargets) {
-        ArrayNode normalized =
-                normalizeBomLines(scope, brand, owner, node.path("bom").path("lines"), current, componentTargets);
+            Map<UUID, TargetRow> componentTargets,
+            ResolvedBomTargets resolvedTargets) {
+        ArrayNode normalized = normalizeBomLines(
+                scope,
+                brand,
+                owner,
+                node.path("bom").path("lines"),
+                current == null ? null : current.rows(),
+                componentTargets,
+                resolvedTargets);
         String skuCode = owner.productSkuRef() == null ? null : owner.skuCode();
         String optionCode = owner.optionValueRef() == null ? null : owner.optionValueCode();
         if (current != null && current.enabled()) {
@@ -3145,39 +3826,54 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             String brand,
             OwnerIdentity owner,
             JsonNode rawLines,
-            RuleFact existing,
-            Map<UUID, TargetRow> componentTargets) {
+            JsonNode existingRows,
+            Map<UUID, TargetRow> componentTargets,
+            ResolvedBomTargets resolvedTargets) {
         Map<UUID, JsonNode> oldLines = new LinkedHashMap<>();
-        if (existing != null && existing.rows() != null && existing.rows().isArray())
-            existing.rows().forEach(line -> {
-                try {
-                    oldLines.put(UUID.fromString(line.path("targetRef").asText()), line);
-                } catch (IllegalArgumentException ignored) {
+        if (existingRows != null && existingRows.isArray())
+            existingRows.forEach(line -> {
+                if (!(line instanceof ObjectNode object)) {
+                    throw new InventoryOwnerApi.Problem(
+                            "REFERENCE_MAPPING_UNRESOLVED",
+                            500,
+                            /* format-wrap */
+                            "库存 BOM 行不是有效对象");
                 }
+                oldLines.put(requiredBomTargetRef(object), line);
             });
-        LinkedHashSet<UUID> refs = new LinkedHashSet<>();
-        rawLines.forEach(line -> refs.add(requiredOpaqueRef((ObjectNode) line, "targetRef")));
+        Set<UUID> existingRefs = existingBomTargetRefs(existingRows);
         ArrayNode normalized = mapper.createArrayNode();
         rawLines.forEach(raw -> {
-            ObjectNode line = (ObjectNode) raw;
-            UUID targetRef = requiredOpaqueRef(line, "targetRef");
+            if (!(raw instanceof ObjectNode line))
+                throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM 行必须为对象");
+            UUID targetRef = requiredBomTargetRef(line);
             TargetRow component = componentTargets.get(targetRef);
-            if (component == null
-                    || !"ENABLED".equals(component.definitionStatus())
-                    || !component.componentEligible()
-                    || component.consumptionUnitSnapshot() == null)
-                throw new InventoryOwnerApi.Problem("INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE", 422, "BOM 组件不可用");
             ObjectNode result = normalized
                     .addObject()
                     .put("targetRef", targetRef.toString())
                     .put("lineSign", normalizeLineSign(line.path("lineSign").asText("POSITIVE")))
                     .put("quantity", decimal(decimalValue(line, "quantity")));
             JsonNode old = oldLines.get(targetRef);
-            if (old != null && old.path("consumptionUnitSnapshot").isObject())
+            if (existingRefs.contains(targetRef)) {
+                if (old == null || !old.path("consumptionUnitSnapshot").isObject())
+                    throw new InventoryOwnerApi.Problem(
+                            "CONSUMPTION_UNIT_SNAPSHOT_REQUIRED",
+                            422,
+                            /* format-wrap */
+                            "既有 BOM 组件缺少单位快照");
                 result.set(
                         "consumptionUnitSnapshot",
                         old.path("consumptionUnitSnapshot").deepCopy());
-            else result.set("consumptionUnitSnapshot", mapper.valueToTree(component.consumptionUnitSnapshot()));
+            } else {
+                resolvedTargets.requireNewAdmission(targetRef);
+                if (component == null || component.consumptionUnitSnapshot() == null)
+                    throw new InventoryOwnerApi.Problem(
+                            "CONSUMPTION_UNIT_SNAPSHOT_REQUIRED",
+                            422,
+                            /* format-wrap */
+                            "BOM 组件单位快照不完整");
+                result.set("consumptionUnitSnapshot", mapper.valueToTree(component.consumptionUnitSnapshot()));
+            }
         });
         return normalized;
     }
@@ -3303,10 +3999,20 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     private Map<String, RuleFact> factsByIdentity(List<RuleFact> facts) {
         Map<String, RuleFact> result = new LinkedHashMap<>();
         for (RuleFact fact : facts) {
-            if (result.putIfAbsent(fact.owner().key(), fact) != null) {
+            RuleFact previous = result.get(fact.owner().key());
+            if (previous == null) {
+                result.put(fact.owner().key(), fact);
+                continue;
+            }
+            if (previous.enabled() && fact.enabled()) {
                 String detail = "库存 owner 定义不唯一";
                 throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 500, detail);
             }
+            // Historical definitions remain for audit.  They must not shadow the one current definition, and multiple
+            // disabled snapshots are resolved deterministically so a later save can recreate the active definition.
+            if (!previous.enabled() && fact.enabled()
+                    || (!previous.enabled() && !fact.enabled() && fact.version() > previous.version()))
+                result.put(fact.owner().key(), fact);
         }
         return result;
     }
@@ -3344,6 +4050,72 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         }
     }
 
+    private record CurrentBomRow(long version, JsonNode rows) {}
+
+    private record VoidDependencyFact(
+            String factKind,
+            UUID factRef,
+            UUID subjectRef,
+            String definitionStatus,
+            UUID sourceItemRef,
+            UUID sourceSkuRef,
+            UUID sourceOptionValueRef,
+            UUID targetRef,
+            String sourceCode,
+            String sourceName,
+            String matchedTargetStatus) {}
+
+    private record CatalogVoidInboundKey(
+            UUID sourceItemRef,
+            UUID sourceSkuRef,
+            UUID sourceOptionValueRef,
+            UUID targetRef,
+            String sourceCode,
+            String sourceName) {}
+
+    private static final class VoidDependencyAccumulator {
+        private final InventoryOwnerApi.CatalogVoidSubject subject;
+        private final Set<UUID> ownedTargetRefsAllStatus = new LinkedHashSet<>();
+        private final Set<UUID> ownedActiveTargetRefs = new LinkedHashSet<>();
+        private final Set<UUID> ownedDisabledTargetRefs = new LinkedHashSet<>();
+        private final Map<CatalogVoidInboundKey, Long> inboundCounts = new LinkedHashMap<>();
+        private long ownedActiveProductBomCount;
+
+        private VoidDependencyAccumulator(InventoryOwnerApi.CatalogVoidSubject subject) {
+            this.subject = subject;
+        }
+
+        private InventoryOwnerApi.CatalogVoidDependencyReadback readback() {
+            List<InventoryOwnerApi.CatalogVoidInboundBomReference> inbound = inboundCounts.entrySet().stream()
+                    .map(entry -> {
+                        CatalogVoidInboundKey key = entry.getKey();
+                        InventoryOwnerApi.CatalogVoidSubjectKind sourceKind = key.sourceOptionValueRef() != null
+                                ? InventoryOwnerApi.CatalogVoidSubjectKind.OPTION_VALUE
+                                : key.sourceSkuRef() != null
+                                        ? InventoryOwnerApi.CatalogVoidSubjectKind.PRODUCT_SKU
+                                        : InventoryOwnerApi.CatalogVoidSubjectKind.CATALOG_ITEM;
+                        return new InventoryOwnerApi.CatalogVoidInboundBomReference(
+                                sourceKind,
+                                key.sourceItemRef(),
+                                key.sourceSkuRef(),
+                                key.sourceOptionValueRef(),
+                                key.targetRef(),
+                                key.sourceCode(),
+                                key.sourceName(),
+                                entry.getValue());
+                    })
+                    .toList();
+            return new InventoryOwnerApi.CatalogVoidDependencyReadback(
+                    subject,
+                    ownedTargetRefsAllStatus,
+                    ownedActiveTargetRefs,
+                    ownedDisabledTargetRefs,
+                    ownedActiveTargetRefs.size(),
+                    ownedActiveProductBomCount,
+                    inbound);
+        }
+    }
+
     private String catalogSaveReceiptKey(String idempotencyKey, String operation, String canonicalRequestJson) {
         try {
             String digest = Sha256Hex.digest(canonicalRequestJson);
@@ -3375,28 +4147,11 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         requiredOpaqueRef(request, "itemRef");
         JsonNode rows = request.path("rows");
         if (!rows.isArray()) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM rows must be an array");
-        List<UUID> targetRefs = new ArrayList<>();
         rows.forEach(row -> {
-            String targetRef =
-                    row.path("targetRef").asText(row.path("componentTargetRef").asText(""));
-            if (targetRef.isBlank()) {
-                throw new InventoryOwnerApi.Problem(
-                        ("REFERENCE_MAPPING_UNRESOLVED"),
-                        (422),
-                        /* format-wrap */
-                        ("BOM 组件必须选择已有库存对象"));
-            }
-            try {
-                targetRefs.add(UUID.fromString(targetRef));
-            } catch (IllegalArgumentException failure) {
-                {
-                    throw new InventoryOwnerApi.Problem(
-                            ("REFERENCE_MAPPING_UNRESOLVED"), (422), ("BOM 组件库存对象不存在"), (failure));
-                }
-            }
+            if (!(row instanceof ObjectNode line))
+                throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM 行必须为对象");
+            requiredBomTargetRef(line);
         });
-        ResolvedBomTargets resolved = ResolvedBomTargets.load(jdbc, scope, brand, targetRefs);
-        targetRefs.forEach(resolved::requireResolved);
     }
 
     private JsonNode saveCatalogProductBomCore(
@@ -3429,23 +4184,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         long expected = request.has("expectedVersion") ? requiredLong(request, "expectedVersion") : 0L;
         List<UUID> targetRefs = new ArrayList<>();
         rows.forEach(row -> {
-            String component =
-                    row.path("targetRef").asText(row.path("componentTargetRef").asText(""));
-            if (component.isBlank()) {
-                throw new InventoryOwnerApi.Problem(
-                        ("REFERENCE_MAPPING_UNRESOLVED"),
-                        (422),
-                        /* format-wrap */
-                        ("BOM 组件必须选择已有库存对象"));
-            }
-            try {
-                targetRefs.add(UUID.fromString(component));
-            } catch (IllegalArgumentException failure) {
-                {
-                    throw new InventoryOwnerApi.Problem(
-                            ("REFERENCE_MAPPING_UNRESOLVED"), (422), ("BOM 组件库存对象不存在"), (failure));
-                }
-            }
+            if (!(row instanceof ObjectNode line))
+                throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM 行必须为对象");
+            targetRefs.add(requiredBomTargetRef(line));
             BigDecimal quantity = decimalValue((ObjectNode) row, "quantity");
             String lineSign = normalizeLineSign(row.path("lineSign").asText("POSITIVE"));
             if (!Set.of("POSITIVE", "NEGATIVE").contains(lineSign) || quantity.signum() == 0) {
@@ -3459,19 +4200,19 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                     || ("NEGATIVE".equals(lineSign) && quantity.signum() > 0))
                 throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM 行方向与数量符号不一致");
         });
-        ResolvedBomTargets resolvedTargets = ResolvedBomTargets.load(jdbc, scope, brand, targetRefs);
-        // Apply the result in the submitted order so the first missing component
-        // retains the owner contract's original line-order diagnostic.
-        targetRefs.forEach(resolvedTargets::requireResolved);
         String currentSql = optionValueRef != null
-                ? "SELECT version FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=? AND "
+                ? "SELECT version,rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? "
+                        + "AND item_ref=? AND "
                         + "product_sku_ref IS NULL AND option_value_ref=?"
                 : (productSkuRef == null
-                        ? "SELECT version FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND "
+                        ? "SELECT version,rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? "
+                                + "AND "
                                 + "item_ref=? AND product_sku_ref IS NULL AND option_value_ref IS NULL"
-                        : "SELECT version FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND "
+                        : "SELECT version,rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? "
+                                + "AND "
                                 + "item_ref=? AND product_sku_ref=? AND option_value_ref IS NULL");
-        List<Long> current = jdbc.query(
+        currentSql += " AND definition_status='ENABLED' FOR UPDATE";
+        List<CurrentBomRow> current = jdbc.query(
                 currentSql,
                 statement -> {
                     statement.setString(1, scope);
@@ -3481,29 +4222,58 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                     else if (productSkuRef != null) statement.setObject(4, productSkuRef);
                 },
                 result -> {
-                    List<Long> values = new ArrayList<>();
-                    while (result.next()) values.add(result.getLong(1));
+                    List<CurrentBomRow> values = new ArrayList<>();
+                    while (result.next()) values.add(new CurrentBomRow(result.getLong(1), json(result.getString(2))));
                     return values;
                 });
-        if ((current.isEmpty() ? 0L : current.get(0)) != expected)
+        CurrentBomRow existing = current.isEmpty() ? null : current.get(0);
+        if ((existing == null ? 0L : existing.version()) != expected)
             throw new InventoryOwnerApi.Problem("VERSION_CONFLICT", 409, "商品 BOM 版本已变化");
+        Map<UUID, TargetRow> componentTargets =
+                loadTargetsByRefs(scope, brand, new LinkedHashSet<>(targetRefs), false, false);
+        ResolvedBomTargets resolvedTargets = ResolvedBomTargets.load(jdbc, scope, brand, targetRefs);
+        // The current BOM row is read under the same row lock as the version check.  Admission is then state-aware:
+        // only target refs added or replaced by this submission must be enabled and component-eligible.
+        validateBomLines(
+                new OwnerIdentity(
+                        optionValueRef != null ? "OPTION_VALUE" : productSkuRef != null ? "SKU" : "ITEM",
+                        itemRef,
+                        productSkuRef,
+                        optionValueRef,
+                        itemCode,
+                        skuCode,
+                        optionValueCode),
+                rows,
+                existing == null ? null : existing.rows(),
+                componentTargets,
+                resolvedTargets);
         ArrayNode normalized = mapper.createArrayNode();
         rows.forEach(row -> {
-            UUID componentTargetRef = UUID.fromString(
-                    row.path("targetRef").asText(row.path("componentTargetRef").asText()));
-            InventoryOwnerApi.UnitSnapshot componentUnit = consumptionUnitSnapshot(componentTargetRef);
+            ObjectNode rawLine = (ObjectNode) row;
+            UUID componentTargetRef = requiredBomTargetRef(rawLine);
             ObjectNode line = normalized
                     .addObject()
                     .put("lineSign", normalizeLineSign(row.path("lineSign").asText("POSITIVE")))
-                    .put(
-                            "targetRef",
-                            row.path("targetRef")
-                                    .asText(row.path("componentTargetRef").asText()))
+                    .put("targetRef", componentTargetRef.toString())
                     .put(
                             "quantity",
                             row.path("quantity")
                                     .asText(row.path("quantityPerUnit").asText("0")));
-            line.set("consumptionUnitSnapshot", mapper.valueToTree(componentUnit));
+            JsonNode oldLine = existingBomLine(existing == null ? null : existing.rows(), componentTargetRef);
+            if (oldLine != null && oldLine.path("consumptionUnitSnapshot").isObject())
+                line.set(
+                        "consumptionUnitSnapshot",
+                        oldLine.path("consumptionUnitSnapshot").deepCopy());
+            else {
+                TargetRow component = componentTargets.get(componentTargetRef);
+                if (component == null || component.consumptionUnitSnapshot() == null)
+                    throw new InventoryOwnerApi.Problem(
+                            "CONSUMPTION_UNIT_SNAPSHOT_REQUIRED",
+                            422,
+                            /* format-wrap */
+                            "BOM 组件单位快照不完整");
+                line.set("consumptionUnitSnapshot", mapper.valueToTree(component.consumptionUnitSnapshot()));
+            }
             line.put("ownerRef", itemRef.toString());
             if (productSkuRef == null) line.putNull("productSkuRef");
             else line.put("productSkuRef", productSkuRef.toString());
@@ -3692,18 +4462,30 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     }
 
     private Map<UUID, TargetRow> loadTargetsByRefs(String scope, String brand, Set<UUID> targetRefs) {
-        return loadTargetsByRefs(scope, brand, targetRefs, true);
+        return loadTargetsByRefs(scope, brand, targetRefs, true, true);
     }
 
     private Map<UUID, TargetRow> loadTargetsByRefs(
             String scope, String brand, Set<UUID> targetRefs, boolean requireCompleteConsumptionUnit) {
+        return loadTargetsByRefs(scope, brand, targetRefs, true, requireCompleteConsumptionUnit);
+    }
+
+    private Map<UUID, TargetRow> loadTargetsByRefs(
+            String scope,
+            String brand,
+            Set<UUID> targetRefs,
+            boolean enabledOnly,
+            boolean requireCompleteConsumptionUnit) {
         if (targetRefs.isEmpty()) return Map.of();
         UUID[] values = targetRefs.toArray(UUID[]::new);
+        String statusPredicate = enabledOnly ? "AND definition_status='ENABLED' " : "";
         return jdbc.query(
                 "SELECT "
                         + TARGET_SELECT_COLUMNS
                         + " FROM inventory.stock_target WHERE data_node_ref=? AND "
-                        + "brand_ref=? AND definition_status='ENABLED' AND target_ref = ANY(?::uuid[])",
+                        + "brand_ref=? "
+                        + statusPredicate
+                        + "AND target_ref = ANY(?::uuid[])",
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -4505,8 +5287,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                                             "itemRef",
                                             result.getObject(2, UUID.class).toString())
                                     .put("itemCode", result.getString(4))
-                                    .put("itemName", itemName)
-                                    .put("status", "ENABLED");
+                                    .put("itemName", itemName);
                             UUID skuRef = result.getObject(3, UUID.class);
                             if (skuRef == null) item.putNull("productSkuRef");
                             else item.put("productSkuRef", skuRef.toString());
@@ -5016,12 +5797,13 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                         + "entry->'consumptionUnitSnapshot'->>'name' AS consumption_unit_name,"
                         + "entry->'consumptionUnitSnapshot'->>'unitDimension' AS consumption_unit_dimension,"
                         + "(entry->'consumptionUnitSnapshot'->>'precision')::integer AS consumption_unit_precision,"
-                        + "entry->>'timing' AS timing,COALESCE(entry->>'status','ACTIVE') AS status,ord,COUNT(*) OV"
+                        + "entry->>'timing' AS timing,ord,COUNT(*) OV"
                         + "ER() AS total "
                         + "FROM inventory.stock_bom sb "
                         + "CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(sb.rows)='array' THEN "
                         + "sb.rows ELSE '[]'::jsonb END) WITH ORDINALITY AS e(entry,ord) "
                         + "WHERE sb.data_node_ref=? AND sb.brand_ref=? "
+                        + "AND sb.definition_status='ENABLED' "
                         + "AND jsonb_path_exists(CASE WHEN jsonb_typeof(sb.rows)='array' THEN sb.rows "
                         + "ELSE '[]'::jsonb END, "
                         + "'$[*] ? (@.targetRef == $targetRef || @.componentTargetRef == $targetRef)', "
@@ -5031,7 +5813,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                         + "item_ref,item_code,sku_code,option_value_code,source_kind,quantity,consumption_unit_ref,"
                         + "consumption_unit_code,consumption_unit_name,consumption_unit_dimension,consumption_unit_"
                         + "precision,"
-                        + "timing,status,total "
+                        + "timing,total "
                         + "FROM expanded ORDER BY item_code,sku_code NULLS FIRST,ord LIMIT ? OFFSET ?",
                 statement -> {
                     statement.setString(1, scope);
@@ -5051,15 +5833,14 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                                     .put("sourceCode", result.getString(2))
                                     .put("sourceKind", result.getString(5) == null ? "ITEM" : result.getString(5))
                                     .put("quantity", result.getString(6) == null ? "0" : result.getString(6))
-                                    .put("timing", result.getString(12) == null ? "BOM" : result.getString(12))
-                                    .put("status", result.getString(13) == null ? "ACTIVE" : result.getString(13));
+                                    .put("timing", result.getString(12) == null ? "BOM" : result.getString(12));
                             setNullableSnapshot(entry, "consumptionUnitSnapshot", unitSnapshot(result, 7));
                             if (result.getString(4) == null) entry.putNull("sourceOptionValueCode");
                             else entry.put("sourceOptionValueCode", result.getString(4));
                             if (result.getString(3) == null) entry.putNull("sourceSkuCode");
                             else entry.put("sourceSkuCode", result.getString(3));
                         }
-                        total[0] = result.getLong(14);
+                        total[0] = result.getLong(13);
                     }
                     return null;
                 });
@@ -5358,7 +6139,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             return jdbc.queryForObject(
                     "SELECT "
                             + TARGET_SELECT_COLUMNS
-                            + " FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND target_ref=?",
+                            + " FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND target_ref=? "
+                            + "AND definition_status='ENABLED'",
                     (r, n) -> targetRowWithConsumptionUnitSnapshot(r),
                     scope,
                     brand,
@@ -6251,6 +7033,18 @@ public class InventoryOwnerService implements InventoryOwnerApi {
 
     private record ChangeSnapshot(
             BigDecimal today, BigDecimal sevenDays, BigDecimal thirtyDays, String lastSource, Long lastAt) {}
+
+    private record CatalogVoidBatchSqlOutcome(
+            long inboundCount,
+            boolean inboundResolvable,
+            String inboundSummary,
+            long retiredTargetCount,
+            long retiredBomCount,
+            long remainingCount,
+            String priorOperation,
+            String priorRequestHash,
+            String priorResponse,
+            String writtenResponse) {}
 
     private record Receipt(String operation, String requestHash, JsonNode response) {}
 }

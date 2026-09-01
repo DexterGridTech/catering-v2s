@@ -203,7 +203,7 @@ HTTP/DB join 与 cleanup 的证据。
 2. 对 F1–F7 每项记录 `CONFIRMED`、`PARTIALLY_CONFIRMED`、`REJECTED_WITH_EVIDENCE` 或 `UNVERIFIED_REQUIRES_EVIDENCE`，附唯一代码路径与消费端；不沿用历史 review 的数字。
 3. 把允许的旧字面上下文列为精确路径：migration/preflight、红变异、copy closure、seed definition map。其余正向运行路径构成 retirement scan 的零集合。
 4. 产出实施时使用的“源→产物→消费者”差集清单；该清单不是第二份 registry，不可由运行时消费。
-5. 退役无调用者的历史字段级 `quickManage` 分支：当前正式路径是编辑草稿持久化→关闭编辑→对应配置库→工作台恢复编辑；不得用保留死分支、旧 testId 或回填 callback 冒充兼容。
+5. 退役无调用者的历史字段级 `quickManage` 分支：当前正式路径是商品编辑会话内存草稿→统一 dirty guard→整单一次提交或关闭丢弃；编辑内配置库仍是 child task，不得用持久化恢复、保留死分支、旧 testId 或回填 callback 冒充兼容。详见 `doc/decisions/2026-08-30-v2s-catalog-item-editor-transient-draft-close-discard.md`。
 
 **完成条件**：所有分母可复算、历史结论已重新判定；若分母不同，先修订本文和相关设计，尚不改代码。
 

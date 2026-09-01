@@ -12,7 +12,7 @@ import {
   TagsOutlined,
   ToolOutlined,
 } from '@ant-design/icons';
-import {Button, Card, Dropdown, Input, Space, Tag, Tree} from 'antd';
+import {Button, Card, Dropdown, Input, Space, Tag, Tooltip, Tree} from 'antd';
 import {EllipsisTooltip, NameCodeText, testId} from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useMemo, type Key, type ReactNode} from 'react';
 import {catalogTestIds, catalogTestIdControls} from '../catalogTestIds';
@@ -48,6 +48,7 @@ const shapeIcons: Record<string, ReactNode> = {
 function CatalogTreeLine({
   label,
   count,
+  countTooltip,
   icon,
   action,
   children,
@@ -55,6 +56,7 @@ function CatalogTreeLine({
 }: {
   label: string;
   count?: number;
+  countTooltip?: string;
   icon?: ReactNode;
   action?: ReactNode;
   children?: ReactNode;
@@ -71,7 +73,17 @@ function CatalogTreeLine({
           {children ?? label}
         </span>
       </EllipsisTooltip>
-      {typeof count === 'number' ? <Tag style={{marginInlineEnd: 0, flex: '0 0 auto'}}>{count}</Tag> : null}
+      {typeof count === 'number' ? (
+        countTooltip ? (
+          <Tooltip title={countTooltip}>
+            <Tag aria-label={countTooltip} style={{marginInlineEnd: 0, flex: '0 0 auto'}}>
+              {count}
+            </Tag>
+          </Tooltip>
+        ) : (
+          <Tag style={{marginInlineEnd: 0, flex: '0 0 auto'}}>{count}</Tag>
+        )
+      ) : null}
       {action ? <span style={{marginInlineStart: 'auto', flex: '0 0 auto'}}>{action}</span> : null}
     </div>
   );
@@ -100,6 +112,12 @@ type CategoryTreeNode = CatalogNavigation['tree'][number];
  * A malformed or cyclic navigation response fails closed here; the owner remains authoritative.
  */
 export const catalogCategoryDepthLimitCopy = '商品分类最多只能建立三级';
+
+export function catalogCategoryCountTooltip(node: Pick<CategoryTreeNode, 'count' | 'directCount' | 'countSemantics'>) {
+  return node.countSemantics === 'SELF_AND_DESCENDANTS'
+    ? `本级 ${node.directCount} · 含下级 ${node.count}`
+    : `本级 ${node.count}`;
+}
 
 export function catalogCategoryCanCreateChild(
   node: CategoryTreeNode,
@@ -166,6 +184,7 @@ export function CatalogWorkbenchNavigationTree({
           <CatalogTreeLine
             label={node.name}
             count={node.count}
+            countTooltip={catalogCategoryCountTooltip(node)}
             action={
               canWriteCatalog && (
                 <span

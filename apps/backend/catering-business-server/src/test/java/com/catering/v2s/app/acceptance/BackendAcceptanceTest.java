@@ -168,10 +168,12 @@ class BackendAcceptanceTest {
             "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations");
     static final RouteIdentity OPERATIONS_WORKSPACE_STORE_INVITATION_CANCEL = new RouteIdentity(
             "cancelOperationsWorkspaceStoreInvitation",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel");
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/"
+                    + "{invitationId}/cancel");
     static final RouteIdentity OPERATIONS_WORKSPACE_STORE_INVITATION_REISSUE = new RouteIdentity(
             "reissueOperationsWorkspaceStoreInvitation",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue");
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/"
+                    + "{invitationId}/reissue");
     static final RouteIdentity OPERATIONS_WORKSPACE_GROUP_INVITATION_CANDIDATES = new RouteIdentity(
             "getOperationsWorkspaceGroupInvitationCandidates",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates");
@@ -198,7 +200,8 @@ class BackendAcceptanceTest {
             "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}");
     static final RouteIdentity OPERATIONS_WORKSPACE_GROUP_USER_REVOKE = new RouteIdentity(
             "revokeOperationsWorkspaceGroupUserAssignment",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke");
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/"
+                    + "{assignmentId}/revoke");
     static final RouteIdentity OPERATIONS_WORKSPACE_REGION_USER = new RouteIdentity(
             "getOperationsWorkspaceRegionUser",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user");
@@ -207,7 +210,8 @@ class BackendAcceptanceTest {
             "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}");
     static final RouteIdentity OPERATIONS_WORKSPACE_REGION_USER_REVOKE = new RouteIdentity(
             "revokeOperationsWorkspaceRegionUserAssignment",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke");
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/"
+                    + "{assignmentId}/revoke");
     static final RouteIdentity OPERATIONS_WORKSPACE_PROJECT_USER = new RouteIdentity(
             "getOperationsWorkspaceProjectUser",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user");
@@ -216,22 +220,26 @@ class BackendAcceptanceTest {
             "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}");
     static final RouteIdentity OPERATIONS_WORKSPACE_PROJECT_USER_REVOKE = new RouteIdentity(
             "revokeOperationsWorkspaceProjectUserAssignment",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke");
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/"
+                    + "{assignmentId}/revoke");
     static final RouteIdentity OPERATIONS_WORKSPACE_HEAD_COMPANY_USER = new RouteIdentity(
             "getOperationsWorkspaceHeadCompanyUser",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user");
     static final RouteIdentity OPERATIONS_WORKSPACE_HEAD_COMPANY_USER_ACCOUNT = new RouteIdentity(
             "getOperationsWorkspaceHeadCompanyUserAccount",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}");
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/"
+                    + "{accountId}");
     static final RouteIdentity OPERATIONS_WORKSPACE_HEAD_COMPANY_USER_REVOKE = new RouteIdentity(
             "revokeOperationsWorkspaceHeadCompanyUserAssignment",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke");
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/"
+                    + "{assignmentId}/revoke");
     static final RouteIdentity OPERATIONS_WORKSPACE_STORE_USER_ACCOUNT = new RouteIdentity(
             "getOperationsWorkspaceStoreUserAccount",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/accounts/{accountId}");
     static final RouteIdentity OPERATIONS_WORKSPACE_STORE_USER_REVOKE = new RouteIdentity(
             "revokeOperationsWorkspaceStoreUserAssignment",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke");
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/"
+                    + "{assignmentId}/revoke");
     static final RouteIdentity OPERATIONS_ORGANIZATION_REGION_CREATE = new RouteIdentity(
             "createOperationsOrganizationRegion",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions");

@@ -232,13 +232,6 @@
         "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
-    "CATALOG_EDIT_RESUME": {
-      "testId": "catalog-item-dirty-restore",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/controllers/CatalogWorkbenchController.tsx",
-        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
-      ]
-    },
     "CATALOG_SKU_MATRIX": {
       "alternatives": ["catalog-item-sku-matrix-editor", "catalog-item-sku-matrix-readonly"],
       "sourceFiles": [

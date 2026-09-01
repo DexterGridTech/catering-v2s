@@ -1,4 +1,4 @@
-import {useCallback, useReducer, useRef, useState} from 'react';
+import {useCallback, useReducer, useRef} from 'react';
 import {catalogItemRowTestId} from '../../catalogTestIds';
 import type {CatalogItemSummary, CatalogNavigation} from '../../model/catalogModel';
 import {
@@ -39,7 +39,6 @@ export function useCatalogWorkbenchTaskCoordinator({
   clearSelectedRows,
 }: Args) {
   const [workspaceTask, dispatchWorkspaceTask] = useReducer(catalogWorkspaceTaskReducer, initialCatalogWorkspaceTask);
-  const [rebuildPrefill, setRebuildPrefill] = useState<{code?: string; name?: string; shapeKey?: string}>();
   const detailTriggerRef = useRef<HTMLElement | null>(null);
   const categoryController = useCatalogCategoryActionController({
     workspaceTask,
@@ -102,7 +101,6 @@ export function useCatalogWorkbenchTaskCoordinator({
   return {
     workspaceTask,
     detailTarget: catalogWorkspaceTaskItemCode(workspaceTask),
-    rebuildPrefill,
     categoryController,
     batchController,
     openDetail,
@@ -123,19 +121,11 @@ export function useCatalogWorkbenchTaskCoordinator({
         triggerTestId: triggerTestId ?? catalogItemRowTestId(itemCode),
       });
     },
-    onVoidAndRebuild: (source: {code?: string; name?: string; shapeKey?: string}) => {
-      closeDetail(false);
-      detailTriggerRef.current = null;
-      setRebuildPrefill(source);
-      dispatchWorkspaceTask({type: 'OPEN_CREATE', prefill: source});
-    },
     onCreateClose: () => {
       dispatchWorkspaceTask({type: 'CLOSE'});
-      setRebuildPrefill(undefined);
     },
     onCreated: (createdCode: string) => {
       dispatchWorkspaceTask({type: 'CLOSE'});
-      setRebuildPrefill(undefined);
       detailTriggerRef.current = null;
       dispatchWorkspaceTask({type: 'OPEN_EDIT', itemCode: createdCode});
     },

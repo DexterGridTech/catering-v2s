@@ -24,7 +24,6 @@ import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
 import com.catering.v2s.collaboration.api.CollaborationBindingReadApi;
-import com.catering.v2s.collaboration.api.CollaborationCommandApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.application.OperationsOrganizationTaskReadService;
 import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
@@ -371,11 +370,7 @@ public final class OperationsBusinessChannelController {
         if (body == null || body.expectedVersion() == null)
             throw new InvalidEdgeRequestException("expectedVersion is required");
         return ExternalCollaborationWireMapper.binding(coordinator.deleteOperationsBinding(
-                request,
-                groupWorkspaceKey,
-                channelRef,
-                body.expectedVersion(),
-                idempotencyKey(idempotencyKey)));
+                request, groupWorkspaceKey, channelRef, body.expectedVersion(), idempotencyKey(idempotencyKey)));
     }
 
     private BusinessChannelPage channels(

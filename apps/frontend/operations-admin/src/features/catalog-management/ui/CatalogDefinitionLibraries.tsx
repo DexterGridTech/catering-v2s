@@ -1,5 +1,5 @@
 import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
-import {Alert, Button, Card, Form, Input, Modal, Select, Space, Table, Tag, Typography} from 'antd';
+import {Alert, Button, Card, Flex, Form, Input, Modal, Select, Space, Table, Tag, Typography} from 'antd';
 import {
   adminListState,
   createContentIdempotencyKey,
@@ -20,13 +20,14 @@ import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inv
 import {wireUuid} from '../../../app/api/wireUuid';
 import {
   hydrateOrderOptionDefinitionValues,
+  orderOptionMaterialRefs,
+  orderOptionMaterialsFromRefs,
   serializeOrderOptionDefinitionValues,
   type OrderOptionDefinitionFormValue,
 } from '../model/catalogDefinitionForm';
 import {catalogUiProblemFeedback} from '../model/catalogUiProblemFeedback';
 import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 import type {CatalogDefinitionEditorState} from '../model/useCatalogConfigLibrary';
-import {catalogFieldWidth} from './catalogFieldWidths';
 
 type LibraryKind = 'ATTRIBUTES' | 'ORDER_OPTIONS';
 type AttributeDefinition = CatalogAttributeDefinitionList['data']['definitions'][number];
@@ -192,12 +193,13 @@ export function CatalogDefinitionLibraries({
                       onOpenDefinitionEditor({library: 'ATTRIBUTES', mode: 'EDIT', definitionRef: row.definitionRef})
                     }
                   >
-                    <NameCodeText name={row.name} code={row.code} />
+                    {row.name}
                   </Button>
                 ) : (
-                  <NameCodeText name={row.name} code={row.code} />
+                  row.name
                 ),
             },
+            {title: '属性编码', dataIndex: 'code', width: 180},
             {title: '填写方式', dataIndex: 'valueType', width: 160, render: value => attributeValueTypeLabel(value)},
             {
               title: '可选值',
@@ -412,12 +414,12 @@ function CatalogAttributeDefinitionPane({
   };
   const changeStatus = (targetStatus: 'ENABLED' | 'DISABLED' | 'VOIDED') => {
     if (!definition || definition === 'CREATE' || !scopeRef || !canWrite || readOnly) return;
-    const actionLabel = targetStatus === 'VOIDED' ? '标记删除' : targetStatus === 'DISABLED' ? '停用' : '启用';
+    const actionLabel = targetStatus === 'VOIDED' ? '删除' : targetStatus === 'DISABLED' ? '停用' : '启用';
     Modal.confirm({
       title: `${actionLabel}“${definition.name}”`,
       content:
         targetStatus === 'VOIDED'
-          ? '标记删除后将保留历史事实并释放编码供新定义使用；已有商品引用不会被静默改写。'
+          ? '删除后会保留历史事实并释放编码供新定义使用；已有商品引用不会被静默改写。'
           : targetStatus === 'DISABLED'
             ? '停用后，新建商品不会再提供该属性；已有商品引用仍保留。'
             : '启用后，该属性会重新出现在新建商品的候选列表中。',
@@ -469,7 +471,7 @@ function CatalogAttributeDefinitionPane({
                 {definition.status === 'ENABLED' ? '停用' : '启用'}
               </Button>
               <Button danger icon={<DeleteOutlined />} onClick={() => changeStatus('VOIDED')}>
-                标记删除
+                删除
               </Button>
             </>
           )}
@@ -486,24 +488,32 @@ function CatalogAttributeDefinitionPane({
         <Alert type="error" showIcon title="商品属性未保存" description={problem} style={{marginBottom: 16}} />
       )}
       <Form form={form} layout="vertical" disabled={readOnly} onValuesChange={() => lifecycle.setDirty(true)}>
-        <Space direction="vertical" size={0} style={{display: 'flex'}}>
+        <Flex gap="middle" wrap="wrap" align="start" style={{width: '100%'}}>
           <Form.Item
             label="属性名称"
             name="name"
             rules={[{required: true, whitespace: true, message: '请填写属性名称'}]}
+            style={{flex: '1 1 0', minWidth: 0}}
           >
-            <Input maxLength={80} />
+            <Input style={{width: '100%'}} maxLength={80} />
           </Form.Item>
           <Form.Item
             label="属性编码"
             name="code"
             rules={[{required: true, whitespace: true, message: '请填写属性编码'}]}
+            style={{flex: '1 1 0', minWidth: 0}}
           >
-            <Input maxLength={80} />
+            <Input style={{width: '100%'}} maxLength={80} />
           </Form.Item>
-          <Form.Item label="填写方式" name="valueType" rules={[{required: true}]} extra="创建后不可修改。">
+          <Form.Item
+            label="填写方式"
+            name="valueType"
+            rules={[{required: true}]}
+            extra="创建后不可修改。"
+            style={{flex: '1 1 0', minWidth: 0}}
+          >
             <Select
-              style={catalogFieldWidth('compact')}
+              style={{width: '100%'}}
               disabled={definition !== 'CREATE'}
               options={[
                 {value: 'TEXT', label: '纯文本'},
@@ -512,59 +522,59 @@ function CatalogAttributeDefinitionPane({
               ]}
             />
           </Form.Item>
-          {valueType !== 'TEXT' && (
-            <Form.List name="options">
-              {(fields, {add, remove: removeOption, move}) => (
-                <Card
-                  size="small"
-                  title="可选值"
-                  extra={
-                    canWrite && (
-                      <Button type="link" icon={<PlusOutlined />} onClick={() => add({name: ''})}>
-                        添加可选值
-                      </Button>
-                    )
-                  }
-                >
-                  {fields.length === 0 && <Typography.Text type="secondary">请至少添加一个可选值。</Typography.Text>}
-                  {fields.map((field, index) => (
-                    <Space key={field.key} align="start" style={{display: 'flex', marginBottom: 8}}>
-                      <Typography.Text>{index + 1}.</Typography.Text>
-                      <Form.Item
-                        name={[field.name, 'name']}
-                        rules={[{required: true, whitespace: true, message: '请填写可选值'}]}
-                        style={{marginBottom: 0, flex: 1}}
-                      >
-                        <Input placeholder="例如：三个月" />
-                      </Form.Item>
-                      {canWrite && (
-                        <>
-                          <Button type="text" disabled={index === 0} onClick={() => move(index, index - 1)}>
-                            上移
-                          </Button>
-                          <Button
-                            type="text"
-                            disabled={index === fields.length - 1}
-                            onClick={() => move(index, index + 1)}
-                          >
-                            下移
-                          </Button>
-                          <Button
-                            type="text"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => removeOption(field.name)}
-                            aria-label="删除可选值"
-                          />
-                        </>
-                      )}
-                    </Space>
-                  ))}
-                </Card>
-              )}
-            </Form.List>
-          )}
-        </Space>
+        </Flex>
+        {valueType !== 'TEXT' && (
+          <Form.List name="options">
+            {(fields, {add, remove: removeOption, move}) => (
+              <Card
+                size="small"
+                title="可选值"
+                extra={
+                  canWrite && (
+                    <Button type="link" icon={<PlusOutlined />} onClick={() => add({name: ''})}>
+                      添加可选值
+                    </Button>
+                  )
+                }
+              >
+                {fields.length === 0 && <Typography.Text type="secondary">请至少添加一个可选值。</Typography.Text>}
+                {fields.map((field, index) => (
+                  <Space key={field.key} align="start" style={{display: 'flex', marginBottom: 8}}>
+                    <Typography.Text>{index + 1}.</Typography.Text>
+                    <Form.Item
+                      name={[field.name, 'name']}
+                      rules={[{required: true, whitespace: true, message: '请填写可选值'}]}
+                      style={{marginBottom: 0, flex: 1}}
+                    >
+                      <Input placeholder="例如：三个月" />
+                    </Form.Item>
+                    {canWrite && (
+                      <>
+                        <Button type="text" disabled={index === 0} onClick={() => move(index, index - 1)}>
+                          上移
+                        </Button>
+                        <Button
+                          type="text"
+                          disabled={index === fields.length - 1}
+                          onClick={() => move(index, index + 1)}
+                        >
+                          下移
+                        </Button>
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => removeOption(field.name)}
+                          aria-label="删除可选值"
+                        />
+                      </>
+                    )}
+                  </Space>
+                ))}
+              </Card>
+            )}
+          </Form.List>
+        )}
       </Form>
     </Card>
   );
@@ -729,12 +739,12 @@ function CatalogOrderOptionDefinitionPane({
   };
   const changeStatus = (targetStatus: 'ENABLED' | 'DISABLED' | 'VOIDED') => {
     if (!definition || definition === 'CREATE' || !scopeRef || !canWrite || readOnly) return;
-    const actionLabel = targetStatus === 'VOIDED' ? '标记删除' : targetStatus === 'DISABLED' ? '停用' : '启用';
+    const actionLabel = targetStatus === 'VOIDED' ? '删除' : targetStatus === 'DISABLED' ? '停用' : '启用';
     Modal.confirm({
       title: `${actionLabel}“${definition.name}”`,
       content:
         targetStatus === 'VOIDED'
-          ? '标记删除后将保留历史事实并释放编码供新定义使用；已有商品引用不会被静默改写。'
+          ? '删除后会保留历史事实并释放编码供新定义使用；已有商品引用不会被静默改写。'
           : targetStatus === 'DISABLED'
             ? '停用后，新建商品不会再提供该点单选项；已有商品引用仍保留。'
             : '启用后，该点单选项会重新出现在新建商品的候选列表中。',
@@ -785,7 +795,7 @@ function CatalogOrderOptionDefinitionPane({
                 {definition.status === 'ENABLED' ? '停用' : '启用'}
               </Button>
               <Button danger icon={<DeleteOutlined />} onClick={() => changeStatus('VOIDED')}>
-                标记删除
+                删除
               </Button>
             </>
           )}
@@ -802,30 +812,39 @@ function CatalogOrderOptionDefinitionPane({
         <Alert type="error" showIcon title="点单选项未保存" description={problem} style={{marginBottom: 16}} />
       )}
       <Form form={form} layout="vertical" disabled={readOnly} onValuesChange={() => lifecycle.setDirty(true)}>
-        <Form.Item
-          label="选项组名称"
-          name="name"
-          rules={[{required: true, whitespace: true, message: '请填写选项组名称'}]}
-        >
-          <Input maxLength={80} />
-        </Form.Item>
-        <Form.Item
-          label="选项组编码"
-          name="code"
-          rules={[{required: true, whitespace: true, message: '请填写选项组编码'}]}
-          extra={definition === 'CREATE' ? '创建后不可修改。' : '创建后不可修改。'}
-        >
-          <Input disabled={definition !== 'CREATE'} maxLength={80} />
-        </Form.Item>
-        <Form.Item label="选择方式" name="selectionMode" rules={[{required: true}]}>
-          <Select
-            style={catalogFieldWidth('compact')}
-            options={[
-              {value: 'SINGLE', label: '单选'},
-              {value: 'MULTIPLE', label: '多选'},
-            ]}
-          />
-        </Form.Item>
+        <Flex gap="middle" wrap="wrap" align="start" style={{width: '100%'}}>
+          <Form.Item
+            label="选项组名称"
+            name="name"
+            rules={[{required: true, whitespace: true, message: '请填写选项组名称'}]}
+            style={{flex: '1 1 0', minWidth: 0}}
+          >
+            <Input style={{width: '100%'}} maxLength={80} />
+          </Form.Item>
+          <Form.Item
+            label="选项组编码"
+            name="code"
+            rules={[{required: true, whitespace: true, message: '请填写选项组编码'}]}
+            extra="创建后不可修改。"
+            style={{flex: '1 1 0', minWidth: 0}}
+          >
+            <Input style={{width: '100%'}} disabled={definition !== 'CREATE'} maxLength={80} />
+          </Form.Item>
+          <Form.Item
+            label="选择方式"
+            name="selectionMode"
+            rules={[{required: true}]}
+            style={{flex: '1 1 0', minWidth: 0}}
+          >
+            <Select
+              style={{width: '100%'}}
+              options={[
+                {value: 'SINGLE', label: '单选'},
+                {value: 'MULTIPLE', label: '多选'},
+              ]}
+            />
+          </Form.Item>
+        </Flex>
         <Form.List name="values">
           {(fields, {add, remove: removeValue, move}) => (
             <Card
@@ -892,75 +911,39 @@ function CatalogOrderOptionDefinitionPane({
                       <Input placeholder="例如：黑松露酱" />
                     </Form.Item>
                   </div>
-                  <Form.List name={[field.name, 'materials']}>
-                    {(materialFields, {add: addMaterial, remove: removeMaterial}) => (
-                      <Card
-                        size="small"
-                        title="关联原料商品"
-                        extra={
-                          canWrite && (
-                            <Button
-                              type="link"
-                              icon={<PlusOutlined />}
-                              onClick={() => addMaterial({materialItemRef: undefined})}
-                            >
-                              添加原料商品
-                            </Button>
-                          )
-                        }
-                        style={{marginTop: 12}}
-                      >
-                        {materialFields.length === 0 && (
-                          <Typography.Text type="secondary">不扣原料可留空。</Typography.Text>
-                        )}
-                        {materialFields.map((materialField, materialIndex) => (
-                          <Space key={materialField.key} align="start" style={{display: 'flex', marginBottom: 8}}>
-                            <Typography.Text>{materialIndex + 1}.</Typography.Text>
-                            <Form.Item
-                              name={[materialField.name, 'materialItemRef']}
-                              style={{marginBottom: 0, flex: 1}}
-                            >
-                              <Select
-                                style={catalogFieldWidth('full')}
-                                allowClear
-                                showSearch
-                                loading={inventoryQuery.isFetching}
-                                filterOption={false}
-                                placeholder="搜索并选择已有库存记录的原料商品"
-                                onSearch={setMaterialKeyword}
-                                onPopupScroll={event =>
-                                  onMaterialCandidatePopupScroll(event, inventoryQuery.isFetching)
-                                }
-                                notFoundContent={
-                                  inventoryQuery.isFetching ? '正在查找原料商品…' : '没有可选择的原料商品'
-                                }
-                                options={candidates.map(candidate => ({
-                                  value: candidate.itemRef,
-                                  label: (
-                                    <Space size={4}>
-                                      <span>{candidate.name}</span>
-                                      <Typography.Text type="secondary">
-                                        {candidate.consumptionUnitSnapshot.name}
-                                      </Typography.Text>
-                                    </Space>
-                                  ),
-                                }))}
-                              />
-                            </Form.Item>
-                            {canWrite && (
-                              <Button
-                                type="text"
-                                danger
-                                icon={<DeleteOutlined />}
-                                onClick={() => removeMaterial(materialField.name)}
-                                aria-label="删除关联原料商品"
-                              />
-                            )}
+                  <Form.Item
+                    label="关联原料商品"
+                    name={[field.name, 'materials']}
+                    getValueProps={(materials: OrderOptionDefinitionFormValue['materials'] | undefined) => ({
+                      value: orderOptionMaterialRefs(materials),
+                    })}
+                    getValueFromEvent={(materialRefs: string[]) => orderOptionMaterialsFromRefs(materialRefs)}
+                    extra="不扣原料可留空。"
+                    style={{marginTop: 12, marginBottom: 0}}
+                  >
+                    <Select
+                      mode="multiple"
+                      style={{width: '100%'}}
+                      allowClear
+                      showSearch
+                      maxTagCount="responsive"
+                      loading={inventoryQuery.isFetching}
+                      filterOption={false}
+                      placeholder="搜索并选择已有库存记录的原料商品"
+                      onSearch={setMaterialKeyword}
+                      onPopupScroll={event => onMaterialCandidatePopupScroll(event, inventoryQuery.isFetching)}
+                      notFoundContent={inventoryQuery.isFetching ? '正在查找原料商品…' : '没有可选择的原料商品'}
+                      options={candidates.map(candidate => ({
+                        value: candidate.itemRef,
+                        label: (
+                          <Space size={4}>
+                            <span>{candidate.name}</span>
+                            <Typography.Text type="secondary">{candidate.consumptionUnitSnapshot.name}</Typography.Text>
                           </Space>
-                        ))}
-                      </Card>
-                    )}
-                  </Form.List>
+                        ),
+                      }))}
+                    />
+                  </Form.Item>
                 </Card>
               ))}
               {fields.length === 0 && <Typography.Text type="secondary">请至少添加一个可选项。</Typography.Text>}

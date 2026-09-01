@@ -9462,8 +9462,8 @@
     },
     "shapeManifest": {
       "path": "contracts/catalog/catalog-item-editor-manifest.json",
-      "digest": "fa563828651978a17e40d91f2d0b1c797a81088e6757d00d2a8331498ec3acdc"
+      "digest": "04be8368bd8477c454654136a6510c0d8106f1e9902af70988a59237d944518c"
     }
   },
-  "contractDigest": "bfa322c08667fa4f42a687f0d8d773dc675a167f73eb5886edeaad611dc563b4"
+  "contractDigest": "7b30b76697e3a40b0ced2fa56a88468c29ea38e929846b9a7d37a0846ebeb0f3"
 }

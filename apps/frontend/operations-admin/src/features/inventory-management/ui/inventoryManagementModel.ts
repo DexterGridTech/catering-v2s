@@ -20,6 +20,116 @@ export type InventoryConversionFacts = {
   conversionFactor: string;
 };
 
+type InventoryLabelMap = Readonly<Record<string, string>>;
+
+const INVENTORY_SHAPE_LABELS: InventoryLabelMap = {
+  STANDARD_SALE_COUNTED: '普通销售商品',
+  SKU_VARIANT_SALE_COUNTED: '按规格管理商品',
+  STANDARD_SALE_WEIGHED: '称重销售商品',
+  MATERIAL: '原材料/半成品/包装物',
+  COMPOSITE: '商品型套餐',
+  SERVICE: '服务/费用商品',
+  BENEFIT_SHELL: '权益商品壳',
+  COUNTED: '计数销售',
+  WEIGHED: '称重销售',
+};
+
+const INVENTORY_MATERIAL_ROLE_LABELS: InventoryLabelMap = {
+  RAW_MATERIAL: '原材料',
+  SEMI_FINISHED: '半成品',
+  PACKAGING_MATERIAL: '包装物',
+};
+
+const INVENTORY_TARGET_TYPE_LABELS: InventoryLabelMap = {
+  CATALOG_ITEM: '商品',
+  SKU: '规格',
+  OPTION_VALUE: '点单选项值',
+};
+
+const INVENTORY_STOCK_STATE_LABELS: InventoryLabelMap = {
+  IN_STOCK: '在库',
+  OK: '在库',
+  LOW: '低库存',
+  LOW_STOCK: '低库存',
+  OUT: '无库存',
+  OUT_OF_STOCK: '无库存',
+  NEGATIVE: '负库存',
+  UNKNOWN: '未知',
+};
+
+/**
+ * Inventory owner returns closed-set identities for these projections. Keep
+ * their user-facing labels at one boundary so an internal value cannot be
+ * rendered directly by a table column or a detail description.
+ */
+const INVENTORY_OPERATION_LABELS: InventoryLabelMap = {
+  COUNT: '存量盘点',
+  INCREASE: '库存增加',
+  ADJUST: '人工调整',
+  ORDER_DEDUCTION: '订单扣减',
+  RESTORE: '库存恢复',
+  MANUAL_ADJUSTMENT: '人工调整',
+  MANUAL_COUNT_COVERAGE: '存量盘点',
+  GOVERNANCE_ADJUSTMENT: '库存治理调整',
+};
+
+const INVENTORY_REASON_LABELS: InventoryLabelMap = {
+  RECOUNT: '盘点复核',
+  RECEIPT: '收货/增加',
+  WASTE: '报损/废弃',
+  TRANSFER: '调拨',
+  CORRECTION: '盘点纠正',
+  OTHER: '其他已核实原因',
+};
+
+const INVENTORY_REFERENCE_SOURCE_KIND_LABELS: InventoryLabelMap = {
+  ITEM: '商品',
+  CATALOG_ITEM: '商品',
+  SKU: '规格',
+  OPTION_VALUE: '点单选项值',
+};
+
+const INVENTORY_DEDUCTION_TIMING_LABELS: InventoryLabelMap = {
+  BOM: '按 BOM 扣组件库存',
+};
+
+function inventoryClosedSetLabel(value: string | null | undefined, labels: InventoryLabelMap) {
+  if (!value) return '—';
+  return labels[value] ?? '未识别';
+}
+
+export function inventoryShapeLabel(value: string | null | undefined) {
+  return inventoryClosedSetLabel(value, INVENTORY_SHAPE_LABELS);
+}
+
+export function inventoryMaterialRoleLabel(value: string | null | undefined) {
+  return inventoryClosedSetLabel(value, INVENTORY_MATERIAL_ROLE_LABELS);
+}
+
+export function inventoryTargetTypeLabel(value: string | null | undefined) {
+  return inventoryClosedSetLabel(value, INVENTORY_TARGET_TYPE_LABELS);
+}
+
+export function inventoryStockStateLabel(value: string | null | undefined) {
+  return inventoryClosedSetLabel(value, INVENTORY_STOCK_STATE_LABELS);
+}
+
+export function inventoryOperationLabel(value: string | null | undefined) {
+  return inventoryClosedSetLabel(value, INVENTORY_OPERATION_LABELS);
+}
+
+export function inventoryReasonLabel(value: string | null | undefined) {
+  return inventoryClosedSetLabel(value, INVENTORY_REASON_LABELS);
+}
+
+export function inventoryReferenceSourceKindLabel(value: string | null | undefined) {
+  return inventoryClosedSetLabel(value, INVENTORY_REFERENCE_SOURCE_KIND_LABELS);
+}
+
+export function inventoryDeductionTimingLabel(value: string | null | undefined) {
+  return inventoryClosedSetLabel(value, INVENTORY_DEDUCTION_TIMING_LABELS);
+}
+
 export function inventoryUnitLabel(snapshot: InventoryUnitSnapshot | null | undefined): ReactNode {
   if (!snapshot) return '—';
   return createElement(NameCodeText, {name: snapshot.name, code: snapshot.code});
@@ -114,15 +224,7 @@ export type InventoryReference = {
   quantity: string;
   consumptionUnitSnapshot: InventoryUnitSnapshot;
   timing: string;
-  status: string;
 };
-export type InventoryDiagnostics = {
-  permission: {granted: boolean; reason: string | null};
-  queries: Array<{queryName: string; databaseOperationCount: number; durationMillis: number}>;
-  timings: Array<{queryName: string; durationMillis: number}>;
-  warnings: Array<{code: string; message: string}>;
-};
-
 export type InventoryCurrentView = {
   target: InventoryTargetSummary & {productShape: string};
   balance: string;
@@ -143,6 +245,25 @@ export type InventoryCurrentView = {
   diagnosticsAvailability: {canRead: boolean; reason: string | null};
 };
 
+/**
+ * Inventory actions may only enter quantities in the units already owned by
+ * the current inventory object: its consumption unit and, when configured,
+ * its counting-unit snapshot. The catalog unit dictionary is not an action
+ * candidate source; the owner command accepts the same closed set.
+ */
+export function inventorySelectableUnitSnapshots(
+  current: Pick<InventoryCurrentView, 'target' | 'configuration'>,
+): InventoryUnitSnapshot[] {
+  const configuredCountingUnit = current.configuration.countingUnitSnapshot ?? current.target.countingUnitSnapshot;
+  return [
+    ...new Map(
+      [current.target.consumptionUnitSnapshot, configuredCountingUnit]
+        .filter((unit): unit is InventoryUnitSnapshot => Boolean(unit))
+        .map(unit => [unit.unitRef, unit]),
+    ).values(),
+  ];
+}
+
 export type InventoryPage = {
   items: InventoryTargetSummary[];
   cursor: string;
@@ -162,8 +283,7 @@ export type InventoryWriteResult = {
 };
 
 export function inventoryAuthorityLabel(authorityType: string | null | undefined) {
-  if (authorityType === 'INTERNAL') return '内部轻库存';
-  return authorityType ?? '—';
+  return inventoryClosedSetLabel(authorityType, {INTERNAL: '内部轻库存'});
 }
 
 export function envelopeData<T>(envelope: CatalogInventoryEnvelope | undefined): T | undefined {
@@ -179,10 +299,6 @@ export function envelopeResult<T>(envelope: CatalogInventoryEnvelope | undefined
 
 export function hasCapability(keys: readonly string[], capability: string) {
   return keys.includes(capability);
-}
-
-export function shouldRequestInventoryDiagnostics(drawerOpen: boolean) {
-  return drawerOpen;
 }
 
 export function matchesStockView(row: InventoryTargetSummary, view: StockView) {

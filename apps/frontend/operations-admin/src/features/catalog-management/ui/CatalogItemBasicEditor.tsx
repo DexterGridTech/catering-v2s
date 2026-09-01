@@ -1,4 +1,18 @@
-import {Alert, Button, Form, Input, InputNumber, Select, Space, TreeSelect, Typography, Upload} from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  Row,
+  Select,
+  Space,
+  TreeSelect,
+  Typography,
+  Upload,
+} from 'antd';
 import type {FormInstance} from 'antd';
 import {testId} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, type ReactNode} from 'react';
@@ -232,7 +246,7 @@ export function CatalogCategoryDescriptorField({
           onDirty();
         }}
         placeholder="请选择分类；也可以暂不分类"
-        style={{width: '100%'}}
+        style={catalogFieldWidth('full')}
         {...testId(catalogTestIds.static.itemCategoryField)}
       />
       <Typography.Text type="secondary" style={{fontSize: 12}}>
@@ -298,127 +312,163 @@ export function CatalogItemBasicEditor({
     standardSalePriceDraft: standardSalePrice,
   } = basicDraft.values;
   return (
-    <Space direction="vertical" size={16} style={{display: 'flex'}}>
+    <Space direction="vertical" size={16} style={{display: 'flex', width: '100%', maxWidth: 720, margin: '0 auto'}}>
       <Form form={form} layout="vertical" onValuesChange={onDirty}>
         <Alert type="info" showIcon title="商品编码与商品形态创建后不可修改" style={{marginBottom: 16}} />
-        {denied('name') ? (
-          lockedFact('name', detail.item.name)
-        ) : (
-          <Form.Item
-            label={fieldLabel('name')}
-            name="displayName"
-            rules={[{required: true, message: '请输入商品名称'}]}
-          >
-            <Input {...testId(catalogTestIds.static.itemEditName)} />
-          </Form.Item>
-        )}
-        {denied('shortName') ? (
-          lockedFact('shortName', detail.item.shortName || '未设置')
-        ) : (
-          <Form.Item label={fieldLabel('shortName')} name="shortName">
-            <Input placeholder="用于列表或小票的短展示名" {...testId(catalogTestIds.static.itemEditShortName)} />
-          </Form.Item>
-        )}
-        {denied('categoryRef') ? (
-          lockedFact('categoryRef', categorySummary)
-        ) : (
-          <CatalogCategoryDescriptorField
-            manifest={manifest}
-            shapeKey={detail.item.shapeKey}
-            value={categoryRef}
-            selectedPathLabels={detail.item.categoryPath.map(node => node.name)}
-            denied={false}
-            scopeRef={scopeRef}
-            brandRef={brandRef}
-            onChange={next => basicDraft.onChange({categoryRefDraft: next})}
-            onDirty={onDirty}
-          />
-        )}
-        {denied('tagRefs') ? (
-          lockedFact('tagRefs', selectedTagRefs.length ? `已设置 ${selectedTagRefs.length} 个商品标签` : '未设置')
-        ) : (
-          <CatalogDescriptorPicker
-            manifest={manifest}
-            shapeKey={detail.item.shapeKey}
-            fieldKey="tagRefs"
-            value={selectedTagRefs}
-            context={referencePickerContexts.TAG}
-            actions={
-              <Button size="small" onClick={onOpenTagDictionary} {...testId(catalogTestIds.static.itemTagManage)}>
-                维护商品标签
-              </Button>
-            }
-            testIdValue={catalogTestIds.static.itemTagRefs}
-            onChange={next => basicDraft.onChange({selectedTagRefs: Array.isArray(next) ? next : next ? [next] : []})}
-          />
-        )}
-        {denied('salesUnitRef') ? (
-          lockedFact(
-            'salesUnitRef',
-            selectedSalesUnitRef
-              ? (unitOptions.find(unit => unit.unitRef === selectedSalesUnitRef)?.name ?? '已设置')
-              : '未设置',
-          )
-        ) : (
-          <Form.Item label={fieldLabel('salesUnitRef')} extra="商品销售单位只能选择一个；原料可以留空。">
-            <Select
-              style={catalogFieldWidth('compact')}
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              value={selectedSalesUnitRef}
-              loading={unitsLoading}
-              options={unitOptions.map(unit => ({value: unit.unitRef, label: unitLabel(unit)}))}
-              onChange={next => basicDraft.onChange({selectedSalesUnitRef: next})}
-              {...testId(catalogTestIds.static.itemSalesUnit)}
-            />
-          </Form.Item>
-        )}
-        {denied('baseMeasureUnitRef') ? (
-          lockedFact(
-            'baseMeasureUnitRef',
-            selectedBaseMeasureUnitRef
-              ? (unitOptions.find(unit => unit.unitRef === selectedBaseMeasureUnitRef)?.name ?? '已设置')
-              : '未设置',
-          )
-        ) : (
-          <Form.Item label={fieldLabel('baseMeasureUnitRef')} extra="用于记录库存扣减数量；配置配方或库存时必须填写。">
-            <Select
-              style={catalogFieldWidth('compact')}
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              value={selectedBaseMeasureUnitRef}
-              loading={unitsLoading}
-              options={unitOptions.map(unit => ({value: unit.unitRef, label: unitLabel(unit)}))}
-              onChange={next => basicDraft.onChange({selectedBaseMeasureUnitRef: next})}
-              {...testId(catalogTestIds.static.itemBaseMeasureUnit)}
-            />
-          </Form.Item>
-        )}
-        {detail.item.priceGranularity === 'ITEM' ? (
-          denied('standardSalePrice') ? (
-            lockedFact(
-              'standardSalePrice',
-              standardSalePrice === null ? '—' : `¥${(standardSalePrice / 100).toFixed(2)}`,
-            )
-          ) : (
-            <Form.Item label={fieldLabel('standardSalePrice')}>
-              <InputNumber
-                min={0}
-                precision={2}
-                step={0.01}
-                suffix="元"
-                value={catalogCentsToYuan(standardSalePrice)}
-                onChange={value => basicDraft.onChange({standardSalePriceDraft: catalogYuanToCents(value)})}
-                style={{width: '100%'}}
-                {...testId(catalogTestIds.static.itemEditStandardPrice)}
-              />
-            </Form.Item>
-          )
-        ) : (
-          <Typography.Text type="secondary">标准价在规格矩阵中维护。</Typography.Text>
-        )}
+        <Card size="small" title="基本信息">
+          <Row gutter={[16, 0]} align="top">
+            <Col xs={24} md={12}>
+              {denied('name') ? (
+                lockedFact('name', detail.item.name)
+              ) : (
+                <Form.Item
+                  label={fieldLabel('name')}
+                  name="displayName"
+                  rules={[{required: true, message: '请输入商品名称'}]}
+                >
+                  <Input style={catalogFieldWidth('regular')} {...testId(catalogTestIds.static.itemEditName)} />
+                </Form.Item>
+              )}
+            </Col>
+            <Col xs={24} md={12}>
+              {denied('shortName') ? (
+                lockedFact('shortName', detail.item.shortName || '未设置')
+              ) : (
+                <Form.Item label={fieldLabel('shortName')} name="shortName">
+                  <Input
+                    placeholder="用于列表或小票的短展示名"
+                    style={catalogFieldWidth('regular')}
+                    {...testId(catalogTestIds.static.itemEditShortName)}
+                  />
+                </Form.Item>
+              )}
+            </Col>
+            <Col span={24}>
+              {denied('categoryRef') ? (
+                lockedFact('categoryRef', categorySummary)
+              ) : (
+                <CatalogCategoryDescriptorField
+                  manifest={manifest}
+                  shapeKey={detail.item.shapeKey}
+                  value={categoryRef}
+                  selectedPathLabels={detail.item.categoryPath.map(node => node.name)}
+                  denied={false}
+                  scopeRef={scopeRef}
+                  brandRef={brandRef}
+                  onChange={next => basicDraft.onChange({categoryRefDraft: next})}
+                  onDirty={onDirty}
+                />
+              )}
+            </Col>
+            <Col span={24}>
+              {denied('tagRefs') ? (
+                lockedFact('tagRefs', selectedTagRefs.length ? `已设置 ${selectedTagRefs.length} 个商品标签` : '未设置')
+              ) : (
+                <CatalogDescriptorPicker
+                  manifest={manifest}
+                  shapeKey={detail.item.shapeKey}
+                  fieldKey="tagRefs"
+                  value={selectedTagRefs}
+                  context={referencePickerContexts.TAG}
+                  actions={
+                    <Button size="small" onClick={onOpenTagDictionary} {...testId(catalogTestIds.static.itemTagManage)}>
+                      维护商品标签
+                    </Button>
+                  }
+                  actionsPlacement="after-label"
+                  actionsAlign="end"
+                  testIdValue={catalogTestIds.static.itemTagRefs}
+                  width="100%"
+                  onChange={next =>
+                    basicDraft.onChange({selectedTagRefs: Array.isArray(next) ? next : next ? [next] : []})
+                  }
+                />
+              )}
+            </Col>
+          </Row>
+        </Card>
+        <Card size="small" title="销售与计量">
+          <Row gutter={[16, 0]} align="top">
+            <Col xs={24} sm={8}>
+              {denied('salesUnitRef') ? (
+                lockedFact(
+                  'salesUnitRef',
+                  selectedSalesUnitRef
+                    ? (unitOptions.find(unit => unit.unitRef === selectedSalesUnitRef)?.name ?? '已设置')
+                    : '未设置',
+                )
+              ) : (
+                <Form.Item label={fieldLabel('salesUnitRef')} extra="商品销售单位只能选择一个；原料可以留空。">
+                  <Select
+                    style={catalogFieldWidth('compact')}
+                    allowClear
+                    showSearch
+                    optionFilterProp="label"
+                    value={selectedSalesUnitRef}
+                    loading={unitsLoading}
+                    options={unitOptions.map(unit => ({value: unit.unitRef, label: unitLabel(unit)}))}
+                    onChange={next => basicDraft.onChange({selectedSalesUnitRef: next})}
+                    {...testId(catalogTestIds.static.itemSalesUnit)}
+                  />
+                </Form.Item>
+              )}
+            </Col>
+            <Col xs={24} sm={8}>
+              {denied('baseMeasureUnitRef') ? (
+                lockedFact(
+                  'baseMeasureUnitRef',
+                  selectedBaseMeasureUnitRef
+                    ? (unitOptions.find(unit => unit.unitRef === selectedBaseMeasureUnitRef)?.name ?? '已设置')
+                    : '未设置',
+                )
+              ) : (
+                <Form.Item
+                  label={fieldLabel('baseMeasureUnitRef')}
+                  extra="用于记录库存扣减数量；配置配方或库存时必须填写。"
+                >
+                  <Select
+                    style={catalogFieldWidth('compact')}
+                    allowClear
+                    showSearch
+                    optionFilterProp="label"
+                    value={selectedBaseMeasureUnitRef}
+                    loading={unitsLoading}
+                    options={unitOptions.map(unit => ({value: unit.unitRef, label: unitLabel(unit)}))}
+                    onChange={next => basicDraft.onChange({selectedBaseMeasureUnitRef: next})}
+                    {...testId(catalogTestIds.static.itemBaseMeasureUnit)}
+                  />
+                </Form.Item>
+              )}
+            </Col>
+            <Col xs={24} sm={8}>
+              {detail.item.priceGranularity === 'ITEM' ? (
+                denied('standardSalePrice') ? (
+                  lockedFact(
+                    'standardSalePrice',
+                    standardSalePrice === null ? '—' : `¥${(standardSalePrice / 100).toFixed(2)}`,
+                  )
+                ) : (
+                  <Form.Item label={fieldLabel('standardSalePrice')}>
+                    <InputNumber
+                      min={0}
+                      precision={2}
+                      step={0.01}
+                      suffix="元"
+                      value={catalogCentsToYuan(standardSalePrice)}
+                      onChange={value => basicDraft.onChange({standardSalePriceDraft: catalogYuanToCents(value)})}
+                      style={catalogFieldWidth('compact')}
+                      {...testId(catalogTestIds.static.itemEditStandardPrice)}
+                    />
+                  </Form.Item>
+                )
+              ) : (
+                <Form.Item label={fieldLabel('standardSalePrice')}>
+                  <Typography.Text type="secondary">标准价在规格矩阵中维护。</Typography.Text>
+                </Form.Item>
+              )}
+            </Col>
+          </Row>
+        </Card>
       </Form>
       {denied('images') ? (
         locked('images')

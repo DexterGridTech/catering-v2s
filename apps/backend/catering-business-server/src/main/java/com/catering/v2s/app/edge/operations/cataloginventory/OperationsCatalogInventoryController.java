@@ -25,6 +25,7 @@ import com.catering.v2s.app.edge.generated.wire.CatalogDictionaryEntryReorderReq
 import com.catering.v2s.app.edge.generated.wire.CatalogDictionaryEntryTransitionRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogDictionaryEntryUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogDictionaryView;
+import com.catering.v2s.app.edge.generated.wire.CatalogInventoryWireEnums;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemBatchStatusTransitionReadback;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemBatchStatusTransitionRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemCommandReadback;
@@ -942,7 +943,7 @@ public final class OperationsCatalogInventoryController {
                                 definition.definitionRef(),
                                 definition.code(),
                                 definition.name(),
-                                definition.status(),
+                                CatalogInventoryWireEnums.DictionaryEntryStatus.valueOf(definition.status()),
                                 definition.valueType(),
                                 definition.options().stream()
                                         .map(option ->
@@ -966,7 +967,7 @@ public final class OperationsCatalogInventoryController {
                                 unit.name(),
                                 unit.unitDimension().name(),
                                 (long) unit.precision(),
-                                unit.status(),
+                                CatalogInventoryWireEnums.DictionaryEntryStatus.valueOf(unit.status()),
                                 readback.referencedUnitRefs().contains(unit.unitRef()),
                                 unit.version()))
                         .toList()));
@@ -979,7 +980,7 @@ public final class OperationsCatalogInventoryController {
                         definition.definitionRef(),
                         definition.code(),
                         definition.name(),
-                        definition.status(),
+                        CatalogInventoryWireEnums.DictionaryEntryStatus.valueOf(definition.status()),
                         definition.selectionMode(),
                         orderOptionValues(definition.values()),
                         definition.version()))

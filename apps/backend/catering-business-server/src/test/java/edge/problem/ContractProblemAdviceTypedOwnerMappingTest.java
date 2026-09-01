@@ -195,7 +195,7 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertFalse(referenceBlocked.getBody().detail().contains("product_sku_ref"));
         assertProblem(genericValidation, HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR");
         assertEquals(
-                "商品、生产标签或库存操作不满足 owner 约束",
+                "请求中的业务信息不完整或不符合规则",
                 /* format-wrap */
                 genericValidation.getBody().detail());
         assertFalse(genericValidation.getBody().detail().contains("internal validation detail"));

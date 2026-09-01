@@ -550,7 +550,7 @@ normal `scripts/verify`：它含本批未授权的远端/既有 runtime commands
 
 ### 10.4 必须保留的未证明边界
 
-- Android Gradle/autolinking/应用启动/bootstrap 渲染：批一 CP-7 已有 14 包投影证据；批二新增四个 adapter 未重复设备运行，不能扩展该证明；
+- Android Gradle/autolinking/应用启动/bootstrap 渲染：最终 22 包树已由 final-device addendum 的一次性模拟器运行证明；该证明只覆盖本仓布局下的构建、autolinking、启动与名称渲染，不扩展为 Kotlin 或业务能力；
 - Kotlin 能力仍未实现、未测试，仍为 `UNVERIFIED`；
 - adapter native bridge 能力未实现；
 - 没有 command、slice、port、持久化、双屏或自动化行为；
@@ -583,7 +583,7 @@ BATCH2_AUTHORIZED=true
 | 4 | 1 normalized adapter | raw-vs-final 清单；extra workspace/native guess red |
 | 5 | assembly + 14 reachable roots | missing import red；Expo export green |
 | 6 | 6 rule gates + 1 hygiene check + 2 TER markers；仓级零 tuple | 每门 mutation red；hygiene 反例 red；marker failure red |
-| 7 | batch1 local evidence + one-time emulator acceptance + final root tuples + validate-only + review | 本地或设备未全绿即出现 tuple red；任一 OPEN/UNVERIFIED 升级即 NO-GO |
+| 7 | batch1 local evidence + one-time emulator acceptance + review handoff；root tuple 接线状态另由最终收口记录，不把仓级 validate-only 作为本轮验收 | 本地或设备未全绿即进入 review；任一 OPEN/UNVERIFIED 升级即 NO-GO |
 | 8 | batch2 8 roots + final 22-package graph/bootstrap + TER-only verify + scaffold rerun/cleanup | 22 census、exact-set、typecheck、Metro、hygiene 或 cleanup 任一失败即不收口 |
 
 ## 12 · 实施中不得猜的事项
@@ -593,8 +593,8 @@ BATCH2_AUTHORIZED=true
 3. UI 版本源：必须记录 latest app 原始 manifest、Expo CLI 解析结果与进程级 age-gate 覆盖，不抄需求快照；
 4. scaffold scripts/内部 helper 的依赖：先从原始 package.json 与 script 调用链核对再删；
 5. assembly 自身可达性：bootstrap 用本地 `./index` package root，不做 npm self-import；
-6. Android Gradle/autolinking：只由 CP-7 一次性模拟器 `expo run:android` 证明，不用 Metro 成功替代；
-7. Kotlin 能力：本批无能力实现；即使设备运行通过，也保持 `UNVERIFIED`；
+6. Android Gradle/autolinking：只由最终 22 包树的一次性模拟器 `expo run:android` 复核证明，不用 Metro 成功替代；
+7. Kotlin 能力：本批无能力实现；即使最终 22 包设备运行通过，也保持 `UNVERIFIED`；
 8. 任何需求/模板不一致：停下并回报，不凭“常见 Expo 项目”补目录。
 9. 重新解析的 latest 无法与 owning source 的 latest 优先策略同时满足，或需要未获裁决的供应链/版本策略：
    停止并回报，不用旧快照或手工 pin 掩盖。
@@ -618,11 +618,24 @@ FINAL_TER_TYPECHECK=22_OF_22_PASS
 FINAL_TER_METRO=PASS_647_MODULES
 TER_VERIFY=PASS_20_SECONDS
 TER_VERIFY_CLEANUP=PASS
-TER_ROOT_VERIFY=NOT_RUN_BY_DEXTER_TER_ONLY_AUTHORIZATION
+FINAL_ANDROID_DEVICE=PASS
+FINAL_GRADLE_BUILD=PASS
+FINAL_AUTOLINKED_ADAPTERS=5_OF_5
+FINAL_APP_START=PASS
+FINAL_BOOTSTRAP_RENDER=22_OF_22
+FINAL_ANDROID_GENERATED_CLEANUP=PASS
+TER_ROOT_VERIFY_AUTHORIZED_RUN=NOT_PERFORMED
+TER_ROOT_VERIFY_ACCIDENTAL_ATTEMPT=STATIC_FIRST_FAIL_NOT_EVIDENCE
 ```
 
-本轮只运行 `yarn workspace @catering-v2s/terminal run verify` 及其 TER-local focused checks，
-没有运行仓级 `scripts/verify`（normal 或 `--validate-only`）。仓级 tuple 的源码形状仍由实现保留，
-但不把未执行的 root runner 写成证据。批一 CP-7 的一次性模拟器记录仍只覆盖 14 包投影；CP-8
-没有重复设备运行，因此四个新增 adapter 的 Gradle/autolinking/启动、Kotlin 能力和所有业务能力继续
-保持未证明/未授权。
+`FINAL_TER_TYPECHECK=22_OF_22_PASS` 的准确含义是 22 个包根及其声明的跨包 import 可解析并编译，
+属于跨包类型解析证据；它不证明终端业务类型或 adapter 能力正确。
+
+本轮运行了 `yarn workspace @catering-v2s/terminal run verify` 及其 TER-local focused checks，
+并在 TER-only verify 之外补做了一次最终 22 包树的人工 Android 模拟器验收。该验收的
+Gradle 构建、5/5 adapter autolinking、APK 安装、Activity 启动、JS main 执行与 22 个
+`moduleName` 渲染证据集中在 `doc/evidence/platform/terminal-skeleton/batch-2/cp8-batch2-skeleton-codex.md`
+的 final-device addendum。没有完成授权的仓级 `scripts/verify`（normal 或 `--validate-only`）；
+一次事故性静态首败已在 CP-8 evidence 中单独记录，不作为验收证据。
+仓级 tuple 的源码形状仍由实现保留，但不把事故性静态首败的 root runner 写成成功证据。Kotlin 能力和所有
+adapter/terminal 业务能力仍保持未证明/未授权。

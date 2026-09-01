@@ -309,16 +309,23 @@ class InventoryTypedMutationCasIntegrationTest {
         when(sessions.commandAuthorizationFacts("inventory-test-session"))
                 .thenReturn(new WorkspaceCommandAuthorizationFacts(session, UUID.randomUUID(), "STORE", SCOPE));
         WorkspaceCapabilityScopeResolver capabilities = mock(WorkspaceCapabilityScopeResolver.class);
-        when(capabilities.resolveGeneratedOperation(any(), anyString(), anyString(), any()))
-                .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
-                        WorkspaceCapabilityScopeResolver.Decision.ALLOW,
-                        token.capabilityFor("STORE"),
-                        new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
-                                workspaceId, "inventory-m01-test", "STORE", SCOPE, "STORE", SCOPE, List.of(SCOPE))));
+        when(capabilities.resolveGeneratedCatalogOperation(any(), anyString(), anyString(), any(), any()))
+                .thenReturn(new WorkspaceCapabilityScopeResolver.CatalogScopeResolution(
+                        new WorkspaceCapabilityScopeResolver.ScopeResolution(
+                                WorkspaceCapabilityScopeResolver.Decision.ALLOW,
+                                token.capabilityFor("STORE"),
+                                new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
+                                        workspaceId,
+                                        "inventory-m01-test",
+                                        "STORE",
+                                        SCOPE,
+                                        "STORE",
+                                        SCOPE,
+                                        List.of(SCOPE))),
+                        new CatalogScopeLookup.CatalogBrandJudgment(
+                                "BRAND", "TEST_ORGANIZATION_JUDGMENT", "TEST_REVISION"),
+                        null));
         CatalogScopeLookup catalogScopes = mock(CatalogScopeLookup.class);
-        when(catalogScopes.resolveCatalogBrand(any(), anyString(), anyString(), any(), any()))
-                .thenReturn(new CatalogScopeLookup.CatalogBrandJudgment(
-                        "BRAND", "TEST_ORGANIZATION_JUDGMENT", "TEST_REVISION"));
         return new CommandExecutionContextResolver(capabilities, catalogScopes, sessions)
                 .resolveCatalog(
                         "inventory-test-session",

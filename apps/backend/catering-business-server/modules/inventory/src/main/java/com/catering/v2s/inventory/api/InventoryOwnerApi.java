@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /** Public inventory owner boundary. Inventory facts are stored and changed only in inventory schema. */
@@ -329,6 +330,135 @@ public interface InventoryOwnerApi {
             WorkspaceExecutionContext<CatalogAuthorizationScope> context, String itemRef);
 
     record CatalogItemVoidDependencyReadback(boolean hasDependentFacts, long stockTargetCount, long productBomCount) {}
+
+    /**
+     * Explicit lifecycle subject used by catalog when it asks inventory to judge or retire owned definitions. The
+     * subject kind is part of the value so an item and one of its SKUs cannot accidentally share a column-only query.
+     */
+    enum CatalogVoidSubjectKind {
+        CATALOG_ITEM,
+        PRODUCT_SKU,
+        OPTION_VALUE
+    }
+
+    record CatalogVoidSubject(CatalogVoidSubjectKind kind, UUID ref) {}
+
+    /** One active BOM component row that points at a catalog lifecycle subject. */
+    record CatalogVoidInboundBomReference(
+            CatalogVoidSubjectKind sourceKind,
+            UUID sourceItemRef,
+            UUID sourceSkuRef,
+            UUID sourceOptionValueRef,
+            UUID targetRef,
+            String sourceCode,
+            String sourceName,
+            long count) {}
+
+    /**
+     * Inventory's lifecycle judgement. Owned definitions are facts to retire, not blockers; only inbound active BOM
+     * rows block the catalog subject. The all/active/disabled sets make the status boundary explicit for callers.
+     */
+    record CatalogVoidDependencyReadback(
+            CatalogVoidSubject subject,
+            Set<UUID> ownedTargetRefsAllStatus,
+            Set<UUID> ownedActiveTargetRefs,
+            Set<UUID> ownedDisabledTargetRefs,
+            long ownedActiveStockTargetCount,
+            long ownedActiveProductBomCount,
+            List<CatalogVoidInboundBomReference> inboundBomReferences) {
+        public boolean hasInboundBomReferences() {
+            return inboundBomReferences != null && !inboundBomReferences.isEmpty();
+        }
+
+        public CatalogVoidDependencyReadback {
+            ownedTargetRefsAllStatus =
+                    ownedTargetRefsAllStatus == null ? Set.of() : Set.copyOf(ownedTargetRefsAllStatus);
+            ownedActiveTargetRefs = ownedActiveTargetRefs == null ? Set.of() : Set.copyOf(ownedActiveTargetRefs);
+            ownedDisabledTargetRefs = ownedDisabledTargetRefs == null ? Set.of() : Set.copyOf(ownedDisabledTargetRefs);
+            inboundBomReferences = inboundBomReferences == null ? List.of() : List.copyOf(inboundBomReferences);
+        }
+    }
+
+    /** Readback proving the inventory-owned half of a catalog VOID transition completed. */
+    record CatalogVoidInventoryRetirementReadback(
+            CatalogVoidSubject subject,
+            long retiredStockTargetCount,
+            long retiredProductBomCount,
+            long remainingActiveOwnedDefinitionCount) {}
+
+    /**
+     * Explicit item/SKU lifecycle judgement. The default is a source-compatible bridge for narrow test doubles; the
+     * concrete inventory owner overrides it with one scoped set-based read.
+     */
+    default CatalogVoidDependencyReadback catalogVoidDependencies(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context, CatalogVoidSubject subject) {
+        if (subject == null || subject.kind() == null || subject.ref() == null)
+            throw new Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "catalog void subject is required");
+        if (subject.kind() != CatalogVoidSubjectKind.CATALOG_ITEM)
+            throw new Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "SKU inventory void judgement is not implemented");
+        CatalogItemVoidDependencyReadback legacy =
+                catalogItemVoidDependencies(context, subject.ref().toString());
+        if (legacy == null) throw new Problem("RESULT_UNKNOWN", 500, "inventory void dependency readback is missing");
+        return new CatalogVoidDependencyReadback(
+                subject, Set.of(), Set.of(), Set.of(), legacy.stockTargetCount(), legacy.productBomCount(), List.of());
+    }
+
+    /** Collection boundary used by batch VOID preflight; the concrete owner must keep this set-based. */
+    default List<CatalogVoidDependencyReadback> catalogVoidDependenciesByRefs(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            CatalogVoidSubjectKind kind,
+            List<UUID> references) {
+        if (references == null || references.isEmpty()) return List.of();
+        return references.stream()
+                .distinct()
+                .map(ref -> catalogVoidDependencies(context, new CatalogVoidSubject(kind, ref)))
+                .toList();
+    }
+
+    /**
+     * Retires only the subject's own ENABLED inventory definitions after an owner recheck. This is an internal command
+     * boundary, not a new HTTP operation. The default keeps old unit-test doubles source-compatible.
+     */
+    default CatalogVoidInventoryRetirementReadback retireCatalogVoidInventoryDefinitions(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            CatalogVoidSubject subject,
+            String idempotencyKey) {
+        CatalogVoidDependencyReadback judgement = catalogVoidDependencies(context, subject);
+        if (judgement.hasInboundBomReferences()) {
+            throw new Problem("REFERENCE_BLOCKS_VOID", 422, /* format-wrap */ "库存 BOM 仍引用该对象");
+        }
+        long own = judgement.ownedActiveStockTargetCount() + judgement.ownedActiveProductBomCount();
+        return new CatalogVoidInventoryRetirementReadback(subject, 0L, 0L, own);
+    }
+
+    /**
+     * Batch-item variant used by the catalog owner while its batch-start locks are held. The enclosing catalog batch
+     * receipt still owns replay of the item result; the concrete inventory owner must retain its own scoped validation,
+     * retirement, and owner readback in the item's REQUIRED transaction. The default keeps narrow test doubles
+     * source-compatible and deliberately falls back to the full command path.
+     */
+    default CatalogVoidInventoryRetirementReadback retireCatalogVoidInventoryDefinitionsForBatch(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            CatalogVoidSubject subject,
+            String idempotencyKey) {
+        return retireCatalogVoidInventoryDefinitions(context, subject, idempotencyKey);
+    }
+
+    /** Untyped detail projection for SKU lifecycle facts; it remains an owner read, not an HTTP operation. */
+    default JsonNode catalogSkuVoidDependencies(String dataNodeRef, String brandRef, String skuRef, String requestId) {
+        throw new UnsupportedOperationException("inventory SKU void-dependency judgement is not implemented");
+    }
+
+    /** Batched untyped detail projection; the concrete owner must keep the SKU judgement set-based. */
+    default List<JsonNode> catalogSkuVoidDependenciesByRefs(
+            String dataNodeRef, String brandRef, List<UUID> skuRefs, String requestId) {
+        if (skuRefs == null || skuRefs.isEmpty()) return List.of();
+        return skuRefs.stream()
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .map(ref -> catalogSkuVoidDependencies(dataNodeRef, brandRef, ref.toString(), requestId))
+                .toList();
+    }
 
     /**
      * Typed catalog-owner judgement for lifecycle guards on concrete catalog references. This is an owner-to-owner read

@@ -171,13 +171,23 @@ test('catalog configuration drawer keeps one first-level workspace with stable l
   assert.match(navigation, /\{key: 'ORDER_OPTIONS', label: '点单选项库'\}/);
   assert.match(
     configurationSurface,
-    /title=\{presentation === 'EDITOR_CHILD' \? '维护商品元数据' : '商品配置'\}[\s\S]*push=\{false\}[\s\S]*adminWideDrawerSurfaceProps/,
+    /title=\{presentation === 'EDITOR_CHILD' \? '维护商品基础数据' : '商品配置'\}[\s\S]*push=\{false\}[\s\S]*adminWideDrawerSurfaceProps/,
   );
   assert.match(
     configurationSurface,
     /<CatalogConfigurationLibraryNavigation[\s\S]*contentId="catalog-configuration-content"/,
   );
-  assert.match(navigation, /aria-label="商品配置分类"[\s\S]*width: 184/);
+  assert.match(navigation, /aria-label="商品配置分类"[\s\S]*width: 172/);
+  assert.match(navigation, /role="tablist"[\s\S]*aria-orientation="vertical"[\s\S]*type="text"/);
+  assert.match(navigation, /borderInlineEnd:[\s\S]*token\.colorPrimary/);
+  assert.match(
+    configurationSurface,
+    /body: \{\.\.\.adminWideDrawerSurfaceProps\.styles\.body, overflowY: 'hidden', padding: '0 24px'\}/,
+  );
+  assert.match(
+    configurationSurface,
+    /role="tabpanel"[\s\S]*aria-labelledby=\{`catalog-configuration-tab-\$\{currentLibrary\}`\}/,
+  );
   assert.match(
     dictionary,
     /<CatalogDefinitionLibraries[\s\S]*open=\{open\}[\s\S]*kind=\{currentLibrary === 'ATTRIBUTES' \? 'ATTRIBUTES' : 'ORDER_OPTIONS'\}/,
@@ -220,7 +230,8 @@ test('catalog configuration drawer keeps one first-level workspace with stable l
     definitionLibraries,
     /选项组[\s\S]*onOpenDefinitionEditor\(\{library: 'ORDER_OPTIONS', mode: 'EDIT', definitionRef: row\.definitionRef\}\)/,
   );
-  assert.match(workbench, /商品元数据/);
+  assert.match(workbench, /商品基础数据/);
+  assert.doesNotMatch(workbench, /商品元数据/);
   assert.doesNotMatch(workbench, /<Tabs\b|catalogArea|catalog-inventory-area-tabs|CatalogDefinitionLibraries/);
   assert.doesNotMatch(workbench, /catalog-inventory-production-tags/);
 });

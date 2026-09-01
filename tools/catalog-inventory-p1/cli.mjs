@@ -314,7 +314,7 @@ const expectedB3FieldSpecs = [
   {fieldKey: "categoryRef", dataPath: "categoryRef", controlKind: "treeSelect", tabKey: "basic", admittedShapes: expectedShapes},
   {fieldKey: "attributeAssignments", dataPath: "attributeAssignments[]", controlKind: "detailTable", tabKey: "attributes", admittedShapes: expectedShapes},
   {fieldKey: "orderOptionConfigs", dataPath: "orderOptionConfigs[]", controlKind: "orderOptionsWorkbench", tabKey: "order-options", admittedShapes: ["STANDARD_SALE_COUNTED", "STANDARD_SALE_WEIGHED"]},
-  {fieldKey: "skuVariantAttribute", dataPath: "skuVariantDimensions[].attributeRef", controlKind: "select", tabKey: "sku-specifications-pricing", admittedShapes: ["SKU_VARIANT_SALE_COUNTED"]},
+  {fieldKey: "skuVariantAttribute", dataPath: "skuVariantDimensions[].attributeRef", controlKind: "multiSelect", tabKey: "sku-specifications-pricing", admittedShapes: ["SKU_VARIANT_SALE_COUNTED"]},
   {fieldKey: "skuVariantValues", dataPath: "skuVariantDimensions[].values[].valueRef", controlKind: "multiSelect", tabKey: "sku-specifications-pricing", admittedShapes: ["SKU_VARIANT_SALE_COUNTED"]},
   {fieldKey: "skuMatrix", dataPath: "skus[]", controlKind: "skuVariantMatrix", tabKey: "sku-specifications-pricing", admittedShapes: ["SKU_VARIANT_SALE_COUNTED"]},
   {fieldKey: "inventoryRuleMode", dataPath: "inventoryRules.nodes[].mode", controlKind: "select", tabKey: "inventory-bom", admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL"]},
@@ -670,7 +670,18 @@ function validate(root = ROOT) {
   const latteSeed = fixtures.seedDatasets.find((entry) => entry.fixtureId === "SEED-LATTE");
   const caesarSeed = fixtures.seedDatasets.find((entry) => entry.fixtureId === "SEED-CAESAR");
   const materialSeed = fixtures.seedDatasets.find((entry) => entry.fixtureId === "SEED-MATERIALS");
-  expect(latteSeed.entities.skus?.length === 3 && latteSeed.entities.bomLines?.length === 3, "P1_SEED_LATTE_GRAPH");
+  const latteSkusByCode = new Map((latteSeed.entities.skus || []).map((sku) => [sku.code, sku]));
+  const latteNonVoidedSkuCodes = (latteSeed.entities.skus || [])
+    .filter((sku) => sku.status !== "VOIDED")
+    .map((sku) => sku.code);
+  const latteBomSkuCodes = new Set((latteSeed.entities.bomLines || []).map((line) => line.skuCode));
+  expect(
+    latteSeed.entities.skus?.length === 3
+      && latteNonVoidedSkuCodes.length >= 2
+      && latteNonVoidedSkuCodes.every((skuCode) => latteBomSkuCodes.has(skuCode))
+      && (latteSeed.entities.bomLines || []).every((line) => latteSkusByCode.get(line.skuCode)?.status !== "VOIDED"),
+    "P1_SEED_LATTE_GRAPH",
+  );
   expect(caesarSeed.entities.optionGroups?.length === 3 && caesarSeed.entities.bomLines?.length === 4, "P1_SEED_CAESAR_GRAPH");
   expect(materialSeed.entities.catalogItems?.length >= 7 && materialSeed.entities.stockTargets?.length >= 7, "P1_SEED_MATERIAL_GRAPH");
   const fixtureIds = new Set(seedIds.concat(testIds));

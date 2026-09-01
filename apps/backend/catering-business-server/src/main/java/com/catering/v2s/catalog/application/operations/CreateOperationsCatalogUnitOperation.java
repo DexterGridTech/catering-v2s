@@ -1,5 +1,6 @@
 package com.catering.v2s.catalog.application.operations;
 
+import com.catering.v2s.app.edge.generated.wire.CatalogInventoryWireEnums;
 import com.catering.v2s.app.edge.generated.wire.CatalogUnitCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogUnitReadback;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
@@ -77,7 +78,7 @@ public class CreateOperationsCatalogUnitOperation {
                         value.name(),
                         value.unitDimension().name(),
                         (long) value.precision(),
-                        value.status(),
+                        CatalogInventoryWireEnums.DictionaryEntryStatus.valueOf(value.status()),
                         value.version())),
                 value.version());
     }

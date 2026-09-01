@@ -23,16 +23,15 @@ import com.catering.v2s.contract.application.ContractTaskReadService;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
-import com.catering.v2s.organization.api.StoreContractLookup;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolver;
+import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -111,7 +110,7 @@ class OperationsContractControllerScopeAndCandidateTest {
     }
 
     @Test
-    void createUsesStoreOwnerProjectAndPassesServerResolvedGrantToContractOwner() {
+    void createUsesSelectedProjectAndPassesServerResolvedGrantToContractOwner() {
         Fixture fixture = fixture();
         UUID scopedProjectId = selectedProjectId(fixture);
         UUID storeId = UUID.randomUUID();
@@ -128,13 +127,11 @@ class OperationsContractControllerScopeAndCandidateTest {
                 "PROJECT",
                 scopedProjectId,
                 List.of(scopedProjectId));
-        when(fixture.entities.requireStoreContractContext(fixture.workspaceId, KEY, storeId))
-                .thenReturn(new StoreContractLookup.StoreContractContext(
-                        storeId, tenantId, scopedProjectId, "ENABLED", "ENABLED", List.of("一期")));
-        when(fixture.capabilityScopes.resolve(
+        when(fixture.capabilityScopes.resolveUsingResolvedTaskPath(
                         fixture.session,
                         "REQ_CREATE_OPERATIONS_CONTRACT",
-                        new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId)))
+                        new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId),
+                        projectPath(scopedProjectId)))
                 .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
                         WorkspaceCapabilityScopeResolver.Decision.ALLOW,
                         "BC-CONTRACT-CREATE",
@@ -176,27 +173,6 @@ class OperationsContractControllerScopeAndCandidateTest {
                         "VALID",
                         3L,
                         List.of(new StoreContractReadback.Item(1, "SKU-1", "货号一"))));
-        when(fixture.reads.view(fixture.workspaceId, KEY, contractId))
-                .thenReturn(new ContractTaskReadService.StoreContractView(
-                        contractId,
-                        KEY,
-                        new ContractTaskReadService.Reference(scopedProjectId, "PRJ-01", "项目一"),
-                        new ContractTaskReadService.Reference(storeId, "STORE-01", "门店一"),
-                        new ContractTaskReadService.Reference(tenantId, "TEN-01", "经营主体一"),
-                        "一期",
-                        "HT-001",
-                        LocalDate.parse("2026-07-30"),
-                        null,
-                        "备注",
-                        Map.of(),
-                        0L,
-                        "VALID",
-                        3L,
-                        "MANUAL",
-                        10L,
-                        11L,
-                        List.of(new ContractTaskReadService.Item("SKU-1", "货号一")),
-                        "一期"));
         when(fixture.reads.readTaskView(
                         new OperationsStoreContractCommandApi.TaskViewQuery(fixture.workspaceId, KEY, contractId)))
                 .thenReturn(new OperationsStoreContractCommandApi.StoreContractTaskReadback(
@@ -239,29 +215,39 @@ class OperationsContractControllerScopeAndCandidateTest {
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals("HT-001", response.getBody().contractNo());
         assertEquals(scopedProjectId.toString(), response.getBody().project().id());
-        verify(fixture.entities).requireStoreContractContext(fixture.workspaceId, KEY, storeId);
         verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
         verify(fixture.capabilityScopes)
-                .resolve(
+                .resolveUsingResolvedTaskPath(
                         fixture.session,
                         "REQ_CREATE_OPERATIONS_CONTRACT",
-                        new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId));
+                        new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId),
+                        projectPath(scopedProjectId));
         verify(fixture.contracts).create(command);
     }
 
     @Test
-    void updateAndInvalidateRejectAContractOutsideTheRetainedSelectedProjectBeforeCommands() {
+    void updateAndInvalidateStopAtSelectedProjectCapabilityBoundaryBeforeOwnerCommands() {
         Fixture fixture = fixture();
         UUID selectedProjectId = selectedProjectId(fixture);
-        UUID foreignProjectId = UUID.randomUUID();
+        selectedProject(fixture, selectedProjectId);
         UUID contractId = UUID.randomUUID();
-        when(fixture.reads.view(fixture.workspaceId, KEY, contractId))
-                .thenReturn(contractView(contractId, foreignProjectId));
-        when(fixture.user.resolveSelectedProjectScope(fixture.session, foreignProjectId))
-                .thenThrow(new WorkspaceUserService.TaskScopeDeniedException());
+        when(fixture.capabilityScopes.resolveUsingResolvedTaskPath(
+                        fixture.session,
+                        "REQ_UPDATE_OPERATIONS_CONTRACT",
+                        new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", selectedProjectId),
+                        projectPath(selectedProjectId)))
+                .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
+                        WorkspaceCapabilityScopeResolver.Decision.DENY, null, null));
+        when(fixture.capabilityScopes.resolveUsingResolvedTaskPath(
+                        fixture.session,
+                        "REQ_INVALIDATE_OPERATIONS_CONTRACT",
+                        new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", selectedProjectId),
+                        projectPath(selectedProjectId)))
+                .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
+                        WorkspaceCapabilityScopeResolver.Decision.DENY, null, null));
 
         assertThrows(
-                WorkspaceUserService.TaskScopeDeniedException.class,
+                WorkspaceCommandAuthorizationService.AuthorizationDeniedException.class,
                 () -> fixture.controller.update(
                         fixture.request,
                         KEY,
@@ -282,12 +268,24 @@ class OperationsContractControllerScopeAndCandidateTest {
                                 List.of(new StoreContractItem("SKU-1", "货号一")),
                                 "一期")));
         assertThrows(
-                WorkspaceUserService.TaskScopeDeniedException.class,
+                WorkspaceCommandAuthorizationService.AuthorizationDeniedException.class,
                 () -> fixture.controller.invalidate(
                         fixture.request, KEY, contractId, IDEMPOTENCY_KEY, new StoreContractInvalidateRequest(3L)));
 
-        verify(fixture.user, times(2)).resolveSelectedProjectScope(fixture.session, foreignProjectId);
-        verifyNoInteractions(fixture.contracts, fixture.capabilityScopes);
+        verify(fixture.user, times(2)).resolveSelectedProjectScope(fixture.session, null);
+        verify(fixture.capabilityScopes)
+                .resolveUsingResolvedTaskPath(
+                        fixture.session,
+                        "REQ_UPDATE_OPERATIONS_CONTRACT",
+                        new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", selectedProjectId),
+                        projectPath(selectedProjectId));
+        verify(fixture.capabilityScopes)
+                .resolveUsingResolvedTaskPath(
+                        fixture.session,
+                        "REQ_INVALIDATE_OPERATIONS_CONTRACT",
+                        new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", selectedProjectId),
+                        projectPath(selectedProjectId));
+        verifyNoInteractions(fixture.contracts, fixture.entities);
         assertEquals(selectedProjectId, fixture.session.scopeContext().project().dataNodeId());
     }
 
@@ -383,37 +381,11 @@ class OperationsContractControllerScopeAndCandidateTest {
     }
 
     private static void selectedProject(Fixture fixture, UUID projectId) {
-        when(fixture.user.resolveSelectedProjectScope(fixture.session, null))
-                .thenReturn(new OrganizationTaskPathLookup.TaskPath(
-                        "PROJECT",
-                        projectId,
-                        List.of(projectId),
-                        /* format-wrap */
-                        "集团 / 项目"));
+        when(fixture.user.resolveSelectedProjectScope(fixture.session, null)).thenReturn(projectPath(projectId));
     }
 
-    private static ContractTaskReadService.StoreContractView contractView(UUID contractId, UUID projectId) {
-        UUID storeId = UUID.randomUUID();
-        UUID tenantId = UUID.randomUUID();
-        return new ContractTaskReadService.StoreContractView(
-                contractId,
-                KEY,
-                new ContractTaskReadService.Reference(projectId, "PRJ-01", "项目一"),
-                new ContractTaskReadService.Reference(storeId, "STORE-01", "门店一"),
-                new ContractTaskReadService.Reference(tenantId, "TEN-01", "经营主体一"),
-                "一期",
-                "HT-001",
-                LocalDate.parse("2026-07-30"),
-                null,
-                "备注",
-                Map.of(),
-                0L,
-                "VALID",
-                3L,
-                "MANUAL",
-                10L,
-                11L,
-                List.of(new ContractTaskReadService.Item("SKU-1", "货号一")),
-                "一期");
+    private static OrganizationTaskPathLookup.TaskPath projectPath(UUID projectId) {
+        return new OrganizationTaskPathLookup.TaskPath(
+                "PROJECT", projectId, List.of(projectId), /* format-wrap */ "集团 / 项目");
     }
 }

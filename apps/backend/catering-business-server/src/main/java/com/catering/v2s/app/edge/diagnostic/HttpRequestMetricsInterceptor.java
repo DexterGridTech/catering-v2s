@@ -116,7 +116,8 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
         String measurementScenarioId =
                 mode == Mode.BACKEND_ACCEPTANCE ? request.getHeader(mode.measurementScenarioHeader()) : null;
         boolean measurementScenarioInvalid = mode == Mode.BACKEND_ACCEPTANCE
-                && !BACKEND_ACCEPTANCE_MEASUREMENT_SCENARIO_IDS.contains(measurementScenarioId);
+                && (measurementScenarioId == null
+                        || !BACKEND_ACCEPTANCE_MEASUREMENT_SCENARIO_IDS.contains(measurementScenarioId));
         boolean credentialAuthorized = eventActive
                 && validSecret(request.getHeader(mode.secretHeader()))
                 && runId.equals(request.getHeader(mode.runIdHeader()));

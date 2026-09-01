@@ -57,8 +57,122 @@ final class CatalogSkuFacts {
      * preparation profile. Carry that owner-local column in the existing SKU set read rather than opening a second
      * page-wide lookup for the same SKU rows.
      */
-    Map<UUID, ArrayNode> readByItemRefsForList(Collection<UUID> itemRefs) {
-        return readByItemRefs(itemRefs, true);
+    ListReadback readByItemRefsForList(Collection<UUID> itemRefs) {
+        if (itemRefs == null || itemRefs.isEmpty()) return ListReadback.empty();
+        List<UUID> refs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
+        String requestedValues =
+                refs.stream().map(ignored -> "(?::uuid)").collect(java.util.stream.Collectors.joining(","));
+        Map<UUID, LinkedHashMap<UUID, ObjectNode>> rows = new LinkedHashMap<>();
+        Map<UUID, ArrayNode> axes = new LinkedHashMap<>();
+        Set<UUID> loadedAxes = new LinkedHashSet<>();
+        refs.forEach(ref -> axes.put(ref, mapper.createArrayNode()));
+        jdbc.query(
+                "WITH requested(item_ref) AS (VALUES "
+                        + requestedValues
+                        + ") SELECT requested.item_ref, sku.product_sku_ref, sku.sku_code, sku.sku_name,"
+                        + " sku.standard_sale_price, sku.is_default, sku.status, sku.version, sku.display_order,"
+                        + " sku.variant_combination_digest, sku.sales_unit_override_ref,"
+                        + " sku.base_measure_unit_override_ref, sku.sales_unit_ref, sku.sales_unit_code,"
+                        + " sku.sales_unit_name, sku.sales_unit_dimension, sku.sales_unit_precision,"
+                        + " sku.base_measure_unit_ref, sku.base_measure_unit_code, sku.base_measure_unit_name,"
+                        + " sku.base_measure_unit_dimension, sku.base_measure_unit_precision,"
+                        + " attribute_value.attribute_ref, attribute.code, attribute.name, value.entry_ref, value.code,"
+                        + " value.name, value.status, COALESCE(axis_value.display_order,0), media_refs.media_refs,"
+                        + " sku.preparation_override::text AS preparation_override, sku.updated_at_epoch_millis,"
+                        + " axis_facts.axis_facts FROM requested LEFT JOIN catalog.catalog_sku sku ON"
+                        + " sku.item_ref=requested.item_ref AND sku.status <> 'VOIDED' LEFT JOIN"
+                        + " catalog.catalog_sku_attribute_value attribute_value ON"
+                        + " attribute_value.product_sku_ref=sku.product_sku_ref LEFT JOIN catalog.dictionary_entry"
+                        + " attribute ON attribute.entry_ref=attribute_value.attribute_ref LEFT JOIN"
+                        + " catalog.dictionary_entry value ON value.entry_ref=attribute_value.attribute_value_ref LEFT"
+                        + " JOIN"
+                        + " catalog.catalog_sku_variant_axis axis ON axis.item_ref=sku.item_ref AND"
+                        + " axis.attribute_ref=attribute_value.attribute_ref LEFT JOIN"
+                        + " catalog.catalog_sku_variant_axis_value axis_value ON"
+                        + " axis_value.sku_variant_axis_ref=axis.sku_variant_axis_ref AND"
+                        + " axis_value.value_ref=attribute_value.attribute_value_ref LEFT JOIN LATERAL"
+                        + " (SELECT COALESCE(string_agg(media.asset_ref::text, ',' ORDER BY media.display_order,"
+                        + " media.asset_ref), '') AS media_refs FROM catalog.catalog_sku_media media WHERE"
+                        + " media.product_sku_ref=sku.product_sku_ref) AS media_refs ON TRUE LEFT JOIN LATERAL"
+                        + " (SELECT COALESCE(jsonb_agg(jsonb_build_object("
+                        + "'attributeRef',axis_projection.attribute_ref::text,"
+                        + "'attributeCode',axis_projection.attribute_code,"
+                        + "'attributeName',axis_projection.attribute_name,"
+                        + "'displayOrder',axis_projection.display_order,"
+                        + "'values',axis_projection.values_json) ORDER BY axis_projection.display_order,"
+                        + " axis_projection.attribute_ref), '[]'::jsonb)::text AS axis_facts FROM (SELECT"
+                        + " axis_projection.attribute_ref,attribute_projection.code AS attribute_code,"
+                        + " attribute_projection.name AS attribute_name,axis_projection.display_order,"
+                        + " COALESCE((SELECT jsonb_agg(jsonb_build_object("
+                        + "'valueRef',axis_value_projection.value_ref::text,"
+                        + "'valueCode',value_projection.code,'valueLabel',value_projection.name,"
+                        + "'status',value_projection.status,'displayOrder',axis_value_projection.display_order)"
+                        + " ORDER BY axis_value_projection.display_order,axis_value_projection.value_ref) FROM"
+                        + " catalog.catalog_sku_variant_axis_value axis_value_projection LEFT JOIN"
+                        + " catalog.dictionary_entry value_projection ON value_projection.entry_ref="
+                        + " axis_value_projection.value_ref WHERE axis_value_projection.sku_variant_axis_ref="
+                        + " axis_projection.sku_variant_axis_ref), '[]'::jsonb) AS values_json FROM"
+                        + " catalog.catalog_sku_variant_axis axis_projection JOIN catalog.dictionary_entry"
+                        + " attribute_projection ON attribute_projection.entry_ref=axis_projection.attribute_ref WHERE"
+                        + " axis_projection.item_ref=requested.item_ref) axis_projection) axis_facts ON TRUE ORDER BY"
+                        + " requested.item_ref, sku.display_order NULLS LAST, sku.sku_code NULLS LAST,"
+                        + " COALESCE(axis_value.display_order,0), attribute.code, value.code",
+                statement -> {
+                    for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
+                },
+                result -> {
+                    while (result.next()) {
+                        UUID itemRef = result.getObject(1, UUID.class);
+                        if (loadedAxes.add(itemRef)) setAxisFacts(axes.get(itemRef), result.getString(34));
+                        UUID skuRef = result.getObject(2, UUID.class);
+                        if (skuRef == null) continue;
+                        LinkedHashMap<UUID, ObjectNode> itemSkus =
+                                rows.computeIfAbsent(itemRef, ignored -> new LinkedHashMap<>());
+                        ObjectNode sku = itemSkus.get(skuRef);
+                        if (sku == null) {
+                            sku = skuNode(result);
+                            itemSkus.put(skuRef, sku);
+                        }
+                        UUID attributeRef = result.getObject(23, UUID.class);
+                        if (attributeRef == null) continue;
+                        ObjectNode value = sku.withArray("attributeValueRefs").addObject();
+                        value.put("attributeRef", attributeRef.toString());
+                        value.put("attributeCode", result.getString(24));
+                        value.put("attributeName", result.getString(25));
+                        value.put(
+                                "attributeValueRef",
+                                result.getObject(26, UUID.class).toString());
+                        value.put("valueCode", result.getString(27));
+                        value.put("valueLabel", result.getString(28));
+                        value.put("displayOrder", result.getInt(30));
+                        value.put("status", result.getString(29));
+                    }
+                    return null;
+                });
+        Map<UUID, ArrayNode> skusByItem = new LinkedHashMap<>();
+        refs.forEach(itemRef -> {
+            ArrayNode values = mapper.createArrayNode();
+            rows.getOrDefault(itemRef, new LinkedHashMap<>()).values().forEach(values::add);
+            skusByItem.put(itemRef, values);
+        });
+        return new ListReadback(Map.copyOf(skusByItem), Map.copyOf(axes));
+    }
+
+    private void setAxisFacts(ArrayNode target, String axisFacts) {
+        if (target == null || axisFacts == null || axisFacts.isBlank()) return;
+        try {
+            JsonNode parsed = mapper.readTree(axisFacts);
+            if (!parsed.isArray()) throw new IllegalStateException("axis facts are not an array");
+            parsed.forEach(target::add);
+        } catch (Exception failure) {
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "规格轴读取失败", failure);
+        }
+    }
+
+    record ListReadback(Map<UUID, ArrayNode> skusByItem, Map<UUID, ArrayNode> axesByItem) {
+        static ListReadback empty() {
+            return new ListReadback(Map.of(), Map.of());
+        }
     }
 
     private Map<UUID, ArrayNode> readByItemRefs(Collection<UUID> itemRefs, boolean includePreparationOverride) {

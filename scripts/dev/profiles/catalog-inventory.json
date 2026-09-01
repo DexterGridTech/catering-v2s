@@ -26,9 +26,10 @@
     "getOperationsCatalogItem",
     "getOperationsCatalogNavigation",
     "getOperationsCatalogItems",
-    "getOperationsInventoryTargets"
+    "getOperationsInventoryTargets",
+    "getOperationsInventoryConsumptionTargetCandidates"
   ],
-  "readback": ["getOperationsCatalogItem", "getOperationsCatalogNavigation", "getOperationsInventoryTargets"],
+  "readback": ["getOperationsCatalogItem", "getOperationsCatalogNavigation", "getOperationsInventoryTargets", "getOperationsInventoryConsumptionTargetCandidates"],
   "cleanup": {"kind": "catalog-inventory-seed", "mediaNamespaceReadbackRequired": true, "businessAndCleanupSeparate": true},
   "forbidden": ["direct-database-writes", "sql-fallback", "duplicate-code-as-replay-success", "standalone-user-seed-entry", "independent-full-seed-claim"]
 }

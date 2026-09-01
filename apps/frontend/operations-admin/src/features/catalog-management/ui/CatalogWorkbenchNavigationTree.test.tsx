@@ -1,5 +1,9 @@
 import {describe, expect, it} from 'vitest';
-import {catalogCategoryCanCreateChild, catalogCategoryDepthLimitCopy} from './CatalogWorkbenchNavigationTree';
+import {
+  catalogCategoryCanCreateChild,
+  catalogCategoryCountTooltip,
+  catalogCategoryDepthLimitCopy,
+} from './CatalogWorkbenchNavigationTree';
 import type {CatalogNavigation} from '../model/catalogModel';
 
 type Category = CatalogNavigation['tree'][number];
@@ -13,7 +17,8 @@ const category = (categoryRef: string, parentCategoryRef: string | null): Catego
     version: 1,
     displayOrder: 0,
     count: 0,
-    countSemantics: 'SELF_ONLY',
+    directCount: 0,
+    countSemantics: 'SELF_AND_DESCENDANTS',
     deletionAvailability: {
       canDelete: true,
       subtreeSize: 1,
@@ -45,5 +50,12 @@ describe('catalog category child entry availability', () => {
 
     expect(catalogCategoryCanCreateChild(orphan, [orphan])).toBe(false);
     expect(catalogCategoryCanCreateChild(left, [left, right])).toBe(false);
+  });
+
+  it('explains the owner-provided aggregate and direct category counts together', () => {
+    expect(catalogCategoryCountTooltip({count: 12, directCount: 1, countSemantics: 'SELF_AND_DESCENDANTS'})).toBe(
+      '本级 1 · 含下级 12',
+    );
+    expect(catalogCategoryCountTooltip({count: 3, directCount: 3, countSemantics: 'SELF_ONLY'})).toBe('本级 3');
   });
 });

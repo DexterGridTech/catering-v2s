@@ -17,13 +17,11 @@ type Props = {
   brandRef?: string;
   canWriteCatalog: boolean;
   detailTarget?: string;
-  rebuildPrefill?: {code?: string; name?: string; shapeKey?: string};
   batchProps: ComponentProps<typeof CatalogBatchActionModal>;
   categoryProps: ComponentProps<typeof CatalogCategoryActionModal>;
   onDetailEdit: () => void;
   onLocalCopy: (source: {itemCode: string; targetShapeKey?: string}) => void;
   onDetailSaved: () => void;
-  onVoidAndRebuild: (source: {code?: string; name?: string; shapeKey?: string}) => void;
   onDetailClose: () => void;
   onCreateClose: () => void;
   onCreated: (itemCode: string) => void;
@@ -39,13 +37,11 @@ export function CatalogWorkbenchTaskSurfaces({
   brandRef,
   canWriteCatalog,
   detailTarget,
-  rebuildPrefill,
   batchProps,
   categoryProps,
   onDetailEdit,
   onLocalCopy,
   onDetailSaved,
-  onVoidAndRebuild,
   onDetailClose,
   onCreateClose,
   onCreated,
@@ -79,14 +75,12 @@ export function CatalogWorkbenchTaskSurfaces({
         onEdit={onDetailEdit}
         onCopy={onLocalCopy}
         onSaved={onDetailSaved}
-        onVoidAndRebuild={onVoidAndRebuild}
         onClose={onDetailClose}
       />
       <CatalogItemCreateDrawer
         open={createOpen}
         queryContext={queryContext}
         brandRef={brandRef}
-        initialValues={rebuildPrefill}
         onClose={onCreateClose}
         onCreated={onCreated}
       />

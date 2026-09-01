@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.catering.v2s.app.edge.generated.wire.ProviderProfileViewCatalogStatus;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
@@ -81,7 +82,8 @@ class OperationsExternalCollaborationControllerTest {
         assertEquals(
                 List.of("PLANNED-PROVIDER"),
                 result.items().stream().map(value -> value.providerCode()).toList());
-        assertEquals("PLANNED", result.items().get(0).catalogStatus());
+        assertEquals(
+                ProviderProfileViewCatalogStatus.PLANNED, result.items().get(0).catalogStatus());
         verify(catalog).listEnabledProviderProfiles(WORKSPACE, KEY, "GROUP_BUY");
     }
 

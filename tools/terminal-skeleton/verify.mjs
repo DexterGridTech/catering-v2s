@@ -12,8 +12,30 @@ import {
 const toolDirectory = path.dirname(fileURLToPath(import.meta.url));
 const staticPath = path.join(toolDirectory, 'verify-static.mjs');
 const terminalPackageName = '@catering-v2s/terminal';
+const contractsPackageName = '@catering-v2s/kernel-base-contracts';
+const platformPortsPackageName = '@catering-v2s/kernel-base-platform-ports';
+const statePackageName = '@catering-v2s/kernel-base-state';
+const runtimePackageName = '@catering-v2s/kernel-base-runtime';
+const terminalTestOwners = Object.freeze([
+  contractsPackageName,
+  platformPortsPackageName,
+  statePackageName,
+  runtimePackageName,
+  '@catering-v2s/adapter-android-app-control',
+  '@catering-v2s/adapter-android-device',
+  '@catering-v2s/adapter-android-dual-screen',
+  '@catering-v2s/adapter-android-logger',
+  '@catering-v2s/adapter-android-persist-kv',
+]);
+const terminalRealTestOwners = Object.freeze([
+  contractsPackageName,
+  platformPortsPackageName,
+  statePackageName,
+  runtimePackageName,
+]);
 const terminalFilters = ['--filter=./apps/terminal/**', `--filter=!${terminalPackageName}`];
 const nonExecutableTaskCommand = '<NONEXISTENT>';
+const packageTestMarkerPattern = /TERMINAL_PACKAGE_TEST=PASS kind=(REAL_TESTS|NO_TEST_FILES) package=(@catering-v2s\/[A-Za-z0-9-]+)/g;
 
 function sorted(values) {
   return [...new Set(values)].sort();
@@ -38,6 +60,7 @@ function run(label, command, args, cwd = repoRoot) {
   if (result.status !== 0) {
     fail(label, `exit=${String(result.status)}`);
   }
+  return result;
 }
 
 export function expectedTaskOwners(taskName, batch) {
@@ -45,9 +68,56 @@ export function expectedTaskOwners(taskName, batch) {
   const projected = projectSkeletonGraph(spec, batch ?? spec.activeBatch);
   const packageNames = Object.keys(projected).map(moduleNameToPackageName);
   if (taskName === 'typecheck') return sorted(packageNames);
-  if (taskName === 'test') return sorted(packageNames.filter(packageName => packageName.includes('/adapter-')));
+  if (taskName === 'test') {
+    return [...terminalTestOwners];
+  }
   if (taskName === 'lint' || taskName === 'clean') return [];
   throw new Error(`unsupported TER Turbo task: ${taskName}`);
+}
+
+export function assertPackageTestMarkers(output, expected = expectedTaskOwners('test')) {
+  const markers = [...String(output).matchAll(packageTestMarkerPattern)].map(match => ({
+    kind: match[1],
+    packageName: match[2],
+  }));
+  if (markers.length !== expected.length) {
+    throw new Error(`marker count mismatch; expected=${expected.length} actual=${markers.length}`);
+  }
+  const actualPackages = markers.map(marker => marker.packageName);
+  const duplicatePackages = actualPackages.filter((packageName, index) => actualPackages.indexOf(packageName) !== index);
+  const missing = difference(expected, actualPackages);
+  const extra = difference(actualPackages, expected);
+  if (duplicatePackages.length || missing.length || extra.length) {
+    throw new Error(
+      `test marker package mismatch; missing=${JSON.stringify(missing)} extra=${JSON.stringify(extra)} duplicates=${JSON.stringify(sorted(duplicatePackages))}`,
+    );
+  }
+  const real = sorted(markers.filter(marker => marker.kind === 'REAL_TESTS').map(marker => marker.packageName));
+  const noTests = sorted(markers.filter(marker => marker.kind === 'NO_TEST_FILES').map(marker => marker.packageName));
+  if (!real.includes(contractsPackageName) || noTests.includes(contractsPackageName)) {
+    throw new Error(`contracts marker must be REAL_TESTS; real=${JSON.stringify(real)} noTests=${JSON.stringify(noTests)}`);
+  }
+  if (!real.includes(platformPortsPackageName) || noTests.includes(platformPortsPackageName)) {
+    throw new Error(`platform-ports marker must be REAL_TESTS; real=${JSON.stringify(real)} noTests=${JSON.stringify(noTests)}`);
+  }
+  if (!real.includes(statePackageName) || noTests.includes(statePackageName)) {
+    throw new Error(`state marker must be REAL_TESTS; real=${JSON.stringify(real)} noTests=${JSON.stringify(noTests)}`);
+  }
+  if (!real.includes(runtimePackageName) || noTests.includes(runtimePackageName)) {
+    throw new Error(`runtime marker must be REAL_TESTS; real=${JSON.stringify(real)} noTests=${JSON.stringify(noTests)}`);
+  }
+  const expectedReal = sorted(terminalRealTestOwners);
+  const expectedNoTests = difference(expected, expectedReal);
+  const missingReal = difference(expectedReal, real);
+  const extraReal = difference(real, expectedReal);
+  const missingNoTests = difference(expectedNoTests, noTests);
+  const extraNoTests = difference(noTests, expectedNoTests);
+  if (missingReal.length || extraReal.length || missingNoTests.length || extraNoTests.length) {
+    throw new Error(
+      `marker kind mismatch; missingReal=${JSON.stringify(missingReal)} extraReal=${JSON.stringify(extraReal)} missingNoTests=${JSON.stringify(missingNoTests)} extraNoTests=${JSON.stringify(extraNoTests)}`,
+    );
+  }
+  return {real, noTests};
 }
 
 export function parseTurboDryRun(stdout) {
@@ -129,6 +199,13 @@ function main() {
   run('static', process.execPath, [staticPath]);
   for (const taskName of ['typecheck', 'test', 'lint', 'clean']) runTurboDryRun(taskName);
   run('typecheck', 'yarn', ['turbo', 'run', 'typecheck', ...terminalFilters]);
+  const testResult = run('test', 'yarn', ['turbo', 'run', 'test', ...terminalFilters]);
+  try {
+    const markers = assertPackageTestMarkers(`${testResult.stdout ?? ''}\n${testResult.stderr ?? ''}`);
+    console.log(`TERMINAL_TEST_MARKERS=PASS real=${markers.real.length} noTests=${markers.noTests.length}`);
+  } catch (error) {
+    fail('test-markers', error instanceof Error ? error.message : String(error));
+  }
   const assemblyDirectory = path.join(repoRoot, 'apps/terminal/assembly/android/pos-desktop');
   const exportArtifacts = exportArtifactPaths(assemblyDirectory);
   const preexistingArtifacts = exportArtifacts.filter(artifactPath => fs.existsSync(artifactPath));

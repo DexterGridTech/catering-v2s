@@ -25,14 +25,17 @@ import {
   envelopeData,
   hasCapability,
   inventoryConversionLabel,
+  inventoryMaterialRoleLabel,
+  inventoryOperationLabel,
+  inventoryStockStateLabel,
   inventoryAuthorityLabel,
+  inventoryTargetTypeLabel,
   inventoryUnitLabel,
   type InventoryCounts,
   type InventoryPage,
   type InventoryTargetSummary,
   type StockView,
 } from './inventoryManagementModel';
-import {catalogEnumLabel} from '../../catalog-management/model/catalogManifestLabels';
 
 const stockLabels: Record<StockView, string> = {
   ALL: '全部',
@@ -42,15 +45,6 @@ const stockLabels: Record<StockView, string> = {
   NEGATIVE: '负库存',
   UNKNOWN: '未知',
 };
-const stateLabels: Record<string, string> = {
-  IN_STOCK: '在库',
-  OK: '在库',
-  LOW: '低库存',
-  OUT: '无库存',
-  NEGATIVE: '负库存',
-  UNKNOWN: '未知',
-};
-
 export function InventoryManagementPage({queryContext, actionCapabilityKeys}: OperationsPageProps) {
   const [keyword, setKeyword] = useState<string>();
   const [categoryRef, setCategoryRef] = useState<string>();
@@ -76,16 +70,6 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
     [queryContext.scopeRef],
   );
   const navigation = operationsRtk.useGetOperationsCatalogNavigationQuery(navigationRequest, {skip: !scopeReady});
-  const manifestRequest = useMemo(
-    () =>
-      catalogInventoryRtkRequest.getOperationsCatalogShapeManifest(
-        {},
-        {query: {dataNodeRef: wireUuid(queryContext.scopeRef ?? '')}},
-      ),
-    [queryContext.scopeRef],
-  );
-  const manifestQuery = operationsRtk.useGetOperationsCatalogShapeManifestQuery(manifestRequest, {skip: !scopeReady});
-  const manifest = manifestQuery.currentData?.data;
   const categoryOptions = useMemo(
     () =>
       (navigation.currentData?.data.tree ?? []).map(node => ({
@@ -113,16 +97,14 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
   );
   const list = operationsRtk.useGetOperationsInventoryTargetsQuery(request, {skip: !scopeReady});
   const refetchNavigation = navigation.refetch;
-  const refetchManifest = manifestQuery.refetch;
   const refetchList = list.refetch;
   useEffect(() => {
     if (!scopeReady || contentTabRefreshVersion === 0) return;
     // This catalog-inventory edge has no LIST tag. Re-read every inventory
     // workbench model while preserving the current filters and cursor page.
     void refetchNavigation();
-    void refetchManifest();
     void refetchList();
-  }, [contentTabRefreshVersion, refetchList, refetchManifest, refetchNavigation, scopeReady]);
+  }, [contentTabRefreshVersion, refetchList, refetchNavigation, scopeReady]);
   const page = envelopeData<InventoryPage>(list.currentData);
   const rows = page?.items ?? [];
   const counts = useMemo<InventoryCounts>(() => {
@@ -184,7 +166,11 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
               <NameCodeText name={row.productName ?? row.productCode} code={row.productCode} />
             </Button>
             <Typography.Text type="secondary" style={{fontSize: 12}}>
-              {[catalogEnumLabel(manifest, 'inventoryNodeType', row.targetType), row.categoryName, row.materialRole]
+              {[
+                inventoryTargetTypeLabel(row.targetType),
+                row.categoryName,
+                inventoryMaterialRoleLabel(row.materialRole),
+              ]
                 .filter(value => value && value !== '—')
                 .join('｜') || '未分类'}
             </Typography.Text>
@@ -218,7 +204,7 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
         width: 120,
         render: (_, row) => (
           <Space direction="vertical" size={0}>
-            <span>{stateLabels[row.stockState] ?? row.stockState}</span>
+            <span>{inventoryStockStateLabel(row.stockState)}</span>
             {row.stale && (
               <Typography.Text type="warning" style={{fontSize: 12}}>
                 数据陈旧
@@ -266,7 +252,7 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
             <Space direction="vertical" size={0}>
               <span>{new Date(row.lastChangeAt).toLocaleString()}</span>
               <Typography.Text type="secondary" style={{fontSize: 12}}>
-                {row.lastChangeSource ?? '—'}
+                {inventoryOperationLabel(row.lastChangeSource)}
               </Typography.Text>
             </Space>
           ) : (
@@ -275,7 +261,7 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
       },
       {title: '来源', search: false, width: 110, render: (_, row) => inventoryAuthorityLabel(row.authorityType)},
     ],
-    [categoryOptions, manifest, navigation.isFetching, openDetail],
+    [categoryOptions, navigation.isFetching, openDetail],
   );
 
   const problemCode = list.error ? operationsProblemOf(list.error).errorCode : undefined;

@@ -28,12 +28,14 @@ type Props = {
   /** A persisted business label for a selected value which is not in the current candidate page. */
   selectedLabel?: string;
   actions?: ReactNode;
+  /** Places helper text and related maintenance actions directly after the field label. */
+  actionsPlacement?: 'end' | 'after-label';
+  /** Aligns the action slot without changing the field or action semantics. */
+  actionsAlign?: 'start' | 'end';
   width?: CSSProperties['width'];
   testIdValue: string;
   onChange: (value: string | string[], row?: CatalogCandidateRow | CatalogCandidateRow[]) => void;
 };
-
-const MULTI_VALUE_FIELDS = new Set(['tagRefs']);
 
 function selectedDescriptorValues(
   result: CatalogCandidateOptionResult | undefined,
@@ -85,6 +87,8 @@ export function CatalogDescriptorPicker({
   disabledMessage,
   selectedLabel,
   actions,
+  actionsPlacement = 'end',
+  actionsAlign = 'start',
   width = '100%',
   testIdValue,
   onChange,
@@ -157,9 +161,9 @@ export function CatalogDescriptorPicker({
   if (!field)
     return <Alert type="error" showIcon title="字段暂不可用" {...testId(`${testIdValue}-descriptor-error`)} />;
 
-  const selectionHint = MULTI_VALUE_FIELDS.has(fieldKey);
+  const selectionHint = field.controlKind === 'multiSelect';
   const fieldLabel = selectionHint ? `${field.label}（可多选）` : field.label;
-  const fieldHelpText = selectionHint ? `${field.helpText} 当前可选择多项。` : field.helpText;
+  const fieldHelpText = hideLabel ? '' : selectionHint ? `${field.helpText} 当前可选择多项。` : field.helpText;
   const renderedField = (effectiveDisabled || readOnly) && !field.readonly ? {...field, readonly: true} : field;
   const presentationField = {...renderedField, label: fieldLabel, helpText: fieldHelpText};
   const resolvedOptions = visibleDescriptorOptions(result?.options ?? [], value);
@@ -169,6 +173,19 @@ export function CatalogDescriptorPicker({
       ? [...resolvedOptions, {value, label: selectedLabel, disabled: false}]
       : resolvedOptions;
   const optionResolutionPending = Boolean(source) && !effectiveDisabled && !error && !result;
+  const placeActionsAfterLabel = actionsPlacement === 'after-label' && !hideLabel;
+  const controlField = placeActionsAfterLabel ? {...presentationField, helpText: ''} : presentationField;
+  const actionSlot =
+    actions === undefined || actions === null ? null : (
+      <div
+        style={{
+          flex: '0 0 auto',
+          ...(actionsAlign === 'end' ? {marginInlineStart: 'auto'} : {}),
+        }}
+      >
+        {actions}
+      </div>
+    );
   const handleChange = (next: unknown) => {
     if (Array.isArray(next)) {
       const nextValues = next.map(String);
@@ -190,7 +207,7 @@ export function CatalogDescriptorPicker({
     onChange(nextValue, row);
   };
   return (
-    <div {...testId(testIdValue)}>
+    <div style={{display: 'block', width}} {...testId(testIdValue)}>
       {readOnly ? (
         <Flex vertical gap={4} style={{display: 'flex'}}>
           {!hideLabel && <Typography.Text strong>{fieldLabel}</Typography.Text>}
@@ -224,23 +241,53 @@ export function CatalogDescriptorPicker({
           )}
         </Flex>
       ) : (
-        <Space align="end" style={{display: 'flex', width}}>
-          <div style={{flex: 1, minWidth: 0}}>
-            {optionResolutionPending ? (
-              <Typography.Text type="secondary">候选加载中…</Typography.Text>
-            ) : (
-              <DescriptorFieldRenderer
-                field={presentationField}
-                value={value || undefined}
-                options={options}
-                optionLoading={loading}
-                optionError={effectiveDisabled ? undefined : error}
-                onChange={handleChange}
-              />
-            )}
-          </div>
-          {actions}
-        </Space>
+        <>
+          {placeActionsAfterLabel ? (
+            <Flex vertical gap={4} style={{width}}>
+              <Flex align="center" gap="small" wrap style={{width: '100%'}}>
+                <Typography.Text strong>{fieldLabel}</Typography.Text>
+                {fieldHelpText ? (
+                  <Typography.Text type="secondary" style={{fontSize: 12, minWidth: 0}}>
+                    {fieldHelpText}
+                  </Typography.Text>
+                ) : null}
+                {actionSlot}
+              </Flex>
+              {optionResolutionPending ? (
+                <Typography.Text type="secondary">候选加载中…</Typography.Text>
+              ) : (
+                <DescriptorFieldRenderer
+                  field={controlField}
+                  value={value || undefined}
+                  options={options}
+                  optionLoading={loading}
+                  optionError={effectiveDisabled ? undefined : error}
+                  onChange={handleChange}
+                  hideLabel
+                />
+              )}
+            </Flex>
+          ) : (
+            <Flex align="end" gap="small" wrap style={{width}}>
+              <div style={{flex: 1, minWidth: 0}}>
+                {optionResolutionPending ? (
+                  <Typography.Text type="secondary">候选加载中…</Typography.Text>
+                ) : (
+                  <DescriptorFieldRenderer
+                    field={controlField}
+                    value={value || undefined}
+                    options={options}
+                    optionLoading={loading}
+                    optionError={effectiveDisabled ? undefined : error}
+                    onChange={handleChange}
+                    hideLabel={hideLabel}
+                  />
+                )}
+              </div>
+              {actionSlot}
+            </Flex>
+          )}
+        </>
       )}
       {effectiveDisabledMessage && (
         <Typography.Text type="secondary" style={{fontSize: 12}}>

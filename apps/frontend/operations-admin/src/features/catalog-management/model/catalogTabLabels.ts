@@ -20,12 +20,10 @@ export function catalogViewTabLabel(tabKey: string): string {
 }
 
 export function catalogEditorTabLabel(tabKey: string): string {
-  if (tabKey === 'governance') return '关联与依赖（只读）';
   return CATALOG_TAB_LABELS[tabKey] ?? tabKey;
 }
 
-// Kept only for non-surface fallbacks while callers migrate to the explicitly
-// scoped label above. New UI code must select its view or editor vocabulary.
-export function catalogTabLabel(tabKey: string): string {
-  return catalogEditorTabLabel(tabKey);
+/** Reference facts belong to the saved-product view, not the whole-save editor. */
+export function catalogEditorTabIsAllowed(tabKey: string): boolean {
+  return tabKey !== 'governance';
 }

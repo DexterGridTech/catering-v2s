@@ -189,6 +189,10 @@
                     "type": "integer",
                     "description": "design-bound field"
                   },
+                  "directCount": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
                   "countSemantics": {
                     "type": "string",
                     "description": "design-bound field",
@@ -287,6 +291,7 @@
                   "version",
                   "displayOrder",
                   "count",
+                  "directCount",
                   "countSemantics",
                   "deletionAvailability"
                 ]
@@ -347,7 +352,13 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                   },
                   "owner": {
                     "type": "string",
@@ -522,7 +533,13 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "x-java-enum": "CatalogInventoryWireEnums.CatalogItemStatus"
                   },
                   "source": {
                     "type": "string",
@@ -644,7 +661,8 @@
                           "DISABLED",
                           "VOIDED"
                         ],
-                        "description": "unit lifecycle status"
+                        "description": "unit lifecycle status",
+                        "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                       },
                       "inheritanceSource": {
                         "type": "string",
@@ -708,7 +726,8 @@
                           "DISABLED",
                           "VOIDED"
                         ],
-                        "description": "unit lifecycle status"
+                        "description": "unit lifecycle status",
+                        "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                       },
                       "inheritanceSource": {
                         "type": "string",
@@ -930,7 +949,13 @@
                               },
                               "status": {
                                 "type": "string",
-                                "description": "specification value status"
+                                "enum": [
+                                  "ENABLED",
+                                  "DISABLED",
+                                  "VOIDED"
+                                ],
+                                "description": "specification value lifecycle status",
+                                "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                               }
                             }
                           }
@@ -1104,7 +1129,8 @@
                         "name",
                         "valueType",
                         "textValue",
-                        "optionRefs"
+                        "optionRefs",
+                        "selectedOptionNames"
                       ],
                       "properties": {
                         "definitionRef": {
@@ -1144,6 +1170,14 @@
                             "format": "uuid",
                             "description": "attribute option reference"
                           }
+                        },
+                        "selectedOptionNames": {
+                          "type": "array",
+                          "description": "selected attribute choice names",
+                          "items": {
+                            "type": "string",
+                            "description": "attribute option name"
+                          }
                         }
                       }
                     }
@@ -1179,7 +1213,13 @@
                           },
                           "status": {
                             "type": "string",
-                            "description": "production tag status"
+                            "enum": [
+                              "ENABLED",
+                              "DISABLED",
+                              "VOIDED"
+                            ],
+                            "description": "production tag lifecycle status",
+                            "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                           },
                           "owner": {
                             "type": "string",
@@ -1657,7 +1697,13 @@
                             },
                             "status": {
                               "type": "string",
-                              "description": "design-bound field"
+                              "description": "design-bound field",
+                              "enum": [
+                                "ENABLED",
+                                "DISABLED",
+                                "VOIDED"
+                              ],
+                              "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                             }
                           },
                           "required": [
@@ -1745,7 +1791,13 @@
                             },
                             "status": {
                               "type": "string",
-                              "description": "design-bound field"
+                              "description": "design-bound field",
+                              "enum": [
+                                "ENABLED",
+                                "DISABLED",
+                                "VOIDED"
+                              ],
+                              "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                             }
                           },
                           "required": [
@@ -1774,7 +1826,13 @@
                       },
                       "status": {
                         "type": "string",
-                        "description": "design-bound field"
+                        "description": "design-bound field",
+                        "enum": [
+                          "ENABLED",
+                          "DISABLED",
+                          "VOIDED"
+                        ],
+                        "x-java-enum": "CatalogInventoryWireEnums.SkuStatus"
                       },
                       "voidAvailability": {
                         "type": "object",
@@ -1838,15 +1896,24 @@
                               "type": "object",
                               "additionalProperties": false,
                               "required": [
-                                "label",
+                                "reasonCode",
                                 "count",
                                 "relatedItemNames"
                               ],
                               "properties": {
-                                "label": {
+                                "reasonCode": {
                                   "type": "string",
-                                  "description": "business reason label",
-                                  "minLength": 1
+                                  "enum": [
+                                    "HAS_SKUS",
+                                    "HAS_IDENTIFIERS",
+                                    "HAS_PRODUCTION_TAG",
+                                    "USED_BY_OTHER_ITEM",
+                                    "USED_BY_INVENTORY_BOM",
+                                    "ALREADY_VOIDED",
+                                    "USED_BY_PACKAGE"
+                                  ],
+                                  "description": "closed owner reason code",
+                                  "x-java-enum": "CatalogInventoryWireEnums.CatalogVoidBlockingReasonCode"
                                 },
                                 "count": {
                                   "type": "integer",
@@ -1972,7 +2039,8 @@
                               "DISABLED",
                               "VOIDED"
                             ],
-                            "description": "unit lifecycle status"
+                            "description": "unit lifecycle status",
+                            "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                           },
                           "inheritanceSource": {
                             "type": "string",
@@ -2036,7 +2104,8 @@
                               "DISABLED",
                               "VOIDED"
                             ],
-                            "description": "unit lifecycle status"
+                            "description": "unit lifecycle status",
+                            "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                           },
                           "inheritanceSource": {
                             "type": "string",
@@ -2321,7 +2390,8 @@
                         "DISABLED",
                         "VOIDED"
                       ],
-                      "description": "unit lifecycle status"
+                      "description": "unit lifecycle status",
+                      "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                     },
                     "inheritanceSource": {
                       "type": "string",
@@ -2385,7 +2455,8 @@
                         "DISABLED",
                         "VOIDED"
                       ],
-                      "description": "unit lifecycle status"
+                      "description": "unit lifecycle status",
+                      "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                     },
                     "inheritanceSource": {
                       "type": "string",
@@ -2680,7 +2751,13 @@
                             },
                             "status": {
                               "type": "string",
-                              "description": "design-bound field"
+                              "description": "design-bound field",
+                              "enum": [
+                                "ENABLED",
+                                "DISABLED",
+                                "VOIDED"
+                              ],
+                              "x-java-enum": "CatalogInventoryWireEnums.CatalogItemStatus"
                             },
                             "displayOrder": {
                               "type": "integer",
@@ -2722,7 +2799,13 @@
                   "properties": {
                     "status": {
                       "type": "string",
-                      "description": "design-bound field"
+                      "description": "design-bound field",
+                      "enum": [
+                        "ENABLED",
+                        "DISABLED",
+                        "VOIDED"
+                      ],
+                      "x-java-enum": "CatalogInventoryWireEnums.CatalogItemStatus"
                     },
                     "version": {
                       "type": "integer",
@@ -2822,7 +2905,8 @@
                       "name",
                       "valueType",
                       "textValue",
-                      "optionRefs"
+                      "optionRefs",
+                      "selectedOptionNames"
                     ],
                     "properties": {
                       "definitionRef": {
@@ -2861,6 +2945,14 @@
                           "type": "string",
                           "format": "uuid",
                           "description": "attribute option reference"
+                        }
+                      },
+                      "selectedOptionNames": {
+                        "type": "array",
+                        "description": "selected attribute choice names",
+                        "items": {
+                          "type": "string",
+                          "description": "attribute option name"
                         }
                       }
                     }
@@ -3142,7 +3234,13 @@
                             },
                             "status": {
                               "type": "string",
-                              "description": "specification value status"
+                              "enum": [
+                                "ENABLED",
+                                "DISABLED",
+                                "VOIDED"
+                              ],
+                              "description": "specification value lifecycle status",
+                              "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                             }
                           }
                         }
@@ -3316,7 +3414,8 @@
                       "name",
                       "valueType",
                       "textValue",
-                      "optionRefs"
+                      "optionRefs",
+                      "selectedOptionNames"
                     ],
                     "properties": {
                       "definitionRef": {
@@ -3356,6 +3455,14 @@
                           "format": "uuid",
                           "description": "attribute option reference"
                         }
+                      },
+                      "selectedOptionNames": {
+                        "type": "array",
+                        "description": "selected attribute choice names",
+                        "items": {
+                          "type": "string",
+                          "description": "attribute option name"
+                        }
                       }
                     }
                   }
@@ -3391,7 +3498,13 @@
                         },
                         "status": {
                           "type": "string",
-                          "description": "production tag status"
+                          "enum": [
+                            "ENABLED",
+                            "DISABLED",
+                            "VOIDED"
+                          ],
+                          "description": "production tag lifecycle status",
+                          "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                         },
                         "owner": {
                           "type": "string",
@@ -3656,7 +3769,13 @@
                         },
                         "status": {
                           "type": "string",
-                          "description": "design-bound field"
+                          "description": "design-bound field",
+                          "enum": [
+                            "ENABLED",
+                            "DISABLED",
+                            "VOIDED"
+                          ],
+                          "x-java-enum": "CatalogInventoryWireEnums.CatalogItemStatus"
                         },
                         "displayOrder": {
                           "type": "integer",
@@ -3731,7 +3850,13 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "production tag status"
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "description": "production tag lifecycle status",
+                    "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                   },
                   "owner": {
                     "type": "string",
@@ -3891,15 +4016,24 @@
                         "type": "object",
                         "additionalProperties": false,
                         "required": [
-                          "label",
+                          "reasonCode",
                           "count",
                           "relatedItemNames"
                         ],
                         "properties": {
-                          "label": {
+                          "reasonCode": {
                             "type": "string",
-                            "description": "business reason label",
-                            "minLength": 1
+                            "enum": [
+                              "HAS_SKUS",
+                              "HAS_IDENTIFIERS",
+                              "HAS_PRODUCTION_TAG",
+                              "USED_BY_OTHER_ITEM",
+                              "USED_BY_INVENTORY_BOM",
+                              "ALREADY_VOIDED",
+                              "USED_BY_PACKAGE"
+                            ],
+                            "description": "closed owner reason code",
+                            "x-java-enum": "CatalogInventoryWireEnums.CatalogVoidBlockingReasonCode"
                           },
                           "count": {
                             "type": "integer",
@@ -4527,7 +4661,13 @@
             },
             "status": {
               "type": "string",
-              "description": "design-bound field"
+              "description": "design-bound field",
+              "enum": [
+                "STAGED",
+                "ACTIVE",
+                "RELEASED"
+              ],
+              "x-java-enum": "CatalogInventoryWireEnums.AssetStatus"
             },
             "mediaType": {
               "type": "string",
@@ -5177,7 +5317,13 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                   },
                   "ownerType": {
                     "type": "string",
@@ -5347,7 +5493,13 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                   },
                   "ownerType": {
                     "type": "string",
@@ -5588,7 +5740,13 @@
                         },
                         "status": {
                           "type": "string",
-                          "description": "specification value status"
+                          "enum": [
+                            "ENABLED",
+                            "DISABLED",
+                            "VOIDED"
+                          ],
+                          "description": "specification value lifecycle status",
+                          "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                         }
                       }
                     }
@@ -5644,7 +5802,8 @@
                           "DISABLED",
                           "VOIDED"
                         ],
-                        "description": "unit lifecycle status"
+                        "description": "unit lifecycle status",
+                        "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                       },
                       "inheritanceSource": {
                         "type": "string",
@@ -5708,7 +5867,8 @@
                           "DISABLED",
                           "VOIDED"
                         ],
-                        "description": "unit lifecycle status"
+                        "description": "unit lifecycle status",
+                        "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                       },
                       "inheritanceSource": {
                         "type": "string",
@@ -5735,7 +5895,13 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "SKU lifecycle status"
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "description": "SKU lifecycle status",
+                    "x-java-enum": "CatalogInventoryWireEnums.SkuStatus"
                   },
                   "primaryImageAssetRef": {
                     "type": [
@@ -5880,7 +6046,13 @@
                         },
                         "status": {
                           "type": "string",
-                          "description": "specification value status"
+                          "enum": [
+                            "ENABLED",
+                            "DISABLED",
+                            "VOIDED"
+                          ],
+                          "description": "specification value lifecycle status",
+                          "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                         }
                       }
                     }
@@ -5916,7 +6088,13 @@
                           },
                           "status": {
                             "type": "string",
-                            "description": "production tag status"
+                            "enum": [
+                              "ENABLED",
+                              "DISABLED",
+                              "VOIDED"
+                            ],
+                            "description": "production tag lifecycle status",
+                            "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                           },
                           "owner": {
                             "type": "string",
@@ -6106,7 +6284,13 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "x-java-enum": "CatalogInventoryWireEnums.CatalogItemStatus"
                   },
                   "compatibilityHint": {
                     "type": "string",
@@ -6436,7 +6620,14 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "BLOCKED",
+                      "CREATE",
+                      "REUSE",
+                      "REUSE_OR_CREATE",
+                      "REWRITE"
+                    ]
                   },
                   "canonicalTuple": {
                     "type": "object",
@@ -6562,7 +6753,13 @@
                   },
                   "result": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "BLOCKED",
+                      "CREATE",
+                      "REUSE",
+                      "REUSE_OR_CREATE"
+                    ]
                   },
                   "reason": {
                     "type": "string",
@@ -6822,7 +7019,11 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "COMMITTED",
+                      "CONFLICT"
+                    ]
                   },
                   "version": {
                     "type": "integer",
@@ -6950,7 +7151,16 @@
               "type": "array",
               "description": "design-bound field",
               "items": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "NOT_TEMPORARY_ITEM",
+                  "VERSION_CONFLICT",
+                  "SHAPE_DISABLED",
+                  "MATERIAL_ROLE_REQUIRED",
+                  "DUPLICATE_CODE"
+                ],
+                "description": "TemporaryPromotionPreflight.data.blockedReasons",
+                "x-java-enum": "CatalogInventoryWireEnums.TemporaryPromotionBlockingReasonCode"
               }
             },
             "changes": {
@@ -7044,7 +7254,13 @@
             },
             "status": {
               "type": "string",
-              "description": "design-bound field"
+              "description": "design-bound field",
+              "enum": [
+                "ENABLED",
+                "DISABLED",
+                "VOIDED"
+              ],
+              "x-java-enum": "CatalogInventoryWireEnums.CatalogItemStatus"
             },
             "version": {
               "type": "integer",
@@ -7063,7 +7279,10 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "COMMITTED"
+                    ]
                   },
                   "version": {
                     "type": "integer",
@@ -7216,7 +7435,13 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "x-java-enum": "CatalogInventoryWireEnums.CatalogItemStatus"
                   },
                   "version": {
                     "type": "integer",
@@ -7560,7 +7785,14 @@
               },
               "status": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "enum": [
+                  "BLOCKED",
+                  "CREATE",
+                  "REUSE",
+                  "REUSE_OR_CREATE",
+                  "REWRITE"
+                ]
               },
               "canonicalTuple": {
                 "type": "object",
@@ -7686,7 +7918,13 @@
               },
               "result": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "enum": [
+                  "BLOCKED",
+                  "CREATE",
+                  "REUSE",
+                  "REUSE_OR_CREATE"
+                ]
               },
               "reason": {
                 "type": "string",
@@ -7886,7 +8124,11 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "COMMITTED",
+                      "CONFLICT"
+                    ]
                   },
                   "version": {
                     "type": "integer",
@@ -7972,7 +8214,8 @@
                       "DISABLED",
                       "VOIDED"
                     ],
-                    "description": "attribute lifecycle status"
+                    "description": "attribute lifecycle status",
+                    "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                   },
                   "valueType": {
                     "type": "string",
@@ -8082,7 +8325,8 @@
                       "DISABLED",
                       "VOIDED"
                     ],
-                    "description": "ordering option lifecycle status"
+                    "description": "ordering option lifecycle status",
+                    "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                   },
                   "selectionMode": {
                     "type": "string",
@@ -8292,7 +8536,8 @@
                       "DISABLED",
                       "VOIDED"
                     ],
-                    "description": "whether the unit can be selected for new configurations"
+                    "description": "whether the unit can be selected for new configurations",
+                    "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                   },
                   "isReferenced": {
                     "type": "boolean",

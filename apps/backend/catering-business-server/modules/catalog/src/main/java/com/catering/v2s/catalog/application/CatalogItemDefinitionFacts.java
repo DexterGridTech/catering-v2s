@@ -39,16 +39,19 @@ final class CatalogItemDefinitionFacts {
                 "SELECT assignment.item_ref,assignment.item_attribute_assignment_ref,definition.attribute_definitio"
                         + "n_ref,"
                         + "definition.code,definition.name,definition.value_type,assignment.text_value,selection.at"
-                        + "tribute_definition_option_ref "
+                        + "tribute_definition_option_ref,option_row.name "
                         + "FROM catalog.catalog_item_attribute_assignment assignment "
                         + "JOIN catalog.catalog_attribute_definition definition ON definition.attribute_definition_"
                         + "ref=assignment.attribute_definition_ref "
                         + "LEFT JOIN catalog.catalog_item_attribute_selection selection ON selection.item_attribute"
                         + "_assignment_ref=assignment.item_attribute_assignment_ref "
+                        + "LEFT JOIN catalog.catalog_attribute_definition_option option_row ON option_row.attribute_"
+                        + "definition_ref=definition.attribute_definition_ref AND option_row."
+                        + "attribute_definition_option_ref=selection.attribute_definition_option_ref "
                         + "WHERE assignment.item_ref IN ("
                         + placeholders(refs)
-                        + ") ORDER BY assignment.item_ref,definition.code,definition.attribute_definition_ref,selec"
-                        + "tion.attribute_definition_option_ref",
+                        + ") ORDER BY assignment.item_ref,definition.code,definition.attribute_definition_ref,"
+                        + "option_row.display_order NULLS LAST,option_row.attribute_definition_option_ref",
                 statement -> bind(statement, refs),
                 rows -> {
                     while (rows.next()) {
@@ -66,11 +69,19 @@ final class CatalogItemDefinitionFacts {
                             if (rows.getObject(7) == null) assignment.putNull("textValue");
                             else assignment.put("textValue", rows.getString(7));
                             assignment.putArray("optionRefs");
+                            assignment.putArray("selectedOptionNames");
                             assignments.put(assignmentRef, assignment);
                         }
                         UUID optionRef = rows.getObject(8, UUID.class);
-                        if (optionRef != null)
+                        if (optionRef != null) {
+                            String optionName = rows.getString(9);
+                            if (optionName == null || optionName.isBlank()) {
+                                String message = "商品属性选项名称暂时无法读取";
+                                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 503, message);
+                            }
                             assignment.withArray("optionRefs").add(optionRef.toString());
+                            assignment.withArray("selectedOptionNames").add(optionName);
+                        }
                     }
                     return null;
                 });
@@ -161,7 +172,8 @@ final class CatalogItemDefinitionFacts {
                         + "config.min_selection_count,config.max_selection_count,"
                         + "value_definition.order_option_definition_value_ref,value_definition.name,value_definitio"
                         + "n.display_order,"
-                        + "override.item_order_option_value_override_ref,override.is_default,override.extra_price "
+                        + "override.item_order_option_value_override_ref,override.is_default,override.extra_price,"
+                        + "override.preparation_effect::text "
                         + "FROM catalog.catalog_item_order_option_config config "
                         + "JOIN catalog.catalog_order_option_definition definition ON definition.order_option_defin"
                         + "ition_ref=config.order_option_definition_ref "
@@ -208,12 +220,39 @@ final class CatalogItemDefinitionFacts {
                             value.put("defaultValue", rows.getObject(13) != null && rows.getBoolean(14));
                             if (rows.getObject(15) == null) value.putNull("extraPrice");
                             else value.put("extraPrice", rows.getLong(15));
+                            value.set(
+                                    "preparationEffect",
+                                    normalizedPreparationEffect(
+                                            definitionValueRef,
+                                            rows.getInt(6),
+                                            rows.getInt(12),
+                                            parseNullable(rows.getString(16))));
                             values.put(valueKey(configRef, definitionValueRef), value);
                         }
                     }
                     return null;
                 });
         return Map.copyOf(result);
+    }
+
+    /**
+     * The list and detail owner projections expose the same normalized option effect. Keep the relation metadata
+     * derived from the current definition/config order rather than leaking the persisted JSON shape to consumers.
+     */
+    JsonNode normalizedPreparationEffect(
+            UUID definitionValueRef, int optionGroupDisplayOrder, int optionValueDisplayOrder, JsonNode storedEffect) {
+        if (definitionValueRef == null || storedEffect == null || !storedEffect.isObject()) return mapper.nullNode();
+        ObjectNode effect = mapper.createObjectNode()
+                .put("definitionValueRef", definitionValueRef.toString())
+                .put("optionGroupDisplayOrder", optionGroupDisplayOrder)
+                .put("optionValueDisplayOrder", optionValueDisplayOrder);
+        if (storedEffect.has("instruction"))
+            effect.set("instruction", storedEffect.get("instruction").deepCopy());
+        if (storedEffect.has("preparationSecondsDelta"))
+            effect.set(
+                    "preparationSecondsDelta",
+                    storedEffect.get("preparationSecondsDelta").deepCopy());
+        return effect;
     }
 
     /**
@@ -500,9 +539,11 @@ final class CatalogItemDefinitionFacts {
             String scope, String brand, UUID targetItemRef, TemporaryPromotionFacts facts) {
         if (facts == null) return;
         if (facts.hasAttributeAssignments())
-            replaceAttributeAssignments(scope, brand, targetItemRef, facts.attributeAssignments().deepCopy());
+            replaceAttributeAssignments(
+                    scope, brand, targetItemRef, facts.attributeAssignments().deepCopy());
         if (facts.hasOrderOptionConfigs())
-            replaceOrderOptionConfigs(scope, brand, targetItemRef, facts.orderOptionConfigs().deepCopy());
+            replaceOrderOptionConfigs(
+                    scope, brand, targetItemRef, facts.orderOptionConfigs().deepCopy());
     }
 
     private static List<UUID> definitionValueRefs(ArrayNode configs) {
@@ -1785,6 +1826,15 @@ final class CatalogItemDefinitionFacts {
         if (!node.hasNonNull(field)) return null;
         if (!node.path(field).canConvertToInt()) throw problem(field + " must be an integer");
         return node.path(field).asInt();
+    }
+
+    private JsonNode parseNullable(String value) {
+        if (value == null) return null;
+        try {
+            return mapper.readTree(value);
+        } catch (Exception failure) {
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "选项制作变化读取失败", failure);
+        }
     }
 
     private static CatalogOwnerApi.Problem problem(String message) {

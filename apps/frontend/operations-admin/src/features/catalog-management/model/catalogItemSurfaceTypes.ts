@@ -13,7 +13,6 @@ export type CatalogItemDrawerProps = {
   onEdit?: () => void;
   onCopy?: (source: {itemCode: string; targetShapeKey?: string}) => void;
   onSaved?: () => void;
-  onVoidAndRebuild?: (source: {code: string; name: string; shapeKey: string}) => void;
   onClose: () => void;
 };
 

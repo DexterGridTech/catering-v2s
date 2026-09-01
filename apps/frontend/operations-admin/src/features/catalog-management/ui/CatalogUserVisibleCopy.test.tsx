@@ -36,7 +36,6 @@ const userVisibleSurfaceFiles = Object.freeze([
   'CatalogItemEditorSectionAssembler.tsx',
   'CatalogItemEditorTabs.tsx',
   'CatalogItemEditorWorkspace.tsx',
-  'CatalogItemGovernanceEditor.tsx',
   'CatalogItemGovernanceView.tsx',
   'CatalogItemIdentifiersEditor.tsx',
   'CatalogItemIdentifiersView.tsx',

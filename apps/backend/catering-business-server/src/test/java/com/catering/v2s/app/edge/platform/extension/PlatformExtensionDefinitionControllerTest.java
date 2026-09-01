@@ -3,6 +3,7 @@ package com.catering.v2s.app.edge.platform.extension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -74,6 +75,6 @@ class PlatformExtensionDefinitionControllerTest {
                 List.of(), controller.detail(request, WORKSPACE_KEY, "BRAND").blockers());
 
         verify(definitions).platformManagementDefinitions(eq(workspaceId), eq(WORKSPACE_KEY));
-        verify(definitions).platformManagementDefinition(eq(workspaceId), eq(WORKSPACE_KEY), eq("BRAND"));
+        verify(definitions, times(3)).platformManagementDefinition(eq(workspaceId), eq(WORKSPACE_KEY), eq("BRAND"));
     }
 }

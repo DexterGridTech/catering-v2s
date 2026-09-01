@@ -3,7 +3,7 @@ import {adminWideDetailDescriptionsProps, NameCodeText, testId} from '@catering-
 import type {ComponentProps, ReactNode} from 'react';
 import type {CatalogShapeManifestView, JsonValue} from '../../../app/api/generated/catalog-inventory-edge';
 import type {
-  CatalogAttributeAssignment,
+  CatalogAttributeAssignmentReadback,
   CatalogCompositeGroup,
   CatalogDetail,
   CatalogOrderOptionConfig,
@@ -297,6 +297,29 @@ function catalogPreparationLayout(shapeKey: string, skuCount: number, optionEffe
   return 'ITEM_ONLY';
 }
 
+function optionPreparationEffects(orderOptions: CatalogOrderOptionConfig[]) {
+  return orderOptions.flatMap(option =>
+    option.values.flatMap(value =>
+      value.preparationEffect
+        ? [
+            {
+              definitionRef: option.definitionRef,
+              optionName: option.name,
+              valueName: value.name,
+              valueRef: value.definitionValueRef,
+              effect: value.preparationEffect,
+            },
+          ]
+        : [],
+    ),
+  );
+}
+
+function preparationSecondsDeltaLabel(delta: number | null) {
+  if (delta === null) return '—';
+  return `${delta > 0 ? '+' : ''}${delta} 秒`;
+}
+
 export function PreparationVariationSummary({
   skus,
   orderOptions,
@@ -308,31 +331,58 @@ export function PreparationVariationSummary({
   shapeKey: string;
   onNavigateToOptions: () => void;
 }) {
-  const optionEffectCount = orderOptions.reduce(
-    (count, option) => count + option.values.filter(value => value.preparationEffect !== null).length,
-    0,
-  );
+  const optionEffects = optionPreparationEffects(orderOptions);
   const layout = catalogPreparationLayout(
     shapeKey,
     skus.some(sku => sku.preparationOverride.mode === 'OVERRIDE') ? skus.length : 0,
-    optionEffectCount,
+    optionEffects.length,
   );
   if (layout === 'ITEM_ONLY') return null;
   return (
     <Card
       size="small"
       title="各规格与点单选项的制作变化"
+      extra={
+        layout === 'OPTIONS' || layout === 'SKU_AND_OPTIONS' ? (
+          <Button
+            type="link"
+            onClick={onNavigateToOptions}
+            {...testId(catalogTestIds.static.itemOptionPreparationLink)}
+          >
+            去点单选项维护
+          </Button>
+        ) : undefined
+      }
       data-preparation-layout={layout}
       {...testId(catalogTestIds.static.preparationVariationSummary)}
     >
-      {(layout === 'SKU' || layout === 'SKU_AND_OPTIONS') && (
-        <Typography.Text>已有规格单独设置制作信息。</Typography.Text>
-      )}
-      {(layout === 'OPTIONS' || layout === 'SKU_AND_OPTIONS') && (
-        <Button type="link" onClick={onNavigateToOptions} {...testId(catalogTestIds.static.itemOptionPreparationLink)}>
-          {optionEffectCount} 个点单选项已设置制作变化，去点单选项维护
-        </Button>
-      )}
+      <Space direction="vertical" size={12} style={{display: 'flex'}}>
+        {(layout === 'SKU' || layout === 'SKU_AND_OPTIONS') && (
+          <Typography.Text>已有规格单独设置制作信息。</Typography.Text>
+        )}
+        {(layout === 'OPTIONS' || layout === 'SKU_AND_OPTIONS') &&
+          optionEffects.map(effect => (
+            <Descriptions
+              key={`${effect.definitionRef}-${effect.valueRef}`}
+              size="small"
+              column={2}
+              items={[
+                {key: 'option', label: '点单选项', children: effect.optionName},
+                {key: 'value', label: '选项内容', children: effect.valueName},
+                {
+                  key: 'instruction',
+                  label: '制作说明',
+                  children: effect.effect.instruction || '—',
+                },
+                {
+                  key: 'seconds',
+                  label: '制作时长变化',
+                  children: preparationSecondsDeltaLabel(effect.effect.preparationSecondsDelta),
+                },
+              ]}
+            />
+          ))}
+      </Space>
     </Card>
   );
 }
@@ -418,14 +468,14 @@ export function CatalogAssetGallery({assetRefs, itemName}: {assetRefs: string[];
   );
 }
 
-export function AttributeAssignmentsReadOnly({values}: {values: CatalogAttributeAssignment[]}) {
+export function AttributeAssignmentsReadOnly({values}: {values: CatalogAttributeAssignmentReadback[]}) {
   return values.length ? (
     <Descriptions
       {...adminWideDetailDescriptionsProps}
       items={values.map(value => ({
         key: value.definitionRef,
         label: value.name,
-        children: value.valueType === 'TEXT' ? value.textValue || '—' : `已选择 ${value.optionRefs.length} 项`,
+        children: value.valueType === 'TEXT' ? value.textValue || '—' : value.selectedOptionNames.join('、') || '—',
       }))}
     />
   ) : (

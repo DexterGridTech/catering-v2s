@@ -79,7 +79,6 @@ export function CatalogWorkbenchController({
   const {
     workspaceTask,
     detailTarget,
-    rebuildPrefill,
     categoryController,
     batchController,
     openDetail,
@@ -91,7 +90,6 @@ export function CatalogWorkbenchController({
     openBrandCopy,
     openCreate,
     onDetailSaved,
-    onVoidAndRebuild,
     onCreateClose,
     onCreated,
     onConfigClose,
@@ -235,7 +233,6 @@ export function CatalogWorkbenchController({
         brandRef={context?.brandRef ?? brandRef}
         canWriteCatalog={canWriteCatalog}
         detailTarget={detailTarget}
-        rebuildPrefill={rebuildPrefill}
         batchProps={{
           action: batchController.action,
           results: batchController.results,
@@ -269,7 +266,6 @@ export function CatalogWorkbenchController({
         onDetailEdit={openDetailEdit}
         onLocalCopy={openLocalCopy}
         onDetailSaved={onDetailSaved}
-        onVoidAndRebuild={onVoidAndRebuild}
         onDetailClose={closeDetail}
         onCreateClose={onCreateClose}
         onCreated={onCreated}

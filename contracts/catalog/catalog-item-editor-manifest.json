@@ -296,12 +296,12 @@
       "fieldKey": "skuVariantAttribute",
       "dataPath": "skuVariantDimensions[].attributeRef",
       "label": "规格属性",
-      "controlKind": "select",
+      "controlKind": "multiSelect",
       "tabKey": "sku-specifications-pricing",
       "admittedShapes": [
         "SKU_VARIANT_SALE_COUNTED"
       ],
-      "helpText": "选择该商品用于生成规格组合的规格属性。",
+      "helpText": "选择一个或多个用于生成规格组合的规格属性。",
       "optionSourceRef": {
         "kind": "endpoint",
         "operationId": "getOperationsCatalogDictionary",
@@ -3308,5 +3308,5 @@
       "data"
     ]
   },
-  "manifestDigest": "fa563828651978a17e40d91f2d0b1c797a81088e6757d00d2a8331498ec3acdc"
+  "manifestDigest": "04be8368bd8477c454654136a6510c0d8106f1e9902af70988a59237d944518c"
 }

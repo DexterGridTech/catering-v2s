@@ -7601,6 +7601,10 @@
       {
         "operationId": "getOperationsInventoryTargets",
         "purpose": "inventory targets"
+      },
+      {
+        "operationId": "getOperationsInventoryConsumptionTargetCandidates",
+        "purpose": "BOM candidate picker eligibility and owner names"
       }
     ],
     "cleanup": {
@@ -7629,5 +7633,5 @@
     ],
     "seedExecutionNotAuthorized": true
   },
-  "fixtureDigest": "9fadc0d16f473be8e2cac449b1cf05a415784fb8f240a2033bf4e8d889ac4ce5"
+  "fixtureDigest": "674dff9587ae498cf20b1236a8265f262a8354e40e04ba81ef96356d8cc9eee4"
 }

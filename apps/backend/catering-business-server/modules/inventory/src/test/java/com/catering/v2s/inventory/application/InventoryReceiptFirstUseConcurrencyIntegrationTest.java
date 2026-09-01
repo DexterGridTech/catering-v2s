@@ -229,22 +229,23 @@ class InventoryReceiptFirstUseConcurrencyIntegrationTest {
         when(sessions.commandAuthorizationFacts("test-session"))
                 .thenReturn(new WorkspaceCommandAuthorizationFacts(session, UUID.randomUUID(), "STORE", SCOPE));
         WorkspaceCapabilityScopeResolver capabilities = mock(WorkspaceCapabilityScopeResolver.class);
-        when(capabilities.resolveGeneratedOperation(any(), anyString(), anyString(), any()))
-                .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
-                        WorkspaceCapabilityScopeResolver.Decision.ALLOW,
-                        token.capabilityFor("STORE"),
-                        new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
-                                WORKSPACE,
-                                "inventory-receipt-first-use",
-                                "STORE",
-                                SCOPE,
-                                "STORE",
-                                SCOPE,
-                                List.of(SCOPE))));
+        when(capabilities.resolveGeneratedCatalogOperation(any(), anyString(), anyString(), any(), any()))
+                .thenReturn(new WorkspaceCapabilityScopeResolver.CatalogScopeResolution(
+                        new WorkspaceCapabilityScopeResolver.ScopeResolution(
+                                WorkspaceCapabilityScopeResolver.Decision.ALLOW,
+                                token.capabilityFor("STORE"),
+                                new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
+                                        WORKSPACE,
+                                        "inventory-receipt-first-use",
+                                        "STORE",
+                                        SCOPE,
+                                        "STORE",
+                                        SCOPE,
+                                        List.of(SCOPE))),
+                        new CatalogScopeLookup.CatalogBrandJudgment(
+                                BRAND, "RECEIPT_INVENTORY_TEST", "RECEIPT_INVENTORY_REVISION"),
+                        null));
         CatalogScopeLookup catalogScopes = mock(CatalogScopeLookup.class);
-        when(catalogScopes.resolveCatalogBrand(any(), anyString(), anyString(), any(), any()))
-                .thenReturn(new CatalogScopeLookup.CatalogBrandJudgment(
-                        BRAND, "RECEIPT_INVENTORY_TEST", "RECEIPT_INVENTORY_REVISION"));
         return new CommandExecutionContextResolver(capabilities, catalogScopes, sessions)
                 .resolveCatalog(
                         "test-session",

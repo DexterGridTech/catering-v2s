@@ -21,7 +21,6 @@ export const skeletonGraph = {
   },
   'kernel.base.runtime': {
     batch: 1,
-    plannedKind: 'owner',
     dependencies: ['kernel.base.contracts', 'kernel.base.platform-ports', 'kernel.base.state'],
     devDependencies: [],
   },

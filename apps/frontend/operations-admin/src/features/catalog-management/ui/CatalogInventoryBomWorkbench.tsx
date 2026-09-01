@@ -83,6 +83,7 @@ function unitLabel(unit: Pick<UnitOption, 'name' | 'code'> | CatalogUnitSnapshot
 }
 
 function lineLabel(line: BomLine) {
+  if (!line.targetRef) return '新增耗用项';
   const itemName = catalogBusinessName(line.itemName, line.itemCode, '耗用商品名称暂时无法读取');
   const skuName = line.skuName ? catalogBusinessName(line.skuName, line.skuCode, '规格名称暂时无法读取') : null;
   return skuName ? `${itemName} · ${skuName}` : itemName;

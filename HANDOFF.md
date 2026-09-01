@@ -1,6 +1,6 @@
 # catering-v2s HANDOFF
 
-本文件只登记当前架构明确推迟、且有客观激活事实的七项生产化欠账；它不是第二份 Roadmap，也不授权 R2/W1。触发事实成立后，必须在 v2s 新建 decision 与实施计划，不能把本表直接当作写入许可。
+本文件只登记当前架构明确推迟、且有客观激活事实的十项生产化欠账；它不是第二份 Roadmap，也不授权 R2/W1。触发事实成立后，必须在 v2s 新建 decision 与实施计划，不能把本表直接当作写入许可。
 
 编码规范唯一正本入口：后台见 [`doc/platform/backend-coding-standard.md`](doc/platform/backend-coding-standard.md)，前端见 [`doc/platform/frontend-coding-standard.md`](doc/platform/frontend-coding-standard.md)。本文件只提供指针，不复制规范内容。
 
@@ -13,9 +13,9 @@
 | DEPLOYMENT_ROLLBACK | 单服务器重启即部署，无独立回滚故事 | 当前无第二部署环境 | 失败发布恢复依赖人工 | SECOND_DEPLOYMENT_ENVIRONMENT_ENABLED | 前后版本部署/回滚演练、schema compatibility 与 cleanup PASS | [{"path":"doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","anchor":"### H.2 本阶段明确不做"}] |
 | METRICS_ALERTING | run-scoped 结构化日志，无生产指标/告警平台 | 当前无生产流量 | 故障只能被动发现 | PRODUCTION_TRAFFIC_ENABLED | SLI/SLO、告警触发/恢复红绿证据、owner routing | [{"path":"doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","anchor":"### H.2 本阶段明确不做"}] |
 | RUNTIME_DB_ROLE_ISOLATION | 单 runtime DB role，可访问多 owner schema | solo+AI 单 deployable 暂不拆 credential | 单凭据扩大 schema blast radius | SECURITY_REVIEW_REQUIRES_SCHEMA_SCOPED_RUNTIME_CREDENTIALS | schema-scoped credential design、权限矩阵、跨 schema command/read/FK 回归 | [{"path":"doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md","anchor":"## 11. HANDOFF 初始生产化欠账"}] |
-| DIAGNOSTIC_RETENTION_POLICY | S2 诊断事件已结构化输出，但保留期未按部署环境裁定 | 当前仍是本地/受管非生产诊断边界 | 无界增长或过短保留导致缺证 | NON_LOCAL_OBSERVABILITY_DEPLOYMENT_ENABLED | 环境级保留策略、清理证明、故障回放证据 | [{"path":"doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md","anchor":"D1"}] |
-| DIAGNOSTIC_ACCESS_SUBJECTS | S2 诊断日志访问主体与权限未按部署环境裁定 | 当前无生产日志平台与访问角色 | 敏感诊断被越权读取 | NON_LOCAL_OBSERVABILITY_DEPLOYMENT_ENABLED | 访问主体、最小权限、审计与撤销证据 | [{"path":"doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md","anchor":"D1"}] |
-| DIAGNOSTIC_COST_SAMPLING | S2 诊断成本采样/限流未按部署流量裁定 | 当前无生产流量，静态事件保持常开 | 高流量下日志成本不可控 | PRODUCTION_TRAFFIC_ENABLED | 采样策略、成本基线、关键失败不丢失与恢复证据 | [{"path":"doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md","anchor":"D1"}] |
+| DIAGNOSTIC_RETENTION_POLICY | S2 诊断事件已结构化输出，但保留期未按部署环境裁定 | 当前仍是本地/受管非生产诊断边界 | 无界增长或过短保留导致缺证 | NON_LOCAL_OBSERVABILITY_DEPLOYMENT_ENABLED | 环境级保留策略、清理证明、故障回放证据 | [{"path":"doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md","anchor":"## D1 ｜常驻可观测性架构"}] |
+| DIAGNOSTIC_ACCESS_SUBJECTS | S2 诊断日志访问主体与权限未按部署环境裁定 | 当前无生产日志平台与访问角色 | 敏感诊断被越权读取 | NON_LOCAL_OBSERVABILITY_DEPLOYMENT_ENABLED | 访问主体、最小权限、审计与撤销证据 | [{"path":"doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md","anchor":"## D1 ｜常驻可观测性架构"}] |
+| DIAGNOSTIC_COST_SAMPLING | S2 诊断成本采样/限流未按部署流量裁定 | 当前无生产流量，静态事件保持常开 | 高流量下日志成本不可控 | PRODUCTION_TRAFFIC_ENABLED | 采样策略、成本基线、关键失败不丢失与恢复证据 | [{"path":"doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md","anchor":"## D1 ｜常驻可观测性架构"}] |
 
 激活 token 只允许上表 exact 值。`WHEN_NEEDED`、`SCALE_GROWS`、`TEAM_GT_N`、复合 `AND/OR` 或任意自由文本都不具备可验收性，不能通过校验。
 
@@ -69,3 +69,9 @@ P3 当前字节复跑 `scripts/check/frontend-architecture` 时，商品与库�
 - `PART_TWO_M02_PLATFORM_ASSET_FULL_SCAN`：裁定甲下的全平台资产引用扫描是纯性能项；任何按 workspace 收窄都须先证明四种 JSONB 引用形态不漏判，且有真实成本数据，不能复用已作废的单一 `GIN + @>` 方案。
 - `PART_TWO_RLS`：行级安全仍是这类跨 workspace SQL 风险的结构性解法；本部分点修不关闭“未来新增 SQL 漏加 scope”的风险。
 - `INVENTORY_CURSOR_CONTRACT`：保留当前 Inventory 数字 offset continuation token，不在本部分把它改名或伪装为 keyset cursor。只有获批的分页契约修订后，才可设计并实现真正 keyset pagination；本决定对应第二部分 §2.III 的契约裁定边界。
+
+## Catalog / Inventory 作废与 BOM 后续欠账
+
+本节登记本批已明确接受、但不纳入本批实施范围的业务后果；它不授权补充查询、过滤或新的生命周期语义。
+
+- `CATALOG_BOM_REFERENCE_SOURCE_LIFECYCLE_FILTERING`：`InventoryConsumptionReferencePage.entries` 删除 `status` 后，引用列表仍只按当前 data node / brand 的 BOM 关系返回，不 join 或过滤来源 `catalog_item` 的生命周期状态，因此已停用或已作废来源商品可能与活跃来源混列，用户无法在该列表中区分。该边界由 Dexter 在本批明确接受，后续若要修复必须另行形成 decision 与实施计划；本批不得顺手补 join、过滤或替代字段。

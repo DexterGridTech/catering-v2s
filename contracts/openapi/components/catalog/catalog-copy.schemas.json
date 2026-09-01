@@ -97,7 +97,13 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "x-java-enum": "CatalogInventoryWireEnums.CatalogItemStatus"
                   },
                   "compatibilityHint": {
                     "type": "string",
@@ -427,7 +433,14 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "BLOCKED",
+                      "CREATE",
+                      "REUSE",
+                      "REUSE_OR_CREATE",
+                      "REWRITE"
+                    ]
                   },
                   "canonicalTuple": {
                     "type": "object",
@@ -553,7 +566,13 @@
                   },
                   "result": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "BLOCKED",
+                      "CREATE",
+                      "REUSE",
+                      "REUSE_OR_CREATE"
+                    ]
                   },
                   "reason": {
                     "type": "string",
@@ -813,7 +832,11 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "COMMITTED",
+                      "CONFLICT"
+                    ]
                   },
                   "version": {
                     "type": "integer",
@@ -939,7 +962,13 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "x-java-enum": "CatalogInventoryWireEnums.CatalogItemStatus"
                   },
                   "version": {
                     "type": "integer",
@@ -1283,7 +1312,14 @@
               },
               "status": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "enum": [
+                  "BLOCKED",
+                  "CREATE",
+                  "REUSE",
+                  "REUSE_OR_CREATE",
+                  "REWRITE"
+                ]
               },
               "canonicalTuple": {
                 "type": "object",
@@ -1409,7 +1445,13 @@
               },
               "result": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "enum": [
+                  "BLOCKED",
+                  "CREATE",
+                  "REUSE",
+                  "REUSE_OR_CREATE"
+                ]
               },
               "reason": {
                 "type": "string",
@@ -1609,7 +1651,11 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "COMMITTED",
+                      "CONFLICT"
+                    ]
                   },
                   "version": {
                     "type": "integer",
@@ -1947,7 +1993,16 @@
               "type": "array",
               "description": "design-bound field",
               "items": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "NOT_TEMPORARY_ITEM",
+                  "VERSION_CONFLICT",
+                  "SHAPE_DISABLED",
+                  "MATERIAL_ROLE_REQUIRED",
+                  "DUPLICATE_CODE"
+                ],
+                "description": "TemporaryPromotionPreflight.data.blockedReasons",
+                "x-java-enum": "CatalogInventoryWireEnums.TemporaryPromotionBlockingReasonCode"
               }
             },
             "changes": {
@@ -2109,7 +2164,13 @@
             },
             "status": {
               "type": "string",
-              "description": "design-bound field"
+              "description": "design-bound field",
+              "enum": [
+                "ENABLED",
+                "DISABLED",
+                "VOIDED"
+              ],
+              "x-java-enum": "CatalogInventoryWireEnums.CatalogItemStatus"
             },
             "version": {
               "type": "integer",
@@ -2128,7 +2189,10 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "COMMITTED"
+                    ]
                   },
                   "version": {
                     "type": "integer",

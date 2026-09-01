@@ -13,6 +13,18 @@ export type OrderOptionDefinitionFormValue = {
   materials: Array<{materialItemRef?: string}>;
 };
 
+export function orderOptionMaterialRefs(
+  materials: readonly OrderOptionDefinitionFormValue['materials'][number][] | undefined,
+): string[] {
+  return (materials ?? []).flatMap(material => (material.materialItemRef ? [material.materialItemRef] : []));
+}
+
+export function orderOptionMaterialsFromRefs(
+  materialRefs: readonly string[] | undefined,
+): OrderOptionDefinitionFormValue['materials'] {
+  return (materialRefs ?? []).map(materialItemRef => ({materialItemRef}));
+}
+
 /** Keeps every library material row across edit hydration and the save boundary. */
 export function hydrateOrderOptionDefinitionValues(
   values: readonly OrderOptionDefinitionValue[],

@@ -266,7 +266,7 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
     }
 
     @Test
-    void catalogItemDetailExplainsBomConsumptionAsItsOwnVoidBlockingReason() {
+    void catalogItemDetailDoesNotTreatItsOwnBomAsAVoidBlockingReason() {
         ObjectMapper mapper = new ObjectMapper();
         CatalogOwnerApi catalog = mock(CatalogOwnerApi.class);
         InventoryOwnerApi inventory = mock(InventoryOwnerApi.class);
@@ -275,7 +275,6 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
         CatalogInventoryCoordinator service =
                 new CatalogInventoryCoordinator(catalog, inventory, production, null, mapper, null, null);
         UUID itemRef = UUID.randomUUID();
-        UUID targetRef = UUID.randomUUID();
         ObjectNode detail = mapper.createObjectNode();
         detail.putObject("data")
                 .putObject("item")
@@ -288,7 +287,10 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                 .putObject("voidAvailability")
                 .put("canVoid", true)
                 .putArray("blockingReferences");
-        ((ObjectNode) data.path("actionAvailability").path("voidAvailability")).putArray("dependentFacts");
+        ObjectNode voidAvailability =
+                (ObjectNode) data.path("actionAvailability").path("voidAvailability");
+        voidAvailability.putArray("dependentFacts");
+        voidAvailability.putArray("blockingReasons");
         ObjectNode definition = mapper.createObjectNode();
         ObjectNode inventoryNode = definition
                 .putObject("data")
@@ -302,7 +304,7 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                 .putNull("productSkuRef")
                 .putNull("optionValueRef");
         inventoryNode.put("mode", "BOM").putNull("directConfiguration");
-        inventoryNode.putObject("bom").putArray("lines").addObject().put("targetRef", targetRef.toString());
+        inventoryNode.putObject("bom").putArray("lines").addObject();
         when(catalog.readItem(
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString(),
@@ -318,22 +320,10 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
         JsonNode result = service.readCatalogItem("scope", "brand", "ITEM-1", mapper.createObjectNode(), "request");
         JsonNode availability = result.path("data").path("actionAvailability").path("voidAvailability");
 
-        assertFalse(availability.path("canVoid").asBoolean());
-        assertEquals(
-                targetRef.toString(),
-                availability
-                        .path("blockingReferences")
-                        .path(0)
-                        .path("referenceRef")
-                        .asText());
-        assertEquals(
-                "INVENTORY_BOM",
-                availability.path("dependentFacts").path(0).path("factKind").asText());
-        assertEquals(
-                "已配置用料",
-                availability.path("blockingReasons").path(0).path("label").asText());
-        assertEquals(
-                1, availability.path("blockingReasons").path(0).path("count").asInt());
+        assertTrue(availability.path("canVoid").asBoolean());
+        assertTrue(availability.path("blockingReferences").isEmpty());
+        assertTrue(availability.path("dependentFacts").isEmpty());
+        assertTrue(availability.path("blockingReasons").isEmpty());
         verify(production, never())
                 .readTags(
                         org.mockito.ArgumentMatchers.anyString(),
@@ -343,7 +333,7 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
     }
 
     @Test
-    void catalogItemDetailExplainsWhenAnInventoryTargetBlocksSkuVoid() {
+    void catalogItemDetailDoesNotTreatItsOwnInventoryTargetAsAVoidBlockingReason() {
         ObjectMapper mapper = new ObjectMapper();
         CatalogOwnerApi catalog = mock(CatalogOwnerApi.class);
         InventoryOwnerApi inventory = mock(InventoryOwnerApi.class);
@@ -358,7 +348,7 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                 .put("itemRef", itemRef.toString())
                 .put("code", "ITEM-1")
                 .put("name", "测试商品")
-                .put("shapeKey", "SKU_MANAGED");
+                .put("shapeKey", "SKU_VARIANT_SALE_COUNTED");
         ObjectNode skuAvailability = item.putArray("skus")
                 .addObject()
                 .put("productSkuRef", skuRef.toString())
@@ -394,6 +384,12 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(definition);
+        when(inventory.catalogSkuVoidDependenciesByRefs(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyList(),
+                        org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(List.of(emptyInventoryVoidDependencies(mapper, skuRef)));
 
         JsonNode availability = service.readCatalogItem(
                         "scope", "brand", "ITEM-1", mapper.createObjectNode(), "request")
@@ -403,34 +399,13 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                 .path(0)
                 .path("voidAvailability");
 
-        assertFalse(availability.path("canVoid").asBoolean());
-        assertEquals(
-                "INVENTORY_TARGET",
-                availability.path("dependentFacts").path(0).path("factKind").asText());
-        assertEquals(
-                "已配置库存对象",
-                availability.path("blockingReasons").path(0).path("label").asText());
-        assertEquals(
-                1, availability.path("blockingReasons").path(0).path("count").asInt());
-        JsonNode itemAvailability = service.readCatalogItem(
-                        "scope", "brand", "ITEM-1", mapper.createObjectNode(), "request")
-                .path("data")
-                .path("actionAvailability")
-                .path("voidAvailability");
-        assertFalse(itemAvailability.path("canVoid").asBoolean());
-        assertEquals(
-                "INVENTORY_TARGET",
-                itemAvailability.path("dependentFacts").path(0).path("factKind").asText());
-        assertEquals(
-                "已配置库存对象",
-                itemAvailability.path("blockingReasons").path(0).path("label").asText());
-        assertEquals(
-                1,
-                itemAvailability.path("blockingReasons").path(0).path("count").asInt());
+        assertTrue(availability.path("canVoid").asBoolean());
+        assertTrue(availability.path("dependentFacts").isEmpty());
+        assertTrue(availability.path("blockingReasons").isEmpty());
     }
 
     @Test
-    void catalogItemDetailKeepsBomFactKindForBothSkuAndItemVoidAvailability() {
+    void catalogItemDetailDoesNotTreatItsOwnSkuBomAsAVoidBlockingReason() {
         ObjectMapper mapper = new ObjectMapper();
         CatalogOwnerApi catalog = mock(CatalogOwnerApi.class);
         InventoryOwnerApi inventory = mock(InventoryOwnerApi.class);
@@ -445,7 +420,7 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                 .put("itemRef", itemRef.toString())
                 .put("code", "ITEM-1")
                 .put("name", "测试商品")
-                .put("shapeKey", "SKU_MANAGED");
+                .put("shapeKey", "SKU_VARIANT_SALE_COUNTED");
         ObjectNode skuAvailability = item.putArray("skus")
                 .addObject()
                 .put("productSkuRef", skuRef.toString())
@@ -481,21 +456,26 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(definition);
+        when(inventory.catalogSkuVoidDependenciesByRefs(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyList(),
+                        org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(List.of(emptyInventoryVoidDependencies(mapper, skuRef)));
 
         JsonNode result = service.readCatalogItem("scope", "brand", "ITEM-1", mapper.createObjectNode(), "request");
         JsonNode skuAvailabilityResult =
                 result.path("data").path("item").path("skus").path(0).path("voidAvailability");
-        JsonNode itemAvailability =
-                result.path("data").path("actionAvailability").path("voidAvailability");
-        for (JsonNode availability : List.of(skuAvailabilityResult, itemAvailability)) {
-            assertFalse(availability.path("canVoid").asBoolean());
-            assertEquals(
-                    "INVENTORY_BOM",
-                    availability.path("dependentFacts").path(0).path("factKind").asText());
-            assertEquals(
-                    "已配置用料",
-                    availability.path("blockingReasons").path(0).path("label").asText());
-        }
+        assertTrue(skuAvailabilityResult.path("canVoid").asBoolean());
+        assertTrue(skuAvailabilityResult.path("dependentFacts").isEmpty());
+        assertTrue(skuAvailabilityResult.path("blockingReasons").isEmpty());
+    }
+
+    private static ObjectNode emptyInventoryVoidDependencies(ObjectMapper mapper, UUID subjectRef) {
+        ObjectNode dependencies = mapper.createObjectNode();
+        dependencies.put("subjectRef", subjectRef.toString());
+        dependencies.putArray("inboundBomReferences");
+        return dependencies;
     }
 
     @Test

@@ -24,6 +24,7 @@ const allowedRepositoryRootDirectories = new Set([
   ".gradle",
   ".idea",
   ".runtime",
+  ".turbo",
   ".yarn",
   "apps",
   "build",
@@ -233,6 +234,8 @@ function selfTest() {
 
   const repositoryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-code-layout-"));
   try {
+    fs.mkdirSync(path.join(repositoryRoot, ".turbo/cache"), { recursive: true });
+    validate(repositoryRoot);
     expectFailure(repositoryRoot, (fixture) => {
       fs.mkdirSync(path.join(fixture, "components/common"), { recursive: true });
     }, "REPOSITORY_ROOT_DIRECTORY_NOT_ALLOWED:components");

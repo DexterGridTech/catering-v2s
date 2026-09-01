@@ -1,4 +1,5 @@
-import {Alert, Button, Card, Divider, Select, Space, Typography} from 'antd';
+import {Alert, Button, Card, Space, Table, Typography} from 'antd';
+import type {ColumnsType} from 'antd/es/table';
 import {useMemo, useState, type ReactNode} from 'react';
 import {testId} from '@catering-v2s/admin-ui-foundation';
 import {wireUuid} from '../../../app/api/wireUuid';
@@ -6,15 +7,16 @@ import type {CatalogUnitList} from '../../../app/api/generated/catalog-inventory
 import type {CatalogDetail, CatalogIdentifierType, CatalogSkuRow} from '../model/catalogModel';
 import {buildSkuMatrix} from '../model/catalogModel';
 import {
-  draftUuid,
   type MediaDraft,
   type PreparationProfileDraft,
   type SkuDimensionDraft,
-  type SkuDimensionValueDraft,
   type SkuRowDraft,
 } from '../model/catalogItemEditorDraftAdapters';
-import {catalogEnumOptions} from '../model/catalogManifestLabels';
 import type {CatalogCandidateRow, CatalogFieldRuntimeContext} from '../model/catalogFieldRuntime';
+import {
+  reconcileSkuDimensionValuesFromSelection,
+  reconcileSkuDimensionsFromSelection,
+} from '../model/catalogSkuSpecificationDraft';
 import {CatalogDescriptorPicker} from './CatalogDescriptorPicker';
 import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 import {SkuIdentifierEditorModal} from './CatalogItemIdentifiersEditor';
@@ -23,17 +25,8 @@ import {EmptySection, SkuMatrixReadOnly} from './CatalogItemReadOnlyPresenters';
 import {CatalogFactSectionEditor, CatalogFactSectionView} from './CatalogFactSectionBoundary';
 import {CatalogItemSkuMatrixTable} from './CatalogItemSkuMatrixTable';
 import type {CatalogManifest} from '../model/catalogItemSurfaceTypes';
-import {catalogFieldWidths} from './catalogFieldWidths';
 
 type CatalogUnitOption = CatalogUnitList['data']['units'][number];
-
-function descriptorString(value: string | string[]) {
-  return Array.isArray(value) ? (value[0] ?? '') : value;
-}
-
-function descriptorRow(value: CatalogCandidateRow | CatalogCandidateRow[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
 
 type SkuSpecificationsProps = {
   mode: 'view' | 'edit';
@@ -53,8 +46,7 @@ type SkuSpecificationsProps = {
   brandRef?: string;
   version: number;
   unitOptions: CatalogUnitOption[];
-  onOpenDictionary?: (kind: 'SKU_ATTRIBUTE') => void;
-  onOpenValueDictionary?: (dimensionId: string, valueId: string) => void;
+  onOpenDictionary?: (kind: 'SKU_ATTRIBUTE', triggerTestId: string) => void;
   onDimensionsChange: (next: SkuDimensionDraft[]) => void;
   onSkusChange: (next: CatalogSkuRow[]) => void;
   onStageSkuMedia: (file: File, skuEditorId: string, replaceAssetRef?: string, retryId?: string) => Promise<void>;
@@ -110,7 +102,6 @@ function SkuMatrixEditor({
   version,
   unitOptions,
   onOpenDictionary,
-  onOpenValueDictionary,
   onDimensionsChange,
   onSkusChange,
   onStageSkuMedia,
@@ -133,8 +124,7 @@ function SkuMatrixEditor({
   brandRef?: string;
   version: number;
   unitOptions: CatalogUnitOption[];
-  onOpenDictionary?: (kind: 'SKU_ATTRIBUTE') => void;
-  onOpenValueDictionary?: (dimensionId: string, valueId: string) => void;
+  onOpenDictionary?: (kind: 'SKU_ATTRIBUTE', triggerTestId: string) => void;
   onDimensionsChange: (next: SkuDimensionDraft[]) => void;
   onSkusChange: (next: CatalogSkuRow[]) => void;
   onStageSkuMedia: (file: File, skuEditorId: string, replaceAssetRef?: string, retryId?: string) => Promise<void>;
@@ -181,37 +171,57 @@ function SkuMatrixEditor({
     onSkusChange(buildSkuMatrix(normalized, skus));
     onDirty();
   };
-  const updateDimension = (editorId: string, patch: Partial<SkuDimensionDraft>) =>
-    applyDimensions(dimensions.map(entry => (entry.editorId === editorId ? {...entry, ...patch} : entry)));
-  const updateDimensionValue = (dimensionId: string, valueId: string, patch: Partial<SkuDimensionValueDraft>) =>
-    applyDimensions(
-      dimensions.map(entry =>
-        entry.editorId === dimensionId
-          ? {
-              ...entry,
-              values: entry.values.map(value => (value.editorId === valueId ? {...value, ...patch} : value)),
-            }
-          : entry,
-      ),
-    );
-  const moveDimensionValue = (dimensionId: string, valueId: string, offset: -1 | 1) =>
-    applyDimensions(
-      dimensions.map(dimension => {
-        if (dimension.editorId !== dimensionId) return dimension;
-        const index = dimension.values.findIndex(value => value.editorId === valueId);
-        const target = index + offset;
-        if (index < 0 || target < 0 || target >= dimension.values.length) return dimension;
-        const values = [...dimension.values];
-        [values[index], values[target]] = [values[target], values[index]];
-        return {...dimension, values};
-      }),
-    );
+  const handleAttributeSelection = (next: string | string[], rawRows?: CatalogCandidateRow | CatalogCandidateRow[]) => {
+    const nextAttributeRefs = Array.isArray(next) ? next : next ? [next] : [];
+    const rows = rawRows ? (Array.isArray(rawRows) ? rawRows : [rawRows]) : [];
+    applyDimensions(reconcileSkuDimensionsFromSelection(dimensions, nextAttributeRefs, rows, createDraftRowId));
+  };
+  const handleDimensionValuesSelection = (
+    dimension: SkuDimensionDraft,
+    next: string | string[],
+    rawRows?: CatalogCandidateRow | CatalogCandidateRow[],
+  ) => {
+    const nextValueRefs = Array.isArray(next) ? next : next ? [next] : [];
+    const rows = rawRows ? (Array.isArray(rawRows) ? rawRows : [rawRows]) : [];
+    const values = reconcileSkuDimensionValuesFromSelection(dimension.values, nextValueRefs, rows, createDraftRowId);
+    applyDimensions(dimensions.map(entry => (entry.editorId === dimension.editorId ? {...entry, values} : entry)));
+  };
   const updateSku = (editorId: string, patch: Partial<SkuRowDraft>) =>
     onSkusChange(skus.map(entry => (entry.editorId === editorId ? {...entry, ...patch} : entry)));
-  const regenerateMatrix = () => {
-    onSkusChange(buildSkuMatrix(dimensions, skus));
-    onDirty();
-  };
+  const dimensionColumns: ColumnsType<SkuDimensionDraft> = [
+    {
+      title: '规格属性',
+      width: 220,
+      render: (_value, dimension) => (
+        <Space direction="vertical" size={0} style={{display: 'flex'}}>
+          <Typography.Text>{dimension.attributeName || '未命名规格属性'}</Typography.Text>
+          {dimension.attributeCode && (
+            <Typography.Text type="secondary" style={{fontSize: 12}}>
+              {dimension.attributeCode}
+            </Typography.Text>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: '可选值',
+      render: (_value, dimension) => (
+        <CatalogDescriptorPicker
+          manifest={manifest}
+          shapeKey="SKU_VARIANT_SALE_COUNTED"
+          fieldKey="skuVariantValues"
+          value={dimension.values.map(value => String(value.valueRef)).filter(Boolean)}
+          context={valuePickerContexts.get(dimension.editorId)!}
+          disabled={!dimension.attributeRef}
+          disabledMessage={!dimension.attributeRef ? '请先从上方选择规格属性。' : undefined}
+          hideLabel
+          testIdValue={catalogTestIdControls.edit.dynamic('sku-dimension', 'values', dimension.editorId)}
+          width="100%"
+          onChange={(next, rawRows) => handleDimensionValuesSelection(dimension, next, rawRows)}
+        />
+      ),
+    },
+  ];
   return (
     <Space
       direction="vertical"
@@ -222,242 +232,46 @@ function SkuMatrixEditor({
       <Alert
         type="info"
         showIcon
-        title="先选择规格属性和可选值，再生成规格；生成后可逐项补充名称、价格、单位和制作信息。"
+        title="选择规格属性和可选值后，规格组合会自动生成；再逐项补充名称、价格、单位和制作信息。"
       />
-      <Card
-        size="small"
-        title="1. 选择规格属性和可选值"
-        extra={
-          <Space>
-            <Button
-              size="small"
-              disabled={dimensions.length === 0}
-              onClick={regenerateMatrix}
-              {...testId(catalogTestIds.static.itemSkuMatrixRegenerate)}
-            >
-              生成规格
-            </Button>
-            <Button
-              size="small"
-              onClick={() =>
-                applyDimensions([
-                  ...dimensions,
-                  {
-                    editorId: createDraftRowId('dimension'),
-                    attributeRef: draftUuid(),
-                    attributeCode: '',
-                    attributeName: '',
-                    values: [],
-                  },
-                ])
-              }
-              {...testId(catalogTestIds.static.itemSkuDimensionAdd)}
-            >
-              添加规格属性
-            </Button>
-          </Space>
-        }
-      >
-        {dimensions.length === 0 && <EmptySection text="未维护规格维度" />}
+      <Card size="small" title="1. 选择规格属性和可选值">
         <Space direction="vertical" size={10} style={{display: 'flex'}}>
-          {dimensions.map((dimension, dimensionIndex) => (
-            <Card
-              key={dimension.editorId}
-              size="small"
-              title={dimension.attributeName || `规格属性 ${dimensionIndex + 1}`}
-              extra={
+          <CatalogDescriptorPicker
+            manifest={manifest}
+            shapeKey="SKU_VARIANT_SALE_COUNTED"
+            fieldKey="skuVariantAttribute"
+            value={dimensions.map(dimension => String(dimension.attributeRef)).filter(Boolean)}
+            context={attributePickerContext}
+            actions={
+              onOpenDictionary ? (
                 <Button
-                  danger
-                  type="link"
-                  onClick={() => applyDimensions(dimensions.filter(entry => entry.editorId !== dimension.editorId))}
-                  {...testId(catalogTestIdControls.edit.dynamic('sku-dimension', 'remove', dimension.editorId))}
+                  size="small"
+                  onClick={() => onOpenDictionary('SKU_ATTRIBUTE', catalogTestIds.static.itemSkuAttributeManage)}
+                  {...testId(catalogTestIds.static.itemSkuAttributeManage)}
                 >
-                  移除
+                  维护规格属性
                 </Button>
-              }
-            >
-              <Typography.Text strong>规格属性</Typography.Text>
-              <CatalogDescriptorPicker
-                manifest={manifest}
-                shapeKey="SKU_VARIANT_SALE_COUNTED"
-                fieldKey="skuVariantAttribute"
-                value={String(dimension.attributeRef ?? '')}
-                context={attributePickerContext}
-                actions={
-                  onOpenDictionary && (
-                    <Button
-                      size="small"
-                      onClick={() => onOpenDictionary('SKU_ATTRIBUTE')}
-                      {...testId(
-                        catalogTestIdControls.edit.dynamic('sku-dimension-attribute', 'manage', dimension.editorId),
-                      )}
-                    >
-                      维护规格属性
-                    </Button>
-                  )
-                }
-                testIdValue={catalogTestIdControls.edit.dynamic('sku-dimension', 'attribute', dimension.editorId)}
-                width={catalogFieldWidths.regular}
-                onChange={(next, rawRow) => {
-                  const row = descriptorRow(rawRow);
-                  updateDimension(dimension.editorId, {
-                    attributeRef: draftUuid(descriptorString(next)),
-                    attributeCode: typeof row?.code === 'string' ? row.code : '',
-                    attributeName: typeof row?.name === 'string' ? row.name : '',
-                    values: [],
-                  });
-                }}
-              />
-              <Divider plain style={{margin: '12px 0 8px'}}>
-                可选值
-              </Divider>
-              <Typography.Text type="secondary">
-                选择会参与生成规格的属性值；可用上移、下移调整顾客看到的顺序。
-              </Typography.Text>
-              <Button
-                size="small"
-                disabled={!dimension.attributeRef}
-                onClick={() =>
-                  updateDimension(dimension.editorId, {
-                    values: [
-                      ...dimension.values,
-                      {
-                        valueRef: draftUuid(),
-                        editorId: createDraftRowId('dimension-value'),
-                        valueCode: '',
-                        valueLabel: '',
-                        displayOrder: dimension.values.length,
-                        status: 'ENABLED',
-                      },
-                    ],
-                  })
-                }
-                {...testId(catalogTestIdControls.edit.dynamic('sku-dimension-value', 'add', dimension.editorId))}
-              >
-                添加可选值
-              </Button>
-              <Space direction="vertical" size={6} style={{display: 'flex', marginTop: 8}}>
-                {dimension.values.map((value, valueIndex) => (
-                  <Space key={value.editorId} wrap align="end" style={{display: 'flex'}}>
-                    <CatalogDescriptorPicker
-                      manifest={manifest}
-                      shapeKey="SKU_VARIANT_SALE_COUNTED"
-                      fieldKey="skuVariantValues"
-                      value={String(value.valueRef ?? '')}
-                      context={valuePickerContexts.get(dimension.editorId)!}
-                      disabled={!dimension.attributeRef}
-                      disabledMessage={!dimension.attributeRef ? '请先选择规格属性，再选择属性值。' : undefined}
-                      actions={
-                        onOpenValueDictionary && (
-                          <Button
-                            size="small"
-                            disabled={!dimension.attributeRef}
-                            onClick={() => onOpenValueDictionary(dimension.editorId, value.editorId)}
-                            {...testId(
-                              catalogTestIdControls.edit.dynamic(
-                                'sku-dimension-value',
-                                'manage',
-                                dimension.editorId,
-                                value.editorId,
-                              ),
-                            )}
-                          >
-                            维护属性值
-                          </Button>
-                        )
-                      }
-                      testIdValue={catalogTestIdControls.edit.dynamic(
-                        'sku-dimension',
-                        'value',
-                        dimension.editorId,
-                        value.editorId,
-                      )}
-                      width={catalogFieldWidths.full}
-                      onChange={(next, rawRow) => {
-                        const row = descriptorRow(rawRow);
-                        updateDimensionValue(dimension.editorId, value.editorId, {
-                          valueRef: draftUuid(descriptorString(next)),
-                          valueCode: typeof row?.code === 'string' ? row.code : '',
-                          valueLabel: typeof row?.name === 'string' ? row.name : '',
-                          status: typeof row?.status === 'string' ? row.status : 'ENABLED',
-                        });
-                        onDirty();
-                      }}
-                    />
-                    <Space size={2}>
-                      <Button
-                        size="small"
-                        disabled={valueIndex === 0}
-                        onClick={() => moveDimensionValue(dimension.editorId, value.editorId, -1)}
-                        {...testId(
-                          catalogTestIdControls.edit.dynamic(
-                            'sku-dimension-value',
-                            'move-up',
-                            dimension.editorId,
-                            value.editorId,
-                          ),
-                        )}
-                      >
-                        上移
-                      </Button>
-                      <Button
-                        size="small"
-                        disabled={valueIndex === dimension.values.length - 1}
-                        onClick={() => moveDimensionValue(dimension.editorId, value.editorId, 1)}
-                        {...testId(
-                          catalogTestIdControls.edit.dynamic(
-                            'sku-dimension-value',
-                            'move-down',
-                            dimension.editorId,
-                            value.editorId,
-                          ),
-                        )}
-                      >
-                        下移
-                      </Button>
-                    </Space>
-                    <Select
-                      style={{width: catalogFieldWidths.compact}}
-                      value={value.status}
-                      options={catalogEnumOptions(manifest, 'skuStatus')}
-                      onChange={status => {
-                        updateDimensionValue(dimension.editorId, value.editorId, {status});
-                        onDirty();
-                      }}
-                      {...testId(
-                        catalogTestIdControls.edit.dynamic(
-                          'sku-dimension-value',
-                          'status',
-                          dimension.editorId,
-                          value.editorId,
-                        ),
-                      )}
-                    />
-                    <Button
-                      danger
-                      type="link"
-                      onClick={() => {
-                        updateDimension(dimension.editorId, {
-                          values: dimension.values.filter(entry => entry.editorId !== value.editorId),
-                        });
-                        onDirty();
-                      }}
-                      {...testId(
-                        catalogTestIdControls.edit.dynamic(
-                          'sku-dimension-value',
-                          'remove',
-                          dimension.editorId,
-                          value.editorId,
-                        ),
-                      )}
-                    >
-                      移除
-                    </Button>
-                  </Space>
-                ))}
-              </Space>
-            </Card>
-          ))}
+              ) : undefined
+            }
+            actionsPlacement="after-label"
+            testIdValue={catalogTestIds.static.itemSkuAttributeSelector}
+            width="100%"
+            onChange={handleAttributeSelection}
+          />
+          {dimensions.length === 0 ? (
+            <EmptySection text="请从规格库选择规格属性。" />
+          ) : (
+            <Table<SkuDimensionDraft>
+              size="small"
+              tableLayout="fixed"
+              pagination={false}
+              rowKey="editorId"
+              columns={dimensionColumns}
+              dataSource={dimensions}
+              scroll={{x: 700}}
+              {...testId(catalogTestIds.static.itemSkuDimensionTable)}
+            />
+          )}
         </Space>
       </Card>
       <CatalogItemSkuMatrixTable

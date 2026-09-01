@@ -46,7 +46,13 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED",
+                      "VOIDED"
+                    ],
+                    "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
                   },
                   "ownerType": {
                     "type": "string",
@@ -204,7 +210,8 @@
             "DISABLED",
             "VOIDED"
           ],
-          "description": "optional production tag lifecycle status filter"
+          "description": "optional production tag lifecycle status filter",
+          "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
         },
         "cursor": {
           "type": "string",
@@ -326,7 +333,13 @@
             },
             "status": {
               "type": "string",
-              "description": "status"
+              "enum": [
+                "ENABLED",
+                "DISABLED",
+                "VOIDED"
+              ],
+              "description": "production tag lifecycle status",
+              "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
             },
             "version": {
               "type": "integer",
@@ -360,7 +373,13 @@
         },
         "targetStatus": {
           "type": "string",
-          "description": "target lifecycle status"
+          "enum": [
+            "ENABLED",
+            "DISABLED",
+            "VOIDED"
+          ],
+          "description": "production tag lifecycle target status",
+          "x-java-enum": "CatalogInventoryWireEnums.DictionaryEntryStatus"
         },
         "dataNodeRef": {
           "type": "string",

@@ -353,6 +353,14 @@ public interface CatalogOwnerApi {
 
     record TemporaryPromotionChange(String field, String before, String after) {}
 
+    enum TemporaryPromotionBlockingReasonCode {
+        NOT_TEMPORARY_ITEM,
+        VERSION_CONFLICT,
+        SHAPE_DISABLED,
+        MATERIAL_ROLE_REQUIRED,
+        DUPLICATE_CODE
+    }
+
     record TemporaryPromotionPreflightReadback(
             TemporaryPromotionItem item,
             TemporaryPromotionProposed proposed,
@@ -360,7 +368,7 @@ public interface CatalogOwnerApi {
             long sourceVersion,
             boolean formalCodeAvailable,
             List<String> requiredFields,
-            List<String> blockedReasons,
+            List<TemporaryPromotionBlockingReasonCode> blockedReasons,
             List<TemporaryPromotionChange> changes,
             String preflightDigest,
             boolean canPromote) {}

@@ -64,7 +64,8 @@ public class SaveOperationsCatalogItemOperation {
             throw failure;
         } catch (Exception failure) {
             LOG.warn(
-                    "catalog_save_failed operationId={} correlationId={} requestId={} exceptionType={} causeType={}",
+                    "catalog_save_failed operationId={} correlationId={} requestId={} "
+                            + "exceptionType={} causeType={} mappingPath={}",
                     OPERATION_ID,
                     invocation.correlationId(),
                     invocation.requestId(),
@@ -78,6 +79,27 @@ public class SaveOperationsCatalogItemOperation {
         Throwable current = failure;
         while (current.getCause() != null && current.getCause() != current) current = current.getCause();
         return current;
+    }
+
+    private static String mappingPath(Throwable failure) {
+        Throwable current = failure;
+        while (current != null) {
+            if (current instanceof tools.jackson.core.JacksonException jackson) {
+                StringBuilder pathBuilder = new StringBuilder();
+                for (var reference : jackson.getPath()) {
+                    if (reference.getPropertyName() != null) {
+                        if (pathBuilder.length() > 0) pathBuilder.append('.');
+                        pathBuilder.append(reference.getPropertyName());
+                    } else if (reference.getIndex() >= 0) {
+                        pathBuilder.append('[').append(reference.getIndex()).append(']');
+                    }
+                }
+                String path = pathBuilder.toString();
+                return path == null || path.isBlank() ? "<root>" : path;
+            }
+            current = current.getCause();
+        }
+        return "<unavailable>";
     }
 
     public record Invocation(

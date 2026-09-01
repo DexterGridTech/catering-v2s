@@ -702,7 +702,7 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                 BusinessChannelReadback.Channel.class,
                 () -> {
                     TemplateCommandProjection template = readTemplateCommandProjection(
-                            command.workspaceUuid(), command.groupWorkspaceKey(), command.templateRef());
+                            command.workspaceUuid(), command.groupWorkspaceKey(), command.templateRef(), channelCode);
                     requireEnabledTemplate(template.status());
                     CollaborationReadback.Tree collaborationTree = BusinessChannelPolicy.EXTERNAL.equals(
                                     template.accessKind())
@@ -726,6 +726,7 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                             command.ownerNodeType(),
                             command.ownerNodeRef(),
                             false);
+                    ensureChannelCodeAvailable(template.channelCodeInUse());
                     String initialStatus = BusinessChannelPolicy.INTERNAL.equals(template.accessKind())
                             ? BusinessChannelPolicy.ENABLED
                             : binding != null && "EFFECTIVE".equals(binding.status())
@@ -1256,16 +1257,23 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
     }
 
     private TemplateCommandProjection readTemplateCommandProjection(
-            UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef) {
+            UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef, String channelCode) {
         if (templateRef == null) throw problem("VALIDATION_ERROR", 422, "templateRef is required");
         return jdbc.query(
-                "SELECT project_ref, access_kind, operator_kind, order_kind, dine_in_form, provider_code, status "
-                        + "FROM business_channel.business_channel_template "
-                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND template_ref=? FOR UPDATE",
+                "SELECT template.project_ref, template.access_kind, template.operator_kind, template.order_kind, "
+                        + "template.dine_in_form, template.provider_code, template.status, EXISTS (SELECT 1 "
+                        + "FROM business_channel.business_channel channel "
+                        + "WHERE channel.workspace_uuid=template.workspace_uuid "
+                        + "AND channel.group_workspace_key=template.group_workspace_key "
+                        + "AND channel.channel_code=? AND channel.status <> 'VOIDED') AS channel_code_in_use "
+                        + "FROM business_channel.business_channel_template template "
+                        + "WHERE template.workspace_uuid=? AND template.group_workspace_key=? "
+                        + "AND template.template_ref=? FOR UPDATE",
                 statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    statement.setObject(3, templateRef);
+                    statement.setString(1, channelCode);
+                    statement.setObject(2, workspaceUuid);
+                    statement.setString(3, groupWorkspaceKey);
+                    statement.setObject(4, templateRef);
                 },
                 result -> {
                     if (!result.next()) return notFound("template");
@@ -1276,7 +1284,8 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                             result.getString("order_kind"),
                             result.getString("dine_in_form"),
                             result.getString("provider_code"),
-                            result.getString("status"));
+                            result.getString("status"),
+                            result.getBoolean("channel_code_in_use"));
                 });
     }
 
@@ -1770,6 +1779,12 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
         }
     }
 
+    private void ensureChannelCodeAvailable(boolean channelCodeInUse) {
+        if (channelCodeInUse) {
+            throw problem("DUPLICATE_CODE", 409, "channelCode is already used in the group workspace");
+        }
+    }
+
     private long count(String sql, List<Object> arguments) {
         return jdbc.query(
                 sql, statement -> bind(statement, arguments), result -> result.next() ? result.getLong(1) : 0L);
@@ -2024,7 +2039,8 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
             String orderKind,
             String dineInForm,
             String providerCode,
-            String status) {}
+            String status,
+            boolean channelCodeInUse) {}
 
     private record ChannelProjection(
             UUID workspaceUuid,

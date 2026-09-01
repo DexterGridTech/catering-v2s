@@ -67,9 +67,13 @@ Findings are hypotheses until the owning source is reopened. Classify each as `C
 
 ## Boundaries
 
-Deliver review files under `doc/review/platform/` with a `-claude` filename suffix; treat every other
-path as read-only unless Dexter authorises otherwise in session. Do not run reset, seed, DEV restart,
-L2, UAT, deployment, or any Git action. A review verdict authorises nothing beyond the review itself.
+Deliver review files under `doc/review/platform/`. External Claude files use `-claude`; Codex-authored
+files, including Codex-dispatched independent-subagent reviews and author intake/reconciliation, use
+`-codex`. Independence is declared inside the file through `reviewerKind` and the review-governance
+metadata, not through the suffix; historical files are not renamed. Treat every other path as read-only
+unless Dexter authorises otherwise in session. Do not run reset, seed, DEV restart, L2, UAT, deployment,
+or any Git action. A review verdict authorises nothing beyond the review itself. The naming owner is
+`doc/platform/review-standard.md` §5.
 
 When a needed criterion has no home in any standard, record it as a design gap for the design side to
 add to the owning standard. **Never invent the rule inside the review** — a rule with no canonical

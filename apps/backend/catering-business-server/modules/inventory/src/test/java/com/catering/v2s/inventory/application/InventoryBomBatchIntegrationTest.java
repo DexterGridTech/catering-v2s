@@ -77,7 +77,7 @@ class InventoryBomBatchIntegrationTest {
     }
 
     @Test
-    void missingTargetStillUsesReferenceFailureContract() {
+    void missingTargetUsesComponentEligibilityFailureContract() {
         List<UUID> refs = existingTargetRefs();
         refs.set(7, UUID.randomUUID());
         InventoryOwnerApi.Problem failure = assertThrows(
@@ -92,7 +92,7 @@ class InventoryBomBatchIntegrationTest {
                         "inventory-bom-batch",
                         "STORE",
                         grant()));
-        assertEquals("REFERENCE_MAPPING_UNRESOLVED", failure.code());
+        assertEquals("INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE", failure.code());
     }
 
     private static List<UUID> existingTargetRefs() {
@@ -123,7 +123,7 @@ class InventoryBomBatchIntegrationTest {
 
     private static void insertTarget(JdbcTemplate jdbc, UUID targetRef, String itemCode) {
         InventoryTestUnitFacts.insertDirectTarget(
-                jdbc, targetRef, SCOPE, "BRAND", UUID.randomUUID(), null, itemCode, null, BigDecimal.ZERO, 1L);
+                jdbc, targetRef, SCOPE, "BRAND", UUID.randomUUID(), null, itemCode, null, BigDecimal.ZERO, 1L, true);
     }
 
     private static OperationsOwnerScopeGrant grant() {

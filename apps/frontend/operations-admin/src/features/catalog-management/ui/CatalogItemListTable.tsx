@@ -224,7 +224,7 @@ function attributeFactLines(
   return facts.map(fact => {
     if ('attributeValueRef' in fact) return `${fact.attributeName}：${fact.valueLabel}`;
     if (fact.textValue) return `${fact.name}：${fact.textValue}`;
-    if (fact.optionRefs.length > 0) return `${fact.name}：已设置（${fact.optionRefs.length}项）`;
+    if (fact.selectedOptionNames.length > 0) return `${fact.name}：${fact.selectedOptionNames.join('、')}`;
     return `${fact.name}：未设置`;
   });
 }
@@ -232,7 +232,7 @@ function attributeFactLines(
 function preparationFactLines(facts: CatalogPreparationFacts): string[] {
   const lines: string[] = [];
   if (facts.productionTag) lines.push(`生产标签：${facts.productionTag.name}`);
-  if (facts.profile?.productionDisplayName) lines.push(facts.profile.productionDisplayName);
+  if (facts.profile?.productionDisplayName) lines.push(`制作名称：${facts.profile.productionDisplayName}`);
   if (facts.profile?.estimatedPreparationSeconds !== null && facts.profile?.estimatedPreparationSeconds !== undefined) {
     lines.push(`预计制作：${facts.profile.estimatedPreparationSeconds}秒`);
   }

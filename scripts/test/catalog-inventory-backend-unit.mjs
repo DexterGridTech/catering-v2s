@@ -21,7 +21,7 @@ const remoteModuleTasks = [
 ];
 const remoteApplicationTests = [
   'com.catering.v2s.app.edge.operations.cataloginventory.OperationsCatalogInventoryControllerRouteTest',
-  'com.catering.v2s.app.application.cataloginventory.CatalogCopySourceAuthorityTest',
+  'com.catering.v2s.app.application.CatalogInventoryReadTransactionTopologyTest',
 ];
 const childOutputBudgetBytes = 32 * 1024 * 1024;
 const phases = [];

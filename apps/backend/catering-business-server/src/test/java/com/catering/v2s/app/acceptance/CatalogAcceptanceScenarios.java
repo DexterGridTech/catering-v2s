@@ -1396,9 +1396,9 @@ final class CatalogAcceptanceScenarios {
                 host.insertInventoryBomFixture(
                         fixture.storeId(),
                         fixture.brandId(),
-                        UUID.randomUUID(),
+                        UUID.fromString(component.path("itemRef").asText()),
                         null,
-                        "ACC-SWITCH-REFERENCE-" + blocker,
+                        component.path("code").asText(),
                         null,
                         List.of(bomLine(targetRef, "POSITIVE", "1")));
             } else {
@@ -2410,7 +2410,8 @@ final class CatalogAcceptanceScenarios {
                 "COUNT",
                 0,
                 Map.of());
-        String sharedBaseUnitRef = sharedUnit.path("result").path("unit").path("unitRef").asText();
+        String sharedBaseUnitRef =
+                sharedUnit.path("result").path("unit").path("unitRef").asText();
         assertFalse(sharedBaseUnitRef.isBlank(), "BUSINESS: batch fixture obtains one reusable base unit");
 
         List<BatchItem> items = new ArrayList<>();
@@ -2472,7 +2473,9 @@ final class CatalogAcceptanceScenarios {
                 Set.of(200));
         JsonNode results = batch.json().path("results");
         assertEquals(
-                batchSize, results.size(), "BUSINESS: batch readback contains one ordered result for every submitted item");
+                batchSize,
+                results.size(),
+                "BUSINESS: batch readback contains one ordered result for every submitted item");
 
         int failures = 0;
         for (int index = 0; index < items.size(); index++) {
@@ -2983,6 +2986,7 @@ final class CatalogAcceptanceScenarios {
                             catalogNavigationCategoryFact(
                                     categoryRoot,
                                     null,
+                                    1,
                                     0,
                                     3,
                                     false,
@@ -2996,6 +3000,7 @@ final class CatalogAcceptanceScenarios {
                                             .path("categoryRef")
                                             .asText(),
                                     1,
+                                    1,
                                     2,
                                     false,
                                     taggedItemReadback.path("itemRef").asText(),
@@ -3007,6 +3012,7 @@ final class CatalogAcceptanceScenarios {
                                             .path("result")
                                             .path("categoryRef")
                                             .asText(),
+                                    0,
                                     0,
                                     1,
                                     true,
@@ -3804,12 +3810,12 @@ final class CatalogAcceptanceScenarios {
             module = "CATALOG",
             operation = "saveOperationsCatalogItem")
     void skuInventoryIdentityAndRemoval(BackendAcceptanceTest.ScenarioContext context) throws Exception {
-        skuRemovalBlockedByInventorySubcase(context);
+        skuOwnInventoryRetirementSubcase(context);
         skuCodeChangeKeepsInventorySubcase(context);
     }
 
-    /** Proves an inventory-owned SKU reference blocks removal without permitting a partial catalog write. */
-    private void skuRemovalBlockedByInventorySubcase(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+    /** Proves an SKU-owned inventory definition is retired with the SKU rather than blocking its removal. */
+    private void skuOwnInventoryRetirementSubcase(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
         host.completeInvitation(context, fixture);
         Session session = host.login(context, fixture);
@@ -3834,7 +3840,7 @@ final class CatalogAcceptanceScenarios {
                 "BUSINESS: one real save creates linked SKU and inventory target facts; sku=" + sku);
 
         Map<String, Object> request = skuVoidRequest(before, savedVersion, skuRef);
-        Response rejected = context.patch(
+        Response voided = context.patch(
                 OPERATIONS_CATALOG_ITEM_SAVE,
                 itemPath(code),
                 session.cookie(),
@@ -3847,41 +3853,30 @@ final class CatalogAcceptanceScenarios {
                         request.get("sections"),
                         "skuTransitions",
                         request.get("skuTransitions")),
-                Set.of(422));
+                Set.of(200));
         assertEquals(
-                "REFERENCE_BLOCKS_VOID",
-                rejected.problemCode(),
-                "BUSINESS: a SKU referenced by Inventory cannot be silently archived or removed; response="
-                        + rejected.raw());
-        String rejectionDetail = rejected.json().path("detail").asText();
-        assertEquals(
-                "该规格存在库存记录或用料，暂不能作废",
-                rejectionDetail,
-                "BUSINESS: rejection names the inventory-or-BOM business blocker without a generic fallback");
-        assertFalse(rejectionDetail.contains(skuRef), "BUSINESS: rejection does not expose the opaque SKU identity");
-        assertFalse(
-                rejectionDetail.contains("stock_target") || rejectionDetail.contains("product_sku_ref"),
-                "BUSINESS: rejection does not expose inventory schema names");
-        assertEquals(
-                skuRef,
-                readItem(context, fixture, session, code)
-                        .path("skus")
+                "VOIDED",
+                voided.json()
+                        .path("result")
+                        .path("skuTransitions")
                         .get(0)
-                        .path("productSkuRef")
+                        .path("targetStatus")
                         .asText(),
-                "BUSINESS: rejected removal leaves the catalog SKU unchanged");
-        JsonNode target = context.get(
-                        OPERATIONS_INVENTORY_TARGET_READ,
-                        "/api/operations/catalog-inventory/inventory-targets/" + targetRef + "?dataNodeRef="
-                                + fixture.storeId(),
-                        session.cookie(),
-                        Set.of(200))
-                .json()
-                .path("target");
+                "BUSINESS: a SKU-owned inventory definition does not block SKU retirement; response=" + voided.raw());
         assertEquals(
-                skuRef,
-                target.path("productSkuRef").asText(),
-                "BUSINESS: rejected removal leaves the Inventory target linked to its opaque SKU identity");
+                0,
+                readItem(context, fixture, session, code).path("skus").size(),
+                "BUSINESS: a voided SKU is removed from the active SKU readback");
+        Response retiredTarget = context.get(
+                OPERATIONS_INVENTORY_TARGET_READ,
+                "/api/operations/catalog-inventory/inventory-targets/" + targetRef + "?dataNodeRef="
+                        + fixture.storeId(),
+                session.cookie(),
+                Set.of(404));
+        assertEquals(
+                "NOT_FOUND",
+                retiredTarget.problemCode(),
+                "BUSINESS: a retired SKU target is not exposed as a current inventory object");
 
         String compositeBlockedCode =
                 "ACC-SKU-COMPOSITE-" + UUID.randomUUID().toString().substring(0, 8);
@@ -3917,8 +3912,16 @@ final class CatalogAcceptanceScenarios {
                 .asLong();
         String compositeOwnerCode =
                 "ACC-SKU-COMPOSITE-OWNER-" + UUID.randomUUID().toString().substring(0, 8);
-        CreatedItem compositeOwner = createItemWithAttributes(
-                context, fixture, session, compositeOwnerCode, "catalog composite owner", Map.of());
+        CreatedItem compositeOwner = createItemWithShape(
+                context,
+                fixture,
+                session,
+                fixture.storeId().toString(),
+                compositeOwnerCode,
+                "catalog composite owner",
+                Map.of(),
+                Map.of(),
+                "COMPOSITE");
         Map<String, Object> compositeComponent = new LinkedHashMap<>();
         compositeComponent.put("itemRef", compositeBlocked.itemRef().toString());
         compositeComponent.put("productSkuRef", compositeSkuRef);
@@ -3952,6 +3955,20 @@ final class CatalogAcceptanceScenarios {
         assertTrue(
                 compositeSaved.json().path("version").asLong() > compositeOwner.version(),
                 "BUSINESS: catalog composite fixture is persisted before the SKU guard is exercised");
+        JsonNode compositeOwnerReadback = readItem(context, fixture, session, compositeOwnerCode);
+        assertFalse(
+                compositeOwnerReadback.path("compositeGroups").isEmpty(),
+                "BUSINESS: the composite owner readback contains the persisted package relation");
+        assertEquals(
+                compositeSkuRef,
+                compositeOwnerReadback
+                        .path("compositeGroups")
+                        .get(0)
+                        .path("components")
+                        .get(0)
+                        .path("productSkuRef")
+                        .asText(),
+                "BUSINESS: the persisted package relation points to the guarded SKU");
         assertSkuRemovalBlocked(
                 context,
                 fixture,
@@ -3970,16 +3987,47 @@ final class CatalogAcceptanceScenarios {
         String bomSkuRef = bomSku.path("productSkuRef").asText();
         bomVersion =
                 saveSkuBom(context, fixture, session, bomBlockedCode, bomVersion, bomSkuRef, bomComponentTargetRef);
-        // spotless:off
-        assertSkuRemovalBlocked(
-                context,
-                fixture,
-                session,
-                bomBlockedCode,
-                bomVersion,
-                bomSkuRef,
-                "该规格存在库存记录或用料，暂不能作废");
-        // spotless:on
+        JsonNode bomBeforeVoid = readItem(context, fixture, session, bomBlockedCode);
+        JsonNode bomRule = inventoryRuleForSku(bomBeforeVoid, bomSkuRef);
+        assertEquals(
+                "BOM", bomRule.path("mode").asText(), "BUSINESS: the SKU-owned BOM is active before SKU retirement");
+        assertFalse(
+                bomRule.path("bom").path("lines").isEmpty(),
+                "BUSINESS: the SKU-owned BOM has a persisted component line before SKU retirement");
+        Map<String, Object> bomVoidRequest = skuVoidRequest(bomBeforeVoid, bomVersion, bomSkuRef);
+        Response bomVoided = context.patch(
+                OPERATIONS_CATALOG_ITEM_SAVE,
+                itemPath(bomBlockedCode),
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef",
+                        fixture.storeId().toString(),
+                        "itemCode",
+                        bomBlockedCode,
+                        "sections",
+                        bomVoidRequest.get("sections"),
+                        "skuTransitions",
+                        bomVoidRequest.get("skuTransitions")),
+                Set.of(200));
+        assertEquals(
+                "VOIDED",
+                bomVoided
+                        .json()
+                        .path("result")
+                        .path("skuTransitions")
+                        .get(0)
+                        .path("targetStatus")
+                        .asText(),
+                "BUSINESS: an SKU-owned BOM is retired in the same transaction as SKU retirement");
+        JsonNode bomAfterVoid = readItem(context, fixture, session, bomBlockedCode);
+        assertTrue(
+                bomAfterVoid.path("skus").isEmpty(),
+                "BUSINESS: the SKU with its own BOM is removed from active catalog readback");
+        assertTrue(
+                StreamSupport.stream(inventoryRuleNodes(bomAfterVoid).spliterator(), false)
+                        .noneMatch(node -> bomSkuRef.equals(
+                                node.path("owner").path("productSkuRef").asText())),
+                "BUSINESS: the SKU-owned BOM is no longer exposed as a current inventory definition");
     }
 
     private void assertSkuRemovalBlocked(
@@ -7021,6 +7069,9 @@ final class CatalogAcceptanceScenarios {
                                         .path("mode")
                                         .asText()),
                 "BUSINESS: material fixture has an inventory-owned StockTarget before the library command");
+        assertTrue(
+                inventoryRuleNodes(material).get(0).path("componentEligible").asBoolean(false),
+                "BUSINESS: material fixture's StockTarget is eligible for the BOM component candidate owner read");
         return material;
     }
 
@@ -8589,6 +8640,7 @@ final class CatalogAcceptanceScenarios {
             JsonNode category,
             String parentCategoryRef,
             long count,
+            long directCount,
             long subtreeSize,
             boolean canDelete,
             String blockingReference,
@@ -8603,7 +8655,8 @@ final class CatalogAcceptanceScenarios {
         fact.put("version", result.path("version").asLong());
         fact.put("displayOrder", result.path("displayOrder").asInt());
         fact.put("count", count);
-        fact.put("countSemantics", "SELF_ONLY");
+        fact.put("directCount", directCount);
+        fact.put("countSemantics", "SELF_AND_DESCENDANTS");
         Map<String, Object> deletionAvailability = new LinkedHashMap<>();
         deletionAvailability.put("canDelete", canDelete);
         deletionAvailability.put("subtreeSize", subtreeSize);

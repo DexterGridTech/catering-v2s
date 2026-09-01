@@ -7,6 +7,7 @@ test('catalog seed obtains the diagnostic protocol from the managed runtime and 
   assert.match(source, /buildManagedDiagnosticHeaders\(\{manifest, credentials, operationId, routeTemplate: operation\.path, correlationId\}\)/);
   assert.match(source, /managedDevRunId: manifest\.runId, correlationId: response\.headers\.get\("x-correlation-id"\) \|\| correlationId, requestId, owner: operation\.owner, consumerFace:/);
   assert.match(source, /buildSeedReport\(\{runId, managedDevRunId: manifest\.runId, measurement/);
+  assert.match(source, /status: business, businessStatus: business, cleanupStatus: cleanup/);
   assert.doesNotMatch(source, /"X-Seed-|"X-Correlation-Id|V2S_SEED_REPORT_SECRET/);
 });
 
@@ -43,6 +44,24 @@ test('catalog BOM readback compares unit snapshot facts instead of JSONB key ord
   assert.match(source, /consumptionUnitSnapshot: unitSnapshot\(\s*refs,\s*definitionAssignmentFor\(line\.materialItemCode\)\.baseMeasureUnitCode,/);
   assert.match(source, /sameUnitSnapshot\(line\.consumptionUnitSnapshot, expectedLine\.consumptionUnitSnapshot\)/);
   assert.doesNotMatch(source, /JSON\.stringify\(line\.consumptionUnitSnapshot\)/);
+});
+
+test('catalog seed proves the owner candidate collection used by a new BOM line', async () => {
+  const source = await readFile(new URL('./catalog-inventory-seed-executor.mjs', import.meta.url), 'utf8');
+  assert.match(source, /operationId: "getOperationsInventoryConsumptionTargetCandidates"/);
+  assert.match(source, /continuationField: "nextCursor"/);
+  assert.match(source, /SEED_INVENTORY_CANDIDATE_READBACK_INVALID/);
+  assert.match(source, /candidateSetMatches/);
+  assert.match(source, /candidateFactsMatch/);
+});
+
+test('catalog seed follows the owner aggregate category-count semantics', async () => {
+  const source = await readFile(new URL('./catalog-inventory-seed-executor.mjs', import.meta.url), 'utf8');
+  assert.match(source, /const expectedCategoryNavigationCounts = \(sourceItems, scopeType, categoryDefinitions\)/);
+  assert.match(source, /expectedDirectCount: expected\.directCount/);
+  assert.match(source, /expectedCountSemantics: "SELF_AND_DESCENDANTS"/);
+  assert.match(source, /actualCountSemantics !== "SELF_AND_DESCENDANTS"/);
+  assert.match(source, /catalog_item_category_self_and_descendants/);
 });
 
 test('catalog seed retains order-option value codes for option BOM attachment', async () => {

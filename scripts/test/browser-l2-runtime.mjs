@@ -383,7 +383,7 @@ export function validateFixtureVoidedSkuTransitionReadback(transitions, readback
       !Array.isArray(actual.blockingReferences) ||
       !Array.isArray(actual.dependentFacts) ||
       !Array.isArray(actual.blockingReasons) ||
-      !actual.blockingReasons.some(reason => reason?.label === '当前状态不支持作废')
+        !actual.blockingReasons.some(reason => reason?.reasonCode === 'ALREADY_VOIDED')
     ) {
       fail('L2_OWNER_FIXTURE_VOIDED_SKU_TRANSITION_READBACK_INVALID', `${detail}:${expected.skuRef}`);
     }

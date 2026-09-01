@@ -36,13 +36,29 @@ final class InventoryTestUnitFacts {
             String skuCode,
             BigDecimal balance,
             long version) {
+        insertDirectTarget(
+                jdbc, targetRef, scope, brand, itemRef, productSkuRef, itemCode, skuCode, balance, version, false);
+    }
+
+    static void insertDirectTarget(
+            JdbcTemplate jdbc,
+            UUID targetRef,
+            UUID scope,
+            String brand,
+            UUID itemRef,
+            UUID productSkuRef,
+            String itemCode,
+            String skuCode,
+            BigDecimal balance,
+            long version,
+            boolean componentEligible) {
         jdbc.update(
                 "INSERT INTO inventory.stock_target("
                         + "target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code,sku_code,"
                         + "measure_mode,inventory_mode,configuration,balance,version,created_at_epoch_millis,"
                         + "updated_at_epoch_millis,consumption_unit_ref,consumption_unit_code,consumption_unit_name,"
-                        + "consumption_unit_dimension,consumption_unit_precision) "
-                        + "VALUES(?,?,?,?,?,?,?,'COUNTED','DIRECT',CAST(? AS JSONB),?,?,1,1,?,?,?,?,?)",
+                        + "consumption_unit_dimension,consumption_unit_precision,component_eligible) "
+                        + "VALUES(?,?,?,?,?,?,?,'COUNTED','DIRECT',CAST(? AS JSONB),?,?,1,1,?,?,?,?,?,?)",
                 targetRef,
                 scope.toString(),
                 brand,
@@ -57,7 +73,8 @@ final class InventoryTestUnitFacts {
                 CONSUMPTION_UNIT_CODE,
                 CONSUMPTION_UNIT_NAME,
                 CONSUMPTION_UNIT_DIMENSION,
-                CONSUMPTION_UNIT_PRECISION);
+                CONSUMPTION_UNIT_PRECISION,
+                componentEligible);
     }
 
     static String consumptionUnitSnapshotJson() {

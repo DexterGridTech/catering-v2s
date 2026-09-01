@@ -6,7 +6,6 @@ import {
   useCursorStack,
   useDrawerFormLifecycle,
   useRefreshVersion,
-  useShellInteractionLock,
 } from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {
@@ -71,7 +70,6 @@ type DictionaryRow = {
   linkedProductCount?: number;
   voidAvailability?: VoidAvailability;
 };
-type RebuildRequest = {row: DictionaryRow; dictionaryKind: DictionaryKind};
 type NameEditRequest = {row: DictionaryRow; dictionaryKind: DictionaryKind};
 type UnitEditValues = Pick<FormValues, 'code' | 'name' | 'unitDimension' | 'precision'>;
 type StatusChangeRequest = {row: DictionaryRow; dictionaryKind: DictionaryKind};
@@ -83,14 +81,14 @@ function voidReason(value?: VoidAvailability) {
   }
   if (value.blockingReferences.length > 0) return '仍被其他业务记录使用';
   if (value.dependentFacts.length > 0) return '仍存在关联业务数据';
-  return '当前条目暂不能作废';
+  return '当前条目暂不能删除';
 }
 
-function voidActionLabel(_value?: VoidAvailability) {
+function deleteActionLabel(_value?: VoidAvailability) {
   // Availability changes the control state and its business reason, never the
   // action's meaning. A different disabled label made the same lifecycle
   // action look like a second operation in the configuration libraries.
-  return '作废并重建';
+  return '删除';
 }
 
 const dictionaryKindLabels: Record<DictionaryKind, string> = {
@@ -132,7 +130,7 @@ export function catalogUnitVoidControlState({
   isTransitioning: boolean;
 }): {disabled: boolean; reason?: string} {
   if (!canWrite) return {disabled: true, reason: '当前账号只有查看商品库的权限，不能修改字典。'};
-  if (isReferenced) return {disabled: true, reason: '该计量单位正在使用，不能作废；可以停用。'};
+  if (isReferenced) return {disabled: true, reason: '该计量单位正在使用，不能删除；可以停用。'};
   if (isTransitioning) return {disabled: true, reason: '正在更新状态，请稍候。'};
   return {disabled: false};
 }
@@ -142,10 +140,20 @@ export function catalogUnitStatusQuery(status?: string): {status?: 'ENABLED' | '
   return {};
 }
 
+export function catalogConfigurationChangeNeedsConfirmation({
+  configurationLifecycleDirty,
+  definitionDirtyMessage,
+}: {
+  configurationLifecycleDirty: boolean;
+  definitionDirtyMessage?: string;
+}) {
+  return configurationLifecycleDirty || Boolean(definitionDirtyMessage);
+}
+
 /**
  * Owns shared configuration-library commands, query state and drawer
  * lifecycle. The workbench owns the first-level placement; an editor owns its
- * one second-level metadata child placement. This adapter holds neither task
+ * one second-level configuration child placement. This adapter holds neither task
  * state nor an item draft, so it cannot create a parallel business owner.
  */
 export function CatalogDictionaryDrawerState({
@@ -160,11 +168,10 @@ export function CatalogDictionaryDrawerState({
   onAfterClose,
 }: CatalogDictionaryDrawerProps) {
   const {modal} = App.useApp();
-  const {dirtyLocked} = useShellInteractionLock();
   const initialConfigLibrary: ConfigLibraryTab = initialKind === 'SKU_ATTRIBUTE_VALUE' ? 'SKU_ATTRIBUTE' : initialKind;
   const configLibrary = useCatalogConfigLibrary({
     initialLibrary: initialConfigLibrary,
-    contextKey: `${open}|${queryContext.scopeRef ?? ''}|${brandRef ?? ''}`,
+    contextKey: `${open}|${queryContext.scopeRef ?? ''}|${brandRef ?? ''}|${parentEntryRef ?? ''}`,
   });
   const {
     selectLibrary,
@@ -190,7 +197,6 @@ export function CatalogDictionaryDrawerState({
   const [editingEntry, setEditingEntry] = useState<NameEditRequest>();
   const [editingUnit, setEditingUnit] = useState<DictionaryRow>();
   const [statusChange, setStatusChange] = useState<StatusChangeRequest>();
-  const [rebuildFrom, setRebuildFrom] = useState<RebuildRequest>();
   const [creatingKind, setCreatingKind] = useState<DictionaryKind>();
   const selectedAttributeRef = configLibrary.selectedEntryRef;
   const [definitionDirtyMessage, setDefinitionDirtyMessage] = useState<string>();
@@ -443,7 +449,6 @@ export function CatalogDictionaryDrawerState({
       setEditingEntry(undefined);
       setStatusChange(undefined);
       editNameForm.resetFields();
-      setRebuildFrom(undefined);
       setCreatingKind(undefined);
       setProblem(undefined);
       resetLibraryContext();
@@ -456,24 +461,15 @@ export function CatalogDictionaryDrawerState({
       return;
     }
     const entries = dictionaryData?.entries ?? [];
+    const requestedParent =
+      parentEntryRef && entries.some(entry => entry.entryRef === parentEntryRef) ? parentEntryRef : undefined;
     setSelectedEntryRef(
-      selectedAttributeRef && entries.some(entry => entry.entryRef === selectedAttributeRef)
-        ? selectedAttributeRef
-        : entries[0]?.entryRef,
+      requestedParent ??
+        (selectedAttributeRef && entries.some(entry => entry.entryRef === selectedAttributeRef)
+          ? selectedAttributeRef
+          : entries[0]?.entryRef),
     );
-  }, [dictionaryData?.entries, kind, open, selectedAttributeRef, setSelectedEntryRef]);
-  useEffect(() => {
-    if (!rebuildFrom) return;
-    const targetForm =
-      rebuildFrom.dictionaryKind === 'SKU_ATTRIBUTE_VALUE'
-        ? attributeValueForm
-        : formForKind(rebuildFrom.dictionaryKind);
-    targetForm.resetFields();
-    targetForm.setFieldsValue({name: rebuildFrom.row.name});
-    setCreatingKind(rebuildFrom.dictionaryKind);
-    lifecycle.setDirty(true);
-  }, [attributeValueForm, formForKind, lifecycle, rebuildFrom]);
-
+  }, [dictionaryData?.entries, kind, open, parentEntryRef, selectedAttributeRef, setSelectedEntryRef]);
   const create = async () => {
     let values: FormValues;
     try {
@@ -623,7 +619,6 @@ export function CatalogDictionaryDrawerState({
         });
         try {
           activeForm.resetFields();
-          setRebuildFrom(undefined);
           setCreatingKind(undefined);
           lifecycle.reset();
           operationsLogger.info({
@@ -739,7 +734,6 @@ export function CatalogDictionaryDrawerState({
     });
     try {
       activeForm.resetFields();
-      setRebuildFrom(undefined);
       setCreatingKind(undefined);
       lifecycle.reset();
       if (kind === 'SKU_ATTRIBUTE') setSelectedEntryRef(readback.entryRef);
@@ -899,7 +893,6 @@ export function CatalogDictionaryDrawerState({
     });
     try {
       attributeValueForm.resetFields();
-      setRebuildFrom(undefined);
       setCreatingKind(undefined);
       lifecycle.reset();
       operationsLogger.info({
@@ -1095,13 +1088,13 @@ export function CatalogDictionaryDrawerState({
       setProblem(catalogUiProblemFeedback(error, '字典状态更新未完成，请重试。').message);
     }
   };
-  const voidAndPrepareRebuild = (row: DictionaryRow, dictionaryKind: DictionaryKind = kind) => {
+  const deleteDictionaryEntry = (row: DictionaryRow, dictionaryKind: DictionaryKind = kind) => {
     const canVoid = dictionaryKind === 'UNIT' ? !row.isReferenced : row.voidAvailability?.canVoid;
     if (!canVoid) return;
     modal.confirm({
-      title: `作废并重建“${row.name}”`,
-      content: '将先把旧记录置为作废；历史记录会保留，作废后原编码可在当前作用域中复用，再创建一条新记录。',
-      okText: '作废并继续重建',
+      title: `删除“${row.name}”`,
+      content: '删除后会保留历史记录，不会自动创建新记录；如需新增，请在列表中手动新建。',
+      okText: '确认删除',
       cancelText: '取消',
       onOk: async () => {
         try {
@@ -1160,10 +1153,8 @@ export function CatalogDictionaryDrawerState({
               ),
             ).unwrap();
           }
-          setRebuildFrom({row, dictionaryKind});
-          setCreatingKind(dictionaryKind);
         } catch (error) {
-          setProblem(catalogUiProblemFeedback(error, '作废未完成，请重试。').message);
+          setProblem(catalogUiProblemFeedback(error, '删除未完成，请重试。').message);
           throw error;
         }
       },
@@ -1268,14 +1259,12 @@ export function CatalogDictionaryDrawerState({
   const openCreate = (nextKind: DictionaryKind) => {
     const targetForm = nextKind === 'SKU_ATTRIBUTE_VALUE' ? attributeValueForm : formForKind(nextKind);
     targetForm.resetFields();
-    setRebuildFrom(undefined);
     setProblem(undefined);
     setCreatingKind(nextKind);
   };
   const dismissCreate = (nextKind: DictionaryKind) => {
     const targetForm = nextKind === 'SKU_ATTRIBUTE_VALUE' ? attributeValueForm : formForKind(nextKind);
     targetForm.resetFields();
-    setRebuildFrom(undefined);
     setCreatingKind(undefined);
     lifecycle.reset();
   };
@@ -1289,7 +1278,11 @@ export function CatalogDictionaryDrawerState({
       // the owner of this cascade.
       configLibrary.selectLibrary(nextLibrary);
     };
-    if (!dirtyLocked) {
+    const configurationDirty = catalogConfigurationChangeNeedsConfirmation({
+      configurationLifecycleDirty: lifecycle.dirty,
+      definitionDirtyMessage,
+    });
+    if (!configurationDirty) {
       applyChange();
       return;
     }
@@ -1364,7 +1357,7 @@ export function CatalogDictionaryDrawerState({
           renderStatus={value => <StatusTag manifest={manifest} value={value} />}
           renderVoidReason={attribute => {
             const reason = voidReason((attribute as DictionaryRow).voidAvailability);
-            return reason ? <Typography.Text type="secondary">暂不能作废：{reason}</Typography.Text> : undefined;
+            return reason ? <Typography.Text type="secondary">暂不能删除：{reason}</Typography.Text> : undefined;
           }}
           renderAttributeActions={attribute => {
             const row = attribute as DictionaryRow;
@@ -1403,10 +1396,10 @@ export function CatalogDictionaryDrawerState({
                       type="link"
                       danger
                       disabled={disabled}
-                      onClick={() => voidAndPrepareRebuild(row)}
-                      {...testId(catalogTestIdControls.config.action('SKU_ATTRIBUTE', row.code, 'void-rebuild'))}
+                      onClick={() => deleteDictionaryEntry(row)}
+                      {...testId(catalogTestIdControls.config.action('SKU_ATTRIBUTE', row.code, 'delete'))}
                     >
-                      {voidActionLabel(row.voidAvailability)}
+                      {deleteActionLabel(row.voidAvailability)}
                     </Button>,
                     disabled,
                     canWrite ? voidReason(row.voidAvailability) : readOnlyReason,
@@ -1451,10 +1444,10 @@ export function CatalogDictionaryDrawerState({
                       type="link"
                       danger
                       disabled={disabled}
-                      onClick={() => voidAndPrepareRebuild(row, 'SKU_ATTRIBUTE_VALUE')}
-                      {...testId(catalogTestIdControls.config.action('SKU_ATTRIBUTE_VALUE', row.code, 'void-rebuild'))}
+                      onClick={() => deleteDictionaryEntry(row, 'SKU_ATTRIBUTE_VALUE')}
+                      {...testId(catalogTestIdControls.config.action('SKU_ATTRIBUTE_VALUE', row.code, 'delete'))}
                     >
-                      {voidActionLabel(row.voidAvailability)}
+                      {deleteActionLabel(row.voidAvailability)}
                     </Button>,
                     disabled,
                     canWrite ? voidReason(row.voidAvailability) : readOnlyReason,
@@ -1538,10 +1531,10 @@ export function CatalogDictionaryDrawerState({
                         type="link"
                         danger
                         disabled={control.disabled}
-                        onClick={() => voidAndPrepareRebuild(row)}
-                        {...testId(catalogTestIdControls.config.action('UNIT', row.code, 'void-rebuild'))}
+                        onClick={() => deleteDictionaryEntry(row, 'UNIT')}
+                        {...testId(catalogTestIdControls.config.action('UNIT', row.code, 'delete'))}
                       >
-                        作废并重建
+                        删除
                       </Button>,
                       control.disabled,
                       control.reason,
@@ -1585,10 +1578,10 @@ export function CatalogDictionaryDrawerState({
                       type="link"
                       danger
                       disabled={canVoid}
-                      onClick={() => voidAndPrepareRebuild(row)}
-                      {...testId(catalogTestIdControls.config.action(kind, row.code, 'void-rebuild'))}
+                      onClick={() => deleteDictionaryEntry(row)}
+                      {...testId(catalogTestIdControls.config.action(kind, row.code, 'delete'))}
                     >
-                      {voidActionLabel(row.voidAvailability)}
+                      {deleteActionLabel(row.voidAvailability)}
                     </Button>,
                     canVoid,
                     reason,
@@ -1620,7 +1613,6 @@ export function CatalogDictionaryDrawerState({
         creationSubmitting={
           createEntryState.isLoading || createTagState.isLoading || createUnitState.isLoading || lifecycle.submitting
         }
-        rebuildCode={rebuildFrom && rebuildFrom.dictionaryKind === creatingKind ? rebuildFrom.row.code : undefined}
         nameFieldLabel={nameFieldLabel}
         codeFieldLabel={codeFieldLabel}
         unitDimensionOptions={unitDimensionOptions}

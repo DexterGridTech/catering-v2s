@@ -226,7 +226,22 @@ async function stopRemoteJava(host, control) {
     `expected_start_ticks=${control.processStartTicks}`,
     `expected_command_sha256=${quote(control.commandSha256)}`,
     'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
-    'test -r "$root/results/control.json" -a -r "/proc/$pid/stat"',
+    // A managed remote JVM can disappear before the local stop command gets
+    // to it (for example after an out-of-band host restart).  Once the exact
+    // PID and its process group are both gone, the manifest identity proves
+    // that there is no remaining owned process to signal.  Treat that state
+    // as an idempotent stop, but keep PID reuse and surviving-child cases
+    // fail-closed below.
+    'if ! test -r "/proc/$pid/stat"; then',
+    '  if ps -eo pid=,pgid= | awk -v group="$expected_pgid" \'$2 == group {found=1} END {exit found ? 0 : 1}\'; then exit 45; fi',
+    '  if test ! -e "$root" || test -r "$root/results/control.json"; then',
+    '    printf \'%s\\n\' \'{"phase":"STOPPED","status":"PASS","alreadyStopped":true}\'',
+    '    printf \'%s\\n\' R5_REMOTE_JAVA_STOP=PASS STATUS=ALREADY_STOPPED',
+    '    exit 0',
+    '  fi',
+    '  exit 46',
+    'fi',
+    'test -r "$root/results/control.json"',
     'actual_pgid=$(ps -o pgid= -p "$pid" | tr -d " ")',
     'actual_boot_id=$(cat /proc/sys/kernel/random/boot_id)',
     'actual_start_ticks=$(awk \'{print $22}\' "/proc/$pid/stat")',
@@ -242,6 +257,7 @@ async function stopRemoteJava(host, control) {
     'printf \'%s\\n\' R5_REMOTE_JAVA_STOP=PASS',
   ].join('\n'));
   if (!output.includes('R5_REMOTE_JAVA_STOP=PASS')) fail('REMOTE_JAVA_STOP_PROTOCOL_INVALID');
+  return output.includes('R5_REMOTE_JAVA_STOP=PASS STATUS=ALREADY_STOPPED') ? 'ALREADY_STOPPED' : 'STOPPED';
 }
 function collectRemoteLog(host, control, target) {
   validateRemoteJavaControl(control);
@@ -616,11 +632,14 @@ async function stop() {
     try { await stopOwnedProcess(value); }
     catch (error) { failures.push(error); }
   }
-  try { await stopRemoteJava(manifest.remoteHostTrust.host, manifest.remoteJava); }
+  let remoteJavaStopStatus = 'NOT_RUN';
+  try { remoteJavaStopStatus = await stopRemoteJava(manifest.remoteHostTrust.host, manifest.remoteJava); }
   catch (error) { failures.push(error); }
-  try {
-    collectRemoteLog(manifest.remoteHostTrust.host, manifest.remoteJava, manifest.remoteJava.localLogPath ?? path.join(runtime, 'dev', manifest.runId, 'business-server.log'));
-  } catch (error) { failures.push(error); }
+  if (remoteJavaStopStatus !== 'ALREADY_STOPPED') {
+    try {
+      collectRemoteLog(manifest.remoteHostTrust.host, manifest.remoteJava, manifest.remoteJava.localLogPath ?? path.join(runtime, 'dev', manifest.runId, 'business-server.log'));
+    } catch (error) { failures.push(error); }
+  }
   try { refreshManagedDiagnosticFiles(manifest); }
   catch (error) { failures.push(error); }
   try { cleanupRemoteJavaRoot(manifest.remoteHostTrust.host, manifest.remoteJava.remoteRoot); }
@@ -630,7 +649,7 @@ async function stop() {
     firstFailure: failures.length === 0 ? null : safeFailure(failures[0]),
     lastKnownGood: failures.length === 0 ? 'REMOTE_AND_LOCAL_PROCESS_EXIT' : 'PROCESS_IDENTITIES',
     brokenBoundary: failures.length === 0 ? null : 'MANAGED_CLEANUP',
-    business: {status: 'PASS'}, cleanup: {status: cleanupStatus, failedProcessCount: failures.length, remoteJava: cleanupStatus === 'PASS' ? 'PASS' : 'FAIL'},
+    business: {status: 'PASS'}, cleanup: {status: cleanupStatus, failedProcessCount: failures.length, remoteJava: cleanupStatus === 'PASS' ? 'PASS' : 'FAIL', remoteJavaStop: remoteJavaStopStatus},
   });
   if (failures.length > 0) fail(`R5_DEV_STOP_CLEANUP_FAILED:${failures.map((error) => error.message).join('|')}`);
   const lockPath = manifest.portLock ?? path.join(runtime, 'managed-port-lock');
