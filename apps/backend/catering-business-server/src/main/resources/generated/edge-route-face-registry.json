@@ -4,12 +4,12 @@
     "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
     "doc/evidence/platform/r5-u01-edge-placement-resolution.json"
   ],
-  "calibrationReportDigest": "0c427edd94b857404f023fe2c9ed8fb12fedd5983ed5507dd02ff9aee0a33211",
+  "calibrationReportDigest": "8afdb9fba9d353b341c25ca2d97bfed927d971346f1bfe7b4b8ef4044f7dbac9",
   "closure": {
-    "operations": 180,
+    "operations": 210,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 107,
+      "operations-admin": 137,
       "public": 12
     }
   },
@@ -56,6 +56,54 @@
             "from": null,
             "to": 19,
             "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "addOperationsSalesMenuItems",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 35,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 35,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "archiveOperationsSalesMenu",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/archive",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 26,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 26,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
           }
         ]
       }
@@ -314,6 +362,30 @@
       }
     },
     {
+      "operationId": "copyOperationsSalesMenu",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 39,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 39,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "createOperationsBusinessChannel",
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels",
@@ -539,6 +611,54 @@
             "from": null,
             "to": 22,
             "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "createOperationsSalesMenu",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 32,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 32,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "createOperationsSalesMenuSection",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 29,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 29,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
           }
         ]
       }
@@ -793,6 +913,54 @@
             "from": null,
             "to": 22,
             "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "deleteOperationsSalesMenuItem",
+      "method": "DELETE",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 31,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 31,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "deleteOperationsSalesMenuSection",
+      "method": "DELETE",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 30,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 30,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
           }
         ]
       }
@@ -1465,13 +1633,82 @@
       }
     },
     {
-      "operationId": "getOperationsStoreBusinessChannels",
+      "operationId": "getOperationsSalesMenu",
       "method": "GET",
-      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}",
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "business-channel",
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 14,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 14,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuDraftItem",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 22,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 22,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuDraftItems",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 22,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 22,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuDraftSections",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
       "databaseOperationBudget": {
         "kind": "FIXED",
         "max": 13,
@@ -1482,6 +1719,190 @@
           {
             "from": null,
             "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuItemCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/item-candidates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 17,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 17,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuOperationRecords",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublicationPreview",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 22,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 22,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublishedItem",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 21,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 21,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublishedItems",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 20,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 20,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublishedSections",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenus",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "getOperationsStoreBusinessChannels",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "business-channel",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 12,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 12,
             "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
@@ -2707,6 +3128,54 @@
       }
     },
     {
+      "operationId": "moveOperationsSalesMenuItem",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 34,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 34,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "moveOperationsSalesMenuSection",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/move",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 34,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 34,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "operationsWorkspaceLogout",
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/logout",
@@ -2794,6 +3263,30 @@
             "from": null,
             "to": 11,
             "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "publishOperationsSalesMenu",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 42,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 42,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
           }
         ]
       }
@@ -2943,6 +3436,30 @@
       }
     },
     {
+      "operationId": "releaseOperationsSalesMenuStagedAsset",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 30,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 30,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+          }
+        ]
+      }
+    },
+    {
       "operationId": "releasePlatformStagedAsset",
       "method": "POST",
       "path": "/api/platform/assets/staging/{assetRef}/release",
@@ -2984,6 +3501,54 @@
             "from": null,
             "to": 20,
             "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "renameOperationsSalesMenu",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/name",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 26,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 26,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "renameOperationsSalesMenuSection",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 29,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 29,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
           }
         ]
       }
@@ -3053,6 +3618,30 @@
             "from": null,
             "to": 17,
             "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "restoreOperationsSalesMenuItemSale",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 34,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 34,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
           }
         ]
       }
@@ -3380,6 +3969,78 @@
             "from": null,
             "to": 9,
             "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "setOperationsSalesMenuActivation",
+      "method": "PUT",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 31,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 31,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "setOperationsSalesMenuItemSoldOut",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 34,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 34,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "stageOperationsSalesMenuAsset",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 32,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 32,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
           }
         ]
       }
@@ -3955,6 +4616,54 @@
             "from": null,
             "to": 21,
             "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "updateOperationsSalesMenuItem",
+      "method": "PUT",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 47,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 47,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "updateOperationsSalesMenuSchedule",
+      "method": "PUT",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "sales-menu",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 28,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 20,
+            "to": 28,
+            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
           }
         ]
       }

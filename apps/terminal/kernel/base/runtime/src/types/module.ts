@@ -23,12 +23,6 @@ import {commandDefinitionBrand} from './command'
 import type {CommandDispatchResult} from './execution'
 import type {PeerDispatchGateway} from './peer'
 
-export type RuntimeRoleChangeEffect = (input: Readonly<{
-  previousMode: 'MASTER' | 'SLAVE'
-  nextMode: 'MASTER' | 'SLAVE'
-  context: ActorExecutionContext
-}>) => void | Promise<void>
-
 export type RuntimeRoleChangeSignal = Readonly<{
   kind: 'role.change-requested' | 'role.changed'
   previousMode: 'MASTER' | 'SLAVE'
@@ -67,6 +61,7 @@ export type RuntimeModuleContext = Readonly<{
   getState: () => StateRoot
   flushPersistence: () => Promise<PersistenceOperationResult>
   subscribeState: (listener: () => void) => () => void
+  registerResource: (cleanup: () => void) => () => void
   dispatchCommand: <TPayload extends StateJsonValue>(
     definition: CommandDefinition<TPayload>,
     payload: TPayload,
@@ -80,8 +75,6 @@ export type RuntimeModule = Readonly<AppModule & {
   commandDefinitions?: readonly RuntimeCommandDefinition[]
   actorDefinitions?: readonly ActorDefinition[]
   stateSlices?: readonly StateRuntimeSliceRegistration[]
-  /** Ordered effects run by the internal role actor before it writes the role slice. */
-  roleChangeEffects?: readonly RuntimeRoleChangeEffect[]
   preSetup?: (context: RuntimeModulePreSetupContext) => void | Promise<void>
   install?: (context: RuntimeModuleContext) => void | Promise<void>
   onApplicationReset?: (

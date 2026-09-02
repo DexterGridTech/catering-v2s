@@ -3,6 +3,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import ts from 'typescript';
+import {readPackageInvariant} from '../terminal-shared/package-invariants.mjs';
 import {
   runTr05CheckerBoundary,
   runTr05NamedBoundary,
@@ -29,65 +30,6 @@ const storageMethods = new Set([
   'removeMany',
   'listKeys',
   'clear',
-]);
-
-const expectedPublicExports = Object.freeze([
-  'moduleName',
-  'dependencyModuleNames',
-  'devDependencyModuleNames',
-  'StateJsonPrimitive',
-  'StateJsonValue',
-  'StateJsonObject',
-  'PersistIntent',
-  'SyncIntent',
-  'PersistenceProtection',
-  'PersistenceFlushMode',
-  'PersistenceStorageKind',
-  'PersistencePhase',
-  'StateStorageTimeoutPolicy',
-  'StateRuntimePersistenceFieldDescriptor',
-  'StateRuntimePersistenceRecordDescriptor',
-  'StateRuntimePersistenceDescriptor',
-  'PersistenceFailureKind',
-  'PersistenceFailure',
-  'PersistenceHealth',
-  'PersistenceHealthListener',
-  'PersistenceOperationSucceeded',
-  'PersistenceOperationFailed',
-  'PersistenceOperationResult',
-  'StateRuntimeSliceDescriptor',
-  'StateRuntimeSliceRegistration',
-  'defineStateRuntimeSlice',
-  'SyncValueEnvelope',
-  'SyncRecordState',
-  'SyncStateSummaryEntry',
-  'SyncStateSummary',
-  'SyncStateDiffEntry',
-  'SyncStateDiff',
-  'SyncDiffOptions',
-  'StateRuntimeSyncRecordDescriptor',
-  'StateRuntimeSyncDescriptor',
-  'createSliceSyncSummary',
-  'createSliceSyncDiff',
-  'createFullSliceSyncPayload',
-  'applySliceSyncDiff',
-  'createSyncTombstone',
-  'StateResetActor',
-  'StateSyncSkipReason',
-  'StateSyncPayloadResult',
-  'StateSyncApplyResult',
-  'CreateStateRuntimeInput',
-  'StateRoot',
-  'StateRuntime',
-  'createStateRuntime',
-  'WorkspaceKey',
-  'WorkspaceStateKeys',
-  'WorkspaceRouteContext',
-  'CreateWorkspaceActionDispatcherInput',
-  'ToWorkspaceStateDescriptorsInput',
-  'createWorkspaceStateKeys',
-  'createWorkspaceActionDispatcher',
-  'toWorkspaceStateDescriptors',
 ]);
 
 function sourceFiles(root) {
@@ -279,11 +221,11 @@ function runNoStorageClear({root, files}) {
   }
 }
 
-function runPublicSupport({checker, indexSourceFile, root}) {
+function runPublicSupport({checker, indexSourceFile, root, invariant}) {
   const actual = checker.getExportsOfModule(moduleSymbol(checker, indexSourceFile))
     .map(symbol => symbol.name)
     .sort();
-  const expected = [...expectedPublicExports].sort();
+  const expected = [...invariant.publicExports].sort();
   const missing = expected.filter(name => !actual.includes(name));
   const extra = actual.filter(name => !expected.includes(name));
   if (missing.length || extra.length || new Set(actual).size !== actual.length) {
@@ -298,6 +240,7 @@ function runPublicSupport({checker, indexSourceFile, root}) {
 
 export function runStateStaticChecks({statePackageRoot: root = stateRoot} = {}) {
   const context = createProgram(root);
+  const invariant = readPackageInvariant(root, '@catering-v2s/kernel-base-state');
   const indexSourceFile = context.program.getSourceFile(path.join(root, 'src/index.ts'));
   if (!indexSourceFile) throw new Error(`state src/index.ts is missing under ${root}`);
   const checks = [
@@ -324,7 +267,7 @@ export function runStateStaticChecks({statePackageRoot: root = stateRoot} = {}) 
   });
   let support;
   try {
-    runPublicSupport({checker: context.checker, indexSourceFile, root});
+    runPublicSupport({checker: context.checker, indexSourceFile, root, invariant});
     support = {status: 'PASS'};
   } catch (error) {
     support = {status: 'FAIL', error: error instanceof Error ? error.message : String(error)};

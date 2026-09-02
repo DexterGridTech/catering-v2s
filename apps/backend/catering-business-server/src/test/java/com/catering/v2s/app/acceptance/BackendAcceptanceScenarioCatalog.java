@@ -16,7 +16,8 @@ final class BackendAcceptanceScenarioCatalog {
                 new AuditAcceptanceScenarios(host),
                 new ExtensionAcceptanceScenarios(host),
                 new CollaborationAcceptanceScenarios(host),
-                new BusinessChannelAcceptanceScenarios(host));
+                new BusinessChannelAcceptanceScenarios(host),
+                new SalesMenuAcceptanceScenarios(host));
         return groups.stream()
                 .flatMap(target -> Arrays.stream(target.getClass().getDeclaredMethods())
                         .filter(method -> method.isAnnotationPresent(AcceptanceScenario.class))

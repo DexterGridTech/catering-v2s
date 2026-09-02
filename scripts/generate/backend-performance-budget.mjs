@@ -46,6 +46,36 @@ const INVITATION_ASSIGNMENT_P3_MEASURED_MAX_BY_OPERATION = Object.freeze({
   revokeOperationsWorkspaceStoreUserAssignment: 26,
 });
 
+// Dexter decision 2026-09-02: the generic P3 <=20 ceiling does not fit the
+// Sales Menu command paths after the current-tree CP-05 repair. The three
+// managed calibration runs proved stable operation-scoped maxima, and the
+// fresh step reconciliation found no safe consolidation that would remove
+// owner facts, transaction, idempotency, locking, audit, or authoritative
+// readback. This is the exact authorized command set; it is not a blanket
+// Sales Menu or P3 ceiling increase.
+const SALES_MENU_P3_DECISION_REF = 'DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3';
+const SALES_MENU_P3_MEASURED_MAX_BY_OPERATION = Object.freeze({
+  addOperationsSalesMenuItems: 35,
+  archiveOperationsSalesMenu: 26,
+  copyOperationsSalesMenu: 39,
+  createOperationsSalesMenu: 32,
+  createOperationsSalesMenuSection: 29,
+  deleteOperationsSalesMenuItem: 31,
+  deleteOperationsSalesMenuSection: 30,
+  moveOperationsSalesMenuItem: 34,
+  moveOperationsSalesMenuSection: 34,
+  publishOperationsSalesMenu: 42,
+  releaseOperationsSalesMenuStagedAsset: 30,
+  renameOperationsSalesMenu: 26,
+  renameOperationsSalesMenuSection: 29,
+  restoreOperationsSalesMenuItemSale: 34,
+  setOperationsSalesMenuActivation: 31,
+  setOperationsSalesMenuItemSoldOut: 34,
+  stageOperationsSalesMenuAsset: 32,
+  updateOperationsSalesMenuItem: 47,
+  updateOperationsSalesMenuSchedule: 28,
+});
+
 const FORBIDDEN_PLACEHOLDER_TOKENS = new Set([
   'NULL',
   'SENTINEL',
@@ -79,6 +109,7 @@ export const CONTROLLED_BUDGET_EXCEPTION_DECISION_SCOPE = Object.freeze({
   [INVITATION_ASSIGNMENT_P3_DECISION_REF]: Object.freeze(
     Object.keys(INVITATION_ASSIGNMENT_P3_MEASURED_MAX_BY_OPERATION),
   ),
+  [SALES_MENU_P3_DECISION_REF]: Object.freeze(Object.keys(SALES_MENU_P3_MEASURED_MAX_BY_OPERATION)),
 });
 
 // Source-owned controlled exception records.  Keep this in the budget
@@ -87,8 +118,8 @@ export const CONTROLLED_BUDGET_EXCEPTION_DECISION_SCOPE = Object.freeze({
 // truth. Each record is deliberately operation-scoped and tied to the
 // three-run CP-05 calibration maxima; it does not authorize deleting business
 // facts to make a count fit the generic ceiling.
-export const CONTROLLED_BUDGET_EXCEPTION_RECORDS = Object.freeze(
-  Object.entries(INVITATION_ASSIGNMENT_P3_MEASURED_MAX_BY_OPERATION).map(([operationId, measuredMax]) => {
+const invitationAssignmentBudgetExceptionRecords = Object.entries(INVITATION_ASSIGNMENT_P3_MEASURED_MAX_BY_OPERATION).map(
+  ([operationId, measuredMax]) => {
     const isAssignmentRevocation = operationId.startsWith('revokeOperationsWorkspace');
     return Object.freeze({
       operationId,
@@ -124,8 +155,54 @@ export const CONTROLLED_BUDGET_EXCEPTION_RECORDS = Object.freeze(
         '三轮受管 CP-05 已证明该 operation 的稳定上限；保留天然多表业务事实的成本高于通用 P3 计数上限，但没有可消除的共享 fan-out，不能以止血改写业务。',
       narrowScope: operationId,
     });
-  }),
+  },
 );
+
+const salesMenuBudgetExceptionRecords = Object.entries(SALES_MENU_P3_MEASURED_MAX_BY_OPERATION).map(
+  ([operationId, measuredMax]) =>
+    Object.freeze({
+      operationId,
+      decisionRef: SALES_MENU_P3_DECISION_REF,
+      authority: 'DEXTER',
+      from: 20,
+      to: measuredMax,
+      history: [
+        {
+          from: 20,
+          to: measuredMax,
+          reason:
+            'Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.',
+          decisionRef: SALES_MENU_P3_DECISION_REF,
+        },
+      ],
+      businessFactsPreserved: true,
+      businessFactsEvidence: [
+        'owner:sales-menu:store-scope-channel-draft-publication-manual-asset-readback',
+        'business-facts:owner-recheck-transaction-idempotency-lock-cas-typed-problem-audit-authoritative-readback',
+        'business-facts:asset-target-claim-release-guards-for-applicable-asset-operations',
+        `measurement:cp05-three-run-max:${operationId}:${measuredMax}`,
+        'measurement:cp05-report:contracts/policy/backend-performance-cp05-calibration-report.json',
+        'measurement:cp05-source-runs:r5-tc-1788323919762-4962,r5-tc-1788324172119-5229,r5-tc-1788324435357-5472',
+      ],
+      sharedMechanismsReused: true,
+      sharedMechanismsEvidence: [
+        'source:sales-menu:shared-command-receipt-lock-owner-readback',
+        'source:sales-menu:set-based-write-helpers-and-shared-owner-guards',
+        'measurement:basis:JDBC_EXECUTION_PLUS_CONNECTION_TRANSACTION_BATCH',
+        'measurement:cp05-three-run-exact-operation-set:268:unclassified-sql:0',
+      ],
+      rejectedAlternative:
+        '删除 Sales Menu owner 复核、REQUIRED 事务、幂等回放、并发锁、CAS、typed problem、审计、asset target guard 或权威 readback，以硬压到通用 20；该方案会丢失销售菜单业务事实或原子性。',
+      costComparison:
+        '三轮受管 CP-05 已证明该 operation 的稳定上限；fresh 步骤级复核未发现可消除的共享 fan-out、重复实现或安全 N+1，保留完整业务闭包的成本高于通用 P3 计数上限。',
+      narrowScope: operationId,
+    }),
+);
+
+export const CONTROLLED_BUDGET_EXCEPTION_RECORDS = Object.freeze([
+  ...invitationAssignmentBudgetExceptionRecords,
+  ...salesMenuBudgetExceptionRecords,
+]);
 
 const CONTROLLED_BUDGET_EXCEPTION_AUTHORITIES = new Set(['DEXTER', 'IMPLEMENTATION_AGENT']);
 
@@ -159,6 +236,16 @@ function fail(code, detail = '') {
 
 export function isCp05CalibrationBootstrapMode(env = process.env) {
   return env?.V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE === 'CALIBRATION';
+}
+
+/**
+ * Focused acceptance compiles need the same identity-only projection as CP-05 calibration while the
+ * newly added operations are not yet present in the current measured report. This build-only mode must
+ * remain distinct from the full-run verification mode: it emits no budgets and cannot make an acceptance
+ * run or a normal budget projection pass.
+ */
+export function isCp05IdentityOnlyProjectionMode(env = process.env) {
+  return isCp05CalibrationBootstrapMode(env) || env?.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE === 'IDENTITY_ONLY';
 }
 
 function isPlainObject(value) {

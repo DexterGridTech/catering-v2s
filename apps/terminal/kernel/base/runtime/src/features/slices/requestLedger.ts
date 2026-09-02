@@ -1,8 +1,12 @@
+import {createSlice, type PayloadAction, type Reducer} from '@reduxjs/toolkit'
 import {
-  defineStateRuntimeSlice,
+  createPartitionedActionDispatcher,
+  createPartitionedStateKeys,
+  readPartitionedState,
+  toPartitionedStateDescriptors,
+  type StateJsonValue,
   type StateRuntimeSliceRegistration,
   type SyncRecordState,
-  type StateJsonValue,
   type SyncValueEnvelope,
 } from '@catering-v2s/kernel-base-state'
 import type {RequestId, TimestampMs} from '@catering-v2s/kernel-base-contracts'
@@ -19,105 +23,32 @@ export type RuntimeRequestLedgerSliceName =
 
 export type RuntimeRequestLedgerState = SyncRecordState<string, RequestExecutionRecord>
 
-const upsertRequestLedgerRecordActionType = '@@catering-v2s/runtime/UPSERT_REQUEST_LEDGER_RECORD'
-const deleteRequestLedgerRecordsActionType = '@@catering-v2s/runtime/DELETE_REQUEST_LEDGER_RECORDS'
-const clearRequestLedgerSliceActionType = '@@catering-v2s/runtime/CLEAR_REQUEST_LEDGER_SLICE'
+const runtimeInstanceModes = ['MASTER', 'SLAVE'] as const satisfies readonly RuntimeInstanceMode[]
+const runtimeRequestLedgerStateKeys = createPartitionedStateKeys(
+  'kernel.base.runtime.request-ledger',
+  runtimeInstanceModes,
+) as Readonly<Record<RuntimeInstanceMode, RuntimeRequestLedgerSliceName>>
+
+type RequestLedgerUpsertPayload = Readonly<{
+  record: RequestExecutionRecord
+  updatedAt: TimestampMs
+}>
+
+type RequestLedgerDeletePayload = Readonly<{
+  requestIds: readonly RequestId[]
+}>
+
+const peerModeFor = (mode: RuntimeInstanceMode): RuntimeInstanceMode => mode === 'MASTER'
+  ? 'SLAVE'
+  : 'MASTER'
 
 export const requestLedgerSliceNameForMode = (
   mode: RuntimeInstanceMode,
-): RuntimeRequestLedgerSliceName => mode === 'MASTER'
-  ? runtimeRequestLedgerMasterSliceName
-  : runtimeRequestLedgerSlaveSliceName
+): RuntimeRequestLedgerSliceName => readPartitionedState(runtimeRequestLedgerStateKeys, mode)
 
 export const peerRequestLedgerSliceNameForMode = (
   mode: RuntimeInstanceMode,
-): RuntimeRequestLedgerSliceName => mode === 'MASTER'
-  ? runtimeRequestLedgerSlaveSliceName
-  : runtimeRequestLedgerMasterSliceName
-
-export const createUpsertRequestLedgerRecordAction = (
-  sliceName: RuntimeRequestLedgerSliceName,
-  record: RequestExecutionRecord,
-  updatedAt: TimestampMs,
-): RuntimeUnknownAction & {
-  readonly payload: Readonly<{
-    sliceName: RuntimeRequestLedgerSliceName
-    requestId: RequestId
-    record: RequestExecutionRecord
-    updatedAt: TimestampMs
-  }>
-} => ({
-  type: upsertRequestLedgerRecordActionType,
-  payload: {sliceName, requestId: record.requestId, record, updatedAt},
-})
-
-export const createDeleteRequestLedgerRecordsAction = (
-  sliceName: RuntimeRequestLedgerSliceName,
-  requestIds: readonly RequestId[],
-): RuntimeUnknownAction & {
-  readonly payload: Readonly<{
-    sliceName: RuntimeRequestLedgerSliceName
-    requestIds: readonly RequestId[]
-  }>
-} => ({
-  type: deleteRequestLedgerRecordsActionType,
-  payload: {sliceName, requestIds: Object.freeze([...requestIds])},
-})
-
-export const createClearRequestLedgerSliceAction = (
-  sliceName: RuntimeRequestLedgerSliceName,
-): RuntimeUnknownAction & {
-  readonly payload: Readonly<{sliceName: RuntimeRequestLedgerSliceName}>
-} => ({
-  type: clearRequestLedgerSliceActionType,
-  payload: {sliceName},
-})
-
-export const readLiveRequestEnvelope = (
-  state: RuntimeRequestLedgerState | undefined,
-  requestId: RequestId,
-): SyncValueEnvelope<RequestExecutionRecord> | undefined => {
-  const envelope = state?.[String(requestId)]
-  if (envelope === undefined || envelope.tombstone === true) return undefined
-  return envelope
-}
-
-const reducerFor = (
-  sliceName: RuntimeRequestLedgerSliceName,
-) => (
-  state: RuntimeRequestLedgerState = {},
-  action: RuntimeUnknownAction,
-): RuntimeRequestLedgerState => {
-  const payload = Reflect.get(action, 'payload')
-  if (typeof payload !== 'object' || payload === null || Reflect.get(payload, 'sliceName') !== sliceName) {
-    return state
-  }
-  if (action.type === upsertRequestLedgerRecordActionType) {
-    const requestId = Reflect.get(payload, 'requestId')
-    const record = Reflect.get(payload, 'record')
-    const updatedAt = Reflect.get(payload, 'updatedAt')
-    if (typeof requestId !== 'string' || typeof record !== 'object' || record === null || typeof updatedAt !== 'number') {
-      return state
-    }
-    return {
-      ...state,
-      [requestId]: {value: record as RequestExecutionRecord, updatedAt},
-    }
-  }
-  if (action.type === deleteRequestLedgerRecordsActionType) {
-    const requestIds = Reflect.get(payload, 'requestIds')
-    if (!Array.isArray(requestIds) || requestIds.length === 0) return state
-    const next: Record<string, SyncValueEnvelope<RequestExecutionRecord>> = {}
-    for (const [key, value] of Object.entries(state)) {
-      if (value !== undefined && !requestIds.includes(key as RequestId)) next[key] = value
-    }
-    return next
-  }
-  if (action.type === clearRequestLedgerSliceActionType) {
-    return {}
-  }
-  return state
-}
+): RuntimeRequestLedgerSliceName => requestLedgerSliceNameForMode(peerModeFor(mode))
 
 const syncDescriptor = {
   kind: 'record' as const,
@@ -128,18 +59,136 @@ const syncDescriptor = {
   ): RuntimeRequestLedgerState => ({...(entries as RuntimeRequestLedgerState)}),
 }
 
-export const runtimeRequestLedgerMasterSlice: StateRuntimeSliceRegistration = defineStateRuntimeSlice<RuntimeRequestLedgerState>({
-  name: runtimeRequestLedgerMasterSliceName,
-  reducer: reducerFor(runtimeRequestLedgerMasterSliceName),
-  persistIntent: 'never',
-  syncIntent: 'master-to-slave',
-  sync: syncDescriptor,
+// Keep the RTK Draft boundary shallow: the owned RequestExecutionRecord has a
+// recursive StateJsonValue graph, which TypeScript cannot expand through
+// Immer's Draft type.  The runtime/state registration below retains the exact
+// RuntimeRequestLedgerState contract.
+type RequestLedgerSliceState = Readonly<Partial<Record<string, {
+  readonly value?: object
+  readonly updatedAt: TimestampMs
+  readonly tombstone?: true
+}>>>
+
+type RequestLedgerActions = Readonly<{
+  upsert: (payload: RequestLedgerUpsertPayload) => RuntimeUnknownAction
+  deleteRecords: (payload: RequestLedgerDeletePayload) => RuntimeUnknownAction
+  clear: () => RuntimeUnknownAction
+}>
+
+type RequestLedgerSlice = Readonly<{
+  reducer: Reducer<RequestLedgerSliceState>
+  actions: RequestLedgerActions
+}>
+
+const upsertRequestLedger = (
+  state: RequestLedgerSliceState,
+  action: PayloadAction<RequestLedgerUpsertPayload>,
+): RequestLedgerSliceState => ({
+  ...state,
+  [String(action.payload.record.requestId)]: {
+    value: action.payload.record,
+    updatedAt: action.payload.updatedAt,
+  },
 })
 
-export const runtimeRequestLedgerSlaveSlice: StateRuntimeSliceRegistration = defineStateRuntimeSlice<RuntimeRequestLedgerState>({
-  name: runtimeRequestLedgerSlaveSliceName,
-  reducer: reducerFor(runtimeRequestLedgerSlaveSliceName),
-  persistIntent: 'never',
-  syncIntent: 'slave-to-master',
-  sync: syncDescriptor,
+const deleteRequestLedgerRecords = (
+  state: RequestLedgerSliceState,
+  action: PayloadAction<RequestLedgerDeletePayload>,
+): RequestLedgerSliceState => {
+  if (action.payload.requestIds.length === 0) return state
+  const requestIds = new Set(action.payload.requestIds.map(requestId => String(requestId)))
+  const next = {...state}
+  let changed = false
+  for (const requestId of Object.keys(next)) {
+    if (!requestIds.has(requestId)) continue
+    delete next[requestId]
+    changed = true
+  }
+  return changed ? next : state
+}
+
+const clearRequestLedger = (state: RequestLedgerSliceState): RequestLedgerSliceState =>
+  Object.keys(state).length === 0 ? state : {}
+
+type RequestLedgerCaseReducers = {
+  readonly upsert: (
+    state: RequestLedgerSliceState,
+    action: PayloadAction<RequestLedgerUpsertPayload>,
+  ) => RequestLedgerSliceState
+  readonly deleteRecords: (
+    state: RequestLedgerSliceState,
+    action: PayloadAction<RequestLedgerDeletePayload>,
+  ) => RequestLedgerSliceState
+  readonly clear: (state: RequestLedgerSliceState) => RequestLedgerSliceState
+}
+
+const requestLedgerReducers = {
+  upsert: upsertRequestLedger,
+  deleteRecords: deleteRequestLedgerRecords,
+  clear: clearRequestLedger,
+} satisfies RequestLedgerCaseReducers
+
+const createRequestLedgerSlice = (mode: RuntimeInstanceMode): RequestLedgerSlice =>
+  createSlice<
+    RequestLedgerSliceState,
+    RequestLedgerCaseReducers,
+    RuntimeRequestLedgerSliceName,
+    Record<never, never>,
+    RuntimeRequestLedgerSliceName
+  >({
+    name: requestLedgerSliceNameForMode(mode),
+    initialState: {} as RequestLedgerSliceState,
+    reducers: requestLedgerReducers,
+  })
+
+type RequestLedgerBundle = Readonly<{
+  slice: RequestLedgerSlice
+  registration: StateRuntimeSliceRegistration
+}>
+
+const requestLedgerSlices = new Map<RuntimeInstanceMode, RequestLedgerSlice>(
+  runtimeInstanceModes.map(mode => [mode, createRequestLedgerSlice(mode)]),
+)
+
+const requestLedgerRegistrations = toPartitionedStateDescriptors({
+  keys: runtimeInstanceModes,
+  stateKeys: runtimeRequestLedgerStateKeys,
+  createDescriptor: (mode, stateKey) => ({
+    name: stateKey,
+    reducer: requestLedgerSlices.get(mode)!.reducer as Reducer<RuntimeRequestLedgerState>,
+    persistIntent: 'never' as const,
+    syncIntent: mode === 'MASTER' ? 'master-to-slave' as const : 'slave-to-master' as const,
+    sync: syncDescriptor,
+  }),
 })
+
+const requestLedgerByMode = new Map<RuntimeInstanceMode, RequestLedgerBundle>(
+  runtimeInstanceModes.map((mode, index) => [mode, {
+    slice: requestLedgerSlices.get(mode)!,
+    registration: requestLedgerRegistrations[index]!,
+  }]),
+)
+
+export const requestLedgerActionsForMode = (mode: RuntimeInstanceMode) =>
+  requestLedgerByMode.get(mode)!.slice.actions
+
+export const createRequestLedgerActionDispatcher = (
+  selectMode: () => RuntimeInstanceMode,
+  dispatch: (action: RuntimeUnknownAction) => unknown,
+): ((createAction: (mode: RuntimeInstanceMode) => RuntimeUnknownAction) => unknown) =>
+  createPartitionedActionDispatcher<RuntimeInstanceMode, RuntimeUnknownAction>({
+    selectPartition: selectMode,
+    dispatch,
+  })
+
+export const runtimeRequestLedgerMasterSlice = requestLedgerByMode.get('MASTER')!.registration
+export const runtimeRequestLedgerSlaveSlice = requestLedgerByMode.get('SLAVE')!.registration
+
+export const readLiveRequestEnvelope = (
+  state: RuntimeRequestLedgerState | undefined,
+  requestId: RequestId,
+): SyncValueEnvelope<RequestExecutionRecord> | undefined => {
+  const envelope = state?.[String(requestId)]
+  if (envelope === undefined || envelope.tombstone === true) return undefined
+  return envelope
+}

@@ -3,6 +3,12 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import ts from 'typescript';
+import {readPackageInvariant} from '../terminal-shared/package-invariants.mjs';
+import {
+  createAnalysisProgram,
+  resolveAliasedSymbol,
+  resolveValueExpressionSymbol,
+} from '../terminal-shared/typescript-analysis.mjs';
 
 const toolDirectory = path.dirname(fileURLToPath(import.meta.url));
 export const repoRoot = path.resolve(toolDirectory, '../..');
@@ -17,64 +23,6 @@ export const RUNTIME_RULE_NAMES = Object.freeze([
   'ledger-record-shape',
 ]);
 export const RUNTIME_SUPPORT_CHECK_COUNT = 1;
-
-const expectedModuleContextMembers = Object.freeze([
-  'moduleName',
-  'localNodeId',
-  'platformPorts',
-  'descriptors',
-  'getState',
-  'flushPersistence',
-  'subscribeState',
-  'dispatchCommand',
-  'installPeerDispatchGateway',
-]);
-
-const expectedActorContextMembers = Object.freeze([
-  'runtimeId',
-  'localNodeId',
-  'platformPorts',
-  'command',
-  'actor',
-  'getState',
-  'dispatchAction',
-  'flushPersistence',
-  'subscribeState',
-  'dispatchCommand',
-  'requestApplicationReset',
-]);
-
-const expectedInternalCommands = Object.freeze([
-  'kernel.base.runtime.initialize',
-  'kernel.base.runtime.set-instance-mode',
-  'kernel.base.runtime.cleanup-request-ledger',
-]);
-const expectedInternalCommandDefinitions = Object.freeze([
-  'initializeCommand',
-  'setRuntimeInstanceModeCommand',
-  'cleanupRequestLedgerCommand',
-]);
-
-const expectedPublicExports = Object.freeze([
-  'moduleName', 'dependencyModuleNames', 'devDependencyModuleNames',
-  'CommandVisibility', 'CommandTarget', 'CommandDefinition', 'DefineCommandInput', 'CommandIntent', 'CommandDispatchOptions', 'ActorDispatchOptions', 'DispatchedCommand',
-  'defineCommand', 'createCommand',
-  'ActorInfo', 'ActorExecutionContext', 'ActorCommandHandler', 'ActorCommandHandlerDefinition', 'ActorDefinition',
-  'defineActor', 'onCommand',
-  'LedgerError', 'ActorExecutionStatus', 'ActorExecutionRecord', 'CommandExecutionObservation', 'CommandAggregateStatus', 'CommandDispatchResult',
-  'aggregateCommandStatus',
-  'RequestExecutionCommandView', 'RequestExecutionView',
-  'selectRequestExecutionView', 'selectRequestExecutionViews', 'selectRequestExecutionCommands',
-  'PeerDispatchOptions', 'PeerDispatchGateway',
-  'RuntimeModulePreSetupContext', 'RuntimeModuleContext', 'RuntimeModuleResetInput', 'RuntimeRoleChangeEffect', 'RuntimeModule', 'RuntimeModuleDescriptor',
-  'RuntimeInstanceMode', 'SetRuntimeInstanceModePayload', 'SetRuntimeInstanceModeResult',
-  'initializeCommand', 'setRuntimeInstanceModeCommand', 'selectRuntimeInstanceMode',
-  'RuntimeLimits',
-  'defaultMaxCommandDepth', 'defaultMaxCommandsPerRequest', 'defaultMaxActorResultBytes', 'defaultRequestRetentionMs', 'defaultRequestMaxResidenceMs', 'defaultMaxJournalRecords', 'defaultCommandTimeoutMs', 'defaultRuntimeLimits',
-  'RuntimeJournalEvent', 'RuntimeLifecycleObserver', 'RuntimeJournal',
-  'RuntimeStatus', 'RuntimeStateInput', 'CreateRuntimeInput', 'Runtime',
-  'createRuntime',
-]);
 
 function sourceFiles(root) {
   const sourceRoot = path.join(root, 'src');
@@ -291,7 +239,7 @@ function arrayElements(property, label) {
   return expression.elements.map(unwrapExpression);
 }
 
-function stringProperty(object, name, label) {
+function stringProperty(object, name, label, moduleName) {
   const member = objectProperty(object, name);
   if (!member) throw new Error(`${label}.${name} property is missing`);
   const initializer = unwrapExpression(member.initializer);
@@ -302,12 +250,27 @@ function stringProperty(object, name, label) {
       if (!ts.isIdentifier(span.expression) || span.expression.text !== 'moduleName') {
         throw new Error(`${label}.${name} must be a string literal or moduleName template`);
       }
-      value += 'kernel.base.runtime';
+      if (!moduleName) throw new Error(`${label}.${name} moduleName binding is missing`);
+      value += moduleName;
       value += span.literal.text;
     }
     return value;
   }
   throw new Error(`${label}.${name} must be a string literal`);
+}
+
+function readModuleNameValue(root) {
+  const moduleNamePath = findFile(root, path.join('src', 'moduleName.ts'));
+  const source = parseSource(moduleNamePath);
+  const declaration = findDeclaration(source, statement =>
+    ts.isVariableStatement(statement)
+    && statement.declarationList.declarations.some(candidate => declarationName(candidate) === 'moduleName'),
+  )?.declarationList.declarations.find(candidate => declarationName(candidate) === 'moduleName');
+  const initializer = declaration?.initializer && unwrapExpression(declaration.initializer);
+  if (!initializer || !ts.isStringLiteralLike(initializer)) {
+    throw new Error('runtime moduleName.ts must export moduleName as a string literal');
+  }
+  return initializer.text;
 }
 
 function identifierProperty(object, name, label) {
@@ -324,11 +287,11 @@ function findFile(root, suffix) {
   return match;
 }
 
-function runContextExactSet({root}) {
+function runContextExactSet({root, invariant}) {
   const moduleContext = findTypeDeclaration(root, 'RuntimeModuleContext');
   const actorContext = findTypeDeclaration(root, 'ActorExecutionContext');
-  assertExactNames('RuntimeModuleContext', typeMembers(moduleContext.declaration), expectedModuleContextMembers);
-  assertExactNames('ActorExecutionContext', typeMembers(actorContext.declaration), expectedActorContextMembers);
+  assertExactNames('RuntimeModuleContext', typeMembers(moduleContext.declaration), invariant.moduleContextMembers);
+  assertExactNames('ActorExecutionContext', typeMembers(actorContext.declaration), invariant.actorContextMembers);
 }
 
 function typeReferenceName(node) {
@@ -386,7 +349,8 @@ function hasBrandedHandlerDefinition(handlerDeclaration) {
   return false;
 }
 
-function runCommandMountShape({root}) {
+function runCommandMountShape({root, invariant}) {
+  const moduleName = readModuleNameValue(root);
   const commandPath = findFile(root, path.join('src', 'types', 'command.ts'));
   const commandSource = parseSource(commandPath);
   const commandDeclaration = findDeclaration(commandSource, statement =>
@@ -444,16 +408,16 @@ function runCommandMountShape({root}) {
   const commands = arrayElements(objectProperty(returned, 'commands'), 'internal module commands');
   const commandNames = commands.map((element, index) => {
     if (!ts.isObjectLiteralExpression(element)) throw new Error(`internal command ${index} must be an object literal`);
-    return stringProperty(element, 'name', `internal command ${index}`);
+    return stringProperty(element, 'name', `internal command ${index}`, moduleName);
   });
-  assertExactNames('internal command declarations', commandNames, expectedInternalCommands);
+  assertExactNames('internal command declarations', commandNames, invariant.internalCommands);
 
   const definitions = arrayElements(objectProperty(returned, 'commandDefinitions'), 'internal command definitions');
   const definitionNames = definitions.map((element, index) => {
     if (!ts.isIdentifier(element)) throw new Error(`internal command definition ${index} must be a named definition`);
     return element.text;
   });
-  assertExactNames('internal command definition mounts', definitionNames, expectedInternalCommandDefinitions);
+  assertExactNames('internal command definition mounts', definitionNames, invariant.internalCommandDefinitions);
   if (definitions.length !== commands.length) {
     throw new Error(`internal command declaration/definition count mismatch; declarations=${commands.length} definitions=${definitions.length}`);
   }
@@ -481,11 +445,48 @@ function readGraphRuntimeEntry(graphPath = skeletonGraphPath) {
 }
 
 function runOwnerKind({root, graphPath = skeletonGraphPath}) {
+  const moduleNamePath = findFile(root, path.join('src', 'moduleName.ts'));
+  const analysis = createAnalysisProgram(root);
+  const checker = analysis.program.getTypeChecker();
+  const moduleNameSource = analysis.program.getSourceFile(moduleNamePath) ?? parseSource(moduleNamePath);
+  const moduleSymbol = checker.getSymbolAtLocation(moduleNameSource);
+  const moduleKindExport = moduleSymbol
+    ? checker.getExportsOfModule(moduleSymbol).find(symbol => symbol.name === 'moduleKind')
+    : null;
+  const resolvedModuleKind = moduleKindExport
+    ? resolveAliasedSymbol(checker, moduleKindExport)
+    : null;
+  const moduleKindDeclaration = findDeclaration(moduleNameSource, statement =>
+    ts.isVariableStatement(statement)
+    && statement.declarationList.declarations.some(declaration => declarationName(declaration) === 'moduleKind'),
+  );
+  const moduleKindVariable = moduleKindDeclaration?.declarationList.declarations.find(
+    declaration => declarationName(declaration) === 'moduleKind',
+  );
+  const moduleKindInitializer = moduleKindVariable?.initializer && unwrapExpression(moduleKindVariable.initializer);
+  if (!moduleKindVariable || !resolvedModuleKind || !moduleKindInitializer || !ts.isStringLiteral(moduleKindInitializer)
+    || !['owner', 'toolkit'].includes(moduleKindInitializer.text)) {
+    throw new Error('runtime moduleName.ts must export moduleKind as an owner/toolkit literal');
+  }
   const internalPath = findFile(root, path.join('src', 'application', 'createInternalRuntimeModule.ts'));
-  const internalSource = parseSource(internalPath);
+  const internalSource = analysis.program.getSourceFile(internalPath) ?? parseSource(internalPath);
   const returned = objectReturnedByFunction(internalSource, 'createInternalRuntimeModule');
-  if (stringProperty(returned, 'kind', 'internal runtime module') !== 'owner') {
-    throw new Error('runtime module manifest kind must be owner');
+  const kindMember = objectProperty(returned, 'kind');
+  const kindInitializer = kindMember ? unwrapExpression(kindMember.initializer) : null;
+  if (!kindInitializer) {
+    throw new Error('runtime module manifest kind must reference moduleKind from moduleName.ts');
+  }
+  const resolvedKind = resolveValueExpressionSymbol(checker, kindInitializer);
+  const sameModuleKind = Boolean(
+    resolvedKind
+      && resolvedKind === resolvedModuleKind
+      && resolvedKind.declarations?.some(declaration =>
+        path.resolve(declaration.getSourceFile().fileName) === path.resolve(moduleNamePath)
+        && declarationName(declaration) === 'moduleKind',
+      ),
+  );
+  if (!sameModuleKind) {
+    throw new Error('runtime module manifest kind must reference moduleKind from src/moduleName.ts');
   }
   const stateSlices = arrayElements(objectProperty(returned, 'stateSlices'), 'internal runtime stateSlices');
   if (stateSlices.length < 1) throw new Error('owner runtime module must declare at least one state slice');
@@ -523,29 +524,11 @@ function runRestartPositive({root}) {
   }
 }
 
-function runLedgerRecordShape({root}) {
+function runLedgerRecordShape({root, invariant}) {
   const record = findTypeDeclaration(root, 'RequestExecutionRecord');
   const observation = findTypeDeclaration(root, 'CommandExecutionObservation');
-  assertExactNames(
-    'RequestExecutionRecord',
-    typeMembers(record.declaration),
-    ['requestId', 'workspace', 'startedAt', 'commands'],
-  );
-  assertExactNames(
-    'CommandExecutionObservation',
-    typeMembers(observation.declaration),
-    [
-      'commandId',
-      'parentCommandId',
-      'commandName',
-      'target',
-      'allowNoActor',
-      'actorResults',
-      'startedAt',
-      'completedAt',
-      'displayMode',
-    ],
-  );
+  assertExactNames('RequestExecutionRecord', typeMembers(record.declaration), invariant.ledgerRecordShape.RequestExecutionRecord);
+  assertExactNames('CommandExecutionObservation', typeMembers(observation.declaration), invariant.ledgerRecordShape.CommandExecutionObservation);
 }
 
 function moduleSymbol(checker, sourceFile) {
@@ -554,11 +537,11 @@ function moduleSymbol(checker, sourceFile) {
   return symbol;
 }
 
-function runPublicSupport({checker, indexSourceFile, root}) {
+function runPublicSupport({checker, indexSourceFile, root, invariant}) {
   const actual = checker.getExportsOfModule(moduleSymbol(checker, indexSourceFile))
     .map(symbol => symbol.name)
     .sort();
-  const expected = [...expectedPublicExports].sort();
+  const expected = [...invariant.publicExports].sort();
   const missing = expected.filter(name => !actual.includes(name));
   const extra = actual.filter(name => !expected.includes(name));
   if (missing.length || extra.length || new Set(actual).size !== actual.length) {
@@ -573,15 +556,16 @@ function runPublicSupport({checker, indexSourceFile, root}) {
 
 export function runRuntimeStaticChecks({runtimePackageRoot: root = runtimeRoot, graphPath = skeletonGraphPath} = {}) {
   const context = createProgram(root);
+  const invariant = readPackageInvariant(root, '@catering-v2s/kernel-base-runtime');
   const indexPath = path.join(root, 'src/index.ts');
   const indexSourceFile = context.program.getSourceFile(indexPath);
   if (!indexSourceFile) throw new Error(`runtime src/index.ts is missing under ${root}`);
   const checks = [
-    ['context-exact-set', () => runContextExactSet({root})],
-    ['command-mount-shape', () => runCommandMountShape({root})],
+    ['context-exact-set', () => runContextExactSet({root, invariant})],
+    ['command-mount-shape', () => runCommandMountShape({root, invariant})],
     ['owner-kind', () => runOwnerKind({root, graphPath})],
     ['restart-positive', () => runRestartPositive({root})],
-    ['ledger-record-shape', () => runLedgerRecordShape({root})],
+    ['ledger-record-shape', () => runLedgerRecordShape({root, invariant})],
   ];
   const results = checks.map(([name, check]) => {
     try {
@@ -593,7 +577,7 @@ export function runRuntimeStaticChecks({runtimePackageRoot: root = runtimeRoot, 
   });
   let support;
   try {
-    runPublicSupport({checker: context.checker, indexSourceFile, root});
+    runPublicSupport({checker: context.checker, indexSourceFile, root, invariant});
     support = {status: 'PASS'};
   } catch (error) {
     support = {status: 'FAIL', error: error instanceof Error ? error.message : String(error)};

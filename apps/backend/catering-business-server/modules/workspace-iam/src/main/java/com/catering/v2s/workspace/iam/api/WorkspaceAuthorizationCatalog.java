@@ -30,6 +30,7 @@ public final class WorkspaceAuthorizationCatalog {
         public static final String PG_CATALOG_STORE_ITEMS = "PG-CATALOG-STORE-ITEMS";
         public static final String PG_INVENTORY_STORE_STATUS = "PG-INVENTORY-STORE-STATUS";
         public static final String PG_CATALOG_BRAND_ITEMS = "PG-CATALOG-BRAND-ITEMS";
+        public static final String PG_SALES_MENU_STORE = "PG-SALES-MENU-STORE";
     }
     public static final class CapabilityKeys {
         private CapabilityKeys() { }
@@ -72,6 +73,7 @@ public final class WorkspaceAuthorizationCatalog {
         public static final String EDIT_HEAD_COMPANY_CATALOG = "EDIT_HEAD_COMPANY_CATALOG";
         public static final String EDIT_STORE_CATALOG = "EDIT_STORE_CATALOG";
         public static final String EDIT_STORE_INVENTORY = "EDIT_STORE_INVENTORY";
+        public static final String EDIT_STORE_SALES_MENU = "EDIT_STORE_SALES_MENU";
     }
     public static List<CapabilityCatalogEntry> capabilityCatalog() { return List.of(
             capability("BC-ORG-GROUP-EDIT", "编辑集团资料", "ORGANIZATION_MANAGEMENT", "组织管理", 100, List.of("GROUP"), "PG-ORG-STRUCTURE", "GROUP_VISIBLE"),
@@ -112,7 +114,8 @@ public final class WorkspaceAuthorizationCatalog {
             capability("BC-BUSINESS-CHANNEL-STORE-EDIT", "编辑门店经营渠道", "BUSINESS_CHANNEL_MANAGEMENT", "经营渠道管理", 600, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-BUSINESS-CHANNEL-STORE", "SELECTED_STORE_SCOPE"),
             capability("EDIT_HEAD_COMPANY_CATALOG", "编辑总公司商品", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "HEAD_COMPANY"), "PG-CATALOG-BRAND-ITEMS", "SELECTED_HEAD_COMPANY_SCOPE"),
             capability("EDIT_STORE_CATALOG", "编辑门店商品", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-CATALOG-STORE-ITEMS", "SELECTED_STORE_SCOPE"),
-            capability("EDIT_STORE_INVENTORY", "编辑门店库存", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-INVENTORY-STORE-STATUS", "SELECTED_STORE_SCOPE")); }
+            capability("EDIT_STORE_INVENTORY", "编辑门店库存", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-INVENTORY-STORE-STATUS", "SELECTED_STORE_SCOPE"),
+            capability("EDIT_STORE_SALES_MENU", "编辑门店销售菜单", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-SALES-MENU-STORE", "SELECTED_STORE_SCOPE")); }
     public static List<PageAccessCatalogEntry> pageCatalog() { return List.of(
             page("HOME-GROUP", "集团首页", "工作台", 10, "NONE", List.of("GROUP"), null, false),
             page("HOME-REGION", "大区首页", "工作台", 20, "NONE", List.of("REGION"), null, false),
@@ -135,7 +138,8 @@ public final class WorkspaceAuthorizationCatalog {
             page("PG-BUSINESS-CHANNEL-STORE", "门店经营渠道管理", "经营渠道", 340, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
             page("PG-CATALOG-STORE-ITEMS", "门店商品管理", "商品与服务", 510, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
             page("PG-INVENTORY-STORE-STATUS", "门店库存管理", "商品与服务", 520, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
-            page("PG-CATALOG-BRAND-ITEMS", "品牌商品管理", "商品与服务", 530, "HEAD_COMPANY", List.of("GROUP", "HEAD_COMPANY"), null, true)); }
+            page("PG-CATALOG-BRAND-ITEMS", "品牌商品管理", "商品与服务", 530, "HEAD_COMPANY", List.of("GROUP", "HEAD_COMPANY"), null, true),
+            page("PG-SALES-MENU-STORE", "门店销售菜单", "商品与服务", 540, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true)); }
     public static List<UserManagementActionBinding> userManagementActionBindings() { return List.of(
             new UserManagementActionBinding("PG-IAM-GROUP-USERS", "GROUP", UserManagementAction.ROLE_REVOKE, "BC-IAM-GROUP-ROLE-REVOKE"),
             new UserManagementActionBinding("PG-IAM-REGION-USERS", "REGION", UserManagementAction.ROLE_REVOKE, "BC-IAM-REGION-ROLE-REVOKE"),

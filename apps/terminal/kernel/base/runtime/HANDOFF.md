@@ -1,5 +1,10 @@
 # kernel.base.runtime Unit A HANDOFF
 
+> **历史口径警告（当前有效接缝见文末）**：本文件保留多轮 Unit A 的历史证据。
+> 文中早于《当前有效接缝：display-context DC-P0》的 `RuntimeRoleChangeEffect`、
+> `roleChangeEffects`、`RUNTIME_RULE_GATES=4` 以及 `57/58` 公开面数字均为历史快照，
+> 不得作为当前 DC-P0 或后续消费者的实施输入；当前以文末 DC-P0 段为准。
+
 ## CP-A0 入口核验
 
 CP-A0 的有限定向核验已完成，`BLOCKING_OPEN=0`。本记录只保存当前源码核验结果；需求与评审文档保持不变。
@@ -42,16 +47,19 @@ CP-A1 fresh 独立对账首轮发现 `2M/1S/1N`，已在 CP-A1 范围闭合：
 - `yarn workspace @catering-v2s/kernel-base-runtime typecheck`：exit 0。
 - `yarn workspace @catering-v2s/kernel-base-runtime test`：10 files / 41 tests PASS，打印 `TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-runtime`。
 - `node tools/terminal-runtime/check-static.test.mjs`：打印 `RUNTIME_MODEL_CLEANUP=PASS` 与 `TERMINAL_RUNTIME_STATIC_MODEL_TEST=PASS`。
-- `node tools/terminal-runtime/check-static.mjs`：`RUNTIME_RULE_GATES=4`、`RUNTIME_SUPPORT_CHECKS=1`、四道规则与 public support 全部 PASS，打印 `TERMINAL_RUNTIME_STATIC=PASS`。
+- `node tools/terminal-runtime/check-static.mjs`：`RUNTIME_RULE_GATES=4`（历史快照；当前 DC-P0 为 5）、`RUNTIME_SUPPORT_CHECKS=1`、四道规则与 public support 全部 PASS，打印 `TERMINAL_RUNTIME_STATIC=PASS`。
 - `node tools/terminal-skeleton/check-static.mjs`：六道 skeleton 规则与 scaffold hygiene 全部 PASS。
 
 ### CP-A1 修复后独立复核
+
+> 历史段落：以下 CP-A1 记录中的 `RuntimeModule.roleChangeEffects` 描述已被 2026-09-02
+> DC-P0 当前有效接缝取代；请以文末《当前有效接缝：display-context DC-P0》为准。
 
 CP-A1 的 fresh 独立三维复核（对照需求、详设、项目规范与当前源码）结论为
 `REVIEW_TARGET=IMPLEMENTATION / SCOPE=CP-A1 / VERDICT=GO / M=0 S=0 N=0`。
 
 - contracts exact export 的疑问经当前 TypeScript checker 与手写 expected 清单复算为 `69/69`，并由 `node tools/terminal-contracts/check-static.mjs` 的 `TERMINAL_CONTRACTS_STATIC=PASS` 复证；不存在 68/69 漂移。
-- `RuntimeModule.roleChangeEffects` 是模块声明级受控 seam；`createRuntime` 在构造 internal runtime module 前按输入模块顺序收集并注入，后续 Unit B 可注册清旧 ledger effect 而无需修改 A 的角色 actor。
+- `RuntimeModule.roleChangeEffects` 是模块声明级受控 seam（历史快照，已被 DC-P0 的 changed command 取代）；`createRuntime` 在构造 internal runtime module 前按输入模块顺序收集并注入，后续 Unit B 可注册清旧 ledger effect 而无需修改 A 的角色 actor。
 - `ActorExecutionRecord` 与 `CommandExecutionObservation` 的正常、peer、gateway-missing、depth 与异常降级记录均由 lifecycle emitter 内部构造/推进；dispatcher 不再拥有 record 或 observation fallback 对象构造。
 - 修复后的 focused proof：runtime/contracts typecheck 均 exit 0；runtime 10 files / 41 tests PASS；runtime static、contracts static、skeleton static 及各自 model test 全部 PASS。
 - 该复核仍不证明 DEV、设备、Gradle、native、浏览器 L2、UAT 或部署；runtime 包 README 与最终 CP-A4 收口仍未完成。
@@ -419,11 +427,11 @@ Metro 702 modules、`TERMINAL_VERIFY_CLEANUP=PASS` 与 `TERMINAL_VERIFY=PASS`。
 闭包；不升级为 native、设备、adapter 能力或跨重启证明。该段记录的是决策 C 前的历史状态；
 S-7 已由 Dexter 决策 C 收口，不再是未决项，当前口径见下节。
 
-## Dexter 决策 C 收口（当前唯一有效口径，2026-08-31）
+## Dexter 决策 C 收口（历史口径，已被 display-context DC-P0 取代，2026-08-31）
 
-Dexter 已裁定单元 B 可以直接命名角色切换 effect，但不得公开仅供 runtime 内部生命周期搬运的
-signal。当前有效状态如下；上文所有 `57`、`S-7` 或“effect 仍为内部类型”的表述仅保留为发生时的
-历史证据，均不得再作为实施输入：
+Dexter 当时裁定单元 B 可以直接命名角色切换 effect，但不得公开仅供 runtime 内部生命周期搬运的
+signal。该口径已被文末 `display-context DC-P0` 的 TR-11 command 形态取代；上文所有 `57`、`58`、
+`S-7` 或 role-effect 相关表述仅保留为发生时的历史证据，均不得再作为实施输入：
 
 - `RuntimeRoleChangeEffect` 从 `src/types/module.ts` 由 runtime root `src/index.ts` 正式导出；
 - `RuntimeRoleChangeSignal` 继续保持包内私有，不进入 root exports；
@@ -517,3 +525,20 @@ gates + support PASS；TER `verify:static` PASS；TER-local `verify` 22/22 typec
 
 边界不变：未运行仓级 normal `scripts/verify`、native/Gradle/设备、DEV、seed/reset、浏览器 L2、
 UAT 或部署；`state.applyAuthoritativeSync` 的 sync direction 仍为 `UNVERIFIED_REQUIRES_EVIDENCE`。
+
+## 当前有效接缝：display-context DC-P0（2026-09-02）
+
+本节是当前源码相对于上方历史交接段的有效收口，后续消费者以本节为准。DC-P0 已把角色
+切换后的业务通知改为 runtime 自己定义的内部 `instance-mode-changed` command：角色字段
+成功提交后才派发，request-ledger actor 与 display-context actor 各自消费；不再使用
+`RuntimeRoleChangeEffect`、`RuntimeModule.roleChangeEffects` 或 action-list effect seam。
+
+当前 runtime 公开面为 `63` 项（删除旧 role-effect 类型、增加 changed command），内部 runtime
+module 有 4 个 command definition 与 3 个 actor；`RuntimeModuleContext` 的 10 项成员包含
+`registerResource(cleanup)`，供模块登记 disposer。`RuntimeRoleChangeSignal` 仅用于 runtime
+内部 lifecycle journal，不是业务回调注册 API。
+
+DC-P0 当前 focused proof：runtime typecheck exit 0；runtime test 13 files / 76 tests PASS；
+runtime static 为 5 rule gates + 1 support PASS。上述 proof 不升级为 display-context、native、
+Gradle、设备或生产 teardown 证明；生产电源订阅的释放路径仍依赖未来 Runtime stop/dispose
+能力，当前仅有 test-only resource disposer。

@@ -22,6 +22,79 @@ public interface InventoryOwnerApi {
     /** Effective catalog/SKU base-unit facts supplied by catalog before its own save write. */
     record CatalogSkuBaseMeasureUnit(UUID productSkuRef, UnitSnapshot unitSnapshot) {}
 
+    enum InventoryAvailabilityApplicability {
+        NOT_APPLICABLE,
+        APPLICABLE
+    }
+
+    enum InventoryAvailabilityState {
+        AVAILABLE,
+        AUTO_UNAVAILABLE,
+        UNKNOWN
+    }
+
+    enum InventoryAvailabilityReason {
+        OUT_OF_STOCK,
+        NEGATIVE_NOT_ALLOWED,
+        READ_UNAVAILABLE
+    }
+
+    /** Catalog-facing inventory identity; productSkuRef is null for an item-level target. */
+    record InventoryTargetRef(UUID itemRef, UUID productSkuRef) {
+        public InventoryTargetRef {
+            java.util.Objects.requireNonNull(itemRef, "itemRef");
+        }
+    }
+
+    /** Owner-native inventory fact for sales-menu consumers; raw stock states never cross this boundary. */
+    record InventoryAvailabilityFact(
+            InventoryTargetRef identity,
+            UUID targetRef,
+            boolean targetExists,
+            InventoryAvailabilityApplicability applicability,
+            InventoryAvailabilityState state,
+            InventoryAvailabilityReason reason) {
+        public static InventoryAvailabilityFact notApplicable(InventoryTargetRef identity) {
+            return new InventoryAvailabilityFact(
+                    identity, null, false, InventoryAvailabilityApplicability.NOT_APPLICABLE, null, null);
+        }
+
+        public static InventoryAvailabilityFact available(InventoryTargetRef identity, UUID targetRef) {
+            return new InventoryAvailabilityFact(
+                    identity,
+                    targetRef,
+                    true,
+                    InventoryAvailabilityApplicability.APPLICABLE,
+                    InventoryAvailabilityState.AVAILABLE,
+                    null);
+        }
+
+        public static InventoryAvailabilityFact autoUnavailable(
+                InventoryTargetRef identity, UUID targetRef, InventoryAvailabilityReason reason) {
+            return new InventoryAvailabilityFact(
+                    identity,
+                    targetRef,
+                    true,
+                    InventoryAvailabilityApplicability.APPLICABLE,
+                    InventoryAvailabilityState.AUTO_UNAVAILABLE,
+                    reason);
+        }
+
+        public static InventoryAvailabilityFact unknown(InventoryTargetRef identity, UUID targetRef) {
+            return new InventoryAvailabilityFact(
+                    identity,
+                    targetRef,
+                    true,
+                    InventoryAvailabilityApplicability.APPLICABLE,
+                    InventoryAvailabilityState.UNKNOWN,
+                    InventoryAvailabilityReason.READ_UNAVAILABLE);
+        }
+    }
+
+    /** Ordered task readback; one fact is returned for every requested identity, including absent identities. */
+    List<InventoryAvailabilityFact> readSalesMenuAvailability(
+            String dataNodeRef, String brandRef, Set<InventoryTargetRef> targetRefs);
+
     enum CatalogUnitLifecycleChange {
         RENAME,
         UPDATE_DEFINITION,

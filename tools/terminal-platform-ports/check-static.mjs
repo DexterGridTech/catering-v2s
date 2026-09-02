@@ -3,6 +3,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import ts from 'typescript';
+import {readPackageInvariant} from '../terminal-shared/package-invariants.mjs';
 import {
   runTr05CheckerBoundary,
   runTr05NamedBoundary,
@@ -20,49 +21,6 @@ export const PLATFORM_PORT_RULE_NAMES = Object.freeze([
 ]);
 export const PLATFORM_PORT_SUPPORT_CHECK_COUNT = 1;
 
-const expectedPortKeys = Object.freeze([
-  'logger',
-  'persistKv',
-  'persistSecure',
-  'device',
-  'appControl',
-  'script',
-  'connector',
-  'hotUpdate',
-  'logUpload',
-  'topologyHost',
-]);
-
-const expectedPortMethods = Object.freeze({
-  LoggerPort: ['debug', 'info', 'warn', 'error', 'scope', 'withContext'],
-  StateStoragePort: ['read', 'write', 'remove', 'readMany', 'writeMany', 'removeMany', 'listKeys', 'clear'],
-  DevicePort: ['getDeviceInfo', 'getSystemStatus', 'getPowerStatus', 'subscribePowerStatus', 'unsubscribePowerStatus'],
-  AppControlPort: [
-    'resetRuntime',
-    'exitApplication',
-    'clearHostDataCache',
-    'setFullscreen',
-    'getFullscreen',
-    'setKioskMode',
-    'getKioskMode',
-    'showNativeLoading',
-    'hideNativeLoading',
-  ],
-  ScriptPort: ['execute', 'getStats', 'clearStats'],
-  ConnectorPort: ['call', 'subscribe', 'unsubscribe', 'on'],
-  HotUpdatePort: [
-    'downloadPackage',
-    'writeBootMarker',
-    'readBootMarker',
-    'readActiveMarker',
-    'readRollbackMarker',
-    'clearBootMarker',
-    'confirmLoadComplete',
-  ],
-  LogUploadPort: ['uploadLogsForDate'],
-  TopologyHostPort: ['start', 'stop', 'getStatus', 'getDiagnosticsSnapshot'],
-});
-
 const forbiddenPlatformIdentifiers = new Set([
   'NativeModules',
   'TurboModuleRegistry',
@@ -77,22 +35,6 @@ const forbiddenPlatformIdentifiers = new Set([
 ]);
 
 const forbiddenPlatformImportPattern = /^(?:react-native(?:\/|$)|expo(?:-|\/|$)|@expo(?:-|\/|$)|@react-native(?:\/|$)|electron(?:\/|$)|node:(?:fs|child_process)(?:\/|$)|(?:fs|child_process)(?:\/|$))/;
-
-const expectedPublicExports = Object.freeze([
-  'moduleName', 'dependencyModuleNames', 'devDependencyModuleNames',
-  'EnvironmentMode', 'PlatformPortName', 'CapabilityUnavailableReason', 'PortUnavailable', 'PortError', 'PortFailure', 'PortTimedOut', 'PortSucceeded', 'PortAccepted', 'NoOutput', 'PortResult', 'PortActionResult',
-  'LogLevel', 'LogMaskingMode', 'LogPrimitive', 'LogValue', 'LogFields', 'LogScope', 'LogScopeBinding', 'LogContext', 'LogError', 'LogSecurity', 'LogEvent', 'LogWriteInput', 'LogWriteResult', 'LoggerPort',
-  'StateStorageCall', 'StateStorageReadInput', 'StateStorageWriteInput', 'StateStorageKeysInput', 'StateStorageEntriesInput', 'StateStorageEntry', 'StateStorageReadValue', 'StateStorageReadEntry', 'StateStoragePort',
-  'DeviceInfo', 'ProcessorStatus', 'MemoryStatus', 'StorageStatus', 'NetworkStatus', 'PowerStatus', 'SystemStatus', 'PowerStatusChanged', 'PowerStatusListener', 'DeviceCall', 'PowerStatusSubscriptionInput', 'PowerStatusUnsubscribeInput', 'DevicePort',
-  'AppControlCall', 'RuntimeResetInput', 'ExitApplicationInput', 'SurfaceActionInput', 'SurfaceToggleInput', 'NativeLoadingInput', 'ApplicationToggleInput', 'ToggleState', 'RuntimeTransitionObservation', 'ExitTransitionObservation', 'AppControlPort',
-  'NativeFunctionInvocation', 'NativeFunctionOutput', 'NativeFunctionDispatcher', 'ScriptNativeBindings', 'ScriptExecutionInput', 'ScriptExecutionOutput', 'ScriptStats', 'ScriptCall', 'ScriptPort',
-  'ConnectorScalar', 'ConnectorValue', 'ConnectorObject', 'ConnectorChannelRef', 'ConnectorCallRequest', 'ConnectorCallResponse', 'ConnectorMessage', 'ConnectorError', 'ConnectorSubscriptionError', 'ConnectorSubscribeInput', 'ConnectorEvent', 'ConnectorOnInput', 'ConnectorUnsubscribeInput', 'ConnectorSubscription', 'ConnectorPort',
-  'HotUpdateCall', 'HotUpdateDownloadInput', 'HotUpdateInstall', 'HotUpdateMarkerInput', 'HotUpdateMarker', 'HotUpdateMarkerRead', 'HotUpdateMarkerWrite', 'HotUpdatePort',
-  'LogUploadInput', 'UploadedLogFile', 'LogUploadOutput', 'LogUploadPort',
-  'TopologyHostState', 'TopologyHostRuntimeConfig', 'TopologyHostConfig', 'TopologyHostAddress', 'TopologyHostStatus', 'TopologyHostStats', 'TopologyHostDiagnostics', 'TopologyHostCall', 'TopologyHostPort',
-  'LoggerConsoleBinding', 'LoggerSinkBinding', 'LoggerBinding', 'PlatformPortBindings', 'PlatformPorts', 'CreatePlatformPortsInput', 'createPlatformPorts',
-  'consoleLoggerBinding', 'createProcessMemoryStateStoragePort', 'unavailablePersistSecurePort', 'unavailableDevicePort', 'unavailableAppControlPort', 'unavailableScriptPort', 'unavailableConnectorPort', 'unavailableHotUpdatePort', 'unavailableLogUploadPort', 'unavailableTopologyHostPort',
-]);
 
 function sourceFiles(root) {
   const sourceRoot = path.join(root, 'src');
@@ -236,7 +178,9 @@ function assertExactRequiredProperties(checker, indexSourceFile, typeName, expec
   }
 }
 
-function runRequiredPortShape({checker, indexSourceFile}) {
+function runRequiredPortShape({checker, indexSourceFile, invariant}) {
+  const expectedPortKeys = invariant.portKeys;
+  const expectedPortMethods = invariant.portMethods;
   assertExactRequiredProperties(checker, indexSourceFile, 'PlatformPorts', expectedPortKeys);
   assertExactRequiredProperties(checker, indexSourceFile, 'PlatformPortBindings', expectedPortKeys);
   for (const [typeName, methods] of Object.entries(expectedPortMethods)) {
@@ -359,9 +303,9 @@ function runPlatformIdentifierBoundary({root, files}) {
   }
 }
 
-function runPublicSupport({checker, indexSourceFile, root}) {
+function runPublicSupport({checker, indexSourceFile, root, invariant}) {
   const actual = checker.getExportsOfModule(moduleSymbol(checker, indexSourceFile, 'platform-ports src/index.ts')).map(symbol => symbol.name).sort();
-  const expected = [...expectedPublicExports].sort();
+  const expected = [...invariant.publicExports].sort();
   const missing = expected.filter(name => !actual.includes(name));
   const extra = actual.filter(name => !expected.includes(name));
   if (missing.length || extra.length || new Set(actual).size !== actual.length) {
@@ -379,6 +323,7 @@ function runPublicSupport({checker, indexSourceFile, root}) {
 
 export function runPlatformPortsStaticChecks({platformPortsRoot: root = platformPortsRoot} = {}) {
   const context = createProgram(root);
+  const invariant = readPackageInvariant(root, '@catering-v2s/kernel-base-platform-ports');
   const indexSourceFile = context.program.getSourceFile(path.join(root, 'src/index.ts'));
   if (!indexSourceFile) throw new Error(`platform-ports src/index.ts is missing under ${root}`);
   const checks = [
@@ -391,7 +336,7 @@ export function runPlatformPortsStaticChecks({platformPortsRoot: root = platform
         checker: context.checker,
       });
     }],
-    ['required-port-shape', () => runRequiredPortShape({...context, indexSourceFile})],
+    ['required-port-shape', () => runRequiredPortShape({...context, indexSourceFile, invariant})],
     ['default-import-allowlist', () => runDefaultImportAllowlist({root})],
     ['platform-identifier-boundary', () => runPlatformIdentifierBoundary({root, files: context.files})],
   ];
@@ -405,7 +350,7 @@ export function runPlatformPortsStaticChecks({platformPortsRoot: root = platform
   });
   let support;
   try {
-    runPublicSupport({checker: context.checker, indexSourceFile, root});
+    runPublicSupport({checker: context.checker, indexSourceFile, root, invariant});
     support = {status: 'PASS'};
   } catch (error) {
     support = {status: 'FAIL', error: error instanceof Error ? error.message : String(error)};

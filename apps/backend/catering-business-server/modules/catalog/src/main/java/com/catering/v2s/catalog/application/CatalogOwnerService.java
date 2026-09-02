@@ -51,6 +51,9 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
     /** A catalog tree is intentionally shallow so operators can scan and choose it as a hierarchy. */
     private static final int CATALOG_CATEGORY_MAX_DEPTH = 3;
 
+    private static final String SALES_MENU_CANDIDATE_OPERATION = "getOperationsSalesMenuItemCandidates";
+    private static final int SALES_MENU_CANDIDATE_PAGE_SIZE = 20;
+
     private static final String CATEGORY_MOVE_SELF_MESSAGE = "分类不能以自身作为父分类";
     private static final String CATEGORY_MOVE_CYCLE_MESSAGE = "分类不能移动到自身或下级分类下";
     private static final String CATEGORY_DEPTH_ERROR_CODE = "CATEGORY_DEPTH_EXCEEDED";
@@ -242,6 +245,355 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                         result.getString(3),
                         result.getString(4)));
         return rows.isEmpty() ? CatalogOwnerApi.InventoryTargetDisplayFact.absent(itemRef) : rows.getFirst();
+    }
+
+    @Override
+    public CatalogOwnerApi.SalesMenuCandidatePage readSalesMenuCandidatePage(
+            CatalogOwnerApi.SalesMenuCandidatePageQuery query) {
+        java.util.Objects.requireNonNull(query, "query");
+        requireScope(query.dataNodeRef(), query.brandRef());
+        String queryIdentity = cursorIdentity(
+                SALES_MENU_CANDIDATE_OPERATION,
+                query.dataNodeRef(),
+                query.brandRef(),
+                String.valueOf(query.categoryRef()),
+                query.filter(),
+                Integer.toString(query.pageSize()));
+        OpaqueCollectionCursor.Position cursor = decodeSalesMenuCursor(query.cursor(), queryIdentity);
+
+        StringBuilder sql = new StringBuilder("SELECT i.item_ref,i.code,i.name,i.shape_key,i.status,"
+                + "NULLIF(i.sections->>'standardSalePrice','')::bigint AS default_price,i.version "
+                + "FROM catalog.catalog_item i WHERE i.data_node_ref=? AND i.brand_ref=? "
+                + "AND i.status <> 'VOIDED'");
+        List<Object> arguments = new ArrayList<>(List.of(query.dataNodeRef(), query.brandRef()));
+        if (!query.filter().isBlank()) {
+            sql.append(" AND (i.code ILIKE ? OR i.name ILIKE ?)");
+            String filter = "%" + query.filter() + "%";
+            arguments.add(filter);
+            arguments.add(filter);
+        }
+        if (query.categoryRef() != null) {
+            sql.append(" AND EXISTS (SELECT 1 FROM catalog.catalog_item_category relation "
+                    + "JOIN catalog.catalog_category category ON category.category_ref=relation.category_ref "
+                    + "WHERE relation.item_ref=i.item_ref AND relation.category_ref=? "
+                    + "AND category.data_node_ref=i.data_node_ref AND category.brand_ref=i.brand_ref "
+                    + "AND category.status <> 'VOIDED')");
+            arguments.add(query.categoryRef());
+        }
+        if (cursor != null) {
+            sql.append(" AND (i.code > ? OR (i.code = ? AND i.item_ref > ?))");
+            arguments.add(cursor.sortKey());
+            arguments.add(cursor.sortKey());
+            arguments.add(cursor.tieBreaker());
+        }
+        sql.append(" ORDER BY i.code,i.item_ref LIMIT ?");
+        arguments.add(SALES_MENU_CANDIDATE_PAGE_SIZE + 1);
+        List<SalesMenuItemRow> rows = jdbc.query(
+                sql.toString(),
+                (result, ignored) -> new SalesMenuItemRow(
+                        result.getObject(1, UUID.class),
+                        result.getString(2),
+                        result.getString(3),
+                        result.getString(4),
+                        result.getString(5),
+                        result.getObject(6, Long.class),
+                        result.getLong(7)),
+                arguments.toArray());
+        boolean hasNext = rows.size() > SALES_MENU_CANDIDATE_PAGE_SIZE;
+        List<SalesMenuItemRow> pageRows =
+                hasNext ? new ArrayList<>(rows.subList(0, SALES_MENU_CANDIDATE_PAGE_SIZE)) : rows;
+        SalesMenuFactSnapshot facts = readSalesMenuFactSnapshot(
+                query.dataNodeRef(),
+                query.brandRef(),
+                pageRows.stream().map(SalesMenuItemRow::itemRef).toList(),
+                false,
+                true);
+        List<CatalogOwnerApi.SalesMenuCandidate> candidates =
+                pageRows.stream().map(row -> salesMenuCandidate(row, facts)).toList();
+        String nextCursor = hasNext
+                ? OpaqueCollectionCursor.encode(
+                        queryIdentity,
+                        pageRows.getLast().itemCode(),
+                        pageRows.getLast().itemRef())
+                : null;
+        return new CatalogOwnerApi.SalesMenuCandidatePage(candidates, query.cursor(), nextCursor);
+    }
+
+    @Override
+    public Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> readSalesMenuItemFacts(
+            String dataNodeRef, String brandRef, Set<UUID> itemRefs) {
+        requireScope(dataNodeRef, brandRef);
+        if (itemRefs == null || itemRefs.isEmpty()) return Map.of();
+        for (UUID itemRef : itemRefs)
+            if (itemRef == null)
+                throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "itemRefs must contain UUID values");
+
+        List<UUID> requestedRefs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
+        String placeholders = String.join(",", Collections.nCopies(requestedRefs.size(), "?"));
+        List<Object> arguments = new ArrayList<>(List.of(dataNodeRef, brandRef));
+        arguments.addAll(requestedRefs);
+        List<SalesMenuItemRow> rows = jdbc.query(
+                "SELECT i.item_ref,i.code,i.name,i.shape_key,i.status,"
+                        + "NULLIF(i.sections->>'standardSalePrice','')::bigint AS default_price,i.version "
+                        + "FROM catalog.catalog_item i WHERE i.data_node_ref=? AND i.brand_ref=? "
+                        + "AND i.item_ref IN ("
+                        + placeholders
+                        + ") AND i.status <> 'VOIDED' ORDER BY i.item_ref",
+                (result, ignored) -> new SalesMenuItemRow(
+                        result.getObject(1, UUID.class),
+                        result.getString(2),
+                        result.getString(3),
+                        result.getString(4),
+                        result.getString(5),
+                        result.getObject(6, Long.class),
+                        result.getLong(7)),
+                arguments.toArray());
+        if (rows.isEmpty()) return Map.of();
+
+        SalesMenuFactSnapshot facts = readSalesMenuFactSnapshot(
+                dataNodeRef,
+                brandRef,
+                rows.stream().map(SalesMenuItemRow::itemRef).toList(),
+                true,
+                false);
+        Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> result = new LinkedHashMap<>();
+        rows.forEach(row -> result.put(row.itemRef(), salesMenuItemFacts(row, facts)));
+        return Map.copyOf(result);
+    }
+
+    private CatalogOwnerApi.SalesMenuCandidate salesMenuCandidate(SalesMenuItemRow row, SalesMenuFactSnapshot facts) {
+        List<CatalogOwnerApi.SalesMenuSkuFact> skus =
+                salesMenuSkuFacts(facts.skusByItem().get(row.itemRef()));
+        List<CatalogOwnerApi.SalesMenuSkuVariantAxisFact> axes =
+                salesMenuVariantAxes(facts.axesByItem().get(row.itemRef()));
+        return new CatalogOwnerApi.SalesMenuCandidate(
+                row.itemRef(),
+                row.itemCode(),
+                row.itemName(),
+                row.shapeKey(),
+                salesMenuUuidFacts(facts.categoryRefsByItem().get(row.itemRef()), "categoryRefs"),
+                facts.categoryNamesByItem().getOrDefault(row.itemRef(), List.of()),
+                row.defaultPriceCents(),
+                salesMenuPrimaryImage(facts.imagesByItem().get(row.itemRef())),
+                salesMenuSkuSummary(row.shapeKey(), skus, axes));
+    }
+
+    private CatalogOwnerApi.SalesMenuItemFacts salesMenuItemFacts(SalesMenuItemRow row, SalesMenuFactSnapshot facts) {
+        List<CatalogOwnerApi.SalesMenuSkuFact> skus =
+                salesMenuSkuFacts(facts.skusByItem().get(row.itemRef()));
+        List<CatalogOwnerApi.SalesMenuSkuVariantAxisFact> axes =
+                salesMenuVariantAxes(facts.axesByItem().get(row.itemRef()));
+        return new CatalogOwnerApi.SalesMenuItemFacts(
+                row.itemRef(),
+                row.itemCode(),
+                row.itemName(),
+                row.shapeKey(),
+                row.status(),
+                row.version(),
+                salesMenuUuidFacts(facts.categoryRefsByItem().get(row.itemRef()), "categoryRefs"),
+                row.defaultPriceCents(),
+                facts.salesUnitsByItem().get(row.itemRef()),
+                salesMenuPrimaryImage(facts.imagesByItem().get(row.itemRef())),
+                salesMenuSkuSummary(row.shapeKey(), skus, axes),
+                skus,
+                axes);
+    }
+
+    private SalesMenuFactSnapshot readSalesMenuFactSnapshot(
+            String dataNodeRef,
+            String brandRef,
+            Collection<UUID> itemRefs,
+            boolean includeSalesUnits,
+            boolean includeCategoryNames) {
+        if (itemRefs == null || itemRefs.isEmpty()) return SalesMenuFactSnapshot.empty();
+        List<UUID> refs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
+        CatalogSkuFacts.ListReadback skuReadback = skuFacts.readByItemRefsForList(refs);
+        Map<UUID, InventoryOwnerApi.UnitSnapshot> salesUnitsByItem = new LinkedHashMap<>();
+        if (includeSalesUnits) {
+            itemUnitRefsByItemRefs(refs).forEach((itemRef, units) -> {
+                if (units.salesUnitSnapshot() != null) salesUnitsByItem.put(itemRef, units.salesUnitSnapshot());
+            });
+        }
+        Map<UUID, ArrayNode> categoryRefsByItem;
+        Map<UUID, List<String>> categoryNamesByItem;
+        if (includeCategoryNames) {
+            Map<UUID, CatalogItemCategoryFacts.SalesMenuCategoryFacts> categoryFactsByItem =
+                    categoryFacts.readSalesMenuByItemRefs(dataNodeRef, brandRef, refs);
+            categoryRefsByItem = new LinkedHashMap<>();
+            categoryNamesByItem = new LinkedHashMap<>();
+            for (Map.Entry<UUID, CatalogItemCategoryFacts.SalesMenuCategoryFacts> entry :
+                    categoryFactsByItem.entrySet()) {
+                UUID itemRef = entry.getKey();
+                CatalogItemCategoryFacts.SalesMenuCategoryFacts facts = entry.getValue();
+                ArrayNode categoryRefs = mapper.createArrayNode();
+                facts.categoryRefs().forEach(categoryRef -> categoryRefs.add(categoryRef.toString()));
+                categoryRefsByItem.put(itemRef, categoryRefs);
+                categoryNamesByItem.put(itemRef, facts.categoryNames());
+            }
+        } else {
+            categoryRefsByItem = categoryFacts.readByItemRefs(refs);
+            categoryNamesByItem = Map.of();
+        }
+        return new SalesMenuFactSnapshot(
+                skuReadback.skusByItem(),
+                skuReadback.axesByItem(),
+                itemMediaFacts.readByItemRefs(refs),
+                Map.copyOf(categoryRefsByItem),
+                Map.copyOf(categoryNamesByItem),
+                Map.copyOf(salesUnitsByItem));
+    }
+
+    private List<CatalogOwnerApi.SalesMenuSkuFact> salesMenuSkuFacts(ArrayNode values) {
+        if (values == null || !values.isArray()) return List.of();
+        List<CatalogOwnerApi.SalesMenuSkuFact> result = new ArrayList<>();
+        for (JsonNode value : values) {
+            String status = requiredSalesMenuText(value, "sku.status");
+            if ("VOIDED".equals(status)) continue;
+            result.add(new CatalogOwnerApi.SalesMenuSkuFact(
+                    requiredSalesMenuUuid(value, "productSkuRef"),
+                    requiredSalesMenuText(value, "skuCode"),
+                    requiredSalesMenuText(value, "skuName"),
+                    optionalSalesMenuLong(value.get("standardSalePrice"), "standardSalePrice"),
+                    value.path("isDefault").asBoolean(false),
+                    status,
+                    value.path("version").asLong(0),
+                    value.path("displayOrder").asInt(0),
+                    requiredSalesMenuText(value, "variantCombinationDigest"),
+                    salesMenuUuidFacts(value.get("mediaRefs"), "sku.mediaRefs"),
+                    salesMenuSkuAttributeFacts(value.get("attributeValueRefs"))));
+        }
+        return List.copyOf(result);
+    }
+
+    private List<CatalogOwnerApi.SalesMenuSkuAttributeValueFact> salesMenuSkuAttributeFacts(JsonNode values) {
+        if (values == null || values.isMissingNode() || values.isNull()) return List.of();
+        if (!values.isArray()) throw salesMenuResultProblem("sku.attributeValueRefs");
+        List<CatalogOwnerApi.SalesMenuSkuAttributeValueFact> result = new ArrayList<>();
+        for (JsonNode value : values)
+            result.add(new CatalogOwnerApi.SalesMenuSkuAttributeValueFact(
+                    requiredSalesMenuUuid(value, "attributeRef"),
+                    optionalSalesMenuText(value, "attributeCode"),
+                    optionalSalesMenuText(value, "attributeName"),
+                    requiredSalesMenuUuid(value, "attributeValueRef"),
+                    optionalSalesMenuText(value, "valueCode"),
+                    optionalSalesMenuText(value, "valueLabel"),
+                    optionalSalesMenuText(value, "status"),
+                    value.path("displayOrder").asInt(0)));
+        return List.copyOf(result);
+    }
+
+    private List<CatalogOwnerApi.SalesMenuSkuVariantAxisFact> salesMenuVariantAxes(ArrayNode values) {
+        if (values == null || !values.isArray()) return List.of();
+        List<CatalogOwnerApi.SalesMenuSkuVariantAxisFact> result = new ArrayList<>();
+        for (JsonNode value : values)
+            result.add(new CatalogOwnerApi.SalesMenuSkuVariantAxisFact(
+                    requiredSalesMenuUuid(value, "axis.attributeRef"),
+                    optionalSalesMenuText(value, "attributeCode"),
+                    optionalSalesMenuText(value, "attributeName"),
+                    value.path("displayOrder").asInt(0),
+                    salesMenuVariantValues(value.get("values"))));
+        return List.copyOf(result);
+    }
+
+    private List<CatalogOwnerApi.SalesMenuSkuVariantValueFact> salesMenuVariantValues(JsonNode values) {
+        if (values == null || values.isMissingNode() || values.isNull()) return List.of();
+        if (!values.isArray()) throw salesMenuResultProblem("sku.variantAxes.values");
+        List<CatalogOwnerApi.SalesMenuSkuVariantValueFact> result = new ArrayList<>();
+        for (JsonNode value : values)
+            result.add(new CatalogOwnerApi.SalesMenuSkuVariantValueFact(
+                    requiredSalesMenuUuid(value, "valueRef"),
+                    optionalSalesMenuText(value, "valueCode"),
+                    optionalSalesMenuText(value, "valueLabel"),
+                    optionalSalesMenuText(value, "status"),
+                    value.path("displayOrder").asInt(0)));
+        return List.copyOf(result);
+    }
+
+    private CatalogOwnerApi.SalesMenuSkuSummary salesMenuSkuSummary(
+            String shapeKey,
+            List<CatalogOwnerApi.SalesMenuSkuFact> skus,
+            List<CatalogOwnerApi.SalesMenuSkuVariantAxisFact> axes) {
+        int enabled = 0;
+        int nonArchived = 0;
+        Long minimum = null;
+        Long maximum = null;
+        for (CatalogOwnerApi.SalesMenuSkuFact sku : skus) {
+            if ("ENABLED".equals(sku.status())) enabled++;
+            if (!"ARCHIVED".equals(sku.status())) nonArchived++;
+            if (sku.standardSalePrice() != null) {
+                minimum = minimum == null ? sku.standardSalePrice() : Math.min(minimum, sku.standardSalePrice());
+                maximum = maximum == null ? sku.standardSalePrice() : Math.max(maximum, sku.standardSalePrice());
+            }
+        }
+        LinkedHashSet<String> dimensions = new LinkedHashSet<>();
+        axes.forEach(axis -> {
+            if (axis.attributeName() != null && !axis.attributeName().isBlank()) dimensions.add(axis.attributeName());
+        });
+        if (dimensions.isEmpty())
+            skus.forEach(sku -> sku.attributeValueRefs().forEach(value -> {
+                if (value.attributeName() != null && !value.attributeName().isBlank())
+                    dimensions.add(value.attributeName());
+            }));
+        return new CatalogOwnerApi.SalesMenuSkuSummary(
+                shapeRule(shapeKey).priceGranularity(),
+                enabled,
+                nonArchived,
+                skus.size(),
+                List.copyOf(dimensions),
+                minimum,
+                maximum);
+    }
+
+    private static UUID salesMenuPrimaryImage(ArrayNode values) {
+        if (values == null || values.isEmpty()) return null;
+        return requiredSalesMenuUuid(values.get(0), "defaultImageAssetRef");
+    }
+
+    private static List<UUID> salesMenuUuidFacts(JsonNode values, String field) {
+        if (values == null || values.isMissingNode() || values.isNull()) return List.of();
+        if (!values.isArray()) throw salesMenuResultProblem(field);
+        LinkedHashSet<UUID> result = new LinkedHashSet<>();
+        for (JsonNode value : values) result.add(requiredSalesMenuUuid(value, field));
+        return List.copyOf(result);
+    }
+
+    private static UUID requiredSalesMenuUuid(JsonNode value, String field) {
+        JsonNode fieldValue = salesMenuFieldValue(value, field);
+        if (fieldValue == null || !fieldValue.isTextual() || fieldValue.asText().isBlank())
+            throw salesMenuResultProblem(field);
+        try {
+            return UUID.fromString(fieldValue.asText());
+        } catch (IllegalArgumentException failure) {
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, field + " is not a valid UUID", failure);
+        }
+    }
+
+    private static String requiredSalesMenuText(JsonNode value, String field) {
+        String result = optionalSalesMenuText(value, field);
+        if (result == null) throw salesMenuResultProblem(field);
+        return result;
+    }
+
+    private static JsonNode salesMenuFieldValue(JsonNode value, String field) {
+        if (value == null || value.isMissingNode() || value.isNull() || !value.isObject()) return value;
+        return value.get(field.substring(field.lastIndexOf('.') + 1));
+    }
+
+    private static String optionalSalesMenuText(JsonNode value, String field) {
+        JsonNode fieldValue = salesMenuFieldValue(value, field);
+        if (fieldValue == null || fieldValue.isMissingNode() || fieldValue.isNull()) return null;
+        String result = fieldValue.asText(null);
+        return result == null || result.isBlank() ? null : result;
+    }
+
+    private static Long optionalSalesMenuLong(JsonNode value, String field) {
+        if (value == null || value.isMissingNode() || value.isNull()) return null;
+        if (!value.isIntegralNumber()) throw salesMenuResultProblem(field);
+        return value.longValue();
+    }
+
+    private static CatalogOwnerApi.Problem salesMenuResultProblem(String field) {
+        return new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, field + " catalog fact is invalid");
     }
 
     @Override
@@ -11916,6 +12268,14 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         }
     }
 
+    private static OpaqueCollectionCursor.Position decodeSalesMenuCursor(String cursor, String queryIdentity) {
+        try {
+            return OpaqueCollectionCursor.decode(cursor, queryIdentity);
+        } catch (OpaqueCollectionCursor.InvalidCursor failure) {
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "cursor is invalid", failure);
+        }
+    }
+
     private static String cursorIdentity(String operationId, String... parts) {
         StringBuilder identity = new StringBuilder(operationId);
         for (String part : parts) {
@@ -13394,6 +13754,27 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             implements CatalogObject {
         public String objectType() {
             return "CATALOG_ITEM";
+        }
+    }
+
+    private record SalesMenuItemRow(
+            UUID itemRef,
+            String itemCode,
+            String itemName,
+            String shapeKey,
+            String status,
+            Long defaultPriceCents,
+            long version) {}
+
+    private record SalesMenuFactSnapshot(
+            Map<UUID, ArrayNode> skusByItem,
+            Map<UUID, ArrayNode> axesByItem,
+            Map<UUID, ArrayNode> imagesByItem,
+            Map<UUID, ArrayNode> categoryRefsByItem,
+            Map<UUID, List<String>> categoryNamesByItem,
+            Map<UUID, InventoryOwnerApi.UnitSnapshot> salesUnitsByItem) {
+        static SalesMenuFactSnapshot empty() {
+            return new SalesMenuFactSnapshot(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
         }
     }
 

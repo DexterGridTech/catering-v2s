@@ -10,6 +10,7 @@ import {
   defineActor,
   defineCommand,
   onCommand,
+  runtimeInstanceModeChangedCommand,
   selectRuntimeInstanceMode,
   setRuntimeInstanceModeCommand,
   type ActorExecutionContext,
@@ -51,12 +52,10 @@ describe('runtime role and route boundaries', () => {
     )
   })
 
-  it('I-2 runs role effects before the write, is idempotent, and preserves state on failure', async () => {
+  it('I-2 commits the role before notifying post-commit consumers and remains idempotent', async () => {
     let mode: 'MASTER' | 'SLAVE' = 'MASTER'
-    const effectOrder: string[] = []
-    const effectActor = createSetRuntimeInstanceModeActor([
-      async ({nextMode}) => { effectOrder.push(`effect:${nextMode}`); if (nextMode === 'SLAVE') mode = 'MASTER' },
-    ])
+    const order: string[] = []
+    const actor = createSetRuntimeInstanceModeActor(() => { order.push('role-signal') })
     const context = {
       runtimeId: createRuntimeInstanceId(),
       localNodeId: createNodeId(),
@@ -68,38 +67,29 @@ describe('runtime role and route boundaries', () => {
       },
       actor: {actorKey: 'kernel.base.runtime.instance-mode', moduleName: 'kernel.base.runtime', actorName: 'instance-mode'},
       getState: () => ({'kernel.base.runtime.instance-mode': {instanceMode: mode}}),
-      dispatchAction: action => { effectOrder.push(`write:${String(Reflect.get(action, 'payload'))}`); mode = Reflect.get(action, 'payload') as 'MASTER' | 'SLAVE'; return action },
+      dispatchAction: action => { order.push('write'); mode = Reflect.get(action, 'payload') as 'MASTER' | 'SLAVE'; return action },
       flushPersistence: async () => ({status: 'succeeded', writtenKeys: [], removedKeys: []}),
       subscribeState: () => () => undefined,
-      dispatchCommand: async () => ({requestId: null, commandId: createCommandId(), status: 'completed', actorResults: []}),
+      dispatchCommand: async definition => { order.push(definition.commandName); return {requestId: null, commandId: createCommandId(), status: 'completed', actorResults: []} },
       requestApplicationReset: () => undefined,
     } satisfies ActorExecutionContext<{instanceMode: 'MASTER' | 'SLAVE'}>
-    const result = await effectActor.handlers[0]!.handle(context)
+    const result = await actor.handlers[0]!.handle(context)
     expect(result).toMatchObject({changed: true, currentMode: 'SLAVE'})
-    expect(effectOrder).toEqual(['effect:SLAVE', 'write:SLAVE'])
-    effectOrder.length = 0
-    const same = await effectActor.handlers[0]!.handle(context)
+    expect(order).toEqual([
+      'role-signal', 'write', 'role-signal', runtimeInstanceModeChangedCommand.commandName,
+    ])
+    order.length = 0
+    const same = await actor.handlers[0]!.handle(context)
     expect(same).toMatchObject({changed: false, previousMode: 'SLAVE', currentMode: 'SLAVE'})
-    expect(effectOrder).toEqual([])
-    const failingActor = createSetRuntimeInstanceModeActor([() => { throw new Error('effect failed') }])
-    mode = 'MASTER'
-    await expect(failingActor.handlers[0]!.handle(context)).rejects.toThrow('effect failed')
-    expect(mode).toBe('MASTER')
+    expect(order).toEqual([])
 
-    let seamCalled = false
-    const seamModule = moduleFor('test.role-effect-seam', [], [], {
-      roleChangeEffects: [({previousMode, nextMode}) => {
-        seamCalled = previousMode === 'MASTER' && nextMode === 'SLAVE'
-      }],
-    })
-    const runtime = createRuntime(createTestRuntimeInput({modules: [seamModule]}))
+    const runtime = createRuntime(createTestRuntimeInput())
     await runtime.start()
     const runtimeResult = await runtime.dispatchCommand(
       setRuntimeInstanceModeCommand,
       {instanceMode: 'SLAVE'},
     )
     expect(runtimeResult.status).toBe('completed')
-    expect(seamCalled).toBe(true)
     expect(selectRuntimeInstanceMode(runtime.getState())).toBe('SLAVE')
     expect(runtime.journal.list()).toEqual(expect.arrayContaining([
       expect.objectContaining({
@@ -117,12 +107,8 @@ describe('runtime role and route boundaries', () => {
     ]))
   })
 
-  it('I-2 fails closed for an invalid role payload before effects or role signals', async () => {
-    let effectCalls = 0
-    const module = moduleFor('test.role-invalid-payload', [], [], {
-      roleChangeEffects: [() => { effectCalls += 1 }],
-    })
-    const runtime = createRuntime(createTestRuntimeInput({modules: [module]}))
+  it('I-2 fails closed for an invalid role payload before role signals', async () => {
+    const runtime = createRuntime(createTestRuntimeInput())
     await runtime.start()
 
     const result = await runtime.dispatchCommand(
@@ -131,7 +117,6 @@ describe('runtime role and route boundaries', () => {
     )
 
     expect(result.status).toBe('error')
-    expect(effectCalls).toBe(0)
     expect(selectRuntimeInstanceMode(runtime.getState())).toBe('MASTER')
     expect(runtime.journal.list().some(event => event.kind === 'role.change-requested' || event.kind === 'role.changed')).toBe(false)
   })
@@ -156,15 +141,22 @@ describe('runtime role and route boundaries', () => {
     vi.useFakeTimers()
     try {
       const effectRelease = deferred<void>()
-      const roleModule = moduleFor('test.role-late', [], [], {
-        roleChangeEffects: [async () => { await effectRelease.promise }],
-      })
+      const lateConsumer = defineActor('test.role-late', 'consumer', [onCommand(
+        runtimeInstanceModeChangedCommand,
+        async () => { await effectRelease.promise },
+      )])
+      const roleModule = moduleFor('test.role-late', [], [lateConsumer])
       const runtime = createRuntime(createTestRuntimeInput({modules: [roleModule]}))
       await runtime.start()
       const pending = runtime.dispatchCommand(setRuntimeInstanceModeCommand, {instanceMode: 'SLAVE'})
-      await vi.advanceTimersByTimeAsync(60_000)
-      const timedOut = await pending
-      expect(timedOut.status).toBe('timed-out')
+      await vi.advanceTimersByTimeAsync(5_000)
+      const committed = await pending
+      expect(committed.status).toBe('completed')
+      expect(committed.actorResults[0]?.result).toMatchObject({changed: true, currentMode: 'SLAVE'})
+      expect(selectRuntimeInstanceMode(runtime.getState())).toBe('SLAVE')
+      expect(runtime.journal.list()).toEqual(expect.arrayContaining([
+        expect.objectContaining({kind: 'actor.timed-out', commandName: runtimeInstanceModeChangedCommand.commandName}),
+      ]))
       effectRelease.resolve()
       await vi.runAllTicks()
       await Promise.resolve()

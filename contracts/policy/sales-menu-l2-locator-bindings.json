@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "kind": "sales-menu-l2-locator-bindings",
+  "revision": "SALES_MENU_L2_P1_20260902",
+  "bindingMode": "CASE_PARAMETER_CONTROL_KEYS",
+  "sourceOfTruth": "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+  "caseBlueprint": "contracts/policy/sales-menu-l2-case-blueprint.json",
+  "caseCount": 16,
+  "controls": {
+    "SALES_MENU_PAGE": {
+      "testId": "sales-menu-page",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_CHANNEL_CARDS": {
+      "testId": "sales-menu-channel-cards",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_CHANNEL_CARD": {
+      "testIdTemplate": "sales-menu-channel-${channelRef}",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_CHANNEL_PAGINATION": {
+      "testIdPrefix": "sales-menu-page-pagination",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_MODE": {
+      "testIdTemplate": "sales-menu-mode-${mode}",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_SELECTOR": {
+      "testId": "sales-menu-selector",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_SELECTOR_PAGINATION": {
+      "testIdPrefix": "sales-menu-selector-pagination",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_MANAGER": {
+      "testId": "sales-menu-manager",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_MANAGER_PAGINATION": {
+      "testIdPrefix": "sales-menu-manager-pagination",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_SECTION_LIST": {
+      "testId": "sales-menu-section-list",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_SECTION": {
+      "testIdTemplate": "sales-menu-section-${sectionRef}",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_SECTION_ACTION": {
+      "parentTestId": "sales-menu-section-${sectionRef}",
+      "role": "button",
+      "name": "更多分区操作",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
+      ]
+    },
+    "SALES_MENU_ITEM_TABLE": {
+      "testId": "sales-menu-item-table",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_ITEM": {
+      "testIdTemplate": "sales-menu-item-${itemRef}",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_ITEM_ACTION": {
+      "testIdTemplate": "sales-menu-item-${itemRef}-menu",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_CANDIDATE_DRAWER": {
+      "testId": "sales-menu-candidate-drawer",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_CANDIDATE_CATEGORY_TREE": {
+      "testId": "sales-menu-candidate-category-tree",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_CANDIDATE_PAGINATION": {
+      "testIdPrefix": "sales-menu-candidate-pagination",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_ITEM_EDITOR": {
+      "testId": "sales-menu-item-editor",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_ITEM_DISPLAY_NAME": {
+      "testId": "sales-menu-item-display-name",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_ITEM_LISTED_PRICE": {
+      "testId": "sales-menu-item-listed-price",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_ITEM_MEDIA_EDITOR": {
+      "testId": "sales-menu-item-media-editor",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_ITEM_MEDIA_UPLOAD": {
+      "testId": "sales-menu-item-media-upload",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_ITEM_MEDIA_LIST": {
+      "testId": "sales-menu-item-media-list",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_ITEM_DETAIL": {
+      "testId": "sales-menu-item-detail",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_PUBLISH_DRAWER": {
+      "testId": "sales-menu-publish-drawer",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_SCHEDULE_DRAWER": {
+      "testId": "sales-menu-schedule-drawer",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_DRAFT_PAGINATION": {
+      "testIdPrefix": "sales-menu-draft-pagination",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_PUBLISHED_PAGINATION": {
+      "testIdPrefix": "sales-menu-published-pagination",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_OPERATION_LOG": {
+      "testId": "sales-menu-operation-log",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_LOG_PAGINATION": {
+      "testIdPrefix": "sales-menu-log-pagination",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    }
+  },
+  "noSeedRuntimeInput": true
+}

@@ -15,6 +15,10 @@ import {
 import {Button, Card, Dropdown, Input, Space, Tag, Tooltip, Tree} from 'antd';
 import {EllipsisTooltip, NameCodeText, testId} from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useMemo, type Key, type ReactNode} from 'react';
+import {
+  buildCatalogNavigationCategoryTree,
+  type CatalogNavigationCategoryTreeNode,
+} from '../../../app/api/catalogNavigationTree';
 import {catalogTestIds, catalogTestIdControls} from '../catalogTestIds';
 import type {CatalogNavigation} from '../model/catalogModel';
 import type {CatalogCategoryAction} from '../model/catalogWorkspaceTask';
@@ -105,6 +109,7 @@ type Props = {
 };
 
 type CategoryTreeNode = CatalogNavigation['tree'][number];
+type CategoryTreeDataNode = CatalogNavigationCategoryTreeNode<CategoryTreeNode>;
 
 /**
  * The owner is the write boundary for the three-level limit. The navigation tree mirrors that
@@ -160,21 +165,24 @@ export function CatalogWorkbenchNavigationTree({
   const treeData = useMemo<CatalogWorkbenchTreeNode[]>(() => {
     if (!navigation) return [];
     const match = search.trim().toLocaleLowerCase();
-    const categoryByParent = new Map<string, CatalogNavigation['tree']>();
-    navigation.tree.forEach(node => {
-      const parent = node.parentCategoryRef ?? '';
-      categoryByParent.set(parent, [...(categoryByParent.get(parent) ?? []), node]);
-    });
-    const categoryMatches = (node: CatalogNavigation['tree'][number]): boolean =>
+    const categoryTree = buildCatalogNavigationCategoryTree(navigation.tree);
+    const categoryTreeByRef = new Map<string, CategoryTreeDataNode>();
+    const indexCategoryTree = (nodes: readonly CategoryTreeDataNode[]) => {
+      nodes.forEach(node => {
+        categoryTreeByRef.set(String(node.category.categoryRef), node);
+        indexCategoryTree(node.children);
+      });
+    };
+    indexCategoryTree(categoryTree);
+    const categoryMatches = (treeNode: CategoryTreeDataNode): boolean =>
       !match ||
-      node.name.toLocaleLowerCase().includes(match) ||
-      node.code.toLocaleLowerCase().includes(match) ||
-      (categoryByParent.get(node.categoryRef) ?? []).some(categoryMatches);
-    const renderCategory = (node: CatalogNavigation['tree'][number]): CatalogWorkbenchTreeNode => {
-      const siblings = (categoryByParent.get(node.parentCategoryRef ?? '') ?? [])
-        .slice()
-        .sort((left, right) => left.displayOrder - right.displayOrder || left.code.localeCompare(right.code));
-      const siblingIndex = siblings.findIndex(sibling => sibling.categoryRef === node.categoryRef);
+      treeNode.category.name.toLocaleLowerCase().includes(match) ||
+      treeNode.category.code.toLocaleLowerCase().includes(match) ||
+      treeNode.children.some(categoryMatches);
+    const renderCategory = ({category: node, children}: CategoryTreeDataNode): CatalogWorkbenchTreeNode => {
+      const parentNode = node.parentCategoryRef ? categoryTreeByRef.get(String(node.parentCategoryRef)) : undefined;
+      const siblings = parentNode?.children ?? categoryTree;
+      const siblingIndex = siblings.findIndex(sibling => sibling.category.categoryRef === node.categoryRef);
       const canMoveUp = siblingIndex > 0;
       const canMoveDown = siblingIndex >= 0 && siblingIndex < siblings.length - 1;
       const canCreateChild = catalogCategoryCanCreateChild(node, navigation.tree);
@@ -261,7 +269,7 @@ export function CatalogWorkbenchNavigationTree({
             <NameCodeText name={node.name} code={node.code} />
           </CatalogTreeLine>
         ),
-        children: (categoryByParent.get(node.categoryRef) ?? []).filter(categoryMatches).map(renderCategory),
+        children: children.filter(categoryMatches).map(renderCategory),
       };
     };
     return [
@@ -364,7 +372,7 @@ export function CatalogWorkbenchNavigationTree({
             key: 'UNCATEGORIZED:UNCATEGORIZED',
             title: <CatalogTreeLine label="未分类" count={navigation.uncategorizedCount ?? 0} />,
           },
-          ...(categoryByParent.get('') ?? []).filter(categoryMatches).map(renderCategory),
+          ...categoryTree.filter(categoryMatches).map(renderCategory),
         ],
       },
     ];

@@ -1,0 +1,3944 @@
+{
+  "paths": {
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus": {
+      "get": {
+        "operationId": "getOperationsSalesMenus",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "SALES_MENU_CHANNEL_INELIGIBLE",
+          "SALES_MENU_SCOPE_MISMATCH"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channelRef",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 160
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOperationsSalesMenu",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_MENU_CHANNEL_INELIGIBLE",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-capability": "REQ_CREATE_OPERATIONS_SALES_MENU",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCreateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}": {
+      "get": {
+        "operationId": "getOperationsSalesMenu",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "SALES_MENU_CHANNEL_INELIGIBLE",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_SCOPE_MISMATCH"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channelRef",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections": {
+      "get": {
+        "operationId": "getOperationsSalesMenuDraftSections",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_SCOPE_MISMATCH"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuSectionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOperationsSalesMenuSection",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_CREATE_OPERATIONS_SALES_MENU_SECTION",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuSectionCreateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items": {
+      "get": {
+        "operationId": "getOperationsSalesMenuDraftItems",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_SECTION_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesSectionRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuItemPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      },
+      "post": {
+        "operationId": "addOperationsSalesMenuItems",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_ITEM_REFERENCE_INVALID",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT",
+          "SALES_SECTION_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesSectionRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_ADD_OPERATIONS_SALES_MENU_ITEMS",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuItemsAddRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}": {
+      "get": {
+        "operationId": "getOperationsSalesMenuDraftItem",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "SALES_ITEM_NOT_FOUND",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_SCOPE_MISMATCH"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesItemRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuDraftItemView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateOperationsSalesMenuItem",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_ITEM_NOT_FOUND",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_ASSET_INVALID",
+          "SALES_MENU_ASSET_LIFECYCLE_CONFLICT",
+          "SALES_MENU_ASSET_TARGET_MISMATCH",
+          "SALES_MENU_CONSTRAINT_INVALID",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_ITEM_REFERENCE_INVALID",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_PRICE_REQUIRED",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_SKU_REFERENCE_INVALID",
+          "SALES_MENU_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesItemRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Sales-Menu-Asset-Bind-Grants",
+            "in": "header",
+            "required": false,
+            "description": "JSON assetRef-to-bindGrant map for this save only. It is transient proof material, never sales-menu data or log content.",
+            "schema": {
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_UPDATE_OPERATIONS_SALES_MENU_ITEM",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuItemUpdateRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteOperationsSalesMenuItem",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_ITEM_NOT_FOUND",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesItemRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_DELETE_OPERATIONS_SALES_MENU_ITEM",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuDeleteRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections": {
+      "get": {
+        "operationId": "getOperationsSalesMenuPublishedSections",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_SCOPE_MISMATCH"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuPublishedSectionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items": {
+      "get": {
+        "operationId": "getOperationsSalesMenuPublishedItems",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_PUBLICATION_REQUIRED",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_SECTION_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesSectionRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channelRef",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuPublishedItemPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}": {
+      "get": {
+        "operationId": "getOperationsSalesMenuPublishedItem",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "SALES_ITEM_NOT_FOUND",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_PUBLICATION_REQUIRED",
+          "SALES_MENU_SCOPE_MISMATCH"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesItemRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channelRef",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuPublishedItemView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/item-candidates": {
+      "get": {
+        "operationId": "getOperationsSalesMenuItemCandidates",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_SCOPE_MISMATCH"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "categoryRef",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 160
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCandidatePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview": {
+      "get": {
+        "operationId": "getOperationsSalesMenuPublicationPreview",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_SCOPE_MISMATCH"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channelRef",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuPublicationPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records": {
+      "get": {
+        "operationId": "getOperationsSalesMenuOperationRecords",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_SCOPE_MISMATCH"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channelRef",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuOperationRecordPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies": {
+      "post": {
+        "operationId": "copyOperationsSalesMenu",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_COPY_OPERATIONS_SALES_MENU",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCopyRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/name": {
+      "patch": {
+        "operationId": "renameOperationsSalesMenu",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_RENAME_OPERATIONS_SALES_MENU",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuRenameRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/archive": {
+      "post": {
+        "operationId": "archiveOperationsSalesMenu",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_ARCHIVE_OPERATIONS_SALES_MENU",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuArchiveRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation": {
+      "put": {
+        "operationId": "setOperationsSalesMenuActivation",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_CHANNEL_INELIGIBLE",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "channelRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_SET_OPERATIONS_SALES_MENU_ACTIVATION",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuActivationRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule": {
+      "put": {
+        "operationId": "updateOperationsSalesMenuSchedule",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCHEDULE_INVALID",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_UPDATE_OPERATIONS_SALES_MENU_SCHEDULE",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuScheduleUpdateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name": {
+      "patch": {
+        "operationId": "renameOperationsSalesMenuSection",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT",
+          "SALES_SECTION_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesSectionRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_RENAME_OPERATIONS_SALES_MENU_SECTION",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuSectionRenameRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}": {
+      "delete": {
+        "operationId": "deleteOperationsSalesMenuSection",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_SECTION_NOT_EMPTY",
+          "SALES_MENU_VERSION_CONFLICT",
+          "SALES_SECTION_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesSectionRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_DELETE_OPERATIONS_SALES_MENU_SECTION",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuDeleteRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/move": {
+      "post": {
+        "operationId": "moveOperationsSalesMenuSection",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_MOVE_BOUNDARY",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT",
+          "SALES_SECTION_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesSectionRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_MOVE_OPERATIONS_SALES_MENU_SECTION",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuSectionMoveRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move": {
+      "post": {
+        "operationId": "moveOperationsSalesMenuItem",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_ITEM_NOT_FOUND",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_MOVE_BOUNDARY",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesItemRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_MOVE_OPERATIONS_SALES_MENU_ITEM",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuItemMoveRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage": {
+      "post": {
+        "operationId": "stageOperationsSalesMenuAsset",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_ITEM_NOT_FOUND",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_ASSET_INVALID",
+          "SALES_MENU_ASSET_TARGET_MISMATCH",
+          "SALES_MENU_CAPABILITY_REQUIRED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesItemRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuAssetStageReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_STAGE_OPERATIONS_SALES_MENU_ASSET",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuAssetStageRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release": {
+      "post": {
+        "operationId": "releaseOperationsSalesMenuStagedAsset",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_ITEM_NOT_FOUND",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_ASSET_INVALID",
+          "SALES_MENU_ASSET_LIFECYCLE_CONFLICT",
+          "SALES_MENU_ASSET_TARGET_MISMATCH",
+          "SALES_MENU_CAPABILITY_REQUIRED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesItemRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "assetRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuAssetReleaseReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_RELEASE_OPERATIONS_SALES_MENU_STAGED_ASSET",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuAssetReleaseRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications": {
+      "post": {
+        "operationId": "publishOperationsSalesMenu",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_ASSET_INVALID",
+          "SALES_MENU_CHANNEL_DISABLED",
+          "SALES_MENU_CHANNEL_INELIGIBLE",
+          "SALES_MENU_CONSTRAINT_INVALID",
+          "SALES_MENU_DRAFT_INVALID",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_ITEM_REFERENCE_INVALID",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_PRICE_REQUIRED",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCHEDULE_INVALID",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_SKU_REFERENCE_INVALID",
+          "SALES_MENU_STORE_DISABLED",
+          "SALES_MENU_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_PUBLISH_OPERATIONS_SALES_MENU",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuPublishRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out": {
+      "post": {
+        "operationId": "setOperationsSalesMenuItemSoldOut",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_ITEM_NOT_FOUND",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_MANUAL_REASON_REQUIRED",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_PUBLICATION_REQUIRED",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesItemRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "channelRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_SET_OPERATIONS_SALES_MENU_ITEM_SOLD_OUT",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuManualSoldOutRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore": {
+      "post": {
+        "operationId": "restoreOperationsSalesMenuItemSale",
+        "tags": [
+          "sales-menu"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "sales-menu",
+        "x-scenario-ids": [
+          "R5-SALES-MENU"
+        ],
+        "x-page-key": "OPERATIONS-SALES-MENU",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "SALES_ITEM_NOT_FOUND",
+          "SALES_MENU_ARCHIVED",
+          "SALES_MENU_IDEMPOTENCY_CONFLICT",
+          "SALES_MENU_NOT_FOUND",
+          "SALES_MENU_PUBLICATION_REQUIRED",
+          "SALES_MENU_RESULT_UNKNOWN",
+          "SALES_MENU_SCOPE_MISMATCH",
+          "SALES_MENU_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesMenuRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "salesItemRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "channelRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_RESTORE_OPERATIONS_SALES_MENU_ITEM_SALE",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuManualRestoreRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

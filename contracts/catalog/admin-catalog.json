@@ -891,6 +891,27 @@
       }
     },
     {
+      "key": "PG-SALES-MENU-STORE",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {"label": "门店销售菜单"},
+      "page": {"kind": "BUSINESS"},
+      "navigation": {"groupKey": "NAV-CATALOG-SERVICES", "order": 540},
+      "experience": {
+        "pageDescription": "按当前门店维护内部堂食与外带经营入口的销售菜单。",
+        "dataNodeCascaderLabel": "可视数据节点",
+        "noDataNodePrompt": "请选择可视数据节点",
+        "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+        "cascadeLevelLabels": ["大区", "项目", "门店"],
+        "forbiddenAlternatives": ["项目级菜单", "外部菜单", "商品对应关系"]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT", "STORE"],
+        "requiredDataNodeType": "STORE"
+      }
+    },
+    {
       "key": "BC-ORG-GROUP-EDIT",
       "kind": "ACTION",
       "consumerFace": "operations-admin",
@@ -1472,6 +1493,20 @@
       "action": {
         "groupKey": "CATALOG_MANAGEMENT",
         "targetPageKey": "PG-INVENTORY-STORE-STATUS",
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT", "STORE"],
+        "scopeApplicability": "SELECTED_STORE_SCOPE"
+      }
+    },
+    {
+      "key": "EDIT_STORE_SALES_MENU",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "编辑门店销售菜单"
+      },
+      "action": {
+        "groupKey": "CATALOG_MANAGEMENT",
+        "targetPageKey": "PG-SALES-MENU-STORE",
         "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT", "STORE"],
         "scopeApplicability": "SELECTED_STORE_SCOPE"
       }

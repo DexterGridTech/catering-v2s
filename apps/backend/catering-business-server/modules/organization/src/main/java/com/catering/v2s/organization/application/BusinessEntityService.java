@@ -19,6 +19,7 @@ import com.catering.v2s.organization.api.OrganizationEntityLookup;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.api.OrganizationNodeLookup;
 import com.catering.v2s.organization.api.OrganizationNodeTypes;
+import com.catering.v2s.organization.api.OrganizationOwnerApi;
 import com.catering.v2s.organization.api.StoreAssignmentLookup;
 import com.catering.v2s.organization.api.StoreContractLookup;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
@@ -47,7 +48,8 @@ public class BusinessEntityService
                 StoreContractLookup,
                 CatalogScopeLookup,
                 OperationsBusinessEntityCommandApi,
-                OperationsStoreCommandApi {
+                OperationsStoreCommandApi,
+                OrganizationOwnerApi {
     private static final String BUSINESS_ENTITY_PROJECTION =
             "entities.id, entities.workspace_uuid, entities.group_workspace_key, entities.code, entities.name, "
                     + "entities.legal_name, entities.credit_code, entities.alias, entities.remark, entities.notes, "
@@ -2017,6 +2019,35 @@ public class BusinessEntityService
                     statement.setString(3, groupWorkspaceKey);
                 },
                 result -> result.next() && "ENABLED".equals(result.getString(1)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrganizationOwnerApi.SalesMenuStoreJudgment requireSalesMenuStore(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
+        if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank() || storeRef == null) {
+            throw new OrganizationValidationException();
+        }
+        return jdbc.query(
+                "SELECT store.id AS store_ref, store.status, store.brand_id "
+                        + "FROM organization.store store "
+                        + "WHERE store.id=? AND store.workspace_uuid=? AND store.group_workspace_key=?",
+                statement -> {
+                    statement.setObject(1, storeRef);
+                    statement.setObject(2, workspaceUuid);
+                    statement.setString(3, groupWorkspaceKey);
+                },
+                result -> {
+                    if (!result.next()) throw new OrganizationNotFoundException();
+                    UUID actualStoreRef = result.getObject("store_ref", UUID.class);
+                    UUID actualBrandRef = result.getObject("brand_id", UUID.class);
+                    return new OrganizationOwnerApi.SalesMenuStoreJudgment(
+                            actualStoreRef,
+                            result.getString("status"),
+                            null,
+                            actualStoreRef.toString(),
+                            actualBrandRef.toString());
+                });
     }
 
     @Override

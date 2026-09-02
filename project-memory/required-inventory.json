@@ -1982,6 +1982,80 @@
       ]
     },
     {
+      "id": "operations.execution-economics-and-failure-family-closure",
+      "path": "project-memory/operations/execution-economics-and-failure-family-closure.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "backend-acceptance",
+          "testing",
+          "review"
+        ],
+        "domains": [
+          "platform",
+          "backend",
+          "contract",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "backend",
+          "frontend-platform"
+        ],
+        "impacts": [
+          "evidence",
+          "governance",
+          "runtime"
+        ],
+        "triggers": [
+          "implementation",
+          "failure",
+          "review"
+        ]
+      },
+      "requiredAssertions": [
+        "RUN_COUNT_NOT_RUN_COST_DOMINATES",
+        "FAILURE_FAMILY_CLOSED_BEFORE_NEXT",
+        "BROAD_RUN_IS_REGRESSION_NOT_DISCOVERY",
+        "PASS_WITHOUT_REVIEWED_FIXTURE_DENOMINATOR_IS_NOT_COMPLETION",
+        "RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "RUN_COUNT_NOT_RUN_COST_DOMINATES",
+          "path": "doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md",
+          "anchor": "> **运行本身只占墙钟的 13%。约 14 小时、86% 的时间不在跑测试。**"
+        },
+        {
+          "assertionKey": "FAILURE_FAMILY_CLOSED_BEFORE_NEXT",
+          "path": "doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md",
+          "anchor": "> **同一 failureCategory 第二次出现,立即停止业务推进,先把该族关闭到零复发。**"
+        },
+        {
+          "assertionKey": "BROAD_RUN_IS_REGRESSION_NOT_DISCOVERY",
+          "path": "doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md",
+          "anchor": "`all` 是**回归确认**,不是**发现手段**。"
+        },
+        {
+          "assertionKey": "PASS_WITHOUT_REVIEWED_FIXTURE_DENOMINATOR_IS_NOT_COMPLETION",
+          "path": "doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md",
+          "anchor": "**因此本批已有的任何 PASS,在其 fixture 分母被独立复核之前,都不构成完成证据。**"
+        },
+        {
+          "assertionKey": "RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN",
+          "path": "doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md",
+          "anchor": "对阶段 0 与 1 的产物做证伪式对账,**在第一次动态运行之前**。"
+        }
+      ],
+      "sourceRefs": [
+        "doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md"
+      ]
+    },
+    {
       "id": "operations.verification-governance",
       "path": "project-memory/operations/verification-governance.md",
       "layer": "routed",
@@ -3188,7 +3262,9 @@
       "requiredAssertions": [
         "ACCEPTANCE_ASSERTS_EXACT_NESTED_ROUTE",
         "ACCEPTANCE_FIXTURE_REACHES_TARGET_RULE",
-        "ACCEPTANCE_ORACLE_EXCLUDES_TRANSPORT_METADATA"
+        "ACCEPTANCE_ORACLE_EXCLUDES_TRANSPORT_METADATA",
+        "FIXTURE_HELPER_RETURN_CARRIES_RESOURCE_IDENTITY",
+        "ORACLE_EXPECTATION_RECOMPUTED_FROM_ACTION_SEQUENCE"
       ],
       "assertionSources": [
         {
@@ -3205,6 +3281,16 @@
           "assertionKey": "ACCEPTANCE_ORACLE_EXCLUDES_TRANSPORT_METADATA",
           "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
           "anchor": "## 3. 业务断言不能把传输元数据当作数据泄漏"
+        },
+        {
+          "assertionKey": "FIXTURE_HELPER_RETURN_CARRIES_RESOURCE_IDENTITY",
+          "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
+          "anchor": "`FIXTURE_HELPER_RETURN_CARRIES_RESOURCE_IDENTITY`"
+        },
+        {
+          "assertionKey": "ORACLE_EXPECTATION_RECOMPUTED_FROM_ACTION_SEQUENCE",
+          "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
+          "anchor": "`ORACLE_EXPECTATION_RECOMPUTED_FROM_ACTION_SEQUENCE`"
         }
       ],
       "sourceRefs": [
@@ -4377,7 +4463,7 @@
       "requiredAssertions": [
         "TERMINAL_STANDARD_SINGLE_SOURCE",
         "TERMINAL_STANDARD_POINTERS_ONLY",
-        "TERMINAL_TEN_HARD_RULES",
+        "TERMINAL_HARD_RULES_NUMBERING_STABLE",
         "TERMINAL_TRIPLE_NAMING_DERIVED",
         "TERMINAL_PORT_REGISTRY_WITH_DEFAULTS",
         "TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README"
@@ -4394,9 +4480,9 @@
           "anchor": "## 6 · 维护约定"
         },
         {
-          "assertionKey": "TERMINAL_TEN_HARD_RULES",
+          "assertionKey": "TERMINAL_HARD_RULES_NUMBERING_STABLE",
           "path": "doc/platform/terminal-coding-standard.md",
-          "anchor": "## 1 · 十条硬规则（`TR-01` … `TR-10`）"
+          "anchor": "## 1 · 硬规则（`TR-01` 起，编号只增不改）"
         },
         {
           "assertionKey": "TERMINAL_TRIPLE_NAMING_DERIVED",
@@ -4457,7 +4543,8 @@
         "TER_SINGLE_VM_SINGLE_STORE_MULTI_SURFACE",
         "TER_PAIR_TOPOLOGY_WITH_DETACHABLE_SECONDARY",
         "TER_STACK_RULINGS_T1_T13",
-        "TER_SCRIPT_EXECUTE_UNRESTRICTED"
+        "TER_SCRIPT_EXECUTE_UNRESTRICTED",
+        "TER_EVENT_TO_COMMAND_ACTOR_PATTERN"
       ],
       "assertionSources": [
         {
@@ -4489,9 +4576,15 @@
           "assertionKey": "TER_SCRIPT_EXECUTE_UNRESTRICTED",
           "path": "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md",
           "anchor": "### 4B.11 Dexter 2026-08-28 第三轮裁定（Q-04 / X-02 / X-07 / X-08 / Q-11）"
+        },
+        {
+          "assertionKey": "TER_EVENT_TO_COMMAND_ACTOR_PATTERN",
+          "path": "doc/platform/terminal-coding-standard.md",
+          "anchor": "### `TR-11` · 事件必须变成 command，不得以回调或 effect 列表交给业务方"
         }
       ],
       "sourceRefs": [
+        "doc/platform/terminal-coding-standard.md",
         "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md"
       ]
     },

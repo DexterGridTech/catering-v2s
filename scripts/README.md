@@ -47,6 +47,8 @@ When the local host has no Docker daemon, execute focused R5 Testcontainers from
 scripts/test/r5-remote-testcontainers.mjs :apps:backend:catering-business-server:modules:asset:test
 ```
 
+可用 `node scripts/test/managed-run-summary.mjs [managed-evidence-root]` 对受管 run manifest 做只读汇总。它报告有记录时长、墙钟跨度、run 总时长、中位数、最大值、run 间未归因间隙、business/cleanup/status/failureCategory 与阶段（无显式阶段时按 verification mode、operation 或 task）统计；无效 manifest 会使汇总为 `INCOMPLETE`，不会静默忽略。
+
 The entry creates a per-run temporary source and Gradle snapshot on that host, reuses only a fixed remote dependency cache, returns the test report under `.runtime/r5/evidence/remote-testcontainers/`, compares Testcontainers resources before and after the run, and deletes its exact temporary directory. Before source sync it rejects identity-matching prior managed processes, prior RSS above 2048 MiB, or any stale `org.testcontainers=true` container/volume; those observations are written into the run manifest. It neither starts DEV nor uses the DEV database as a Testcontainers substitute.
 
 The root Gradle build has a fail-closed guard for every test source that imports or constructs Testcontainers. Such a task must receive `V2S_TESTCONTAINERS_EXECUTION_PLANE=remote`, which only the managed remote runner exports immediately before the remote JVM starts. Direct local Gradle execution therefore stops with `V2S_TESTCONTAINERS_REMOTE_REQUIRED` before Testcontainers can invoke `DockerClientProviderStrategy`; no local Colima or Docker socket fallback is permitted.

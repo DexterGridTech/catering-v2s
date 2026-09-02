@@ -33,22 +33,19 @@ import type {RuntimeUnknownAction, RuntimeStore} from '../types/runtime'
 import type {RuntimeModule, RuntimeRoleChangeSignal} from '../types/module'
 import type {RuntimeJournalEvent} from '../types/journal'
 import {moduleName} from '../moduleName'
-import {cleanupRequestLedgerCommand, initializeCommand} from '../features/commands'
+import {initializeCommand} from '../features/commands'
 import {createInternalRuntimeModule} from './createInternalRuntimeModule'
-import {createRequestLedgerRoleEffect} from './createRequestLedgerRoleEffect'
 import {describeRuntimeModule} from './moduleManifest'
 import {resolveModuleOrder} from '../foundations/resolveModuleOrder'
 import {createRuntimeLifecycle} from '../foundations/createRuntimeLifecycle'
 import {createCommandDispatcher} from '../foundations/createCommandDispatcher'
 import {createRuntimeJournal} from '../foundations/createRuntimeJournal'
 import {createActorRegistry} from '../foundations/createActorRegistry'
+import {assertNonEmptyString} from '../foundations/assertNonEmptyString'
+import {createRuntimeResourceRegistry} from '../foundations/createRuntimeResourceRegistry'
 import {commandDefinitionBrand} from '../types/command'
-import {
-  actorCommandHandlerDefinitionBrand,
-  actorDefinitionBrand,
-} from '../types/actor'
-import {createRuntimeTestResourceRegistry, registerRuntimeTestResources} from '../testing/releaseRuntimeForTest'
-import {registerRuntimeStateSyncForTest} from '../testing/runtimeStateSyncForTest'
+import {registerRuntimeResourceAccessorForTest} from '../testing/releaseRuntimeForTest'
+import {registerRuntimeStateSyncAccessorForTest} from '../testing/runtimeStateSyncForTest'
 
 const lifecycleErrorDefinition = {
   key: `${moduleName}.lifecycle_failed`,
@@ -171,64 +168,28 @@ const validateModuleShape = (
   return definitions
 }
 
-const validateActorMounts = (
-  modules: readonly RuntimeModule[],
-  definitions: ReadonlyMap<string, RegisteredCommandDefinition>,
-): void => {
-  const actorKeys = new Set<string>()
-  const actorCommandPairs = new Set<string>()
-  for (const module of modules) {
-    for (const actor of module.actorDefinitions ?? []) {
-      if (typeof actor !== 'object' || actor === null || !(actorDefinitionBrand in actor)) {
-        throw new Error(`Actor was not created by defineActor: ${module.moduleName}`)
-      }
-      if (actor.moduleName !== module.moduleName) {
-        throw new Error(`Actor definition does not belong to owning module: ${actor.actorKey}`)
-      }
-      const actorKey = `${actor.moduleName}.${actor.actorName}`
-      if (actorKeys.has(actorKey)) throw new Error(`Duplicate runtime actor: ${actorKey}`)
-      actorKeys.add(actorKey)
-      for (const handler of actor.handlers) {
-        if (typeof handler !== 'object' || handler === null || !(actorCommandHandlerDefinitionBrand in handler)) {
-          throw new Error(`Actor handler was not created by onCommand: ${actorKey}`)
-        }
-        if (handler.definition.commandName !== handler.commandName) {
-          throw new Error(`Actor handler command identity mismatch: ${handler.commandName}`)
-        }
-        const definition = definitions.get(handler.commandName)
-        if (definition === undefined) throw new Error(`Actor handler command is not registered: ${handler.commandName}`)
-        const pair = `${actorKey}:${handler.commandName}`
-        if (actorCommandPairs.has(pair)) throw new Error(`Duplicate runtime actor handler: ${pair}`)
-        actorCommandPairs.add(pair)
-      }
-    }
-  }
-}
-
 export const createRuntime = (input: CreateRuntimeInput): Runtime => {
-  if (input.localNodeId.trim().length === 0) throw new Error('Runtime localNodeId must be non-empty')
-  if (input.state.runtimeName.trim().length === 0) throw new Error('Runtime runtimeName must be non-empty')
+  assertNonEmptyString(input.localNodeId, '', 'Runtime localNodeId')
+  assertNonEmptyString(input.state.runtimeName, '', 'Runtime runtimeName')
   const resolvedLimitsRef: {current?: RuntimeLimits} = {}
-  const roleChangeEffects = Object.freeze([
-    ...input.modules.flatMap(module => [...(module.roleChangeEffects ?? [])]),
-    createRequestLedgerRoleEffect(),
-  ])
   const roleChangeSignalRef: {
     current?: (signal: RuntimeRoleChangeSignal) => void
   } = {}
   const internalModule = createInternalRuntimeModule(
-    roleChangeEffects,
     signal => roleChangeSignalRef.current?.(signal),
     () => resolvedLimitsRef.current ?? defaultRuntimeLimits,
   )
   const declaredModules = [internalModule, ...input.modules]
   const definitions = validateModuleShape(declaredModules)
-  validateActorMounts(declaredModules, definitions)
   const maxRegisteredCommandTimeoutMs = [...definitions.values()]
     .reduce((max, definition) => Math.max(max, definition.timeoutMs), Number(defaultCommandTimeoutMs))
   const limits = resolveLimits(input.limits, maxRegisteredCommandTimeoutMs)
   resolvedLimitsRef.current = limits
   const modules = resolveModuleOrder(declaredModules)
+  const actorRegistry = createActorRegistry(modules, definitions, {
+    actorDefinition: moduleNameValue => `Actor was not created by defineActor: ${moduleNameValue}`,
+    handlerDefinition: actorKey => `Actor handler was not created by onCommand: ${actorKey}`,
+  })
   const descriptors = Object.freeze(modules.map(describeRuntimeModule))
   const journal = createRuntimeJournal(limits.maxJournalRecords)
   const logger = input.platformPorts.logger.scope({
@@ -244,39 +205,7 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
   let failure: AppError | null = null
   let startPromise: Promise<void> | undefined
   let resetting = false
-  let cleanupInFlight = false
-  let cleanupTimerRegistered = false
-  const resources = createRuntimeTestResourceRegistry()
-
-  const registerCleanupTimer = (): void => {
-    if (cleanupTimerRegistered || dispatcher === undefined) return
-    const timer = setInterval(() => {
-      if (cleanupInFlight || status !== 'started' || dispatcher === undefined) return
-      cleanupInFlight = true
-      void dispatcher.dispatchCommand(cleanupRequestLedgerCommand, Object.freeze({})).then(
-        result => {
-          if (result.status !== 'completed') {
-            logger.warn({
-              category: 'runtime.request-ledger',
-              event: 'runtime.request-ledger.cleanup-rejected',
-              message: 'request ledger cleanup did not complete',
-              data: {status: result.status},
-            })
-          }
-        }, () => {
-          logger.error({
-            category: 'runtime.request-ledger',
-            event: 'runtime.request-ledger.cleanup-failed',
-            message: 'request ledger cleanup dispatch failed',
-          })
-        },
-      ).finally(() => {
-        cleanupInFlight = false
-      })
-    }, limits.requestRetentionMs)
-    resources.register(() => clearInterval(timer))
-    cleanupTimerRegistered = true
-  }
+  const resources = createRuntimeResourceRegistry()
 
   const dispatchForContext = <TPayload extends StateJsonValue>(
     definition: CommandDefinition<TPayload>,
@@ -365,10 +294,7 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
           stateRuntime,
           limits,
           definitionsByName: definitions,
-          handlersByCommand: ((): ReadonlyMap<string, readonly import('../types/actor').RegisteredActorHandler[]> => {
-            const registry = createActorRegistry(modules)
-            return registry.handlersByCommand
-          })(),
+          handlersByCommand: actorRegistry.handlersByCommand,
           getSessionId: input.getSessionId,
           onLifecycleEvent: input.onLifecycleEvent,
           journal,
@@ -383,7 +309,6 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
           throw lifecycleError(`Initialize did not complete: ${initializeResult.status}`)
         }
         status = 'started'
-        registerCleanupTimer()
       } catch (error) {
         failure = isAppError(error) ? error : lifecycleError('Runtime start failed', error)
         status = 'failed'
@@ -440,7 +365,7 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
     getStore,
     dispatchCommand,
   }
-  registerRuntimeTestResources(runtime, resources)
-  registerRuntimeStateSyncForTest(runtime, () => stateRuntime)
+  registerRuntimeResourceAccessorForTest(runtime, resources)
+  registerRuntimeStateSyncAccessorForTest(runtime, () => stateRuntime)
   return runtime
 }

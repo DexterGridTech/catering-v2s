@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/kernel-base-contracts",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-contracts", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": [
+    "AppError", "AppModule", "AppModuleActorDescriptor", "AppModuleCommandDescriptor", "AppModuleDependency", "AppModuleKind", "AppModuleSliceDescriptor", "CommandId", "CommandLifecycleStatus", "CommandResultPatch", "CommandResultSnapshot", "CommandRouteContext", "ConnectionId", "CreateAppErrorContext", "CreateAppErrorInput", "DefineErrorInput", "DefineParameterInput", "DispatchId", "EnvelopeId", "ErrorCategory", "ErrorDefinition", "ErrorSeverity", "ErrorTemplateArguments", "ErrorTemplateValue", "ModuleErrorFactory", "ModuleParameterFactory", "NodeId", "ParameterDefinition", "ParameterDescriptor", "ParameterValueType", "ProjectionId", "RenderedErrorTemplate", "RequestCommandSnapshot", "RequestId", "RequestLifecycleSnapshot", "RequestLifecycleStatus", "ResolveTransportServerConfigOptions", "RuntimeIdKind", "RuntimeInstanceId", "SessionId", "TimestampMs", "TransportRequestContext", "TransportServerAddress", "TransportServerAddressOverride", "TransportServerConfig", "TransportServerConfigSpace", "TransportServerDefinition", "TransportServerOverride", "createAppError", "createCommandId", "createConnectionId", "createDispatchId", "createEnvelopeId", "createModuleErrorFactory", "createModuleParameterFactory", "createNodeId", "createProjectionId", "createRequestId", "createRuntimeId", "createRuntimeInstanceId", "createSessionId", "dependencyModuleNames", "devDependencyModuleNames", "isAppError", "listDefinitions", "moduleName", "nowTimestampMs", "renderErrorTemplate", "runtimeIdPrefixes"
+  ],
+  "runtimeIdPrefixes": {
+    "runtime": "run",
+    "request": "req",
+    "command": "cmd",
+    "session": "ses",
+    "node": "nod",
+    "connection": "con",
+    "envelope": "env",
+    "dispatch": "dsp",
+    "projection": "prj"
+  },
+  "closedUnionDefinitions": {
+    "AppModuleKind": ["owner", "toolkit"],
+    "ErrorCategory": ["BUSINESS", "VALIDATION", "AUTHENTICATION", "AUTHORIZATION", "NETWORK", "DATABASE", "EXTERNAL_API", "SYSTEM", "UNKNOWN"],
+    "ErrorSeverity": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+    "ParameterValueType": ["string", "number", "boolean", "json"],
+    "RequestLifecycleStatus": ["started", "completed", "partial-failed", "timed-out", "error"],
+    "CommandLifecycleStatus": ["registered", "dispatched", "accepted", "started", "completed", "error"]
+  },
+  "closedUnionConsumerCount": 10,
+  "closedUnionConsumers": [
+    {"union": "AppModuleKind", "unionPackage": "@catering-v2s/kernel-base-contracts", "expectedSymbol": "@catering-v2s/kernel-base-contracts#AppModuleKind", "sourceFile": "src/types/module.ts", "declarationId": "AppModule", "member": "kind"},
+    {"union": "ErrorCategory", "unionPackage": "@catering-v2s/kernel-base-contracts", "expectedSymbol": "@catering-v2s/kernel-base-contracts#ErrorCategory", "sourceFile": "src/foundations/definition.ts", "declarationId": "DefineErrorInput", "member": "category"},
+    {"union": "ErrorCategory", "unionPackage": "@catering-v2s/kernel-base-contracts", "expectedSymbol": "@catering-v2s/kernel-base-contracts#ErrorCategory", "sourceFile": "src/types/error.ts", "declarationId": "ErrorDefinition", "member": "category"},
+    {"union": "ErrorCategory", "unionPackage": "@catering-v2s/kernel-base-contracts", "expectedSymbol": "@catering-v2s/kernel-base-contracts#ErrorCategory", "sourceFile": "src/types/error.ts", "declarationId": "AppError", "member": "category"},
+    {"union": "ErrorSeverity", "unionPackage": "@catering-v2s/kernel-base-contracts", "expectedSymbol": "@catering-v2s/kernel-base-contracts#ErrorSeverity", "sourceFile": "src/foundations/definition.ts", "declarationId": "DefineErrorInput", "member": "severity"},
+    {"union": "ErrorSeverity", "unionPackage": "@catering-v2s/kernel-base-contracts", "expectedSymbol": "@catering-v2s/kernel-base-contracts#ErrorSeverity", "sourceFile": "src/types/error.ts", "declarationId": "ErrorDefinition", "member": "severity"},
+    {"union": "ErrorSeverity", "unionPackage": "@catering-v2s/kernel-base-contracts", "expectedSymbol": "@catering-v2s/kernel-base-contracts#ErrorSeverity", "sourceFile": "src/types/error.ts", "declarationId": "AppError", "member": "severity"},
+    {"union": "ParameterValueType", "unionPackage": "@catering-v2s/kernel-base-contracts", "expectedSymbol": "@catering-v2s/kernel-base-contracts#ParameterValueType", "sourceFile": "src/types/parameter.ts", "declarationId": "ParameterDescriptor", "member": "valueType"},
+    {"union": "RequestLifecycleStatus", "unionPackage": "@catering-v2s/kernel-base-contracts", "expectedSymbol": "@catering-v2s/kernel-base-contracts#RequestLifecycleStatus", "sourceFile": "src/types/request.ts", "declarationId": "RequestLifecycleSnapshot", "member": "status"},
+    {"union": "CommandLifecycleStatus", "unionPackage": "@catering-v2s/kernel-base-contracts", "expectedSymbol": "@catering-v2s/kernel-base-contracts#CommandLifecycleStatus", "sourceFile": "src/types/request.ts", "declarationId": "RequestCommandSnapshot", "member": "status"}
+  ],
+  "literalUnions": {
+    "ErrorCategory": ["BUSINESS", "VALIDATION", "AUTHENTICATION", "AUTHORIZATION", "NETWORK", "DATABASE", "EXTERNAL_API", "SYSTEM", "UNKNOWN"],
+    "ErrorSeverity": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+    "ParameterValueType": ["string", "number", "boolean", "json"],
+    "RequestLifecycleStatus": ["started", "completed", "partial-failed", "timed-out", "error"],
+    "CommandRouteContext.workspace": ["MAIN", "BRANCH"],
+    "CommandRouteContext.instanceMode": ["MASTER", "SLAVE"],
+    "CommandRouteContext.displayMode": ["PRIMARY", "SECONDARY"]
+  }
+}

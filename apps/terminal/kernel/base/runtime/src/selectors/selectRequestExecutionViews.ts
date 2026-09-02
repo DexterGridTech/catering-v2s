@@ -4,34 +4,25 @@ import {
   peerRequestLedgerSliceNameForMode,
   readLiveRequestEnvelope,
   requestLedgerSliceNameForMode,
-  type RuntimeRequestLedgerState,
 } from '../features/slices/requestLedger'
 import {selectRuntimeInstanceMode} from './selectRuntimeInstanceMode'
 import {selectRequestExecutionView} from './selectRequestExecutionView'
+import {readRequestLedgerState} from './readRequestLedgerState'
 import type {RequestExecutionCommandView, RequestExecutionView} from '../types/requestLedger'
-
-const readLedgerState = (
-  state: StateRoot,
-  sliceName: string,
-): RuntimeRequestLedgerState | undefined => {
-  const slice = state[sliceName]
-  return typeof slice === 'object' && slice !== null
-    ? slice as RuntimeRequestLedgerState
-    : undefined
-}
+import {freezeList} from '../foundations/freezeList'
 
 export const selectRequestExecutionViews = (
   state: StateRoot,
   workspace?: 'MAIN' | 'BRANCH',
 ): readonly RequestExecutionView[] => {
   const mode = selectRuntimeInstanceMode(state)
-  const local = readLedgerState(state, requestLedgerSliceNameForMode(mode))
-  const peer = readLedgerState(state, peerRequestLedgerSliceNameForMode(mode))
+  const local = readRequestLedgerState(state, requestLedgerSliceNameForMode(mode))
+  const peer = readRequestLedgerState(state, peerRequestLedgerSliceNameForMode(mode))
   const requestIds = new Set<RequestId>([
     ...Object.keys(local ?? {}).filter(key => readLiveRequestEnvelope(local, key as RequestId) !== undefined).map(key => key as RequestId),
     ...Object.keys(peer ?? {}).filter(key => readLiveRequestEnvelope(peer, key as RequestId) !== undefined).map(key => key as RequestId),
   ])
-  return Object.freeze(
+  return freezeList(
     [...requestIds]
       .map(requestId => selectRequestExecutionView(state, requestId))
       .filter((view): view is RequestExecutionView => view !== null)
@@ -46,8 +37,8 @@ export const selectRequestExecutionCommands = (
   displayMode?: 'PRIMARY' | 'SECONDARY',
 ): readonly RequestExecutionCommandView[] => {
   const view = selectRequestExecutionView(state, requestId)
-  if (view === null) return Object.freeze([])
-  return Object.freeze(view.commands.filter(command =>
+  if (view === null) return freezeList([])
+  return freezeList(view.commands.filter(command =>
     displayMode === undefined || command.displayMode === null || command.displayMode === displayMode,
   ))
 }

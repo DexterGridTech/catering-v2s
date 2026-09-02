@@ -1,5 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import ts from 'typescript';
+import {readPackageInvariant} from '../terminal-shared/package-invariants.mjs';
+import {assertClosedUnionConsumers} from '../terminal-shared/closed-union-consumers.mjs';
+import {
+  createAnalysisProgram,
+  resolveAliasedSymbol,
+  resolveValueExpressionSymbol,
+} from '../terminal-shared/typescript-analysis.mjs';
 import {
   repoRoot,
   terminalRoot,
@@ -254,6 +262,11 @@ function runGraphComparison(context) {
     assertEqualSet('assembly dependency closure', [...reachable], expectedNames);
   }
   runAssemblyEntryReachability(context);
+  // The package-local invariant files own the closed-union denominator.  Do
+  // not freeze the migration-time 9/22 totals here: a later owner package may
+  // add or remove a legitimate consumer and must update its own invariant
+  // without changing this checker.
+  assertClosedUnionConsumers(root);
 }
 
 function runTripleNaming(context) {
@@ -333,21 +346,288 @@ function runDependencyDeclarationCompleteness(context) {
   }
 }
 
+function hasAncestorTypeAlias(node, aliasName) {
+  let current = node.parent;
+  while (current) {
+    if (ts.isTypeAliasDeclaration(current) && current.name.text === aliasName) return true;
+    current = current.parent;
+  }
+  return false;
+}
+
+function isActorDispatchProperty(checker, symbol) {
+  const resolved = symbol ? resolveAliasedSymbol(checker, symbol) : null;
+  return Boolean(
+    resolved?.name === 'dispatchAction'
+      && resolved.declarations?.some(declaration =>
+        ts.isPropertySignature(declaration)
+        && hasAncestorTypeAlias(declaration, 'ActorExecutionContext'),
+      ),
+  );
+}
+
+function resolveElementAccessProperty(checker, expression) {
+  if (!ts.isElementAccessExpression(expression)) return null;
+  const argument = expression.argumentExpression;
+  if (!argument || (!ts.isStringLiteral(argument) && !ts.isNoSubstitutionTemplateLiteral(argument))) return null;
+  const receiverType = checker.getTypeAtLocation(expression.expression);
+  return checker.getPropertyOfType(receiverType, argument.text) ?? null;
+}
+
+function resolvesToActorDispatch(checker, expression) {
+  if (!expression) return false;
+  const elementProperty = resolveElementAccessProperty(checker, expression);
+  if (elementProperty && isActorDispatchProperty(checker, elementProperty)) return true;
+  const symbol = resolveValueExpressionSymbol(checker, expression);
+  return isActorDispatchProperty(checker, symbol);
+}
+
+function declarationIsFromPackage(declaration, packageName) {
+  const fileName = declaration?.getSourceFile?.().fileName?.split(path.sep).join('/') ?? '';
+  return fileName.includes(`/node_modules/${packageName}/`);
+}
+
+function isReduxStoreType(checker, type, seen = new Set()) {
+  if (!type || seen.has(type)) return false;
+  seen.add(type);
+
+  const symbols = [type.aliasSymbol, type.symbol]
+    .filter(Boolean)
+    .map(symbol => resolveAliasedSymbol(checker, symbol));
+  if (symbols.some(symbol =>
+    (symbol?.name === 'Store' && symbol.declarations?.some(declaration => declarationIsFromPackage(declaration, 'redux')))
+      || (symbol?.name === 'EnhancedStore' && symbol.declarations?.some(declaration => declarationIsFromPackage(declaration, '@reduxjs/toolkit'))),
+  )) {
+    return true;
+  }
+
+  if (type.types?.some(candidate => isReduxStoreType(checker, candidate, seen))) return true;
+  if (type.intersectionTypes?.some(candidate => isReduxStoreType(checker, candidate, seen))) return true;
+  if (typeof type.getBaseTypes === 'function'
+    && type.getBaseTypes()?.some(candidate => isReduxStoreType(checker, candidate, seen))) return true;
+  const apparent = checker.getApparentType(type);
+  return apparent !== type && isReduxStoreType(checker, apparent, seen);
+}
+
+function isStoreDispatchProperty(checker, expression) {
+  if (!ts.isPropertyAccessExpression(expression) && !ts.isElementAccessExpression(expression)) return false;
+  const propertyName = ts.isPropertyAccessExpression(expression)
+    ? expression.name.text
+    : (ts.isStringLiteral(expression.argumentExpression) || ts.isNoSubstitutionTemplateLiteral(expression.argumentExpression))
+      ? expression.argumentExpression.text
+      : null;
+  if (propertyName !== 'dispatch') return false;
+  return isReduxStoreType(checker, checker.getTypeAtLocation(expression.expression));
+}
+
+function tr01ExceptionKey(exception) {
+  return [exception.sourceFile, exception.declarationId, exception.dispatchExpression, exception.reasonCategory].join('\u0000');
+}
+
+function tr01ExceptionBaseKey(exception) {
+  return [exception.sourceFile, exception.declarationId, exception.dispatchExpression].join('\u0000');
+}
+
 function runTr01Boundary(context) {
   const {root, projected} = context;
-  const allowed = new Set(['kernel.base.runtime', 'kernel.base.state']);
+  const analysis = createAnalysisProgram(root);
+  const checker = analysis.program.getTypeChecker();
+  const actorPath = /(?:^|[\\/])features[\\/]actors[\\/]/;
+  const packageExceptions = new Map();
   for (const moduleName of Object.keys(projected)) {
     const packageDirectory = moduleNameToPath(moduleName, root);
+    const packageName = moduleNameToPackageName(moduleName);
+    const invariantPath = path.join(packageDirectory, 'terminal-invariants.json');
+    const exceptions = fs.existsSync(invariantPath)
+      ? readPackageInvariant(packageDirectory, packageName).tr01Exceptions ?? []
+      : [];
+    packageExceptions.set(moduleName, exceptions);
     for (const sourcePath of collectSourceFiles(packageDirectory)) {
       const sourceText = fs.readFileSync(sourcePath, 'utf8');
-      if (
-        /\bdispatchAction\s*\(|\bstore\.dispatch\s*\(|\buseDispatch\s*\(/.test(sourceText) &&
-        !allowed.has(moduleName)
-      ) {
-        throw new Error(`TR-01 reducer call outside whitelist: ${path.relative(root, sourcePath)}`);
+      const sourceFile = ts.createSourceFile(
+        sourcePath,
+        sourceText,
+        ts.ScriptTarget.Latest,
+        true,
+        sourcePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+      );
+      const relativeSource = path.relative(packageDirectory, sourcePath).split(path.sep).join('/');
+      const sourceExceptions = exceptions.filter(item => item.sourceFile === relativeSource);
+      const exceptionBuckets = new Map();
+      for (const exception of sourceExceptions) {
+        const key = tr01ExceptionKey(exception);
+        const bucketKey = tr01ExceptionBaseKey(exception);
+        if (exceptionBuckets.has(key)) {
+          throw new Error(`TR-01 duplicate exception declaration: ${relativeSource}:${exception.declarationId}:${exception.dispatchExpression}:${exception.reasonCategory}`);
+        }
+        const bucket = exceptionBuckets.get(bucketKey) ?? [];
+        bucket.push(exception);
+        exceptionBuckets.set(bucketKey, bucket);
+      }
+      for (const bucket of exceptionBuckets.values()) {
+        bucket.sort((left, right) => left.reasonCategory.localeCompare(right.reasonCategory));
+      }
+      const exceptionOccurrences = new Map();
+      const consumedExceptions = new Set();
+      const typedSourceFile = analysis.program.getSourceFile(sourcePath);
+      const isRuntimeFactorySymbol = (identifier, expectedName) => {
+        if (!typedSourceFile || identifier.text !== expectedName) return false;
+        const symbol = checker.getSymbolAtLocation(identifier);
+        const resolved = symbol ? resolveAliasedSymbol(checker, symbol) : null;
+        return Boolean(resolved?.declarations?.some(declaration =>
+          path.basename(declaration.getSourceFile().fileName) === 'defineActor.ts'
+          && declaration.name?.text === expectedName,
+        ));
+      };
+      const actorFactoryNames = new Set();
+      const scanActorQualification = node => {
+        if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)
+          && (node.expression.text === 'defineActor' || node.expression.text === 'onCommand')
+          && isRuntimeFactorySymbol(node.expression, node.expression.text)) {
+          actorFactoryNames.add(node.expression.text);
+        }
+        ts.forEachChild(node, scanActorQualification);
+      };
+      // Resolve actor factories from the same AST nodes owned by the TypeScript
+      // Program.  Nodes parsed separately with createSourceFile have no
+      // checker symbols, so using them here would silently de-qualify every
+      // real actor even when its imports resolve correctly.
+      scanActorQualification(typedSourceFile ?? sourceFile);
+      const qualificationSource = typedSourceFile ?? sourceFile;
+      const exportedActorDefinition = qualificationSource.statements.some(statement => {
+        if (!ts.isVariableStatement(statement) || !statement.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword)) {
+          return false;
+        }
+        return statement.declarationList.declarations.some(declaration => {
+          const type = declaration.type;
+          if (!type || !ts.isTypeReferenceNode(type) || !ts.isIdentifier(type.typeName) || type.typeName.text !== 'ActorDefinition') return false;
+          const symbol = checker.getSymbolAtLocation(type.typeName);
+          const resolved = symbol ? resolveAliasedSymbol(checker, symbol) : null;
+          return Boolean(resolved?.declarations?.some(candidate =>
+            path.basename(candidate.getSourceFile().fileName) === 'actor.ts'
+            && candidate.name?.text === 'ActorDefinition',
+          ));
+        });
+      });
+      const isActorSource = actorPath.test(relativeSource)
+        && (exportedActorDefinition || (actorFactoryNames.has('defineActor') && actorFactoryNames.has('onCommand')));
+      const scopeStack = [];
+      const scanSource = typedSourceFile ?? sourceFile;
+      const functionScopeName = node => {
+        if (ts.isFunctionDeclaration(node) && node.name) return node.name.text;
+        let parent = node.parent;
+        while (parent) {
+          if (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name)) return parent.name.text;
+          if (ts.isPropertyAssignment(parent) && (ts.isIdentifier(parent.name) || ts.isStringLiteral(parent.name))) {
+            return parent.name.text;
+          }
+          if (ts.isStatement(parent) || ts.isSourceFile(parent)) break;
+          parent = parent.parent;
+        }
+        return null;
+      };
+      const visit = (node, insideOnCommandHandler = false) => {
+        let nextInsideHandler = insideOnCommandHandler;
+        let pushedScope = false;
+        if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'onCommand') {
+          const handler = node.arguments[1];
+          if (handler && (ts.isArrowFunction(handler) || ts.isFunctionExpression(handler))) {
+            const body = handler.body;
+            const visitHandler = child => visit(child, true);
+            if (body) ts.forEachChild(body, visitHandler);
+            return;
+          }
+        }
+        if (ts.isFunctionDeclaration(node) && node.name) {
+          scopeStack.push(node.name.text);
+          pushedScope = true;
+        } else if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)
+          && node.initializer && (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer))) {
+          scopeStack.push(node.name.text);
+          pushedScope = true;
+        } else if ((ts.isArrowFunction(node) || ts.isFunctionExpression(node)) && functionScopeName(node)) {
+          scopeStack.push(functionScopeName(node));
+          pushedScope = true;
+        }
+        if (ts.isCallExpression(node)) {
+          const expression = node.expression;
+          const dispatchExpression = ts.isPropertyAccessExpression(expression)
+            ? expression.getText(scanSource)
+            : ts.isElementAccessExpression(expression)
+              ? expression.getText(scanSource)
+              : ts.isIdentifier(expression) ? expression.text : null;
+          const actorDispatchCall = resolvesToActorDispatch(checker, expression);
+          const propertyName = ts.isPropertyAccessExpression(expression)
+            ? expression.name.text
+            : ts.isElementAccessExpression(expression)
+              && (ts.isStringLiteral(expression.argumentExpression)
+                || ts.isNoSubstitutionTemplateLiteral(expression.argumentExpression))
+              ? expression.argumentExpression.text
+              : ts.isIdentifier(expression) ? expression.text : null;
+          const receiver = ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)
+            ? expression.expression
+            : null;
+          const globalLikeReceiver = Boolean(receiver && ts.isIdentifier(receiver))
+            && (receiver.text === 'globalThis' || receiver.text === 'window');
+          const namedDispatchCall = propertyName === 'dispatchAction' && !globalLikeReceiver;
+          const isReducerCall = actorDispatchCall
+            || namedDispatchCall
+            || propertyName === 'useDispatch'
+            || isStoreDispatchProperty(checker, expression);
+          if (isReducerCall) {
+            const matchingExceptionCandidates = sourceExceptions.filter(item =>
+              item.dispatchExpression === dispatchExpression
+              && scopeStack.includes(item.declarationId),
+            );
+            const matchingExceptionBaseKey = matchingExceptionCandidates.length > 0
+              ? tr01ExceptionBaseKey(matchingExceptionCandidates[0])
+              : null;
+            const occurrence = matchingExceptionBaseKey === null
+              ? 0
+              : (exceptionOccurrences.get(matchingExceptionBaseKey) ?? 0);
+            if (matchingExceptionBaseKey !== null) {
+              exceptionOccurrences.set(matchingExceptionBaseKey, occurrence + 1);
+            }
+            const matchingException = matchingExceptionBaseKey === null
+              ? undefined
+              : exceptionBuckets.get(matchingExceptionBaseKey)?.[occurrence];
+            if (matchingException) consumedExceptions.add(tr01ExceptionKey(matchingException));
+            const actorAllowed = actorDispatchCall && isActorSource && insideOnCommandHandler;
+            if (!matchingException && !actorAllowed) {
+              const lineSource = node.getSourceFile();
+              throw new Error(
+                `TR-01 reducer call outside actor handler/declared exception: ${path.relative(root, sourcePath)}:${lineSource.getLineAndCharacterOfPosition(node.getStart(lineSource)).line + 1}`,
+              );
+            }
+          }
+          // Passing the actor context's dispatch function to a helper crosses
+          // the lexical handler boundary and is intentionally rejected.  It
+          // is the finite machine-checkable form of the D-3 rule; deeper
+          // inter-file data flow remains an independent semantic review item.
+          if (!insideOnCommandHandler || isActorSource) {
+            const isOnCommandCall = ts.isIdentifier(expression) && expression.text === 'onCommand';
+            if (!isOnCommandCall && node.arguments.some(argument => resolvesToActorDispatch(checker, argument))) {
+              const lineSource = node.getSourceFile();
+              throw new Error(
+                `TR-01 actor dispatchAction passed to helper: ${path.relative(root, sourcePath)}:${lineSource.getLineAndCharacterOfPosition(node.getStart(lineSource)).line + 1}`,
+              );
+            }
+          }
+        }
+        ts.forEachChild(node, child => visit(child, nextInsideHandler));
+        if (pushedScope) scopeStack.pop();
+      };
+      visit(scanSource);
+      for (const exception of sourceExceptions) {
+        if (!consumedExceptions.has(tr01ExceptionKey(exception))) {
+          throw new Error(
+            `TR-01 exception not consumed: ${relativeSource}:${exception.declarationId}:${exception.dispatchExpression}:${exception.reasonCategory}`,
+          );
+        }
       }
     }
   }
+  void packageExceptions;
 }
 
 function collectSourceFiles(packageDirectory) {

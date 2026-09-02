@@ -9,6 +9,7 @@
 - 外部评审：`doc/review/platform/2026-09-01-v2s-sales-menu-design-review-claude.md`
 - 作者 intake：`doc/review/platform/2026-09-01-v2s-sales-menu-external-design-review-intake-codex.md`
 - 执行原则：contract/backend/API closure → frontend/IA/L2 closure → DEV reset/seed；不得并行跨越 owner/contract 未冻结边界。
+- 当前执行状态：`SM-05_FOCUSED_RECOVERY_REQUIRED`；SM-06 及以后尚未到达。
 
 ## 0 · 本计划如何使用
 
@@ -17,12 +18,105 @@
 1. **前读**：逐项打开该步的需求、IA、详设条款、六维 recall 全部命中、owning source；
 2. **红证明**：先写能证伪目标形态的 focused test/red mutation；
 3. **实施**：只改该步 finite denominator，不顺手扩未决能力；
-4. **focused proof**：运行本步最低足够档位，保留首败；
-5. **后读**：用第 1 步同一原文逐项回读生产源码和测试，不以 green 替代语义；
-6. **独立阶段对账**：进入下一步前，由 fresh 独立子 agent 对需求/详设IA/项目记忆三维、11 个界面/设计维度给 `MATCHED|OPEN`；OPEN 先修并 fresh recheck；
-7. **证据分级**：静态、compile、真实 HTTP/Testcontainers、browser L2、DEV seed、UAT 各自命名，禁止越级。
+4. **owning source → generator → verify**：所有生成物必须从 owning source 重生成并完成当前仓库的 `scripts/verify`（或该步明确的 `--validate-only` 等价入口）；verify 必须作用于本次新生成输出，不能在旧 generated 输出上先验；
+5. **focused proof**：仅在第 4 步通过后运行本步最低足够档位，保留首败；动态场景按失败族逐个闭环，不用全量运行替代诊断；
+6. **后读**：用第 1 步同一原文逐项回读生产源码和测试，不以 green 替代语义；
+7. **独立阶段对账**：进入下一步前，由 fresh 独立子 agent 对需求/详设IA/项目记忆三维、11 个界面/设计维度给 `MATCHED|OPEN`；OPEN 先修并 fresh recheck；
+8. **证据分级**：静态、compile、真实 HTTP/Testcontainers、browser L2、DEV seed、UAT 各自命名，禁止越级。
 
 动态命令只有在 Dexter 对当次实施明确授权后才可执行。Roadmap 只记录能力授权，不替代当前会话直接指派。Git、部署、UAT 不属于本计划完成前提。
+
+### 1a · 当前字节执行修订：CP-05 normal projection 的跨阶段边界（2026-09-01）
+
+当前仓库的 performance source 明确规定：CP-05 budget projection 只能在当前 operation exact-set 的
+真实 HTTP completion evidence、三次受管 measurement、business/cleanup PASS 后生成；在此之前只允许
+保留 calibration identity projection，不得写 `pending`、null、哨兵预算或手工补 report。销售菜单把
+operation denominator 从 238 扩到 268 后，SM-01 的正常（非 calibration）`edge-codegen --check` 因
+缺少 `getOperationsSalesMenus` 的 CP-05 row 而失败，这是当前字节可复现的跨阶段前置依赖，不是
+contract/admin/auth/source-denominator 的产品或设计偏移。
+
+因此执行口径固定为：
+
+1. SM-01 必须先完成 source denominator → calibration edge projection → binding/admin/IAM 的静态闭环；
+   `V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=CALIBRATION scripts/verify --validate-only` 是本阶段允许的
+   verify 入口。正常 CP-05 首败必须保留，不能称为 normal PASS，也不能用跳过/放宽断言关闭。
+2. 该 CP-05 pending 不计作 SM-01 的三维设计偏移；它作为 `OPEN_GLOBAL_PREREQUISITE` 保留在实施证据，
+   不得丢失。SM-02→SM-05 仍严格串行，期间不得提前生成预算或运行依赖未闭合 route 的 acceptance。
+3. SM-05 的真实 backend-acceptance HTTP exact-set closure 后，按受管 CP-05 路径刷新 report；随后在
+   进入整体测试与 SM-12 收口前，必须重新运行正常 `edge-codegen --check`、`scripts/verify --validate-only`
+   及其 owning generated checks。若 CP-05 仍红，回 owning source/受管测量根因修复，不得推进整体测试。
+
+这条修订只修正不可提前满足的验证时序，不改变任何 operation、业务语义、预算值、授权、测试分母或
+SM-00→SM-12 串行顺序；若当前性能规范被后续 Dexter 裁定替换，以新裁定为准并重新记录冲突。
+
+### 1b · 2026-09-01 执行路径审计与纠偏（必须遵守）
+
+本节是对本轮近 13 小时执行的只读复盘，不是新的产品语义或新的 operation。两名 fresh 独立审计者
+分别重开当前计划、需求、IA、详设、项目记忆、owning source 及最新受管运行证据，结论一致：销售菜单
+整体方向不需要推倒，当前执行算法必须停止并切换为 `SM-05` focused recovery。
+
+已确认的执行事实：
+
+- `.runtime/r5/evidence/remote-testcontainers/` 在 2026-09-01 的审计窗口内有 21 个相关 manifest；其中
+  14 次首败为 `REMOTE_GRADLE_EXIT_NONZERO`，4 次仍停在同一 `BUDGET_PROJECTION_OPERATION_MISSING`，
+  另有 1 次因既有受管 run 尚未结束而触发 `LOCAL_TESTCONTAINERS_RUN_ALREADY_ACTIVE`。因此耗时主要来自
+  重复粗粒度运行与编排噪音，不是一次业务测试连续运行近 13 小时。
+- 最近一轮 `r5-tc-1788271073909-91073` 直接运行 `backend-acceptance --operation all --calibration`；
+  Gradle 共 101 tests、10 failures，仍同时包含 405、403、409、422、500、publication revision 与 P2
+  失败族。该结果只能作为 SM-05 诊断输入，不能作为 closure，也不得再原样重跑。
+- 当前 evidence 只实际收口到 SM-04（`doc/evidence/platform/2026-09-01-v2s-sales-menu-implementation-evidence-codex.md:594-730`）；
+  最新 SM-05 运行尚未形成 15 条场景、每条的 BUSINESS/cleanup 分账及 31-operation 实际映射，因此
+  动态证据链不完整。
+- 当前工作树同时存在销售菜单以外的大量 terminal/remediation 改动。它们属于现有工作区上下文，不能被
+  反向撤销，也不能混入销售菜单的阶段 closure；本批只读取相关字节并限制销售菜单的变更面。
+
+不可继续的动作：
+
+1. SM-05 closure 之前，不进入 SM-06/SM-07/SM-08/SM-09/SM-10/SM-11，也不做前端 mock、browser L2、
+   reset 或 seed。
+2. 不再用 `--operation all`、`--operation all --calibration` 或 whole-app test 作为调试循环；不在已有
+   active managed run 上启动新 run；不把 CP-05、P2 connection proof、HTTP BUSINESS 失败和 cleanup 失败
+   混成一个“测试红”。
+3. 同一 failure signature、source/generated digest 与请求证据未发生变化时，不得第二次重跑；必须先完成
+   日志读取、first failure / last known good / broken boundary 分类和 owning layer 定位。
+
+SM-05 的唯一恢复算法：
+
+1. 固定 `CURRENT_STAGE=SM-05`，建立 15 行场景台账（13 SalesMenu、1 BusinessChannel、1 Asset）。每行记录
+   `scenarioId`、failure family、request source、owning source、最新运行、first failure、CONTRACT、
+   BUSINESS、DB_OPERATIONS（信息项）、business cleanup、resource cleanup 和 31-row operation mapping。
+2. 每一轮只处理一个失败族，并在该轮开始前重读需求、IA、详设/计划 SM-05、active backend-acceptance
+   standard、对应 owner/edge source、scenario source、最新 run manifest/HTTP/DB/log。先判断是 contract/source、
+   generated、scenario request/fixture、owner fact、编排还是环境 cleanup，禁止先凭状态码猜归属。
+3. 修 owning source；若涉及契约或生成边界，先完成 source/generator 的新输出，再运行 `scripts/verify`
+   （或该步骤明确的 validate-only 入口），verify PASS 后才允许 focused test。不得手改 generated、放宽断言、
+   加 fallback、延长 timeout、删除场景或用 pending/null/哨兵预算止血。
+4. 只运行该失败族的单条或最小必要场景，真实读取 run-scoped manifest、结构化日志、HTTP/DB evidence；分别
+   判定 CONTRACT、BUSINESS、DB_OPERATIONS 与 cleanup。若仍失败，保留首败并继续根因定位，不回到全量。
+5. 该失败族 focused PASS 后，执行同一组原文的后读，并由 fresh 独立子 agent 逐条三维对账；有 OPEN 就修复并
+   fresh recheck，不得把 OPEN 积到 SM-05 最终测试。
+6. 仅当 15 条场景都各自 focused PASS、cleanup PASS、证据完整时，才运行一次 `backend-acceptance --operation all`；
+   然后用真实 HTTP completion event 对 31 个 operation 做 exact mapping。CP-05 normal projection、normal
+   `edge-codegen --check` 和最终 `scripts/verify` 必须在新生成输出上按计划顺序完成，不能以 calibration PASS 代替。
+7. 只有 15/15、31/31、CP-05、normal verify、cleanup 及 fresh SM-05 三维对账全部 `OPEN=0`，才允许 SM-06。
+
+首轮只按 405 route/method 失败族恢复，覆盖 copy、generated-route、manual-sold-out/restore 相关场景；
+随后依次处理已记录的 500 SKU fact、publication revision、asset/version、display-media 422、disabled-store
+preview 403、ordered cursor 422 与 P2 proof。该顺序只是失败族的诊断顺序，不改变任何业务语义；每个族仍须
+以当前字节和详设 oracle 重新确认，不能把审计者的归因直接当成修复授权。
+
+本节的完成标志不是“跑过一次全量”，而是：失败族根因已闭合、15 行台账逐条有新鲜证据、SM-05 fresh
+三维对账 `OPEN=0`。本节不授权扩大产品范围，也不覆盖后续 implementation review 的两轮上限。
+
+### 1c · 当前字节执行修订：SM-02 排序交换（2026-09-01）
+
+详设 §10.3 的 deferred/single-CASE 排序写法与当前 database-boundaries gate 冲突：该 gate 禁止
+`DEFERRABLE` 唯一约束，而当前 migration 已使用立即唯一约束。SM-02 不得通过放宽 gate 或手改 generated
+输出关闭冲突。执行采用详设 §10.3a 的等价闭包：`lockAndCheck` 的 aggregate `FOR UPDATE` + CAS，current
+与全序相邻行显式 `FOR UPDATE`，临时未占用 order，再以三次单行更新完成交换；每次必须影响 1 行，事务失败
+整体回滚。focused/容器证明必须覆盖连续序号与删除后有空洞序号两种邻接，且检查 `canMove*` 来自 owner 全集
+邻接 existence。该修订只解决立即唯一约束下的可执行性，不改变用户可见上下移动作、排序全序、operation
+分母或模型边界。
 
 ## 1 · 总顺序与不可并行边界
 
@@ -36,9 +130,9 @@ SM-00 重新冻结输入/影响分母
   → SM-06 shared image primitive + operations-admin model/route
   → SM-07 单页 IA 全行为 + frontend focused closure
   → SM-08 sales-menu P1 + 同一 managed browser runner 扩展
-  → SM-09 managed browser L2（需单独动态授权）
+  → SM-09 managed browser L2（本轮已获动态授权，仍须受管入口与 business/cleanup 门）
   → SM-10 business-channel prerequisite seed + sales-menu seed + r5-full parent
-  → SM-11 managed reset/seed（需单独破坏性授权）
+  → SM-11 managed reset/seed（本轮已获破坏性授权，仍须受管入口与前置门）
   → SM-12 全批三维对账、整体验证、正式 IMPLEMENTATION review
 ```
 
@@ -160,13 +254,20 @@ node scripts/generate/operation-handler-bindings.mjs --check
 - Inventory：availability set-read；
 - BusinessChannel：既有 store-channel operation 增加 `usage=SALES_MENU`、一般 access/order facts和真实 keyset cursor；内部 API提供 exact judgment；退休当前无业务上界的 `LIMIT 101/nextCursor=null`；
 - Organization：store status/timezone judgment；
-- Asset：sales-menu image stage/release-STAGED/claim/task-read + owner-local `sales_menu_asset_target`；API 接收 server-owned target readback、STORE grant/contextVersion，不能只检查 workspace/usage。
+- Asset：sales-menu image stage/release-STAGED/claim/task-read + owner-local `sales_menu_asset_target`；API 接收 server-owned target readback、STORE grant/contextVersion，不能只检查 workspace/usage。菜单复制沿 Catalog 既有关系复制语义，直接复用已 ACTIVE 的 `assetRef`，不 clone Asset、不复制文件、不新增复制 operation。实现前必须读取 `CatalogOwnerService.executeCopy`、`CatalogItemMediaFacts.insertForCopy` 与 `CatalogSkuMediaFacts.insertForCopy` 的当前源码；菜单只复刻“新 owner relation 指向同一 opaque ref”的事实，不复制 Catalog item、Asset object 或 lifecycle。
 
 每个 API 先有 task-shaped focused test与唯一消费者；严禁 screen JSON、逐 item detail 或零调用者方法。
+
+B（结构化商品单位）必须沿用 Catalog owner 的既有 `UnitSnapshot` read path：输入请求不得有 `unitLabel`/`salesUnit`，
+`SalesMenuItemFacts` 传递 `salesUnitSnapshot`；draft list/detail 现读 Catalog，published 只读
+`sales_version_item` 的五列快照。只在 WEIGHTED 输出结构化 `salesUnit`，不得新增 sales-menu unit model、直接查
+catalog schema 或让前端回写单位。
 
 ### 5.2 menu command 顺序
 
 按详设 §5 operation 13..31 实现：menu lifecycle → section → item → publication → manual status。每条 command 同形：
+
+实现 command/readback 时沿用详设 §5.2 的 target 口径：菜单级与分区级（含按分区加入商品）命令的 `targetRef` 是菜单聚合 ref；分区 path 仍必须用于 owner 关系校验，不能自动取第一分区；销售项级命令和人工沽清/恢复的 `targetRef` 是 stable `salesItemRef`。图片 stage/release 使用独立完整 `SalesMenuAssetTarget` readback。
 
 ```text
 parse/validate
@@ -180,7 +281,13 @@ parse/validate
 → commit
 ```
 
-已授权、已定位的业务 rejection 由 edge catch 后调用 `recordRejectedOperation` 独立事务；auth、transport、unknown internal failure 只写脱敏诊断日志。
+实现时先取得同 key 的 owner receipt advisory lock，再锁定实际 menu/target 并完成 workspace、STORE、capability、channel、archive/version
+复核；只有完成本次 owner recheck 后才读取 receipt 做 replay/conflict，不能用 receipt replay 绕过本次 target 复核；Catalog/Inventory/Asset
+等业务 facts 在 replay 判定后、业务写入前重新读取。成功 action 后必须从
+`SalesMenuRepository.find` 重新读取持久化 aggregate，再组装 authoritative command readback；不得用 `expectedVersion + 1` 或锁前内存
+aggregate 猜造版本。成功 operation record 之后才写 `SUCCEEDED` receipt，本批不写 `IN_PROGRESS`。已授权、已定位的业务 rejection 由
+edge command supplier 内 catch 后调用 `recordRejectedOperation` 独立事务；auth、transport、unknown internal failure 只写脱敏诊断日志。
+`SALES_MENU_CHANNEL_INELIGIBLE` 的失败记录先由 BusinessChannel owner 做仅限 persisted STORE target 的 ownership proof，同店但不合资格可记账，跨店/无 target 不记账。
 
 ### 5.3 publication 的 focused red cases
 
@@ -193,7 +300,7 @@ parse/validate
 
 ### 5.4 Asset 原子组
 
-提取/扩 Asset usage 时同时改 contract、Asset owner service/API、migration/check、generated wire、menu item save、focused tests。固定顺序是：path target → selected STORE → `EDIT_STORE_SALES_MENU` grant → `SalesMenuOwnerApi.requireSalesMenuItemAssetTarget(mode, ...)` → Asset stage/release；whole-save claim 在 draft lock 内以 `CLAIM` 重判 target，release以 `RELEASE_STAGED`允许归档/已移除item的原target清理但不得放宽store/menu/item匹配。Asset target row必须精确记录 workspace/store/menu/item，stage/release/claim 都锁后比对；no-capability、cross-store/menu/item、wrong usage、released/version conflict 先红。已进入任一 published version 的 ACTIVE menu asset 不因 draft 替换或 archive 释放。
+提取/扩 Asset usage 时同时改 contract、Asset owner service/API、migration/check、generated wire、menu item save、focused tests。固定顺序是：path target → selected STORE → `EDIT_STORE_SALES_MENU` grant → `SalesMenuOwnerApi.requireSalesMenuItemAssetTarget(mode, ...)` → Asset stage/release；whole-save claim 在 draft lock 内以 `CLAIM` 重判 target，release 以 `RELEASE_STAGED` 允许归档/已移除 item 的原 target 清理但不得放宽 store/menu/item/usage 匹配。`SalesMenuAssetReleaseRequest` 只有 `expectedAssetVersion`，release 不接受或猜造 draft version；Asset owner 锁定 staged asset 与 target row 后，以保存的 target 版本做 authoritative readback，并以 asset version 做 CAS。Asset target row 必须精确记录 workspace/store/menu/item，stage/release/claim 都锁后比对；no-capability、cross-store/menu/item、wrong usage、released/version conflict 先红。已进入任一 published version 的 ACTIVE menu asset 不因 draft 替换或 archive 释放。已 ACTIVE 的菜单图片（包括复制得到的共享 `assetRef`）不再次 claim；复制只新增 menu media relation，不新增 Asset target row。
 
 **阶段对账重点**：38 owner rules、copy include/exclude、publish blockers、两个状态维度、事务/receipt/CAS/audit/log ordering。
 
@@ -213,7 +320,10 @@ parse/validate
 - same workspace foreign store/menu/channel/item、project/external channel、no capability 全拒绝且无 menu/asset owner writes；
 - unknown error不泄露 exception/raw reason；
 - content/intent idempotency replay；
-- app compile/spotless/static architecture。
+- app compile/spotless/static architecture；
+- 构造 persisted menu version 与 expected/in-memory version 不同的 red case，验证 command readback 使用 owner `find` 的 persisted version；
+- create、activation、manual sold-out/restore 的 in-supplier channel eligibility failure 经过 recorder；auth、transport、unknown failure 不生成 FAILED operation record；
+- receipt order 验证 target lock/recheck → receipt replay/conflict → business preflight → CAS/write → authoritative readback → success record → `SUCCEEDED` receipt，且不存在 `IN_PROGRESS` 写入。
 
 **阶段对账重点**：read scope与write capability不同、actual target recheck 在 receipt/CAS 前、generated paths、typed errors/日志脱敏。
 
@@ -234,14 +344,21 @@ parse/validate
 
 运行前重读当前 direct authority 与 `cs-managed-runtime-execution`。若当次没有 Testcontainers runtime 授权，只可完成静态/compile，不得宣称 API closure；把动态项列 `PENDING_AUTHORITY`。
 
-获授权后逐条执行，30 秒报告，首败诊断，business/cleanup 分账：
+获当前授权后，先确认无 active managed run，再按“source/generator → fresh generated output → `scripts/verify`
+（或该步明确的 validate-only 入口）→ focused scenario”的顺序逐条执行；每次受管运行 30 秒报告，首败诊断，
+business/cleanup 分账。`verify` 必须发生在本批所有 focused/all 测试之前，且不能针对旧 generated 输出先验：
 
 ```bash
+# 先在最新 owning source 生成并校验；不能省略或移到测试之后
+scripts/verify
+
 scripts/test/backend-acceptance --operation sales-menu.store-scope-and-channel-eligibility
 # 其余12条 SalesMenu、1条 BusinessChannel、1条 Asset 场景逐条
 scripts/test/backend-acceptance --operation all
-scripts/verify
 ```
+
+不得用 `--operation all`（含 calibration）替代失败族 focused recovery；只有 15 条场景都各自 focused PASS
+并完成后读/独立阶段对账后，才运行一次 all。
 
 若运行前有当前 manifest 明确拥有且 identity 匹配的 DEV，按 AGENTS 联动先 managed stop，记录 `DEV_WAS_RUNNING=true`；只有 Testcontainers business+cleanup PASS 才 managed restart，原来无 DEV 则不启动。不得停止未知进程或 seed。
 
@@ -299,7 +416,7 @@ scripts/verify
 - section/item 不拖拽；row末 `…` 的 exact actions；
 - draft/front fixed columns；front 无“操作/查看”；detail非 disabled Form；
 - item editor title有删除/关闭，无库存/沽清；
-- SKU逐价、weighted无份约束、image最后；
+- SKU逐价、weighted无份约束且只读展示 Catalog 结构化 `salesUnit`、image最后；
 - sold-out仅front status modal；库存只读且不可在 modal恢复；
 - multi-menu不互斥，copy exact，disabled menu仍 edit/publish；
 - publish/operation copy准确，无诊断台；
@@ -342,9 +459,10 @@ scripts/verify
 
 **阶段对账重点**：31 UI不是31 case；21st channel/menu/candidate/item/log均有明确用户动作与owner readback；每个写 action有失败不变事实；无 DEV seed输入。
 
-## 11 · SM-09 · managed browser L2（单独动态授权）
+## 11 · SM-09 · managed browser L2（本轮已获动态授权）
 
-只有 Dexter 对当次 L2 明确授权才执行：
+本轮 direct authority 已包含当次 L2；仍只能在 SM-08 完成、受管 runner readiness 通过且 business/cleanup
+门可满足时执行。不得因 Roadmap ready flag自行运行，也不得手工启动 Spring/Vite/Playwright/tunnel/DB/assets：
 
 ```bash
 scripts/test/browser-l2 --suite sales-menu readiness
@@ -373,7 +491,7 @@ scripts/test/browser-l2 --suite sales-menu run
 - `profiles/sales-menu.json`、plan、executor、tests；
 - plan exact覆盖详设 §10b.3；
 - executor只用 generated operations，按前置 readback解析真实 refs；
-- copy等行为必须通过真实 commands造成，不能把预期结果直接写成 fixture；
+- copy等行为必须通过真实 commands造成，不能把预期结果直接写成 fixture；SalesMenu CUSTOM 图片必须断言源/副本 media `assetRef` 完全相同、Asset 行/object/lifecycle 不变，且无 clone/stage/claim/release 调用。测试前后以 `CatalogItemMediaFacts.insertForCopy`/`CatalogSkuMediaFacts.insertForCopy` 当前源码的 relation-only 语义作静态对照，不调用、抽取或跨 owner 复用这些 package-private 类；sales-menu 只写自己的 media relation；
 - UNKNOWN inventory标 N/A_WITH_REASON，不伪造 owner state。
 
 ### 12.3 parent
@@ -387,9 +505,11 @@ scripts/test/browser-l2 --suite sales-menu run
 
 **阶段对账重点**：每个事实只由自己的 owner seed生成；acceptance/L2 fixture仍完全独立。
 
-## 13 · SM-11 · managed reset/seed（单独破坏性授权）
+## 13 · SM-11 · managed reset/seed（本轮已获破坏性授权）
 
-执行前必须取得 Dexter 对当次 reset/seed 的直接授权，并使用受管入口；不得因 Roadmap ready flag自行运行。调用遵循当前 `scripts/dev/*` 帮助和 managed manifest，核心 seed入口为：
+本轮 direct authority 已包含当次 reset/seed；仍必须在 SM-09 business 与 cleanup 均 PASS、SM-10 静态
+stage/parent closure 后使用受管入口，不得因 Roadmap ready flag自行运行。调用遵循当前 `scripts/dev/*` 帮助和
+managed manifest，核心 seed入口为：
 
 ```bash
 R5_SEED_CONFIRMATION=EXPLICIT_R5_SEED scripts/dev/seed --profile r5-full

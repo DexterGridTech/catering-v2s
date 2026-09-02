@@ -340,7 +340,10 @@ public class OrganizationVisibilityService implements OrganizationVisibilityLook
                 .filter(value -> storeId.equals(value.id()))
                 .findFirst()
                 .orElse(null);
-        if (store == null || !"ENABLED".equals(store.status())) return null;
+        // A persisted selection remains an addressable read scope after a store is disabled so that existing
+        // sessions can inspect the store and its business blockers.  The candidate projection above still filters
+        // disabled stores, and enterableStore/isVisibleDataNodeAllowed continues to prevent a new login or selection.
+        if (store == null || (!"ENABLED".equals(store.status()) && !"DISABLED".equals(store.status()))) return null;
         HierarchyNode project = nodes.get(store.projectId());
         if (project == null || !ServiceNodeTypes.PROJECT.equals(project.type()) || !"ENABLED".equals(project.status()))
             return null;

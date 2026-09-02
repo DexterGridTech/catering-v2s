@@ -15,6 +15,7 @@ import {
   buildBudgetProjectionSubset,
   controlledBudgetExceptionForOperation,
   isCp05CalibrationBootstrapMode,
+  isCp05IdentityOnlyProjectionMode,
   validateBudgetChange,
   validateBudgetRegistry,
   validateControlledBudgetException,
@@ -62,6 +63,21 @@ test('P2 connection-scope recipes and the closed interceptor set retain both cat
         `normalContext\\.get\\(\\s*${operationId === 'getOperationsCatalogCategoryCandidates' ? 'CATEGORY_CANDIDATES' : 'ITEM_SKUS'}`,
       ),
     );
+    assert.match(interceptor, new RegExp(`"${operationId}"`));
+  }
+  for (const operationId of [
+    'getOperationsSalesMenu',
+    'getOperationsSalesMenuDraftItem',
+    'getOperationsSalesMenuDraftItems',
+    'getOperationsSalesMenuDraftSections',
+    'getOperationsSalesMenuItemCandidates',
+    'getOperationsSalesMenuOperationRecords',
+    'getOperationsSalesMenuPublicationPreview',
+    'getOperationsSalesMenuPublishedItem',
+    'getOperationsSalesMenuPublishedItems',
+    'getOperationsSalesMenuPublishedSections',
+    'getOperationsSalesMenus',
+  ]) {
     assert.match(interceptor, new RegExp(`"${operationId}"`));
   }
   assert.match(
@@ -125,6 +141,14 @@ test('CP-05 calibration bootstrap projects only route identity and never activat
   }));
   assert.equal(isCp05CalibrationBootstrapMode({V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE: 'CALIBRATION'}), true);
   assert.equal(isCp05CalibrationBootstrapMode({V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE: 'ACCEPTANCE'}), false);
+  assert.equal(
+    isCp05IdentityOnlyProjectionMode({V2S_BACKEND_PERFORMANCE_PROJECTION_MODE: 'IDENTITY_ONLY'}),
+    true,
+  );
+  assert.equal(
+    isCp05IdentityOnlyProjectionMode({V2S_BACKEND_PERFORMANCE_PROJECTION_MODE: 'REPORT'}),
+    false,
+  );
 
   const projection = buildCp05CalibrationIdentityProjection({operations});
   assert.equal(projection.expectedOperations, EXPECTED_OPERATION_COUNT);

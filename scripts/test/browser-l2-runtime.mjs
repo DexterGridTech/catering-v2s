@@ -55,6 +55,13 @@ const executionPath = path.join(root, 'contracts/policy/catalog-inventory-l2-exe
 const scenarioPath = path.join(root, 'contracts/policy/catalog-inventory-l2-scenarios.json');
 const bindingPath = path.join(root, 'contracts/policy/catalog-inventory-l2-locator-bindings.json');
 const timingPath = path.join(root, 'contracts/policy/catalog-inventory-l2-timing-budget.json');
+const salesMenuFixturePath = path.join(root, 'contracts/policy/sales-menu-l2-fixture.json');
+const salesMenuActivationCandidatePath = path.join(root, 'contracts/policy/sales-menu-l2-activation-candidate.json');
+const salesMenuExecutionPath = path.join(root, 'contracts/policy/sales-menu-l2-execution.json');
+const salesMenuScenarioPath = path.join(root, 'contracts/policy/sales-menu-l2-scenarios.json');
+const salesMenuBindingPath = path.join(root, 'contracts/policy/sales-menu-l2-locator-bindings.json');
+const salesMenuTimingPath = path.join(root, 'contracts/policy/sales-menu-l2-timing-budget.json');
+const salesMenuSpecPath = path.join(root, 'apps/frontend/operations-admin/src/tests/l2/sales-menu.spec.ts');
 const catalogRegistryPath = path.join(
   root,
   'apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json',
@@ -67,6 +74,70 @@ const operationsSpec = path.join(root, 'apps/frontend/operations-admin');
 const viteCliPath = path.join(root, 'node_modules/vite/bin/vite.js');
 const playwrightCliPath = path.join(root, 'node_modules/playwright/cli.js');
 const now = () => new Date().toISOString();
+
+const L2_SUITE_CONFIGS = Object.freeze({
+  'catalog-inventory': Object.freeze({
+    suite: 'catalog-inventory',
+    fixturePath,
+    activationCandidatePath,
+    executionPath,
+    scenarioPath,
+    bindingPath,
+    timingPath,
+    readinessKind: 'catalog-inventory-l2-readiness-manifest',
+    executionManifestKind: 'catalog-inventory-l2-execution-manifest',
+    selectionKind: 'catalog-inventory-l2-selection-manifest',
+    joinKind: 'catalog-inventory-l2-join-artifact',
+    cleanupKind: 'catalog-inventory-l2-cleanup-manifest',
+    stateKind: 'catalog-inventory-l2-runtime-state',
+    discoveryKind: 'catalog-inventory-l2-discovery-manifest',
+    ownerFixtureKind: 'catalog-inventory-l2-owner-fixture',
+    activationCandidateKind: 'catalog-inventory-l2-activation-candidate',
+    executionProfileKind: 'catalog-inventory-l2-execution-profile',
+    ownerFixtureEnv: 'R5_L2_CATALOG_INVENTORY_OWNER_FIXTURE',
+    casesEnv: 'R5_L2_CATALOG_INVENTORY_CASES',
+    bindingsEnv: 'R5_L2_CATALOG_INVENTORY_BINDINGS',
+    executionEnv: 'R5_L2_CATALOG_INVENTORY_EXECUTION',
+  }),
+  'sales-menu': Object.freeze({
+    suite: 'sales-menu',
+    fixturePath: salesMenuFixturePath,
+    activationCandidatePath: salesMenuActivationCandidatePath,
+    executionPath: salesMenuExecutionPath,
+    scenarioPath: salesMenuScenarioPath,
+    bindingPath: salesMenuBindingPath,
+    timingPath: salesMenuTimingPath,
+    readinessKind: 'sales-menu-l2-readiness-manifest',
+    executionManifestKind: 'sales-menu-l2-execution-manifest',
+    selectionKind: 'sales-menu-l2-selection-manifest',
+    joinKind: 'sales-menu-l2-join-artifact',
+    cleanupKind: 'sales-menu-l2-cleanup-manifest',
+    stateKind: 'sales-menu-l2-runtime-state',
+    discoveryKind: 'sales-menu-l2-discovery-manifest',
+    ownerFixtureKind: 'sales-menu-l2-owner-fixture',
+    activationCandidateKind: 'sales-menu-l2-activation-candidate',
+    executionProfileKind: 'sales-menu-l2-execution-profile',
+    ownerFixtureEnv: 'R5_L2_SALES_MENU_OWNER_FIXTURE',
+    casesEnv: 'R5_L2_SALES_MENU_CASES',
+    bindingsEnv: 'R5_L2_SALES_MENU_BINDINGS',
+    executionEnv: 'R5_L2_SALES_MENU_EXECUTION',
+  }),
+});
+
+function suiteConfig(suite = 'catalog-inventory') {
+  const config = L2_SUITE_CONFIGS[suite];
+  if (!config) fail('L2_SUITE_UNKNOWN', String(suite));
+  return config;
+}
+
+export function catalogBootstrapCaseIdsForSuite(suite, activeExecutionCaseIds) {
+  if (!Array.isArray(activeExecutionCaseIds)) fail('L2_CATALOG_BOOTSTRAP_ACTIVE_SET_INVALID');
+  // Sales-menu owns its own exact candidate denominator.  Catalog library
+  // cases share the same store/brand scope, and their non-VOIDED items are
+  // intentionally visible to the Catalog candidate read, so they must not be
+  // materialized into this suite's owner fixture.
+  return suite === 'sales-menu' ? [] : [...activeExecutionCaseIds];
+}
 const REPOSITORY_BYTE_BINDING_EXCLUDED_DIRECTORIES = Object.freeze([
   '.git',
   '.runtime',
@@ -100,8 +171,8 @@ const REPOSITORY_BYTE_BINDING_EXCLUDED_FILE_NAMES = new Set(
 function isRepositoryByteBindingExcludedFile(name) {
   return (
     REPOSITORY_BYTE_BINDING_EXCLUDED_FILE_NAMES.has(name) ||
-    REPOSITORY_BYTE_BINDING_EXCLUDED_FILE_PATTERNS.some(pattern =>
-      pattern.startsWith('*.') && name.endsWith(pattern.slice(1)),
+    REPOSITORY_BYTE_BINDING_EXCLUDED_FILE_PATTERNS.some(
+      pattern => pattern.startsWith('*.') && name.endsWith(pattern.slice(1)),
     )
   );
 }
@@ -303,8 +374,7 @@ export function validateFixtureSkuOwnership(fixtureObjects) {
   const ownerBySkuCode = new Map();
   for (const item of items) {
     if (item.skuCodes === undefined || item.skuCodes === null) continue;
-    if (!Array.isArray(item.skuCodes))
-      fail('L2_OWNER_FIXTURE_SKU_OWNERSHIP_INVALID', String(item.code ?? 'item'));
+    if (!Array.isArray(item.skuCodes)) fail('L2_OWNER_FIXTURE_SKU_OWNERSHIP_INVALID', String(item.code ?? 'item'));
     for (const code of item.skuCodes) {
       if (typeof code !== 'string' || code.length === 0)
         fail('L2_OWNER_FIXTURE_SKU_OWNERSHIP_INVALID', String(item.code ?? 'item'));
@@ -354,8 +424,7 @@ export function buildFixtureVoidedSkuTransitions(fixtureObjects, fixtureItem, ac
   const declaredVoidedSkus = fixtureSkuFactsForItem(fixtureObjects, fixtureItem).filter(
     entry => entry.status === 'VOIDED',
   );
-  if (!Array.isArray(actualSkus))
-    fail('L2_OWNER_FIXTURE_VOIDED_SKU_READBACK_INVALID', `${detail}:skus`);
+  if (!Array.isArray(actualSkus)) fail('L2_OWNER_FIXTURE_VOIDED_SKU_READBACK_INVALID', `${detail}:skus`);
   return declaredVoidedSkus.map(declaredSku => {
     const skuCode = fixtureSkuCode(declaredSku);
     const actualSku = actualSkus.find(candidate => candidate?.skuCode === skuCode);
@@ -383,7 +452,7 @@ export function validateFixtureVoidedSkuTransitionReadback(transitions, readback
       !Array.isArray(actual.blockingReferences) ||
       !Array.isArray(actual.dependentFacts) ||
       !Array.isArray(actual.blockingReasons) ||
-        !actual.blockingReasons.some(reason => reason?.reasonCode === 'ALREADY_VOIDED')
+      !actual.blockingReasons.some(reason => reason?.reasonCode === 'ALREADY_VOIDED')
     ) {
       fail('L2_OWNER_FIXTURE_VOIDED_SKU_TRANSITION_READBACK_INVALID', `${detail}:${expected.skuRef}`);
     }
@@ -398,10 +467,7 @@ export function validateFixtureVisibleSkuReadback(fixtureObjects, fixtureItem, a
     declaredSkus.filter(entry => entry.status !== 'VOIDED').map(entry => fixtureSkuCode(entry)),
   );
   const actualSkuCodes = new Set(actualSkus.map(entry => entry?.skuCode).filter(code => typeof code === 'string'));
-  if (
-    actualSkuCodes.size !== expectedSkuCodes.size ||
-    [...expectedSkuCodes].some(code => !actualSkuCodes.has(code))
-  ) {
+  if (actualSkuCodes.size !== expectedSkuCodes.size || [...expectedSkuCodes].some(code => !actualSkuCodes.has(code))) {
     fail('L2_OWNER_ITEM_SKU_READBACK_INVALID', detail);
   }
   return actualSkus.map(sku => {
@@ -795,10 +861,16 @@ function candidateDigest(candidate) {
 }
 
 export function loadL2ActivationCandidate(candidate = readJson(activationCandidatePath)) {
-  if (!candidate || typeof candidate !== 'object' || candidate.kind !== 'catalog-inventory-l2-activation-candidate') {
+  return loadSuiteActivationCandidate('catalog-inventory', candidate);
+}
+
+function loadSuiteActivationCandidate(suite = 'catalog-inventory', candidate = undefined) {
+  const config = suiteConfig(suite);
+  const value = candidate ?? readJson(config.activationCandidatePath);
+  if (!value || typeof value !== 'object' || value.kind !== config.activationCandidateKind) {
     fail('L2_ACTIVATION_CANDIDATE_INVALID');
   }
-  const ids = candidate.approvedCaseIds;
+  const ids = value.approvedCaseIds;
   if (
     !Array.isArray(ids) ||
     ids.length === 0 ||
@@ -808,13 +880,13 @@ export function loadL2ActivationCandidate(candidate = readJson(activationCandida
     fail('L2_ACTIVATION_CANDIDATE_CASE_SET_INVALID');
   }
   if (
-    candidate.noSeedRuntimeInput !== true ||
-    typeof candidate.candidateDigest !== 'string' ||
-    candidate.candidateDigest !== candidateDigest(candidate)
+    value.noSeedRuntimeInput !== true ||
+    typeof value.candidateDigest !== 'string' ||
+    value.candidateDigest !== candidateDigest(value)
   ) {
     fail('L2_ACTIVATION_CANDIDATE_DIGEST_INVALID');
   }
-  return Object.freeze({...candidate, approvedCaseIds: Object.freeze([...ids])});
+  return Object.freeze({...value, approvedCaseIds: Object.freeze([...ids])});
 }
 
 export function requireActivatedCatalogLibraryExecution(execution, candidate = loadL2ActivationCandidate()) {
@@ -832,6 +904,29 @@ export function requireActivatedCatalogLibraryExecution(execution, candidate = l
   }
   if (
     execution.activationCandidate?.path !== 'contracts/policy/catalog-inventory-l2-activation-candidate.json' ||
+    execution.activationCandidate?.digest !== candidate.candidateDigest ||
+    !execution.readiness?.runBinding
+  ) {
+    fail('L2_EXECUTION_CANDIDATE_BINDING_INVALID');
+  }
+  return ids;
+}
+
+function requireActivatedSuiteExecution(execution, candidate, suite = 'catalog-inventory') {
+  const config = suiteConfig(suite);
+  if (!execution || typeof execution !== 'object') fail('L2_EXECUTION_PROFILE_MISSING');
+  if (execution.mode !== 'INCREMENTAL') {
+    fail(execution.mode === 'FRAMEWORK_ONLY' ? 'L2_EXECUTION_FRAMEWORK_ONLY' : 'L2_EXECUTION_NOT_ACTIVATED');
+  }
+  const ids = activeCaseIds(execution);
+  if (
+    ids.length !== candidate.approvedCaseIds.length ||
+    ids.some((id, index) => id !== candidate.approvedCaseIds[index])
+  ) {
+    fail('L2_EXECUTION_CANDIDATE_CASE_SET_MISMATCH');
+  }
+  if (
+    execution.activationCandidate?.path !== repositoryRelativePath(config.activationCandidatePath) ||
     execution.activationCandidate?.digest !== candidate.candidateDigest ||
     !execution.readiness?.runBinding
   ) {
@@ -935,12 +1030,71 @@ export function validateL2ContractDenominators({
   });
 }
 
+function validateSalesMenuContractDenominators({
+  execution = readJson(salesMenuExecutionPath),
+  scenarios = readJson(salesMenuScenarioPath),
+  bindings = readJson(salesMenuBindingPath),
+  fixture = readJson(salesMenuFixturePath),
+  timing = readJson(salesMenuTimingPath),
+} = {}) {
+  const cases = activeCaseIds(execution);
+  const scenarioRows = Array.isArray(scenarios.scenarios) ? scenarios.scenarios : [];
+  const scenarioCaseIds = scenarioRows.flatMap(scenario => (scenario.cases ?? []).map(entry => entry.caseId));
+  if (scenarioRows.length !== 16 || scenarioCaseIds.length !== 16) fail('SALES_MENU_L2_POLICY_DENOMINATOR_INVALID');
+  if (fixture.kind !== 'sales-menu-l2-fixture' || fixture.fixtureClass !== 'TEST' || fixture.seedRuntimeInput !== false)
+    fail('SALES_MENU_L2_FIXTURE_BOUNDARY_INVALID');
+  if (
+    fixture.ownerFacts?.channelPageSize !== 20 ||
+    fixture.ownerFacts?.menuPageSize !== 20 ||
+    fixture.ownerFacts?.candidatePageSize !== 20 ||
+    fixture.ownerFacts?.expectedEligibleChannelCount !== 21 ||
+    fixture.ownerFacts?.expectedMenuCount !== 21 ||
+    fixture.ownerFacts?.expectedCandidateCount !== 21
+  )
+    fail('SALES_MENU_L2_FIXTURE_DENOMINATOR_INVALID');
+  for (const [name, expected] of [
+    ['channelFixtures', 21],
+    ['menuFixtures', 21],
+    ['candidateFixtures', 21],
+  ]) {
+    const rows = fixture[name];
+    if (!Array.isArray(rows) || rows.length !== expected) fail('SALES_MENU_L2_FIXTURE_COLLECTION_INVALID', name);
+  }
+  if (
+    bindings.kind !== 'sales-menu-l2-locator-bindings' ||
+    bindings.bindingMode !== 'CASE_PARAMETER_CONTROL_KEYS' ||
+    bindings.caseCount !== 16 ||
+    bindings.noSeedRuntimeInput !== true ||
+    Object.keys(bindings.controls ?? {}).length === 0
+  )
+    fail('SALES_MENU_L2_BINDINGS_INVALID');
+  const timingRows = Array.isArray(timing.cases) ? timing.cases : [];
+  if (timingRows.length !== 16) fail('SALES_MENU_L2_TIMING_DENOMINATOR_INVALID');
+  if (cases.length > 0 && cases.some(id => !scenarioCaseIds.includes(id)))
+    fail('SALES_MENU_L2_ACTIVE_CASE_NOT_IN_POLICY');
+  return Object.freeze({
+    scenarios: scenarioRows.length,
+    policyCases: scenarioCaseIds.length,
+    activeCases: cases.length,
+    testDatasets: 3,
+    newTestDatasets: 3,
+    locatorBindings: Object.keys(bindings.controls).length,
+    timingRows: timingRows.length,
+    activeCaseIds: Object.freeze(cases),
+  });
+}
+
 function caseBudgetIndex(timing = readJson(timingPath)) {
   const rows = timing.caseBudgets ?? timing.cases ?? [];
   return new Map(rows.map(row => [row.caseId ?? row.id, row]));
 }
 
-export function materializeL2TimingBudget(activeIds, timing = readJson(timingPath), outputPath = null) {
+export function materializeL2TimingBudget(
+  activeIds,
+  timing = readJson(timingPath),
+  outputPath = null,
+  sourcePath = timingPath,
+) {
   const index = caseBudgetIndex(timing);
   const rows = activeIds.map(id => {
     const row = index.get(id);
@@ -954,7 +1108,7 @@ export function materializeL2TimingBudget(activeIds, timing = readJson(timingPat
   const report = {
     schemaVersion: 1,
     kind: 'browser-l2-timing-budget-report',
-    source: path.relative(root, timingPath),
+    source: path.relative(root, sourcePath),
     topology: 'LOCAL_SPRING_REMOTE_DB_ASSET_TUNNEL',
     databaseOperationMillisBaseline: Number(timing.dbOperationBaselineMs ?? 42.7),
     activeCaseCount: rows.length,
@@ -1026,6 +1180,7 @@ function safePublicManifest(manifest, secretValues = []) {
 }
 
 export function buildIncompleteExecutionManifest({
+  suite = 'catalog-inventory',
   state,
   activeCaseIds = state?.activeCaseIds ?? [],
   executionStatus = 'INCOMPLETE_FINALIZATION',
@@ -1037,6 +1192,7 @@ export function buildIncompleteExecutionManifest({
   cleanupErrors = [],
   cleanupManifestPath = null,
 } = {}) {
+  const config = suiteConfig(suite);
   if (!state?.identity?.runId || typeof state.runDirectory !== 'string') {
     fail('L2_RUNTIME_EXECUTION_STATE_REQUIRED');
   }
@@ -1045,7 +1201,7 @@ export function buildIncompleteExecutionManifest({
   }
   const manifest = {
     schemaVersion: 1,
-    kind: 'catalog-inventory-l2-execution-manifest',
+    kind: config.executionManifestKind,
     runId: state.identity.runId,
     topology: 'LOCAL_SPRING_LOCAL_VITE_LOCAL_PLAYWRIGHT_REMOTE_DB_ASSET_TUNNEL',
     discovered: 0,
@@ -1234,15 +1390,18 @@ function tunnelEnvironment(identity, ports, credentials, diagnostics) {
   };
 }
 
-function writeTimingReport(runDirectory, activeIds) {
+function writeTimingReport(runDirectory, activeIds, suite = 'catalog-inventory') {
+  const config = suiteConfig(suite);
   return materializeL2TimingBudget(
     activeIds,
-    readJson(timingPath),
+    readJson(config.timingPath),
     path.join(runDirectory, 'l2-timing-budget-report.json'),
+    config.timingPath,
   );
 }
 
 export function buildReadinessManifest({
+  suite = 'catalog-inventory',
   identity,
   ports,
   candidate,
@@ -1262,6 +1421,7 @@ export function buildReadinessManifest({
   setupCleanup = 'NOT_RUN',
   cleanup = 'PENDING',
 } = {}) {
+  const config = suiteConfig(suite);
   if (status === 'PASS') {
     const activeIds = denominators?.activeCaseIds;
     if (
@@ -1304,7 +1464,7 @@ export function buildReadinessManifest({
     : null;
   const manifest = {
     schemaVersion: 1,
-    kind: 'catalog-inventory-l2-readiness-manifest',
+    kind: config.readinessKind,
     runId: identity.runId,
     topology: 'LOCAL_SPRING_LOCAL_VITE_LOCAL_PLAYWRIGHT_REMOTE_DB_ASSET_TUNNEL',
     namespace: identity.namespace,
@@ -1332,7 +1492,7 @@ export function buildReadinessManifest({
     setupCleanupStatus: setupCleanup,
     cleanupStatus: cleanup,
     activeCaseIds: [...(denominators.activeCaseIds ?? [])],
-    activationCandidatePath: 'contracts/policy/catalog-inventory-l2-activation-candidate.json',
+    activationCandidatePath: repositoryRelativePath(config.activationCandidatePath),
     activationCandidateDigest: candidate?.candidateDigest ?? null,
     runBinding: {
       runId: identity.runId,
@@ -1931,6 +2091,7 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
           'BC-ORG-STORE-STATUS',
           'BC-ORG-TENANT-CREATE',
           'BC-ORG-TENANT-STATUS',
+          'BC-BUSINESS-CHANNEL-PROJECT-EDIT',
         ],
       },
     },
@@ -1946,8 +2107,14 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
       body: {
         name: 'L2 门店商品管理员',
         serviceNodeType: 'STORE',
-        pageAccessKeys: ['PG-IAM-STORE-USERS', 'PG-CATALOG-STORE-ITEMS'],
-        capabilityKeys: ['BC-IAM-STORE-ROLE-REVOKE', 'BC-IAM-STORE-INVITE', 'EDIT_STORE_CATALOG'],
+        pageAccessKeys: ['PG-IAM-STORE-USERS', 'PG-CATALOG-STORE-ITEMS', 'PG-SALES-MENU-STORE'],
+        capabilityKeys: [
+          'BC-IAM-STORE-ROLE-REVOKE',
+          'BC-IAM-STORE-INVITE',
+          'EDIT_STORE_CATALOG',
+          'EDIT_STORE_SALES_MENU',
+          'BC-BUSINESS-CHANNEL-STORE-EDIT',
+        ],
       },
     },
   );
@@ -2343,7 +2510,9 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
     .filter(entry => activeIds.includes(entry.caseId));
   if (activeRows.length !== activeIds.length) fail('L2_ACTIVE_CASE_OWNER_FIXTURE_DENOMINATOR_INVALID');
   const caseIdentityPlans = new Map(
-    validateCatalogLibraryCaseIdentityPlans(activeRows.map(row => row.caseId)).map(plan => [plan.caseId, plan]),
+    (activeRows.length === 0 ? [] : validateCatalogLibraryCaseIdentityPlans(activeRows.map(row => row.caseId))).map(
+      plan => [plan.caseId, plan],
+    ),
   );
   const items = [];
   const cases = {};
@@ -2531,7 +2700,7 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
               // readback. Establish the row with the legal non-terminal status,
               // then materialize the declared terminal fact through the owner
               // skuTransitions command below.
-              status: sku.status === 'VOIDED' ? 'DISABLED' : sku.status ?? 'ENABLED',
+              status: sku.status === 'VOIDED' ? 'DISABLED' : (sku.status ?? 'ENABLED'),
               mediaRefs: [],
               salesUnitOverrideRef: null,
               baseMeasureUnitOverrideRef: null,
@@ -3819,6 +3988,8 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
   return {
     registry,
     client,
+    groupCookie,
+    headCookie,
     operationsCookie,
     workspaceKey,
     org: {...org, groupRef},
@@ -3842,6 +4013,840 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
         categoryCount: scaffold.fixtureObjects.filter(entry => entry.type === 'CatalogCategory').length,
         productionTagCount: scaffold.fixtureObjects.filter(entry => entry.type === 'ProductionTag').length,
       })),
+    },
+  };
+}
+
+function salesMenuPageItems(json) {
+  const value = unwrapResponse(json);
+  return Array.isArray(value?.items) ? value.items : [];
+}
+
+function salesMenuNextCursor(json) {
+  const value = unwrapResponse(json);
+  return typeof value?.nextCursor === 'string' ? value.nextCursor : '';
+}
+
+function salesMenuAllDaySchedule() {
+  return {kind: 'ALL_DAY', startLocalTime: null, endLocalTime: null};
+}
+
+function salesMenuInheritedMedia() {
+  return {mode: 'INHERIT_CATALOG', assetRefs: [], primaryAssetRef: null};
+}
+
+function salesMenuCatalogShapeKey(shape) {
+  return {
+    ORDINARY: 'STANDARD_SALE_COUNTED',
+    SKU: 'SKU_VARIANT_SALE_COUNTED',
+    WEIGHTED: 'STANDARD_SALE_WEIGHED',
+    COMPOSITE: 'COMPOSITE',
+    SERVICE: 'SERVICE',
+  }[shape];
+}
+
+export function salesMenuSaleContentKind(shape) {
+  switch (String(shape ?? '').toUpperCase()) {
+    case 'SKU':
+      return 'SKU_SELECTION';
+    case 'WEIGHTED':
+      return 'WEIGHTED';
+    case 'COMPOSITE':
+      return 'COMPOSITE';
+    default:
+      return 'DIRECT';
+  }
+}
+
+function salesMenuSaleDefinition(candidate) {
+  const saleContentKind = salesMenuSaleContentKind(candidate.shape);
+  return candidate.shape === 'SKU'
+    ? {
+        kind: saleContentKind,
+        listedPriceCents: null,
+        skuPrices: candidate.skus.map(sku => ({
+          skuRef: sku.skuRef,
+          skuName: sku.skuName,
+          skuCode: sku.skuCode,
+          standardPriceCents: sku.standardPriceCents,
+          listedPriceCents: sku.standardPriceCents + 100,
+        })),
+      }
+    : {
+        kind: saleContentKind,
+        listedPriceCents: Number(candidate.defaultPriceCents),
+        skuPrices: [],
+      };
+}
+
+async function bootstrapSalesMenuFacts({identity, base}) {
+  const fixture = readJson(salesMenuFixturePath);
+  const request = base.client.request;
+  const workspaceKey = base.workspaceKey;
+  const dataNodeRef = String(base.org.storeRef);
+  const projectRef = String(base.org.projectRef);
+  const brandRef = String(base.brandRef);
+  const storeRef = String(base.org.storeRef);
+  const operationsCookie = base.operationsCookie;
+  const groupCookie = base.groupCookie;
+  const stage = name => `sales-menu-${name}`;
+  const suffix = sha256(identity.runId).slice(0, 10).toUpperCase();
+
+  const categoryRefs = new Map();
+  const categoryNames = new Map();
+  const categoryRows = fixture.candidateFixtures;
+  for (const candidate of categoryRows) {
+    const [rootName, childName] = candidate.categoryPath ?? [];
+    if (!rootName) continue;
+    if (!categoryRefs.has(rootName)) {
+      const createdRoot = await request(
+        stage(`category-root-${rootName}`),
+        'createOperationsCatalogCategory',
+        {},
+        {
+          cookie: operationsCookie,
+          brandRef,
+          expected: [200],
+          body: {
+            dataNodeRef,
+            code: `SM-${suffix}-${rootName}`,
+            name: rootName,
+            parentCategoryRef: null,
+          },
+        },
+      );
+      const rootRef = String(
+        requiredObjectValue(createdRoot.json, ['categoryRef', 'id', 'ref'], 'SALES_MENU_CATEGORY_ROOT_REF_MISSING'),
+      );
+      categoryRefs.set(rootName, rootRef);
+      categoryNames.set(rootName, rootName);
+    }
+    if (childName && !categoryRefs.has(`${rootName}/${childName}`)) {
+      const createdChild = await request(
+        stage(`category-child-${rootName}-${childName}`),
+        'createOperationsCatalogCategory',
+        {},
+        {
+          cookie: operationsCookie,
+          brandRef,
+          expected: [200],
+          body: {
+            dataNodeRef,
+            code: `SM-${suffix}-${rootName}-${childName}`,
+            name: childName,
+            parentCategoryRef: categoryRefs.get(rootName),
+          },
+        },
+      );
+      const childRef = String(
+        requiredObjectValue(createdChild.json, ['categoryRef', 'id', 'ref'], 'SALES_MENU_CATEGORY_CHILD_REF_MISSING'),
+      );
+      categoryRefs.set(`${rootName}/${childName}`, childRef);
+      categoryNames.set(`${rootName}/${childName}`, `${rootName} / ${childName}`);
+    }
+  }
+
+  const createUnit = async (code, name, unitDimension, precision) => {
+    const created = await request(
+      stage(`unit-${code}`),
+      'createOperationsCatalogUnit',
+      {},
+      {
+        cookie: operationsCookie,
+        brandRef,
+        expected: [200],
+        body: {dataNodeRef, code, name, unitDimension, precision},
+      },
+    );
+    return String(requiredObjectValue(created.json, ['unitRef', 'id', 'ref'], 'SALES_MENU_UNIT_REF_MISSING'));
+  };
+  const countUnitRef = await createUnit(`SM-${suffix}-EA`, '个', 'COUNT', 0);
+  const weightUnitRef = await createUnit(`SM-${suffix}-KG`, '千克', 'WEIGHT', 3);
+
+  const candidateRecords = [];
+  for (const candidate of fixture.candidateFixtures) {
+    const shapeKey = salesMenuCatalogShapeKey(candidate.shape);
+    if (!shapeKey) fail('SALES_MENU_CATALOG_SHAPE_UNSUPPORTED', candidate.shape);
+    const itemCode = `${candidate.code}-${suffix}`;
+    const itemName = `${candidate.name}-${suffix}`;
+    const categoryRef = candidate.categoryPath?.length ? categoryRefs.get(candidate.categoryPath.join('/')) : null;
+    if (candidate.categoryPath?.length && !categoryRef)
+      fail('SALES_MENU_CATEGORY_BINDING_MISSING', candidate.fixtureId);
+    const created = await request(
+      stage(`candidate-create-${candidate.fixtureId}`),
+      'createOperationsCatalogItem',
+      {},
+      {
+        cookie: operationsCookie,
+        brandRef,
+        expected: [200],
+        body: {dataNodeRef, name: itemName, code: itemCode, shapeKey, categoryRef},
+      },
+    );
+    let version = itemVersion(created.json);
+    const catalogItemRef = String(
+      requiredCatalogItemCommandResourceRef(created.json, 'SALES_MENU_CATALOG_ITEM_REF_MISSING'),
+    );
+    const weighted = candidate.shape === 'WEIGHTED';
+    const sku = candidate.shape === 'SKU';
+    const inventoryless = candidate.shape === 'COMPOSITE' || candidate.shape === 'SERVICE';
+    const skuDraft = sku
+      ? [
+          {
+            skuCode: `${itemCode}-DEFAULT`,
+            skuName: `${itemName}默认规格`,
+            displayOrder: 0,
+            attributeValueRefs: [],
+            standardSalePrice: 1299,
+            isDefault: true,
+            status: 'ENABLED',
+            mediaRefs: [],
+            salesUnitOverrideRef: null,
+            baseMeasureUnitOverrideRef: null,
+            identifiers: [],
+            preparationOverride: {mode: 'INHERIT_ITEM', profile: null},
+          },
+        ]
+      : [];
+    const catalogDraft = {
+      name: itemName,
+      shapeKey,
+      shortName: itemName,
+      images: [],
+      tagRefs: [],
+      identifiers: [],
+      categoryRef,
+      productionTagRef: null,
+      salesUnitRef: weighted ? weightUnitRef : countUnitRef,
+      baseMeasureUnitRef: inventoryless ? null : weighted ? weightUnitRef : countUnitRef,
+      skus: skuDraft,
+      skuVariantDimensions: [],
+      attributeAssignments: [],
+      orderOptionConfigs: [],
+      compositeGroups: [],
+      preparationProfile: null,
+      priceGranularity: sku ? 'SKU' : 'ITEM',
+      standardSalePrice: sku ? null : Number(candidate.defaultPriceCents),
+    };
+    const saved = await request(
+      stage(`candidate-save-${candidate.fixtureId}`),
+      'saveOperationsCatalogItem',
+      {itemCode},
+      {
+        cookie: operationsCookie,
+        brandRef,
+        expected: [200],
+        body: {
+          dataNodeRef,
+          itemCode,
+          sections: {catalogDraft, inventoryRules: {nodes: []}, expectedCatalogVersion: version},
+        },
+      },
+    );
+    version = itemVersion(saved.json);
+    const enabled = await request(
+      stage(`candidate-enable-${candidate.fixtureId}`),
+      'transitionOperationsCatalogItemStatus',
+      {itemCode},
+      {
+        cookie: operationsCookie,
+        brandRef,
+        expected: [200],
+        body: {dataNodeRef, itemCode, targetStatus: 'ENABLED', expectedVersion: version},
+      },
+    );
+    version = itemVersion(enabled.json);
+    const detail = await request(
+      stage(`candidate-read-${candidate.fixtureId}`),
+      'getOperationsCatalogItem',
+      {itemCode},
+      {
+        cookie: operationsCookie,
+        brandRef,
+        expected: [200],
+        queryParameters: {dataNodeRef},
+      },
+    );
+    const detailRoot = unwrapResponse(detail.json);
+    const detailItem = detailRoot?.item ?? detailRoot;
+    const actualSkus = Array.isArray(detailItem?.skus) ? detailItem.skus : [];
+    if (sku && actualSkus.length === 0) fail('SALES_MENU_CATALOG_SKU_READBACK_MISSING', candidate.fixtureId);
+    candidateRecords.push({
+      fixtureId: candidate.fixtureId,
+      itemRef: catalogItemRef,
+      itemCode,
+      itemName,
+      shape: candidate.shape,
+      shapeKey,
+      categoryRef,
+      categoryNames: [...(candidate.categoryPath ?? [])],
+      defaultPriceCents: candidate.defaultPriceCents,
+      version,
+      skus: actualSkus.map((row, index) => ({
+        skuRef: String(row.productSkuRef ?? row.skuRef ?? ''),
+        skuCode: String(row.skuCode ?? `${itemCode}-SKU-${index + 1}`),
+        skuName: String(row.skuName ?? `${itemName}规格${index + 1}`),
+        standardPriceCents: Number(row.standardSalePrice ?? 1299),
+      })),
+    });
+  }
+
+  const createTemplate = async (orderKind, dineInForm) => {
+    const created = await request(
+      stage(`channel-template-${orderKind}`),
+      'createOperationsBusinessChannelTemplate',
+      {
+        groupWorkspaceKey: workspaceKey,
+      },
+      {
+        cookie: groupCookie,
+        expected: [200],
+        body: {
+          projectRef,
+          templateName: `销售菜单${orderKind}模板-${suffix}`,
+          templateCode: `SM-${suffix}-${orderKind}`,
+          accessKind: 'INTERNAL',
+          operatorKind: 'STORE',
+          orderKind,
+          dineInForm,
+          providerCode: null,
+        },
+      },
+    );
+    return String(
+      requiredObjectValue(created.json, ['templateRef', 'id', 'ref'], 'SALES_MENU_CHANNEL_TEMPLATE_REF_MISSING'),
+    );
+  };
+  const takeawayTemplateRef = await createTemplate('TAKEAWAY', null);
+  const dineInTemplateRef = await createTemplate('DINE_IN', 'POS');
+  const channelRecords = [];
+  for (const channel of fixture.channelFixtures) {
+    const templateRef = channel.orderKind === 'DINE_IN' ? dineInTemplateRef : takeawayTemplateRef;
+    const created = await request(
+      stage(`channel-${channel.fixtureId}`),
+      'createOperationsBusinessChannel',
+      {
+        groupWorkspaceKey: workspaceKey,
+      },
+      {
+        cookie: operationsCookie,
+        expected: [200],
+        body: {
+          templateRef,
+          ownerNodeType: 'STORE',
+          ownerNodeRef: storeRef,
+          channelCode: `${channel.code}-${suffix}`,
+          channelName: `${channel.name}-${suffix}`,
+          bindingRef: null,
+        },
+      },
+    );
+    channelRecords.push({
+      fixtureId: channel.fixtureId,
+      ref: String(requiredObjectValue(created.json, ['channelRef', 'id', 'ref'], 'SALES_MENU_CHANNEL_REF_MISSING')),
+      code: `${channel.code}-${suffix}`,
+      name: `${channel.name}-${suffix}`,
+      orderKind: channel.orderKind,
+      dineInForm: channel.dineInForm ?? null,
+      status: 'ENABLED',
+      version: Number(requiredObjectValue(created.json, ['version'], 'SALES_MENU_CHANNEL_VERSION_MISSING')),
+    });
+  }
+  const primaryChannel = channelRecords[0];
+  const secondaryChannel = channelRecords.at(-1);
+
+  const menuRecords = [];
+  for (const menuFixture of fixture.menuFixtures) {
+    const created = await request(
+      stage(`menu-create-${menuFixture.fixtureId}`),
+      'createOperationsSalesMenu',
+      {
+        groupWorkspaceKey: workspaceKey,
+        storeRef,
+      },
+      {
+        cookie: operationsCookie,
+        expected: [201],
+        body: {channelRef: primaryChannel.ref, name: `${menuFixture.name}-${suffix}`},
+      },
+    );
+    menuRecords.push({
+      fixtureId: menuFixture.fixtureId,
+      ref: String(requiredObjectValue(created.json, ['salesMenuRef'], 'SALES_MENU_REF_MISSING')),
+      name: `${menuFixture.name}-${suffix}`,
+      draftRevision: Number(requiredObjectValue(created.json, ['version'], 'SALES_MENU_VERSION_MISSING')),
+      activation: {},
+      publication: null,
+    });
+  }
+  const primaryMenu = menuRecords[0];
+  const secondaryMenu = menuRecords[1];
+  const primaryPath = {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primaryMenu.ref};
+  const setActivation = async (menu, channel, status) => {
+    const result = await request(
+      stage(`menu-activation-${menu.fixtureId}-${channel.fixtureId}-${status}`),
+      'setOperationsSalesMenuActivation',
+      {
+        ...primaryPath,
+        salesMenuRef: menu.ref,
+        channelRef: channel.ref,
+      },
+      {
+        cookie: operationsCookie,
+        expected: [200],
+        body: {status, expectedVersion: menu.draftRevision},
+      },
+    );
+    menu.draftRevision = Number(requiredObjectValue(result.json, ['version'], 'SALES_MENU_ACTIVATION_VERSION_MISSING'));
+    menu.activation[channel.fixtureId] = status;
+  };
+  await setActivation(primaryMenu, primaryChannel, 'ENABLED');
+  await setActivation(primaryMenu, secondaryChannel, 'ENABLED');
+  await setActivation(secondaryMenu, primaryChannel, 'ENABLED');
+
+  const sectionRecords = [];
+  for (const [index, name] of ['饮品', '主食', '套餐'].entries()) {
+    const created = await request(
+      stage(`section-create-${index + 1}`),
+      'createOperationsSalesMenuSection',
+      primaryPath,
+      {
+        cookie: operationsCookie,
+        expected: [201],
+        body: {name: `销售菜单分区${name}-${suffix}`, expectedVersion: primaryMenu.draftRevision},
+      },
+    );
+    primaryMenu.draftRevision = Number(
+      requiredObjectValue(created.json, ['version'], 'SALES_MENU_SECTION_VERSION_MISSING'),
+    );
+    const sections = await request(
+      stage(`section-read-${index + 1}`),
+      'getOperationsSalesMenuDraftSections',
+      primaryPath,
+      {
+        cookie: operationsCookie,
+        expected: [200],
+      },
+    );
+    const sectionRow = salesMenuPageItems(sections.json).find(row => row.name === `销售菜单分区${name}-${suffix}`);
+    if (!sectionRow) fail('SALES_MENU_SECTION_READBACK_MISSING', String(index + 1));
+    sectionRecords.push({
+      ref: String(requiredObjectValue(sectionRow, ['salesSectionRef'], 'SALES_MENU_SECTION_REF_MISSING')),
+      name: sectionRow.name,
+      displayOrder: Number(sectionRow.displayOrder ?? index),
+    });
+  }
+  const primarySection = sectionRecords[0];
+  const catalogRefs = candidateRecords.map(candidate => candidate.itemRef);
+  const added = await request(
+    stage('items-add'),
+    'addOperationsSalesMenuItems',
+    {
+      ...primaryPath,
+      salesSectionRef: primarySection.ref,
+    },
+    {
+      cookie: operationsCookie,
+      expected: [201],
+      body: {catalogItemRefs: catalogRefs, expectedVersion: primaryMenu.draftRevision},
+    },
+  );
+  primaryMenu.draftRevision = Number(requiredObjectValue(added.json, ['version'], 'SALES_MENU_ADD_VERSION_MISSING'));
+
+  const draftRows = [];
+  let draftCursor = '';
+  do {
+    const page = await request(
+      stage(`draft-items-read-${draftRows.length}`),
+      'getOperationsSalesMenuDraftItems',
+      {
+        ...primaryPath,
+        salesSectionRef: primarySection.ref,
+      },
+      {
+        cookie: operationsCookie,
+        expected: [200],
+        queryParameters: {pageSize: 20, ...(draftCursor ? {cursor: draftCursor} : {})},
+      },
+    );
+    draftRows.push(...salesMenuPageItems(page.json));
+    draftCursor = salesMenuNextCursor(page.json);
+  } while (draftCursor);
+  if (draftRows.length !== candidateRecords.length)
+    fail('SALES_MENU_DRAFT_ITEM_DENOMINATOR_INVALID', `${draftRows.length}/${candidateRecords.length}`);
+  const candidateByRef = new Map(candidateRecords.map(candidate => [candidate.itemRef, candidate]));
+  const salesItems = [];
+  for (const row of draftRows) {
+    const candidate = candidateByRef.get(String(row.catalogItemRef));
+    if (!candidate) fail('SALES_MENU_DRAFT_CATALOG_ITEM_UNBOUND', String(row.catalogItemRef));
+    const saleContent = salesMenuSaleDefinition(candidate);
+    const updated = await request(
+      stage(`item-update-${candidate.fixtureId}`),
+      'updateOperationsSalesMenuItem',
+      {
+        ...primaryPath,
+        salesItemRef: String(row.salesItemRef),
+      },
+      {
+        cookie: operationsCookie,
+        expected: [200],
+        body: {
+          displayNameOverride: null,
+          saleContent,
+          orderingConstraints:
+            candidate.shape === 'WEIGHTED'
+              ? {minItemQuantity: null, quantityStep: null}
+              : {minItemQuantity: 1, quantityStep: 1},
+          displayMedia: salesMenuInheritedMedia(),
+          expectedVersion: primaryMenu.draftRevision,
+        },
+      },
+    );
+    primaryMenu.draftRevision = Number(
+      requiredObjectValue(updated.json, ['version'], 'SALES_MENU_ITEM_UPDATE_VERSION_MISSING'),
+    );
+    salesItems.push({
+      candidateFixtureId: candidate.fixtureId,
+      ref: String(row.salesItemRef),
+      catalogItemRef: candidate.itemRef,
+      itemCode: candidate.itemCode,
+      itemName: candidate.itemName,
+      shape: candidate.shape,
+      version: Number(row.version ?? 1),
+      saleContent,
+    });
+  }
+
+  const scheduled = await request(stage('menu-schedule'), 'updateOperationsSalesMenuSchedule', primaryPath, {
+    cookie: operationsCookie,
+    expected: [200],
+    body: {schedule: salesMenuAllDaySchedule(), expectedVersion: primaryMenu.draftRevision},
+  });
+  primaryMenu.draftRevision = Number(
+    requiredObjectValue(scheduled.json, ['version'], 'SALES_MENU_SCHEDULE_VERSION_MISSING'),
+  );
+  const published = await request(stage('menu-publish'), 'publishOperationsSalesMenu', primaryPath, {
+    cookie: operationsCookie,
+    expected: [201],
+    body: {expectedVersion: primaryMenu.draftRevision},
+  });
+  primaryMenu.draftRevision = Number(
+    requiredObjectValue(published.json, ['version'], 'SALES_MENU_PUBLISH_VERSION_MISSING'),
+  );
+  primaryMenu.publication = {status: 'PUBLISHED', revision: 1};
+
+  // Mutating browser cases must not share the published primary menu. Catalog
+  // L2 uses an independent owner scaffold per case; keep the same boundary here
+  // by materializing only the small menu graph each sales-menu case needs.
+  const menuRecordByFixture = new Map(menuRecords.map(menu => [menu.fixtureId, menu]));
+  const menuFactsByFixture = new Map([[primaryMenu.fixtureId, {sectionRecords, salesItems}]]);
+  const isolatedSetups = new Map();
+  for (const fixtureDefinition of Object.values(fixture.caseFixtures ?? {})) {
+    const menuFixtureId = fixtureDefinition.menuFixtureId;
+    const sectionCount = Number(fixtureDefinition.sectionCount ?? 0);
+    if (!menuFixtureId || !sectionCount || menuFixtureId === primaryMenu.fixtureId) continue;
+    const setup = isolatedSetups.get(menuFixtureId) ?? {sectionCount: 0, baselineCandidateFixtureIds: []};
+    setup.sectionCount = Math.max(setup.sectionCount, sectionCount);
+    for (const candidateFixtureId of fixtureDefinition.baselineCandidateFixtureIds ?? []) {
+      if (!setup.baselineCandidateFixtureIds.includes(candidateFixtureId))
+        setup.baselineCandidateFixtureIds.push(candidateFixtureId);
+    }
+    isolatedSetups.set(menuFixtureId, setup);
+  }
+
+  for (const [menuFixtureId, setup] of isolatedSetups) {
+    const menu = menuRecordByFixture.get(menuFixtureId);
+    if (!menu) fail('SALES_MENU_ISOLATED_MENU_FIXTURE_MISSING', menuFixtureId);
+    const menuPath = {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: menu.ref};
+    const isolatedSections = [];
+    for (let index = 0; index < setup.sectionCount; index += 1) {
+      const name = `销售菜单${menuFixtureId}分区${index + 1}-${suffix}`;
+      const created = await request(
+        stage(`isolated-${menuFixtureId}-section-create-${index + 1}`),
+        'createOperationsSalesMenuSection',
+        menuPath,
+        {
+          cookie: operationsCookie,
+          expected: [201],
+          body: {name, expectedVersion: menu.draftRevision},
+        },
+      );
+      menu.draftRevision = Number(
+        requiredObjectValue(created.json, ['version'], 'SALES_MENU_ISOLATED_SECTION_VERSION_MISSING'),
+      );
+      const sections = await request(
+        stage(`isolated-${menuFixtureId}-section-read-${index + 1}`),
+        'getOperationsSalesMenuDraftSections',
+        menuPath,
+        {cookie: operationsCookie, expected: [200]},
+      );
+      const sectionRow = salesMenuPageItems(sections.json).find(row => row.name === name);
+      if (!sectionRow) fail('SALES_MENU_ISOLATED_SECTION_READBACK_MISSING', `${menuFixtureId}:${index + 1}`);
+      isolatedSections.push({
+        ref: String(requiredObjectValue(sectionRow, ['salesSectionRef'], 'SALES_MENU_ISOLATED_SECTION_REF_MISSING')),
+        name: sectionRow.name,
+        displayOrder: Number(sectionRow.displayOrder ?? index),
+      });
+    }
+
+    const baselineCatalogRefs = setup.baselineCandidateFixtureIds
+      .map(fixtureId => candidateRecords.find(candidate => candidate.fixtureId === fixtureId)?.itemRef)
+      .filter(Boolean);
+    if (baselineCatalogRefs.length !== setup.baselineCandidateFixtureIds.length)
+      fail('SALES_MENU_ISOLATED_CANDIDATE_FIXTURE_MISSING', menuFixtureId);
+    if (baselineCatalogRefs.length > 0) {
+      const added = await request(
+        stage(`isolated-${menuFixtureId}-items-add`),
+        'addOperationsSalesMenuItems',
+        {...menuPath, salesSectionRef: isolatedSections[0].ref},
+        {
+          cookie: operationsCookie,
+          expected: [201],
+          body: {catalogItemRefs: baselineCatalogRefs, expectedVersion: menu.draftRevision},
+        },
+      );
+      menu.draftRevision = Number(
+        requiredObjectValue(added.json, ['version'], 'SALES_MENU_ISOLATED_ADD_VERSION_MISSING'),
+      );
+    }
+
+    const draftRows = [];
+    let draftCursor = '';
+    do {
+      const page = await request(
+        stage(`isolated-${menuFixtureId}-items-read-${draftRows.length}`),
+        'getOperationsSalesMenuDraftItems',
+        {...menuPath, salesSectionRef: isolatedSections[0].ref},
+        {
+          cookie: operationsCookie,
+          expected: [200],
+          queryParameters: {pageSize: 20, ...(draftCursor ? {cursor: draftCursor} : {})},
+        },
+      );
+      draftRows.push(...salesMenuPageItems(page.json));
+      draftCursor = salesMenuNextCursor(page.json);
+    } while (draftCursor);
+
+    const isolatedItems = [];
+    for (const row of draftRows) {
+      const catalogCandidate = candidateByRef.get(String(row.catalogItemRef));
+      if (!catalogCandidate) fail('SALES_MENU_ISOLATED_CATALOG_ITEM_UNBOUND', `${menuFixtureId}:${row.catalogItemRef}`);
+      const saleContent = salesMenuSaleDefinition(catalogCandidate);
+      const updated = await request(
+        stage(`isolated-${menuFixtureId}-item-update-${catalogCandidate.fixtureId}`),
+        'updateOperationsSalesMenuItem',
+        {...menuPath, salesItemRef: String(row.salesItemRef)},
+        {
+          cookie: operationsCookie,
+          expected: [200],
+          body: {
+            displayNameOverride: null,
+            saleContent,
+            orderingConstraints:
+              catalogCandidate.shape === 'WEIGHTED'
+                ? {minItemQuantity: null, quantityStep: null}
+                : {minItemQuantity: 1, quantityStep: 1},
+            displayMedia: salesMenuInheritedMedia(),
+            expectedVersion: menu.draftRevision,
+          },
+        },
+      );
+      menu.draftRevision = Number(
+        requiredObjectValue(updated.json, ['version'], 'SALES_MENU_ISOLATED_ITEM_UPDATE_VERSION_MISSING'),
+      );
+      isolatedItems.push({
+        candidateFixtureId: catalogCandidate.fixtureId,
+        ref: String(row.salesItemRef),
+        catalogItemRef: catalogCandidate.itemRef,
+        itemCode: catalogCandidate.itemCode,
+        itemName: catalogCandidate.itemName,
+        shape: catalogCandidate.shape,
+        version: Number(row.version ?? 1),
+        saleContent,
+      });
+    }
+    menuFactsByFixture.set(menuFixtureId, {sectionRecords: isolatedSections, salesItems: isolatedItems});
+  }
+
+  const readPage = async (operationId, pathParameters, queryParameters, name) => {
+    const response = await request(stage(name), operationId, pathParameters, {
+      cookie: operationsCookie,
+      expected: [200],
+      queryParameters,
+    });
+    return response.json;
+  };
+  const channelPage = await readPage(
+    'getOperationsStoreBusinessChannels',
+    {groupWorkspaceKey: workspaceKey, storeRef},
+    {usage: 'SALES_MENU', pageSize: 20},
+    'channels-read-page-1',
+  );
+  const channelPageRows = salesMenuPageItems(channelPage);
+  const channelCursor = salesMenuNextCursor(channelPage);
+  const channelPage2 = channelCursor
+    ? await readPage(
+        'getOperationsStoreBusinessChannels',
+        {groupWorkspaceKey: workspaceKey, storeRef},
+        {usage: 'SALES_MENU', pageSize: 20, cursor: channelCursor},
+        'channels-read-page-2',
+      )
+    : {items: []};
+  const menuPage = await readPage(
+    'getOperationsSalesMenus',
+    {groupWorkspaceKey: workspaceKey, storeRef},
+    {channelRef: primaryChannel.ref, pageSize: 20},
+    'menus-read-page-1',
+  );
+  const menuCursor = salesMenuNextCursor(menuPage);
+  const menuPage2 = menuCursor
+    ? await readPage(
+        'getOperationsSalesMenus',
+        {groupWorkspaceKey: workspaceKey, storeRef},
+        {channelRef: primaryChannel.ref, pageSize: 20, cursor: menuCursor},
+        'menus-read-page-2',
+      )
+    : {items: []};
+  const candidatePage = await readPage(
+    'getOperationsSalesMenuItemCandidates',
+    primaryPath,
+    {pageSize: 20},
+    'candidates-read-page-1',
+  );
+  const candidateCursor = salesMenuNextCursor(candidatePage);
+  const candidatePage2 = candidateCursor
+    ? await readPage(
+        'getOperationsSalesMenuItemCandidates',
+        primaryPath,
+        {pageSize: 20, cursor: candidateCursor},
+        'candidates-read-page-2',
+      )
+    : {items: []};
+  const operationPage = await readPage(
+    'getOperationsSalesMenuOperationRecords',
+    primaryPath,
+    {channelRef: primaryChannel.ref, pageSize: 20},
+    'operation-records-read-page-1',
+  );
+  const operationCursor = salesMenuNextCursor(operationPage);
+  const operationPage2 = operationCursor
+    ? await readPage(
+        'getOperationsSalesMenuOperationRecords',
+        primaryPath,
+        {channelRef: primaryChannel.ref, pageSize: 20, cursor: operationCursor},
+        'operation-records-read-page-2',
+      )
+    : {items: []};
+  const operationRows = [...salesMenuPageItems(operationPage), ...salesMenuPageItems(operationPage2)];
+  if (
+    channelPageRows.length + salesMenuPageItems(channelPage2).length !== 21 ||
+    salesMenuPageItems(menuPage).length + salesMenuPageItems(menuPage2).length !== 21 ||
+    salesMenuPageItems(candidatePage).length + salesMenuPageItems(candidatePage2).length !== 21 ||
+    operationRows.length < 21
+  ) {
+    fail('SALES_MENU_OWNER_FIXTURE_DENOMINATOR_INVALID');
+  }
+
+  const candidateByFixture = Object.fromEntries(candidateRecords.map(row => [row.fixtureId, row]));
+  const menuByFixture = Object.fromEntries(menuRecords.map(row => [row.fixtureId, row]));
+  const scenarioRows = readJson(salesMenuScenarioPath).scenarios.flatMap(scenario => scenario.cases ?? []);
+  const cases = {};
+  for (const row of scenarioRows) {
+    const caseFixture = fixture.caseFixtures[row.fixtureRef] ?? {};
+    const menuFixtureId = caseFixture.menuFixtureId ?? 'MENU-01';
+    const candidateFixtureId = caseFixture.candidateFixtureId ?? caseFixture.candidateFixtureIds?.[0] ?? 'CANDIDATE-01';
+    const candidate = candidateByFixture[candidateFixtureId] ?? candidateRecords[0];
+    const menuFacts = menuFactsByFixture.get(menuFixtureId) ?? menuFactsByFixture.get(primaryMenu.fixtureId);
+    if (!menuFacts) fail('SALES_MENU_MENU_FACTS_MISSING', menuFixtureId);
+    const salesItem = menuFacts.salesItems.find(item => item.candidateFixtureId === candidate.fixtureId);
+    const menu = menuByFixture[menuFixtureId] ?? primaryMenu;
+    const menuSection = menuFacts.sectionRecords[0];
+    cases[row.caseId] = {
+      fixtureRef: row.fixtureRef,
+      scope: {kind: 'STORE', regionName: 'L2验证大区', projectName: 'L2验证项目', storeName: 'L2验证门店'},
+      dataNodeRef,
+      brandRef,
+      menuRef: menu.ref,
+      menuName: menu.name,
+      menuVersion: menu.draftRevision,
+      channelRef: primaryChannel.ref,
+      secondaryChannelRef: secondaryChannel.ref,
+      sectionRef: menuSection?.ref,
+      sectionRefs: menuFacts.sectionRecords.map(section => section.ref),
+      itemRef: salesItem?.ref,
+      catalogItemRef: candidate.itemRef,
+      candidateRef: candidate.itemRef,
+      candidateRefs: (caseFixture.candidateFixtureIds ?? [candidate.fixtureId])
+        .map(id => candidateByFixture[id]?.itemRef)
+        .filter(Boolean),
+      duplicateCandidateRef:
+        candidateByFixture[caseFixture.duplicateCandidateFixtureId ?? 'CANDIDATE-01']?.itemRef ?? null,
+      candidateFixtureId: candidate.fixtureId,
+      candidateShape: candidate.shape,
+      candidateCode: candidate.itemCode,
+      candidateName: candidate.itemName,
+      defaultPriceCents: candidate.defaultPriceCents,
+      skuRefs: candidate.skus.map(sku => sku.skuRef),
+      channelRefs: channelRecords.map(channel => channel.ref),
+      menuRefs: menuRecords.map(menuRow => menuRow.ref),
+      salesItemRefs: menuFacts.salesItems.map(item => item.ref),
+      expectedChannelCount: 21,
+      expectedMenuCount: 21,
+      expectedCandidateCount: 21,
+      expectedDraftItemCount: menuFacts.salesItems.length,
+      expectedOperationRecordMinimum: 21,
+      publicationRevision: primaryMenu.publication?.revision ?? 1,
+      operationRecordCount: operationRows.length,
+    };
+  }
+  return {
+    registry: base.registry,
+    client: base.client,
+    groupCookie,
+    headCookie: base.headCookie,
+    operationsCookie,
+    workspaceKey,
+    org: base.org,
+    dataNodeRef,
+    brandRef,
+    category: {categoryRefs: Object.fromEntries(categoryRefs)},
+    channels: channelRecords,
+    menus: menuRecords,
+    candidates: candidateRecords,
+    items: salesItems,
+    cases,
+    ownerFacts: {
+      workspaceKey,
+      dataNodeRef,
+      brandRef,
+      scope: {kind: 'STORE', regionName: 'L2验证大区', projectName: 'L2验证项目', storeName: 'L2验证门店'},
+      channelPageSize: 20,
+      menuPageSize: 20,
+      candidatePageSize: 20,
+      draftItemPageSize: 20,
+      operationRecordPageSize: 20,
+      expectedEligibleChannelCount: 21,
+      expectedMenuCount: 21,
+      expectedCandidateCount: 21,
+      expectedDraftItemCount: 21,
+      expectedOperationRecordCount: operationRows.length,
+      supportedChannelBoundary: {accessKind: 'INTERNAL', operatorKind: 'STORE', orderKinds: ['DINE_IN', 'TAKEAWAY']},
+      channels: channelRecords,
+      menus: menuRecords,
+      candidates: candidateRecords,
+      sections: sectionRecords,
+      salesItems,
+      primaryMenuRef: primaryMenu.ref,
+      primaryChannelRef: primaryChannel.ref,
+      secondaryChannelRef: secondaryChannel.ref,
+      primarySectionRef: primarySection.ref,
+      publicationExcludedFacts: [
+        'publication',
+        'operationRecords',
+        'manualSaleStatus',
+        'inventoryAvailability',
+        'sourceActivation',
+      ],
     },
   };
 }
@@ -3870,12 +4875,12 @@ function writeRunRuntimeState(state) {
   }
 }
 
-function readRuntimeState() {
+function readRuntimeState(suite = 'catalog-inventory') {
+  const config = suiteConfig(suite);
   const statePath = currentRuntimeStatePath();
   if (!existsSync(statePath)) fail('L2_RUNTIME_STATE_REQUIRED');
   const state = readJson(statePath);
-  if (state.kind !== 'catalog-inventory-l2-runtime-state' || state.status !== 'READY')
-    fail('L2_RUNTIME_STATE_NOT_READY');
+  if (state.kind !== config.stateKind || state.status !== 'READY') fail('L2_RUNTIME_STATE_NOT_READY');
   validateNamespaceBinding(state.identity);
   return state;
 }
@@ -3902,6 +4907,7 @@ function completeCleanupEvidence(
   state,
   credentials,
   {
+    suite = state.suite ?? 'catalog-inventory',
     reason = null,
     business = 'NOT_RUN',
     lastKnownGood = 'OWNER_HTTP_FIXTURE_READY',
@@ -3909,11 +4915,12 @@ function completeCleanupEvidence(
     cleanupErrors = [],
   } = {},
 ) {
+  const config = suiteConfig(suite);
   let finalCleanupErrors = [...cleanupErrors];
   const cleanupManifestPath = path.join(state.runDirectory, 'l2-cleanup-manifest.json');
   const cleanupManifest = {
     schemaVersion: 1,
-    kind: 'catalog-inventory-l2-cleanup-manifest',
+    kind: config.cleanupKind,
     runId: state.identity.runId,
     topology: 'LOCAL_SPRING_LOCAL_VITE_LOCAL_PLAYWRIGHT_REMOTE_DB_ASSET_TUNNEL',
     firstFailure: reason,
@@ -3958,12 +4965,14 @@ function completeCleanupEvidence(
 async function cleanupRuntimeState(
   state,
   {
+    suite = state.suite ?? 'catalog-inventory',
     reason = 'L2_RUNTIME_INTERRUPTED',
     business = 'NOT_RUN',
     lastKnownGood = 'OWNER_HTTP_FIXTURE_READY',
     brokenBoundary = 'L2_RUNTIME_INTERRUPTED_BEFORE_NORMAL_CLEANUP',
   } = {},
 ) {
+  const config = suiteConfig(suite);
   const trusted = resolveTrustedRemoteHost(process.env);
   if (state.remote.host !== trusted.host || state.remote.fingerprint !== trusted.fingerprint) {
     fail('L2_CLEANUP_REMOTE_BINDING_MISMATCH');
@@ -3996,6 +5005,7 @@ async function cleanupRuntimeState(
   };
   const cleanupErrors = await cleanupOwnedL2Resources(state, credentials);
   return completeCleanupEvidence(state, credentials, {
+    suite,
     reason,
     business,
     lastKnownGood,
@@ -4004,25 +5014,27 @@ async function cleanupRuntimeState(
   });
 }
 
-async function cleanupCommand(targetPath = currentRuntimeStatePath()) {
+async function cleanupCommand(targetPath = currentRuntimeStatePath(), suite = 'catalog-inventory') {
+  const config = suiteConfig(suite);
   const resolvedTarget = path.resolve(targetPath);
   const runtimePrefix = `${runtimeRoot}${path.sep}`;
   if (!resolvedTarget.startsWith(runtimePrefix) || path.basename(resolvedTarget) !== 'runtime-state.json') {
     fail('L2_CLEANUP_TARGET_OUTSIDE_RUNTIME_ROOT');
   }
   const state = readJson(resolvedTarget);
-  if (state.kind !== 'catalog-inventory-l2-runtime-state' || state.status !== 'READY') {
+  if (state.kind !== config.stateKind || state.status !== 'READY') {
     fail('L2_CLEANUP_STATE_NOT_READY');
   }
   validateNamespaceBinding(state.identity);
-  const result = await cleanupRuntimeState(state, {reason: 'L2_RUNTIME_CLEANUP_RECOVERY'});
+  const result = await cleanupRuntimeState(state, {suite, reason: 'L2_RUNTIME_CLEANUP_RECOVERY'});
   process.stdout.write(
     `BROWSER_L2_CLEANUP=${result.cleanupErrors.length ? 'FAIL' : 'PASS'}; RUN_ID=${state.identity.runId}; BUSINESS=NOT_RUN; CLEANUP=${result.cleanupErrors.length ? 'FAIL' : 'PASS'}; MANIFEST=${result.cleanupManifestPath}\n`,
   );
   if (result.cleanupErrors.length) process.exitCode = 1;
 }
 
-function createPlaywrightEnvironment({state, credentials}) {
+function createPlaywrightEnvironment({state, credentials, suite = state.suite ?? 'catalog-inventory'}) {
+  const config = suiteConfig(suite);
   const projected = projectChildEnvironment({
     credentials,
     allowedKeys: CHILD_PROCESS_ENV_ALLOWLISTS.operationsPlaywright,
@@ -4045,17 +5057,24 @@ function createPlaywrightEnvironment({state, credentials}) {
     R5_L2_RUN_ID: state.identity.runId,
     R5_L2_SECRET: projected.V2S_L2_DIAGNOSTIC_SECRET,
     R5_L2_JOIN_EVENTS: path.join(state.runDirectory, 'l2-join-events.jsonl'),
-    R5_L2_CATALOG_INVENTORY_OWNER_FIXTURE: state.ownerFixturePath,
-    R5_L2_CATALOG_INVENTORY_CASES: scenarioPath,
-    R5_L2_CATALOG_INVENTORY_BINDINGS: bindingPath,
-    R5_L2_CATALOG_INVENTORY_EXECUTION: executionPath,
+    [config.ownerFixtureEnv]: state.ownerFixturePath,
+    [config.casesEnv]: config.scenarioPath,
+    [config.bindingsEnv]: config.bindingPath,
+    [config.executionEnv]: config.executionPath,
     R5_L2_TIMING_BUDGET_REPORT: state.timingReportPath,
     R5_L2_EXPECT_TIMEOUT_MS: String(expectTimeoutMs),
     R5_L2_PLAYWRIGHT_OUTPUT_DIR: playwrightArtifactDirectoryForRun(state.runDirectory),
+    ...(suite === 'sales-menu'
+      ? {
+          R5_L2_SALES_MENU_ACTIVATION_CANDIDATE: salesMenuActivationCandidatePath,
+          R5_L2_SALES_MENU_ROUTE: `http://127.0.0.1:${state.ports.operations}/operations/${encodeURIComponent(state.workspaceKey)}/catalog/sales-menus`,
+        }
+      : {}),
   };
 }
 
-function discoverPlaywrightCases({state, credentials, activeIds}) {
+function discoverPlaywrightCases({state, credentials, activeIds, suite = state.suite ?? 'catalog-inventory'}) {
+  const config = suiteConfig(suite);
   const discoveryStdoutPath = path.join(state.runDirectory, 'l2-discovery.stdout.log');
   const discoveryStderrPath = path.join(state.runDirectory, 'l2-discovery.stderr.log');
   const discoveryPath = path.join(state.runDirectory, 'l2-discovery-manifest.json');
@@ -4074,7 +5093,7 @@ function discoverPlaywrightCases({state, credentials, activeIds}) {
     {
       cwd: operationsSpec,
       encoding: 'utf8',
-      env: createPlaywrightEnvironment({state, credentials}),
+      env: createPlaywrightEnvironment({state, credentials, suite}),
       maxBuffer: 16 * 1024 * 1024,
     },
   );
@@ -4095,7 +5114,7 @@ function discoverPlaywrightCases({state, credentials, activeIds}) {
   const missingCaseIds = activeIds.filter(caseId => !listedCaseIds.includes(caseId));
   const manifest = {
     schemaVersion: 1,
-    kind: 'catalog-inventory-l2-discovery-manifest',
+    kind: config.discoveryKind,
     runId: state.identity.runId,
     source: 'PLAYWRIGHT_LIST',
     command: 'playwright test --list --grep <active-case-set>',
@@ -4118,11 +5137,12 @@ function discoverPlaywrightCases({state, credentials, activeIds}) {
   return {path: discoveryPath, manifest};
 }
 
-function runPlaywright({state, credentials, activeIds, onProcess}) {
+function runPlaywright({state, credentials, activeIds, onProcess, suite = state.suite ?? 'catalog-inventory'}) {
+  const config = suiteConfig(suite);
   if (!Array.isArray(activeIds) || activeIds.length === 0) fail('L2_PLAYWRIGHT_ACTIVE_SET_REQUIRED');
   const activeCaseIds = [...activeIds];
   const activeCaseCount = activeCaseIds.length;
-  const discovery = discoverPlaywrightCases({state, credentials, activeIds: activeCaseIds});
+  const discovery = discoverPlaywrightCases({state, credentials, activeIds: activeCaseIds, suite});
   const stdoutPath = path.join(state.runDirectory, 'playwright-results.json');
   const stderrPath = path.join(state.runDirectory, 'playwright.stderr.log');
   const joinEventsPath = path.join(state.runDirectory, 'l2-join-events.jsonl');
@@ -4137,7 +5157,7 @@ function runPlaywright({state, credentials, activeIds, onProcess}) {
   mkdirSync(playwrightArtifactDirectory, {recursive: true, mode: 0o700});
   const stdoutFd = openSync(stdoutPath, 'w', 0o600);
   const stderrFd = openSync(stderrPath, 'w', 0o600);
-  const env = createPlaywrightEnvironment({state, credentials});
+  const env = createPlaywrightEnvironment({state, credentials, suite});
   const activeCaseGrep = `(${activeCaseIds.map(value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`;
   const caseIndex = new Map(activeCaseIds.map((caseId, index) => [caseId, index + 1]));
   const seenProgressEvents = new Set();
@@ -4359,6 +5379,7 @@ export function resolveL2TerminalResults({activeIds, playwrightResultRows = [], 
 }
 
 export function buildL2SelectionManifest({
+  suite = 'catalog-inventory',
   state,
   activeIds,
   resultRows = [],
@@ -4366,6 +5387,7 @@ export function buildL2SelectionManifest({
   joinTerminalRows = [],
   outputPath = null,
 }) {
+  const config = suiteConfig(suite);
   if (!Array.isArray(activeIds) || activeIds.length === 0) fail('L2_SELECTION_ACTIVE_SET_REQUIRED');
   const activeCaseIds = [...activeIds];
   const selectedCaseIds = [...activeCaseIds];
@@ -4391,7 +5413,7 @@ export function buildL2SelectionManifest({
       : 'FAIL';
   const manifest = {
     schemaVersion: 1,
-    kind: 'catalog-inventory-l2-selection-manifest',
+    kind: config.selectionKind,
     runId: state?.identity?.runId ?? null,
     source: resultSource,
     activeCaseIds,
@@ -4432,30 +5454,33 @@ function readJsonLines(file) {
     });
 }
 
-function declaredControlKeysFor(activeIds) {
+function declaredControlKeysFor(activeIds, suite = 'catalog-inventory') {
+  const config = suiteConfig(suite);
   const active = new Set(activeIds);
   return Object.fromEntries(
-    readJson(scenarioPath)
+    readJson(config.scenarioPath)
       .scenarios.flatMap(scenario => scenario.cases.map(entry => ({...entry, scenarioId: scenario.scenarioId})))
       .filter(entry => active.has(entry.caseId))
       .map(entry => [entry.caseId, [...entry.parameter.controlKeys]]),
   );
 }
 
-function declaredActionsFor(activeIds) {
+function declaredActionsFor(activeIds, suite = 'catalog-inventory') {
+  const config = suiteConfig(suite);
   const active = new Set(activeIds);
   return Object.fromEntries(
-    readJson(scenarioPath)
+    readJson(config.scenarioPath)
       .scenarios.flatMap(scenario => scenario.cases.map(entry => ({...entry, scenarioId: scenario.scenarioId})))
       .filter(entry => active.has(entry.caseId))
       .map(entry => [entry.caseId, [...(entry.parameter.declaredActions ?? [])]]),
   );
 }
 
-function declaredNetworkFor(activeIds) {
+function declaredNetworkFor(activeIds, suite = 'catalog-inventory') {
+  const config = suiteConfig(suite);
   const active = new Set(activeIds);
   return Object.fromEntries(
-    readJson(scenarioPath)
+    readJson(config.scenarioPath)
       .scenarios.flatMap(scenario => scenario.cases.map(entry => ({...entry, scenarioId: scenario.scenarioId})))
       .filter(entry => active.has(entry.caseId))
       .map(entry => [entry.caseId, entry.parameter.network]),
@@ -4463,16 +5488,18 @@ function declaredNetworkFor(activeIds) {
 }
 
 function buildL2JoinArtifact({
+  suite = 'catalog-inventory',
   state,
   activeIds,
   resultRows,
   joinEvents,
   httpEvents,
   dbEvents,
-  declaredControlKeysByCase = declaredControlKeysFor(activeIds),
-  declaredActionsByCase = declaredActionsFor(activeIds),
-  declaredNetworkByCase = declaredNetworkFor(activeIds),
+  declaredControlKeysByCase = declaredControlKeysFor(activeIds, suite),
+  declaredActionsByCase = declaredActionsFor(activeIds, suite),
+  declaredNetworkByCase = declaredNetworkFor(activeIds, suite),
 }) {
+  const config = suiteConfig(suite);
   if (!Array.isArray(activeIds) || activeIds.length === 0) fail('L2_JOIN_ACTIVE_SET_REQUIRED');
   const activeCaseSet = new Set(activeIds);
   const invalidCaseScopedEvents = joinEvents.filter(
@@ -4706,7 +5733,7 @@ function buildL2JoinArtifact({
   });
   const artifact = {
     schemaVersion: 1,
-    kind: 'catalog-inventory-l2-join-artifact',
+    kind: config.joinKind,
     runId: state.identity.runId,
     cases,
     httpCompletionCount: completions.length,
@@ -4732,11 +5759,12 @@ function buildL2JoinArtifact({
   return artifact;
 }
 
-async function readiness() {
+async function readiness(suite = 'catalog-inventory') {
+  const config = suiteConfig(suite);
   ensureDirectory(runtimeRoot);
   const identity = makeRunIdentity();
   const trust = resolveTrustedRemoteHost(process.env);
-  const activationCandidate = loadL2ActivationCandidate();
+  const activationCandidate = loadSuiteActivationCandidate(suite);
   const activeExecutionCaseIds = [...activationCandidate.approvedCaseIds];
   const runDirectory = path.join(runtimeRoot, identity.runId);
   const playwrightArtifactDirectory = playwrightArtifactDirectoryForRun(runDirectory);
@@ -4789,17 +5817,21 @@ async function readiness() {
     });
     runtime = await startLocalRuntime({identity, ports, host: trust.host, credentials, runDirectory, diagnostics});
     remoteBootstrapRoot(trust.host, identity.database, credentials.values.V2S_L2_PLATFORM_PASSWORD);
+    const catalogBootstrapCaseIds = catalogBootstrapCaseIdsForSuite(suite, activeExecutionCaseIds);
     bootstrap = await bootstrapOwnerFacts({
       identity,
       credentials,
       ports,
       runDirectory,
       diagnostics,
-      activeIds: activeExecutionCaseIds,
+      activeIds: catalogBootstrapCaseIds,
     });
+    if (suite === 'sales-menu') {
+      bootstrap = await bootstrapSalesMenuFacts({identity, base: bootstrap});
+    }
     const ownerFixture = {
       schemaVersion: 1,
-      kind: 'catalog-inventory-l2-owner-fixture',
+      kind: config.ownerFixtureKind,
       fixtureClass: 'TEST',
       setupChannel: 'OWNER_HTTP_COMMANDS',
       seedRuntimeInput: false,
@@ -4811,19 +5843,23 @@ async function readiness() {
       cleanup: {status: 'PENDING_HELD', meaning: 'resources-intentionally-held-for-browser-l2-run'},
     };
     assertNoSensitiveLeak(ownerFixture, {secretValues: Object.values(credentials.values)});
-    ownerFixturePath = path.join(runDirectory, 'catalog-inventory-owner-fixture.json');
+    ownerFixturePath = path.join(runDirectory, `${suite}-owner-fixture.json`);
     privateWrite(ownerFixturePath, ownerFixture);
     sourceByteBinding = writeRepositoryByteBinding({runDirectory, identity});
     validateRepositoryByteBinding(sourceByteBinding.path, {expectedRunId: identity.runId});
-    const baseDenominators = validateL2ContractDenominators();
+    const baseDenominators =
+      suite === 'sales-menu'
+        ? validateSalesMenuContractDenominators({execution: {enabledCaseIds: activeExecutionCaseIds}})
+        : validateL2ContractDenominators({execution: {enabledCaseIds: activeExecutionCaseIds}});
     const denominators = {
       ...baseDenominators,
       activeCases: activeExecutionCaseIds.length,
       activeCaseIds: [...activeExecutionCaseIds],
     };
-    const timingReport = writeTimingReport(runDirectory, activeExecutionCaseIds);
+    const timingReport = writeTimingReport(runDirectory, activeExecutionCaseIds, suite);
     const processes = [runtime.tunnel, runtime.spring, runtime.platform, runtime.operations];
     const manifest = buildReadinessManifest({
+      suite,
       identity,
       ports,
       candidate: activationCandidate,
@@ -4849,7 +5885,8 @@ async function readiness() {
     privateWrite(readinessPath, manifest);
     const state = {
       schemaVersion: 1,
-      kind: 'catalog-inventory-l2-runtime-state',
+      kind: config.stateKind,
+      suite,
       status: 'READY',
       runDirectory,
       readinessManifestPath: readinessPath,
@@ -4883,6 +5920,7 @@ async function readiness() {
     const remoteErrors = await cleanupRemote(trust.host, identity, credentials);
     const cleanup = [...processErrors, ...remoteErrors];
     const manifest = buildReadinessManifest({
+      suite,
       identity,
       ports,
       denominators: {activeCaseIds: [...activeExecutionCaseIds], activeCases: activeExecutionCaseIds.length},
@@ -4911,13 +5949,14 @@ async function readiness() {
   }
 }
 
-async function finalizeRepositoryByteBinding() {
-  let state = readRuntimeState();
+async function finalizeRepositoryByteBinding(suite = 'catalog-inventory') {
+  const config = suiteConfig(suite);
+  let state = readRuntimeState(suite);
   let finalizeLastKnownGood = 'READINESS_HELD';
   try {
     let readiness = readJson(state.readinessManifestPath);
     if (
-      readiness.kind !== 'catalog-inventory-l2-readiness-manifest' ||
+      readiness.kind !== config.readinessKind ||
       readiness.runId !== state.identity.runId ||
       readiness.status !== 'PASS' ||
       readiness.businessStatus !== 'PASS' ||
@@ -4927,10 +5966,13 @@ async function finalizeRepositoryByteBinding() {
     ) {
       fail('L2_RUNTIME_FINALIZE_READINESS_NOT_HELD');
     }
-    const candidate = loadL2ActivationCandidate();
-    const execution = readJson(executionPath);
-    const active = requireActivatedCatalogLibraryExecution(execution, candidate);
-    if (state.activeCaseIds?.length !== active.length || state.activeCaseIds.some((id, index) => id !== active[index])) {
+    const candidate = loadSuiteActivationCandidate(suite);
+    const execution = readJson(config.executionPath);
+    const active = requireActivatedSuiteExecution(execution, candidate, suite);
+    if (
+      state.activeCaseIds?.length !== active.length ||
+      state.activeCaseIds.some((id, index) => id !== active[index])
+    ) {
       fail('L2_RUNTIME_FINALIZE_ACTIVE_CASE_EXACT_SET_REQUIRED');
     }
     const binding = execution.readiness?.runBinding;
@@ -4969,6 +6011,7 @@ async function finalizeRepositoryByteBinding() {
     let result;
     try {
       result = await cleanupRuntimeState(state, {
+        suite,
         reason: firstFailure,
         business: 'FAIL',
         lastKnownGood: finalizeLastKnownGood,
@@ -4981,6 +6024,7 @@ async function finalizeRepositoryByteBinding() {
       };
     }
     const manifest = buildIncompleteExecutionManifest({
+      suite,
       state,
       executionStatus: 'INCOMPLETE_PREFLIGHT',
       firstFailure,
@@ -5010,8 +6054,9 @@ async function finalizeRepositoryByteBinding() {
   }
 }
 
-async function runBrowserL2() {
-  const state = readRuntimeState();
+async function runBrowserL2(suite = 'catalog-inventory') {
+  const config = suiteConfig(suite);
+  const state = readRuntimeState(suite);
   let credentials;
   let active = Array.isArray(state.activeCaseIds) ? [...state.activeCaseIds] : [];
   let preflightLastKnownGood = 'RUNTIME_STATE_READ';
@@ -5037,9 +6082,9 @@ async function runBrowserL2() {
     if (typeof state.sourceByteBindingPath !== 'string') fail('L2_RUNTIME_SOURCE_BYTE_BINDING_REQUIRED');
     validateRepositoryByteBinding(state.sourceByteBindingPath, {expectedRunId: state.identity.runId});
     preflightLastKnownGood = 'SOURCE_BYTE_BINDING_VALIDATED';
-    const activationCandidate = loadL2ActivationCandidate();
-    const execution = readJson(executionPath);
-    active = requireActivatedCatalogLibraryExecution(execution, activationCandidate);
+    const activationCandidate = loadSuiteActivationCandidate(suite);
+    const execution = readJson(config.executionPath);
+    active = requireActivatedSuiteExecution(execution, activationCandidate, suite);
     preflightLastKnownGood = 'ACTIVATION_PROFILE_VALIDATED';
     const binding = execution.readiness?.runBinding;
     if (
@@ -5051,7 +6096,10 @@ async function runBrowserL2() {
       fail('L2_RUNTIME_READINESS_RUN_BINDING_MISMATCH');
     }
     preflightLastKnownGood = 'READINESS_RUN_BINDING_VALIDATED';
-    if (state.activeCaseIds?.length !== active.length || state.activeCaseIds.some((id, index) => id !== active[index])) {
+    if (
+      state.activeCaseIds?.length !== active.length ||
+      state.activeCaseIds.some((id, index) => id !== active[index])
+    ) {
       fail('L2_RUNTIME_STATE_ACTIVE_CASE_EXACT_SET_REQUIRED');
     }
     preflightLastKnownGood = 'ACTIVE_CASE_EXACT_SET_VALIDATED';
@@ -5064,12 +6112,16 @@ async function runBrowserL2() {
       state,
       credentials,
       activeIds: active,
+      suite,
       onProcess: childProcess => {
         playwrightProcess = childProcess;
       },
     });
     if (interruptedSignal) {
-      const result = await cleanupRuntimeState(state, {reason: `L2_RUNTIME_INTERRUPTED_${interruptedSignal}`});
+      const result = await cleanupRuntimeState(state, {
+        suite,
+        reason: `L2_RUNTIME_INTERRUPTED_${interruptedSignal}`,
+      });
       process.stderr.write(
         `BROWSER_L2=INTERRUPTED; SIGNAL=${interruptedSignal}; BUSINESS=NOT_RUN; CLEANUP=${result.cleanupErrors.length ? 'FAIL' : 'PASS'}; MANIFEST=${result.cleanupManifestPath}\n`,
       );
@@ -5106,7 +6158,15 @@ async function runBrowserL2() {
     const dbEvents = readJsonLines(state.diagnostics.dbEvents);
     let joinArtifact;
     try {
-      joinArtifact = buildL2JoinArtifact({state, activeIds: active, resultRows, joinEvents, httpEvents, dbEvents});
+      joinArtifact = buildL2JoinArtifact({
+        suite,
+        state,
+        activeIds: active,
+        resultRows,
+        joinEvents,
+        httpEvents,
+        dbEvents,
+      });
     } catch (error) {
       // A public-artifact validation failure is business evidence, never a
       // reason to bypass normal result accounting and owned-resource cleanup.
@@ -5115,7 +6175,7 @@ async function runBrowserL2() {
       firstFailure ??= errorCode(error);
       joinArtifact = {
         schemaVersion: 1,
-        kind: 'catalog-inventory-l2-join-artifact',
+        kind: config.joinKind,
         runId: state.identity.runId,
         cases: [],
         joinStatus: 'INCOMPLETE',
@@ -5129,6 +6189,7 @@ async function runBrowserL2() {
     const discovered = discovery?.discoveredCount ?? 0;
     const selectionPath = path.join(state.runDirectory, 'l2-selection-manifest.json');
     const selection = buildL2SelectionManifest({
+      suite,
       state,
       activeIds: active,
       resultRows,
@@ -5188,9 +6249,10 @@ async function runBrowserL2() {
       ? passedCount > 0
         ? `L2_CASES_${passedCount}_PASS`
         : 'OWNER_FIXTURE_READY'
-      : 'L2_24_CASES_PASS';
+      : `L2_${active.length}_CASES_PASS`;
     const cleanupErrorsBeforePrivateCleanup = await cleanupOwnedL2Resources(state, credentials);
     const cleanupResult = completeCleanupEvidence(state, credentials, {
+      suite,
       reason: firstFailure,
       business,
       lastKnownGood,
@@ -5201,7 +6263,7 @@ async function runBrowserL2() {
     const cleanup = cleanupErrors.length ? 'FAIL' : 'PASS';
     const manifest = {
       schemaVersion: 1,
-      kind: 'catalog-inventory-l2-execution-manifest',
+      kind: config.executionManifestKind,
       runId: state.identity.runId,
       topology: 'LOCAL_SPRING_LOCAL_VITE_LOCAL_PLAYWRIGHT_REMOTE_DB_ASSET_TUNNEL',
       discovered,
@@ -5217,7 +6279,10 @@ async function runBrowserL2() {
         durationMs: child.durationMs,
         artifactDirectory: repositoryRelativePath(child.playwrightArtifactDirectory),
       },
-      discovery: {manifestPath: repositoryRelativePath(child.discoveryPath), discoveredCaseIds: child.discoveredCaseIds},
+      discovery: {
+        manifestPath: repositoryRelativePath(child.discoveryPath),
+        discoveredCaseIds: child.discoveredCaseIds,
+      },
       selection: {
         manifestPath: repositoryRelativePath(selectionPath),
         selectedCaseIds: selection.selectedCaseIds,
@@ -5236,7 +6301,9 @@ async function runBrowserL2() {
       cleanup,
       cleanupErrors,
       cleanupManifestPath: repositoryRelativePath(cleanupResult.cleanupManifestPath),
-      retainedEvidence: {playwrightArtifactDirectory: repositoryRelativePath(playwrightArtifactDirectoryForRun(state.runDirectory))},
+      retainedEvidence: {
+        playwrightArtifactDirectory: repositoryRelativePath(playwrightArtifactDirectoryForRun(state.runDirectory)),
+      },
       finishedAt: now(),
     };
     safePublicManifest(manifest, Object.values(credentials.values));
@@ -5275,6 +6342,7 @@ async function runBrowserL2() {
     let result;
     try {
       result = await cleanupRuntimeState(state, {
+        suite,
         reason: firstFailure,
         business: 'FAIL',
         lastKnownGood,
@@ -5287,6 +6355,7 @@ async function runBrowserL2() {
       };
     }
     const manifest = buildIncompleteExecutionManifest({
+      suite,
       state,
       activeCaseIds: active.length > 0 ? active : [...(state.activeCaseIds ?? [])],
       executionStatus,
@@ -5318,6 +6387,85 @@ async function runBrowserL2() {
     process.removeListener('SIGINT', handleSignal);
     process.removeListener('SIGTERM', handleSignal);
   }
+}
+
+function salesMenuSelfTest() {
+  const policy = readJson(salesMenuScenarioPath);
+  const fixture = readJson(salesMenuFixturePath);
+  const bindings = readJson(salesMenuBindingPath);
+  const candidate = readJson(salesMenuActivationCandidatePath);
+  const execution = readJson(salesMenuExecutionPath);
+  const timing = readJson(salesMenuTimingPath);
+  if (!existsSync(salesMenuSpecPath)) fail('SALES_MENU_L2_SPEC_MISSING');
+  if (
+    policy.kind !== 'sales-menu-l2-scenarios' ||
+    policy.caseCount !== 16 ||
+    !Array.isArray(policy.scenarios) ||
+    policy.scenarios.length !== 16 ||
+    !Array.isArray(policy.operationCoverage) ||
+    policy.operationCoverage.length !== 31
+  ) {
+    fail('SALES_MENU_L2_POLICY_DENOMINATOR_INVALID');
+  }
+  const caseRows = policy.scenarios.flatMap(scenario => scenario.cases ?? []);
+  if (caseRows.length !== 16 || new Set(caseRows.map(row => row.caseId)).size !== 16)
+    fail('SALES_MENU_L2_CASE_EXACT_SET_INVALID');
+  if (
+    fixture.kind !== 'sales-menu-l2-fixture' ||
+    fixture.fixtureClass !== 'TEST' ||
+    fixture.setupChannel !== 'OWNER_HTTP_COMMANDS' ||
+    fixture.seedRuntimeInput !== false ||
+    fixture.runId !== 'RUNTIME_ASSIGNED' ||
+    fixture.channelFixtures?.length !== 21 ||
+    fixture.menuFixtures?.length !== 21 ||
+    fixture.candidateFixtures?.length !== 21 ||
+    Object.keys(fixture.caseFixtures ?? {}).length !== 16
+  ) {
+    fail('SALES_MENU_L2_FIXTURE_DENOMINATOR_INVALID');
+  }
+  if (
+    bindings.kind !== 'sales-menu-l2-locator-bindings' ||
+    bindings.bindingMode !== 'CASE_PARAMETER_CONTROL_KEYS' ||
+    bindings.caseCount !== 16 ||
+    bindings.noSeedRuntimeInput !== true ||
+    Object.keys(bindings.controls ?? {}).length === 0
+  ) {
+    fail('SALES_MENU_L2_BINDINGS_INVALID');
+  }
+  if (
+    candidate.kind !== 'sales-menu-l2-activation-candidate' ||
+    candidate.noSeedRuntimeInput !== true ||
+    candidate.approvedCaseIds?.length !== 16 ||
+    candidate.candidateDigest !== candidateDigest(candidate)
+  ) {
+    fail('SALES_MENU_L2_CANDIDATE_INVALID');
+  }
+  if (
+    execution.kind !== 'sales-menu-l2-execution-profile' ||
+    execution.noSeedRuntimeInput !== true ||
+    execution.mode !== 'FRAMEWORK_ONLY' ||
+    execution.enabledCaseIds?.length !== 0
+  ) {
+    fail('SALES_MENU_L2_EXECUTION_FRAMEWORK_INVALID');
+  }
+  if (
+    timing.kind !== 'sales-menu-l2-timing-budget' ||
+    timing.caseCount !== 16 ||
+    !Array.isArray(timing.cases) ||
+    timing.cases.length !== 16 ||
+    timing.cases.some(row => !Number.isFinite(Number(row.caseTimeoutMs)) || Number(row.caseTimeoutMs) <= 0)
+  ) {
+    fail('SALES_MENU_L2_TIMING_INVALID');
+  }
+  const operations = new Set(combinedRegistry().map(entry => entry.operationId));
+  if (policy.operationCoverage.some(row => !operations.has(row.operationId)))
+    fail('SALES_MENU_L2_OPERATION_ROUTE_MISSING');
+  const active = activeCaseIds(execution);
+  if (execution.mode === 'INCREMENTAL' && active.length !== 16) fail('SALES_MENU_L2_ACTIVE_CASE_SET_INVALID');
+  if (execution.mode === 'FRAMEWORK_ONLY' && active.length !== 0) fail('SALES_MENU_L2_FRAMEWORK_HAS_ACTIVE_CASES');
+  process.stdout.write(
+    `BROWSER_L2_SALES_MENU_RUNTIME_SELF_TEST=PASS; POLICY=16; OPERATIONS=31; DATASETS=21/21/21; TARGET_CASES=${active.length}; MODE=${execution.mode}\n`,
+  );
 }
 
 function selfTest() {
@@ -5662,13 +6810,30 @@ function selfTest() {
 }
 
 export async function main() {
-  const mode = process.argv[2];
-  if (mode === '--self-test') return selfTest();
-  if (mode === 'readiness') return readiness();
-  if (mode === 'finalize') return finalizeRepositoryByteBinding();
-  if (mode === 'run') return runBrowserL2();
-  if (mode === 'cleanup') return cleanupCommand(process.argv[3]);
-  process.stderr.write('Usage: browser-l2-runtime.mjs --self-test|readiness|finalize|run|cleanup [runtime-state.json]\n');
+  const args = process.argv.slice(2);
+  const suiteIndex = args.indexOf('--suite');
+  const suite = suiteIndex >= 0 ? args[suiteIndex + 1] : 'catalog-inventory';
+  if (suiteIndex >= 0 && !suite) {
+    process.stderr.write('Usage: browser-l2 --suite catalog-inventory|sales-menu <mode>\n');
+    process.exitCode = 2;
+    return;
+  }
+  try {
+    suiteConfig(suite);
+  } catch (error) {
+    process.stderr.write(`Unknown browser-L2 suite: ${suite}; FIRST_FAILURE=${errorCode(error)}\n`);
+    process.exitCode = 2;
+    return;
+  }
+  const mode = args.find(arg => ['--self-test', 'readiness', 'finalize', 'run', 'cleanup'].includes(arg));
+  if (mode === '--self-test') return suite === 'sales-menu' ? salesMenuSelfTest() : selfTest();
+  if (mode === 'readiness') return readiness(suite);
+  if (mode === 'finalize') return finalizeRepositoryByteBinding(suite);
+  if (mode === 'run') return runBrowserL2(suite);
+  if (mode === 'cleanup') return cleanupCommand(args[args.indexOf('cleanup') + 1], suite);
+  process.stderr.write(
+    'Usage: browser-l2-runtime.mjs --self-test|readiness|finalize|run|cleanup [runtime-state.json]\n',
+  );
   process.exitCode = 2;
 }
 

@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.platform.asset.api.SalesMenuAssetCommandApi;
+import com.catering.v2s.platform.asset.api.SalesMenuAssetTarget;
+import com.catering.v2s.platform.asset.api.SalesMenuAssetUsage;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -17,7 +20,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.util.HashMap;
+import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -818,6 +824,152 @@ class PlatformAssetServiceTest {
     }
 
     @Test
+    void salesMenuImageLifecycleRequiresExactTargetAndUsesSeparateOperationGrants() {
+        byte[] content = png(0xff0f766e);
+        UUID storeRef = UUID.randomUUID();
+        UUID salesMenuRef = UUID.randomUUID();
+        UUID salesItemRef = UUID.randomUUID();
+        SalesMenuAssetTarget target = new SalesMenuAssetTarget(
+                workspaceId,
+                "asset-flow",
+                storeRef,
+                salesMenuRef,
+                salesItemRef,
+                SalesMenuAssetUsage.SALES_MENU_ITEM_IMAGE,
+                3L);
+        OperationsOwnerScopeGrant stageGrant =
+                salesMenuGrant(workspaceId, "asset-flow", storeRef, "REQ_STAGE_OPERATIONS_SALES_MENU_ASSET");
+
+        var staged = assets.stageSalesMenuItemImage(
+                target,
+                stageGrant,
+                1L,
+                new SalesMenuAssetCommandApi.StageCommand(
+                        "menu.png",
+                        "image/png",
+                        sha256(content),
+                        content.length,
+                        new ByteArrayInputStream(content),
+                        "sales-menu-stage-entity-0001"));
+        assertEquals("STAGED", staged.status());
+        assertEquals(
+                1,
+                jdbc.queryForObject(
+                        "SELECT count(*) FROM platform_asset.sales_menu_asset_target WHERE asset_ref=?",
+                        Integer.class,
+                        staged.assetRef()));
+
+        OperationsOwnerScopeGrant wrongCapability = new OperationsOwnerScopeGrant(
+                workspaceId,
+                "asset-flow",
+                "REQ_STAGE_OPERATIONS_SALES_MENU_ASSET",
+                "EDIT_STORE_INVENTORY",
+                "STORE",
+                storeRef,
+                "STORE",
+                storeRef,
+                List.of(storeRef),
+                1L);
+        assertThrows(
+                PlatformAssetService.AssetOwnerScopeForbiddenException.class,
+                () -> assets.stageSalesMenuItemImage(
+                        target,
+                        wrongCapability,
+                        1L,
+                        new SalesMenuAssetCommandApi.StageCommand(
+                                "menu.png",
+                                "image/png",
+                                sha256(content),
+                                content.length,
+                                new ByteArrayInputStream(content),
+                                "sales-menu-stage-denied-0001")));
+
+        SalesMenuAssetTarget wrongItemTarget = new SalesMenuAssetTarget(
+                workspaceId,
+                "asset-flow",
+                storeRef,
+                salesMenuRef,
+                UUID.randomUUID(),
+                SalesMenuAssetUsage.SALES_MENU_ITEM_IMAGE,
+                3L);
+        OperationsOwnerScopeGrant releaseGrant =
+                salesMenuGrant(workspaceId, "asset-flow", storeRef, "REQ_RELEASE_OPERATIONS_SALES_MENU_STAGED_ASSET");
+        assertThrows(
+                PlatformAssetService.AssetOwnerScopeForbiddenException.class,
+                () -> assets.releaseStagedSalesMenuItemImage(
+                        wrongItemTarget,
+                        releaseGrant,
+                        1L,
+                        new SalesMenuAssetCommandApi.ReleaseCommand(
+                                staged.assetRef(), 1L, "sales-menu-release-wrong-item-0001")));
+
+        OperationsOwnerScopeGrant claimGrant =
+                salesMenuGrant(workspaceId, "asset-flow", storeRef, "REQ_UPDATE_OPERATIONS_SALES_MENU_ITEM");
+        var claimed = assets.claimSalesMenuItemImages(
+                target,
+                claimGrant,
+                1L,
+                List.of(new SalesMenuAssetCommandApi.AssetBinding(staged.assetRef(), staged.bindGrant())));
+        assertEquals("ACTIVE", claimed.assets().getFirst().status());
+        assertEquals(2L, claimed.assets().getFirst().version());
+
+        assertThrows(
+                PlatformAssetService.AssetClaimRejectedException.class,
+                () -> assets.releaseStagedSalesMenuItemImage(
+                        target,
+                        releaseGrant,
+                        1L,
+                        new SalesMenuAssetCommandApi.ReleaseCommand(
+                                staged.assetRef(), 2L, "sales-menu-release-active-0001")));
+    }
+
+    @Test
+    void salesMenuReleaseUsesStoredTargetVersionRatherThanClientDraftVersion() {
+        byte[] content = png(0xff1d4ed8);
+        UUID storeRef = UUID.randomUUID();
+        UUID salesMenuRef = UUID.randomUUID();
+        UUID salesItemRef = UUID.randomUUID();
+        SalesMenuAssetTarget stagedTarget = new SalesMenuAssetTarget(
+                workspaceId,
+                "asset-flow",
+                storeRef,
+                salesMenuRef,
+                salesItemRef,
+                SalesMenuAssetUsage.SALES_MENU_ITEM_IMAGE,
+                7L);
+        var staged = assets.stageSalesMenuItemImage(
+                stagedTarget,
+                salesMenuGrant(workspaceId, "asset-flow", storeRef, "REQ_STAGE_OPERATIONS_SALES_MENU_ASSET"),
+                1L,
+                new SalesMenuAssetCommandApi.StageCommand(
+                        "menu-release.png",
+                        "image/png",
+                        sha256(content),
+                        content.length,
+                        new ByteArrayInputStream(content),
+                        "sales-menu-release-owner-local-version-stage-0001"));
+
+        SalesMenuAssetTarget releaseTarget = new SalesMenuAssetTarget(
+                workspaceId,
+                "asset-flow",
+                storeRef,
+                salesMenuRef,
+                salesItemRef,
+                SalesMenuAssetUsage.SALES_MENU_ITEM_IMAGE,
+                0L);
+        var released = assets.releaseStagedSalesMenuItemImage(
+                releaseTarget,
+                salesMenuGrant(workspaceId, "asset-flow", storeRef, "REQ_RELEASE_OPERATIONS_SALES_MENU_STAGED_ASSET"),
+                1L,
+                new SalesMenuAssetCommandApi.ReleaseCommand(
+                        staged.assetRef(), 1L, "sales-menu-release-owner-local-version-release-0001"));
+
+        assertEquals(staged.assetRef(), released.assetRef());
+        assertEquals(2L, released.version());
+        assertEquals(7L, released.target().expectedDraftVersion());
+    }
+
+    @Test
     void catalogStageAndActiveRefCannotBeClaimedOrDiscardedByAnotherWorkspace() {
         byte[] firstPng = png(0xffc026d3);
         var staged = assets.stageCatalogContent(
@@ -1261,6 +1413,29 @@ class PlatformAssetServiceTest {
                 "STORE",
                 targetId,
                 java.util.List.of(targetId));
+    }
+
+    private static OperationsOwnerScopeGrant salesMenuGrant(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, String requirementId) {
+        return new OperationsOwnerScopeGrant(
+                workspaceUuid,
+                groupWorkspaceKey,
+                requirementId,
+                "EDIT_STORE_SALES_MENU",
+                "STORE",
+                storeRef,
+                "STORE",
+                storeRef,
+                java.util.List.of(storeRef),
+                1L);
+    }
+
+    private static String sha256(byte[] bytes) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+        } catch (java.security.GeneralSecurityException failure) {
+            throw new IllegalStateException("SHA-256 unavailable", failure);
+        }
     }
 
     private static byte[] png(int argb) {

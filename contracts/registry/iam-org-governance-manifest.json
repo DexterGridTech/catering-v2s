@@ -227,6 +227,13 @@
       "requiredInOwnerCommand": true,
       "transactionRequirement": "REQUIRED",
       "crossOwnerWritesUsePublicCommandApi": true
+    },
+    {
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "ownerModule": "sales-menu",
+      "requiredInOwnerCommand": true,
+      "transactionRequirement": "REQUIRED",
+      "crossOwnerWritesUsePublicCommandApi": true
     }
   ],
   "typedProblemMappings": [
@@ -317,6 +324,13 @@
     {
       "typedProblemMappingId": "PROBLEM_BUSINESS_CHANNEL_TYPED_OWNER_EXCEPTION",
       "ownerModule": "business-channel",
+      "typedProblemOnly": true,
+      "noTestCodeInResponse": true,
+      "unmappedExceptionFails": true
+    },
+    {
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "sales-menu",
       "typedProblemOnly": true,
       "noTestCodeInResponse": true,
       "unmappedExceptionFails": true
@@ -3214,6 +3228,234 @@
       "ownerRecheckId": "OWNER_RECHECK_BUSINESS_CHANNEL",
       "typedProblemMappingId": "PROBLEM_BUSINESS_CHANNEL_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_OPERATIONS_CHANNEL_GRANT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_SALES_MENU",
+      "operationIdentity": {"operationId": "createOperationsSalesMenu", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CREATE_OPERATIONS_SALES_MENU",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_COPY_OPERATIONS_SALES_MENU",
+      "operationIdentity": {"operationId": "copyOperationsSalesMenu", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_COPY_OPERATIONS_SALES_MENU",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_RENAME_OPERATIONS_SALES_MENU",
+      "operationIdentity": {"operationId": "renameOperationsSalesMenu", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/name", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_RENAME_OPERATIONS_SALES_MENU",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_ARCHIVE_OPERATIONS_SALES_MENU",
+      "operationIdentity": {"operationId": "archiveOperationsSalesMenu", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/archive", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_ARCHIVE_OPERATIONS_SALES_MENU",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_SET_OPERATIONS_SALES_MENU_ACTIVATION",
+      "operationIdentity": {"operationId": "setOperationsSalesMenuActivation", "method": "PUT", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_SET_OPERATIONS_SALES_MENU_ACTIVATION",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_UPDATE_OPERATIONS_SALES_MENU_SCHEDULE",
+      "operationIdentity": {"operationId": "updateOperationsSalesMenuSchedule", "method": "PUT", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_UPDATE_OPERATIONS_SALES_MENU_SCHEDULE",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_SALES_MENU_SECTION",
+      "operationIdentity": {"operationId": "createOperationsSalesMenuSection", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CREATE_OPERATIONS_SALES_MENU_SECTION",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_RENAME_OPERATIONS_SALES_MENU_SECTION",
+      "operationIdentity": {"operationId": "renameOperationsSalesMenuSection", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_RENAME_OPERATIONS_SALES_MENU_SECTION",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_DELETE_OPERATIONS_SALES_MENU_SECTION",
+      "operationIdentity": {"operationId": "deleteOperationsSalesMenuSection", "method": "DELETE", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_DELETE_OPERATIONS_SALES_MENU_SECTION",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_MOVE_OPERATIONS_SALES_MENU_SECTION",
+      "operationIdentity": {"operationId": "moveOperationsSalesMenuSection", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/move", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_MOVE_OPERATIONS_SALES_MENU_SECTION",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_ADD_OPERATIONS_SALES_MENU_ITEMS",
+      "operationIdentity": {"operationId": "addOperationsSalesMenuItems", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_ADD_OPERATIONS_SALES_MENU_ITEMS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_UPDATE_OPERATIONS_SALES_MENU_ITEM",
+      "operationIdentity": {"operationId": "updateOperationsSalesMenuItem", "method": "PUT", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_UPDATE_OPERATIONS_SALES_MENU_ITEM",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_DELETE_OPERATIONS_SALES_MENU_ITEM",
+      "operationIdentity": {"operationId": "deleteOperationsSalesMenuItem", "method": "DELETE", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_DELETE_OPERATIONS_SALES_MENU_ITEM",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_MOVE_OPERATIONS_SALES_MENU_ITEM",
+      "operationIdentity": {"operationId": "moveOperationsSalesMenuItem", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_MOVE_OPERATIONS_SALES_MENU_ITEM",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_STAGE_OPERATIONS_SALES_MENU_ASSET",
+      "operationIdentity": {"operationId": "stageOperationsSalesMenuAsset", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_STAGE_OPERATIONS_SALES_MENU_ASSET",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_RELEASE_OPERATIONS_SALES_MENU_STAGED_ASSET",
+      "operationIdentity": {"operationId": "releaseOperationsSalesMenuStagedAsset", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_RELEASE_OPERATIONS_SALES_MENU_ASSET",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_PUBLISH_OPERATIONS_SALES_MENU",
+      "operationIdentity": {"operationId": "publishOperationsSalesMenu", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_PUBLISH_OPERATIONS_SALES_MENU",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_SET_OPERATIONS_SALES_MENU_ITEM_SOLD_OUT",
+      "operationIdentity": {"operationId": "setOperationsSalesMenuItemSoldOut", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_SET_OPERATIONS_SALES_MENU_ITEM_SOLD_OUT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_RESTORE_OPERATIONS_SALES_MENU_ITEM_SALE",
+      "operationIdentity": {"operationId": "restoreOperationsSalesMenuItemSale", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore", "consumerFace": "operations-admin", "ownerModule": "sales-menu"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SALES_MENU"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "sales-menu",
+      "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
+      "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_RESTORE_OPERATIONS_SALES_MENU_ITEM_SALE",
       "noClientDerivedAuthorization": true
     }
   ]

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/kernel-base-ui-state",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-ui-state", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "ownerKind": "owner",
+  "publicExports": [
+    "ContainerKey", "DisplayMode", "LayerEntry", "PartKey", "ScreenPlacement", "UiCatalog", "UiCatalogContext", "UiCatalogEntry", "UiStateModule",
+    "UiVariableDeclaration", "UiVariableWrite", "createModuleUiVariableFactory", "createUiCatalog",
+    "createUiVariableWrite", "createUiStateModule", "clearLayersCommand", "clearUiVariablesCommand", "closeLayerCommand", "dependencyModuleNames", "devDependencyModuleNames", "moduleKind", "moduleName",
+    "openLayerCommand", "selectAvailableParts", "selectLayers", "selectScreen", "setUiVariablesCommand", "showScreenCommand"
+  ]
+}

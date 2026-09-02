@@ -642,6 +642,40 @@ export const adminCatalog = {
         "HEAD_COMPANY"
       ],
       "userManagementTargetOrganizationType": null
+    },
+    {
+      "pageDesignKey": "PG-SALES-MENU-STORE",
+      "kind": "BUSINESS",
+      "pageAccessManaged": true,
+      "menuOrder": 540,
+      "menuGroupKey": "NAV-CATALOG-SERVICES",
+      "menuGroupIconKey": "CATALOG_SERVICES",
+      "menuGroupLabel": "商品与服务",
+      "menuLabel": "门店销售菜单",
+      "pageTitle": "门店销售菜单",
+      "contentTabLabel": "门店销售菜单",
+      "pageDescription": "按当前门店维护内部堂食与外带经营入口的销售菜单。",
+      "dataNodeCascaderLabel": "可视数据节点",
+      "noDataNodePrompt": "请选择可视数据节点",
+      "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+      "cascadeLevelLabels": [
+        "大区",
+        "项目",
+        "门店"
+      ],
+      "forbiddenAlternatives": [
+        "项目级菜单",
+        "外部菜单",
+        "商品对应关系"
+      ],
+      "requiredDataNodeType": "STORE",
+      "supportedRoleNodeTypes": [
+        "GROUP",
+        "REGION",
+        "PROJECT",
+        "STORE"
+      ],
+      "userManagementTargetOrganizationType": null
     }
   ],
   "actionGroups": [
@@ -1594,6 +1628,32 @@ export const adminCatalog = {
         "PROJECT",
         "STORE"
       ]
+    },
+    {
+      "actionKey": "EDIT_STORE_SALES_MENU",
+      "actionLabel": "编辑门店销售菜单",
+      "actionDescription": "编辑门店销售菜单",
+      "actionGroupKey": "CATALOG_MANAGEMENT",
+      "actionGroupLabel": "商品与服务",
+      "actionGroupOrder": 500,
+      "pageBindings": [
+        {
+          "pageDesignKey": "PG-SALES-MENU-STORE",
+          "selectedIdentityTypes": [
+            "GROUP",
+            "REGION",
+            "PROJECT",
+            "STORE"
+          ],
+          "scopeApplicability": "SELECTED_STORE_SCOPE"
+        }
+      ],
+      "grantableRoleNodeTypes": [
+        "GROUP",
+        "REGION",
+        "PROJECT",
+        "STORE"
+      ]
     }
   ],
   "userManagementActionBindings": [
@@ -1708,7 +1768,8 @@ export const operationsPageDesignKeys = {
   "PgBusinessChannelStore": "PG-BUSINESS-CHANNEL-STORE",
   "PgCatalogStoreItems": "PG-CATALOG-STORE-ITEMS",
   "PgInventoryStoreStatus": "PG-INVENTORY-STORE-STATUS",
-  "PgCatalogBrandItems": "PG-CATALOG-BRAND-ITEMS"
+  "PgCatalogBrandItems": "PG-CATALOG-BRAND-ITEMS",
+  "PgSalesMenuStore": "PG-SALES-MENU-STORE"
 } as const;
 export type AdminCatalog = typeof adminCatalog;
 export type OperationsPageDesignKey = typeof operationsPageDesignKeys[keyof typeof operationsPageDesignKeys];
@@ -1751,7 +1812,8 @@ export const ACTION_CAPABILITIES = {
   "BUSINESS_CHANNEL_STORE_EDIT": "BC-BUSINESS-CHANNEL-STORE-EDIT",
   "EDIT_HEAD_COMPANY_CATALOG": "EDIT_HEAD_COMPANY_CATALOG",
   "EDIT_STORE_CATALOG": "EDIT_STORE_CATALOG",
-  "EDIT_STORE_INVENTORY": "EDIT_STORE_INVENTORY"
+  "EDIT_STORE_INVENTORY": "EDIT_STORE_INVENTORY",
+  "EDIT_STORE_SALES_MENU": "EDIT_STORE_SALES_MENU"
 } as const;
 export type AdminActionCapabilityKey = typeof ACTION_CAPABILITIES[keyof typeof ACTION_CAPABILITIES];
 export const USER_MANAGEMENT_PAGE_DESIGN_KEYS = [

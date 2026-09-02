@@ -454,6 +454,81 @@
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}": {
       "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channels~1{channelRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections~1{salesSectionRef}~1items"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1items~1{salesItemRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1sections"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1sections~1{salesSectionRef}~1items"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1items~1{salesItemRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/item-candidates": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1item-candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1publication-preview"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1sales-menu-operation-records"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1copies"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/name": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1name"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/archive": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1archive"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1channels~1{channelRef}~1activation"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1schedule"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections~1{salesSectionRef}~1name"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections~1{salesSectionRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/move": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections~1{salesSectionRef}~1move"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1items~1{salesItemRef}~1move"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1items~1{salesItemRef}~1assets~1stage"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1items~1{salesItemRef}~1assets~1stage~1{assetRef}~1release"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1publications"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1items~1{salesItemRef}~1channels~1{channelRef}~1manual-sold-out"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1items~1{salesItemRef}~1channels~1{channelRef}~1manual-restore"
     }
   },
   "components": {
@@ -1078,6 +1153,144 @@
       },
       "ExternalProviderCandidatePage": {
         "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/ExternalProviderCandidatePage"
+      },
+      "SalesMenuSchedule": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuSchedule"
+      },
+      "SalesMenuActivation": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuActivation"
+      },
+      "SalesMenuSummary": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuSummary"
+      },
+      "SalesMenuPage": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuPage"
+      },
+      "SalesMenuDetail": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuDetail"
+      },
+      "SalesMenuSectionView": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuSectionView"
+      },
+      "SalesMenuSectionList": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuSectionList"
+      },
+      "SalesMenuSkuPrice": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuSkuPrice"
+      },
+      "SalesMenuSaleContent": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuSaleContent"
+      },
+      "SalesMenuOrderingConstraints": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuOrderingConstraints"
+      },
+      "SalesMenuDisplayMedia": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuDisplayMedia"
+      },
+      "SalesMenuDraftItemView": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuDraftItemView"
+      },
+      "SalesMenuItemPage": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuItemPage"
+      },
+      "InventoryAvailabilityFact": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/InventoryAvailabilityFact"
+      },
+      "ManualSaleStatusFact": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/ManualSaleStatusFact"
+      },
+      "SalesMenuPublishedItemView": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuPublishedItemView"
+      },
+      "SalesMenuPublishedSectionList": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuPublishedSectionList"
+      },
+      "SalesMenuPublishedItemPage": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuPublishedItemPage"
+      },
+      "SalesMenuItemCandidate": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuItemCandidate"
+      },
+      "SalesMenuCandidatePage": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCandidatePage"
+      },
+      "SalesMenuPublicationBlocker": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuPublicationBlocker"
+      },
+      "SalesMenuPublicationPreview": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuPublicationPreview"
+      },
+      "SalesMenuOperationRecord": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuOperationRecord"
+      },
+      "SalesMenuOperationRecordPage": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuOperationRecordPage"
+      },
+      "SalesMenuAssetTargetReadback": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuAssetTargetReadback"
+      },
+      "SalesMenuAssetStageRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuAssetStageRequest"
+      },
+      "SalesMenuAssetStageReadback": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuAssetStageReadback"
+      },
+      "SalesMenuAssetReleaseRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuAssetReleaseRequest"
+      },
+      "SalesMenuAssetReleaseReadback": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuAssetReleaseReadback"
+      },
+      "SalesMenuCreateRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCreateRequest"
+      },
+      "SalesMenuCopyRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCopyRequest"
+      },
+      "SalesMenuArchiveRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuArchiveRequest"
+      },
+      "SalesMenuRenameRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuRenameRequest"
+      },
+      "SalesMenuActivationRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuActivationRequest"
+      },
+      "SalesMenuScheduleUpdateRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuScheduleUpdateRequest"
+      },
+      "SalesMenuSectionCreateRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuSectionCreateRequest"
+      },
+      "SalesMenuSectionRenameRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuSectionRenameRequest"
+      },
+      "SalesMenuSectionMoveRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuSectionMoveRequest"
+      },
+      "SalesMenuDeleteRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuDeleteRequest"
+      },
+      "SalesMenuItemsAddRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuItemsAddRequest"
+      },
+      "SalesMenuItemUpdateRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuItemUpdateRequest"
+      },
+      "SalesMenuItemMoveRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuItemMoveRequest"
+      },
+      "SalesMenuPublishRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuPublishRequest"
+      },
+      "SalesMenuManualSoldOutRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuManualSoldOutRequest"
+      },
+      "SalesMenuManualRestoreRequest": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuManualRestoreRequest"
+      },
+      "SalesMenuCommandReadback": {
+        "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
       },
       "EpochMillis": {
         "$ref": "./components/common/time.schemas.json#/components/schemas/EpochMillis"

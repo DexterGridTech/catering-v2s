@@ -10,6 +10,7 @@ import {
   buildL2SelectionManifest,
   buildReadinessManifest,
   buildFixtureVoidedSkuTransitions,
+  catalogBootstrapCaseIdsForSuite,
   catalogLibraryCaseIdentityPlan,
   fixtureSkuFactsForItem,
   l2FixtureStageSuffix,
@@ -21,6 +22,7 @@ import {
   requiredCatalogItemDetailVoidAvailability,
   requireActivatedCatalogLibraryExecution,
   resolveL2TerminalResults,
+  salesMenuSaleContentKind,
   materializeFixtureVoidedSkuLifecycle,
   repositoryRelativePath,
   writeRepositoryByteBinding,
@@ -43,8 +45,41 @@ const catalogL2Source = readFileSync(
   path.join(root, 'apps/frontend/operations-admin/src/tests/l2/catalog-inventory.spec.ts'),
   'utf8',
 );
+const salesMenuL2Source = readFileSync(
+  path.join(root, 'apps/frontend/operations-admin/src/tests/l2/sales-menu.spec.ts'),
+  'utf8',
+);
 const fixtureSource = readFileSync(path.join(root, 'scripts/test/catalog-inventory-l2-fixture.mjs'), 'utf8');
 const p1Source = readFileSync(path.join(root, 'scripts/generate/catalog-inventory-p1.mjs'), 'utf8');
+
+test('sales-menu fixture shapes use the owner-aligned sale-content kind mapping', () => {
+  assert.equal(salesMenuSaleContentKind('ORDINARY'), 'DIRECT');
+  assert.equal(salesMenuSaleContentKind('SERVICE'), 'DIRECT');
+  assert.equal(salesMenuSaleContentKind('SKU'), 'SKU_SELECTION');
+  assert.equal(salesMenuSaleContentKind('WEIGHTED'), 'WEIGHTED');
+  assert.equal(salesMenuSaleContentKind('COMPOSITE'), 'COMPOSITE');
+  assert.match(runtimeSource, /const saleContentKind = salesMenuSaleContentKind\(candidate\.shape\)/);
+});
+
+test('sales-menu readiness keeps Catalog library fixtures out of its exact candidate denominator', () => {
+  const catalogCaseIds = ['catalog-find-success', 'catalog-find-failure'];
+  assert.deepEqual(catalogBootstrapCaseIdsForSuite('sales-menu', catalogCaseIds), []);
+  assert.deepEqual(catalogBootstrapCaseIdsForSuite('catalog-inventory', catalogCaseIds), catalogCaseIds);
+  assert.match(runtimeSource, /activeRows\.length === 0 \? \[\] : validateCatalogLibraryCaseIdentityPlans/);
+  assert.match(runtimeSource, /catalogBootstrapCaseIdsForSuite\(suite, activeExecutionCaseIds\)/);
+});
+
+test('sales-menu L2 consumes the managed timing report field contract', () => {
+  assert.match(salesMenuL2Source, /cases: Array<\{caseId: string; timeoutMs: number\}>/);
+  assert.match(salesMenuL2Source, /Number\.isFinite\(budget\.timeoutMs\)/);
+  assert.match(salesMenuL2Source, /testInfo\.setTimeout\(budget\.timeoutMs\)/);
+  assert.doesNotMatch(salesMenuL2Source, /budget\.caseTimeoutMs/);
+});
+
+test('sales-menu L2 never treats an observed HTTP failure as a completed operation', () => {
+  assert.match(salesMenuL2Source, /completion\.status < 200 \|\| completion\.status >= 300/);
+  assert.match(salesMenuL2Source, /SALES_MENU_L2_OPERATION_HTTP_FAILED/);
+});
 
 test('browser L2 contract denominators and the target exact set are explicit', () => {
   const current = validateL2ContractDenominators();
@@ -165,7 +200,7 @@ test('browser L2 Playwright artifacts are run-scoped evidence and cannot fall ba
   );
   assert.match(runtimeSource, /R5_L2_PLAYWRIGHT_OUTPUT_DIR: playwrightArtifactDirectoryForRun\(state\.runDirectory\)/);
   assert.match(runtimeSource, /L2_PLAYWRIGHT_ARTIFACT_STATE_MISMATCH/);
-  assert.match(runtimeSource, /retainedEvidence: \{playwrightArtifactDirectory/);
+  assert.match(runtimeSource, /retainedEvidence:\s*\{\s*playwrightArtifactDirectory/);
   const configSource = readFileSync(path.join(root, 'apps/frontend/operations-admin/playwright.config.ts'), 'utf8');
   assert.match(configSource, /R5_L2_PLAYWRIGHT_OUTPUT_DIR_REQUIRED/);
   assert.match(configSource, /outputDir,/);
@@ -576,7 +611,10 @@ test('browser L2 join distinguishes backend completions from explicit frontend i
   assert.match(catalogL2Source, /kind: 'ACTION_START'/);
   assert.match(catalogL2Source, /kind: 'ACTION_COMPLETE'/);
   assert.match(catalogL2Source, /CATALOG_INVENTORY_L2_HTTP_OUTSIDE_ACTION/);
-  assert.match(catalogL2Source, /await page\.waitForLoadState\('networkidle'\);\s*await Promise\.all\(responseWrites\);/);
+  assert.match(
+    catalogL2Source,
+    /await page\.waitForLoadState\('networkidle'\);\s*await Promise\.all\(responseWrites\);/,
+  );
 });
 
 test('catalog-library owner readback and actions are target-specific declarations', () => {
@@ -600,7 +638,7 @@ test('catalog-library owner readback and actions are target-specific declaration
   assert.match(catalogL2Source, /CATALOG_INVENTORY_L2_OWNER_BATCH_ITEM_ROWS_MISSING/);
   assert.match(catalogL2Source, /CATALOG_INVENTORY_L2_OWNER_COPY_EXECUTION_PRESENT_AFTER_FAILURE/);
   assert.doesNotMatch(catalogL2Source, /payloadContainsRequiredFields/);
-  assert.match(runtimeSource, /function declaredActionsFor\(activeIds\)/);
+  assert.match(runtimeSource, /function declaredActionsFor\(activeIds(?:, suite = 'catalog-inventory')?\)/);
   assert.doesNotMatch(catalogL2Source, /const expectedTarget = \{/);
 });
 
@@ -613,8 +651,11 @@ test('P1 rejects duplicate L2 blueprint object keys before JSON parsing', () => 
 });
 
 test('browser L2 readiness consumes the generated candidate instead of an execution profile', () => {
-  assert.match(runtimeSource, /const timingReport = writeTimingReport\(runDirectory, activeExecutionCaseIds\)/);
-  assert.match(runtimeSource, /const activationCandidate = loadL2ActivationCandidate\(\)/);
+  assert.match(
+    runtimeSource,
+    /const timingReport = writeTimingReport\(runDirectory, activeExecutionCaseIds(?:, suite)?\)/,
+  );
+  assert.match(runtimeSource, /const activationCandidate = loadSuiteActivationCandidate\(suite\)/);
   assert.match(runtimeSource, /L2_READINESS_CANDIDATE_CASE_SET_MISMATCH/);
   assert.match(runtimeSource, /L2_READINESS_TIMING_ACTIVE_CASE_MISMATCH/);
   assert.doesNotMatch(runtimeSource, /CATALOG_LIBRARY_CASE_IDS/);
@@ -625,7 +666,10 @@ test('browser L2 interrupted runs have a managed cleanup recovery path', () => {
   assert.match(runtimeSource, /const cleanupErrors = await cleanupOwnedL2Resources\(state, credentials\)/);
   assert.match(runtimeSource, /process\.once\('SIGINT', handleSignal\)/);
   assert.match(runtimeSource, /L2_RUNTIME_INTERRUPTED_\$\{interruptedSignal\}/);
-  assert.match(runtimeSource, /if \(mode === 'cleanup'\) return cleanupCommand\(process\.argv\[3\]\)/);
+  assert.match(
+    runtimeSource,
+    /if \(mode === 'cleanup'\) return cleanupCommand\(args\[args\.indexOf\('cleanup'\) \+ 1\], suite\)/,
+  );
   assert.match(runtimeSource, /executionStatus = 'INCOMPLETE_FINALIZATION'/);
   assert.match(runtimeSource, /brokenBoundary = 'L2_RUNTIME_FINALIZATION'/);
   assert.match(runtimeSource, /preflightComplete \? 'INCOMPLETE_FINALIZATION' : 'INCOMPLETE_PREFLIGHT'/);
@@ -653,7 +697,10 @@ test('browser L2 preflight failures emit run-bound execution evidence before bus
   assert.equal(manifest.results, 0);
   assert.deepEqual(manifest.activeCaseIds, ['catalog-view-success']);
   assert.equal(manifest.sourceByteBindingPath, 'contracts/policy/catalog-inventory-l2-execution.json');
-  assert.equal(manifest.cleanupManifestPath, '.runtime/browser-l2/l2-preflight-manifest-focused/l2-cleanup-manifest.json');
+  assert.equal(
+    manifest.cleanupManifestPath,
+    '.runtime/browser-l2/l2-preflight-manifest-focused/l2-cleanup-manifest.json',
+  );
   assert.equal(manifest.brokenBoundary, 'L2_RUNTIME_PREFLIGHT');
   assert.doesNotMatch(JSON.stringify(manifest), /\/Users\/|\/Volumes\//);
 });
@@ -676,20 +723,29 @@ test('browser L2 owner bootstrap uses the contract asset usage value', () => {
   assert.doesNotMatch(runtimeSource, /form\.set\('usage', 'WORKSPACE_LOGO'\)/);
 });
 
+test('sales-menu operation-record readiness reads the required channel-scoped query', () => {
+  assert.match(
+    runtimeSource,
+    /getOperationsSalesMenuOperationRecords'[\s\S]*?\{channelRef: primaryChannel\.ref, pageSize: 20\}/,
+  );
+  assert.match(runtimeSource, /operation-records-read-page-2/);
+  assert.match(runtimeSource, /operationCursor = salesMenuNextCursor\(operationPage\)/);
+});
+
 test('browser L2 owner client binds body idempotency fields to the request header', () => {
   assert.match(runtimeSource, /options\.body\?\.idempotencyKey === '\$header'/);
   assert.match(runtimeSource, /idempotencyKey: '\$header'/);
   assert.doesNotMatch(runtimeSource, /idempotencyKey\(identity\.runId, 'workspace-body'\)/);
 });
 
-test('browser L2 store bootstrap role only requests pages valid for a store role', () => {
+test('browser L2 store bootstrap role exposes the approved sales-menu page', () => {
   const storeRoleBlock = runtimeSource.match(
     /const storeRole = await request\([\s\S]*?const storeRoleId = requiredObjectValue\([\s\S]*?\n/,
   )?.[0];
   assert.ok(storeRoleBlock, 'store role bootstrap block must remain structurally discoverable');
   assert.match(
     storeRoleBlock,
-    /serviceNodeType: 'STORE',[\s\S]*?pageAccessKeys: \['PG-IAM-STORE-USERS', 'PG-CATALOG-STORE-ITEMS'\]/,
+    /serviceNodeType: 'STORE',[\s\S]*?pageAccessKeys: \['PG-IAM-STORE-USERS', 'PG-CATALOG-STORE-ITEMS', 'PG-SALES-MENU-STORE'\]/,
   );
   assert.doesNotMatch(storeRoleBlock, /PG-CATALOG-BRAND-ITEMS/);
 });
@@ -771,7 +827,10 @@ test('browser L2 keeps a legally unpriced SKU view fixture in draft instead of f
 });
 
 test('browser L2 materializes terminal SKU facts through the owner lifecycle command', () => {
-  assert.match(runtimeSource, /status: sku\.status === 'VOIDED' \? 'DISABLED' : sku\.status \?\? 'ENABLED'/);
+  assert.match(
+    runtimeSource,
+    /status:\s*sku\.status === 'VOIDED'\s*\?\s*'DISABLED'\s*:\s*\(?sku\.status\s*\?\?\s*'ENABLED'\)?/,
+  );
   assert.match(runtimeSource, /export async function materializeFixtureVoidedSkuLifecycle/);
   assert.match(runtimeSource, /fixtureSkuFactsForItem\(fixtureObjects, fixtureItem\)/);
   assert.match(runtimeSource, /\$\{stagePrefix\}-sku-void-readback`,\s*'getOperationsCatalogItem'/);
@@ -781,7 +840,10 @@ test('browser L2 materializes terminal SKU facts through the owner lifecycle com
   assert.match(runtimeSource, /targetStatus: 'VOIDED', expectedVersion: actualSku\.version/);
   assert.match(runtimeSource, /catalogDraft: \{name: itemName, shapeKey\}/);
   assert.match(runtimeSource, /skuTransitions: transitions/);
-  assert.match(runtimeSource, /validateFixtureVoidedSkuTransitionReadback\(transitions, transitioned\.json, stagePrefix\)/);
+  assert.match(
+    runtimeSource,
+    /validateFixtureVoidedSkuTransitionReadback\(transitions, transitioned\.json, stagePrefix\)/,
+  );
   assert.match(runtimeSource, /entry\.status !== 'VOIDED'/);
   assert.match(runtimeSource, /expectedCatalogVersion: version/);
 });
@@ -795,8 +857,14 @@ test('browser L2 terminal SKU fixture selection and transition payload are execu
     {type: 'CatalogSku', code: 'PRIMARY-ACTIVE', skuCode: 'PRIMARY-ACTIVE', status: 'ENABLED'},
     {type: 'CatalogSku', code: 'EXTRA-VOID', skuCode: 'EXTRA-VOID', status: 'VOIDED'},
   ];
-  const primarySkus = fixtureSkuFactsForItem(fixtureObjects, {code: 'PRIMARY', skuCodes: ['PRIMARY-VOID', 'PRIMARY-ACTIVE']});
-  assert.deepEqual(primarySkus.map(sku => sku.code), ['PRIMARY-VOID', 'PRIMARY-ACTIVE']);
+  const primarySkus = fixtureSkuFactsForItem(fixtureObjects, {
+    code: 'PRIMARY',
+    skuCodes: ['PRIMARY-VOID', 'PRIMARY-ACTIVE'],
+  });
+  assert.deepEqual(
+    primarySkus.map(sku => sku.code),
+    ['PRIMARY-VOID', 'PRIMARY-ACTIVE'],
+  );
   assert.deepEqual(
     buildFixtureVoidedSkuTransitions(
       fixtureObjects,
@@ -883,7 +951,11 @@ test('browser L2 terminal SKU fixture selection and transition payload are execu
     error => error.code === 'L2_OWNER_FIXTURE_SKU_OWNERSHIP_UNBOUND',
   );
   assert.throws(
-    () => validateFixtureSkuOwnership([...fixtureObjects, {type: 'CatalogItem', code: 'DUPLICATE', skuCodes: ['EXTRA-VOID']}]),
+    () =>
+      validateFixtureSkuOwnership([
+        ...fixtureObjects,
+        {type: 'CatalogItem', code: 'DUPLICATE', skuCodes: ['EXTRA-VOID']},
+      ]),
     error => error.code === 'L2_OWNER_FIXTURE_SKU_OWNERSHIP_DUPLICATE',
   );
   assert.throws(
@@ -912,11 +984,18 @@ test('browser L2 readiness evidence binds current repository bytes and exposes o
   assert.equal(validation.byteCount, sourceBinding.byteCount);
   assert.deepEqual(binding.excludedFilePatterns, ['.DS_Store', '*.log', '*.apk', '*.aab', '*.keystore']);
   assert.equal(
-    binding.files.some(file =>
-      file.path.split('/').some(segment => ['.expo', '.turbo', '.yarn', '.kotlin', '.vite', '.next', 'test-results', 'playwright-report'].includes(segment)) ||
-      file.path === '.DS_Store' ||
-      file.path.endsWith('.log') ||
-      /\.(apk|aab|keystore)$/.test(file.path),
+    binding.files.some(
+      file =>
+        file.path
+          .split('/')
+          .some(segment =>
+            ['.expo', '.turbo', '.yarn', '.kotlin', '.vite', '.next', 'test-results', 'playwright-report'].includes(
+              segment,
+            ),
+          ) ||
+        file.path === '.DS_Store' ||
+        file.path.endsWith('.log') ||
+        /\.(apk|aab|keystore)$/.test(file.path),
     ),
     false,
   );
@@ -984,9 +1063,7 @@ test('browser L2 executes the real VIEW fixture terminal SKU lifecycle in owner 
     }
     assert.equal(operationId, 'saveOperationsCatalogItem');
     const transitions = options.body.skuTransitions;
-    assert.deepEqual(transitions, [
-      {skuRef: refs['L2-VIEW-SKU-L'], targetStatus: 'VOIDED', expectedVersion: 1},
-    ]);
+    assert.deepEqual(transitions, [{skuRef: refs['L2-VIEW-SKU-L'], targetStatus: 'VOIDED', expectedVersion: 1}]);
     return {
       json: {
         result: {
@@ -1018,10 +1095,10 @@ test('browser L2 executes the real VIEW fixture terminal SKU lifecycle in owner 
     requestContext: {dataNodeRef: '44444444-4444-4444-8444-444444444444'},
   });
   assert.equal(version, 2);
-  assert.deepEqual(calls.map(call => call.operationId), [
-    'getOperationsCatalogItem',
-    'saveOperationsCatalogItem',
-  ]);
+  assert.deepEqual(
+    calls.map(call => call.operationId),
+    ['getOperationsCatalogItem', 'saveOperationsCatalogItem'],
+  );
   assert.equal(calls[1].options.body.sections.expectedCatalogVersion, 1);
   assert.equal(fixtureScaffold.fixtureBindings.get('L2-VIEW-SKU-L').ref, refs['L2-VIEW-SKU-L']);
   const visible = validateFixtureVisibleSkuReadback(
@@ -1033,7 +1110,10 @@ test('browser L2 executes the real VIEW fixture terminal SKU lifecycle in owner 
     ],
     'fixture-view-final',
   );
-  assert.deepEqual(visible.map(entry => entry.sku.skuCode), ['L2-VIEW-SKU-S', 'L2-VIEW-SKU-M']);
+  assert.deepEqual(
+    visible.map(entry => entry.sku.skuCode),
+    ['L2-VIEW-SKU-S', 'L2-VIEW-SKU-M'],
+  );
   assert.throws(
     () =>
       validateFixtureVisibleSkuReadback(

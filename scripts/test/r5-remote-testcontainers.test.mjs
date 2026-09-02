@@ -97,6 +97,9 @@ test('focused runner accepts one task with explicit selectors only', () => {
 
 test('backend acceptance supplies every non-production server prerequisite and selection', () => {
   assert.deepEqual(backendAcceptanceEnvironment(null), []);
+  assert.deepEqual(backendAcceptanceEnvironment(null, 'focused-owner-test'), [
+    'export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY',
+  ]);
   const environment = backendAcceptanceEnvironment('backend-acceptance-run-12345678', 'all').join('\n');
   for (const required of [
     'V2S_RUNTIME_ENVIRONMENT=non-production',
@@ -115,6 +118,11 @@ test('backend acceptance supplies every non-production server prerequisite and s
   ]) {
     assert.match(environment, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
+  assert.doesNotMatch(environment, /V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY/);
+  assert.match(
+    backendAcceptanceEnvironment('backend-acceptance-run-12345678', 'catalog.category-candidate-hierarchy').join('\n'),
+    /V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY/,
+  );
   assert.doesNotMatch(
     backendAcceptanceEnvironment('backend-acceptance-run-12345678', 'catalog.category-candidate-hierarchy').join('\n'),
     /V2S_BACKEND_PERFORMANCE_OPERATION_COVERAGE=true/,

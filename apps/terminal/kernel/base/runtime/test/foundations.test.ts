@@ -74,6 +74,12 @@ describe('runtime CP-A1 foundations', () => {
     circular.self = circular
     expect(cloneStateJsonValue(circular, 1000)).toMatchObject({status: 'invalid', reason: 'circular-reference'})
     expect(cloneStateJsonValue({value: 'x'.repeat(100)}, 10)).toMatchObject({status: 'invalid', reason: 'result-too-large'})
+
+    const accessor = {}
+    Object.defineProperty(accessor, 'value', {enumerable: true, get: () => 1})
+    expect(cloneStateJsonValue(accessor, 1000)).toMatchObject({status: 'invalid', reason: 'accessor-property'})
+    const symbolKey = {[Symbol('state')]: 1}
+    expect(cloneStateJsonValue(symbolKey, 1000)).toMatchObject({status: 'invalid', reason: 'symbol-key'})
   })
 
   it('preserves JSON __proto__ keys without changing the cloned object prototype', () => {

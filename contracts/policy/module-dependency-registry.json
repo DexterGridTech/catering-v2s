@@ -57,6 +57,30 @@
       "ownerSchema": null,
       "valueOnly": true,
       "commandApiPackages": ["com.catering.v2s.audit.contract"]
+    },
+    {
+      "moduleKey": "catalog",
+      "sourceRoot": "apps/backend/catering-business-server/modules/catalog",
+      "ownerSchema": "catalog",
+      "commandApiPackages": ["com.catering.v2s.catalog.api"]
+    },
+    {
+      "moduleKey": "inventory",
+      "sourceRoot": "apps/backend/catering-business-server/modules/inventory",
+      "ownerSchema": "inventory",
+      "commandApiPackages": ["com.catering.v2s.inventory.api"]
+    },
+    {
+      "moduleKey": "business-channel",
+      "sourceRoot": "apps/backend/catering-business-server/modules/business-channel",
+      "ownerSchema": "business_channel",
+      "commandApiPackages": ["com.catering.v2s.businesschannel.api"]
+    },
+    {
+      "moduleKey": "sales-menu",
+      "sourceRoot": "apps/backend/catering-business-server/modules/sales-menu",
+      "ownerSchema": "sales_menu",
+      "commandApiPackages": ["com.catering.v2s.salesmenu.api"]
     }
   ],
   "edges": [
@@ -291,6 +315,154 @@
       "queryId": "contract-project-phase-candidates",
       "initiatingModule": "contract",
       "referencedSchemaObject": "organization.project_phase_name"
+    },
+    {
+      "edgeId": "r5-command-sales-menu-platform-asset",
+      "edgeKind": "COMMAND",
+      "fromModule": "sales-menu",
+      "toModule": "platform-asset",
+      "rationale": "Sales-menu image stage, release and claim use the platform asset owner command boundary inside the same REQUIRED transaction.",
+      "apiPackage": "com.catering.v2s.platform.asset.api",
+      "operation": "StageReleaseClaimSalesMenuImage"
+    },
+    {
+      "edgeId": "r5-task-read-sales-menu-catalog",
+      "edgeKind": "TASK_READ",
+      "fromModule": "sales-menu",
+      "toModule": "catalog",
+      "rationale": "Sales-menu candidate, draft and publication validation uses a bounded catalog task read and does not write catalog facts.",
+      "queryId": "sales-menu-catalog-facts",
+      "initiatingModule": "sales-menu",
+      "referencedSchemaObject": "catalog.catalog_item"
+    },
+    {
+      "edgeId": "r5-task-read-sales-menu-inventory",
+      "edgeKind": "TASK_READ",
+      "fromModule": "sales-menu",
+      "toModule": "inventory",
+      "rationale": "Published sales-menu views overlay current inventory availability through one set task read; no inventory facts are stored in sales_menu.",
+      "queryId": "sales-menu-inventory-availability",
+      "initiatingModule": "sales-menu",
+      "referencedSchemaObject": "inventory.stock_target"
+    },
+    {
+      "edgeId": "r5-task-read-sales-menu-business-channel",
+      "edgeKind": "TASK_READ",
+      "fromModule": "sales-menu",
+      "toModule": "business-channel",
+      "rationale": "Sales-menu scope and publication validation uses business-channel eligibility judgments for the selected store and channel.",
+      "queryId": "sales-menu-business-channel-eligibility",
+      "initiatingModule": "sales-menu",
+      "referencedSchemaObject": "business_channel.business_channel"
+    },
+    {
+      "edgeId": "r5-task-read-sales-menu-organization",
+      "edgeKind": "TASK_READ",
+      "fromModule": "sales-menu",
+      "toModule": "organization",
+      "rationale": "Every menu command rechecks the selected store and publication additionally reads its status and timezone through the organization owner.",
+      "queryId": "sales-menu-store-scope",
+      "initiatingModule": "sales-menu",
+      "referencedSchemaObject": "organization.store"
+    },
+    {
+      "edgeId": "r5-value-api-sales-menu-audit-contract",
+      "edgeKind": "VALUE_API",
+      "fromModule": "sales-menu",
+      "toModule": "audit-contract",
+      "rationale": "Sales-menu commands carry owner-local actor and target audit values through the value-only audit contract.",
+      "apiPackage": "com.catering.v2s.audit.contract",
+      "operation": "AuditActorAuditTargetAuditHistory"
+    },
+    {
+      "edgeId": "r5-task-read-sales-menu-platform-asset",
+      "edgeKind": "TASK_READ",
+      "fromModule": "sales-menu",
+      "toModule": "platform-asset",
+      "rationale": "Draft and published menu reads obtain safe asset metadata from the platform asset owner without copying storage facts.",
+      "queryId": "sales-menu-item-images",
+      "initiatingModule": "sales-menu",
+      "referencedSchemaObject": "platform_asset.staged_asset"
+    },
+    {
+      "edgeId": "r5-task-read-inventory-catalog-item",
+      "edgeKind": "TASK_READ",
+      "fromModule": "inventory",
+      "toModule": "catalog",
+      "rationale": "The existing inventory task read resolves catalog item identity while retaining inventory facts in the inventory owner.",
+      "queryId": "inventory-catalog-item-facts",
+      "initiatingModule": "inventory",
+      "referencedSchemaObject": "catalog.catalog_item"
+    },
+    {
+      "edgeId": "r5-task-read-inventory-catalog-category",
+      "edgeKind": "TASK_READ",
+      "fromModule": "inventory",
+      "toModule": "catalog",
+      "rationale": "The existing inventory candidate read resolves catalog category scope without writing catalog facts.",
+      "queryId": "inventory-catalog-category-scope",
+      "initiatingModule": "inventory",
+      "referencedSchemaObject": "catalog.catalog_category"
+    },
+    {
+      "edgeId": "r5-task-read-inventory-catalog-item-category",
+      "edgeKind": "TASK_READ",
+      "fromModule": "inventory",
+      "toModule": "catalog",
+      "rationale": "The existing inventory candidate read resolves catalog item-category membership as a bounded task join.",
+      "queryId": "inventory-catalog-item-category",
+      "initiatingModule": "inventory",
+      "referencedSchemaObject": "catalog.catalog_item_category"
+    },
+    {
+      "edgeId": "r5-task-read-inventory-catalog-sku",
+      "edgeKind": "TASK_READ",
+      "fromModule": "inventory",
+      "toModule": "catalog",
+      "rationale": "The existing inventory candidate read resolves catalog SKU identity without copying SKU ownership.",
+      "queryId": "inventory-catalog-sku",
+      "initiatingModule": "inventory",
+      "referencedSchemaObject": "catalog.catalog_sku"
+    },
+    {
+      "edgeId": "r5-task-read-business-channel-organization-brand",
+      "edgeKind": "TASK_READ",
+      "fromModule": "business-channel",
+      "toModule": "organization",
+      "rationale": "The existing business-channel owner resolves organization brand scope through a bounded task read.",
+      "queryId": "business-channel-organization-brand",
+      "initiatingModule": "business-channel",
+      "referencedSchemaObject": "organization.brand"
+    },
+    {
+      "edgeId": "r5-task-read-business-channel-organization-node",
+      "edgeKind": "TASK_READ",
+      "fromModule": "business-channel",
+      "toModule": "organization",
+      "rationale": "The existing business-channel owner resolves organization node scope without writing organization facts.",
+      "queryId": "business-channel-organization-node",
+      "initiatingModule": "business-channel",
+      "referencedSchemaObject": "organization.organization_node"
+    },
+    {
+      "edgeId": "r5-task-read-business-channel-organization-store",
+      "edgeKind": "TASK_READ",
+      "fromModule": "business-channel",
+      "toModule": "organization",
+      "rationale": "The existing business-channel owner resolves store ownership through a bounded organization task read.",
+      "queryId": "business-channel-organization-store",
+      "initiatingModule": "business-channel",
+      "referencedSchemaObject": "organization.store"
+    },
+    {
+      "edgeId": "r5-task-read-business-channel-organization-tenant",
+      "edgeKind": "TASK_READ",
+      "fromModule": "business-channel",
+      "toModule": "organization",
+      "rationale": "The existing business-channel owner resolves tenant scope through a bounded organization task read.",
+      "queryId": "business-channel-organization-tenant",
+      "initiatingModule": "business-channel",
+      "referencedSchemaObject": "organization.tenant"
     }
   ]
 }

@@ -31,7 +31,7 @@
 | 平台实现 | 真实实现在 `adapter/**`；本包只有**声明**与**零依赖默认实例** |
 | 配置容器 | `environmentMode` 是 factory 的构造参数，**不是端口**，也不出现在 `PlatformPorts` 里 |
 | UI / assembly 控制面 | automation 不进端口 —— 它是 UI 层关注点，且 `TR-08` 要求编译期剔除 |
-| 屏幕硬件查询 | **没有 `display` 端口**。surface 身份由宿主经 `initialProps` 推入 `kernel.base.display-context`；`appControl` 只拿被推进来的 `containerKey` 路由既有 surface，不枚举显示器 |
+| 屏幕上下文 | **没有独立的 `display` 端口**。设备级屏数由 `device.getDisplayInfo()` 提供；surface 身份仍由宿主经 `initialProps` 推入 `kernel.base.display-context`；`appControl` 只拿被推进来的 `containerKey` 路由既有 surface |
 
 ## 3 · 什么该进来 —— 三个判别式
 
@@ -63,7 +63,7 @@ src/
     result.ts        五态 result union · PlatformPortName 闭集 · 不可用原因
     logging.ts       LogEvent 与 LoggerPort（**无 emit**）
     storage.ts       persistKv 与 persistSecure 共用的 StateStoragePort
-    device.ts        设备/系统/电源快照与订阅（已去平台化）
+    device.ts        设备/屏幕/系统/电源快照与订阅（已去平台化）
     appControl.ts    六类宿主控制能力
     script.ts        脚本执行：函数名列表 + 单一 dispatcher
     connector.ts     外设通道 call/subscribe/unsubscribe/on

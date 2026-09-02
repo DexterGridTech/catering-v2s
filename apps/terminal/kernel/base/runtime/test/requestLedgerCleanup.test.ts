@@ -11,6 +11,7 @@ import {
   defineActor,
   defineCommand,
   onCommand,
+  runtimeInstanceModeChangedCommand,
   selectRequestExecutionView,
   selectRuntimeInstanceMode,
   setRuntimeInstanceModeCommand,
@@ -151,7 +152,7 @@ describe('runtime request ledger cleanup', () => {
       const result = await runtime.dispatchCommand(cleanupRequestLedgerCommand, {})
       expect(result.status).toBe('completed')
       expect(selectRequestExecutionView(runtime.getState(), requestId)).toBeNull()
-      expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0)
+      releaseRuntimeForTest(runtime)
     } finally {
       vi.useRealTimers()
     }
@@ -175,7 +176,7 @@ describe('runtime request ledger cleanup', () => {
       expect(selectRequestExecutionView(runtime.getState(), requestId)?.status).toBe('started')
       blocked.resolve({done: true})
       await pending
-      expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0)
+      releaseRuntimeForTest(runtime)
     } finally {
       vi.useRealTimers()
     }
@@ -200,13 +201,13 @@ describe('runtime request ledger cleanup', () => {
       expect(selectRequestExecutionView(runtime.getState(), localRequestId)).toBeNull()
       expect(selectRequestExecutionView(runtime.getState(), peerRequestId)).not.toBeNull()
       expect(selectRequestExecutionView(runtime.getState(), peerRequestId)?.timeSource).toBe('peer')
-      expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0)
+      releaseRuntimeForTest(runtime)
     } finally {
       vi.useRealTimers()
     }
   })
 
-  it('E-2 keeps a local terminal half when a distinct peer command is still running', async () => {
+  it('E-2 keeps a local terminal half when a distinct peer command is still running within max residence', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
     try {
@@ -223,7 +224,41 @@ describe('runtime request ledger cleanup', () => {
       expect(selectRequestExecutionView(runtime.getState(), requestId)?.status).toBe('started')
       await runtime.dispatchCommand(cleanupRequestLedgerCommand, {})
       expect(selectRequestExecutionView(runtime.getState(), requestId)).not.toBeNull()
-      expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0)
+      releaseRuntimeForTest(runtime)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('E-2 deletes a peer-running merged entry after max residence independently of terminal retention', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    try {
+      const {module} = makeCommandModule('test.cleanup.peer-running-residence', () => null)
+      const runtime = runtimeWith(module, {
+        limits: {maxCommandDepth: 1, requestRetentionMs: 10, requestMaxResidenceMs: 100_000},
+      })
+      await runtime.start()
+      const requestId = createRequestId()
+      applyRecord(runtime, runtimeRequestLedgerMasterSliceName, requestId, record(requestId, [observation()]), 1)
+      applyRecord(runtime, runtimeRequestLedgerSlaveSliceName, requestId, record(requestId, [observation({status: 'running'})]), 2)
+      vi.setSystemTime(100_002)
+
+      expect(runtime.getState()[runtimeRequestLedgerMasterSliceName]).toHaveProperty(String(requestId))
+      expect(selectRequestExecutionView(runtime.getState(), requestId)?.status).toBe('started')
+      const cleanupResult = await runtime.dispatchCommand(cleanupRequestLedgerCommand, {})
+      expect(cleanupResult.actorResults).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          result: expect.objectContaining({deletedRequestIds: [requestId]}),
+        }),
+      ]))
+      expect(runtime.getState()[runtimeRequestLedgerMasterSliceName]).not.toHaveProperty(String(requestId))
+      expect(selectRequestExecutionView(runtime.getState(), requestId)).toMatchObject({
+        requestId,
+        timeSource: 'peer',
+        status: 'started',
+      })
+      releaseRuntimeForTest(runtime)
     } finally {
       vi.useRealTimers()
     }
@@ -245,7 +280,7 @@ describe('runtime request ledger cleanup', () => {
       await fast.dispatchCommand(cleanupRequestLedgerCommand, {})
       expect(selectRequestExecutionView(fast.getState(), fastRequestId)?.timeSource).toBe('local')
       expect(selectRequestExecutionView(fast.getState(), fastRequestId)).not.toBeNull()
-      expect(releaseRuntimeForTest(fast)).toBeGreaterThan(0)
+      releaseRuntimeForTest(fast)
 
       vi.setSystemTime(100)
       const {module: slowModule} = makeCommandModule('test.cleanup.peer-clock-slow', () => null)
@@ -259,7 +294,7 @@ describe('runtime request ledger cleanup', () => {
       vi.setSystemTime(110)
       await slow.dispatchCommand(cleanupRequestLedgerCommand, {})
       expect(selectRequestExecutionView(slow.getState(), slowRequestId)).toBeNull()
-      expect(releaseRuntimeForTest(slow)).toBeGreaterThan(0)
+      releaseRuntimeForTest(slow)
     } finally {
       vi.useRealTimers()
     }
@@ -280,30 +315,76 @@ describe('runtime request ledger cleanup', () => {
       expect(selectRuntimeInstanceMode(runtime.getState())).toBe('SLAVE')
       expect(runtime.getState()[runtimeRequestLedgerMasterSliceName]).toEqual({})
       expect(selectRequestExecutionView(runtime.getState(), requestId)).toBeNull()
-      expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0)
+      releaseRuntimeForTest(runtime)
     } finally {
       vi.useRealTimers()
     }
   })
 
-  it('E-4 preserves the old half and role when a preceding role effect fails', async () => {
-    const {module} = makeCommandModule('test.cleanup.role-effect-failure', () => ({done: true}))
+  it('E-4 preserves the original request start when role change writes the new half', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1000)
+      const runtime = runtimeWith(moduleFor('test.cleanup.role-request', [], []))
+      await runtime.start()
+      const requestId = createRequestId()
+
+      const result = await runtime.dispatchCommand(setRuntimeInstanceModeCommand, {instanceMode: 'SLAVE'}, {
+        requestId,
+        onLifecycleEvent: event => {
+          if (event.kind === 'command.started' && event.commandName === setRuntimeInstanceModeCommand.commandName) {
+            vi.setSystemTime(5000)
+          }
+        },
+      })
+
+      expect(result.status).toBe('completed')
+      expect(selectRuntimeInstanceMode(runtime.getState())).toBe('SLAVE')
+      expect(runtime.getState()[runtimeRequestLedgerMasterSliceName]).toEqual({})
+      const view = selectRequestExecutionView(runtime.getState(), requestId)
+      expect(view).toMatchObject({requestId, status: 'completed', timeSource: 'local'})
+      expect(view?.startedAt).toBe(1000)
+      expect(view?.commands.map(command => command.commandName).sort()).toEqual([
+        runtimeInstanceModeChangedCommand.commandName,
+        setRuntimeInstanceModeCommand.commandName,
+      ].sort())
+      const parent = view?.commands.find(command => command.commandName === setRuntimeInstanceModeCommand.commandName)
+      const child = view?.commands.find(command => command.commandName === runtimeInstanceModeChangedCommand.commandName)
+      expect(parent?.parentCommandId).toBeNull()
+      expect(child?.parentCommandId).toBe(parent?.commandId)
+      expect(runtime.getState()[runtimeRequestLedgerSlaveSliceName]).toHaveProperty(String(requestId))
+      releaseRuntimeForTest(runtime)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('E-4 keeps the committed role when a post-commit consumer fails', async () => {
+    const failingConsumer = defineActor('test.cleanup.role-consumer-failure', 'consumer', [onCommand(
+      runtimeInstanceModeChangedCommand,
+      () => { throw new Error('post-commit consumer failed') },
+    )])
+    const {module} = makeCommandModule('test.cleanup.role-consumer-failure', () => ({done: true}))
     const runtime = runtimeWith({
       ...module,
-      roleChangeEffects: [() => { throw new Error('preceding role effect failed') }],
+      actors: [{name: 'handler'}, {name: 'consumer'}],
+      actorDefinitions: [...module.actorDefinitions ?? [], failingConsumer],
     })
     await runtime.start()
     const requestId = createRequestId()
-    await runtime.dispatchCommand('test.cleanup.role-effect-failure.run', {}, {requestId})
+    await runtime.dispatchCommand('test.cleanup.role-consumer-failure.run', {}, {requestId})
 
     const result = await runtime.dispatchCommand(setRuntimeInstanceModeCommand, {instanceMode: 'SLAVE'})
-    expect(result.status).toBe('error')
-    expect(selectRuntimeInstanceMode(runtime.getState())).toBe('MASTER')
-    expect(selectRequestExecutionView(runtime.getState(), requestId)).not.toBeNull()
-    expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0)
+    expect(result.status).toBe('completed')
+    expect(selectRuntimeInstanceMode(runtime.getState())).toBe('SLAVE')
+    expect(selectRequestExecutionView(runtime.getState(), requestId)).toBeNull()
+    expect(runtime.journal.list()).toEqual(expect.arrayContaining([
+      expect.objectContaining({commandName: 'kernel.base.runtime.instance-mode-changed', kind: 'actor.error'}),
+    ]))
+    releaseRuntimeForTest(runtime)
   })
 
-  it('E-4 keeps role and ledger when the cleanup effect cannot dispatch', async () => {
+  it('E-4 keeps role and ledger when the role action cannot dispatch', async () => {
     const {module} = makeCommandModule('test.cleanup.role-clear-failure', () => ({done: true}))
     const runtime = runtimeWith(module)
     await runtime.start()
@@ -319,25 +400,30 @@ describe('runtime request ledger cleanup', () => {
       expect(selectRequestExecutionView(runtime.getState(), requestId)).not.toBeNull()
     } finally {
       dispatch.mockRestore()
-      expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0)
+      expect(releaseRuntimeForTest(runtime)).toBe(0)
     }
   })
 
-  it('registers cleanup on a timer and releases it with the test resource registry', async () => {
+  it('does not register a cleanup timer and scans before the first write of a new request', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
     try {
-      const {module} = makeCommandModule('test.cleanup.timer', () => ({done: true}))
+      const {module, command} = makeCommandModule('test.cleanup.new-request-scan', () => ({done: true}))
       const runtime = runtimeWith(module, {
         limits: {maxCommandDepth: 1, requestRetentionMs: 10, requestMaxResidenceMs: 100_000},
       })
       await runtime.start()
-      const requestId = createRequestId()
-      await runtime.dispatchCommand('test.cleanup.timer.run', {}, {requestId})
+      const expiredRequestId = createRequestId()
+      applyRecord(runtime, runtimeRequestLedgerMasterSliceName, expiredRequestId, record(expiredRequestId, [observation()]), 1)
       vi.setSystemTime(20)
-      await vi.advanceTimersByTimeAsync(10)
-      expect(selectRequestExecutionView(runtime.getState(), requestId)).toBeNull()
-      expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0)
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(selectRequestExecutionView(runtime.getState(), expiredRequestId)).not.toBeNull()
+
+      const newRequestId = createRequestId()
+      await runtime.dispatchCommand(command, {}, {requestId: newRequestId})
+      expect(selectRequestExecutionView(runtime.getState(), expiredRequestId)).toBeNull()
+      expect(selectRequestExecutionView(runtime.getState(), newRequestId)).not.toBeNull()
+    releaseRuntimeForTest(runtime)
     } finally {
       vi.useRealTimers()
     }
@@ -357,7 +443,7 @@ describe('runtime request ledger cleanup', () => {
     await first.dispatchCommand('test.cleanup.restart.run', {}, {requestId: createRequestId()})
     await Promise.resolve()
     await Promise.resolve()
-    expect(releaseRuntimeForTest(first)).toBeGreaterThan(0)
+    releaseRuntimeForTest(first)
 
     const second = runtimeWith(module, {
       runtimeName: 'cleanup-restart-second',
@@ -368,6 +454,6 @@ describe('runtime request ledger cleanup', () => {
     expect(selectRuntimeInstanceMode(second.getState())).toBe('SLAVE')
     expect(Object.keys(second.getState()[runtimeRequestLedgerMasterSliceName] ?? {})).toHaveLength(0)
     expect(Object.keys(second.getState()[runtimeRequestLedgerSlaveSliceName] ?? {})).toHaveLength(0)
-    expect(releaseRuntimeForTest(second)).toBeGreaterThan(0)
+    releaseRuntimeForTest(second)
   })
 })

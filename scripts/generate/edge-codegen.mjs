@@ -10,7 +10,7 @@ import { projectEdgeCatalog } from "./edge-operation-projections.mjs";
 import {
   buildBudgetProjectionSubset,
   buildCp05CalibrationIdentityProjection,
-  isCp05CalibrationBootstrapMode,
+  isCp05IdentityOnlyProjectionMode,
   readCp05CalibrationReport,
 } from "./backend-performance-budget.mjs";
 
@@ -203,7 +203,7 @@ function load(base = root) {
   const expectedOperationCount = catalog.denominator?.operations;
   if (!Number.isInteger(expectedOperationCount) || catalog.operations.length !== expectedOperationCount || report.operations.length !== expectedOperationCount) fail("R5_EDGE_CODEGEN_OPERATION_COUNT");
   assertCanonicalOperationIdentity(catalog);
-  const budgetProjection = isCp05CalibrationBootstrapMode()
+  const budgetProjection = isCp05IdentityOnlyProjectionMode()
     ? buildCp05CalibrationIdentityProjection({operations: catalog.operations})
     : buildBudgetProjectionSubset({
       operations: catalog.operations,

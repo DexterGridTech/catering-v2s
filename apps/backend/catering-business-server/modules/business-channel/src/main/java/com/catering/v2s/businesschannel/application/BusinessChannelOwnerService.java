@@ -5,6 +5,7 @@ import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
+import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
 import com.catering.v2s.collaboration.api.CollaborationBindingReadApi;
@@ -35,7 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Owner of business-channel templates and channel instances. */
 @Service
-public class BusinessChannelOwnerService implements BusinessChannelReadApi, BusinessChannelCommandApi {
+public class BusinessChannelOwnerService
+        implements BusinessChannelReadApi, BusinessChannelCommandApi, BusinessChannelOwnerApi {
     private static final String REQ_CREATE_TEMPLATE = "REQ_CREATE_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE";
     private static final String REQ_UPDATE_TEMPLATE = "REQ_UPDATE_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE";
     private static final String REQ_TRANSITION_TEMPLATE = "REQ_TRANSITION_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE_STATUS";
@@ -44,6 +46,10 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
     private static final String REQ_TRANSITION_CHANNEL = "REQ_TRANSITION_OPERATIONS_BUSINESS_CHANNEL_STATUS";
     private static final int DEFAULT_PAGE_SIZE = 50;
     private static final int MAX_PAGE_SIZE = 100;
+    private static final String SALES_MENU_CHANNEL_INELIGIBLE_PREFIX = "当前只处理门店内部";
+    private static final String SALES_MENU_CHANNEL_INELIGIBLE_SUFFIX = "堂食/外带入口";
+    private static final String SALES_MENU_CHANNEL_INELIGIBLE_MESSAGE =
+            SALES_MENU_CHANNEL_INELIGIBLE_PREFIX + SALES_MENU_CHANNEL_INELIGIBLE_SUFFIX;
     /**
      * Fixed source bound for the project-owned template/channel reads classified as Bounded.
      *
@@ -254,6 +260,112 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                 page.stream().map(projection -> templateRow(projection, facts)).toList();
         return new BusinessChannelReadback.TemplatePage(
                 mapped.stream().map(BusinessChannelOwnerService::template).toList(), nextCursor, total);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BusinessChannelOwnerApi.SalesMenuEligibleChannelPage listSalesMenuEligibleChannels(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String storeRef,
+            String cursor,
+            int pageSize,
+            String sortKey,
+            String sortDirection) {
+        requireScope(workspaceUuid, groupWorkspaceKey);
+        String normalizedStoreRef = BusinessChannelPolicy.required(storeRef, "storeRef", 240);
+        int size = pageSize(pageSize);
+        String normalizedSortKey = optionalEnum(
+                sortKey,
+                "sortKey",
+                "CHANNEL_NAME",
+                "CHANNEL_CODE",
+                "TEMPLATE_NAME",
+                "ACCESS_KIND",
+                "OPERATOR_KIND",
+                "ORDER_KIND",
+                "STATUS",
+                "BINDING_STATUS");
+        String normalizedSortDirection = optionalEnum(sortDirection, "sortDirection", "ASC", "DESC");
+        if (normalizedSortKey == null && normalizedSortDirection != null) {
+            throw problem("VALIDATION_ERROR", 422, "sortDirection requires sortKey");
+        }
+        String identity = canonical(
+                "sales-menu-eligible-channel-page",
+                workspaceUuid,
+                groupWorkspaceKey,
+                normalizedStoreRef,
+                size,
+                normalizedSortKey,
+                normalizedSortDirection);
+        OpaqueCollectionCursor.Position position = decodeCursor(cursor, identity);
+        List<Object> arguments = new ArrayList<>(List.of(workspaceUuid, groupWorkspaceKey, normalizedStoreRef));
+        StringBuilder predicate = new StringBuilder(
+                " WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.target_node_type='STORE'"
+                        + " AND c.target_node_ref=? AND target_store.id IS NOT NULL"
+                        + " AND t.access_kind='INTERNAL' AND t.operator_kind='STORE'"
+                        + " AND t.order_kind IN ('DINE_IN','TAKEAWAY')");
+        appendSalesMenuChannelCursorPredicate(
+                predicate, arguments, position, normalizedSortKey, normalizedSortDirection);
+        List<ChannelProjection> projections = query(
+                channelProjection("JOIN business_channel.business_channel_template t "
+                                + "ON t.template_ref=c.template_ref AND t.workspace_uuid=c.workspace_uuid "
+                                + "AND t.group_workspace_key=c.group_workspace_key ")
+                        + predicate
+                        + " ORDER BY "
+                        + salesMenuChannelOrderBy(normalizedSortKey, normalizedSortDirection)
+                        + " LIMIT ?",
+                append(arguments, size + 1),
+                this::mapChannelProjection);
+        boolean hasNext = projections.size() > size;
+        List<ChannelProjection> page = hasNext ? projections.subList(0, size) : projections;
+        String nextCursor = hasNext
+                ? OpaqueCollectionCursor.encode(
+                        identity,
+                        salesMenuChannelSortValue(page.get(page.size() - 1), normalizedSortKey),
+                        page.get(page.size() - 1).channelRef())
+                : null;
+        StatusFacts facts = statusFacts(workspaceUuid, groupWorkspaceKey, List.of(), page);
+        List<BusinessChannelOwnerApi.SalesMenuEligibleChannel> items = page.stream()
+                .map(projection -> salesMenuEligibleChannel(projection, channelRow(projection, facts)))
+                .toList();
+        return new BusinessChannelOwnerApi.SalesMenuEligibleChannelPage(items, cursor, nextCursor);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BusinessChannelOwnerApi.SalesMenuChannelJudgment requireSalesMenuChannel(
+            UUID workspaceUuid, String groupWorkspaceKey, String storeRef, UUID channelRef) {
+        requireScope(workspaceUuid, groupWorkspaceKey);
+        String normalizedStoreRef = BusinessChannelPolicy.required(storeRef, "storeRef", 240);
+        if (channelRef == null) throw problem("VALIDATION_ERROR", 422, "channelRef is required");
+        List<ChannelProjection> projections = query(
+                channelSelect(
+                                "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=? "
+                        + "AND c.target_node_type='STORE' AND c.target_node_ref=? "
+                        + "AND target_store.id IS NOT NULL AND t.access_kind='INTERNAL' "
+                        + "AND t.operator_kind='STORE' AND t.order_kind IN ('DINE_IN','TAKEAWAY')"),
+                List.of(workspaceUuid, groupWorkspaceKey, channelRef, normalizedStoreRef),
+                this::mapChannelProjection);
+        if (projections.isEmpty()) throw salesMenuChannelIneligible();
+        return salesMenuChannelJudgment(projections.get(0));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean salesMenuChannelBelongsToStore(
+            UUID workspaceUuid, String groupWorkspaceKey, String storeRef, UUID channelRef) {
+        requireScope(workspaceUuid, groupWorkspaceKey);
+        String normalizedStoreRef = BusinessChannelPolicy.required(storeRef, "storeRef", 240);
+        if (channelRef == null) throw problem("VALIDATION_ERROR", 422, "channelRef is required");
+        return !query(
+                        channelSelect(
+                                "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=? "
+                                        + "AND c.target_node_type='STORE' AND c.target_node_ref=? "
+                                        + "AND target_store.id IS NOT NULL"),
+                        List.of(workspaceUuid, groupWorkspaceKey, channelRef, normalizedStoreRef),
+                        this::mapChannelProjection)
+                .isEmpty();
     }
 
     @Override
@@ -1869,6 +1981,72 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
         return expression + " " + direction(sortDirection) + ", c.channel_ref";
     }
 
+    private static void appendSalesMenuChannelCursorPredicate(
+            StringBuilder predicate,
+            List<Object> arguments,
+            OpaqueCollectionCursor.Position position,
+            String sortKey,
+            String sortDirection) {
+        if (position == null) return;
+        if (sortKey == null) {
+            predicate.append(" AND c.channel_ref > ?");
+            arguments.add(position.tieBreaker());
+            return;
+        }
+        String expression = salesMenuChannelSortExpression(sortKey);
+        String comparison = "DESC".equals(sortDirection) ? "<" : ">";
+        predicate
+                .append(" AND (")
+                .append(expression)
+                .append(' ')
+                .append(comparison)
+                .append(" ? OR (")
+                .append(expression)
+                .append(" = ? AND c.channel_ref > ?))");
+        arguments.add(position.sortKey());
+        arguments.add(position.sortKey());
+        arguments.add(position.tieBreaker());
+    }
+
+    private static String salesMenuChannelOrderBy(String sortKey, String sortDirection) {
+        if (sortKey == null) return "c.channel_ref";
+        return salesMenuChannelSortExpression(sortKey) + " " + direction(sortDirection) + ", c.channel_ref";
+    }
+
+    private static String salesMenuChannelSortExpression(String sortKey) {
+        return switch (sortKey) {
+            case "CHANNEL_NAME" -> "COALESCE(c.channel_name, '')";
+            case "CHANNEL_CODE" -> "COALESCE(c.channel_code, '')";
+            case "TEMPLATE_NAME" -> "COALESCE(t.template_name, '')";
+            case "ACCESS_KIND" -> "t.access_kind";
+            case "OPERATOR_KIND" -> "t.operator_kind";
+            case "ORDER_KIND" -> "t.order_kind";
+            case "STATUS" -> "c.status";
+            case "BINDING_STATUS" -> "CAST(CASE WHEN t.access_kind='INTERNAL' THEN 0 WHEN c.binding_ref IS NULL "
+                    + "THEN 1 ELSE 2 END AS TEXT)";
+            default -> throw problem("VALIDATION_ERROR", 422, "sortKey is not supported");
+        };
+    }
+
+    private static String salesMenuChannelSortValue(ChannelProjection row, String sortKey) {
+        if (sortKey == null) return row.channelRef().toString();
+        return switch (sortKey) {
+            case "CHANNEL_NAME" -> Objects.toString(row.channelName(), "");
+            case "CHANNEL_CODE" -> Objects.toString(row.channelCode(), "");
+            case "TEMPLATE_NAME" -> Objects.toString(row.templateName(), "");
+            case "ACCESS_KIND" -> row.templateAccessKind();
+            case "OPERATOR_KIND" -> row.templateOperatorKind();
+            case "ORDER_KIND" -> row.templateOrderKind();
+            case "STATUS" -> row.status();
+            case "BINDING_STATUS" -> switch (bindingStatus(row.templateAccessKind(), row.bindingRef())) {
+                case "NOT_REQUIRED" -> "0";
+                case "UNBOUND" -> "1";
+                default -> "2";
+            };
+            default -> throw problem("VALIDATION_ERROR", 422, "sortKey is not supported");
+        };
+    }
+
     private static String direction(String sortDirection) {
         return "DESC".equals(sortDirection) ? "DESC" : "ASC";
     }
@@ -1925,6 +2103,38 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                 row.statusDimensions(),
                 row.blockers(),
                 row.version());
+    }
+
+    private static BusinessChannelOwnerApi.SalesMenuEligibleChannel salesMenuEligibleChannel(
+            ChannelProjection projection, ChannelRow row) {
+        return new BusinessChannelOwnerApi.SalesMenuEligibleChannel(
+                projection.channelRef(),
+                projection.templateRef(),
+                projection.targetNodeRef(),
+                projection.channelCode(),
+                projection.channelName(),
+                projection.templateAccessKind(),
+                projection.templateOperatorKind(),
+                projection.templateOrderKind(),
+                row.bindingStatus(),
+                projection.status(),
+                row.statusDimensions(),
+                row.blockers(),
+                projection.version());
+    }
+
+    private static BusinessChannelOwnerApi.SalesMenuChannelJudgment salesMenuChannelJudgment(
+            ChannelProjection projection) {
+        return new BusinessChannelOwnerApi.SalesMenuChannelJudgment(
+                projection.channelRef(),
+                projection.templateRef(),
+                projection.targetNodeRef(),
+                projection.templateAccessKind(),
+                projection.templateOperatorKind(),
+                projection.templateOrderKind(),
+                bindingStatus(projection.templateAccessKind(), projection.bindingRef()),
+                projection.status(),
+                projection.version());
     }
 
     private static ChannelRow channelRow(BusinessChannelReadback.Channel value) {
@@ -1996,6 +2206,10 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
 
     private static BusinessChannelCommandApi.Problem problem(String code, int status, String message, Throwable cause) {
         return new BusinessChannelCommandApi.Problem(code, status, message, cause);
+    }
+
+    private static BusinessChannelCommandApi.Problem salesMenuChannelIneligible() {
+        return problem("SALES_MENU_CHANNEL_INELIGIBLE", 422, SALES_MENU_CHANNEL_INELIGIBLE_MESSAGE);
     }
 
     private record StatusFacts(

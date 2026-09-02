@@ -8,8 +8,8 @@ consumerFaces: ["all"]
 owners: ["platform","frontend-platform","product"]
 impacts: ["architecture","governance","runtime"]
 triggers: ["task-start","implementation","review"]
-assertions: ["TER_SAME_GOVERNANCE_AS_MAIN_REPO","TER_FOUR_LAYER_NESTED_STRUCTURE","TER_SINGLE_VM_SINGLE_STORE_MULTI_SURFACE","TER_PAIR_TOPOLOGY_WITH_DETACHABLE_SECONDARY","TER_STACK_RULINGS_T1_T13","TER_SCRIPT_EXECUTE_UNRESTRICTED"]
-sourceRefs: ["doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md"]
+assertions: ["TER_SAME_GOVERNANCE_AS_MAIN_REPO","TER_FOUR_LAYER_NESTED_STRUCTURE","TER_SINGLE_VM_SINGLE_STORE_MULTI_SURFACE","TER_PAIR_TOPOLOGY_WITH_DETACHABLE_SECONDARY","TER_STACK_RULINGS_T1_T13","TER_SCRIPT_EXECUTE_UNRESTRICTED","TER_EVENT_TO_COMMAND_ACTOR_PATTERN"]
+sourceRefs: ["doc/platform/terminal-coding-standard.md","doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md"]
 ---
 
 # TER 架构与技术栈裁定
@@ -25,6 +25,14 @@ TER = `apps/terminal`，v2s 仓内的终端产品工程。设计输入是对 POC
   `ui-state` 留在 `kernel/base`（它是 React-free 的状态协议），渲染在 `ui/base`。
   **integration 是真实的 UI 与业务整合层，不是测试包**；"必须能在 Expo Web 上跑"是加在它身上的约束。
   它**不得依赖 adapter**（反向依赖）——web 上的能力由端口默认实例覆盖，**不建 `adapter/web`**。
+- `TER_EVENT_TO_COMMAND_ACTOR_PATTERN`：🔴 **Dexter 2026-09-02 定为「本 TER 工程最重要的设计模式」** ——
+  **事件 → command → 关心它的业务方自己的 actor → `dispatchAction`**；内部外部一律照此，
+  **不得**以回调注册、effect 列表或事件总线交给业务方。
+  ⚠️ **内容正本在 `doc/platform/terminal-coding-standard.md` 的 `TR-11`**（含 command 定义点的层序约束、
+  桥的播种与去重要求、门与反例栏）。本条只是指针，**不复述** —— 同一条规则写两处必然漂移（规范正本 §0）。
+  ⚠️ 已知连带：runtime 现有的 `RuntimeModule.roleChangeEffects` 是被这条取代的形态；
+  门缺陷整改 D-5 当前方案（effect 返回 action 数组）比现状好但**仍是 effect 列表**，
+  落地前须问 Dexter 是否直接换成 command + actor。
 - `TER_SINGLE_VM_SINGLE_STORE_MULTI_SURFACE`：单机双屏 = **一个 ReactHost、一个 Hermes VM、
   一个 JS 线程、一个 store、多个 Root Surface**，Kotlin 按屏传不同 `initialProps`。
   POC 的"副屏独立进程"整套跨进程广播协议**不搬**。

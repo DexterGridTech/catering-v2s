@@ -20,18 +20,36 @@ import {
   applySliceSyncDiff,
   createFullSliceSyncPayload,
 } from '../supports/sync'
+import {assertNonEmptyString} from './assertNonEmptyString'
 
 type AutoFlushSelection = 'all' | 'immediate'
+
+const recordEntriesChanged = (
+  previous: Readonly<Record<string, unknown>>,
+  next: Readonly<Record<string, unknown>>,
+): boolean => {
+  const previousKeys = Object.keys(previous)
+  const nextKeys = Object.keys(next)
+  if (previousKeys.length !== nextKeys.length) return true
+  return previousKeys.some((key) => !Object.is(previous[key], next[key]))
+}
+
+const persistenceDescriptorChanged = (
+  descriptor: RegisteredStateRuntimeSlice['persistence'][number],
+  previous: object | undefined,
+  next: object | undefined,
+): boolean => {
+  if (previous === next) return false
+  if (previous === undefined || next === undefined) return true
+  if (descriptor.kind === 'field') {
+    return !Object.is(descriptor.readField(previous), descriptor.readField(next))
+  }
+  return recordEntriesChanged(descriptor.getEntries(previous), descriptor.getEntries(next))
+}
 
 const requirePositiveFinite = (value: number, label: string): void => {
   if (!Number.isFinite(value) || value <= 0) {
     throw new Error(`[createStateRuntime] ${label} must be a positive finite number`)
-  }
-}
-
-const requireNonEmpty = (value: string, label: string): void => {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new Error(`[createStateRuntime] ${label} must be non-empty`)
   }
 }
 
@@ -67,8 +85,8 @@ const createReducers = (
 export const createStateRuntime = async (
   input: CreateStateRuntimeInput,
 ): Promise<StateRuntime> => {
-  requireNonEmpty(input.runtimeName, 'runtimeName')
-  requireNonEmpty(input.persistenceKey, 'persistenceKey')
+  assertNonEmptyString(input.runtimeName, 'createStateRuntime', 'runtimeName')
+  assertNonEmptyString(input.persistenceKey, 'createStateRuntime', 'persistenceKey')
   requirePositiveFinite(input.storageTimeouts.readMs, 'storageTimeouts.readMs')
   requirePositiveFinite(input.storageTimeouts.writeMs, 'storageTimeouts.writeMs')
   requirePositiveFinite(input.storageTimeouts.resetMs, 'storageTimeouts.resetMs')
@@ -129,25 +147,20 @@ export const createStateRuntime = async (
   }
   const scheduleAutoFlush = (): void => {
     const state = store.getState()
-    const changedSlices = slices.filter((slice) => {
+    const changedDescriptors = slices.flatMap((slice) => {
       if (slice.persistence.length === 0) {
-        return false
+        return []
       }
       const next = state[slice.name]
       const previous = persistableSliceRefs.get(slice.name)
       persistableSliceRefs.set(slice.name, next)
-      return next !== previous
+      return slice.persistence.filter((descriptor) =>
+        persistenceDescriptorChanged(descriptor, previous, next),
+      )
     })
-    if (changedSlices.length === 0) {
-      return
-    }
-
-    const hasImmediateChange = changedSlices.some((slice) =>
-      slice.persistence.some((entry) => entry.flushMode !== 'debounced'),
-    )
-    const hasDebouncedChange = changedSlices.some((slice) =>
-      slice.persistence.some((entry) => entry.flushMode === 'debounced'),
-    )
+    const hasImmediateChange = changedDescriptors.some((entry) => entry.flushMode !== 'debounced')
+    const hasDebouncedChange = changedDescriptors.some((entry) => entry.flushMode === 'debounced')
+    if (!hasImmediateChange && !hasDebouncedChange) return
     if (input.persistenceDebounceMs === 0) {
       cancelDebounce()
       runFlush('all')
@@ -160,13 +173,12 @@ export const createStateRuntime = async (
       runFlush('immediate')
     }
     if (hasDebouncedChange) {
-      if (debounceTimer !== undefined) {
-        clearTimeout(debounceTimer)
+      if (debounceTimer === undefined) {
+        debounceTimer = setTimeout(() => {
+          debounceTimer = undefined
+          runFlush('all')
+        }, input.persistenceDebounceMs)
       }
-      debounceTimer = setTimeout(() => {
-        debounceTimer = undefined
-        runFlush('all')
-      }, input.persistenceDebounceMs)
     }
   }
   store.subscribe(scheduleAutoFlush)

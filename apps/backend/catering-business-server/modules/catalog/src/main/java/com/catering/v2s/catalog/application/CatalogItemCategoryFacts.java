@@ -44,6 +44,49 @@ final class CatalogItemCategoryFacts {
         return Map.copyOf(result);
     }
 
+    /** Reads the candidate-facing category refs and labels in one scoped set-read. */
+    Map<UUID, SalesMenuCategoryFacts> readSalesMenuByItemRefs(
+            String dataNodeRef, String brandRef, Collection<UUID> itemRefs) {
+        if (itemRefs == null || itemRefs.isEmpty()) return Map.of();
+        List<UUID> refs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
+        String placeholders = String.join(",", Collections.nCopies(refs.size(), "?"));
+        Map<UUID, List<UUID>> categoryRefsByItem = new LinkedHashMap<>();
+        Map<UUID, List<String>> categoryNamesByItem = new LinkedHashMap<>();
+        refs.forEach(ref -> {
+            categoryRefsByItem.put(ref, new ArrayList<>());
+            categoryNamesByItem.put(ref, new ArrayList<>());
+        });
+        jdbc.query(
+                "SELECT relation.item_ref,relation.category_ref,category.name "
+                        + "FROM catalog.catalog_item_category relation "
+                        + "JOIN catalog.catalog_category category ON category.category_ref=relation.category_ref "
+                        + "AND category.data_node_ref=? AND category.brand_ref=? "
+                        + "AND category.status <> 'VOIDED' WHERE relation.item_ref IN ("
+                        + placeholders + ") ORDER BY relation.item_ref,relation.category_ref",
+                statement -> {
+                    statement.setString(1, dataNodeRef);
+                    statement.setString(2, brandRef);
+                    for (int index = 0; index < refs.size(); index++) statement.setObject(index + 3, refs.get(index));
+                },
+                rows -> {
+                    while (rows.next()) {
+                        UUID itemRef = rows.getObject(1, UUID.class);
+                        if (!categoryRefsByItem.containsKey(itemRef)) continue;
+                        categoryRefsByItem.get(itemRef).add(rows.getObject(2, UUID.class));
+                        String name = rows.getString(3);
+                        if (name != null && !name.isBlank())
+                            categoryNamesByItem.get(itemRef).add(name);
+                    }
+                    return null;
+                });
+        Map<UUID, SalesMenuCategoryFacts> result = new LinkedHashMap<>();
+        refs.forEach(ref -> result.put(
+                ref,
+                new SalesMenuCategoryFacts(
+                        List.copyOf(categoryRefsByItem.get(ref)), List.copyOf(categoryNamesByItem.get(ref)))));
+        return Map.copyOf(result);
+    }
+
     void replace(UUID itemRef, ArrayNode categoryRefs) {
         List<UUID> normalized = normalize(categoryRefs);
         jdbc.update("DELETE FROM catalog.catalog_item_category WHERE item_ref=?", itemRef);
@@ -91,5 +134,12 @@ final class CatalogItemCategoryFacts {
                     /* format-wrap */
                     "商品最多只能选择一个分类");
         return List.copyOf(refs);
+    }
+
+    record SalesMenuCategoryFacts(List<UUID> categoryRefs, List<String> categoryNames) {
+        SalesMenuCategoryFacts {
+            categoryRefs = List.copyOf(categoryRefs);
+            categoryNames = List.copyOf(categoryNames);
+        }
     }
 }

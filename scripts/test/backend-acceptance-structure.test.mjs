@@ -16,6 +16,7 @@ const scenarioFiles = [
   'CommercialContractAcceptanceScenarios.java',
   'AssetAcceptanceScenarios.java',
   'CatalogAcceptanceScenarios.java',
+  'SalesMenuAcceptanceScenarios.java',
 ];
 
 test('backend acceptance discovers all real scenarios through explicit domain groups', () => {

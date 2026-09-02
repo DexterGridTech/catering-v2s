@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "generated-owner-operation-binding-index",
-  "operationCount": 238,
+  "operationCount": 268,
   "owners": [
     "asset",
     "business-channel",
@@ -15,6 +15,7 @@
     "platform-asset",
     "platform-iam",
     "platform-workspace",
+    "sales-menu",
     "workspace-iam"
   ],
   "outputs": [
@@ -30,6 +31,7 @@
     "contracts/registry/generated/operation-handler-bindings/platform-asset.json",
     "contracts/registry/generated/operation-handler-bindings/platform-iam.json",
     "contracts/registry/generated/operation-handler-bindings/platform-workspace.json",
+    "contracts/registry/generated/operation-handler-bindings/sales-menu.json",
     "contracts/registry/generated/operation-handler-bindings/workspace-iam.json"
   ],
   "javaOutputs": [
@@ -46,6 +48,7 @@
     "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/platformasset/PlatformAssetOperationBindings.java",
     "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/platformiam/PlatformIamOperationBindings.java",
     "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/platformworkspace/PlatformWorkspaceOperationBindings.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/salesmenu/SalesMenuOperationBindings.java",
     "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/workspaceiam/WorkspaceIamOperationBindings.java"
   ],
   "dispatchStrategy": "OWNER_LOCAL_CLOSED_SWITCH",

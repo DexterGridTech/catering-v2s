@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it, vi} from 'vitest'
 import {
   createRuntime,
   defineActor,
@@ -6,6 +6,7 @@ import {
   onCommand,
   type RuntimeModule,
 } from '../src/index'
+import {createRequestId} from '@catering-v2s/kernel-base-contracts'
 import {createSharedMemoryStoragePort, createTestRuntimeInput, createTestSlice, deferred} from './testSupport'
 
 type CommandSpec = NonNullable<RuntimeModule['commandDefinitions']>[number]
@@ -120,6 +121,61 @@ describe('runtime reset boundary', () => {
     })
     const child = await runtime.dispatchCommand(probeCommand, {}, {parentCommandId: rootCommandId})
     expect(child.status).toBe('completed')
+  })
+
+  it('discards and warns about a pending reset when the root command fails', async () => {
+    const events: import('@catering-v2s/kernel-base-platform-ports').LogEvent[] = []
+    const first = defineCommand<Readonly<{}>>('test.reset.discarded', {name: 'first', visibility: 'internal'})
+    const second = defineCommand<Readonly<{}>>('test.reset.discarded', {name: 'second', visibility: 'internal'})
+    let firstRequested = false
+    let secondRequested = false
+    let resetCount = 0
+    const firstActor = defineActor('test.reset.discarded', 'first', [onCommand(first, context => {
+      if (!firstRequested) {
+        firstRequested = true
+        context.requestApplicationReset('discarded-secret-reason')
+      }
+      return null
+    })])
+    const secondActor = defineActor('test.reset.discarded', 'second', [onCommand(second, context => {
+      if (!secondRequested) {
+        secondRequested = true
+        context.requestApplicationReset('second-reason')
+      }
+      return null
+    })])
+    const module = moduleFor('test.reset.discarded', [first, second], [firstActor, secondActor], {
+      onApplicationReset: () => { resetCount += 1 },
+    })
+    const runtime = createRuntime(createTestRuntimeInput({modules: [module], events}))
+    await runtime.start()
+    const originalDispatch = runtime.getStore().dispatch
+    let dispatchCount = 0
+    const dispatch = vi.spyOn(runtime.getStore(), 'dispatch').mockImplementation(action => {
+      dispatchCount += 1
+      // command.started, actor.running, and actor.completed write successfully;
+      // fail command.completed after the actor has queued its reset.
+      if (dispatchCount === 4) throw new Error('synthetic root completion failure')
+      return originalDispatch(action)
+    })
+    try {
+      await expect(runtime.dispatchCommand(first, {}, {requestId: createRequestId()})).rejects.toMatchObject({
+        key: 'kernel.base.runtime.ledger_write_failed',
+      })
+    } finally {
+      dispatch.mockRestore()
+    }
+
+    const discarded = events.find(event => event.event === 'runtime.reset.request-discarded-after-root-failure')
+    expect(discarded).toMatchObject({
+      level: 'warn',
+      data: {rootCommandId: expect.any(String), hasReason: true},
+    })
+    expect(JSON.stringify(discarded)).not.toContain('discarded-secret-reason')
+
+    const result = await runtime.dispatchCommand(second, {})
+    expect(result.status).toBe('completed')
+    expect(resetCount).toBe(1)
   })
 
   it('does not queue a reset from an actor that finishes after its command was released', async () => {

@@ -7,20 +7,18 @@ import {
   type ActorDefinition,
 } from '../types/actor'
 import type {CommandDefinition} from '../types/command'
+import {freezeList} from './freezeList'
+import {assertNonEmptyString} from './assertNonEmptyString'
 
 const requireBareName = (value: string, label: string): void => {
-  if (value.trim().length === 0) {
-    throw new Error(`${label} must be non-empty`)
-  }
+  assertNonEmptyString(value, '', label)
   if (value.includes('.')) {
     throw new Error(`${label} must be a bare name: ${value}`)
   }
 }
 
 const requireModuleName = (value: string): void => {
-  if (value.trim().length === 0) {
-    throw new Error('Runtime actor module name must be non-empty')
-  }
+  assertNonEmptyString(value, '', 'Runtime actor module name')
 }
 
 export const onCommand = <TPayload extends StateJsonValue>(
@@ -47,7 +45,7 @@ export const defineActor = <
     moduleName,
     actorName,
     actorKey,
-    handlers: Object.freeze([...handlers]),
+    handlers: freezeList(handlers),
     [actorDefinitionBrand]: true as const,
   })
 }

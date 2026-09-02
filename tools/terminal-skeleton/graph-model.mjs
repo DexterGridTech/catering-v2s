@@ -2,6 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import ts from 'typescript';
+import {
+  createAnalysisProgram,
+  resolveAliasedSymbol,
+  resolveModuleNameExport,
+} from '../terminal-shared/typescript-analysis.mjs';
 
 const toolsDirectory = path.dirname(fileURLToPath(import.meta.url));
 export const repoRoot = path.resolve(toolsDirectory, '../..');
@@ -9,6 +14,43 @@ export const terminalRoot = path.join(repoRoot, 'apps/terminal');
 export const skeletonGraphPath = path.join(terminalRoot, 'skeleton-graph.ts');
 export const terminalPackageName = '@catering-v2s/terminal';
 export const packageScope = '@catering-v2s/';
+
+function resolvesToStateSliceFactory(checker, expression) {
+  if (!expression) return false;
+  const symbol = checker.getSymbolAtLocation(expression);
+  const resolved = symbol ? resolveAliasedSymbol(checker, symbol) : null;
+  return Boolean(
+    resolved?.name === 'defineStateRuntimeSlice'
+      && resolved.declarations?.some(declaration =>
+        ts.isVariableDeclaration(declaration)
+        && declaration.name?.text === 'defineStateRuntimeSlice'
+        && path.basename(declaration.getSourceFile().fileName) === 'defineStateRuntimeSlice.ts',
+      ),
+  );
+}
+
+function packageHasRealStateSlice(root, moduleName, analysis) {
+  const slicesRoot = path.join(moduleNameToPath(moduleName, root), 'src', 'features', 'slices');
+  if (!fs.existsSync(slicesRoot)) return false;
+  const checker = analysis.program.getTypeChecker();
+  for (const sourcePath of readAllSourceFiles(moduleNameToPath(moduleName, root))) {
+    if (!sourcePath.startsWith(`${slicesRoot}${path.sep}`)) continue;
+    const sourceFile = analysis.program.getSourceFile(sourcePath);
+    if (!sourceFile) continue;
+    let found = false;
+    const visit = node => {
+      if (found) return;
+      if (ts.isCallExpression(node) && resolvesToStateSliceFactory(checker, node.expression)) {
+        found = true;
+        return;
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
+    if (found) return true;
+  }
+  return false;
+}
 
 function propertyName(node) {
   if (ts.isIdentifier(node.name) || ts.isStringLiteral(node.name) || ts.isNumericLiteral(node.name)) {
@@ -61,17 +103,10 @@ function rootFromGraphPath(graphPath) {
   return repoRoot;
 }
 
-function realizedModuleKind(moduleName, graphPath) {
-  if (moduleName !== 'kernel.base.runtime') return null;
+function realizedModuleKind(moduleName, graphPath, analysis) {
   const root = rootFromGraphPath(graphPath);
-  const manifestPath = path.join(
-    root,
-    'apps/terminal/kernel/base/runtime/src/application/createInternalRuntimeModule.ts',
-  );
-  if (!fs.existsSync(manifestPath)) return null;
-  const source = fs.readFileSync(manifestPath, 'utf8');
-  const match = source.match(/\bkind\s*:\s*['"](owner|toolkit)['"]\s+as\s+const\b/);
-  return match ? match[1] : null;
+  const resolved = resolveModuleNameExport({root, moduleName, analysis});
+  return resolved?.value ?? null;
 }
 
 export function readSkeletonSpec(graphPath = skeletonGraphPath) {
@@ -85,17 +120,29 @@ export function readSkeletonSpec(graphPath = skeletonGraphPath) {
   if (!graph || Array.isArray(graph) || typeof graph !== 'object') {
     throw new Error('skeletonGraph must be an object literal');
   }
+  const root = rootFromGraphPath(graphPath);
+  const analysis = createAnalysisProgram(root);
   for (const [moduleName, entry] of Object.entries(graph)) {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry))
       throw new Error(`${moduleName} has an invalid entry`);
     if (!Number.isInteger(entry.batch) || ![1, 2].includes(entry.batch))
       throw new Error(`${moduleName} has an invalid batch`);
-    const manifestKind = realizedModuleKind(moduleName, graphPath);
-    if (entry.plannedKind !== undefined && manifestKind !== null) {
-      throw new Error(`${moduleName} must not declare both plannedKind and manifest kind`);
-    }
-    if (entry.plannedKind === undefined && manifestKind === null) {
-      throw new Error(`${moduleName} has neither plannedKind nor manifest kind`);
+    const manifestKind = realizedModuleKind(moduleName, graphPath, analysis);
+    const hasRealSlice = packageHasRealStateSlice(root, moduleName, analysis);
+    if (hasRealSlice) {
+      if (entry.plannedKind !== undefined) {
+        throw new Error(`${moduleName} has a real state slice but still declares plannedKind`);
+      }
+      if (manifestKind !== 'owner') {
+        throw new Error(`${moduleName} real state slice requires moduleKind owner`);
+      }
+    } else {
+      if (entry.plannedKind !== undefined && manifestKind !== null) {
+        throw new Error(`${moduleName} must not declare both plannedKind and manifest kind`);
+      }
+      if (entry.plannedKind === undefined && manifestKind === null) {
+        throw new Error(`${moduleName} has neither plannedKind nor manifest kind`);
+      }
     }
     entry.plannedKind = entry.plannedKind ?? manifestKind;
     if (!['toolkit', 'owner'].includes(entry.plannedKind)) throw new Error(`${moduleName} has an invalid plannedKind`);

@@ -277,6 +277,31 @@ describe('runtime journal and lifecycle', () => {
     expect(notifications).toBe(beforeRelease)
   })
 
+  it('L-4 exposes module registerResource and releases each cleanup once', async () => {
+    let cleanupCount = 0
+    const module: RuntimeModule = {
+      moduleName: 'test.lifecycle.module-resource',
+      kind: 'owner',
+      dependencies: [{moduleName: 'kernel.base.runtime'}],
+      commands: [],
+      commandDefinitions: [],
+      actors: [],
+      actorDefinitions: [],
+      stateSlices: [createTestSlice('test.lifecycle.module-resource.state')],
+      install: context => {
+        context.registerResource(() => { cleanupCount += 1 })
+      },
+    }
+    const runtime = createRuntime(createTestRuntimeInput({modules: [module]}))
+    await runtime.start()
+    expect(cleanupCount).toBe(0)
+    const {releaseRuntimeForTest} = await import('../src/testing/releaseRuntimeForTest')
+    expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0)
+    expect(cleanupCount).toBe(1)
+    expect(releaseRuntimeForTest(runtime)).toBe(0)
+    expect(cleanupCount).toBe(1)
+  })
+
   it('L-4 releases actor state subscriptions through the test resource registry', async () => {
     let notifications = 0
     let subscribed = false

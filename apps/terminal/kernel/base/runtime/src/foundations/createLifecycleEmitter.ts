@@ -18,6 +18,7 @@ import type {RuntimeJournalEvent, RuntimeLifecycleObserver} from '../types/journ
 import {aggregateCommandStatus} from './aggregateCommandStatus'
 import {createRuntimeJournal, type RuntimeJournalWithAppend} from './createRuntimeJournal'
 import {normalizeRuntimeError} from './normalizeRuntimeError'
+import {freezeList} from './freezeList'
 
 export type LifecycleCommandContext = Readonly<{
   runtimeId: RuntimeInstanceId
@@ -128,7 +129,7 @@ const createCommandExecutionObservation = (
   commandName: context.commandName,
   target: context.target,
   allowNoActor: context.allowNoActor,
-  actorResults: Object.freeze([...actorResults]),
+  actorResults: freezeList(actorResults),
   startedAt: context.startedAt,
   completedAt,
   displayMode: context.routeContext?.displayMode ?? null,
@@ -140,7 +141,7 @@ const replaceObservationActors = (
   completedAt: number | null = observation.completedAt,
 ): CommandExecutionObservation => Object.freeze({
   ...observation,
-  actorResults: Object.freeze([...actorResults]),
+  actorResults: freezeList(actorResults),
   completedAt,
 })
 

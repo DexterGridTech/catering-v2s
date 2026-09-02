@@ -25,13 +25,13 @@ describe('runtime type and public-shape boundaries', () => {
   it('T-2 exposes exactly the module and actor context keys at runtime', () => {
     const moduleKeys: readonly (keyof RuntimeModuleContext)[] = [
       'moduleName', 'localNodeId', 'platformPorts', 'descriptors', 'getState', 'flushPersistence',
-      'subscribeState', 'dispatchCommand', 'installPeerDispatchGateway',
+      'subscribeState', 'registerResource', 'dispatchCommand', 'installPeerDispatchGateway',
     ]
     const actorKeys: readonly (keyof ActorExecutionContext)[] = [
       'runtimeId', 'localNodeId', 'platformPorts', 'command', 'actor', 'getState', 'dispatchAction',
       'flushPersistence', 'subscribeState', 'dispatchCommand', 'requestApplicationReset',
     ]
-    expect(new Set(moduleKeys).size).toBe(9)
+    expect(new Set(moduleKeys).size).toBe(10)
     expect(new Set(actorKeys).size).toBe(11)
     expect(moduleKeys).not.toContain('requestApplicationReset' as never)
     expect(actorKeys).not.toContain('installPeerDispatchGateway' as never)

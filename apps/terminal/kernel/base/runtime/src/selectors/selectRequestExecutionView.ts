@@ -1,3 +1,4 @@
+import {createSelector} from '@reduxjs/toolkit'
 import type {
   CommandId,
   RequestId,
@@ -16,6 +17,7 @@ import {
   type RuntimeRequestLedgerState,
 } from '../features/slices/requestLedger'
 import {selectRuntimeInstanceMode} from './selectRuntimeInstanceMode'
+import {readRequestLedgerState} from './readRequestLedgerState'
 import type {
   CommandExecutionObservation,
   LedgerError,
@@ -26,30 +28,12 @@ import type {
   RequestExecutionRecord,
   RequestExecutionView,
 } from '../types/requestLedger'
+import {freezeList} from '../foundations/freezeList'
 
 type RequestEnvelope = SyncValueEnvelope<RequestExecutionRecord>
 type ObservationSource = 'local' | 'peer'
 
-const NO_LOCAL_ENVELOPE = Object.freeze({sentinel: 'NO_LOCAL_ENVELOPE'})
-const NO_PEER_ENVELOPE = Object.freeze({sentinel: 'NO_PEER_ENVELOPE'})
-
-const viewCache = new WeakMap<object, WeakMap<object, Map<RuntimeInstanceMode, RequestExecutionView | null>>>()
 const observationCache = new WeakMap<CommandExecutionObservation, Readonly<CommandExecutionObservation & {source: ObservationSource}>>()
-
-const readLedgerState = (
-  state: StateRoot,
-  sliceName: string,
-): RuntimeRequestLedgerState | undefined => {
-  const slice = state[sliceName]
-  return typeof slice === 'object' && slice !== null
-    ? slice as RuntimeRequestLedgerState
-    : undefined
-}
-
-const envelopeKey = (
-  envelope: RequestEnvelope | undefined,
-  fallback: object,
-): object => envelope ?? fallback
 
 const cachedObservation = (
   observation: CommandExecutionObservation,
@@ -83,11 +67,11 @@ const buildCommandView = (
 ): RequestExecutionCommandView => {
   const preferred = local ?? peer
   if (preferred === undefined) throw new Error(`request command is missing: ${commandId}`)
-  const rawObservations = Object.freeze([
+  const rawObservations = freezeList([
     ...(local === undefined ? [] : [local]),
     ...(peer === undefined ? [] : [peer]),
   ])
-  const observations = Object.freeze([
+  const observations = freezeList([
     ...(local === undefined ? [] : [cachedObservation(local, 'local')]),
     ...(peer === undefined ? [] : [cachedObservation(peer, 'peer')]),
   ])
@@ -130,7 +114,7 @@ const buildView = (
     ...localCommands.keys(),
     ...peerCommands.keys(),
   ])
-  const commandViews = Object.freeze(
+  const commandViews = freezeList(
     [...commandKeys]
       .map(key => buildCommandView(
         key as CommandId,
@@ -146,7 +130,7 @@ const buildView = (
   const chosenRecord = localRecord ?? peerRecord
   const chosenEnvelope = localEnvelope ?? peerEnvelope
   if (chosenRecord === undefined || chosenEnvelope === undefined) return null
-  const rootCommandIds = Object.freeze(commandViews
+  const rootCommandIds = freezeList(commandViews
     .filter(command => command.parentCommandId === null)
     .map(command => command.commandId))
   return Object.freeze({
@@ -161,57 +145,46 @@ const buildView = (
   })
 }
 
-const readCache = (
-  mode: RuntimeInstanceMode,
-  localEnvelope: RequestEnvelope | undefined,
-  peerEnvelope: RequestEnvelope | undefined,
-): RequestExecutionView | null | undefined => {
-  if (localEnvelope === undefined && peerEnvelope === undefined) return undefined
-  const localKey = envelopeKey(localEnvelope, NO_LOCAL_ENVELOPE)
-  const peerKey = envelopeKey(peerEnvelope, NO_PEER_ENVELOPE)
-  const peerMap = viewCache.get(localKey)
-  const modeMap = peerMap?.get(peerKey)
-  return modeMap?.get(mode)
+const selectRequestId = (_state: StateRoot, requestId: RequestId): RequestId => requestId
+
+const selectRequestMode = (state: StateRoot): RuntimeInstanceMode =>
+  selectRuntimeInstanceMode(state)
+
+const selectLocalRequestEnvelope = (
+  state: StateRoot,
+  requestId: RequestId,
+): RequestEnvelope | undefined => {
+  const mode = selectRequestMode(state)
+  return readLiveRequestEnvelope(
+    readRequestLedgerState(state, requestLedgerSliceNameForMode(mode)),
+    requestId,
+  )
 }
 
-const writeCache = (
-  mode: RuntimeInstanceMode,
-  localEnvelope: RequestEnvelope | undefined,
-  peerEnvelope: RequestEnvelope | undefined,
-  view: RequestExecutionView | null,
-): void => {
-  if (localEnvelope === undefined && peerEnvelope === undefined) return
-  const localKey = envelopeKey(localEnvelope, NO_LOCAL_ENVELOPE)
-  const peerKey = envelopeKey(peerEnvelope, NO_PEER_ENVELOPE)
-  let peerMap = viewCache.get(localKey)
-  if (peerMap === undefined) {
-    peerMap = new WeakMap()
-    viewCache.set(localKey, peerMap)
-  }
-  let modeMap = peerMap.get(peerKey)
-  if (modeMap === undefined) {
-    modeMap = new Map()
-    peerMap.set(peerKey, modeMap)
-  }
-  modeMap.set(mode, view)
+const selectPeerRequestEnvelope = (
+  state: StateRoot,
+  requestId: RequestId,
+): RequestEnvelope | undefined => {
+  const mode = selectRequestMode(state)
+  return readLiveRequestEnvelope(
+    readRequestLedgerState(state, peerRequestLedgerSliceNameForMode(mode)),
+    requestId,
+  )
 }
+
+const selectRequestExecutionViewMemoized = createSelector(
+  [selectRequestId, selectRequestMode, selectLocalRequestEnvelope, selectPeerRequestEnvelope],
+  (
+    requestId,
+    mode,
+    localEnvelope,
+    peerEnvelope,
+  ): RequestExecutionView | null => buildView(requestId, mode, localEnvelope, peerEnvelope),
+)
 
 export const selectRequestExecutionView = (
   state: StateRoot,
   requestId: RequestId,
 ): RequestExecutionView | null => {
-  const mode = selectRuntimeInstanceMode(state)
-  const localEnvelope = readLiveRequestEnvelope(
-    readLedgerState(state, requestLedgerSliceNameForMode(mode)),
-    requestId,
-  )
-  const peerEnvelope = readLiveRequestEnvelope(
-    readLedgerState(state, peerRequestLedgerSliceNameForMode(mode)),
-    requestId,
-  )
-  const cached = readCache(mode, localEnvelope, peerEnvelope)
-  if (cached !== undefined) return cached
-  const view = buildView(requestId, mode, localEnvelope, peerEnvelope)
-  writeCache(mode, localEnvelope, peerEnvelope, view)
-  return view
+  return selectRequestExecutionViewMemoized(state, requestId)
 }

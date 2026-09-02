@@ -39,8 +39,6 @@ export type {
   StateRuntimeSyncDescriptor,
 } from './types/sync';
 export {
-  createSliceSyncSummary,
-  createSliceSyncDiff,
   createFullSliceSyncPayload,
   applySliceSyncDiff,
   createSyncTombstone,
@@ -51,6 +49,14 @@ export type {
   StateRuntimeSliceRegistration,
 } from './types/slice';
 export {defineStateRuntimeSlice} from './foundations/defineStateRuntimeSlice';
+
+export type {PartitionedStateKeys} from './types/partitioned';
+export {
+  createPartitionedActionDispatcher,
+  createPartitionedStateKeys,
+  readPartitionedState,
+  toPartitionedStateDescriptors,
+} from './supports/partitioned';
 
 export type {
   StateResetActor,

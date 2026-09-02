@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -54,6 +55,132 @@ public interface CatalogOwnerApi {
 
     InventoryTargetDisplayFact readInventoryTargetDisplayFact(
             String dataNodeRef, String brandRef, UUID itemRef, UUID productSkuRef);
+
+    /**
+     * Catalog facts used by the sales-menu owner when it builds its candidate collection. This is an owner task read,
+     * not the catalog screen JSON projection; menu membership/counts remain owned by sales-menu.
+     */
+    record SalesMenuCandidatePageQuery(
+            String dataNodeRef, String brandRef, UUID categoryRef, String filter, String cursor, int pageSize) {
+        public SalesMenuCandidatePageQuery {
+            dataNodeRef = Objects.requireNonNull(dataNodeRef, "dataNodeRef");
+            brandRef = Objects.requireNonNull(brandRef, "brandRef");
+            filter = filter == null ? "" : filter.trim();
+            if (filter.length() > 160) throw new IllegalArgumentException("filter is too long");
+            if (cursor != null && cursor.length() > 512) throw new IllegalArgumentException("cursor is too long");
+            if (pageSize != 20) throw new IllegalArgumentException("pageSize must be 20");
+        }
+    }
+
+    record SalesMenuCandidatePage(List<SalesMenuCandidate> items, String cursor, String nextCursor) {
+        public SalesMenuCandidatePage {
+            items = List.copyOf(Objects.requireNonNull(items, "items"));
+        }
+    }
+
+    record SalesMenuCandidate(
+            UUID itemRef,
+            String itemCode,
+            String itemName,
+            String shapeKey,
+            List<UUID> categoryRefs,
+            List<String> categoryNames,
+            Long defaultPriceCents,
+            UUID defaultImageAssetRef,
+            SalesMenuSkuSummary skuSummary) {
+        public SalesMenuCandidate {
+            categoryRefs = List.copyOf(Objects.requireNonNull(categoryRefs, "categoryRefs"));
+            categoryNames = List.copyOf(Objects.requireNonNull(categoryNames, "categoryNames"));
+            Objects.requireNonNull(skuSummary, "skuSummary");
+        }
+    }
+
+    /** The item and SKU facts needed by sales-menu draft/detail/save/publish task reads. */
+    record SalesMenuItemFacts(
+            UUID itemRef,
+            String itemCode,
+            String itemName,
+            String shapeKey,
+            String status,
+            long version,
+            List<UUID> categoryRefs,
+            Long defaultPriceCents,
+            InventoryOwnerApi.UnitSnapshot salesUnitSnapshot,
+            UUID defaultImageAssetRef,
+            SalesMenuSkuSummary skuSummary,
+            List<SalesMenuSkuFact> skus,
+            List<SalesMenuSkuVariantAxisFact> variantAxes) {
+        public SalesMenuItemFacts {
+            categoryRefs = List.copyOf(Objects.requireNonNull(categoryRefs, "categoryRefs"));
+            Objects.requireNonNull(skuSummary, "skuSummary");
+            skus = List.copyOf(Objects.requireNonNull(skus, "skus"));
+            variantAxes = List.copyOf(Objects.requireNonNull(variantAxes, "variantAxes"));
+        }
+    }
+
+    /** Structured SKU summary; display text is deliberately left to the consumer. */
+    record SalesMenuSkuSummary(
+            String priceGranularity,
+            int enabledCount,
+            int nonArchivedCount,
+            int totalCount,
+            List<String> dimensions,
+            Long standardSalePriceMin,
+            Long standardSalePriceMax) {
+        public SalesMenuSkuSummary {
+            dimensions = List.copyOf(Objects.requireNonNull(dimensions, "dimensions"));
+        }
+    }
+
+    record SalesMenuSkuFact(
+            UUID productSkuRef,
+            String skuCode,
+            String skuName,
+            Long standardSalePrice,
+            boolean defaultSku,
+            String status,
+            long version,
+            int displayOrder,
+            String variantCombinationDigest,
+            List<UUID> mediaRefs,
+            List<SalesMenuSkuAttributeValueFact> attributeValueRefs) {
+        public SalesMenuSkuFact {
+            mediaRefs = List.copyOf(Objects.requireNonNull(mediaRefs, "mediaRefs"));
+            attributeValueRefs = List.copyOf(Objects.requireNonNull(attributeValueRefs, "attributeValueRefs"));
+        }
+    }
+
+    record SalesMenuSkuAttributeValueFact(
+            UUID attributeRef,
+            String attributeCode,
+            String attributeName,
+            UUID valueRef,
+            String valueCode,
+            String valueLabel,
+            String status,
+            int displayOrder) {}
+
+    record SalesMenuSkuVariantAxisFact(
+            UUID attributeRef,
+            String attributeCode,
+            String attributeName,
+            int displayOrder,
+            List<SalesMenuSkuVariantValueFact> values) {
+        public SalesMenuSkuVariantAxisFact {
+            values = List.copyOf(Objects.requireNonNull(values, "values"));
+        }
+    }
+
+    record SalesMenuSkuVariantValueFact(
+            UUID valueRef, String valueCode, String valueLabel, String status, int displayOrder) {}
+
+    SalesMenuCandidatePage readSalesMenuCandidatePage(SalesMenuCandidatePageQuery query);
+
+    /**
+     * Reads only the requested, non-voided items in this catalog scope. The result omits absent/voided refs; the
+     * operation performs one scoped item set read followed by bounded owner-local fact set reads.
+     */
+    Map<UUID, SalesMenuItemFacts> readSalesMenuItemFacts(String dataNodeRef, String brandRef, Set<UUID> itemRefs);
 
     JsonNode readItem(String dataNodeRef, String brandRef, String itemCode, String requestId);
 

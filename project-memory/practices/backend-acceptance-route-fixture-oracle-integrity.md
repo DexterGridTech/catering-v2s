@@ -10,7 +10,7 @@ consumerFaces: ["all"]
 owners: ["backend", "contract", "frontend-platform"]
 impacts: ["architecture", "contract", "evidence"]
 triggers: ["task-start", "implementation", "review", "failure"]
-assertions: ["ACCEPTANCE_ASSERTS_EXACT_NESTED_ROUTE", "ACCEPTANCE_FIXTURE_REACHES_TARGET_RULE", "ACCEPTANCE_ORACLE_EXCLUDES_TRANSPORT_METADATA"]
+assertions: ["ACCEPTANCE_ASSERTS_EXACT_NESTED_ROUTE", "ACCEPTANCE_FIXTURE_REACHES_TARGET_RULE", "ACCEPTANCE_ORACLE_EXCLUDES_TRANSPORT_METADATA", "FIXTURE_HELPER_RETURN_CARRIES_RESOURCE_IDENTITY", "ORACLE_EXPECTATION_RECOMPUTED_FROM_ACTION_SEQUENCE"]
 sourceRefs: ["project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md"]
 ---
 
@@ -44,6 +44,38 @@ operation identity 和响应 shape。
 
 这不放宽公开 problem 的脱敏要求：敏感字段仍不得返回；只是要求测试 oracle 明确区分业务 payload 与协议
 定位元数据。
+
+## 4. 夹具 helper 的返回类型必须携带资源身份
+
+`FIXTURE_HELPER_RETURN_CARRIES_RESOURCE_IDENTITY`
+
+⛔ **夹具 helper 不得返回不携带资源身份的裸响应包装。**
+
+**实测反例(2026-09-02)**:`BusinessChannelAcceptanceScenarios` 的
+`createExternalStoreBinding(...)` 返回裸 `BackendAcceptanceTest.Response`,
+调用方按 channel response 读取 `channelRef`,得空串,
+最终 `UUID.fromString("")` 在 `BackendAcceptanceTest` 抛 `Invalid_UUID_string`。
+**channel、binding、template 的返回结构只靠调用约定区分,编译器一个都拦不住。**
+
+**这不是"测试写得差",是偏离了本仓已有的主流形态。** 实测 acceptance 目录下
+**返回 typed 结构的 helper 有 43 个,返回裸 `Response` 的只有 10 个**;
+而这 10 个例外中 **6 个集中在出事的那一个文件**里。集中度是因果的。
+
+**因此修法是一致性收敛,不是新建能力**:把裸 `Response` helper 改成 43 个同伴已在用的 typed 形态。
+⛔ 不得为此设计通用 fixture DSL 或测试框架。
+
+## 5. 断言期望值必须按动作序列重新推导
+
+`ORACLE_EXPECTATION_RECOMPUTED_FROM_ACTION_SEQUENCE`
+
+⛔ **oracle 的期望值不得沿用前置状态或初始值。**
+
+**实测反例(2026-09-02)**:顺序场景先向第二个 section 添加了一个重复 item,
+随后仍断言该 section 的 `itemCount` 为 0 —— 期望值停留在动作发生之前。
+根因不是生产排序逻辑错,是**测试期望没有随动作序列重算**。
+
+**判据**:写完动作序列后,逐个动作重新推一遍每个被断言字段的值;
+凡是"我记得它应该是几"而不是"按这串动作算出来是几",都要重算。
 
 ## 4. 最小防再犯闭环
 

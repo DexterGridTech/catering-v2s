@@ -1,19 +1,16 @@
 import {onCommand, defineActor} from '../../foundations/defineActor'
 import {setRuntimeInstanceModeCommand} from '../commands/setRuntimeInstanceMode'
+import {runtimeInstanceModeChangedCommand} from '../commands/runtimeInstanceModeChanged'
 import {
-  createSetRuntimeInstanceModeAction,
+  setRuntimeInstanceModeAction,
 } from '../slices/runtimeInstanceMode'
 import {selectRuntimeInstanceMode} from '../../selectors/selectRuntimeInstanceMode'
 import {moduleName} from '../../moduleName'
 import type {ActorDefinition} from '../../types/actor'
-import type {
-  RuntimeRoleChangeEffect,
-  RuntimeRoleChangeSignal,
-} from '../../types/module'
+import type {RuntimeRoleChangeSignal} from '../../types/module'
 import {isRuntimeInstanceMode} from '../../types/role'
 
 export const createSetRuntimeInstanceModeActor = (
-  roleEffects: readonly RuntimeRoleChangeEffect[] = [],
   onRoleChange?: (signal: RuntimeRoleChangeSignal) => void,
 ): ActorDefinition => defineActor(moduleName, 'instance-mode', [
   onCommand(setRuntimeInstanceModeCommand, async context => {
@@ -37,14 +34,7 @@ export const createSetRuntimeInstanceModeActor = (
       visibility: 'internal',
       allowNoActor: false,
     })
-    for (const effect of roleEffects) {
-      await effect({
-        previousMode: current,
-        nextMode: payload.instanceMode,
-        context,
-      })
-    }
-    context.dispatchAction(createSetRuntimeInstanceModeAction(payload.instanceMode))
+    context.dispatchAction(setRuntimeInstanceModeAction(payload.instanceMode))
     onRoleChange?.({
       kind: 'role.changed',
       previousMode: current,
@@ -53,6 +43,35 @@ export const createSetRuntimeInstanceModeActor = (
       visibility: 'internal',
       allowNoActor: false,
     })
+    try {
+      const child = await context.dispatchCommand(runtimeInstanceModeChangedCommand, Object.freeze({
+        previousMode: current,
+        nextMode: payload.instanceMode,
+      }))
+      if (child.status !== 'completed') {
+        context.platformPorts.logger.withContext({
+          commandId: context.command.commandId,
+          commandName: context.command.commandName,
+          nodeId: context.localNodeId,
+        }).error({
+          category: 'runtime.role',
+          event: 'runtime.role.changed-consumer-failed',
+          message: 'Post-commit role-change consumer did not complete',
+          data: {status: child.status},
+        })
+      }
+    } catch (error) {
+      context.platformPorts.logger.withContext({
+        commandId: context.command.commandId,
+        commandName: context.command.commandName,
+        nodeId: context.localNodeId,
+      }).error({
+        category: 'runtime.role',
+        event: 'runtime.role.changed-consumer-failed',
+        message: 'Post-commit role-change consumer failed',
+        error: {message: error instanceof Error ? error.message : 'Unknown role-change consumer error'},
+      })
+    }
     return {
       changed: true,
       previousMode: current,

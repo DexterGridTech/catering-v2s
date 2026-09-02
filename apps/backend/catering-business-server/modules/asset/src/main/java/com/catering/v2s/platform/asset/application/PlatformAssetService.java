@@ -3,6 +3,10 @@ package com.catering.v2s.platform.asset.application;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.asset.api.CatalogAssetCommandApi;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
+import com.catering.v2s.platform.asset.api.SalesMenuAssetCommandApi;
+import com.catering.v2s.platform.asset.api.SalesMenuAssetReadApi;
+import com.catering.v2s.platform.asset.api.SalesMenuAssetTarget;
+import com.catering.v2s.platform.asset.api.SalesMenuAssetUsage;
 import com.catering.v2s.platform.asset.api.WorkspaceLogoAssetCommand;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.CatalogTargetCapability;
@@ -26,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import javax.imageio.ImageIO;
@@ -45,11 +50,23 @@ import org.springframework.transaction.support.TransactionTemplate;
 /** Owner service for public static images and videos. Business owners retain only asset references. */
 @Service
 public class PlatformAssetService
-        implements WorkspaceLogoAssetCommand, CatalogAssetReferenceLock, CatalogAssetCommandApi {
+        implements WorkspaceLogoAssetCommand,
+                CatalogAssetReferenceLock,
+                CatalogAssetCommandApi,
+                SalesMenuAssetReadApi,
+                SalesMenuAssetCommandApi {
     private static final Logger log = LoggerFactory.getLogger(PlatformAssetService.class);
     private static final long MAX_IMAGE_BYTES = 5L * 1024 * 1024;
+    private static final long MAX_SALES_MENU_IMAGE_BYTES = 2L * 1024 * 1024;
     /** Video is deliberately not capped at the image/logo limit; future approved video usage stays streaming. */
     private static final long MAX_VIDEO_BYTES = 512L * 1024 * 1024;
+
+    private static final String SALES_MENU_IMAGE_USAGE = SalesMenuAssetUsage.SALES_MENU_ITEM_IMAGE.name();
+    private static final String SALES_MENU_TARGET_TYPE = "STORE";
+    private static final String SALES_MENU_CAPABILITY = "EDIT_STORE_SALES_MENU";
+    private static final String SALES_MENU_STAGE_REQUIREMENT = "REQ_STAGE_OPERATIONS_SALES_MENU_ASSET";
+    private static final String SALES_MENU_RELEASE_REQUIREMENT = "REQ_RELEASE_OPERATIONS_SALES_MENU_STAGED_ASSET";
+    private static final String SALES_MENU_CLAIM_REQUIREMENT = "REQ_UPDATE_OPERATIONS_SALES_MENU_ITEM";
 
     private static final String GLOBAL_RECEIPT_SCOPE = "global";
     private static final Object CATALOG_ASSET_LOCK_RESOURCE_KEY = new Object();
@@ -162,6 +179,38 @@ public class PlatformAssetService
                 staged.asset().version());
     }
 
+    /**
+     * Stages a server-resolved sales-menu image. The target judgment belongs to sales-menu; this owner only validates
+     * the opaque grant, stores the exact target relation, and owns the asset lifecycle.
+     */
+    @Override
+    public SalesMenuAssetCommandApi.StageReadback stageSalesMenuItemImage(
+            SalesMenuAssetTarget target,
+            OperationsOwnerScopeGrant ownerScopeGrant,
+            long contextVersion,
+            SalesMenuAssetCommandApi.StageCommand command) {
+        requireSalesMenuOwnerScope(target, ownerScopeGrant, contextVersion, SALES_MENU_STAGE_REQUIREMENT);
+        if (command == null || !command.contentDigest().matches("[a-f0-9]{64}")) throw new AssetInputInvalidException();
+        StageResult staged = stageContentResult(
+                SALES_MENU_IMAGE_USAGE,
+                command.mediaType(),
+                command.contentLength(),
+                command.content(),
+                command.idempotencyKey(),
+                target.workspaceUuid(),
+                target.groupWorkspaceKey(),
+                command.contentDigest(),
+                target);
+        return new SalesMenuAssetCommandApi.StageReadback(
+                staged.stage().assetRef(),
+                target,
+                staged.stage().bindGrant(),
+                staged.asset().status(),
+                staged.stage().contentType(),
+                staged.stage().sha256(),
+                staged.asset().version());
+    }
+
     private StageResult stageContentResult(
             String usage,
             String contentType,
@@ -183,23 +232,46 @@ public class PlatformAssetService
             UUID workspaceUuid,
             String groupWorkspaceKey,
             String expectedDigest) {
+        return stageContentResult(
+                usage,
+                contentType,
+                declaredSizeBytes,
+                content,
+                idempotencyKey,
+                workspaceUuid,
+                groupWorkspaceKey,
+                expectedDigest,
+                null);
+    }
+
+    private StageResult stageContentResult(
+            String usage,
+            String contentType,
+            long declaredSizeBytes,
+            InputStream content,
+            String idempotencyKey,
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String expectedDigest,
+            SalesMenuAssetTarget salesMenuTarget) {
         if (!validUsageContentType(usage, contentType)
                 || content == null
                 || declaredSizeBytes <= 0
-                || declaredSizeBytes > maxBytes(contentType)) throw new AssetInputInvalidException();
+                || declaredSizeBytes > maxBytes(usage, contentType)) throw new AssetInputInvalidException();
         // Suspending an external DataSourceTransactionManager transaction would retain its
         // borrowed connection. Refuse after input-shape validation but before materialization or object I/O, so every
         // public stage entry keeps storage latency outside a caller-owned database transaction.
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
             throw new AssetInvariantViolationException("owner.stage-storage-transaction");
         }
-        MaterializedContent materialized = materializeAndValidate(contentType, declaredSizeBytes, content);
+        MaterializedContent materialized = materializeAndValidate(usage, contentType, declaredSizeBytes, content);
         if (expectedDigest != null && !expectedDigest.equals(materialized.sha256())) {
             deleteQuietly(materialized.path());
             throw new AssetInputInvalidException();
         }
         String requestHash = sha256((usage + "|" + contentType + "|" + materialized.sizeBytes() + "|"
-                        + materialized.sha256() + "|" + workspaceUuid + "|" + groupWorkspaceKey)
+                        + materialized.sha256() + "|" + workspaceUuid + "|" + groupWorkspaceKey + "|"
+                        + salesMenuTargetKey(salesMenuTarget))
                 .getBytes(StandardCharsets.UTF_8));
         String receiptScope = receiptScope(workspaceUuid);
         if (idempotencyKey != null) {
@@ -235,7 +307,8 @@ public class PlatformAssetService
                             objectKey,
                             grant,
                             now,
-                            expires));
+                            expires,
+                            salesMenuTarget));
         } catch (RuntimeException failure) {
             scheduleUnreferencedUploadCleanup(objectKey, uploadedByThisAttempt);
             throw failure;
@@ -261,7 +334,8 @@ public class PlatformAssetService
             String objectKey,
             String grant,
             long now,
-            long expires) {
+            long expires,
+            SalesMenuAssetTarget salesMenuTarget) {
         try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             if (idempotencyKey != null) {
                 lockReceipt(receiptScope, idempotencyKey);
@@ -277,6 +351,9 @@ public class PlatformAssetService
                                 .addKeyValue("receiptStatus", replay.status())
                                 .log("catalog asset stage idempotency conflict");
                         throw new AssetIdempotencyConflictException();
+                    }
+                    if (salesMenuTarget != null) {
+                        requireSalesMenuAssetTargetRow(replay.assetRef(), salesMenuTarget);
                     }
                     if ("RELEASED".equals(replay.status())) {
                         log.atInfo()
@@ -419,6 +496,7 @@ public class PlatformAssetService
                         winner.version());
             }
             issueBindGrant(assetRef, grant, expires);
+            if (salesMenuTarget != null) writeSalesMenuAssetTarget(assetRef, salesMenuTarget, now);
             recordStageReceipt(
                     receiptScope,
                     idempotencyKey,
@@ -431,6 +509,102 @@ public class PlatformAssetService
             return stageResult(
                     usage, assetRef, grant, expires, contentType, materialized.sizeBytes(), digest, "STAGED", 1L);
         }
+    }
+
+    /** Releases only an unclaimed sales-menu stage after the sales-menu owner supplied the resolved target. */
+    @Override
+    @Transactional
+    public SalesMenuAssetCommandApi.ReleaseReadback releaseStagedSalesMenuItemImage(
+            SalesMenuAssetTarget target,
+            OperationsOwnerScopeGrant ownerScopeGrant,
+            long contextVersion,
+            SalesMenuAssetCommandApi.ReleaseCommand command) {
+        requireSalesMenuOwnerScope(target, ownerScopeGrant, contextVersion, SALES_MENU_RELEASE_REQUIREMENT);
+        if (command == null) throw new AssetInputInvalidException();
+        String requestHash =
+                salesMenuReleaseRequestHash("RELEASE_STAGED", target, command.assetRef(), command.expectedVersion());
+        String receiptScope = receiptScope(target.workspaceUuid());
+        lockReceipt(receiptScope, command.idempotencyKey());
+        Replay replay = findReceipt(receiptScope, command.idempotencyKey());
+        SalesMenuAssetRow current = lockSalesMenuAssetAndTargetForRelease(command.assetRef(), target);
+        if (replay != null) {
+            if (!requestHash.equals(replay.requestHash()) || !command.assetRef().equals(replay.assetRef())) {
+                throw new AssetIdempotencyConflictException();
+            }
+            if (!"RELEASED".equals(current.status())) throw new AssetClaimRejectedException();
+            return new SalesMenuAssetCommandApi.ReleaseReadback(
+                    storedSalesMenuTarget(current),
+                    current.assetRef(),
+                    current.releasedAt() == null ? time.currentEpochMillis() : current.releasedAt(),
+                    current.version());
+        }
+        if (!"STAGED".equals(current.status()) || current.version() != command.expectedVersion()) {
+            throw new AssetClaimRejectedException();
+        }
+        long releasedAt = time.currentEpochMillis();
+        int changed = jdbc.update(
+                "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, "
+                        + "version=version+1 WHERE asset_ref=? AND usage=? AND status='STAGED' AND version=? "
+                        + "AND workspace_uuid=? AND group_workspace_key=?",
+                releasedAt,
+                command.assetRef(),
+                SALES_MENU_IMAGE_USAGE,
+                command.expectedVersion(),
+                target.workspaceUuid(),
+                target.groupWorkspaceKey());
+        if (changed != 1) throw new AssetClaimRejectedException();
+        AssetReadback released = new AssetReadback(
+                command.assetRef(),
+                SALES_MENU_IMAGE_USAGE,
+                "RELEASED",
+                command.expectedVersion() + 1,
+                current.sizeBytes());
+        recordReleaseReceipt(receiptScope, command.idempotencyKey(), command.assetRef(), requestHash, released);
+        return new SalesMenuAssetCommandApi.ReleaseReadback(
+                storedSalesMenuTarget(current), command.assetRef(), releasedAt, released.version());
+    }
+
+    /** Claims all newly staged refs atomically after locking every asset and its owner-local target row. */
+    @Override
+    @Transactional
+    public SalesMenuAssetCommandApi.ClaimReadback claimSalesMenuItemImages(
+            SalesMenuAssetTarget target,
+            OperationsOwnerScopeGrant ownerScopeGrant,
+            long contextVersion,
+            List<SalesMenuAssetCommandApi.AssetBinding> bindings) {
+        requireSalesMenuOwnerScope(target, ownerScopeGrant, contextVersion, SALES_MENU_CLAIM_REQUIREMENT);
+        List<SalesMenuAssetCommandApi.AssetBinding> requested = bindings == null ? List.of() : List.copyOf(bindings);
+        LinkedHashSet<UUID> refs = new LinkedHashSet<>();
+        for (SalesMenuAssetCommandApi.AssetBinding binding : requested) {
+            if (binding == null || !refs.add(binding.assetRef())) throw new AssetInputInvalidException();
+        }
+        Map<UUID, SalesMenuAssetRow> locked = new LinkedHashMap<>();
+        refs.stream().sorted().forEach(assetRef -> locked.put(assetRef, lockSalesMenuAssetAndTarget(assetRef, target)));
+        long now = time.currentEpochMillis();
+        List<SalesMenuAssetCommandApi.AssetMetadata> claimed = new ArrayList<>();
+        for (SalesMenuAssetCommandApi.AssetBinding binding : requested) {
+            SalesMenuAssetRow current = locked.get(binding.assetRef());
+            if (!"STAGED".equals(current.status())) throw new AssetClaimRejectedException();
+            String proof = sha256(binding.bindGrant().getBytes(StandardCharsets.UTF_8));
+            int consumed = jdbc.update(
+                    "UPDATE platform_asset.asset_bind_grant g SET consumed_at_epoch_millis=? FROM "
+                            + "platform_asset.staged_asset a WHERE g.asset_ref=? AND a.asset_ref=g.asset_ref "
+                            + "AND a.status='STAGED' AND a.usage=? AND a.workspace_uuid=? AND "
+                            + "a.group_workspace_key=? AND g.consumed_at_epoch_millis IS NULL "
+                            + "AND g.expires_at_epoch_millis>=? AND g.grant_hash=?",
+                    now,
+                    binding.assetRef(),
+                    SALES_MENU_IMAGE_USAGE,
+                    target.workspaceUuid(),
+                    target.groupWorkspaceKey(),
+                    now,
+                    proof);
+            if (consumed != 1) throw new AssetClaimRejectedException();
+            SalesMenuAssetCommandApi.AssetMetadata activated =
+                    activateSalesMenuAsset(binding.assetRef(), target, current.version(), now);
+            claimed.add(activated);
+        }
+        return new SalesMenuAssetCommandApi.ClaimReadback(target, claimed);
     }
 
     @Override
@@ -893,6 +1067,55 @@ public class PlatformAssetService
                 });
     }
 
+    /**
+     * Bounded owner task read for sales-menu item images. The caller supplies only opaque refs; usage and lifecycle
+     * metadata are selected and returned by this owner in the same query.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Map<UUID, SalesMenuAssetReadApi.SalesMenuItemImage> readSalesMenuItemImages(Set<UUID> assetRefs) {
+        LinkedHashSet<UUID> distinct = new LinkedHashSet<>(assetRefs == null ? List.of() : assetRefs);
+        if (distinct.isEmpty()) return Map.of();
+        if (distinct.contains(null)) throw new AssetNotFoundException();
+        String placeholders = String.join(",", java.util.Collections.nCopies(distinct.size(), "?"));
+        List<UUID> ids = List.copyOf(distinct);
+        Map<UUID, SalesMenuAssetReadApi.SalesMenuItemImage> images = jdbc.query(
+                "SELECT asset_ref, object_key, content_type, sha256, usage, status, version, size_bytes "
+                        + "FROM platform_asset.staged_asset WHERE usage='SALES_MENU_ITEM_IMAGE' AND status='ACTIVE' "
+                        + "AND asset_ref IN ("
+                        + placeholders
+                        + ")",
+                statement -> {
+                    for (int index = 0; index < ids.size(); index++) statement.setObject(index + 1, ids.get(index));
+                },
+                result -> {
+                    Map<UUID, SalesMenuAssetReadApi.SalesMenuItemImage> resultById = new LinkedHashMap<>();
+                    while (result.next()) {
+                        UUID assetRef = result.getObject("asset_ref", UUID.class);
+                        String usage = result.getString("usage");
+                        if (!SALES_MENU_IMAGE_USAGE.equals(usage)) {
+                            throw new AssetInvariantViolationException("owner.sales-menu-read-usage");
+                        }
+                        resultById.put(
+                                assetRef,
+                                new SalesMenuAssetReadApi.SalesMenuItemImage(
+                                        assetRef,
+                                        new SalesMenuAssetReadApi.PublicReference(
+                                                objects.publicUrl(result.getString("object_key")),
+                                                result.getString("content_type"),
+                                                result.getString("sha256")),
+                                        SalesMenuAssetUsage.SALES_MENU_ITEM_IMAGE,
+                                        result.getString("status"),
+                                        result.getLong("version"),
+                                        result.getLong("size_bytes")));
+                    }
+                    return resultById;
+                });
+        if (images.size() != ids.size()) throw new AssetNotFoundException();
+        for (UUID id : ids) if (!images.containsKey(id)) throw new AssetNotFoundException();
+        return Map.copyOf(images);
+    }
+
     private AssetReadback requireCatalogAssetInWorkspace(UUID assetRef, UUID workspaceUuid) {
         return jdbc.query(
                 "SELECT asset_ref, usage, status, version, size_bytes FROM platform_asset.staged_asset WHERE "
@@ -968,9 +1191,9 @@ public class PlatformAssetService
     }
 
     private static boolean validUsageContentType(String usage, String contentType) {
-        // R5 currently approves a logo usage only. Video support stays in the object adapter/public origin,
-        // but it may not be smuggled into the logo command before a video owner usage is approved.
-        boolean approvedUsage = "GROUP_WORKSPACE_LOGO".equals(usage) || "CATALOG_ITEM_IMAGE".equals(usage);
+        boolean approvedUsage = "GROUP_WORKSPACE_LOGO".equals(usage)
+                || "CATALOG_ITEM_IMAGE".equals(usage)
+                || SALES_MENU_IMAGE_USAGE.equals(usage);
         return approvedUsage
                 && ("image/png".equals(contentType)
                         || "image/jpeg".equals(contentType)
@@ -1014,12 +1237,13 @@ public class PlatformAssetService
         };
     }
 
-    private static long maxBytes(String contentType) {
+    private static long maxBytes(String usage, String contentType) {
+        if (SALES_MENU_IMAGE_USAGE.equals(usage)) return MAX_SALES_MENU_IMAGE_BYTES;
         return "video/mp4".equals(contentType) ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
     }
 
     private static MaterializedContent materializeAndValidate(
-            String contentType, long declaredSizeBytes, InputStream source) {
+            String usage, String contentType, long declaredSizeBytes, InputStream source) {
         Path file;
         try {
             file = Files.createTempFile("catering-v2s-asset-", ".upload");
@@ -1040,7 +1264,7 @@ public class PlatformAssetService
             byte[] buffer = new byte[8192];
             for (int read; (read = input.read(buffer)) != -1; ) {
                 size += read;
-                if (size > maxBytes(contentType)) throw new AssetInputInvalidException();
+                if (size > maxBytes(usage, contentType)) throw new AssetInputInvalidException();
                 int copied = Math.min(read, prefix.length - prefixLength);
                 if (copied > 0) {
                     System.arraycopy(buffer, 0, prefix, prefixLength, copied);
@@ -1256,6 +1480,188 @@ public class PlatformAssetService
                 new AssetReadback(assetRef, usage, status, version, sizeBytes));
     }
 
+    private static void requireSalesMenuOwnerScope(
+            SalesMenuAssetTarget target,
+            OperationsOwnerScopeGrant ownerScopeGrant,
+            long contextVersion,
+            String expectedRequirementId) {
+        requireSalesMenuTarget(target);
+        if (ownerScopeGrant == null
+                || contextVersion < 0
+                || !ownerScopeGrant.matchesExpectedContextVersion(contextVersion)
+                || !ownerScopeGrant.matchesRequirementAndCapability(
+                        target.workspaceUuid(),
+                        target.groupWorkspaceKey(),
+                        SALES_MENU_TARGET_TYPE,
+                        target.storeRef(),
+                        expectedRequirementId,
+                        SALES_MENU_CAPABILITY)) {
+            throw new AssetOwnerScopeForbiddenException();
+        }
+    }
+
+    private static void requireSalesMenuTarget(SalesMenuAssetTarget target) {
+        if (target == null || target.usage() != SalesMenuAssetUsage.SALES_MENU_ITEM_IMAGE) {
+            throw new AssetInputInvalidException();
+        }
+    }
+
+    private void writeSalesMenuAssetTarget(UUID assetRef, SalesMenuAssetTarget target, long now) {
+        requireSalesMenuTarget(target);
+        int inserted = jdbc.update(
+                "INSERT INTO platform_asset.sales_menu_asset_target (asset_ref, workspace_uuid, "
+                        + "group_workspace_key, store_ref, sales_menu_ref, sales_item_ref, usage, "
+                        + "expected_draft_version, created_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                assetRef,
+                target.workspaceUuid(),
+                target.groupWorkspaceKey(),
+                target.storeRef(),
+                target.salesMenuRef(),
+                target.salesItemRef(),
+                SALES_MENU_IMAGE_USAGE,
+                target.expectedDraftVersion(),
+                now);
+        if (inserted != 1) throw new AssetInvariantViolationException("owner.sales-menu-target-write");
+    }
+
+    private static String salesMenuTargetKey(SalesMenuAssetTarget target) {
+        if (target == null) return "";
+        return target.workspaceUuid()
+                + "|"
+                + target.groupWorkspaceKey()
+                + "|"
+                + target.storeRef()
+                + "|"
+                + target.salesMenuRef()
+                + "|"
+                + target.salesItemRef()
+                + "|"
+                + target.usage().name()
+                + "|"
+                + target.expectedDraftVersion();
+    }
+
+    private static String salesMenuRequestHash(
+            String operation, SalesMenuAssetTarget target, UUID assetRef, long expectedVersion) {
+        return sha256((operation + "|" + salesMenuTargetKey(target) + "|" + assetRef + "|" + expectedVersion)
+                .getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static String salesMenuReleaseRequestHash(
+            String operation, SalesMenuAssetTarget target, UUID assetRef, long expectedVersion) {
+        return sha256((operation + "|" + salesMenuReleaseTargetKey(target) + "|" + assetRef + "|" + expectedVersion)
+                .getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static String salesMenuReleaseTargetKey(SalesMenuAssetTarget target) {
+        if (target == null) return "";
+        return target.workspaceUuid()
+                + "|"
+                + target.groupWorkspaceKey()
+                + "|"
+                + target.storeRef()
+                + "|"
+                + target.salesMenuRef()
+                + "|"
+                + target.salesItemRef()
+                + "|"
+                + target.usage().name();
+    }
+
+    private void requireSalesMenuAssetTargetRow(UUID assetRef, SalesMenuAssetTarget target) {
+        lockSalesMenuAssetAndTarget(assetRef, target);
+    }
+
+    private SalesMenuAssetRow lockSalesMenuAssetAndTarget(UUID assetRef, SalesMenuAssetTarget target) {
+        requireSalesMenuTarget(target);
+        SalesMenuAssetRow row = readLockedSalesMenuAssetAndTarget(assetRef);
+        if (!row.matches(target)) throw new AssetOwnerScopeForbiddenException();
+        return row;
+    }
+
+    private SalesMenuAssetRow lockSalesMenuAssetAndTargetForRelease(UUID assetRef, SalesMenuAssetTarget target) {
+        requireSalesMenuTarget(target);
+        SalesMenuAssetRow row = readLockedSalesMenuAssetAndTarget(assetRef);
+        if (!row.matchesRelease(target)) throw new AssetOwnerScopeForbiddenException();
+        return row;
+    }
+
+    private SalesMenuAssetRow readLockedSalesMenuAssetAndTarget(UUID assetRef) {
+        SalesMenuAssetRow row = jdbc.query(
+                "SELECT a.asset_ref AS asset_ref, a.usage AS asset_usage, a.status AS asset_status, "
+                        + "a.version AS asset_version, a.workspace_uuid AS asset_workspace_uuid, "
+                        + "a.group_workspace_key AS asset_group_workspace_key, a.size_bytes AS asset_size_bytes, "
+                        + "a.released_at_epoch_millis AS asset_released_at, "
+                        + "t.workspace_uuid AS target_workspace_uuid, "
+                        + "t.group_workspace_key AS target_group_workspace_key, t.store_ref AS target_store_ref, "
+                        + "t.sales_menu_ref AS target_sales_menu_ref, t.sales_item_ref AS target_sales_item_ref, "
+                        + "t.usage AS target_usage, t.expected_draft_version AS target_expected_draft_version "
+                        + "FROM platform_asset.staged_asset a "
+                        + "JOIN platform_asset.sales_menu_asset_target t ON t.asset_ref=a.asset_ref "
+                        + "WHERE a.asset_ref=? FOR UPDATE OF a, t",
+                statement -> statement.setObject(1, assetRef),
+                result -> result.next()
+                        ? new SalesMenuAssetRow(
+                                result.getObject("asset_ref", UUID.class),
+                                result.getString("asset_usage"),
+                                result.getString("asset_status"),
+                                result.getLong("asset_version"),
+                                result.getObject("asset_workspace_uuid", UUID.class),
+                                result.getString("asset_group_workspace_key"),
+                                result.getLong("asset_size_bytes"),
+                                result.getObject("asset_released_at", Long.class),
+                                result.getObject("target_workspace_uuid", UUID.class),
+                                result.getString("target_group_workspace_key"),
+                                result.getObject("target_store_ref", UUID.class),
+                                result.getObject("target_sales_menu_ref", UUID.class),
+                                result.getObject("target_sales_item_ref", UUID.class),
+                                result.getString("target_usage"),
+                                result.getLong("target_expected_draft_version"))
+                        : null);
+        if (row == null) throw new AssetOwnerScopeForbiddenException();
+        return row;
+    }
+
+    private static SalesMenuAssetTarget storedSalesMenuTarget(SalesMenuAssetRow row) {
+        return new SalesMenuAssetTarget(
+                row.targetWorkspaceUuid(),
+                row.targetGroupWorkspaceKey(),
+                row.storeRef(),
+                row.salesMenuRef(),
+                row.salesItemRef(),
+                SalesMenuAssetUsage.valueOf(row.targetUsage()),
+                row.expectedDraftVersion());
+    }
+
+    private SalesMenuAssetCommandApi.AssetMetadata activateSalesMenuAsset(
+            UUID assetRef, SalesMenuAssetTarget target, long expectedVersion, long now) {
+        SalesMenuAssetCommandApi.AssetMetadata activated = jdbc.query(
+                "UPDATE platform_asset.staged_asset SET status='ACTIVE', claimed_by_type=?, claimed_by_id=?, "
+                        + "activated_at_epoch_millis=?, version=version+1 WHERE asset_ref=? AND usage=? "
+                        + "AND status='STAGED' AND version=? AND workspace_uuid=? AND group_workspace_key=? "
+                        + "RETURNING asset_ref, usage, status, version, size_bytes",
+                statement -> {
+                    statement.setString(1, SALES_MENU_IMAGE_USAGE);
+                    statement.setObject(2, target.salesItemRef());
+                    statement.setLong(3, now);
+                    statement.setObject(4, assetRef);
+                    statement.setString(5, SALES_MENU_IMAGE_USAGE);
+                    statement.setLong(6, expectedVersion);
+                    statement.setObject(7, target.workspaceUuid());
+                    statement.setString(8, target.groupWorkspaceKey());
+                },
+                result -> result.next()
+                        ? new SalesMenuAssetCommandApi.AssetMetadata(
+                                result.getObject("asset_ref", UUID.class),
+                                result.getString("usage"),
+                                result.getString("status"),
+                                result.getLong("version"),
+                                result.getLong("size_bytes"))
+                        : null);
+        if (activated == null) throw new AssetClaimRejectedException();
+        return activated;
+    }
+
     private static void requireCatalogOwnerScopeGrant(
             UUID workspaceUuid,
             String groupWorkspaceKey,
@@ -1448,6 +1854,50 @@ public class PlatformAssetService
             String contentType,
             long sizeBytes,
             String sha256) {}
+
+    private record SalesMenuAssetRow(
+            UUID assetRef,
+            String usage,
+            String status,
+            long version,
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            long sizeBytes,
+            Long releasedAt,
+            UUID targetWorkspaceUuid,
+            String targetGroupWorkspaceKey,
+            UUID storeRef,
+            UUID salesMenuRef,
+            UUID salesItemRef,
+            String targetUsage,
+            long expectedDraftVersion) {
+        private boolean matches(SalesMenuAssetTarget target) {
+            return workspaceUuid.equals(target.workspaceUuid())
+                    && targetWorkspaceUuid.equals(target.workspaceUuid())
+                    && groupWorkspaceKey.equals(target.groupWorkspaceKey())
+                    && targetGroupWorkspaceKey.equals(target.groupWorkspaceKey())
+                    && storeRef.equals(target.storeRef())
+                    && salesMenuRef.equals(target.salesMenuRef())
+                    && salesItemRef.equals(target.salesItemRef())
+                    && SALES_MENU_IMAGE_USAGE.equals(usage)
+                    && SALES_MENU_IMAGE_USAGE.equals(targetUsage)
+                    && target.usage() == SalesMenuAssetUsage.SALES_MENU_ITEM_IMAGE
+                    && expectedDraftVersion == target.expectedDraftVersion();
+        }
+
+        private boolean matchesRelease(SalesMenuAssetTarget target) {
+            return workspaceUuid.equals(target.workspaceUuid())
+                    && targetWorkspaceUuid.equals(target.workspaceUuid())
+                    && groupWorkspaceKey.equals(target.groupWorkspaceKey())
+                    && targetGroupWorkspaceKey.equals(target.groupWorkspaceKey())
+                    && storeRef.equals(target.storeRef())
+                    && salesMenuRef.equals(target.salesMenuRef())
+                    && salesItemRef.equals(target.salesItemRef())
+                    && SALES_MENU_IMAGE_USAGE.equals(usage)
+                    && SALES_MENU_IMAGE_USAGE.equals(targetUsage)
+                    && target.usage() == SalesMenuAssetUsage.SALES_MENU_ITEM_IMAGE;
+        }
+    }
 
     public static final class AssetInputInvalidException extends RuntimeException {}
 

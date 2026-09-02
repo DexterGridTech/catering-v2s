@@ -13,7 +13,8 @@ type RuntimeStateSyncAccessor = Readonly<{
 
 const accessors = new WeakMap<object, () => StateRuntime | undefined>()
 
-export const registerRuntimeStateSyncForTest = (
+/** Production registers this test-only read accessor; the StateRuntime itself remains internal. */
+export const registerRuntimeStateSyncAccessorForTest = (
   runtime: Runtime,
   getStateRuntime: () => StateRuntime | undefined,
 ): void => {

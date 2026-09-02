@@ -23,6 +23,7 @@ public final class EdgeRequestContext {
     private final String requestedBrandRef;
     private final String catalogTestFailurePoint;
     private final String catalogAssetBindGrants;
+    private final String salesMenuAssetBindGrants;
 
     public EdgeRequestContext(
             String rateLimitSourceFingerprint,
@@ -43,6 +44,7 @@ public final class EdgeRequestContext {
                 null,
                 null,
                 null,
+                null,
                 null);
     }
 
@@ -58,6 +60,34 @@ public final class EdgeRequestContext {
             String requestedBrandRef,
             String catalogTestFailurePoint,
             String catalogAssetBindGrants) {
+        this(
+                rateLimitSourceFingerprint,
+                correlationId,
+                platformSessionCookie,
+                operationsSessionCookie,
+                platformRecoveryFlow,
+                operationsRecoveryFlow,
+                operationsRecoveryGrant,
+                requestId,
+                requestedBrandRef,
+                catalogTestFailurePoint,
+                catalogAssetBindGrants,
+                null);
+    }
+
+    public EdgeRequestContext(
+            String rateLimitSourceFingerprint,
+            String correlationId,
+            PlatformSessionCookie platformSessionCookie,
+            OperationsSessionCookie operationsSessionCookie,
+            PasswordRecoveryFlowCredential platformRecoveryFlow,
+            RecoveryFlowCredential operationsRecoveryFlow,
+            RecoveryGrantCredential operationsRecoveryGrant,
+            String requestId,
+            String requestedBrandRef,
+            String catalogTestFailurePoint,
+            String catalogAssetBindGrants,
+            String salesMenuAssetBindGrants) {
         this.rateLimitSourceFingerprint = rateLimitSourceFingerprint;
         this.correlationId = correlationId;
         this.platformSessionCookie = platformSessionCookie;
@@ -70,6 +100,7 @@ public final class EdgeRequestContext {
         this.requestedBrandRef = requestedBrandRef;
         this.catalogTestFailurePoint = catalogTestFailurePoint;
         this.catalogAssetBindGrants = catalogAssetBindGrants;
+        this.salesMenuAssetBindGrants = salesMenuAssetBindGrants;
     }
 
     public String rateLimitSourceFingerprint() {
@@ -114,5 +145,9 @@ public final class EdgeRequestContext {
 
     public String catalogAssetBindGrants() {
         return catalogAssetBindGrants;
+    }
+
+    public String salesMenuAssetBindGrants() {
+        return salesMenuAssetBindGrants;
     }
 }

@@ -13,7 +13,9 @@ import com.catering.v2s.app.edge.externalcollaboration.ExternalCollaborationBusi
 import com.catering.v2s.app.edge.generated.backendperformancem1.BackendPerformanceM1CommandExecutionBindings;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionCookie;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
+import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
+import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
 import com.catering.v2s.collaboration.api.CollaborationBindingReadApi;
@@ -47,10 +49,84 @@ class OperationsBusinessChannelControllerScopeTest {
 
         assertThrows(
                 WorkspaceUserService.TaskScopeDeniedException.class,
-                () -> fixture.controller.storeChannels(fixture.request, KEY, foreignStore, null, null));
+                () -> fixture.controller.storeChannels(
+                        fixture.request, KEY, foreignStore, "SALES_MENU", null, null, null, null));
 
         verify(fixture.organizationReads).store(fixture.workspaceId, KEY, foreignStore);
-        verify(fixture.channels, never()).pageChannels(any(), any(), any(), any(), any(), any(), any());
+        verify(fixture.salesMenuChannels, never())
+                .listSalesMenuEligibleChannels(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void salesMenuChannelListUsesTheEligibleOwnerAndFixedProductPageSize() {
+        Fixture fixture = fixture();
+        OrganizationOverviewTaskReadService.Item store = mock(OrganizationOverviewTaskReadService.Item.class);
+        when(store.project())
+                .thenReturn(new OrganizationOverviewTaskReadService.Reference(
+                        fixture.projectId, "PROJECT-01", "Project 01", true));
+        when(fixture.organizationReads.store(fixture.workspaceId, KEY, fixture.selectedStoreId))
+                .thenReturn(store);
+        UUID channelRef = UUID.randomUUID();
+        UUID templateRef = UUID.randomUUID();
+        when(fixture.salesMenuChannels.listSalesMenuEligibleChannels(
+                        fixture.workspaceId,
+                        KEY,
+                        fixture.selectedStoreId.toString(),
+                        "cursor-1",
+                        20,
+                        "CHANNEL_NAME",
+                        "ASC"))
+                .thenReturn(new BusinessChannelOwnerApi.SalesMenuEligibleChannelPage(
+                        List.of(new BusinessChannelOwnerApi.SalesMenuEligibleChannel(
+                                channelRef,
+                                templateRef,
+                                fixture.selectedStoreId.toString(),
+                                "DINE-IN-01",
+                                "堂食入口",
+                                "INTERNAL",
+                                "STORE",
+                                "DINE_IN",
+                                "NOT_REQUIRED",
+                                "ENABLED",
+                                List.of(),
+                                List.of(),
+                                4L)),
+                        "cursor-1",
+                        "cursor-2"));
+
+        var result = fixture.controller.storeChannels(
+                fixture.request, KEY, fixture.selectedStoreId, "SALES_MENU", "cursor-1", null, "CHANNEL_NAME", "ASC");
+
+        assertEquals(1, result.items().size());
+        assertEquals(channelRef, result.items().getFirst().channelRef());
+        assertEquals("STORE", result.items().getFirst().ownerNodeType().name());
+        assertEquals("cursor-2", result.nextCursor());
+        verify(fixture.salesMenuChannels)
+                .listSalesMenuEligibleChannels(
+                        fixture.workspaceId,
+                        KEY,
+                        fixture.selectedStoreId.toString(),
+                        "cursor-1",
+                        20,
+                        "CHANNEL_NAME",
+                        "ASC");
+    }
+
+    @Test
+    void salesMenuChannelListRejectsWrongUsageOrNonProductPageSizeBeforeOwnerRead() {
+        Fixture fixture = fixture();
+
+        assertThrows(
+                InvalidEdgeRequestException.class,
+                () -> fixture.controller.storeChannels(
+                        fixture.request, KEY, fixture.selectedStoreId, "BUSINESS_CHANNEL", null, null, null, null));
+        assertThrows(
+                InvalidEdgeRequestException.class,
+                () -> fixture.controller.storeChannels(
+                        fixture.request, KEY, fixture.selectedStoreId, "SALES_MENU", null, 10, null, null));
+
+        verify(fixture.salesMenuChannels, never())
+                .listSalesMenuEligibleChannels(any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -184,6 +260,7 @@ class OperationsBusinessChannelControllerScopeTest {
                 selectedStoreId);
         OperationsSessionResolver sessions = mock(OperationsSessionResolver.class);
         BusinessChannelReadApi channels = mock(BusinessChannelReadApi.class);
+        BusinessChannelOwnerApi salesMenuChannels = mock(BusinessChannelOwnerApi.class);
         BackendPerformanceM1CommandExecutionBindings commands =
                 mock(BackendPerformanceM1CommandExecutionBindings.class);
         WorkspaceCapabilityScopeResolver capabilities = mock(WorkspaceCapabilityScopeResolver.class);
@@ -194,7 +271,15 @@ class OperationsBusinessChannelControllerScopeTest {
                 mock(ExternalCollaborationBusinessChannelCoordinator.class);
         when(sessions.requireWorkspaceRead(any(), eq(KEY))).thenReturn(session);
         OperationsBusinessChannelController controller = new OperationsBusinessChannelController(
-                sessions, channels, commands, capabilities, bindings, organizationReads, authorization, coordinator);
+                sessions,
+                channels,
+                salesMenuChannels,
+                commands,
+                capabilities,
+                bindings,
+                organizationReads,
+                authorization,
+                coordinator);
         return new Fixture(
                 workspaceId,
                 projectId,
@@ -210,6 +295,7 @@ class OperationsBusinessChannelControllerScopeTest {
                         null),
                 controller,
                 channels,
+                salesMenuChannels,
                 bindings,
                 organizationReads,
                 authorization);
@@ -223,6 +309,7 @@ class OperationsBusinessChannelControllerScopeTest {
             EdgeRequestContext request,
             OperationsBusinessChannelController controller,
             BusinessChannelReadApi channels,
+            BusinessChannelOwnerApi salesMenuChannels,
             CollaborationBindingReadApi bindings,
             OperationsOrganizationTaskReadService organizationReads,
             WorkspaceUserService authorization) {}

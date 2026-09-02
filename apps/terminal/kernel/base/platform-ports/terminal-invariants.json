@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/kernel-base-platform-ports",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-platform-ports", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": [
+    "AppControlCall", "AppControlPort", "ApplicationToggleInput", "CapabilityUnavailableReason", "ConnectorCallRequest", "ConnectorCallResponse", "ConnectorChannelRef", "ConnectorError", "ConnectorEvent", "ConnectorMessage", "ConnectorObject", "ConnectorOnInput", "ConnectorPort", "ConnectorScalar", "ConnectorSubscribeInput", "ConnectorSubscription", "ConnectorSubscriptionError", "ConnectorUnsubscribeInput", "ConnectorValue", "CreatePlatformPortsInput", "DeviceCall", "DeviceInfo", "DevicePort", "DisplayInfo", "EnvironmentMode", "ExitApplicationInput", "ExitTransitionObservation", "HotUpdateCall", "HotUpdateDownloadInput", "HotUpdateInstall", "HotUpdateMarker", "HotUpdateMarkerInput", "HotUpdateMarkerRead", "HotUpdateMarkerWrite", "HotUpdatePort", "LogContext", "LogError", "LogEvent", "LogFields", "LogLevel", "LogMaskingMode", "LogPrimitive", "LogScope", "LogScopeBinding", "LogSecurity", "LogUploadInput", "LogUploadOutput", "LogUploadPort", "LogValue", "LogWriteInput", "LogWriteResult", "LoggerBinding", "LoggerConsoleBinding", "LoggerPort", "LoggerSinkBinding", "MemoryStatus", "NativeFunctionDispatcher", "NativeFunctionInvocation", "NativeFunctionOutput", "NativeLoadingInput", "NetworkStatus", "NoOutput", "PlatformPortBindings", "PlatformPortName", "PlatformPorts", "PortAccepted", "PortActionResult", "PortError", "PortFailure", "PortResult", "PortSucceeded", "PortTimedOut", "PortUnavailable", "PowerStatus", "PowerStatusChanged", "PowerStatusListener", "PowerStatusSubscriptionInput", "PowerStatusUnsubscribeInput", "ProcessorStatus", "RuntimeResetInput", "RuntimeTransitionObservation", "ScriptCall", "ScriptExecutionInput", "ScriptExecutionOutput", "ScriptNativeBindings", "ScriptPort", "ScriptStats", "StateStorageCall", "StateStorageEntriesInput", "StateStorageEntry", "StateStorageKeysInput", "StateStoragePort", "StateStorageReadEntry", "StateStorageReadInput", "StateStorageReadValue", "StateStorageWriteInput", "StorageStatus", "SurfaceActionInput", "SurfaceToggleInput", "SystemStatus", "ToggleState", "TopologyHostAddress", "TopologyHostCall", "TopologyHostConfig", "TopologyHostDiagnostics", "TopologyHostPort", "TopologyHostRuntimeConfig", "TopologyHostState", "TopologyHostStats", "TopologyHostStatus", "UploadedLogFile", "consoleLoggerBinding", "createPlatformPorts", "createProcessMemoryStateStoragePort", "dependencyModuleNames", "devDependencyModuleNames", "moduleName", "unavailableAppControlPort", "unavailableConnectorPort", "unavailableDevicePort", "unavailableHotUpdatePort", "unavailableLogUploadPort", "unavailablePersistSecurePort", "unavailableScriptPort", "unavailableTopologyHostPort"
+  ],
+  "portKeys": ["logger", "persistKv", "persistSecure", "device", "appControl", "script", "connector", "hotUpdate", "logUpload", "topologyHost"],
+  "portMethods": {
+    "LoggerPort": ["debug", "info", "warn", "error", "scope", "withContext"],
+    "StateStoragePort": ["read", "write", "remove", "readMany", "writeMany", "removeMany", "listKeys", "clear"],
+    "DevicePort": ["getDeviceInfo", "getDisplayInfo", "getSystemStatus", "getPowerStatus", "subscribePowerStatus", "unsubscribePowerStatus"],
+    "AppControlPort": ["resetRuntime", "exitApplication", "clearHostDataCache", "setFullscreen", "getFullscreen", "setKioskMode", "getKioskMode", "showNativeLoading", "hideNativeLoading"],
+    "ScriptPort": ["execute", "getStats", "clearStats"],
+    "ConnectorPort": ["call", "subscribe", "unsubscribe", "on"],
+    "HotUpdatePort": ["downloadPackage", "writeBootMarker", "readBootMarker", "readActiveMarker", "readRollbackMarker", "clearBootMarker", "confirmLoadComplete"],
+    "LogUploadPort": ["uploadLogsForDate"],
+    "TopologyHostPort": ["start", "stop", "getStatus", "getDiagnosticsSnapshot"]
+  }
+}

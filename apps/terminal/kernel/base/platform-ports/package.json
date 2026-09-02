@@ -7,7 +7,7 @@
   },
   "scripts": {
     "typecheck": "tsc --project tsconfig.json --noEmit",
-    "test": "vitest run --config vitest.config.ts && node -e \"console.log('TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-platform-ports')\""
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
   },
   "dependencies": {
     "@catering-v2s/kernel-base-contracts": "workspace:*"

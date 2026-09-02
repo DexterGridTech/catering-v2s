@@ -21,20 +21,13 @@ import type {
 import {
   stateRuntimeSliceRegistrationBrand,
 } from '../types/slice'
+import {assertNonEmptyString} from './assertNonEmptyString'
+import {isObject} from './isObject'
 
 const registeredSlices = new WeakMap<
   StateRuntimeSliceRegistration,
   RegisteredStateRuntimeSlice
 >()
-
-const isObject = (value: unknown): value is object =>
-  typeof value === 'object' && value !== null
-
-function assertNonEmpty(value: unknown, label: string): void {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new Error(`[defineStateRuntimeSlice] ${label} must be non-empty`)
-  }
-}
 
 function assertFunction(value: unknown, label: string): void {
   if (typeof value !== 'function') {
@@ -44,7 +37,7 @@ function assertFunction(value: unknown, label: string): void {
 
 const assertOptionalNonEmpty = (value: unknown, label: string): void => {
   if (value !== undefined) {
-    assertNonEmpty(value, label)
+    assertNonEmptyString(value, 'defineStateRuntimeSlice', label)
   }
 }
 
@@ -105,7 +98,7 @@ const makeRegisteredPersistence = <TState extends object>(
   }
 
   if (descriptor.kind === 'field') {
-    assertNonEmpty(descriptor.stateKey, 'persistence.stateKey')
+    assertNonEmptyString(descriptor.stateKey, 'defineStateRuntimeSlice', 'persistence.stateKey')
     assertOptionalNonEmpty(descriptor.storageKey, 'persistence.storageKey')
     const stateKey = descriptor.stateKey
     const shouldPersist = descriptor.shouldPersist
@@ -220,7 +213,7 @@ const makeRegisteredReducer = <TState extends object>(
 export const defineStateRuntimeSlice = <TState extends object>(
   descriptor: StateRuntimeSliceDescriptor<TState>,
 ): StateRuntimeSliceRegistration => {
-  assertNonEmpty(descriptor.name, 'name')
+  assertNonEmptyString(descriptor.name, 'defineStateRuntimeSlice', 'name')
   assertFunction(descriptor.reducer, `${descriptor.name}.reducer`)
   const persistence = assertPersistenceDeclaration(descriptor)
   const sync = assertSyncDeclaration(descriptor)

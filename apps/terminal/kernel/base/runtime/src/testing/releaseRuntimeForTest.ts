@@ -1,39 +1,20 @@
+/** The resource registry is production lifecycle infrastructure; this module only exposes it to tests. */
+import {type RuntimeResourceRegistry} from '../foundations/createRuntimeResourceRegistry'
 import type {Runtime} from '../types/runtime'
 
-type RuntimeTestResourceRegistry = Readonly<{
-  register: (cleanup: () => void) => () => void
-  release: () => number
-}>
+const registries = new WeakMap<object, RuntimeResourceRegistry>()
 
-const registries = new WeakMap<object, RuntimeTestResourceRegistry>()
-
-export const createRuntimeTestResourceRegistry = (): RuntimeTestResourceRegistry => {
-  const cleanups = new Set<() => void>()
-  const registry: RuntimeTestResourceRegistry = {
-    register: (cleanup: () => void): (() => void) => {
-      cleanups.add(cleanup)
-      return () => { cleanups.delete(cleanup) }
-    },
-    release: (): number => {
-      const pending = [...cleanups]
-      cleanups.clear()
-      for (const cleanup of pending) {
-        try { cleanup() } catch { /* test cleanup is best effort */ }
-      }
-      return pending.length
-    },
-  }
-  return registry
-}
-
-export const registerRuntimeTestResources = (
+export const registerRuntimeResourceAccessorForTest = (
   runtime: Runtime,
-  registry: RuntimeTestResourceRegistry,
+  registry: RuntimeResourceRegistry,
 ): void => {
   registries.set(runtime, registry)
 }
 
-/** Test-only cleanup; deliberately absent from the package root exports. */
+/**
+ * Test-only cleanup; deliberately absent from the package root exports.
+ * Runtime has no production-reachable stop or dispose exit, so only tests call this release seam.
+ * Production has no registry-wide drain: resources that remain registered live until process exit.
+ */
 export const releaseRuntimeForTest = (runtime: Runtime): number =>
   registries.get(runtime)?.release() ?? 0
-

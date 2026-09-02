@@ -9,6 +9,20 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "addOperationsSalesMenuItems",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "archiveOperationsSalesMenu",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/archive",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
     "operationId": "cancelOperationsWorkspaceGroupInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel",
@@ -48,6 +62,13 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password",
     "owner": "workspace-iam",
+    "requiresSession": true
+  },
+  {
+    "operationId": "copyOperationsSalesMenu",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies",
+    "owner": "sales-menu",
     "requiresSession": true
   },
   {
@@ -121,6 +142,20 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "createOperationsSalesMenu",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "createOperationsSalesMenuSection",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
     "operationId": "createOperationsWorkspaceGroupInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
@@ -160,6 +195,20 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "method": "DELETE",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
     "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
+    "operationId": "deleteOperationsSalesMenuItem",
+    "method": "DELETE",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "deleteOperationsSalesMenuSection",
+    "method": "DELETE",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}",
+    "owner": "sales-menu",
     "requiresSession": true
   },
   {
@@ -335,6 +384,83 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/business-channels",
     "owner": "business-channel",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsSalesMenu",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsSalesMenuDraftItem",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsSalesMenuDraftItems",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsSalesMenuDraftSections",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsSalesMenuItemCandidates",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/item-candidates",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsSalesMenuOperationRecords",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsSalesMenuPublicationPreview",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsSalesMenuPublishedItem",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsSalesMenuPublishedItems",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsSalesMenuPublishedSections",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsSalesMenus",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus",
+    "owner": "sales-menu",
     "requiresSession": true
   },
   {
@@ -520,6 +646,20 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "moveOperationsSalesMenuItem",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "moveOperationsSalesMenuSection",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/move",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
     "operationId": "operationsWorkspaceLogout",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/logout",
@@ -532,6 +672,13 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login",
     "owner": "workspace-iam",
     "requiresSession": false
+  },
+  {
+    "operationId": "publishOperationsSalesMenu",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications",
+    "owner": "sales-menu",
+    "requiresSession": true
   },
   {
     "operationId": "reissueOperationsWorkspaceGroupInvitation",
@@ -569,10 +716,38 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "releaseOperationsSalesMenuStagedAsset",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
     "operationId": "removeOperationsOrganizationHeadCompanyBrandAuthorization",
     "method": "DELETE",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}",
     "owner": "organization",
+    "requiresSession": true
+  },
+  {
+    "operationId": "renameOperationsSalesMenu",
+    "method": "PATCH",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/name",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "renameOperationsSalesMenuSection",
+    "method": "PATCH",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "restoreOperationsSalesMenuItemSale",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore",
+    "owner": "sales-menu",
     "requiresSession": true
   },
   {
@@ -630,6 +805,27 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send",
     "owner": "workspace-iam",
     "requiresSession": false
+  },
+  {
+    "operationId": "setOperationsSalesMenuActivation",
+    "method": "PUT",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "setOperationsSalesMenuItemSoldOut",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "stageOperationsSalesMenuAsset",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage",
+    "owner": "sales-menu",
+    "requiresSession": true
   },
   {
     "operationId": "transitionOperationsBusinessChannelStatus",
@@ -744,6 +940,20 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "updateOperationsSalesMenuItem",
+    "method": "PUT",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "updateOperationsSalesMenuSchedule",
+    "method": "PUT",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule",
+    "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
     "operationId": "verifyOperationsWorkspaceOtp",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify",
@@ -764,6 +974,36 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
         "from": null,
         "to": 19,
         "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "addOperationsSalesMenuItems": {
+    "kind": "FIXED",
+    "max": 35,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 35,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "archiveOperationsSalesMenu": {
+    "kind": "FIXED",
+    "max": 26,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 26,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
     ]
   },
@@ -848,6 +1088,21 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
         "from": null,
         "to": 10,
         "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "copyOperationsSalesMenu": {
+    "kind": "FIXED",
+    "max": 39,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 39,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
     ]
   },
@@ -991,6 +1246,36 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
       }
     ]
   },
+  "createOperationsSalesMenu": {
+    "kind": "FIXED",
+    "max": 32,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 32,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "createOperationsSalesMenuSection": {
+    "kind": "FIXED",
+    "max": 29,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 29,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
   "createOperationsWorkspaceGroupInvitation": {
     "kind": "FIXED",
     "max": 21,
@@ -1072,6 +1357,36 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
         "from": null,
         "to": 22,
         "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "deleteOperationsSalesMenuItem": {
+    "kind": "FIXED",
+    "max": 31,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 31,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "deleteOperationsSalesMenuSection": {
+    "kind": "FIXED",
+    "max": 30,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 30,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
     ]
   },
@@ -1425,7 +1740,49 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
       }
     ]
   },
-  "getOperationsStoreBusinessChannels": {
+  "getOperationsSalesMenu": {
+    "kind": "FIXED",
+    "max": 14,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 14,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsSalesMenuDraftItem": {
+    "kind": "FIXED",
+    "max": 22,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 22,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsSalesMenuDraftItems": {
+    "kind": "FIXED",
+    "max": 22,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 22,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsSalesMenuDraftSections": {
     "kind": "FIXED",
     "max": 13,
     "measurementScenarioIds": [
@@ -1435,6 +1792,118 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 13,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsSalesMenuItemCandidates": {
+    "kind": "FIXED",
+    "max": 17,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 17,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsSalesMenuOperationRecords": {
+    "kind": "FIXED",
+    "max": 13,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 13,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsSalesMenuPublicationPreview": {
+    "kind": "FIXED",
+    "max": 22,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 22,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsSalesMenuPublishedItem": {
+    "kind": "FIXED",
+    "max": 21,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 21,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsSalesMenuPublishedItems": {
+    "kind": "FIXED",
+    "max": 20,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 20,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsSalesMenuPublishedSections": {
+    "kind": "FIXED",
+    "max": 13,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 13,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsSalesMenus": {
+    "kind": "FIXED",
+    "max": 13,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 13,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsStoreBusinessChannels": {
+    "kind": "FIXED",
+    "max": 12,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 12,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -1789,6 +2258,36 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
       }
     ]
   },
+  "moveOperationsSalesMenuItem": {
+    "kind": "FIXED",
+    "max": 34,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 34,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "moveOperationsSalesMenuSection": {
+    "kind": "FIXED",
+    "max": 34,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 34,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
   "operationsWorkspaceLogout": {
     "kind": "FIXED",
     "max": 4,
@@ -1814,6 +2313,21 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
         "from": null,
         "to": 22,
         "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "publishOperationsSalesMenu": {
+    "kind": "FIXED",
+    "max": 42,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 42,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
     ]
   },
@@ -1892,6 +2406,21 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
       }
     ]
   },
+  "releaseOperationsSalesMenuStagedAsset": {
+    "kind": "FIXED",
+    "max": 30,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 30,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
   "removeOperationsOrganizationHeadCompanyBrandAuthorization": {
     "kind": "FIXED",
     "max": 20,
@@ -1903,6 +2432,51 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
         "from": null,
         "to": 20,
         "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "renameOperationsSalesMenu": {
+    "kind": "FIXED",
+    "max": 26,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 26,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "renameOperationsSalesMenuSection": {
+    "kind": "FIXED",
+    "max": 29,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 29,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "restoreOperationsSalesMenuItemSale": {
+    "kind": "FIXED",
+    "max": 34,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 34,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
     ]
   },
@@ -2020,6 +2594,51 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
         "from": null,
         "to": 10,
         "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "setOperationsSalesMenuActivation": {
+    "kind": "FIXED",
+    "max": 31,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 31,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "setOperationsSalesMenuItemSoldOut": {
+    "kind": "FIXED",
+    "max": 34,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 34,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "stageOperationsSalesMenuAsset": {
+    "kind": "FIXED",
+    "max": 32,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 32,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
     ]
   },
@@ -2247,6 +2866,36 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
       }
     ]
   },
+  "updateOperationsSalesMenuItem": {
+    "kind": "FIXED",
+    "max": 47,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 47,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
+  "updateOperationsSalesMenuSchedule": {
+    "kind": "FIXED",
+    "max": 28,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 28,
+        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
+        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
+      }
+    ]
+  },
   "verifyOperationsWorkspaceOtp": {
     "kind": "FIXED",
     "max": 21,
@@ -2265,12 +2914,15 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
 
 export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "addOperationsOrganizationHeadCompanyBrandAuthorization": "addOperationsOrganizationHeadCompanyBrandAuthorization",
+  "addOperationsSalesMenuItems": "addOperationsSalesMenuItems",
+  "archiveOperationsSalesMenu": "archiveOperationsSalesMenu",
   "cancelOperationsWorkspaceGroupInvitation": "cancelOperationsWorkspaceGroupInvitation",
   "cancelOperationsWorkspaceHeadCompanyInvitation": "cancelOperationsWorkspaceHeadCompanyInvitation",
   "cancelOperationsWorkspaceProjectInvitation": "cancelOperationsWorkspaceProjectInvitation",
   "cancelOperationsWorkspaceRegionInvitation": "cancelOperationsWorkspaceRegionInvitation",
   "cancelOperationsWorkspaceStoreInvitation": "cancelOperationsWorkspaceStoreInvitation",
   "changeCurrentWorkspacePassword": "changeCurrentWorkspacePassword",
+  "copyOperationsSalesMenu": "copyOperationsSalesMenu",
   "createOperationsBusinessChannel": "createOperationsBusinessChannel",
   "createOperationsBusinessChannelTemplate": "createOperationsBusinessChannelTemplate",
   "createOperationsContract": "createOperationsContract",
@@ -2281,12 +2933,16 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "createOperationsOrganizationStore": "createOperationsOrganizationStore",
   "createOperationsOrganizationTenant": "createOperationsOrganizationTenant",
   "createOperationsOwnerBinding": "createOperationsOwnerBinding",
+  "createOperationsSalesMenu": "createOperationsSalesMenu",
+  "createOperationsSalesMenuSection": "createOperationsSalesMenuSection",
   "createOperationsWorkspaceGroupInvitation": "createOperationsWorkspaceGroupInvitation",
   "createOperationsWorkspaceHeadCompanyInvitation": "createOperationsWorkspaceHeadCompanyInvitation",
   "createOperationsWorkspaceProjectInvitation": "createOperationsWorkspaceProjectInvitation",
   "createOperationsWorkspaceRegionInvitation": "createOperationsWorkspaceRegionInvitation",
   "createOperationsWorkspaceStoreInvitation": "createOperationsWorkspaceStoreInvitation",
   "deleteOperationsOwnerBinding": "deleteOperationsOwnerBinding",
+  "deleteOperationsSalesMenuItem": "deleteOperationsSalesMenuItem",
+  "deleteOperationsSalesMenuSection": "deleteOperationsSalesMenuSection",
   "getOperationsBusinessChannelDetail": "getOperationsBusinessChannelDetail",
   "getOperationsBusinessChannelTemplates": "getOperationsBusinessChannelTemplates",
   "getOperationsContract": "getOperationsContract",
@@ -2312,6 +2968,17 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "getOperationsOrganizationTenants": "getOperationsOrganizationTenants",
   "getOperationsOwnerBindingDetail": "getOperationsOwnerBindingDetail",
   "getOperationsProjectBusinessChannels": "getOperationsProjectBusinessChannels",
+  "getOperationsSalesMenu": "getOperationsSalesMenu",
+  "getOperationsSalesMenuDraftItem": "getOperationsSalesMenuDraftItem",
+  "getOperationsSalesMenuDraftItems": "getOperationsSalesMenuDraftItems",
+  "getOperationsSalesMenuDraftSections": "getOperationsSalesMenuDraftSections",
+  "getOperationsSalesMenuItemCandidates": "getOperationsSalesMenuItemCandidates",
+  "getOperationsSalesMenuOperationRecords": "getOperationsSalesMenuOperationRecords",
+  "getOperationsSalesMenuPublicationPreview": "getOperationsSalesMenuPublicationPreview",
+  "getOperationsSalesMenuPublishedItem": "getOperationsSalesMenuPublishedItem",
+  "getOperationsSalesMenuPublishedItems": "getOperationsSalesMenuPublishedItems",
+  "getOperationsSalesMenuPublishedSections": "getOperationsSalesMenuPublishedSections",
+  "getOperationsSalesMenus": "getOperationsSalesMenus",
   "getOperationsStoreBusinessChannels": "getOperationsStoreBusinessChannels",
   "getOperationsStoreBusinessChannelTemplateCandidates": "getOperationsStoreBusinessChannelTemplateCandidates",
   "getOperationsStoreProfile": "getOperationsStoreProfile",
@@ -2338,14 +3005,21 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "getOperationsWorkspaceStoreUser": "getOperationsWorkspaceStoreUser",
   "getOperationsWorkspaceStoreUserAccount": "getOperationsWorkspaceStoreUserAccount",
   "invalidateOperationsContract": "invalidateOperationsContract",
+  "moveOperationsSalesMenuItem": "moveOperationsSalesMenuItem",
+  "moveOperationsSalesMenuSection": "moveOperationsSalesMenuSection",
   "operationsWorkspaceLogout": "operationsWorkspaceLogout",
   "operationsWorkspacePasswordLogin": "operationsWorkspacePasswordLogin",
+  "publishOperationsSalesMenu": "publishOperationsSalesMenu",
   "reissueOperationsWorkspaceGroupInvitation": "reissueOperationsWorkspaceGroupInvitation",
   "reissueOperationsWorkspaceHeadCompanyInvitation": "reissueOperationsWorkspaceHeadCompanyInvitation",
   "reissueOperationsWorkspaceProjectInvitation": "reissueOperationsWorkspaceProjectInvitation",
   "reissueOperationsWorkspaceRegionInvitation": "reissueOperationsWorkspaceRegionInvitation",
   "reissueOperationsWorkspaceStoreInvitation": "reissueOperationsWorkspaceStoreInvitation",
+  "releaseOperationsSalesMenuStagedAsset": "releaseOperationsSalesMenuStagedAsset",
   "removeOperationsOrganizationHeadCompanyBrandAuthorization": "removeOperationsOrganizationHeadCompanyBrandAuthorization",
+  "renameOperationsSalesMenu": "renameOperationsSalesMenu",
+  "renameOperationsSalesMenuSection": "renameOperationsSalesMenuSection",
+  "restoreOperationsSalesMenuItemSale": "restoreOperationsSalesMenuItemSale",
   "revokeOperationsWorkspaceGroupUserAssignment": "revokeOperationsWorkspaceGroupUserAssignment",
   "revokeOperationsWorkspaceHeadCompanyUserAssignment": "revokeOperationsWorkspaceHeadCompanyUserAssignment",
   "revokeOperationsWorkspaceProjectUserAssignment": "revokeOperationsWorkspaceProjectUserAssignment",
@@ -2354,6 +3028,9 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "selectOperationsWorkspaceSessionContext": "selectOperationsWorkspaceSessionContext",
   "selectOperationsWorkspaceSessionDataNode": "selectOperationsWorkspaceSessionDataNode",
   "sendOperationsWorkspaceOtp": "sendOperationsWorkspaceOtp",
+  "setOperationsSalesMenuActivation": "setOperationsSalesMenuActivation",
+  "setOperationsSalesMenuItemSoldOut": "setOperationsSalesMenuItemSoldOut",
+  "stageOperationsSalesMenuAsset": "stageOperationsSalesMenuAsset",
   "transitionOperationsBusinessChannelStatus": "transitionOperationsBusinessChannelStatus",
   "transitionOperationsBusinessChannelTemplateStatus": "transitionOperationsBusinessChannelTemplateStatus",
   "transitionOperationsOrganizationBrandStatus": "transitionOperationsOrganizationBrandStatus",
@@ -2370,6 +3047,8 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "updateOperationsOrganizationNode": "updateOperationsOrganizationNode",
   "updateOperationsOrganizationStore": "updateOperationsOrganizationStore",
   "updateOperationsOrganizationTenant": "updateOperationsOrganizationTenant",
+  "updateOperationsSalesMenuItem": "updateOperationsSalesMenuItem",
+  "updateOperationsSalesMenuSchedule": "updateOperationsSalesMenuSchedule",
   "verifyOperationsWorkspaceOtp": "verifyOperationsWorkspaceOtp"
 } as const;
 
@@ -2428,6 +3107,31 @@ export const EDGE_PROBLEM_CODES = [
   "PLATFORM_COMMON_VALIDATION_FAILED",
   "PLATFORM_COMMON_VERSION_CONFLICT",
   "PROVIDER_NOT_ENABLED",
+  "SALES_ITEM_NOT_FOUND",
+  "SALES_MENU_ARCHIVED",
+  "SALES_MENU_ASSET_INVALID",
+  "SALES_MENU_ASSET_LIFECYCLE_CONFLICT",
+  "SALES_MENU_ASSET_TARGET_MISMATCH",
+  "SALES_MENU_CAPABILITY_REQUIRED",
+  "SALES_MENU_CHANNEL_DISABLED",
+  "SALES_MENU_CHANNEL_INELIGIBLE",
+  "SALES_MENU_CONSTRAINT_INVALID",
+  "SALES_MENU_DRAFT_INVALID",
+  "SALES_MENU_IDEMPOTENCY_CONFLICT",
+  "SALES_MENU_ITEM_REFERENCE_INVALID",
+  "SALES_MENU_MANUAL_REASON_REQUIRED",
+  "SALES_MENU_MOVE_BOUNDARY",
+  "SALES_MENU_NOT_FOUND",
+  "SALES_MENU_PRICE_REQUIRED",
+  "SALES_MENU_PUBLICATION_REQUIRED",
+  "SALES_MENU_RESULT_UNKNOWN",
+  "SALES_MENU_SCHEDULE_INVALID",
+  "SALES_MENU_SCOPE_MISMATCH",
+  "SALES_MENU_SECTION_NOT_EMPTY",
+  "SALES_MENU_SKU_REFERENCE_INVALID",
+  "SALES_MENU_STORE_DISABLED",
+  "SALES_MENU_VERSION_CONFLICT",
+  "SALES_SECTION_NOT_FOUND",
   "VERSION_CONFLICT",
   "VOIDED_RECORD_IMMUTABLE",
   "WORKSPACE_IAM_ACCOUNT_DISABLED",
@@ -2527,6 +3231,8 @@ export type BusinessChannelCreateRequest = {
 
 export type BusinessChannelPage = {
   items: Array<BusinessChannelView>;
+  cursor: (string) | null;
+  nextCursor: (string) | null;
 };
 
 export type BusinessChannelSortKey = "CHANNEL_NAME" | "CHANNEL_CODE" | "TEMPLATE_NAME" | "STATUS" | "BINDING_STATUS";
@@ -2764,9 +3470,22 @@ export type HeadCompanyUpdateRequest = (HeadCompanyCreateRequest) & ({
   expectedVersion: number;
 });
 
+export type InventoryAvailabilityFact = {
+  applicability: "NOT_APPLICABLE" | "APPLICABLE";
+  state: "AVAILABLE" | "AUTO_UNAVAILABLE" | "UNKNOWN";
+  reason: ("OUT_OF_STOCK" | "NEGATIVE_NOT_ALLOWED" | "READ_UNAVAILABLE") | null;
+};
+
 export type InvitationRouteFacts = {
   groupWorkspaceKey: string;
   invitationToken: string;
+};
+
+export type ManualSaleStatusFact = {
+  state: "NORMAL" | "MANUAL_SOLD_OUT";
+  reason: (string) | null;
+  changedAt: (number) | null;
+  changedByDisplayName: (string) | null;
 };
 
 export type NoBody = Record<string, never>;
@@ -2997,6 +3716,319 @@ export type ProviderProfileView = {
   catalogStatus: "PLANNED" | "AVAILABLE";
   enablementStatus: "ENABLED" | "DISABLED";
   version: number;
+};
+
+export type SalesMenuActivation = {
+  channelRef: string & { readonly __uuid: "Uuid" };
+  status: "ENABLED" | "DISABLED";
+  version: number;
+};
+
+export type SalesMenuActivationRequest = {
+  status: "ENABLED" | "DISABLED";
+  expectedVersion: number;
+};
+
+export type SalesMenuArchiveRequest = {
+  expectedVersion: number;
+};
+
+export type SalesMenuAssetReleaseReadback = {
+  assetRef: string & { readonly __uuid: "Uuid" };
+  status: "RELEASED";
+  version: number;
+  target: SalesMenuAssetTargetReadback;
+};
+
+export type SalesMenuAssetReleaseRequest = {
+  expectedAssetVersion: number;
+};
+
+export type SalesMenuAssetStageReadback = {
+  assetRef: string & { readonly __uuid: "Uuid" };
+  bindGrant: string;
+  status: "STAGED";
+  version: number;
+  target: SalesMenuAssetTargetReadback;
+};
+
+export type SalesMenuAssetStageRequest = {
+  expectedDraftVersion: number;
+  fileName: string;
+  mediaType: string;
+  contentDigest: string;
+  content: Blob;
+};
+
+export type SalesMenuAssetTargetReadback = {
+  groupWorkspaceKey: string;
+  storeRef: string & { readonly __uuid: "Uuid" };
+  salesMenuRef: string & { readonly __uuid: "Uuid" };
+  salesItemRef: string & { readonly __uuid: "Uuid" };
+  usage: "SALES_MENU_ITEM_IMAGE";
+  expectedDraftVersion: number;
+};
+
+export type SalesMenuCandidatePage = {
+  items: Array<SalesMenuItemCandidate>;
+  cursor: (string) | null;
+  nextCursor: (string) | null;
+};
+
+export type SalesMenuCommandReadback = {
+  operationKind: string;
+  salesMenuRef: string & { readonly __uuid: "Uuid" };
+  targetRef?: (string & { readonly __uuid: "Uuid" }) | null;
+  version: number;
+  readbackStatus: "APPLIED" | "RELEASED" | "ARCHIVED" | "PUBLISHED";
+};
+
+export type SalesMenuCopyRequest = {
+  expectedVersion: number;
+};
+
+export type SalesMenuCreateRequest = {
+  channelRef: string & { readonly __uuid: "Uuid" };
+  name: string;
+};
+
+export type SalesMenuDeleteRequest = {
+  expectedVersion: number;
+};
+
+export type SalesMenuDetail = {
+  salesMenuRef: string & { readonly __uuid: "Uuid" };
+  groupWorkspaceKey: string;
+  storeRef: string & { readonly __uuid: "Uuid" };
+  name: string;
+  archived: boolean;
+  version: number;
+  draftRevision: number;
+  latestPublishedRevision: (number) | null;
+  draftDirty: boolean;
+  activation: (SalesMenuActivation) | null;
+  draftSchedule: SalesMenuSchedule;
+  latestPublishedSchedule: (SalesMenuSchedule) | null;
+};
+
+export type SalesMenuDisplayMedia = {
+  mode: "INHERIT_CATALOG" | "CUSTOM";
+  assetRefs: Array<string & { readonly __uuid: "Uuid" }>;
+  primaryAssetRef: (string & { readonly __uuid: "Uuid" }) | null;
+};
+
+export type SalesMenuDraftItemView = {
+  salesItemRef: string & { readonly __uuid: "Uuid" };
+  catalogItemRef: string & { readonly __uuid: "Uuid" };
+  itemCode: string;
+  displayName: string;
+  productShape: "ORDINARY" | "SKU" | "WEIGHTED" | "COMPOSITE" | "SERVICE";
+  defaultPriceCents: (number) | null;
+  saleContent: SalesMenuSaleContent;
+  orderingConstraints: SalesMenuOrderingConstraints;
+  displayMedia: SalesMenuDisplayMedia;
+  displayOrder: number;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  version: number;
+};
+
+export type SalesMenuItemCandidate = {
+  candidateRef: string & { readonly __uuid: "Uuid" };
+  catalogItemRef: string & { readonly __uuid: "Uuid" };
+  itemCode: string;
+  displayName: string;
+  productShape: "ORDINARY" | "SKU" | "WEIGHTED" | "COMPOSITE" | "SERVICE";
+  categoryRefs: Array<string & { readonly __uuid: "Uuid" }>;
+  categoryNames: Array<string>;
+  defaultPriceCents: (number) | null;
+  alreadyAddedCount: number;
+};
+
+export type SalesMenuItemMoveRequest = {
+  direction: "UP" | "DOWN";
+  expectedVersion: number;
+};
+
+export type SalesMenuItemPage = {
+  items: Array<SalesMenuDraftItemView>;
+  cursor: (string) | null;
+  nextCursor: (string) | null;
+};
+
+export type SalesMenuItemUpdateRequest = {
+  displayNameOverride: (string) | null;
+  saleContent: {
+  kind: "DIRECT" | "SKU_SELECTION" | "WEIGHTED" | "COMPOSITE";
+  listedPriceCents: (number) | null;
+  skuPrices: Array<SalesMenuSkuPrice>;
+};
+  orderingConstraints: SalesMenuOrderingConstraints;
+  displayMedia: SalesMenuDisplayMedia;
+  expectedVersion: number;
+};
+
+export type SalesMenuItemsAddRequest = {
+  catalogItemRefs: Array<string & { readonly __uuid: "Uuid" }>;
+  expectedVersion: number;
+};
+
+export type SalesMenuManualRestoreRequest = {
+  confirm: boolean;
+  expectedVersion: number;
+};
+
+export type SalesMenuManualSoldOutRequest = {
+  reason: string;
+  expectedVersion: number;
+};
+
+export type SalesMenuOperationRecord = {
+  operationRecordRef: string & { readonly __uuid: "Uuid" };
+  occurredAt: number;
+  operationKind: string;
+  salesMenuRef: string & { readonly __uuid: "Uuid" };
+  targetRef: (string & { readonly __uuid: "Uuid" }) | null;
+  result: "SUCCESS" | "FAILED";
+  failureCode: (string) | null;
+  actorDisplayName: string;
+};
+
+export type SalesMenuOperationRecordPage = {
+  items: Array<SalesMenuOperationRecord>;
+  cursor: (string) | null;
+  nextCursor: (string) | null;
+};
+
+export type SalesMenuOrderingConstraints = {
+  minItemQuantity: (number) | null;
+  quantityStep: (number) | null;
+};
+
+export type SalesMenuPage = {
+  items: Array<SalesMenuSummary>;
+  cursor: (string) | null;
+  nextCursor: (string) | null;
+};
+
+export type SalesMenuPublicationBlocker = {
+  kind: "STORE_DISABLED" | "CHANNEL_DISABLED" | "CHANNEL_INELIGIBLE" | "CATALOG_ITEM_INVALID" | "SKU_SELECTION_EMPTY" | "SKU_INVALID" | "LISTED_PRICE_MISSING" | "ORDERING_CONSTRAINT_INVALID" | "DISPLAY_ASSET_PENDING_OR_INVALID" | "SCHEDULE_INVALID";
+  salesItemRef: (string & { readonly __uuid: "Uuid" }) | null;
+  messageKey: string;
+};
+
+export type SalesMenuPublicationPreview = {
+  salesMenuRef: string & { readonly __uuid: "Uuid" };
+  draftRevision: number;
+  hasChanges: boolean;
+  violations: Array<SalesMenuPublicationBlocker>;
+};
+
+export type SalesMenuPublishRequest = {
+  expectedVersion: number;
+};
+
+export type SalesMenuPublishedItemPage = {
+  items: Array<SalesMenuPublishedItemView>;
+  cursor: (string) | null;
+  nextCursor: (string) | null;
+};
+
+export type SalesMenuPublishedItemView = {
+  salesItemRef: string & { readonly __uuid: "Uuid" };
+  catalogItemRef: string & { readonly __uuid: "Uuid" };
+  itemCode: string;
+  displayName: string;
+  productShape: "ORDINARY" | "SKU" | "WEIGHTED" | "COMPOSITE" | "SERVICE";
+  saleContent: SalesMenuSaleContent;
+  orderingConstraints: SalesMenuOrderingConstraints;
+  displayMedia: SalesMenuDisplayMedia;
+  displayOrder: number;
+  inventoryAvailability: InventoryAvailabilityFact;
+  manualSaleStatus: ManualSaleStatusFact;
+  version: number;
+};
+
+export type SalesMenuPublishedSectionList = {
+  items: Array<SalesMenuSectionView>;
+};
+
+export type SalesMenuRenameRequest = {
+  name: string;
+  expectedVersion: number;
+};
+
+export type SalesMenuSaleContent = {
+  kind: "DIRECT" | "SKU_SELECTION" | "WEIGHTED" | "COMPOSITE";
+  listedPriceCents: (number) | null;
+  skuPrices: Array<SalesMenuSkuPrice>;
+  salesUnit: {
+  unitRef: string & { readonly __uuid: "Uuid" };
+  code: string;
+  name: string;
+  unitDimension: "COUNT" | "WEIGHT" | "VOLUME" | "SERVICE_DURATION" | "PACKAGE";
+  precision: number;
+};
+};
+
+export type SalesMenuSchedule = {
+  kind: "ALL_DAY" | "DAILY_TIME_RANGE";
+  startLocalTime: (string) | null;
+  endLocalTime: (string) | null;
+};
+
+export type SalesMenuScheduleUpdateRequest = {
+  schedule: SalesMenuSchedule;
+  expectedVersion: number;
+};
+
+export type SalesMenuSectionCreateRequest = {
+  name: string;
+  expectedVersion: number;
+};
+
+export type SalesMenuSectionList = {
+  items: Array<SalesMenuSectionView>;
+};
+
+export type SalesMenuSectionMoveRequest = {
+  direction: "UP" | "DOWN";
+  expectedVersion: number;
+};
+
+export type SalesMenuSectionRenameRequest = {
+  name: string;
+  expectedVersion: number;
+};
+
+export type SalesMenuSectionView = {
+  salesSectionRef: string & { readonly __uuid: "Uuid" };
+  name: string;
+  displayOrder: number;
+  itemCount: number;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+};
+
+export type SalesMenuSkuPrice = {
+  skuRef: string & { readonly __uuid: "Uuid" };
+  skuName: string;
+  skuCode: string;
+  standardPriceCents: number;
+  listedPriceCents: number;
+};
+
+export type SalesMenuSummary = {
+  salesMenuRef: string & { readonly __uuid: "Uuid" };
+  storeRef: string & { readonly __uuid: "Uuid" };
+  name: string;
+  archived: boolean;
+  version: number;
+  draftRevision: number;
+  latestPublishedRevision: (number) | null;
+  draftDirty: boolean;
+  activation: (SalesMenuActivation) | null;
+  draftSchedule: SalesMenuSchedule;
 };
 
 export type ServiceNodeType = "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
@@ -3459,6 +4491,41 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "addOperationsSalesMenuItems": {
+    request: SalesMenuItemsAddRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesSectionRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "archiveOperationsSalesMenu": {
+    request: SalesMenuArchiveRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "cancelOperationsWorkspaceGroupInvitation": {
     request: WorkspaceOperationsInvitationActionRequest;
     response: WorkspaceInvitation;
@@ -3546,6 +4613,23 @@ export type FaceOperationContracts = {
     requiresSession: true;
     path: {
     groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "copyOperationsSalesMenu": {
+    request: SalesMenuCopyRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
   };
     query: Record<string, never>;
     queryRequired: false;
@@ -3706,6 +4790,39 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "createOperationsSalesMenu": {
+    request: SalesMenuCreateRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsSalesMenuSection": {
+    request: SalesMenuSectionCreateRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "createOperationsWorkspaceGroupInvitation": {
     request: WorkspaceOperationsInvitationCreateRequest;
     response: WorkspaceInvitation;
@@ -3789,6 +4906,42 @@ export type FaceOperationContracts = {
     path: {
     groupWorkspaceKey: string;
     channelRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "deleteOperationsSalesMenuItem": {
+    request: SalesMenuDeleteRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesItemRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "deleteOperationsSalesMenuSection": {
+    request: SalesMenuDeleteRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesSectionRef: string & { readonly __uuid: "Uuid" };
   };
     query: Record<string, never>;
     queryRequired: false;
@@ -4239,6 +5392,201 @@ export type FaceOperationContracts = {
     headers: Record<string, never>;
     headersRequired: false;
   };
+  "getOperationsSalesMenu": {
+    request: NoBody;
+    response: SalesMenuDetail;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    channelRef: string & { readonly __uuid: "Uuid" };
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsSalesMenuDraftItem": {
+    request: NoBody;
+    response: SalesMenuDraftItemView;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesItemRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsSalesMenuDraftItems": {
+    request: NoBody;
+    response: SalesMenuItemPage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesSectionRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    cursor?: string;
+    pageSize?: number;
+  };
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsSalesMenuDraftSections": {
+    request: NoBody;
+    response: SalesMenuSectionList;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsSalesMenuItemCandidates": {
+    request: NoBody;
+    response: SalesMenuCandidatePage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    categoryRef?: string & { readonly __uuid: "Uuid" };
+    query?: string;
+    cursor?: string;
+    pageSize?: number;
+  };
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsSalesMenuOperationRecords": {
+    request: NoBody;
+    response: SalesMenuOperationRecordPage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    channelRef: string & { readonly __uuid: "Uuid" };
+    cursor?: string;
+    pageSize?: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsSalesMenuPublicationPreview": {
+    request: NoBody;
+    response: SalesMenuPublicationPreview;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    channelRef: string & { readonly __uuid: "Uuid" };
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsSalesMenuPublishedItem": {
+    request: NoBody;
+    response: SalesMenuPublishedItemView;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesItemRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    channelRef: string & { readonly __uuid: "Uuid" };
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsSalesMenuPublishedItems": {
+    request: NoBody;
+    response: SalesMenuPublishedItemPage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesSectionRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    channelRef: string & { readonly __uuid: "Uuid" };
+    cursor?: string;
+    pageSize?: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsSalesMenuPublishedSections": {
+    request: NoBody;
+    response: SalesMenuPublishedSectionList;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsSalesMenus": {
+    request: NoBody;
+    response: SalesMenuPage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    channelRef: string & { readonly __uuid: "Uuid" };
+    query?: string;
+    cursor?: string;
+    pageSize?: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
   "getOperationsStoreBusinessChannels": {
     request: NoBody;
     response: BusinessChannelPage;
@@ -4249,10 +5597,13 @@ export type FaceOperationContracts = {
     storeRef: string & { readonly __uuid: "Uuid" };
   };
     query: {
+    usage: "SALES_MENU";
+    cursor?: string;
+    pageSize?: number;
     sortKey?: BusinessChannelSortKey;
     sortDirection?: SortDirection;
   };
-    queryRequired: false;
+    queryRequired: true;
     headers: Record<string, never>;
     headersRequired: false;
   };
@@ -4773,6 +6124,42 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "moveOperationsSalesMenuItem": {
+    request: SalesMenuItemMoveRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesItemRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "moveOperationsSalesMenuSection": {
+    request: SalesMenuSectionMoveRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesSectionRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "operationsWorkspaceLogout": {
     request: NoBody;
     response: NoContent;
@@ -4795,6 +6182,23 @@ export type FaceOperationContracts = {
     requiresSession: false;
     path: {
     groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "publishOperationsSalesMenu": {
+    request: SalesMenuPublishRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
   };
     query: Record<string, never>;
     queryRequired: false;
@@ -4883,6 +6287,25 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "releaseOperationsSalesMenuStagedAsset": {
+    request: SalesMenuAssetReleaseRequest;
+    response: SalesMenuAssetReleaseReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesItemRef: string & { readonly __uuid: "Uuid" };
+    assetRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "removeOperationsOrganizationHeadCompanyBrandAuthorization": {
     request: NoBody;
     response: NoContent;
@@ -4892,6 +6315,60 @@ export type FaceOperationContracts = {
     groupWorkspaceKey: string;
     headCompanyId: string;
     brandId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "renameOperationsSalesMenu": {
+    request: SalesMenuRenameRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "renameOperationsSalesMenuSection": {
+    request: SalesMenuSectionRenameRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesSectionRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "restoreOperationsSalesMenuItemSale": {
+    request: SalesMenuManualRestoreRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesItemRef: string & { readonly __uuid: "Uuid" };
+    channelRef: string & { readonly __uuid: "Uuid" };
   };
     query: Record<string, never>;
     queryRequired: false;
@@ -5017,6 +6494,61 @@ export type FaceOperationContracts = {
     requiresSession: false;
     path: {
     groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "setOperationsSalesMenuActivation": {
+    request: SalesMenuActivationRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    channelRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "setOperationsSalesMenuItemSoldOut": {
+    request: SalesMenuManualSoldOutRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesItemRef: string & { readonly __uuid: "Uuid" };
+    channelRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "stageOperationsSalesMenuAsset": {
+    request: SalesMenuAssetStageRequest;
+    response: SalesMenuAssetStageReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesItemRef: string & { readonly __uuid: "Uuid" };
   };
     query: Record<string, never>;
     queryRequired: false;
@@ -5280,6 +6812,42 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "updateOperationsSalesMenuItem": {
+    request: SalesMenuItemUpdateRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+    salesItemRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "X-Sales-Menu-Asset-Bind-Grants"?: string;
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "updateOperationsSalesMenuSchedule": {
+    request: SalesMenuScheduleUpdateRequest;
+    response: SalesMenuCommandReadback;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    salesMenuRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "verifyOperationsWorkspaceOtp": {
     request: WorkspaceOtpVerifyRequest;
     response: WorkspaceSessionEntry;
@@ -5322,6 +6890,22 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       operationId: "addOperationsOrganizationHeadCompanyBrandAuthorization",
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    addOperationsSalesMenuItems: (pathParameters: FaceOperationContracts["addOperationsSalesMenuItems"]["path"], options: FaceOperationOptions<"addOperationsSalesMenuItems">) => execute({
+      operationId: "addOperationsSalesMenuItems",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    archiveOperationsSalesMenu: (pathParameters: FaceOperationContracts["archiveOperationsSalesMenu"]["path"], options: FaceOperationOptions<"archiveOperationsSalesMenu">) => execute({
+      operationId: "archiveOperationsSalesMenu",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/archive",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -5370,6 +6954,14 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       operationId: "changeCurrentWorkspacePassword",
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    copyOperationsSalesMenu: (pathParameters: FaceOperationContracts["copyOperationsSalesMenu"]["path"], options: FaceOperationOptions<"copyOperationsSalesMenu">) => execute({
+      operationId: "copyOperationsSalesMenu",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -5454,6 +7046,22 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    createOperationsSalesMenu: (pathParameters: FaceOperationContracts["createOperationsSalesMenu"]["path"], options: FaceOperationOptions<"createOperationsSalesMenu">) => execute({
+      operationId: "createOperationsSalesMenu",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    createOperationsSalesMenuSection: (pathParameters: FaceOperationContracts["createOperationsSalesMenuSection"]["path"], options: FaceOperationOptions<"createOperationsSalesMenuSection">) => execute({
+      operationId: "createOperationsSalesMenuSection",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     createOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceGroupInvitation">) => execute({
       operationId: "createOperationsWorkspaceGroupInvitation",
       method: "POST",
@@ -5498,6 +7106,22 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       operationId: "deleteOperationsOwnerBinding",
       method: "DELETE",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    deleteOperationsSalesMenuItem: (pathParameters: FaceOperationContracts["deleteOperationsSalesMenuItem"]["path"], options: FaceOperationOptions<"deleteOperationsSalesMenuItem">) => execute({
+      operationId: "deleteOperationsSalesMenuItem",
+      method: "DELETE",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    deleteOperationsSalesMenuSection: (pathParameters: FaceOperationContracts["deleteOperationsSalesMenuSection"]["path"], options: FaceOperationOptions<"deleteOperationsSalesMenuSection">) => execute({
+      operationId: "deleteOperationsSalesMenuSection",
+      method: "DELETE",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -5698,6 +7322,94 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       operationId: "getOperationsProjectBusinessChannels",
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/business-channels",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsSalesMenu: (pathParameters: FaceOperationContracts["getOperationsSalesMenu"]["path"], options: FaceOperationOptions<"getOperationsSalesMenu">) => execute({
+      operationId: "getOperationsSalesMenu",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsSalesMenuDraftItem: (pathParameters: FaceOperationContracts["getOperationsSalesMenuDraftItem"]["path"], options: FaceOperationOptions<"getOperationsSalesMenuDraftItem">) => execute({
+      operationId: "getOperationsSalesMenuDraftItem",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsSalesMenuDraftItems: (pathParameters: FaceOperationContracts["getOperationsSalesMenuDraftItems"]["path"], options: FaceOperationOptions<"getOperationsSalesMenuDraftItems">) => execute({
+      operationId: "getOperationsSalesMenuDraftItems",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsSalesMenuDraftSections: (pathParameters: FaceOperationContracts["getOperationsSalesMenuDraftSections"]["path"], options: FaceOperationOptions<"getOperationsSalesMenuDraftSections">) => execute({
+      operationId: "getOperationsSalesMenuDraftSections",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsSalesMenuItemCandidates: (pathParameters: FaceOperationContracts["getOperationsSalesMenuItemCandidates"]["path"], options: FaceOperationOptions<"getOperationsSalesMenuItemCandidates">) => execute({
+      operationId: "getOperationsSalesMenuItemCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/item-candidates",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsSalesMenuOperationRecords: (pathParameters: FaceOperationContracts["getOperationsSalesMenuOperationRecords"]["path"], options: FaceOperationOptions<"getOperationsSalesMenuOperationRecords">) => execute({
+      operationId: "getOperationsSalesMenuOperationRecords",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsSalesMenuPublicationPreview: (pathParameters: FaceOperationContracts["getOperationsSalesMenuPublicationPreview"]["path"], options: FaceOperationOptions<"getOperationsSalesMenuPublicationPreview">) => execute({
+      operationId: "getOperationsSalesMenuPublicationPreview",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsSalesMenuPublishedItem: (pathParameters: FaceOperationContracts["getOperationsSalesMenuPublishedItem"]["path"], options: FaceOperationOptions<"getOperationsSalesMenuPublishedItem">) => execute({
+      operationId: "getOperationsSalesMenuPublishedItem",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsSalesMenuPublishedItems: (pathParameters: FaceOperationContracts["getOperationsSalesMenuPublishedItems"]["path"], options: FaceOperationOptions<"getOperationsSalesMenuPublishedItems">) => execute({
+      operationId: "getOperationsSalesMenuPublishedItems",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsSalesMenuPublishedSections: (pathParameters: FaceOperationContracts["getOperationsSalesMenuPublishedSections"]["path"], options: FaceOperationOptions<"getOperationsSalesMenuPublishedSections">) => execute({
+      operationId: "getOperationsSalesMenuPublishedSections",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsSalesMenus: (pathParameters: FaceOperationContracts["getOperationsSalesMenus"]["path"], options: FaceOperationOptions<"getOperationsSalesMenus">) => execute({
+      operationId: "getOperationsSalesMenus",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -5910,6 +7622,22 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    moveOperationsSalesMenuItem: (pathParameters: FaceOperationContracts["moveOperationsSalesMenuItem"]["path"], options: FaceOperationOptions<"moveOperationsSalesMenuItem">) => execute({
+      operationId: "moveOperationsSalesMenuItem",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    moveOperationsSalesMenuSection: (pathParameters: FaceOperationContracts["moveOperationsSalesMenuSection"]["path"], options: FaceOperationOptions<"moveOperationsSalesMenuSection">) => execute({
+      operationId: "moveOperationsSalesMenuSection",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/move",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     operationsWorkspaceLogout: (pathParameters: FaceOperationContracts["operationsWorkspaceLogout"]["path"], options: FaceOperationOptions<"operationsWorkspaceLogout">) => execute({
       operationId: "operationsWorkspaceLogout",
       method: "POST",
@@ -5924,6 +7652,14 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login",
       pathParameters,
       requiresSession: false,
+      ...options,
+    }),
+    publishOperationsSalesMenu: (pathParameters: FaceOperationContracts["publishOperationsSalesMenu"]["path"], options: FaceOperationOptions<"publishOperationsSalesMenu">) => execute({
+      operationId: "publishOperationsSalesMenu",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications",
+      pathParameters,
+      requiresSession: true,
       ...options,
     }),
     reissueOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["reissueOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"reissueOperationsWorkspaceGroupInvitation">) => execute({
@@ -5966,10 +7702,42 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    releaseOperationsSalesMenuStagedAsset: (pathParameters: FaceOperationContracts["releaseOperationsSalesMenuStagedAsset"]["path"], options: FaceOperationOptions<"releaseOperationsSalesMenuStagedAsset">) => execute({
+      operationId: "releaseOperationsSalesMenuStagedAsset",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     removeOperationsOrganizationHeadCompanyBrandAuthorization: (pathParameters: FaceOperationContracts["removeOperationsOrganizationHeadCompanyBrandAuthorization"]["path"], options: FaceOperationOptions<"removeOperationsOrganizationHeadCompanyBrandAuthorization">) => execute({
       operationId: "removeOperationsOrganizationHeadCompanyBrandAuthorization",
       method: "DELETE",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    renameOperationsSalesMenu: (pathParameters: FaceOperationContracts["renameOperationsSalesMenu"]["path"], options: FaceOperationOptions<"renameOperationsSalesMenu">) => execute({
+      operationId: "renameOperationsSalesMenu",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/name",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    renameOperationsSalesMenuSection: (pathParameters: FaceOperationContracts["renameOperationsSalesMenuSection"]["path"], options: FaceOperationOptions<"renameOperationsSalesMenuSection">) => execute({
+      operationId: "renameOperationsSalesMenuSection",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    restoreOperationsSalesMenuItemSale: (pathParameters: FaceOperationContracts["restoreOperationsSalesMenuItemSale"]["path"], options: FaceOperationOptions<"restoreOperationsSalesMenuItemSale">) => execute({
+      operationId: "restoreOperationsSalesMenuItemSale",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -6036,6 +7804,30 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send",
       pathParameters,
       requiresSession: false,
+      ...options,
+    }),
+    setOperationsSalesMenuActivation: (pathParameters: FaceOperationContracts["setOperationsSalesMenuActivation"]["path"], options: FaceOperationOptions<"setOperationsSalesMenuActivation">) => execute({
+      operationId: "setOperationsSalesMenuActivation",
+      method: "PUT",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    setOperationsSalesMenuItemSoldOut: (pathParameters: FaceOperationContracts["setOperationsSalesMenuItemSoldOut"]["path"], options: FaceOperationOptions<"setOperationsSalesMenuItemSoldOut">) => execute({
+      operationId: "setOperationsSalesMenuItemSoldOut",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    stageOperationsSalesMenuAsset: (pathParameters: FaceOperationContracts["stageOperationsSalesMenuAsset"]["path"], options: FaceOperationOptions<"stageOperationsSalesMenuAsset">) => execute({
+      operationId: "stageOperationsSalesMenuAsset",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage",
+      pathParameters,
+      requiresSession: true,
       ...options,
     }),
     transitionOperationsBusinessChannelStatus: (pathParameters: FaceOperationContracts["transitionOperationsBusinessChannelStatus"]["path"], options: FaceOperationOptions<"transitionOperationsBusinessChannelStatus">) => execute({
@@ -6162,6 +7954,22 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       operationId: "updateOperationsOrganizationTenant",
       method: "PATCH",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    updateOperationsSalesMenuItem: (pathParameters: FaceOperationContracts["updateOperationsSalesMenuItem"]["path"], options: FaceOperationOptions<"updateOperationsSalesMenuItem">) => execute({
+      operationId: "updateOperationsSalesMenuItem",
+      method: "PUT",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    updateOperationsSalesMenuSchedule: (pathParameters: FaceOperationContracts["updateOperationsSalesMenuSchedule"]["path"], options: FaceOperationOptions<"updateOperationsSalesMenuSchedule">) => execute({
+      operationId: "updateOperationsSalesMenuSchedule",
+      method: "PUT",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule",
       pathParameters,
       requiresSession: true,
       ...options,

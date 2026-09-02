@@ -14,10 +14,13 @@ function currentVisibleOption(page: Page, label?: string) {
  * selecting its real interactive menu item; callers retain command-completion
  * ownership rather than duplicating a click helper per feature suite.
  */
-export async function visibleOperationsMenuItem(page: Page, label: string) {
+export async function visibleOperationsMenuItem(page: Page, label: string | RegExp) {
   const dropdown = page.locator('.ant-dropdown:not(.ant-dropdown-hidden):visible').last();
   await expect(dropdown).toBeVisible();
-  const item = dropdown.getByRole('menuitem', {name: label, exact: true});
+  const item =
+    typeof label === 'string'
+      ? dropdown.getByRole('menuitem', {name: label, exact: true})
+      : dropdown.getByRole('menuitem', {name: label});
   await expect(item).toBeVisible();
   return item;
 }

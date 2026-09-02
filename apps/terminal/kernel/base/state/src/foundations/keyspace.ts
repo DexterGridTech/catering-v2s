@@ -1,4 +1,5 @@
 import type {PersistenceStorageKind} from '../types/persistence'
+import {assertNonEmptyString} from './assertNonEmptyString'
 
 export type PersistenceEntryKind = 'field' | 'record'
 
@@ -36,21 +37,13 @@ export interface PersistenceKeyDescriptor {
 const separator = '/'
 const statePersistenceNamespace = 'catering-v2s.terminal.state.v1'
 
-const assertIdentifier = (value: string, label: string): void => {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new Error(`[state.keyspace] ${label} must be non-empty`)
-  }
-}
-
 const encodeSegment = (value: string, label: string): string => {
-  assertIdentifier(value, label)
+  assertNonEmptyString(value, 'state.keyspace', label)
   return encodeURIComponent(value)
 }
 
 const encodeEntrySegment = (value: string): string => {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new Error('[state.keyspace] entryKey must be non-empty')
-  }
+  assertNonEmptyString(value, 'state.keyspace', 'entryKey')
   return encodeURIComponent(value)
 }
 

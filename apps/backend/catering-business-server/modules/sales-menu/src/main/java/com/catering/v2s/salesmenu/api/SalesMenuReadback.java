@@ -1,0 +1,198 @@
+package com.catering.v2s.salesmenu.api;
+
+import com.catering.v2s.salesmenu.domain.SalesMenuAssetTarget;
+import com.catering.v2s.salesmenu.domain.SalesMenuCommandReadbackStatus;
+import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMedia;
+import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleState;
+import com.catering.v2s.salesmenu.domain.SalesMenuOperationResult;
+import com.catering.v2s.salesmenu.domain.SalesMenuOrderingConstraints;
+import com.catering.v2s.salesmenu.domain.SalesMenuPublicationBlockerKind;
+import com.catering.v2s.salesmenu.domain.SalesMenuSaleContent;
+import com.catering.v2s.salesmenu.domain.SalesMenuSchedule;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
+/** Owner-native readbacks; HTTP models terminate outside this module. */
+public final class SalesMenuReadback {
+    private SalesMenuReadback() {}
+
+    public record Activation(UUID channelRef, String status, long version) {}
+
+    public record MenuSummary(
+            UUID salesMenuRef,
+            UUID storeRef,
+            String name,
+            boolean archived,
+            long version,
+            long draftRevision,
+            Long latestPublishedRevision,
+            boolean draftDirty,
+            Activation activation,
+            SalesMenuSchedule draftSchedule) {}
+
+    public record MenuPage(List<MenuSummary> items, String cursor, String nextCursor) {
+        public MenuPage {
+            items = List.copyOf(Objects.requireNonNull(items, "items"));
+        }
+    }
+
+    public record MenuDetail(
+            UUID salesMenuRef,
+            String groupWorkspaceKey,
+            UUID storeRef,
+            String name,
+            boolean archived,
+            long version,
+            long draftRevision,
+            Long latestPublishedRevision,
+            boolean draftDirty,
+            Activation activation,
+            SalesMenuSchedule draftSchedule,
+            SalesMenuSchedule latestPublishedSchedule) {}
+
+    public record SectionView(
+            UUID salesSectionRef,
+            String name,
+            long displayOrder,
+            long itemCount,
+            boolean canMoveUp,
+            boolean canMoveDown) {}
+
+    public record SectionList(List<SectionView> items) {
+        public SectionList {
+            items = List.copyOf(Objects.requireNonNull(items, "items"));
+        }
+    }
+
+    public record DraftItemView(
+            UUID salesItemRef,
+            UUID catalogItemRef,
+            String itemCode,
+            String displayName,
+            String productShape,
+            Long defaultPriceCents,
+            SalesMenuSaleContent saleContent,
+            SalesMenuOrderingConstraints orderingConstraints,
+            SalesMenuDisplayMedia displayMedia,
+            long displayOrder,
+            boolean canMoveUp,
+            boolean canMoveDown,
+            long version) {}
+
+    public record InventoryAvailabilityFact(String applicability, String state, String reason) {}
+
+    public record ManualSaleStatusFact(
+            SalesMenuManualSaleState state, String reason, Long changedAt, String changedByDisplayName) {}
+
+    public record PublishedItemView(
+            UUID salesItemRef,
+            UUID catalogItemRef,
+            String itemCode,
+            String displayName,
+            String productShape,
+            SalesMenuSaleContent saleContent,
+            SalesMenuOrderingConstraints orderingConstraints,
+            SalesMenuDisplayMedia displayMedia,
+            long displayOrder,
+            InventoryAvailabilityFact inventoryAvailability,
+            ManualSaleStatusFact manualSaleStatus,
+            long version) {}
+
+    public record DraftItemPage(List<DraftItemView> items, String cursor, String nextCursor) {
+        public DraftItemPage {
+            items = List.copyOf(Objects.requireNonNull(items, "items"));
+        }
+    }
+
+    public record PublishedItemPage(List<PublishedItemView> items, String cursor, String nextCursor) {
+        public PublishedItemPage {
+            items = List.copyOf(Objects.requireNonNull(items, "items"));
+        }
+    }
+
+    public record ItemCandidate(
+            UUID candidateRef,
+            UUID catalogItemRef,
+            String itemCode,
+            String displayName,
+            String productShape,
+            List<UUID> categoryRefs,
+            List<String> categoryNames,
+            Long defaultPriceCents,
+            long alreadyAddedCount) {
+        public ItemCandidate {
+            categoryRefs = List.copyOf(Objects.requireNonNull(categoryRefs, "categoryRefs"));
+            categoryNames = List.copyOf(Objects.requireNonNull(categoryNames, "categoryNames"));
+        }
+    }
+
+    public record CandidatePage(List<ItemCandidate> items, String cursor, String nextCursor) {
+        public CandidatePage {
+            items = List.copyOf(Objects.requireNonNull(items, "items"));
+        }
+    }
+
+    public record PublicationBlocker(SalesMenuPublicationBlockerKind kind, UUID salesItemRef, String messageKey) {}
+
+    public record PublicationPreview(
+            UUID salesMenuRef, long draftRevision, boolean hasChanges, List<PublicationBlocker> violations) {
+        public PublicationPreview {
+            violations = List.copyOf(Objects.requireNonNull(violations, "violations"));
+        }
+    }
+
+    public record OperationRecord(
+            UUID operationRecordRef,
+            long occurredAt,
+            String operationKind,
+            UUID salesMenuRef,
+            UUID targetRef,
+            SalesMenuOperationResult result,
+            String failureCode,
+            String actorDisplayName) {}
+
+    public record OperationRecordPage(List<OperationRecord> items, String cursor, String nextCursor) {
+        public OperationRecordPage {
+            items = List.copyOf(Objects.requireNonNull(items, "items"));
+        }
+    }
+
+    public record Command(
+            String operationKind,
+            UUID salesMenuRef,
+            UUID targetRef,
+            long version,
+            SalesMenuCommandReadbackStatus readbackStatus) {}
+
+    public record AssetTargetReadback(SalesMenuAssetTarget target) {
+        public AssetTargetReadback {
+            Objects.requireNonNull(target, "target");
+        }
+    }
+
+    public record AssetStage(
+            UUID assetRef,
+            SalesMenuAssetTarget target,
+            String bindGrant,
+            String status,
+            String mediaType,
+            String contentDigest,
+            long version) {}
+
+    public record AssetRelease(SalesMenuAssetTarget target, UUID assetRef, long releasedAt, long version) {}
+
+    public record AssetClaim(SalesMenuAssetTarget target, List<ClaimedAsset> assets) {
+        public AssetClaim {
+            Objects.requireNonNull(target, "target");
+            assets = List.copyOf(Objects.requireNonNull(assets, "assets"));
+        }
+    }
+
+    public record ClaimedAsset(UUID assetRef, String status, long version) {
+        public ClaimedAsset {
+            Objects.requireNonNull(assetRef, "assetRef");
+            Objects.requireNonNull(status, "status");
+        }
+    }
+}

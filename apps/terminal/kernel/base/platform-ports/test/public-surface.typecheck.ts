@@ -14,6 +14,7 @@ import {
   type AppControlPort,
   type DevicePort,
   type DeviceInfo,
+  type DisplayInfo,
   type EnvironmentMode,
   type HotUpdateMarker,
   type HotUpdateMarkerInput,
@@ -180,6 +181,7 @@ const emptyDeviceInfo: DeviceInfo = {
   systemVersion: '1',
   logicalProcessorCount: 1,
 };
+const emptyDisplayInfo: DisplayInfo = {displayCount: 1};
 const emptySystemStatus: SystemStatus = {
   processor: {logicalProcessorCount: 1, processUtilizationRatio: 0},
   memory: {totalBytes: 1, availableBytes: 1, processBytes: 1},
@@ -228,6 +230,7 @@ const completeLogger: LoggerPort = {
 
 const completeDevice: DevicePort = {
   getDeviceInfo: async () => completeResult(emptyDeviceInfo),
+  getDisplayInfo: async () => completeResult(emptyDisplayInfo),
   getSystemStatus: async () => completeResult(emptySystemStatus),
   getPowerStatus: async () => completeResult(emptySystemStatus.power),
   subscribePowerStatus: async () => completeResult({subscriptionId: 'fixture'}),

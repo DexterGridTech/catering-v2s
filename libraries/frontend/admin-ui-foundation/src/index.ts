@@ -67,6 +67,16 @@ export {EllipsisTooltip} from './presentation/EllipsisTooltip';
 export {adminHierarchyCollator} from './presentation/hierarchyCollator';
 export {activeInvitationPageUrl} from './presentation/activeInvitationPageUrl';
 export {ValidityStatus} from './presentation/validityStatus';
+export {
+  AdminImageCollectionEditor,
+  type AdminImageCollectionAction,
+  type AdminImageCollectionEditorProps,
+  type AdminImageCollectionItem,
+  type AdminImageCollectionLabels,
+  type AdminImageCollectionLimits,
+  type AdminImageCollectionStatus,
+  type AdminImageCollectionTestIds,
+} from './presentation/AdminImageCollectionEditor';
 export type {InvitationPageLinkSource, InvitationRouteFacts} from './presentation/activeInvitationPageUrl';
 export {
   assertDescriptorSlotBindingSet,

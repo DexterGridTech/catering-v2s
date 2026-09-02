@@ -1,0 +1,125 @@
+import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime'
+import {
+  resolveWorkspace,
+  selectDisplayRole,
+} from '@catering-v2s/kernel-base-display-context'
+import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime'
+import type {
+  StateJsonValue,
+  StateRoot,
+} from '@catering-v2s/kernel-base-state'
+import {
+  createClearLayersActor,
+  createClearUiVariablesActor,
+  createCloseLayerActor,
+  createOpenLayerActor,
+  createSetUiVariablesActor,
+  createShowScreenActor,
+} from '../features/actors'
+import {
+  clearLayersCommand,
+  clearUiVariablesCommand,
+  closeLayerCommand,
+  openLayerCommand,
+  setUiVariablesCommand,
+  showScreenCommand,
+} from '../features/commands'
+import {contentStateRegistrations} from '../foundations/workspaceSlices'
+import {
+  createVariableStateFamily,
+  readVariableState,
+} from '../foundations/variableSlices'
+import {assertUiVariableDeclaration} from '../foundations/uiVariable'
+import {dependencyModuleNames} from '../dependencies'
+import {moduleKind, moduleName} from '../moduleName'
+import type {UiCatalog} from '../types/catalog'
+import type {UiStateModule} from '../types/module'
+import type {UiVariableDeclaration} from '../types/variable'
+
+type CreateUiStateModuleInput = Readonly<{
+  readonly catalog: UiCatalog
+  readonly variables: readonly UiVariableDeclaration<StateJsonValue>[]
+}>
+
+type VariableRegistry = ReadonlyMap<string, UiVariableDeclaration<StateJsonValue>>
+
+const createVariableRegistry = (
+  variables: readonly UiVariableDeclaration<StateJsonValue>[],
+): VariableRegistry => {
+  if (!Array.isArray(variables)) throw new Error('[ui-state] variables must be an array')
+  const registry = new Map<string, UiVariableDeclaration<StateJsonValue>>()
+  for (const declaration of variables) {
+    assertUiVariableDeclaration(declaration)
+    if (registry.has(declaration.key)) throw new Error(`[ui-state] duplicate ui variable: ${declaration.key}`)
+    registry.set(declaration.key, declaration)
+  }
+  return registry
+}
+
+const readCurrentWorkspace = (root: StateRoot) => resolveWorkspace({
+  instanceMode: selectRuntimeInstanceMode(root),
+  displayRole: selectDisplayRole(root),
+})
+
+export const createUiStateModule = (
+  input: CreateUiStateModuleInput,
+): UiStateModule => {
+  if (typeof input !== 'object' || input === null) throw new Error('[ui-state] module input must be an object')
+  if (typeof input.catalog !== 'object' || input.catalog === null) throw new Error('[ui-state] catalog is required')
+  const registry = createVariableRegistry(input.variables)
+  const variableFamily = createVariableStateFamily(registry)
+  const actors = [
+    createShowScreenActor(),
+    createOpenLayerActor(),
+    createCloseLayerActor(),
+    createClearLayersActor(),
+    createSetUiVariablesActor(registry, variableFamily),
+    createClearUiVariablesActor(registry, variableFamily),
+  ] as const
+  const commands = [
+    showScreenCommand,
+    openLayerCommand,
+    closeLayerCommand,
+    clearLayersCommand,
+    setUiVariablesCommand,
+    clearUiVariablesCommand,
+  ] as const
+  const stateSlices = Object.freeze([
+    ...contentStateRegistrations,
+    ...variableFamily.registrations,
+  ])
+
+  const selectUiVariable = <TValue extends StateJsonValue>(
+    root: StateRoot,
+    declaration: UiVariableDeclaration<TValue>,
+  ): TValue => {
+    if (typeof declaration !== 'object' || declaration === null || Array.isArray(declaration)) {
+      throw new Error('[ui-state] variable declaration must be registered')
+    }
+    const registered = registry.get(declaration.key)
+    if (registered === undefined || registered !== declaration) {
+      throw new Error(`[ui-state] variable declaration is not registered: ${declaration.key}`)
+    }
+    const state = readVariableState(root, variableFamily.stateKeys, readCurrentWorkspace(root))
+    const value = state.values[registered.key]
+    return (value === undefined ? declaration.defaultValue : value) as TValue
+  }
+
+  const module: UiStateModule = {
+    moduleName,
+    kind: moduleKind,
+    dependencies: dependencyModuleNames.map(name => ({moduleName: name})),
+    commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
+    commandDefinitions: commands,
+    actors: actors.map(actor => ({name: actor.actorName})),
+    actorDefinitions: actors,
+    slices: stateSlices.map(registration => ({
+      name: registration.name,
+      persistIntent: registration.persistIntent,
+    })),
+    stateSlices,
+    catalog: input.catalog,
+    selectUiVariable,
+  }
+  return Object.freeze(module)
+}

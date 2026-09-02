@@ -31,6 +31,10 @@ describe('workspace support', () => {
 
   it('rejects missing workspace and invalid action types', () => {
     expect(() => createWorkspaceActionDispatcher({
+      routeContext: undefined as never,
+      dispatch: () => undefined,
+    })).toThrow('routeContext.workspace is required')
+    expect(() => createWorkspaceActionDispatcher({
       routeContext: {workspace: 'MAIN'},
       dispatch: () => undefined,
     })({type: 'missingSlash'})).toThrow('invalid action type')

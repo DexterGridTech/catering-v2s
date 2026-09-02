@@ -201,9 +201,9 @@ IMPLEMENTATION_AUTHORITY=false
 | 9 | 读前台销售项详情 | `getOperationsSalesMenuPublishedItem` | `GET .../sales-menus/{salesMenuRef}/published/items/{salesItemRef}?channelRef` | operations-admin | Detail aggregate | 单冻结销售项 + 图片 + 两个独立状态事实 |
 | 10 | 列可编入商品 | `getOperationsSalesMenuItemCandidates` | `GET .../sales-menus/{salesMenuRef}/draft/item-candidates?categoryRef&query&cursor&pageSize` | operations-admin | Cursor，20/页；候选区下方显式 `CursorPagination` | 随当前门店可用商品增长；同商品不去重，附当前菜单已有销售项数量；分类/query 变化回第一页，不自动抽干 |
 | 11 | 读发布预检 | `getOperationsSalesMenuPublicationPreview` | `GET .../sales-menus/{salesMenuRef}/draft/publication-preview?channelRef` | operations-admin | Detail aggregate | 单草稿的变更摘要和 closed-set blockers |
-| 12 | 列普通操作记录 | `getOperationsSalesMenuOperationRecords` | `GET .../sales-menu-operation-records?channelRef&cursor&pageSize` | operations-admin | Cursor，20/页 | 随该入口菜单操作持续增长；按 occurredAt/ref 倒序，无详情/诊断链 |
+| 12 | 列普通操作记录 | `getOperationsSalesMenuOperationRecords` | `GET .../sales-menu-operation-records?channelRef&cursor&pageSize` | operations-admin | Cursor，20/页 | 随该入口菜单操作持续增长；按 occurredAt/ref 倒序；同时返回该菜单的菜单级记录（`channel_ref IS NULL`）与当前入口的渠道级记录；无详情/诊断链 |
 | 13 | 新建菜单并建立当前入口的停用关系 | `createOperationsSalesMenu` | `POST .../sales-menus` | operations-admin | Command readback | additive；请求含 channelRef/name；创建独立空草稿与 disabled activation |
-| 14 | 复制当前草稿定义 | `copyOperationsSalesMenu` | `POST .../sales-menus/{salesMenuRef}/copies` | operations-admin | Command readback | additive；复制当前草稿/时段，创建“原菜单名 副本”并返回新 ref |
+| 14 | 复制当前草稿定义 | `copyOperationsSalesMenu` | `POST .../sales-menus/{salesMenuRef}/copies` | operations-admin | Command readback | additive；复制当前草稿/时段及 CUSTOM 图片关系（按原顺序复用同一 `assetRef`，不复制 Asset），创建“原菜单名 副本”并返回新 ref |
 | 15 | 改名 | `renameOperationsSalesMenu` | `PATCH .../sales-menus/{salesMenuRef}/name` | operations-admin | Command readback | set-value；只改 menu identity，不改版本内容 |
 | 16 | 归档菜单 | `archiveOperationsSalesMenu` | `POST .../sales-menus/{salesMenuRef}/archive` | operations-admin | Command readback | set-value；归档后不再作为工作对象/入口候选，冻结历史保留 |
 | 17 | 启用或停用 `(菜单,经营入口)` | `setOperationsSalesMenuActivation` | `PUT .../sales-menus/{salesMenuRef}/channels/{channelRef}/activation` | operations-admin | Command readback | set-value；多菜单可同时 enabled，不做互斥 |
@@ -264,13 +264,13 @@ IMPLEMENTATION_AUTHORITY=false
 | schema | 字段与约束 |
 | --- | --- |
 | `SalesMenuSchedule` | `kind=ALL_DAY|DAILY_TIME_RANGE`；DAILY 必须同时有 `startLocalTime/endLocalTime` 且两者不相等；start < end 表示同日区间，start > end 表示跨午夜，统一为 start-inclusive/end-exclusive；时区由门店事实提供，菜单不存 display 字符串 |
-| `SalesMenuSummary` | menuRef/name/archived、draftRevision、latestPublishedRevision/nullable、draftDirty、activation `{channelRef,status}`、draft schedule；启用与发布分开 |
+| `SalesMenuSummary` | menuRef/name/archived、`version`（销售菜单集合聚合 CAS 版本，仅供命令 `expectedVersion` 使用）、draftRevision、latestPublishedRevision/nullable、draftDirty、activation `{channelRef,status}`/nullable（无该菜单-入口关系时为 JSON `null`，表示默认停用）、draft schedule；启用与发布分开；`version` 与 `draftRevision` 不可互换 |
 | `SalesMenuSectionView` | salesSectionRef/name/displayOrder/itemCount/canMoveUp/canMoveDown；count 紧跟名称由 UI 决定 |
 | `SalesMenuDraftItemView` | salesItemRef/catalogItemRef/itemCode/displayName/productShape、saleContent、listedPrice、orderingConstraints、displayMedia、displayOrder/canMove*、version |
 | `SalesMenuPublishedItemView` | 冻结定义 + `inventoryAvailability` + `manualSaleStatus` 两个必备独立对象；禁止 `available:boolean` 合并字段 |
-| `SalesMenuItemSaleContent` | tagged union：`DIRECT`/`SKU_SELECTION`/`WEIGHTED`/`COMPOSITE`；SKU_SELECTION 每个已选 sku 有独立 `listedPriceCents`，不含公共挂牌价；其他适用形态使用 item `listedPriceCents` |
+| `SalesMenuItemSaleContent` | tagged union：`DIRECT`/`SKU_SELECTION`/`WEIGHTED`/`COMPOSITE`；SKU_SELECTION 每个已选 sku 有独立 `listedPriceCents`，不含公共挂牌价；其他适用形态使用 item `listedPriceCents`；称重输出可带 Catalog 派生的结构化 `salesUnit` |
 | `SalesMenuOrderingConstraints` | JSON object `additionalProperties=false`，仅 `minItemQuantity`、`quantityStep` 两个 nullable positive integer 键；称重形态必须两者均 null |
-| `SalesMenuDisplayMedia` | `mode=INHERIT_CATALOG|CUSTOM`；CUSTOM 为有序 assetRef 列表、第一张主图；1 主 + 最多 5 附、单张最大 2 MB 与 Catalog 图片规则逐字一致 |
+| `SalesMenuDisplayMedia` | `mode=INHERIT_CATALOG|CUSTOM`；CUSTOM 为有序 assetRef 关系列表、第一张主图；复制时只新增菜单关系行并复用原 `assetRef`，不克隆 Asset/file/object；1 主 + 最多 5 附、单张最大 2 MB 与 Catalog 图片规则逐字一致 |
 | `InventoryAvailabilityFact` | `applicability=NOT_APPLICABLE|APPLICABLE`；适用时 `state=AVAILABLE|AUTO_UNAVAILABLE|UNKNOWN`、`reason=OUT_OF_STOCK|NEGATIVE_NOT_ALLOWED|READ_UNAVAILABLE|null`；UNKNOWN 不阻断 |
 | `ManualSaleStatusFact` | `state=NORMAL|MANUAL_SOLD_OUT`、reason/nullable、changedAt、changedByDisplayName；不携带库存状态 |
 | `SalesMenuOperationRecord` | occurredAt、operationKind、target refs、result=`SUCCESS|FAILED`、failureCode/nullable、actor display；用户文案由 frontend presenter 生成，不存整句 display copy |
@@ -278,6 +278,8 @@ IMPLEMENTATION_AUTHORITY=false
 | `SalesMenuAssetTarget` | 只由 URL + owner readback 形成：workspaceUuid/groupWorkspaceKey/storeRef/salesMenuRef/salesItemRef/expectedDraftVersion；业务 target 是当前菜单的 stable item，不以 channel 或 ambient UI state 代替 |
 | `SalesMenuAssetStageRequest` | multipart metadata/content + `expectedDraftVersion`；store/menu/item 只在 path，不允许 body 覆写；服务端生成 idempotency context 包含 operation + 完整 target + digest |
 | `SalesMenuAssetReleaseRequest` | `expectedAssetVersion`；完整 target 在 path；body 不接受 store/menu/item/usage/status；release readback 返回 assetRef/status/version |
+
+`SalesMenuCommandReadback.targetRef` 与普通操作记录的 `targetRef` 使用同一套命令目标口径，不能把路由中的任意 path ref 机械地写入响应：菜单级命令（create/copy/rename/archive/activation/schedule/publish）返回 `salesMenuRef`；分区级命令和按分区加入商品虽然必须以 URL 中的 `salesSectionRef` 做 owner 关系校验，但其聚合版本 readback 的 target 仍返回 `salesMenuRef`；销售项级命令（update/delete/move、人工沽清/恢复）返回 stable `salesItemRef`。创建菜单的请求没有源菜单 target，成功 readback 返回新菜单 ref。图片 stage/release 不使用该通用 command readback，而返回完整的 `SalesMenuAssetTarget`。`salesSectionRef` 不能被忽略或由 owner 自动选择第一分区；它是 `addItems` 的必需命令入参。
 
 价格沿用 Catalog wire 的整数分单位：`listedPriceCents` / `standardPriceCents` 为非负 integer，前端按人民币显示；不得引入浮点。商品默认价只作只读对照，菜单 owner 只持有发布时使用的挂牌价。
 
@@ -290,7 +292,7 @@ IMPLEMENTATION_AUTHORITY=false
 3. edge 调用 `SalesMenuOwnerApi.requireSalesMenuItemAssetTarget(mode, target, ownerScopeGrant, contextVersion)`；owner 在同一次 judgment 中证明 workspace/store/menu/stable item 关系。`STAGE|CLAIM` 要求 menu 未归档、item 仍在 current draft、`expectedDraftVersion` 匹配；`RELEASE_STAGED` 允许 menu 已归档或 item 已从 draft 移除，但仍必须由 stable item/history 证明原 menu 关系，以便只清理该 target 的 STAGED 资产；
 4. SalesMenu owner 返回不可由客户端构造的 `SalesMenuAssetTargetReadback`；edge 将该 readback、原 `OperationsOwnerScopeGrant` 和 session `contextVersion` 传给 `SalesMenuAssetCommandApi`；
 5. Asset owner 再验证 grant 的 workspace/group/targetType=`STORE`/targetId=`storeRef`/requirement/capability/contextVersion，且 `SalesMenuAssetTargetReadback` 与 grant/store 相符；stage 以 usage=`SALES_MENU_ITEM_IMAGE` 写 owner-local target；release 还必须匹配同一 assetRef 的 target、workspace、usage、`STAGED`、expectedAssetVersion；
-6. item whole-save claim 再以 `mode=CLAIM` 调用 `requireSalesMenuItemAssetTarget`，Asset owner仅允许相同完整 target 的 STAGED refs 被 claim；仅持有 bindGrant、同 workspace 或同 menu 但不同 item 均不足以 claim。
+6. item whole-save claim 再以 `mode=CLAIM` 调用 `requireSalesMenuItemAssetTarget`，Asset owner仅允许相同完整 target 的 STAGED refs 被 claim；仅持有 bindGrant、同 workspace 或同 menu 但不同 item 均不足以 claim。已经 `ACTIVE` 的既有 `assetRef` 属于 active display read，不再次 claim；复制得到的共享 active ref 也不走这条 STAGED claim 链。
 
 Asset migration新增 owner-local `platform_asset.sales_menu_asset_target(asset_ref PK/FK staged_asset, workspace_uuid, group_workspace_key, store_ref, sales_menu_ref, sales_item_ref, created_at)`；这些 opaque refs 不建跨 schema FK，也不成为菜单业务 membership。Asset owner在 stage、release、claim时都锁 asset lifecycle 并读取该表；release 不删除 target row，只改变 lifecycle，保证重放/审计可判定。此表不替代 SalesMenu owner judgment，且不得被 Catalog API消费。
 
@@ -305,7 +307,30 @@ Asset migration新增 owner-local `platform_asset.sales_menu_asset_target(asset_
 - 称重销售商品：`saleContent.kind=WEIGHTED`，公共 `listedPriceCents` 按 Catalog 有效销售单位解释；两个按“份”的约束必须缺省；
 - `catalogItemRef` 和 stable `salesItemRef` 不在 update payload 中可换绑；服务端以 URL itemRef 定位原绑定；
 - `displayNameOverride` 为空表示沿用当前 Catalog 展示名；published version 仍冻结最终 resolved displayName；
-- 图片 INHERIT 不复制资产所有权；CUSTOM 引用经 Asset owner claim 的 sales-menu image refs。
+- 图片 INHERIT 不复制资产所有权；CUSTOM 新上传的 STAGED refs 经 Asset owner claim，已 ACTIVE 的既有 refs（包括
+  Catalog 式复制后共享的 refs）只做 active asset read，不重复 claim 或转移资产所有权。
+
+### 5.3a 商品销售单位：沿用 Catalog owner 的结构化事实
+
+本批选择结构化 `salesUnit`（`unitRef`、`code`、`name`、`unitDimension`、`precision`）作为称重销售的显示事实，
+不新增 `unitLabel` 字符串，也不允许前端在销售菜单请求中写入单位。单位的 owner 和生命周期沿用 Catalog：
+
+1. `CatalogOwnerApi.SalesMenuItemFacts.salesUnitSnapshot` 是唯一跨 owner 输入；SalesMenu owner 只能调用现有
+   `CatalogOwnerService` 的 `itemUnitRefsByItemRefs`/`UnitSnapshot` 读取路径，不得直接查询 `catalog` schema，
+   不得在 sales-menu 中复制 unit model、状态或版本语义。
+2. `SalesMenuItemUpdateRequest.saleContent` 是输入专用形态，只接受 `kind`、`listedPriceCents`、`skuPrices`；
+   没有 `salesUnit` 或 `unitLabel`。菜单挂牌价仍由菜单保存，单位只读且不参与客户端 CAS。
+3. draft list/detail read 每次按当前 scoped Catalog facts 派生 `salesUnit`；draft 不保存单位列。输出只在
+   `WEIGHTED` content 上暴露 nullable 结构化 `salesUnit`，其他形态为 `null`；前端若展示单位使用 `name` 等已给出的
+   结构化字段，不自行拼接、回写或从 ambient UI state 推断。
+4. publish 在锁定 current draft 后把同一次 Catalog owner read 的单位事实冻结到
+   `sales_version_item.resolved_sales_unit_ref/code/name/dimension/precision`；published list/detail 只读这些
+   自己的快照，不再次从 Catalog 推导。之后 Catalog 单位变化只影响后续 draft read/新 publication，不改变旧 publication。
+5. copy 只复制 source current draft 的菜单定义、时段、排序、media relation 和其他已批准边界；不复制单位快照列。
+   副本默认停用，副本 draft read 重新从当前 Catalog 派生单位；不创建新的 unit、menu unit label 或跨 owner relation。
+
+这条边界与总公司商品复制的 relation-only 图片复用是并列约束：图片 CUSTOM 复用既有 active `assetRef`，单位则复用
+Catalog owner 的结构化 read fact；两者都不能被实现为 sales-menu 自有的可编辑字符串或 shadow owner。
 
 ### 5.4 typed problem closed set
 
@@ -340,7 +365,7 @@ Asset migration新增 owner-local `platform_asset.sales_menu_asset_target(asset_
 
 | policy | 第一个 owner command | 第二个 owner command | 事务 | 失败时的回滚事实 |
 | --- | --- | --- | --- | --- |
-| 暂存菜单图片 | edge 先以 `mode=STAGE` 调用 `SalesMenuOwnerApi.requireSalesMenuItemAssetTarget` 获得 server-owned target judgment | `SalesMenuAssetCommandApi.stageSalesMenuItemImage(target, grant, contextVersion, command)` | object I/O 事务外；Asset relational stage 自有 REQUIRED | judgment/stage 失败不产生 menu 事实；若 object 已物化但 relational stage 失败，仅 owner cleanup 接管物理对象；无 assetRef readback |
+| 暂存菜单图片 | edge 先以 `mode=STAGE` 调用 `SalesMenuOwnerApi.requireSalesMenuItemAssetTarget` 获得 server-owned target judgment | `SalesMenuAssetCommandApi.stageSalesMenuItemImage(target, grant, contextVersion, command)` | object I/O 事务外；Asset relational stage 自有 REQUIRED | judgment/stage 失败不产生 menu 事实；若 object 已物化但 relational stage 失败，仅 owner cleanup 接管物理对象；stage readback 返回 `assetRef`、暂态 `bindGrant` 与 target，供同一编辑会话后续 whole-save claim |
 | 放弃未绑定暂存图片 | edge 先以 `mode=RELEASE_STAGED` 调用 `SalesMenuOwnerApi.requireSalesMenuItemAssetTarget` 的 cleanup 语义 | `SalesMenuAssetCommandApi.releaseStagedSalesMenuItemImage(target, grant, contextVersion, command)` | Asset owner 自有 REQUIRED | release 失败保持 STAGED，可在编辑器重试；target/workspace/usage/status/version 任一不符均不改资产 |
 | 保存 CUSTOM 菜单图片 | `SalesMenuOwnerApi.updateDraftItem` 在 draft lock 内重新判定 target | `SalesMenuAssetCommandApi.claimSalesMenuItemImages(target, bindings)` | 同一 REQUIRED transaction；sales-menu 是发起 owner，asset 是目标 owner | 任一 target/claim、版本 CAS 或 item write 失败，全部新 asset 仍为 STAGED、draft 仍为旧版本、无 success operation record |
 | 无 CUSTOM 图片的菜单 command | `SalesMenuOwnerApi` 对应 command | N/A | sales-menu REQUIRED | 菜单、receipt、success operation record 同时回滚 |
@@ -358,7 +383,7 @@ Asset migration新增 owner-local `platform_asset.sales_menu_asset_target(asset_
 | 启用主语 `(menu, channel)` | 需求 §4.2/§4.3 | `SalesMenuActivation` schema/DB unique pair | setActivation 只改 relation；publish 不隐式启停 | publish 前后 activation 不变 oracle |
 | 时段是菜单版本事实 | IA 管理/时段原文 | draft schedule → publish clone → published schedule | 前台读取 published schedule；销售端自行判断 | 修改 draft 时 front 不变，publish 后变 |
 | stable SalesItem 不可换绑 | G-11 | add 生成 ref；update payload 无 catalogItemRef | owner URL ref 找原绑定；publication reuse stable ref | duplicate add + rebind rejected |
-| 挂牌价形态适配 | 需求 §4.1/IA item | tagged saleContent；integer cents | owner closed shape validator；frontend 形态分支 | SKU 无公共价、direct 有公共价、weighted 单位价 |
+| 挂牌价形态适配 | 需求 §4.1/IA item | tagged saleContent；integer cents；WEIGHTED 输出 Catalog 结构化 `salesUnit` | owner closed shape validator；frontend 形态分支；Catalog `UnitSnapshot` read | SKU 无公共价、direct 有公共价、weighted 单位价与五字段单位 readback |
 | 两个约束键 | 需求 §4.6 | `SalesMenuOrderingConstraints` explicit properties | owner tolerant read known keys、write only known keys；sales consumer读规则 | unknown write rejected、legacy unknown read ignored focused test |
 | 展示图片覆盖 | IA item | INHERIT 或 ordered CUSTOM asset refs | draft editor/Published effective view；asset owner claim | 1+5/2MB、upload retry、published frozen |
 | 图片实际目标授权 | IA item + backend actual-target owner rule | URL store/menu/item → STORE grant → SalesMenu owner target readback → Asset target row | stage/release/claim 三次检查完整 target；前端 adapter 必须显式传 generated path args | no-capability/cross-store/cross-menu/cross-item/wrong usage/released reds |
@@ -397,7 +422,7 @@ Asset migration新增 owner-local `platform_asset.sales_menu_asset_target(asset_
 | SM-16 | displayNameOverride/image mode 属菜单；INHERIT 在发布时 resolve 并冻结，CUSTOM 必须 asset claim 通过 |
 | SM-17 | 图片数量与大小逐字复用商品图片规则；stage/release/claim 必须匹配 server-judged workspace/store/menu/item target 与 STORE grant，上传中/失败/未 claim 阻断 item 保存/发布 |
 | SM-18 | 约束仅 minItemQuantity/quantityStep positive integer；WEIGHTED 两者必须为空 |
-| SM-19 | copy 只复制 current draft sections/items/order/bindings/overrides/prices/constraints/media/schedule |
+| SM-19 | copy 只复制 current draft sections/items/order/bindings/overrides/prices/constraints/media mode 与 CUSTOM media relation rows/schedule；CUSTOM 保留有序原 `assetRef`，INHERIT 只复制 mode |
 | SM-20 | copy 不复制 published versions/publications、operation records、inventory facts、manual status/history、source activation；新 activation disabled |
 | SM-21 | archive 不删除 versions/publications/history/active assets；archived aggregate 不再编辑、发布或启停 |
 | SM-22 | store disabled 只阻断 publish；draft create/edit/copy/save 不阻断 |
@@ -467,7 +492,7 @@ Asset migration新增 owner-local `platform_asset.sales_menu_asset_target(asset_
 | `BusinessChannelOwnerApi.requireSalesMenuChannel` | create/activation/publish/manual status 和 menu scope recheck |
 | `OrganizationOwnerApi.requireSalesMenuStore` | 所有 command actual target recheck；publish额外取得 store status/timezone |
 | `SalesMenuAssetCommandApi.stageSalesMenuItemImage/releaseStagedSalesMenuItemImage/claimSalesMenuItemImages` | `OperationsSalesMenuAssetController` 与 item save；每次都收 `SalesMenuAssetTargetReadback`，stage/release 另收 STORE `OperationsOwnerScopeGrant` + contextVersion；以 Catalog Asset 的 storage/lifecycle 为机制先例但不继承 catalog usage/capability/target |
-| `SalesMenuAssetReadApi.readSalesMenuItemImages(Set<AssetRef>)` | draft/published item read；只返安全 public ref/metadata |
+| `SalesMenuAssetReadApi.readSalesMenuItemImages(Set<AssetRef>)` | draft/published item read；只返安全 public ref/metadata；active CUSTOM ref 包括复制后与其他销售项共享的 ref |
 
 不得新增“以后可能用”的反向 consumer API；本表之外的方法为零调用者，当场删除。
 
@@ -490,7 +515,7 @@ Asset migration新增 owner-local `platform_asset.sales_menu_asset_target(asset_
 | section/item ordering | schemas + cursor | order columns/swap locks | row menus + authoritative refresh | boundary/cross-page acceptance/L2 | 21-item fixture/seed | 同步修改 |
 | shape/spec/price | tagged schemas | Catalog set-read/validator/version rows | shape presenter/item editor/detail | all-shapes HTTP/browser | Catalog source refs + menu definition | 同步修改；Catalog facts只读 |
 | ordering constraints JSON | explicit schema properties | JSON parser/validator/storage | conditional fields/detail | known/unknown/weighted tests | menu fixture/seed | 同步修改 |
-| display image | schema + target-bound asset usage | SalesMenu target judgment + Asset target table/API/claim + version media | shared image behavior adapter 显式传 generated store/menu/item args | asset owner/HTTP/L2 capability、cross-target、failure retry | independent asset fixture/seed | 同步修改；Catalog image不复制 |
+| display image | schema + active shared asset usage；新上传仍有 target-bound stage/claim | SalesMenu target judgment + Asset lifecycle API/claim + version media；复制沿 Catalog 关系复制直接复用原 `assetRef`，不 clone asset、不复制文件 | shared image behavior adapter 显式传 generated store/menu/item args；复制后的 active ref 走既有 active read | asset owner/HTTP/L2 capability、cross-target、failure retry、copy shared-ref oracle | independent asset fixture/seed；复制只写菜单 media relation | 同步修改；Catalog 与 SalesMenu copy 均复用 active `assetRef`，不复制 Asset |
 | inventory availability | schema | Inventory set-read + mapper；menu migration N/A | published table/detail read-only | state matrix acceptance/L2 | inventory fixture/seed existing owner | 同步修改；menu DB N/A（反例：只派生） |
 | manual sale status | schema | current/event tables + commands | front status modal/detail | set/restore/isolation HTTP/L2 | menu fixture/seed | 同步修改 |
 | operation records | schema | operation_record + rejection recorder | operation mode/pagination | success/failure/cursor | 21 records via real commands | 同步修改 |
@@ -547,13 +572,13 @@ Asset owner 同一 forward-only migration（或按 owner 拆成相邻 migration�
 
 `publish` 的单一 REQUIRED transaction 顺序固定如下：
 
-1. owner recheck workspace/store/menu/channel/capability，锁 `sales_collection` 与 current DRAFT；
-2. receipt 同 key read/replay 或 request-hash conflict；
+1. 以相同 workspace + operation + idempotency key 取得 owner-local receipt advisory lock；随后 owner recheck workspace/store/menu/channel/capability，锁 `sales_collection` 与 current DRAFT；
+2. 在实际 target 已锁定且 workspace/store/menu/channel/capability 的 owner scope judgment 已完成后，读取 receipt 做同 key replay 或 request-hash conflict；不能用 replay 结果替代本次 scope/target recheck；
 3. 重新调用 Organization/BusinessChannel/Catalog/Asset 的批量 judgment，使用锁内 draft 全集做 validator；
-4. 计算下一 publication revision，插入 PUBLISHED version；集合式复制 section/item/SKU/media，并填充 resolved catalog facts；
+4. 计算下一 publication revision，插入 PUBLISHED version；集合式复制 section/item/SKU 销售定义及 media mode/CUSTOM relation rows，并填充 resolved catalog facts；
 5. 插入 `sales_publication`，更新 `latest_published_version_ref`，**不替换或克隆 current DRAFT，也不修改 activation**；此刻 draft revision 与 publication source revision 相同，后续任一 draft command 才使 `draftDirty=true`；
-6. 同事务插 success operation record/receipt/audit value；
-7. commit 后返回 publicationRef/revision/change counts/准确 success fact。
+6. 从 owner repository 重新读取已持久化 menu aggregate，使用该 authoritative version 组装 command readback；不得用 `expectedVersion + 1` 或内存对象推导返回版本；
+7. 同事务插 success operation record，再插 `SUCCEEDED` receipt（不预写 `IN_PROGRESS`）；commit 后返回 authoritative command readback。任何 action、readback、success record 或 receipt 失败都回滚。
 
 PUBLISHED rows在 repository 层没有 update/delete 方法；数据库用 trigger 拦截 published version child update/delete，作为漏写 service guard 时仍会红的保护。trigger 不实现业务流程，只保护 immutable fact。
 
@@ -565,6 +590,120 @@ PUBLISHED rows在 repository 层没有 update/delete 方法；数据库用 trigg
 - Cursor 使用共享 `OpaqueCollectionCursor`，query identity 包括 operationId/workspace/store/channel/menu/version/section/mode/filter/pageSize；
 - 操作记录用 `(occurred_at DESC, record_ref DESC)` keyset；菜单项用 `(display_order ASC, sales_item_ref ASC)`；
 - `canMoveUp/canMoveDown` 由 set query/window 或邻接 existence 计算，不能只按当前页 index 判断。
+
+#### 10.3b · 操作记录的菜单级与渠道级可见性（Dexter 2026-09-01 裁定）
+
+`getOperationsSalesMenuOperationRecords` 接收当前菜单与经营入口上下文；owner 查询必须限制 workspace、group、store、collection，并使用
+`(channel_ref IS NULL OR channel_ref=?)`。`channel_ref IS NULL` 表示菜单级操作，作用于菜单整体，因此在每个经营入口的操作记录集合中可见；非空
+`channel_ref` 只在对应经营入口集合中可见。本批不新增菜单级日志入口，不把该规则扩展为诊断链或终端状态推演。该可见性规则与固定 20 条
+keyset 分页、`(occurred_at DESC, record_ref DESC)` 排序和日志模式切换清栈同时成立。
+
+#### 10.3a · 当前字节执行修订：立即唯一约束下的排序交换（2026-09-01）
+
+原条目要求 deferred order unique + single CASE update；重开当前仓库字节后确认，活动中的 database-boundaries
+门禁止 `DEFERRABLE`，因此该实现形态不能直接写入本仓库。该技术冲突不改变排序业务语义，也不新增 operation、字段或模型。
+本批按当前字节执行以下等价闭包，并以 focused/容器测试证伪：owner transaction 先由 `lockAndCheck` 对
+`sales_collection` 做 `FOR UPDATE` 并执行 CAS；随后对 current 行和全序相邻行显式 `FOR UPDATE`，读取同一
+version/section 下的临时未占用 order，依次执行 current→temporary、adjacent→current、current→adjacent，
+三步均须影响 1 行，否则事务回滚。相邻行按 `(display_order, ref)` 全序寻找，因此删除产生的合法 order 空洞
+不会把可移动项误判为边界。数据库仍保留立即唯一约束；业务上仍是单次上下移、published 不参与写入、
+CAS/receipt/audit 与其他命令一致。本文原 deferred/single-CASE 条目保留作为冲突原文，以上是针对当前仓库门的
+implementation amendment，不得将三次更新扩展为全表重排或客户端排序。
+
+#### 10.3c · 当前字节执行修订：菜单图片绑定凭证的暂态传递与复制停用语义（2026-09-01）
+
+重开 Asset owner API 与当前 edge 生成链后确认，`CUSTOM` 菜单图片的 `STAGED` 资产必须把 Asset owner 返回的
+opaque `bindGrant` 带到同一次销售项 whole-save，才能完成 `CLAIM`；此前 §6 的“无 assetRef readback”表述不足以
+支撑这一闭包。现按以下不新增业务 operation 的形态执行：stage readback 返回 `assetRef` 与暂态 `bindGrant`；
+`updateOperationsSalesMenuItem` 的 JSON body 仍不接收凭证，edge 只从可选的
+`X-Sales-Menu-Asset-Bind-Grants` JSON header 解析 `assetRef -> bindGrant`，生成 owner command 的暂态
+`assetBindings`。该 header 只用于本次请求，不能写入菜单表、operation record、诊断日志或前端持久化存储；
+receipt 只保留不可逆 request hash。销售菜单 owner 在已锁定 draft item 后以当前 item version 重新调用
+`requireSalesMenuItemAssetTarget(CLAIM, ...)`，再以相同 target、grant、contextVersion 调 Asset owner claim；
+claim、menu CAS、media replacement 与 success record 处于同一 `REQUIRED` 数据库事务，任一失败全部回滚。
+只有已是 `ACTIVE` 的既有图片无需再次消费凭证；混入未绑定、错误 target、错误 usage、已释放/已 claim 状态均为
+typed failure。stage 的 multipart/object I/O 仍在数据库事务外，故其 edge adapter 不声明事务；release/claim/save
+保留 owner 的 `REQUIRED` 事务边界。
+
+同时澄清 SM-20 的“新 activation disabled”：复制只写入新的 menu、current draft、sections/items/order/bindings/
+overrides/prices/constraints/media mode 与 CUSTOM media relation rows/schedule，不读取或创建 source 的 `sales_collection_activation` 关系；新菜单
+没有 activation row 即为默认停用，直到用户对目标经营入口显式执行启用 command。这样既满足默认停用，也不复制原菜单
+启用关系；菜单仍可编辑、保存、复制与发布。
+
+#### 10.3d · Dexter 裁定：SalesMenu CUSTOM 图片复制沿用 Catalog 的共享 assetRef 语义（2026-09-01）
+
+针对 `copyOperationsSalesMenu` 的 CUSTOM 图片，复用总公司商品复制的既有实现，不新造 Asset clone 或菜单专用复制机制：
+
+**既有实现锚点（实施者必须先读，不得按名称猜测）：**
+
+| 总公司商品复制源码 | 负责事实 | 销售菜单的复用边界 |
+| --- | --- | --- |
+| `apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java`：`executeCopy` | 在复制 owner transaction 中为 Catalog item、SKU 等实体建立 target mapping；`assetRef` 不参与 mapping，图片 facts 交给 owner-local facts writer | `SalesMenuOwnerService.copyDraft` 只在自己的 transaction 中收集新 `salesItemRef`/version ref；不调用 Catalog 的复制 command，也不复制 Catalog item |
+| `.../catalog/application/CatalogItemMediaFacts.java`：`insertForCopy` | 将源图片的 opaque `assetRef` 按 display order 写入新 item relation；不调用 Asset owner、不复制 object | 菜单 `sales_version_item_media` 按相同顺序写入同一 `assetRef`；不新增菜单 Asset copy API |
+| `.../catalog/application/CatalogSkuMediaFacts.java`：`insertForCopy` | 将 SKU media relation 中的同一 `assetRef` 按顺序写入新 SKU relation | 仅作 Catalog 自有 SKU media relation-only 的源码对照；当前 sales-menu 不投影 Catalog SKU media，`SKU_SELECTION` 只复制菜单自己的 SKU 销售定义和价格事实 |
+
+上表是实现的 source-of-truth，不是建议新增的抽象层。实施前后都必须以当前字节重新确认方法行为；如果总公司复制实现变更，销售菜单应复用其事实边界，而不是另写一套 Asset 生命周期或对象复制逻辑。
+
+1. `SalesMenuOwnerService.copyDraft` 读取源 current draft 的 `sales_version_item_media.asset_ref` 关系，并把相同的
+   opaque `assetRef` 写入副本新 `sales_item_ref`/新 draft version 的 media relation；图片文件、
+   `platform_asset.staged_asset` 行、content hash 和底层 object 均不复制。
+2. 复制只增加菜单域的关系行，不调用 Asset stage、claim、release，也不创建新的 Asset operation 或新的 target row。
+   这是与 `CatalogOwnerService.executeCopy` → `CatalogItemMediaFacts.insertForCopy` /
+   `CatalogSkuMediaFacts.insertForCopy` 相同的“共享资产、复制 owner relation”模式。
+3. 只有新上传的 STAGED 图片需要当前 target-bound `STAGE|CLAIM|RELEASE_STAGED` 链和 bindGrant；已 ACTIVE 的既有
+   `assetRef`（包括复制后被多个销售项引用的 ref）直接使用既有 active asset read，不再次 claim。
+4. active CUSTOM 图片被替换、删除、菜单复制或副本归档时，不释放共享的 ACTIVE asset；Asset 生命周期继续由其 owner
+   的既有引用/发布保护规则管理。复制不得改变源菜单的图片关系或资产状态。
+5. `SalesMenuAssetTarget` 仍用于新上传图片在 stage/claim/release 时的实际目标与 grant 复核；它不是所有 ACTIVE
+   media relation 的一对一 membership 表。不得用该表推导复制后 active ref 的唯一消费者，也不得因 copied ref
+   的原始 target 与副本不同而拒绝 active display read。
+
+因此，复制边界的可证伪 oracle 是：副本与源 current draft 的 CUSTOM media `assetRef` 列表逐项相同；Asset 行数、
+object key/hash/lifecycle 不变；副本只新增自己的 `sales_version_item_media` 关系；源/副本均可读；无 stage/claim/
+clone/release 调用，无 publication、inventory、manual status 或 source activation 复制。若实现发现 active
+display read 仍强制 exact target-bound 一对一匹配，应删除该复制路径上的强制匹配，而不是改变 Catalog 式共享语义。
+
+#### 10.3e · 当前契约下的 STAGED 图片释放目标（2026-09-01）
+
+`SalesMenuAssetReleaseRequest` 的公开 body 只有 `expectedAssetVersion`，因此 release edge 不得让客户端提交、也不得
+猜造 `expectedDraftVersion`。释放请求仍必须从完整的 URL path 解析 `groupWorkspaceKey/storeRef/salesMenuRef/salesItemRef`，
+先由 SalesMenu owner 复核该路径身份，再由 Asset owner 在锁定 `staged_asset` 与其 `sales_menu_asset_target` 后精确复核
+workspace、group、store、menu、item、usage 和 `STAGED` 状态；并以 `expectedAssetVersion` 做生命周期 CAS。target row
+中已保存的 `expectedDraftVersion` 是 Asset owner 的 target 事实和权威 readback 字段，不是 release 请求的客户端 CAS 输入；
+release readback 返回该已保存 target。这样支持商品已经从当前 draft 移除或菜单已归档时清理未 claim 的 STAGED 图片，同时不放宽
+任何门店、菜单、商品或 usage 边界。
+
+release receipt 的 request hash 只由 release operation、完整 target 身份、`assetRef` 和 `expectedAssetVersion` 构成，不能把
+edge 使用的非语义 draft-version 占位值纳入幂等身份；STAGE/CLAIM 仍必须使用客户端 whole-save 对应的精确
+`expectedDraftVersion`。该契约对齐不新增 operation、表或 fallback，且不改变 10.3d 的 Catalog 式 ACTIVE 共享图片复制语义。
+
+#### 10.3f · 当前字节执行修订：命令 receipt、失败记录与权威 readback 顺序（2026-09-01）
+
+销售菜单 command 的 receipt 不是业务事实的前置状态表。当前实现以 owner-local advisory lock 串行化同一
+`workspace + operation + idempotencyKey`，然后锁定并复核实际 menu/store/channel target，再读取 receipt；因此 replay 不能绕过
+本次实际 target/capability 检查，业务 preflight 也不会在 receipt replay 判定前运行。receipt 只在 action 已完成、权威 owner
+readback 已成功、success operation record 已写入后以 `SUCCEEDED` 状态插入；本批不写 `IN_PROGRESS`，也不把 receipt 当作
+补偿事务。
+
+每条写 command 的固定代码闭包是：
+
+1. edge 完成 transport parse，形成显式 path target、selected STORE、capability grant、contextVersion 和 idempotency key；
+2. owner 取得 aggregate/target lock 并复核 workspace、STORE、menu/item/channel、capability、archive/version；适用 Catalog/Inventory/Asset 等业务 facts 在 replay 判定后、业务写入前重新读取；
+3. owner 读取同 key receipt；存在则只允许 request hash 相同的 `SUCCEEDED` readback replay，hash 不同返回 conflict；
+4. 未 replay 时才执行业务 validator、CAS、菜单域写和适用跨 owner command；
+5. 所有写完成后，owner 通过 `SalesMenuRepository.find` 重新读取持久化 aggregate，并以其版本/身份组装 readback；禁止从锁前对象或 `expectedVersion + 1` 猜造结果；
+6. 先写 success operation record，再写 `SUCCEEDED` receipt，二者与业务写同一 `REQUIRED` transaction；任何失败全部回滚。
+
+edge 的已知业务失败必须在 command supplier 内被 `SalesMenuCommandFailureRecorder` 捕获，原 command transaction 回滚后再开启独立
+transaction 写普通 `FAILED` operation record。`SALES_MENU_CHANNEL_INELIGIBLE` 的记录路径只能由 BusinessChannel owner 重新证明
+该 channel 的 persisted STORE target relation；这个 read 不套用 INTERNAL/DINE_IN/TAKEAWAY eligibility，因而同店但不合资格的
+channel 可以被准确记录，而跨店、无 target、授权、transport 或 unknown internal failure 不得写业务失败记录。记录失败只写脱敏
+结构化日志，不覆盖原 typed Problem。
+
+该顺序不改变 operation 数量、契约或产品语义；它只是把“实际 target 锁定/授权复核、receipt replay、业务判断、权威 readback、
+success record/receipt”从隐式实现顺序固定为可读、可测的 owner 闭包。focused proof 必须构造持久化版本与内存 expected version
+不同的 red case，证明响应采用 persisted version；并证明 create、activation、manual sold-out/restore 的 channel business
+precheck 失败仍经 recorder，而 auth/transport/unknown failure 不经 recorder。
 
 ### 10.4 旧行回填与回滚
 
@@ -632,7 +771,7 @@ R5_SEED_CONFIRMATION=EXPLICIT_R5_SEED scripts/dev/seed --profile r5-full
 | `sales-menu.collection-lifecycle-and-multi-activation` | 同上 | authorized store actor | one channel, 21 menus（其中两份用于 multi-active） | create/rename/setActivation/updateSchedule/archive；menu Cursor 两页 + menu detail GET | 两 menu 可同时 enabled；停用仍可 edit/publish；schedule draft readback；第21份可选/可管理；跨 query cursor reject；archive历史保留 |
 | `sales-menu.copy-current-draft-boundary` | 同上 | source menu actor | dirty draft + publication + manual event + operation rows + enabled activation | copy HTTP then all relevant reads | only definition/schedule copied；new disabled；publication/log/inventory/manual/source activation absent；新 ref 独立 |
 | `sales-menu.ordered-sections-and-items` | 同上 | authorized actor | 3 sections；21 eligible candidates；one section 21 duplicate-capable items | candidate Cursor 两页；create/rename/move/delete section；add/move/delete items；draft sections/items/detail GET | 第21候选可加入；global order/readback correct across page；boundary typed reject；nonempty delete no change；duplicate item refs distinct |
-| `sales-menu.shape-specific-sale-definition` | 同上 | authorized actor | direct/SKU/weighted/composite/service items + SKUs/default prices | add/update/read detail for every shape | SKU only per-SKU listed prices/no public price；weighted no piece constraints；others public cents；catalog binding unchanged |
+| `sales-menu.shape-specific-sale-definition` | 同上 | authorized actor | direct/SKU/weighted/composite/service items + SKUs/default prices + Catalog unit fact | add/update/read detail for every shape | SKU only per-SKU listed prices/no public price；weighted no piece constraints，输出与 Catalog 五字段 `salesUnit` 一致且请求不带单位；others public cents；catalog binding unchanged |
 | `sales-menu.display-media-owner-transaction` | 同上 | authorized/no-capability actors | valid target plus cross-store/menu/item targets, staged/released/wrong-usage assets | path-targeted stage/release/update item with valid/invalid target/grant | no-capability、cross-target、wrong usage、released/version conflict reject；valid claim + draft CAS atomic；no menu/asset partial write；published image frozen |
 | `sales-menu.publish-frozen-effective-view` | 同上 | authorized actor | valid draft + catalog facts | preview/publish/front reads；then mutate draft/catalog | published section/item/name/spec/price/schedule unchanged；new publish changes latest only；publication says no terminal ACK |
 | `sales-menu.publish-blockers` | 同上 | authorized actor | disabled store, disabled channel, disabled activation, malformed drafts | preview/publish | store/channel disabled block；activation disabled does not；each violation structured；failed publish no version/publication |
@@ -678,7 +817,7 @@ R5_SEED_CONFIRMATION=EXPLICIT_R5_SEED scripts/dev/seed --profile r5-full
 | OP-18 | `updateOperationsSalesMenuSchedule` | `sales-menu.collection-lifecycle-and-multi-activation`；`sales-menu.copy-current-draft-boundary` | 时段权威读回且 copy 精确复制 | `sales-menu-menu-management-and-multi-active`；`sales-menu-copy-boundary` |
 | OP-19 | `createOperationsSalesMenuSection` | `sales-menu.ordered-sections-and-items`；`sales-menu.command-idempotency-and-cas` | 新 section 有稳定 ref、顺序与 intent 幂等 | `sales-menu-section-actions` |
 | OP-20 | `renameOperationsSalesMenuSection` | `sales-menu.ordered-sections-and-items` | 名称与顺序 readback 精确 | `sales-menu-section-actions` |
-| OP-21 | `deleteOperationsSalesMenuSection` | `sales-menu.ordered-sections-and-items` | 非空/边界拒绝时 section/items/order 均不变 | `sales-menu-section-actions`；`sales-menu-failure-recovery-and-focus` |
+| OP-21 | `deleteOperationsSalesMenuSection` | `sales-menu.ordered-sections-and-items` | 仅空分区可删；非空分区 typed reject 且销售项与顺序不变 | `sales-menu-section-actions`；`sales-menu-failure-recovery-and-focus` |
 | OP-22 | `moveOperationsSalesMenuSection` | `sales-menu.ordered-sections-and-items` | 仅上/下；first/last 拒绝；全序权威读回 | `sales-menu-section-actions`；`sales-menu-failure-recovery-and-focus` |
 | OP-23 | `addOperationsSalesMenuItems` | `sales-menu.ordered-sections-and-items`；`sales-menu.shape-specific-sale-definition`；`sales-menu.command-idempotency-and-cas` | 同商品可形成不同 SalesItem refs；shape 初始销售定义正确 | `sales-menu-add-candidates` |
 | OP-24 | `updateOperationsSalesMenuItem` | `sales-menu.shape-specific-sale-definition`；`sales-menu.display-media-owner-transaction`；`sales-menu.command-idempotency-and-cas` | whole-save、SKU 逐价/weighted 边界、asset claim 原子、CAS/重放 | `sales-menu-edit-direct-item-and-media`；`sales-menu-edit-sku-prices`；`sales-menu-edit-weighted-item`；`sales-menu-failure-recovery-and-focus` |
@@ -756,7 +895,7 @@ L2 case exact-set 固定为以下 16 条；31 条 UI 检查映射到 case，但�
 | `sales-menu-add-candidates` | 05,12,13,14 | 完整分类树/空分类；21 candidates 以20+1显式分页到达；第21个可加入；同商品重复勾选并形成不同 refs；shape 可见 |
 | `sales-menu-edit-direct-item-and-media` | 07,09,10,21,22,23 | 名称进入编辑；无库存/沽清；direct price/约束；custom image upload/reorder/retry；标题删除确认 |
 | `sales-menu-edit-sku-prices` | 10,27,28 | 逐 SKU 选择/菜单价；无公共挂牌价；readback 精确 |
-| `sales-menu-edit-weighted-item` | 08,28 | 公共单位价；不显示/不提交按份约束 |
+| `sales-menu-edit-weighted-item` | 08,28 | 公共单位价；只读展示 Catalog 五字段 `salesUnit`；不显示/不提交按份约束；保存请求不含 `unitLabel`/`salesUnit` |
 | `sales-menu-draft-order-and-pagination` | 11,31 | 21 rows 两页；行末只有上/下；跨页 move 后 owner 全序无重无漏；scope reset page1 |
 | `sales-menu-publish-and-front-structure` | 15,16,17,29,30 | preview/publish；front 无操作/查看列；名称详情是真只读；old publication frozen；准确 success copy |
 | `sales-menu-front-status-and-pagination` | 06,19,31 | 两维状态分列；21 rows 分页；状态 cell 打开 modal，不能恢复 inventory |
@@ -804,7 +943,8 @@ L2 case exact-set 固定为以下 16 条；31 条 UI 检查映射到 case，但�
 1. 需求/IA/本详设对同一用户事实出现不同字节，无法通过保持 IA 原文消解；
 2. 真实 Catalog shape/price/unit 事实不能表达 §5.3 任一已裁形态；
 3. BusinessChannel owner 无法证明 STORE INTERNAL DINE_IN/TAKEAWAY actual target，或需要新 binding 层；
-4. Asset owner 的不可变 publication 图片需要释放策略而当前 active asset 生命周期无唯一安全答案；
+4. Asset owner 的新上传 STAGED 图片或其 bindGrant 生命周期出现当前 Asset owner 无法安全判定的释放/重放边界；已 ACTIVE
+   的共享图片不得因菜单复制、替换、删除或归档被释放；
 5. 实施发现新的商品形态、约束语义或发布阻断条件，而当前 source 无法裁决；
 6. Inventory UNKNOWN 只有生产故障才能构造且无既有安全 seam，禁止为测试新增生产 API；
 7. 实际生成 operation denominator、DB budget、L2 case source 或 §11.1a 覆盖矩阵与本文数字/成员不一致；数字是待验证输入，以当前唯一 source 为准，先修设计/来源再继续；

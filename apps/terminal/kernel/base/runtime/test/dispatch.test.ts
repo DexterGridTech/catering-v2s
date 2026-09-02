@@ -4,6 +4,7 @@ import {
   defineActor,
   defineCommand,
   onCommand,
+  type CommandDispatchResult,
   type RuntimeModule,
 } from '../src/index'
 import {createRequestId} from '@catering-v2s/kernel-base-contracts'
@@ -63,9 +64,11 @@ describe('runtime dispatch and aggregation', () => {
       name: 'run', visibility: 'internal', allowReentry: false,
     })
     let reentryChild: string | undefined
+    let reentryChildResult: CommandDispatchResult | undefined
     const first = defineActor('test.dispatch.reentry', 'first', [onCommand(reentry, async context => {
       const child = await context.dispatchCommand(reentry, {})
       reentryChild = child.status
+      reentryChildResult = child
       return {continued: true}
     })])
     const second = defineActor('test.dispatch.reentry', 'second', [onCommand(reentry, () => ({continued: true}))])
@@ -79,8 +82,47 @@ describe('runtime dispatch and aggregation', () => {
     const result = await runtime.dispatchCommand(reentry, {})
     expect(result.status).toBe('completed')
     expect(result.actorResults.every(record => record.status === 'completed')).toBe(true)
-    expect(reentryChild).toBe('error')
+    expect(reentryChild).toBe('partial-failed')
+    expect(reentryChildResult?.actorResults).toEqual(expect.arrayContaining([
+      expect.objectContaining({actorKey: 'test.dispatch.reentry.first', status: 'error'}),
+      expect.objectContaining({actorKey: 'test.dispatch.reentry.second', status: 'completed'}),
+    ]))
     expect(result.actorResults).toHaveLength(2)
+  })
+
+  it('R3 allows parallel sibling dispatches of the same child command', async () => {
+    const child = defineCommand<Readonly<{}>>('test.dispatch.siblings', {
+      name: 'child', visibility: 'internal', allowReentry: false,
+    })
+    const parent = defineCommand<Readonly<{}>>('test.dispatch.siblings', {
+      name: 'parent', visibility: 'internal', allowReentry: false,
+    })
+    const childStarted = deferred<void>()
+    const releaseChild = deferred<void>()
+    let childRuns = 0
+    const childActor = defineActor('test.dispatch.siblings', 'child', [onCommand(child, async () => {
+      childRuns += 1
+      if (childRuns === 2) childStarted.resolve()
+      await releaseChild.promise
+      return {childRuns}
+    })])
+    const parentActor = defineActor('test.dispatch.siblings', 'parent', [onCommand(parent, async context => {
+      const first = context.dispatchCommand(child, {})
+      const second = context.dispatchCommand(child, {})
+      await childStarted.promise
+      releaseChild.resolve()
+      const results = await Promise.all([first, second])
+      return {statuses: results.map(result => result.status)}
+    })])
+    const runtime = createRuntime(createTestRuntimeInput({modules: [moduleFor(
+      'test.dispatch.siblings', [parent, child], [parentActor, childActor],
+    )]}))
+    await runtime.start()
+
+    const result = await runtime.dispatchCommand(parent, {})
+    expect(result.status).toBe('completed')
+    expect(result.actorResults[0]?.status).toBe('completed')
+    expect(childRuns).toBe(2)
   })
 
   it('D-3 rejects depth 33 while retaining a complete command chain diagnostic', async () => {

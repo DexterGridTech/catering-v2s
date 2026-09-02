@@ -7,7 +7,11 @@ import type {
   WorkspaceStateKeys,
 } from '../types/workspace'
 import type {StateRuntimeSliceRegistration} from '../types/slice'
-import {defineStateRuntimeSlice} from '../foundations/defineStateRuntimeSlice'
+import {
+  createPartitionedActionDispatcher,
+  createPartitionedStateKeys,
+  toPartitionedStateDescriptors,
+} from './partitioned'
 
 const isWorkspaceKey = (value: unknown): value is WorkspaceKey =>
   value === 'MAIN' || value === 'BRANCH'
@@ -51,10 +55,7 @@ export const createWorkspaceStateKeys = (
   if (typeof baseName !== 'string' || baseName.trim().length === 0) {
     throw new Error('[createWorkspaceStateKeys] baseName is required')
   }
-  return Object.freeze({
-    MAIN: `${baseName}.MAIN`,
-    BRANCH: `${baseName}.BRANCH`,
-  })
+  return createPartitionedStateKeys(baseName, ['MAIN', 'BRANCH'])
 }
 
 export const createWorkspaceActionDispatcher = (
@@ -65,15 +66,20 @@ export const createWorkspaceActionDispatcher = (
     throw new Error('[createWorkspaceActionDispatcher] dispatch is required')
   }
 
+  const dispatchPartitioned = createPartitionedActionDispatcher<WorkspaceKey, UnknownAction>({
+    selectPartition: () => workspace,
+    dispatch: input.dispatch,
+  })
+
   return (action: UnknownAction): unknown => {
     const actionType = requireActionType(action)
     const slashIndex = actionType.lastIndexOf('/')
     const sliceType = actionType.slice(0, slashIndex)
     const actionName = actionType.slice(slashIndex + 1)
-    return input.dispatch({
+    return dispatchPartitioned((partition) => ({
       ...action,
-      type: `${sliceType}.${workspace}/${actionName}`,
-    })
+      type: `${sliceType}.${partition}/${actionName}`,
+    }))
   }
 }
 
@@ -85,20 +91,23 @@ export const toWorkspaceStateDescriptors = <TState extends object>(
   }
   const keys = createWorkspaceStateKeys(input.baseName)
   const workspaces: readonly WorkspaceKey[] = ['MAIN', 'BRANCH']
-  const registrations = workspaces.map((workspace) => {
-    const reducer = input.reducers?.[workspace]
-    if (typeof reducer !== 'function') {
-      throw new Error(
-        `[toWorkspaceStateDescriptors] reducer is required for ${workspace}`,
-      )
-    }
-    const descriptor = input.createDescriptor(workspace, keys[workspace], reducer)
-    if (descriptor.name !== keys[workspace]) {
-      throw new Error(
-        `[toWorkspaceStateDescriptors] descriptor name mismatch for ${workspace}`,
-      )
-    }
-    return defineStateRuntimeSlice(descriptor)
+  return toPartitionedStateDescriptors({
+    keys: workspaces,
+    stateKeys: keys,
+    createDescriptor: (workspace, stateKey) => {
+      const reducer = input.reducers?.[workspace]
+      if (typeof reducer !== 'function') {
+        throw new Error(
+          `[toWorkspaceStateDescriptors] reducer is required for ${workspace}`,
+        )
+      }
+      const descriptor = input.createDescriptor(workspace, stateKey, reducer)
+      if (descriptor.name !== stateKey) {
+        throw new Error(
+          `[toWorkspaceStateDescriptors] descriptor name mismatch for ${workspace}`,
+        )
+      }
+      return descriptor
+    },
   })
-  return Object.freeze(registrations)
 }

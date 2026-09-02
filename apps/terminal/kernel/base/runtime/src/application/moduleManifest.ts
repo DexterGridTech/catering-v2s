@@ -1,6 +1,5 @@
 import type {RuntimeModule, RuntimeModuleDescriptor} from '../types/module'
-
-const freezeList = <T>(values: readonly T[]): readonly T[] => Object.freeze([...values])
+import {freezeList} from '../foundations/freezeList'
 
 export const describeRuntimeModule = (module: RuntimeModule): RuntimeModuleDescriptor =>
   Object.freeze({

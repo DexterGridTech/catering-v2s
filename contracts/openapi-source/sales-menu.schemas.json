@@ -24,33 +24,45 @@
       "SalesMenuSummary": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["salesMenuRef", "storeRef", "name", "archived", "draftRevision", "latestPublishedRevision", "draftDirty", "activation", "draftSchedule"],
+        "required": ["salesMenuRef", "storeRef", "name", "archived", "version", "draftRevision", "latestPublishedRevision", "draftDirty", "activation", "draftSchedule"],
         "properties": {
           "salesMenuRef": {"type": "string", "format": "uuid"},
           "storeRef": {"type": "string", "format": "uuid"},
           "name": {"type": "string", "minLength": 1, "maxLength": 160},
           "archived": {"type": "boolean"},
+          "version": {"type": "integer", "format": "int64", "minimum": 0},
           "draftRevision": {"type": "integer", "format": "int64", "minimum": 0},
           "latestPublishedRevision": {"type": "integer", "format": "int64", "minimum": 0, "nullable": true},
           "draftDirty": {"type": "boolean"},
-          "activation": {"$ref": "#/components/schemas/SalesMenuActivation"},
+          "activation": {"$ref": "#/components/schemas/SalesMenuActivation", "nullable": true},
           "draftSchedule": {"$ref": "#/components/schemas/SalesMenuSchedule"}
+        }
+      },
+      "SalesMenuPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["items", "cursor", "nextCursor"],
+        "properties": {
+          "items": {"type": "array", "items": {"$ref": "#/components/schemas/SalesMenuSummary"}},
+          "cursor": {"type": "string", "maxLength": 512, "nullable": true},
+          "nextCursor": {"type": "string", "maxLength": 512, "nullable": true}
         }
       },
       "SalesMenuDetail": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["salesMenuRef", "groupWorkspaceKey", "storeRef", "name", "archived", "draftRevision", "latestPublishedRevision", "draftDirty", "activation", "draftSchedule", "latestPublishedSchedule"],
+        "required": ["salesMenuRef", "groupWorkspaceKey", "storeRef", "name", "archived", "version", "draftRevision", "latestPublishedRevision", "draftDirty", "activation", "draftSchedule", "latestPublishedSchedule"],
         "properties": {
           "salesMenuRef": {"type": "string", "format": "uuid"},
           "groupWorkspaceKey": {"type": "string", "minLength": 1, "maxLength": 128},
           "storeRef": {"type": "string", "format": "uuid"},
           "name": {"type": "string", "minLength": 1, "maxLength": 160},
           "archived": {"type": "boolean"},
+          "version": {"type": "integer", "format": "int64", "minimum": 0},
           "draftRevision": {"type": "integer", "format": "int64", "minimum": 0},
           "latestPublishedRevision": {"type": "integer", "format": "int64", "minimum": 0, "nullable": true},
           "draftDirty": {"type": "boolean"},
-          "activation": {"$ref": "#/components/schemas/SalesMenuActivation"},
+          "activation": {"$ref": "#/components/schemas/SalesMenuActivation", "nullable": true},
           "draftSchedule": {"$ref": "#/components/schemas/SalesMenuSchedule"},
           "latestPublishedSchedule": {"$ref": "#/components/schemas/SalesMenuSchedule", "nullable": true}
         }
@@ -86,15 +98,42 @@
           "listedPriceCents": {"type": "integer", "minimum": 0}
         }
       },
+      "SalesMenuSalesUnit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["unitRef", "code", "name", "unitDimension", "precision"],
+        "properties": {
+          "unitRef": {"type": "string", "format": "uuid", "description": "Catalog sales-unit definition reference"},
+          "code": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Catalog unit code"},
+          "name": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Catalog unit name"},
+          "unitDimension": {
+            "type": "string",
+            "enum": ["COUNT", "WEIGHT", "VOLUME", "SERVICE_DURATION", "PACKAGE"],
+            "description": "Catalog unit dimension"
+          },
+          "precision": {"type": "integer", "minimum": 0, "description": "Catalog decimal precision; zero means whole numbers"}
+        }
+      },
+      "SalesMenuSaleContentInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "listedPriceCents", "skuPrices"],
+        "properties": {
+          "kind": {"type": "string", "enum": ["DIRECT", "SKU_SELECTION", "WEIGHTED", "COMPOSITE"]},
+          "listedPriceCents": {"type": "integer", "minimum": 0, "nullable": true},
+          "skuPrices": {"type": "array", "items": {"$ref": "#/components/schemas/SalesMenuSkuPrice"}}
+        },
+        "description": "Client-editable sale definition. The sales unit is owned by Catalog and is not writable here."
+      },
       "SalesMenuSaleContent": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["kind", "listedPriceCents", "skuPrices", "unitLabel"],
+        "required": ["kind", "listedPriceCents", "skuPrices", "salesUnit"],
         "properties": {
           "kind": {"type": "string", "enum": ["DIRECT", "SKU_SELECTION", "WEIGHTED", "COMPOSITE"]},
           "listedPriceCents": {"type": "integer", "minimum": 0, "nullable": true},
           "skuPrices": {"type": "array", "items": {"$ref": "#/components/schemas/SalesMenuSkuPrice"}},
-          "unitLabel": {"type": "string", "minLength": 1, "maxLength": 40, "nullable": true}
+          "salesUnit": {"$ref": "#/components/schemas/SalesMenuSalesUnit", "nullable": true}
         }
       },
       "SalesMenuOrderingConstraints": {
@@ -119,13 +158,14 @@
       "SalesMenuDraftItemView": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["salesItemRef", "catalogItemRef", "itemCode", "displayName", "productShape", "saleContent", "orderingConstraints", "displayMedia", "displayOrder", "canMoveUp", "canMoveDown", "version"],
+        "required": ["salesItemRef", "catalogItemRef", "itemCode", "displayName", "productShape", "defaultPriceCents", "saleContent", "orderingConstraints", "displayMedia", "displayOrder", "canMoveUp", "canMoveDown", "version"],
         "properties": {
           "salesItemRef": {"type": "string", "format": "uuid"},
           "catalogItemRef": {"type": "string", "format": "uuid"},
           "itemCode": {"type": "string", "minLength": 1, "maxLength": 160},
           "displayName": {"type": "string", "minLength": 1, "maxLength": 160},
           "productShape": {"type": "string", "enum": ["ORDINARY", "SKU", "WEIGHTED", "COMPOSITE", "SERVICE"]},
+          "defaultPriceCents": {"type": "integer", "minimum": 0, "nullable": true, "description": "Current Catalog default price for read-only comparison; null for SKU selection, whose defaults are per SKU."},
           "saleContent": {"$ref": "#/components/schemas/SalesMenuSaleContent"},
           "orderingConstraints": {"$ref": "#/components/schemas/SalesMenuOrderingConstraints"},
           "displayMedia": {"$ref": "#/components/schemas/SalesMenuDisplayMedia"},
@@ -204,7 +244,7 @@
       "SalesMenuItemCandidate": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["candidateRef", "catalogItemRef", "itemCode", "displayName", "productShape", "categoryRefs", "alreadyAddedCount"],
+        "required": ["candidateRef", "catalogItemRef", "itemCode", "displayName", "productShape", "categoryRefs", "categoryNames", "defaultPriceCents", "alreadyAddedCount"],
         "properties": {
           "candidateRef": {"type": "string", "format": "uuid"},
           "catalogItemRef": {"type": "string", "format": "uuid"},
@@ -212,6 +252,8 @@
           "displayName": {"type": "string", "minLength": 1, "maxLength": 160},
           "productShape": {"type": "string", "enum": ["ORDINARY", "SKU", "WEIGHTED", "COMPOSITE", "SERVICE"]},
           "categoryRefs": {"type": "array", "items": {"type": "string", "format": "uuid"}},
+          "categoryNames": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 160}},
+          "defaultPriceCents": {"type": "integer", "minimum": 0, "nullable": true},
           "alreadyAddedCount": {"type": "integer", "minimum": 0}
         }
       },
@@ -299,9 +341,10 @@
       "SalesMenuAssetStageReadback": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["assetRef", "status", "version", "target"],
+        "required": ["assetRef", "bindGrant", "status", "version", "target"],
         "properties": {
           "assetRef": {"type": "string", "format": "uuid"},
+          "bindGrant": {"type": "string", "minLength": 1, "maxLength": 512, "readOnly": true},
           "status": {"type": "string", "enum": ["STAGED"]},
           "version": {"type": "integer", "format": "int64", "minimum": 0},
           "target": {"$ref": "#/components/schemas/SalesMenuAssetTargetReadback"}
@@ -420,7 +463,7 @@
         "required": ["displayNameOverride", "saleContent", "orderingConstraints", "displayMedia", "expectedVersion"],
         "properties": {
           "displayNameOverride": {"type": "string", "minLength": 1, "maxLength": 160, "nullable": true},
-          "saleContent": {"$ref": "#/components/schemas/SalesMenuSaleContent"},
+          "saleContent": {"$ref": "#/components/schemas/SalesMenuSaleContentInput"},
           "orderingConstraints": {"$ref": "#/components/schemas/SalesMenuOrderingConstraints"},
           "displayMedia": {"$ref": "#/components/schemas/SalesMenuDisplayMedia"},
           "expectedVersion": {"type": "integer", "format": "int64", "minimum": 0}

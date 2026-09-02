@@ -22,6 +22,7 @@ import com.catering.v2s.app.edge.generated.wire.BusinessChannelViewSelfStatus;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelViewStatus;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelViewStatusDimensionsItemStatus;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelViewStatusDimensionsItemType;
+import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
 import java.util.UUID;
 import tools.jackson.databind.JsonNode;
@@ -126,7 +127,53 @@ final class BusinessChannelWireMapper {
 
     static BusinessChannelPage channelPage(BusinessChannelReadback.ChannelPage value) {
         return new BusinessChannelPage(
-                value.items().stream().map(BusinessChannelWireMapper::channel).toList());
+                value.items().stream().map(BusinessChannelWireMapper::channel).toList(), null, value.nextCursor());
+    }
+
+    static BusinessChannelPage salesMenuChannelPage(BusinessChannelOwnerApi.SalesMenuEligibleChannelPage value) {
+        return new BusinessChannelPage(
+                value.items().stream()
+                        .map(BusinessChannelWireMapper::salesMenuChannel)
+                        .toList(),
+                value.cursor(),
+                value.nextCursor());
+    }
+
+    private static BusinessChannelView salesMenuChannel(BusinessChannelOwnerApi.SalesMenuEligibleChannel value) {
+        return new BusinessChannelView(
+                value.channelRef(),
+                value.templateRef(),
+                BusinessChannelViewOwnerNodeType.STORE,
+                uuid(value.storeRef(), "storeRef"),
+                value.channelCode() == null ? null : JSON.valueToTree(value.channelCode()),
+                value.channelName(),
+                null,
+                enumValue(BusinessChannelViewStatus.class, value.status(), "status"),
+                enumValue(BusinessChannelViewBindingStatus.class, value.bindingStatus(), "bindingStatus"),
+                enumValue(BusinessChannelViewSelfStatus.class, value.status(), "selfStatus"),
+                value.statusDimensions().stream()
+                        .map(dimension ->
+                                new com.catering.v2s.app.edge.generated.wire.BusinessChannelViewStatusDimensionsItem(
+                                        enumValue(
+                                                BusinessChannelViewStatusDimensionsItemType.class,
+                                                dimension.type(),
+                                                "statusDimensions.type"),
+                                        dimension.ref(),
+                                        enumValue(
+                                                BusinessChannelViewStatusDimensionsItemStatus.class,
+                                                dimension.status(),
+                                                "statusDimensions.status")))
+                        .toList(),
+                value.blockers().stream()
+                        .map(dimension -> new com.catering.v2s.app.edge.generated.wire.BusinessChannelViewBlockersItem(
+                                enumValue(BusinessChannelViewBlockersItemType.class, dimension.type(), "blockers.type"),
+                                dimension.ref(),
+                                enumValue(
+                                        BusinessChannelViewBlockersItemStatus.class,
+                                        dimension.status(),
+                                        "blockers.status")))
+                        .toList(),
+                value.version());
     }
 
     private static UUID uuid(String value, String field) {

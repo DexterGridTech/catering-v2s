@@ -44,6 +44,7 @@ export type {
 } from './types/storage';
 export type {
   DeviceInfo,
+  DisplayInfo,
   ProcessorStatus,
   MemoryStatus,
   StorageStatus,

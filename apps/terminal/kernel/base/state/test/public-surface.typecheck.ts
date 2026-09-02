@@ -2,8 +2,6 @@ import type {Reducer} from '@reduxjs/toolkit'
 import {
   applySliceSyncDiff,
   createFullSliceSyncPayload,
-  createSliceSyncDiff,
-  createSliceSyncSummary,
   createStateRuntime,
   createSyncTombstone,
   createWorkspaceActionDispatcher,
@@ -46,7 +44,6 @@ import type {
   StateSyncSkipReason,
   StateSyncApplyResult,
   StateSyncPayloadResult,
-  SyncDiffOptions,
   SyncIntent,
   SyncRecordState,
   SyncStateDiff,
@@ -206,16 +203,6 @@ void forgedRegistration
 const unsupportedWorkspace: WorkspaceKey = 'instanceMode'
 void unsupportedWorkspace
 
-const summary = createSliceSyncSummary(syncDescriptor, {
-  enabled: false,
-  entries: {},
-})
-const partial = createSliceSyncDiff(
-  syncDescriptor,
-  {enabled: false, entries: {}},
-  summary,
-  {mode: 'authoritative'},
-)
 const full = createFullSliceSyncPayload(syncDescriptor, {
   enabled: false,
   entries: {},
@@ -223,15 +210,7 @@ const full = createFullSliceSyncPayload(syncDescriptor, {
 const applied = applySliceSyncDiff(
   syncDescriptor,
   {enabled: false, entries: {}},
-  partial,
+  full,
 )
 void full
 void applied
-
-// T-8: missing the remote summary/options or passing a full payload where a
-// partial diff is required must remain compile errors.
-// @ts-expect-error partial diff requires a remote summary and options.
-createSliceSyncDiff(syncDescriptor, {enabled: false, entries: {}}, summary)
-// @ts-expect-error a full payload has replaceMissing:true, not the partial branch.
-const partialOnly: Extract<SyncStateDiff, {readonly replaceMissing: false}> = full
-void partialOnly

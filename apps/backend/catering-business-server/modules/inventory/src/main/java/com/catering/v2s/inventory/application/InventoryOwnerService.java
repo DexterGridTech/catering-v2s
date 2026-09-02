@@ -42,6 +42,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     private static final String ITEM_BASE_UNIT_ARGS = "商品基础计量单位判断参数不完整";
     private static final String SKU_BASE_UNIT_ARGS = "SKU 基础计量单位判断参数不完整";
     private static final String INCOMPLETE_CONSUMPTION_UNIT_SNAPSHOT = "单位快照不完整";
+    private static final String SALES_MENU_STATE_UNKNOWN = "库存状态无法转换为销售菜单可用事实";
     private static final String TARGET_SELECT_COLUMNS =
             "target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::text,"
                     + "version,updated_at_epoch_millis,consumption_unit_ref,consumption_unit_code,"
@@ -66,6 +67,29 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         this.jdbc = jdbc;
         this.mapper = mapper;
         this.time = time;
+    }
+
+    /**
+     * Reads the inventory dimension needed by the sales-menu owner. The task is intrinsically STORE-scoped and keeps
+     * inventory's raw balance/configuration state private to this owner.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<InventoryOwnerApi.InventoryAvailabilityFact> readSalesMenuAvailability(
+            String dataNodeRef, String brandRef, Set<InventoryOwnerApi.InventoryTargetRef> targetRefs) {
+        requireSalesMenuAvailabilityScope(dataNodeRef, brandRef);
+        Set<InventoryOwnerApi.InventoryTargetRef> requestedIdentities = normalizedInventoryTargetRefs(targetRefs);
+        Map<TargetIdentity, TargetRow> targets = targetRowsByIdentities(
+                dataNodeRef,
+                brandRef,
+                requestedIdentities.stream()
+                        .map(identity -> new TargetIdentity(identity.itemRef(), identity.productSkuRef()))
+                        .toList(),
+                false);
+        return requestedIdentities.stream()
+                .map(identity -> salesMenuAvailabilityFact(
+                        identity, targets.get(new TargetIdentity(identity.itemRef(), identity.productSkuRef()))))
+                .toList();
     }
 
     @Override
@@ -4353,6 +4377,11 @@ public class InventoryOwnerService implements InventoryOwnerApi {
 
     private Map<TargetIdentity, TargetRow> targetRowsByIdentities(
             String scope, String brand, List<TargetIdentity> identities) {
+        return targetRowsByIdentities(scope, brand, identities, true);
+    }
+
+    private Map<TargetIdentity, TargetRow> targetRowsByIdentities(
+            String scope, String brand, List<TargetIdentity> identities, boolean requireCompleteConsumptionUnit) {
         if (identities.isEmpty()) return Map.of();
         String predicates = String.join(
                 " OR ",
@@ -4365,18 +4394,41 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             args.add(identity.itemRef());
             args.add(identity.productSkuRef());
         }
-        Map<TargetIdentity, TargetRow> result = new LinkedHashMap<>();
-        for (TargetRow row : jdbc.query(
-                "SELECT "
-                        + TARGET_SELECT_COLUMNS
-                        + " FROM inventory.stock_target WHERE data_node_ref=? AND "
-                        + "brand_ref=? AND definition_status='ENABLED' AND ("
-                        + predicates + ")",
-                (row, number) -> targetRowWithConsumptionUnitSnapshot(row),
-                args.toArray())) {
-            result.put(new TargetIdentity(row.itemRef(), row.productSkuRef()), row);
+        String sql = "SELECT "
+                + TARGET_SELECT_COLUMNS
+                + " FROM inventory.stock_target WHERE data_node_ref=? AND "
+                + "brand_ref=? AND definition_status='ENABLED' AND ("
+                + predicates + ")";
+        if (requireCompleteConsumptionUnit) {
+            Map<TargetIdentity, TargetRow> result = new LinkedHashMap<>();
+            for (TargetRow row :
+                    jdbc.query(sql, (row, number) -> targetRowWithConsumptionUnitSnapshot(row), args.toArray())) {
+                result.put(new TargetIdentity(row.itemRef(), row.productSkuRef()), row);
+            }
+            return result;
         }
-        return result;
+        return jdbc.query(
+                sql,
+                statement -> {
+                    statement.setString(1, scope);
+                    statement.setString(2, brand);
+                    int parameter = 3;
+                    for (TargetIdentity identity : identities) {
+                        statement.setObject(parameter++, identity.itemRef());
+                        statement.setObject(parameter++, identity.productSkuRef());
+                    }
+                },
+                resultSet -> {
+                    Map<TargetIdentity, TargetRow> result = new LinkedHashMap<>();
+                    while (resultSet.next()) {
+                        TargetRow row = targetRow(resultSet, unitSnapshot(resultSet, 11));
+                        TargetIdentity identity = new TargetIdentity(row.itemRef(), row.productSkuRef());
+                        if (result.putIfAbsent(identity, row) != null)
+                            throw new InventoryOwnerApi.Problem(
+                                    ("REFERENCE_MAPPING_UNRESOLVED"), (422), ("目标库存对象引用不唯一"));
+                    }
+                    return result;
+                });
     }
 
     /**
@@ -6449,6 +6501,25 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         return value == null ? "0" : value.stripTrailingZeros().toPlainString();
     }
 
+    private InventoryOwnerApi.InventoryAvailabilityFact salesMenuAvailabilityFact(
+            InventoryOwnerApi.InventoryTargetRef identity, TargetRow target) {
+        if (target == null) return InventoryOwnerApi.InventoryAvailabilityFact.notApplicable(identity);
+
+        JsonNode configuration = json(target.configuration());
+        String stockState = state(target.balance(), configuration);
+        return switch (stockState) {
+            case "OK", "LOW" -> InventoryOwnerApi.InventoryAvailabilityFact.available(identity, target.ref());
+            case "OUT" -> InventoryOwnerApi.InventoryAvailabilityFact.autoUnavailable(
+                    identity, target.ref(), InventoryOwnerApi.InventoryAvailabilityReason.OUT_OF_STOCK);
+            case "NEGATIVE" -> configurationReadback(configuration).allowNegative()
+                    ? InventoryOwnerApi.InventoryAvailabilityFact.available(identity, target.ref())
+                    : InventoryOwnerApi.InventoryAvailabilityFact.autoUnavailable(
+                            identity, target.ref(), InventoryOwnerApi.InventoryAvailabilityReason.NEGATIVE_NOT_ALLOWED);
+            case "UNKNOWN" -> InventoryOwnerApi.InventoryAvailabilityFact.unknown(identity, target.ref());
+            default -> throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, SALES_MENU_STATE_UNKNOWN);
+        };
+    }
+
     private BigDecimal decimalNode(JsonNode node, String key) {
         JsonNode value = node.path(key);
         return value.isNumber()
@@ -6702,6 +6773,25 @@ public class InventoryOwnerService implements InventoryOwnerApi {
 
     static boolean isBusinessHistoryOperation(String operation) {
         return "COUNT".equals(operation) || "INCREASE".equals(operation);
+    }
+
+    private static void requireSalesMenuAvailabilityScope(String dataNodeRef, String brandRef) {
+        // This task API has no caller-supplied data-node type: its owner contract is STORE-only by construction.
+        requireStoreDataNodeType("STORE");
+        requireScope(dataNodeRef, brandRef);
+    }
+
+    private static Set<InventoryOwnerApi.InventoryTargetRef> normalizedInventoryTargetRefs(
+            Set<InventoryOwnerApi.InventoryTargetRef> targetRefs) {
+        if (targetRefs == null || targetRefs.isEmpty()) return Set.of();
+        LinkedHashSet<InventoryOwnerApi.InventoryTargetRef> normalized = new LinkedHashSet<>();
+        for (InventoryOwnerApi.InventoryTargetRef identity : targetRefs) {
+            if (identity == null)
+                throw new InventoryOwnerApi.Problem(
+                        "VALIDATION_ERROR", 422, "targetRefs must contain itemRef/productSkuRef identities");
+            normalized.add(identity);
+        }
+        return normalized;
     }
 
     static void requireStoreDataNodeType(String dataNodeType) {

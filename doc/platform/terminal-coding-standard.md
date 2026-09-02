@@ -42,7 +42,12 @@ TER 的控件形态不同。**等 TER 有真实 UI 批次、由实例产生后�
 
 ---
 
-## 1 · 十条硬规则（`TR-01` … `TR-10`）
+## 1 · 硬规则（`TR-01` 起，编号只增不改）
+
+> ⚠️ **本节标题刻意不含条数。** 2026-09-02 新增 `TR-11` 时，
+> 旧标题「十条硬规则（`TR-01` … `TR-10`）」是 `project-memory` 路由锚点的字面量，
+> 一改就使 routed memory recall 失败（`PROJECT_MEMORY=FAIL`）。
+> ⇒ 锚点里不得带会随内容增长的数字。**加规则只追加条目，不动本标题。**
 
 ### `TR-01` · reducer 只能被 actor 调用，且只由 command 驱动
 
@@ -401,6 +406,59 @@ owner 自己在 reducer 里接"，只是把同一个外部写入拆成二十份�
 
 **已落地范例**：`apps/terminal/kernel/base/contracts/README.md`。
 新包写 README 时以它为形，不必逐字照抄结构。
+
+### `TR-11` · 事件必须变成 command，不得以回调或 effect 列表交给业务方
+
+**规则**：任何**外部事件**（平台/端口：电源、网络、屏幕、生命周期…）与**内部事件**
+（角色切换、连接状态变化…）到达业务逻辑的路径**只有一条** ——
+**事件 → command → 关心它的业务方自己的 actor → `dispatchAction`**。
+
+**不得**导出「注册一个回调、由事件源在事件发生时调用业务方代码」的接缝；
+**不得**把 `ActorExecutionContext` 或任何写能力交给这样的回调；
+**不得**用 effect 列表、事件总线或事件源直接写他包 slice 来替代。
+
+⚠️ **Dexter 2026-09-02 定为「本 TER 工程最重要的设计模式」，内部外部一律照此。**
+
+**反例**（仓内实测，两条）：
+
+- 🔴 `runtime` 的 `RuntimeModule.roleChangeEffects` —— 一个**回调列表**，
+  把完整 `ActorExecutionContext`（含 `dispatchAction`）交给第三方 effect。
+  它使 `createRequestLedgerRoleEffect.ts` 成为 `TR-01` 的一条**具名例外**；
+  按本规则它应当是「角色切换发 command、关心的包定 actor 处理」，**一条例外都不需要**；
+- 🔴 `display-context` 需求首版的电源路径 —— 订阅端口回调、算出一个「意图」，
+  而**公开面里没有承载它的东西**：无命令、无 slice 字段、无事件。
+  订阅回调算完把结果**丢在地上**，而全部门与测试仍绿。
+  这是回调式设计的典型病：**算出了结论，却没有地方放**。
+
+**为什么**：四条真实收益 ——
+① 写路径回到 `TR-01` 的唯一合法路，事件处理者是普通 actor，**不需要任何 `TR-01` 例外**；
+② **结果天然有承载体** —— command 本身就是；
+③ 事件源**不需要知道谁关心**，N 个业务方各自定 actor，事件源零改动；
+④ 每次事件进 request ledger，可 selector 观察，`automation` 的 `command.dispatch` 成为完备驱动面。
+
+**🔴 command 的定义点**：**由能依赖 `runtime` 的那一侧定义**，通常是消费方包自己。
+⚠️ 低层包**定义不了 command** —— `CommandDefinition` 住在 `runtime/src/types/command.ts`、
+`defineCommand` 由 `runtime/src/index.ts` 导出，而 `platform-ports` 只依赖 `contracts`。
+让端口自己定义 command 会让**最底层的包反向依赖 runtime**（22 个包里 16 个依赖 platform-ports），方向倒置。
+⇒ payload 用**消费方自己的类型**，值域可抄端口的但**不 import 它**，
+「端口事件 → command」的桥在订阅回调里翻译一次，**连类型依赖都不产生**。
+
+**🔴 桥必须播种与去重**：首个事件**只播种、不派发**；同值**去重**；只有跃迁才派发 command。
+播种状态的持有点**在桥，不入 slice**。
+⚠️ 缺播种时，OS 在启动时投递的**当前**状态会被当成跃迁 —— POC 实测：**每次启动翻转一次屏身份**。
+
+**门**：禁止句 —— 生产源码中不得出现「导出的注册函数接受回调形参，且该回调形参类型的成员里
+含可写状态的能力」。可由 `TR-01` 的同一套 symbol-origin 分析覆盖：
+**写能力符号出现在非 actor 文件的回调形参上 ⇒ 红**。
+**红夹具**：新增一个 `registerXxxListener(cb: (e) => void)` 并在 `cb` 入参里放 `dispatchAction` ⇒ 门必须红。
+**负控制**：`subscribeXxx` 只回传**纯数据**、桥在本包内翻译成 command ⇒ 绿。
+
+**反例栏**：门**只抓「回调形参携带写能力」这一种形状**。
+「事件源自己 import 消费方的 action creator 并写」「用字符串协议间接触发」
+「把事件写进一个共享 slice 让别人轮询」——**都抓不到**，那只能靠 review。
+⚠️ 「这个事件该不该有人关心」「谁该关心」同样**不可机械判定**，属 `UNENFORCEABLE_BY_MACHINE`。
+
+---
 
 ## 2 · 三重命名与依赖方向
 

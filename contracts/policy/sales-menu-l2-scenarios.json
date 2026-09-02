@@ -1,0 +1,2119 @@
+{
+  "schemaVersion": 1,
+  "kind": "sales-menu-l2-scenarios",
+  "revision": "SALES_MENU_L2_P1_20260902",
+  "sourceOfTruth": "contracts/policy/sales-menu-l2-case-blueprint.json",
+  "executionBoundary": {
+    "fixtureClass": "TEST",
+    "setupChannel": "OWNER_HTTP_COMMANDS",
+    "seedRuntimeInput": false,
+    "reportInputs": [],
+    "forbiddenRuntimeInputs": [
+      "DEV seed report",
+      "API report",
+      "seed-created sales-menu object"
+    ]
+  },
+  "scenarioCount": 16,
+  "caseCount": 16,
+  "locatorBinding": "contracts/policy/sales-menu-l2-locator-bindings.json",
+  "operationCoverage": [
+    {
+      "operationId": "getOperationsStoreBusinessChannels",
+      "acceptanceScenarios": [
+        "business-channel.sales-menu-eligible-cursor",
+        "sales-menu.store-scope-and-channel-eligibility"
+      ],
+      "l2Cases": [
+        "sales-menu-entry-and-channels",
+        "sales-menu-auth-and-scope-isolation"
+      ],
+      "route": {
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenus",
+      "acceptanceScenarios": [
+        "sales-menu.collection-lifecycle-and-multi-activation"
+      ],
+      "l2Cases": [
+        "sales-menu-entry-and-channels",
+        "sales-menu-menu-management-and-multi-active"
+      ],
+      "route": {
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenu",
+      "acceptanceScenarios": [
+        "sales-menu.collection-lifecycle-and-multi-activation",
+        "sales-menu.copy-current-draft-boundary"
+      ],
+      "l2Cases": [
+        "sales-menu-menu-management-and-multi-active",
+        "sales-menu-copy-boundary"
+      ],
+      "route": {
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuDraftSections",
+      "acceptanceScenarios": [
+        "sales-menu.ordered-sections-and-items"
+      ],
+      "l2Cases": [
+        "sales-menu-section-actions",
+        "sales-menu-draft-order-and-pagination"
+      ],
+      "route": {
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuDraftItems",
+      "acceptanceScenarios": [
+        "sales-menu.ordered-sections-and-items"
+      ],
+      "l2Cases": [
+        "sales-menu-draft-order-and-pagination"
+      ],
+      "route": {
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuDraftItem",
+      "acceptanceScenarios": [
+        "sales-menu.shape-specific-sale-definition",
+        "sales-menu.display-media-owner-transaction"
+      ],
+      "l2Cases": [
+        "sales-menu-edit-direct-item-and-media",
+        "sales-menu-edit-sku-prices",
+        "sales-menu-edit-weighted-item"
+      ],
+      "route": {
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublishedSections",
+      "acceptanceScenarios": [
+        "sales-menu.publish-frozen-effective-view"
+      ],
+      "l2Cases": [
+        "sales-menu-publish-and-front-structure"
+      ],
+      "route": {
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections"
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublishedItems",
+      "acceptanceScenarios": [
+        "sales-menu.publish-frozen-effective-view",
+        "sales-menu.inventory-availability-matrix",
+        "sales-menu.manual-sale-status-and-restore"
+      ],
+      "l2Cases": [
+        "sales-menu-front-status-and-pagination"
+      ],
+      "route": {
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items"
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublishedItem",
+      "acceptanceScenarios": [
+        "sales-menu.inventory-availability-matrix",
+        "sales-menu.manual-sale-status-and-restore"
+      ],
+      "l2Cases": [
+        "sales-menu-front-status-and-pagination",
+        "sales-menu-manual-sold-out-and-restore"
+      ],
+      "route": {
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}"
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuItemCandidates",
+      "acceptanceScenarios": [
+        "sales-menu.ordered-sections-and-items",
+        "sales-menu.shape-specific-sale-definition"
+      ],
+      "l2Cases": [
+        "sales-menu-add-candidates"
+      ],
+      "route": {
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/item-candidates"
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublicationPreview",
+      "acceptanceScenarios": [
+        "sales-menu.publish-frozen-effective-view",
+        "sales-menu.publish-blockers"
+      ],
+      "l2Cases": [
+        "sales-menu-publish-and-front-structure",
+        "sales-menu-publish-blockers"
+      ],
+      "route": {
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+      }
+    },
+    {
+      "operationId": "getOperationsSalesMenuOperationRecords",
+      "acceptanceScenarios": [
+        "sales-menu.operation-record-cursor"
+      ],
+      "l2Cases": [
+        "sales-menu-operation-records"
+      ],
+      "route": {
+        "method": "GET",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records"
+      }
+    },
+    {
+      "operationId": "createOperationsSalesMenu",
+      "acceptanceScenarios": [
+        "sales-menu.store-scope-and-channel-eligibility",
+        "sales-menu.collection-lifecycle-and-multi-activation",
+        "sales-menu.command-idempotency-and-cas"
+      ],
+      "l2Cases": [
+        "sales-menu-menu-management-and-multi-active",
+        "sales-menu-auth-and-scope-isolation"
+      ],
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+      }
+    },
+    {
+      "operationId": "copyOperationsSalesMenu",
+      "acceptanceScenarios": [
+        "sales-menu.copy-current-draft-boundary",
+        "sales-menu.command-idempotency-and-cas"
+      ],
+      "l2Cases": [
+        "sales-menu-copy-boundary"
+      ],
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies"
+      }
+    },
+    {
+      "operationId": "renameOperationsSalesMenu",
+      "acceptanceScenarios": [
+        "sales-menu.collection-lifecycle-and-multi-activation",
+        "sales-menu.command-idempotency-and-cas"
+      ],
+      "l2Cases": [
+        "sales-menu-menu-management-and-multi-active"
+      ],
+      "route": {
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/name"
+      }
+    },
+    {
+      "operationId": "archiveOperationsSalesMenu",
+      "acceptanceScenarios": [
+        "sales-menu.collection-lifecycle-and-multi-activation"
+      ],
+      "l2Cases": [
+        "sales-menu-menu-management-and-multi-active"
+      ],
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/archive"
+      }
+    },
+    {
+      "operationId": "setOperationsSalesMenuActivation",
+      "acceptanceScenarios": [
+        "sales-menu.collection-lifecycle-and-multi-activation",
+        "sales-menu.publish-blockers"
+      ],
+      "l2Cases": [
+        "sales-menu-menu-management-and-multi-active",
+        "sales-menu-publish-blockers"
+      ],
+      "route": {
+        "method": "PUT",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation"
+      }
+    },
+    {
+      "operationId": "updateOperationsSalesMenuSchedule",
+      "acceptanceScenarios": [
+        "sales-menu.collection-lifecycle-and-multi-activation",
+        "sales-menu.copy-current-draft-boundary"
+      ],
+      "l2Cases": [
+        "sales-menu-menu-management-and-multi-active",
+        "sales-menu-copy-boundary"
+      ],
+      "route": {
+        "method": "PUT",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule"
+      }
+    },
+    {
+      "operationId": "createOperationsSalesMenuSection",
+      "acceptanceScenarios": [
+        "sales-menu.ordered-sections-and-items",
+        "sales-menu.command-idempotency-and-cas"
+      ],
+      "l2Cases": [
+        "sales-menu-section-actions"
+      ],
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+      }
+    },
+    {
+      "operationId": "renameOperationsSalesMenuSection",
+      "acceptanceScenarios": [
+        "sales-menu.ordered-sections-and-items"
+      ],
+      "l2Cases": [
+        "sales-menu-section-actions"
+      ],
+      "route": {
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name"
+      }
+    },
+    {
+      "operationId": "deleteOperationsSalesMenuSection",
+      "acceptanceScenarios": [
+        "sales-menu.ordered-sections-and-items"
+      ],
+      "l2Cases": [
+        "sales-menu-section-actions",
+        "sales-menu-failure-recovery-and-focus"
+      ],
+      "route": {
+        "method": "DELETE",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}"
+      }
+    },
+    {
+      "operationId": "moveOperationsSalesMenuSection",
+      "acceptanceScenarios": [
+        "sales-menu.ordered-sections-and-items"
+      ],
+      "l2Cases": [
+        "sales-menu-section-actions",
+        "sales-menu-failure-recovery-and-focus"
+      ],
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/move"
+      }
+    },
+    {
+      "operationId": "addOperationsSalesMenuItems",
+      "acceptanceScenarios": [
+        "sales-menu.ordered-sections-and-items",
+        "sales-menu.shape-specific-sale-definition",
+        "sales-menu.command-idempotency-and-cas"
+      ],
+      "l2Cases": [
+        "sales-menu-add-candidates"
+      ],
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+      }
+    },
+    {
+      "operationId": "updateOperationsSalesMenuItem",
+      "acceptanceScenarios": [
+        "sales-menu.shape-specific-sale-definition",
+        "sales-menu.display-media-owner-transaction",
+        "sales-menu.command-idempotency-and-cas"
+      ],
+      "l2Cases": [
+        "sales-menu-edit-direct-item-and-media",
+        "sales-menu-edit-sku-prices",
+        "sales-menu-edit-weighted-item",
+        "sales-menu-failure-recovery-and-focus"
+      ],
+      "route": {
+        "method": "PUT",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+      }
+    },
+    {
+      "operationId": "deleteOperationsSalesMenuItem",
+      "acceptanceScenarios": [
+        "sales-menu.ordered-sections-and-items"
+      ],
+      "l2Cases": [
+        "sales-menu-edit-direct-item-and-media",
+        "sales-menu-draft-order-and-pagination"
+      ],
+      "route": {
+        "method": "DELETE",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+      }
+    },
+    {
+      "operationId": "moveOperationsSalesMenuItem",
+      "acceptanceScenarios": [
+        "sales-menu.ordered-sections-and-items"
+      ],
+      "l2Cases": [
+        "sales-menu-draft-order-and-pagination",
+        "sales-menu-failure-recovery-and-focus"
+      ],
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move"
+      }
+    },
+    {
+      "operationId": "stageOperationsSalesMenuAsset",
+      "acceptanceScenarios": [
+        "sales-menu.display-media-owner-transaction",
+        "asset.sales-menu-image-lifecycle"
+      ],
+      "l2Cases": [
+        "sales-menu-edit-direct-item-and-media",
+        "sales-menu-failure-recovery-and-focus"
+      ],
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage"
+      }
+    },
+    {
+      "operationId": "releaseOperationsSalesMenuStagedAsset",
+      "acceptanceScenarios": [
+        "sales-menu.display-media-owner-transaction",
+        "asset.sales-menu-image-lifecycle"
+      ],
+      "l2Cases": [
+        "sales-menu-edit-direct-item-and-media",
+        "sales-menu-failure-recovery-and-focus"
+      ],
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release"
+      }
+    },
+    {
+      "operationId": "publishOperationsSalesMenu",
+      "acceptanceScenarios": [
+        "sales-menu.publish-frozen-effective-view",
+        "sales-menu.publish-blockers",
+        "sales-menu.command-idempotency-and-cas"
+      ],
+      "l2Cases": [
+        "sales-menu-publish-and-front-structure",
+        "sales-menu-publish-blockers",
+        "sales-menu-failure-recovery-and-focus"
+      ],
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications"
+      }
+    },
+    {
+      "operationId": "setOperationsSalesMenuItemSoldOut",
+      "acceptanceScenarios": [
+        "sales-menu.manual-sale-status-and-restore",
+        "sales-menu.command-idempotency-and-cas"
+      ],
+      "l2Cases": [
+        "sales-menu-manual-sold-out-and-restore"
+      ],
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out"
+      }
+    },
+    {
+      "operationId": "restoreOperationsSalesMenuItemSale",
+      "acceptanceScenarios": [
+        "sales-menu.manual-sale-status-and-restore",
+        "sales-menu.command-idempotency-and-cas"
+      ],
+      "l2Cases": [
+        "sales-menu-manual-sold-out-and-restore"
+      ],
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore"
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "scenarioId": "SM-L2-001",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-ENTRY"
+      ],
+      "businessRequirement": "进入门店销售菜单并在真实门店范围浏览经营入口和菜单。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-entry-and-channels",
+          "fixtureRef": "FIXTURE-SALES-MENU-ENTRY",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "entry-browse-and-select",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsStoreBusinessChannels",
+              "getOperationsSalesMenus",
+              "getOperationsSalesMenu"
+            ],
+            "network": {
+              "required": [
+                "getOperationsStoreBusinessChannels",
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublicationPreview"
+              ],
+              "requests": [
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 8
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 2
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 1500,
+              "caseLocalActionMs": 3000,
+              "caseTimeoutMs": 45000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARDS",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SELECTOR_PAGINATION"
+            ],
+            "operationRoutes": {
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-entry-and-channels:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-ENTRY",
+            "businessOracle": [
+              "页面只有当前STORE范围",
+              "经营入口按20+1显式分页",
+              "选择菜单不改变activation"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-002",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-SECTIONS"
+      ],
+      "businessRequirement": "在销售菜单中维护分区及其权威顺序。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-section-actions",
+          "fixtureRef": "FIXTURE-SALES-MENU-SECTIONS",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "maintain-sections",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsSalesMenuDraftSections",
+              "createOperationsSalesMenuSection",
+              "renameOperationsSalesMenuSection",
+              "moveOperationsSalesMenuSection",
+              "deleteOperationsSalesMenuSection"
+            ],
+            "network": {
+              "required": [
+                "getOperationsSalesMenuDraftSections",
+                "createOperationsSalesMenuSection",
+                "renameOperationsSalesMenuSection",
+                "moveOperationsSalesMenuSection",
+                "deleteOperationsSalesMenuSection"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublicationPreview"
+              ],
+              "requests": [
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 8
+                },
+                {
+                  "operationId": "createOperationsSalesMenuSection",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "renameOperationsSalesMenuSection",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "moveOperationsSalesMenuSection",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "deleteOperationsSalesMenuSection",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 2
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 1500,
+              "caseLocalActionMs": 3000,
+              "caseTimeoutMs": 45000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_SECTION",
+              "SALES_MENU_SECTION_ACTION"
+            ],
+            "operationRoutes": {
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "createOperationsSalesMenuSection": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "renameOperationsSalesMenuSection": {
+                "method": "PATCH",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name"
+              },
+              "moveOperationsSalesMenuSection": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/move"
+              },
+              "deleteOperationsSalesMenuSection": {
+                "method": "DELETE",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-section-actions:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-SECTIONS",
+            "businessOracle": [
+              "分区操作紧邻分区且只显示允许动作",
+              "首尾移动来自owner canMove",
+              "非空删除失败且顺序不变"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-003",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-CANDIDATES"
+      ],
+      "businessRequirement": "从完整商品分类树逐页选择候选商品，并允许同一商品形成独立销售项。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-add-candidates",
+          "fixtureRef": "FIXTURE-SALES-MENU-CANDIDATES",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "add-menu-candidates",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsCatalogNavigation",
+              "getOperationsSalesMenuItemCandidates",
+              "addOperationsSalesMenuItems"
+            ],
+            "network": {
+              "required": [
+                "getOperationsCatalogNavigation",
+                "getOperationsSalesMenuItemCandidates",
+                "addOperationsSalesMenuItems"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
+              ],
+              "requests": [
+                {
+                  "operationId": "getOperationsCatalogNavigation",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuItemCandidates",
+                  "maxRequestCount": 6
+                },
+                {
+                  "operationId": "addOperationsSalesMenuItems",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 1
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 1800,
+              "caseLocalActionMs": 4000,
+              "caseTimeoutMs": 50000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_CANDIDATE_DRAWER",
+              "SALES_MENU_CANDIDATE_CATEGORY_TREE",
+              "SALES_MENU_CANDIDATE_PAGINATION",
+              "SALES_MENU_ITEM_TABLE"
+            ],
+            "operationRoutes": {
+              "getOperationsCatalogNavigation": {
+                "method": "GET",
+                "path": "/operations/catalog-inventory/navigation"
+              },
+              "getOperationsSalesMenuItemCandidates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/item-candidates"
+              },
+              "addOperationsSalesMenuItems": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-add-candidates:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-CANDIDATES",
+            "businessOracle": [
+              "分类只筛选当前结果域",
+              "候选20+1显式分页且无自动抽干",
+              "重复商品产生不同salesItemRef"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-004",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-DIRECT"
+      ],
+      "businessRequirement": "编辑普通销售项并在销售菜单目标下维护图片。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-edit-direct-item-and-media",
+          "fixtureRef": "FIXTURE-SALES-MENU-DIRECT",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "edit-direct-item-and-media",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsSalesMenuDraftItem",
+              "updateOperationsSalesMenuItem",
+              "stageOperationsSalesMenuAsset",
+              "releaseOperationsSalesMenuStagedAsset",
+              "deleteOperationsSalesMenuItem"
+            ],
+            "network": {
+              "required": [
+                "getOperationsSalesMenuDraftItem",
+                "updateOperationsSalesMenuItem",
+                "stageOperationsSalesMenuAsset",
+                "releaseOperationsSalesMenuStagedAsset",
+                "deleteOperationsSalesMenuItem"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublicationPreview",
+                "getPublicAssetContent"
+              ],
+              "requests": [
+                {
+                  "operationId": "getOperationsSalesMenuDraftItem",
+                  "maxRequestCount": 6
+                },
+                {
+                  "operationId": "updateOperationsSalesMenuItem",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "stageOperationsSalesMenuAsset",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "releaseOperationsSalesMenuStagedAsset",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "deleteOperationsSalesMenuItem",
+                  "maxRequestCount": 1
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getPublicAssetContent",
+                  "maxRequestCount": 5
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 2200,
+              "caseLocalActionMs": 5000,
+              "caseTimeoutMs": 60000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_ITEM_TABLE",
+              "SALES_MENU_ITEM",
+              "SALES_MENU_ITEM_EDITOR",
+              "SALES_MENU_ITEM_DISPLAY_NAME",
+              "SALES_MENU_ITEM_LISTED_PRICE",
+              "SALES_MENU_ITEM_MEDIA_EDITOR",
+              "SALES_MENU_ITEM_MEDIA_UPLOAD",
+              "SALES_MENU_ITEM_MEDIA_LIST"
+            ],
+            "operationRoutes": {
+              "getOperationsSalesMenuDraftItem": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+              },
+              "updateOperationsSalesMenuItem": {
+                "method": "PUT",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+              },
+              "stageOperationsSalesMenuAsset": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage"
+              },
+              "releaseOperationsSalesMenuStagedAsset": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release"
+              },
+              "deleteOperationsSalesMenuItem": {
+                "method": "DELETE",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-edit-direct-item-and-media:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-DIRECT",
+            "businessOracle": [
+              "商品基础事实来自Catalog",
+              "图片stage/release/claim使用精确menu-item目标",
+              "失败保持输入与owner事实不变"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-005",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-SKU"
+      ],
+      "businessRequirement": "按SKU逐项设置销售菜单价格。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-edit-sku-prices",
+          "fixtureRef": "FIXTURE-SALES-MENU-SKU",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "edit-sku-prices",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsSalesMenuDraftItem",
+              "updateOperationsSalesMenuItem"
+            ],
+            "network": {
+              "required": [
+                "getOperationsSalesMenuDraftItem",
+                "updateOperationsSalesMenuItem"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublicationPreview"
+              ],
+              "requests": [
+                {
+                  "operationId": "getOperationsSalesMenuDraftItem",
+                  "maxRequestCount": 3
+                },
+                {
+                  "operationId": "updateOperationsSalesMenuItem",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 2
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 1200,
+              "caseLocalActionMs": 2500,
+              "caseTimeoutMs": 40000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_ITEM_TABLE",
+              "SALES_MENU_ITEM",
+              "SALES_MENU_ITEM_EDITOR"
+            ],
+            "operationRoutes": {
+              "getOperationsSalesMenuDraftItem": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+              },
+              "updateOperationsSalesMenuItem": {
+                "method": "PUT",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-edit-sku-prices:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-SKU",
+            "businessOracle": [
+              "SKU无公共挂牌价",
+              "每个SKU价格独立且权威读回"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-006",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-WEIGHTED"
+      ],
+      "businessRequirement": "按Catalog单位事实展示加权销售项，禁止写入Catalog单位和按份约束。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-edit-weighted-item",
+          "fixtureRef": "FIXTURE-SALES-MENU-WEIGHTED",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "edit-weighted-item",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsSalesMenuDraftItem",
+              "updateOperationsSalesMenuItem"
+            ],
+            "network": {
+              "required": [
+                "getOperationsSalesMenuDraftItem",
+                "updateOperationsSalesMenuItem"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublicationPreview"
+              ],
+              "requests": [
+                {
+                  "operationId": "getOperationsSalesMenuDraftItem",
+                  "maxRequestCount": 3
+                },
+                {
+                  "operationId": "updateOperationsSalesMenuItem",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 2
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 1200,
+              "caseLocalActionMs": 2500,
+              "caseTimeoutMs": 40000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_ITEM_TABLE",
+              "SALES_MENU_ITEM",
+              "SALES_MENU_ITEM_EDITOR"
+            ],
+            "operationRoutes": {
+              "getOperationsSalesMenuDraftItem": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+              },
+              "updateOperationsSalesMenuItem": {
+                "method": "PUT",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-edit-weighted-item:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-WEIGHTED",
+            "businessOracle": [
+              "只读展示salesUnit五字段",
+              "不展示或提交unitLabel/salesUnit",
+              "不出现按份约束"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-007",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-DRAFT-ORDER"
+      ],
+      "businessRequirement": "草稿销售项跨页移动后保持owner全序，并可达到第21项。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-draft-order-and-pagination",
+          "fixtureRef": "FIXTURE-SALES-MENU-DRAFT-ORDER",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "reorder-draft-items",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsSalesMenuDraftItems",
+              "moveOperationsSalesMenuItem"
+            ],
+            "network": {
+              "required": [
+                "getOperationsSalesMenuDraftItems",
+                "moveOperationsSalesMenuItem"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuPublicationPreview"
+              ],
+              "requests": [
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 6
+                },
+                {
+                  "operationId": "moveOperationsSalesMenuItem",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 2
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 1500,
+              "caseLocalActionMs": 3000,
+              "caseTimeoutMs": 45000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_ITEM_TABLE",
+              "SALES_MENU_ITEM",
+              "SALES_MENU_ITEM_ACTION",
+              "SALES_MENU_DRAFT_PAGINATION"
+            ],
+            "operationRoutes": {
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "moveOperationsSalesMenuItem": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-draft-order-and-pagination:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-DRAFT-ORDER",
+            "businessOracle": [
+              "第21项可达",
+              "移动按钮来自owner canMove",
+              "权威全序无重无漏"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-008",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-PUBLISH"
+      ],
+      "businessRequirement": "预览并发布冻结的前台菜单结构。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-publish-and-front-structure",
+          "fixtureRef": "FIXTURE-SALES-MENU-PUBLISH",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "publish-and-read-front",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsSalesMenuPublicationPreview",
+              "publishOperationsSalesMenu",
+              "getOperationsSalesMenuPublishedSections",
+              "getOperationsSalesMenuPublishedItems"
+            ],
+            "network": {
+              "required": [
+                "getOperationsSalesMenuPublicationPreview",
+                "publishOperationsSalesMenu",
+                "getOperationsSalesMenuPublishedSections",
+                "getOperationsSalesMenuPublishedItems"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [],
+              "requests": [
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 3
+                },
+                {
+                  "operationId": "publishOperationsSalesMenu",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublishedSections",
+                  "maxRequestCount": 3
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublishedItems",
+                  "maxRequestCount": 5
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 1800,
+              "caseLocalActionMs": 3500,
+              "caseTimeoutMs": 50000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_PUBLISH_DRAWER",
+              "SALES_MENU_ITEM_TABLE",
+              "SALES_MENU_PUBLISHED_PAGINATION",
+              "SALES_MENU_ITEM_DETAIL"
+            ],
+            "operationRoutes": {
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "publishOperationsSalesMenu": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications"
+              },
+              "getOperationsSalesMenuPublishedSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections"
+              },
+              "getOperationsSalesMenuPublishedItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-publish-and-front-structure:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-PUBLISH",
+            "businessOracle": [
+              "前台没有操作列",
+              "发布产生不可变publication",
+              "发布不声称终端ACK"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-009",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-FRONT"
+      ],
+      "businessRequirement": "前台菜单分开展示库存和人工销售状态并支持分页。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-front-status-and-pagination",
+          "fixtureRef": "FIXTURE-SALES-MENU-FRONT",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "inspect-front-status",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsSalesMenuPublishedItems",
+              "getOperationsSalesMenuPublishedItem"
+            ],
+            "network": {
+              "required": [
+                "getOperationsSalesMenuPublishedItems",
+                "getOperationsSalesMenuPublishedItem"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [],
+              "requests": [
+                {
+                  "operationId": "getOperationsSalesMenuPublishedItems",
+                  "maxRequestCount": 5
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublishedItem",
+                  "maxRequestCount": 3
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 1200,
+              "caseLocalActionMs": 2500,
+              "caseTimeoutMs": 40000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_ITEM_TABLE",
+              "SALES_MENU_ITEM",
+              "SALES_MENU_PUBLISHED_PAGINATION",
+              "SALES_MENU_ITEM_DETAIL"
+            ],
+            "operationRoutes": {
+              "getOperationsSalesMenuPublishedItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublishedItem": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-front-status-and-pagination:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-FRONT",
+            "businessOracle": [
+              "inventoryAvailability和manualSaleStatus独立",
+              "第21项可达",
+              "状态详情不能改变Inventory"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-010",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-MANUAL-STATUS"
+      ],
+      "businessRequirement": "仅对目标经营入口设置人工沽清并二次确认恢复。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-manual-sold-out-and-restore",
+          "fixtureRef": "FIXTURE-SALES-MENU-MANUAL-STATUS",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "toggle-manual-sale-status",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsSalesMenuPublishedItem",
+              "setOperationsSalesMenuItemSoldOut",
+              "restoreOperationsSalesMenuItemSale",
+              "getOperationsSalesMenuOperationRecords"
+            ],
+            "network": {
+              "required": [
+                "getOperationsSalesMenuPublishedItem",
+                "setOperationsSalesMenuItemSoldOut",
+                "restoreOperationsSalesMenuItemSale",
+                "getOperationsSalesMenuOperationRecords"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [],
+              "requests": [
+                {
+                  "operationId": "getOperationsSalesMenuPublishedItem",
+                  "maxRequestCount": 5
+                },
+                {
+                  "operationId": "setOperationsSalesMenuItemSoldOut",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "restoreOperationsSalesMenuItemSale",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuOperationRecords",
+                  "maxRequestCount": 3
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 1600,
+              "caseLocalActionMs": 3000,
+              "caseTimeoutMs": 45000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_ITEM_TABLE",
+              "SALES_MENU_ITEM",
+              "SALES_MENU_ITEM_DETAIL"
+            ],
+            "operationRoutes": {
+              "getOperationsSalesMenuPublishedItem": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}"
+              },
+              "setOperationsSalesMenuItemSoldOut": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out"
+              },
+              "restoreOperationsSalesMenuItemSale": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore"
+              },
+              "getOperationsSalesMenuOperationRecords": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-manual-sold-out-and-restore:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-MANUAL-STATUS",
+            "businessOracle": [
+              "原因必填",
+              "其他channel不变",
+              "恢复事件保留且不自动改变库存"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-011",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-MANAGER"
+      ],
+      "businessRequirement": "管理21个菜单、多菜单同时启用并维护时段。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-menu-management-and-multi-active",
+          "fixtureRef": "FIXTURE-SALES-MENU-MANAGER",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "manage-menus-and-activation",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsSalesMenus",
+              "getOperationsSalesMenu",
+              "createOperationsSalesMenu",
+              "renameOperationsSalesMenu",
+              "archiveOperationsSalesMenu",
+              "setOperationsSalesMenuActivation",
+              "updateOperationsSalesMenuSchedule"
+            ],
+            "network": {
+              "required": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "createOperationsSalesMenu",
+                "renameOperationsSalesMenu",
+                "archiveOperationsSalesMenu",
+                "setOperationsSalesMenuActivation",
+                "updateOperationsSalesMenuSchedule"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [],
+              "requests": [
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 12
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 6
+                },
+                {
+                  "operationId": "createOperationsSalesMenu",
+                  "maxRequestCount": 3
+                },
+                {
+                  "operationId": "renameOperationsSalesMenu",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "archiveOperationsSalesMenu",
+                  "maxRequestCount": 1
+                },
+                {
+                  "operationId": "setOperationsSalesMenuActivation",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "updateOperationsSalesMenuSchedule",
+                  "maxRequestCount": 2
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 2200,
+              "caseLocalActionMs": 4000,
+              "caseTimeoutMs": 60000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SELECTOR_PAGINATION",
+              "SALES_MENU_MANAGER",
+              "SALES_MENU_MANAGER_PAGINATION",
+              "SALES_MENU_SCHEDULE_DRAWER"
+            ],
+            "operationRoutes": {
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "createOperationsSalesMenu": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "renameOperationsSalesMenu": {
+                "method": "PATCH",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/name"
+              },
+              "archiveOperationsSalesMenu": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/archive"
+              },
+              "setOperationsSalesMenuActivation": {
+                "method": "PUT",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation"
+              },
+              "updateOperationsSalesMenuSchedule": {
+                "method": "PUT",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-menu-management-and-multi-active:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-MANAGER",
+            "businessOracle": [
+              "selector和manager各自20+1",
+              "两个菜单可以同时enabled",
+              "停用不阻断编辑/发布"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-012",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-COPY"
+      ],
+      "businessRequirement": "复制当前草稿定义和时段，但不复制publication、日志、状态和activation。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-copy-boundary",
+          "fixtureRef": "FIXTURE-SALES-MENU-COPY",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "copy-menu-boundary",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsSalesMenu",
+              "copyOperationsSalesMenu"
+            ],
+            "network": {
+              "required": [
+                "getOperationsSalesMenu",
+                "copyOperationsSalesMenu"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [],
+              "requests": [
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "copyOperationsSalesMenu",
+                  "maxRequestCount": 2
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 1400,
+              "caseLocalActionMs": 2500,
+              "caseTimeoutMs": 40000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_MANAGER",
+              "SALES_MENU_ITEM_TABLE"
+            ],
+            "operationRoutes": {
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "copyOperationsSalesMenu": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-copy-boundary:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-COPY",
+            "businessOracle": [
+              "副本ref独立且disabled",
+              "只复制current draft定义及时段",
+              "publication/log/manual/inventory/source activation均缺席"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-013",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-BLOCKERS"
+      ],
+      "businessRequirement": "发布阻断只由真实门店、经营入口和销售定义事实决定。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-publish-blockers",
+          "fixtureRef": "FIXTURE-SALES-MENU-BLOCKERS",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "inspect-publish-blockers",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsSalesMenuPublicationPreview",
+              "publishOperationsSalesMenu",
+              "setOperationsSalesMenuActivation"
+            ],
+            "network": {
+              "required": [
+                "getOperationsSalesMenuPublicationPreview",
+                "publishOperationsSalesMenu",
+                "setOperationsSalesMenuActivation"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [],
+              "requests": [
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "publishOperationsSalesMenu",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "setOperationsSalesMenuActivation",
+                  "maxRequestCount": 2
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 1500,
+              "caseLocalActionMs": 2500,
+              "caseTimeoutMs": 45000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_PUBLISH_DRAWER",
+              "SALES_MENU_ITEM_TABLE"
+            ],
+            "operationRoutes": {
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "publishOperationsSalesMenu": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications"
+              },
+              "setOperationsSalesMenuActivation": {
+                "method": "PUT",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-publish-blockers:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-BLOCKERS",
+            "businessOracle": [
+              "阻断是结构化闭集",
+              "失败不产生publication或版本推进",
+              "失败事实可恢复"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-014",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-RECORDS"
+      ],
+      "businessRequirement": "操作记录按普通业务事实分页展示成功与失败结果。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-operation-records",
+          "fixtureRef": "FIXTURE-SALES-MENU-RECORDS",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "inspect-operation-records",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsSalesMenuOperationRecords"
+            ],
+            "network": {
+              "required": [
+                "getOperationsSalesMenuOperationRecords"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [],
+              "requests": [
+                {
+                  "operationId": "getOperationsSalesMenuOperationRecords",
+                  "maxRequestCount": 4
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 1000,
+              "caseLocalActionMs": 2000,
+              "caseTimeoutMs": 35000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_OPERATION_LOG",
+              "SALES_MENU_LOG_PAGINATION"
+            ],
+            "operationRoutes": {
+              "getOperationsSalesMenuOperationRecords": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-operation-records:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-RECORDS",
+            "businessOracle": [
+              "21条记录20+1",
+              "SUCCESS/FAILED和failureCode准确",
+              "没有raw payload或诊断列"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-015",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-FAILURE-RECOVERY"
+      ],
+      "businessRequirement": "保存、排序、上传和发布失败时保留输入、顺序、焦点和权威事实。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-failure-recovery-and-focus",
+          "fixtureRef": "FIXTURE-SALES-MENU-FAILURE-RECOVERY",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "recover-menu-failures",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "updateOperationsSalesMenuItem",
+              "moveOperationsSalesMenuItem",
+              "stageOperationsSalesMenuAsset",
+              "releaseOperationsSalesMenuStagedAsset",
+              "publishOperationsSalesMenu"
+            ],
+            "network": {
+              "required": [
+                "updateOperationsSalesMenuItem",
+                "moveOperationsSalesMenuItem",
+                "stageOperationsSalesMenuAsset",
+                "releaseOperationsSalesMenuStagedAsset",
+                "publishOperationsSalesMenu"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [],
+              "requests": [
+                {
+                  "operationId": "updateOperationsSalesMenuItem",
+                  "maxRequestCount": 3
+                },
+                {
+                  "operationId": "moveOperationsSalesMenuItem",
+                  "maxRequestCount": 3
+                },
+                {
+                  "operationId": "stageOperationsSalesMenuAsset",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "releaseOperationsSalesMenuStagedAsset",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "publishOperationsSalesMenu",
+                  "maxRequestCount": 2
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 1600,
+              "caseLocalActionMs": 3500,
+              "caseTimeoutMs": 50000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_ITEM_TABLE",
+              "SALES_MENU_ITEM_EDITOR",
+              "SALES_MENU_CANDIDATE_DRAWER",
+              "SALES_MENU_PUBLISH_DRAWER"
+            ],
+            "operationRoutes": {
+              "updateOperationsSalesMenuItem": {
+                "method": "PUT",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+              },
+              "moveOperationsSalesMenuItem": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move"
+              },
+              "stageOperationsSalesMenuAsset": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage"
+              },
+              "releaseOperationsSalesMenuStagedAsset": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release"
+              },
+              "publishOperationsSalesMenu": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-failure-recovery-and-focus:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-FAILURE-RECOVERY",
+            "businessOracle": [
+              "失败不清空用户输入",
+              "重试不复制业务事实",
+              "关闭后焦点回到触发控件"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-016",
+      "layer": "L2",
+      "caseCount": 1,
+      "fixtureRefs": [
+        "FIXTURE-SALES-MENU-AUTH"
+      ],
+      "businessRequirement": "销售菜单真实UI遵守STORE scope和capability边界。",
+      "primaryVerifier": "browser-business",
+      "cases": [
+        {
+          "caseId": "sales-menu-auth-and-scope-isolation",
+          "fixtureRef": "FIXTURE-SALES-MENU-AUTH",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "verify-sales-menu-scope",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsStoreBusinessChannels",
+              "createOperationsSalesMenu",
+              "setOperationsSalesMenuActivation"
+            ],
+            "network": {
+              "required": [
+                "getOperationsStoreBusinessChannels",
+                "createOperationsSalesMenu",
+                "setOperationsSalesMenuActivation"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [],
+              "requests": [
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 3
+                },
+                {
+                  "operationId": "createOperationsSalesMenu",
+                  "maxRequestCount": 1
+                },
+                {
+                  "operationId": "setOperationsSalesMenuActivation",
+                  "maxRequestCount": 1
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 1000,
+              "caseLocalActionMs": 2200,
+              "caseTimeoutMs": 35000
+            },
+            "controlKeys": [
+              "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARDS",
+              "SALES_MENU_MANAGER"
+            ],
+            "operationRoutes": {
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "createOperationsSalesMenu": {
+                "method": "POST",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "setOperationsSalesMenuActivation": {
+                "method": "PUT",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-auth-and-scope-isolation:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-AUTH",
+            "businessOracle": [
+              "无capability不显示或执行写操作",
+              "foreign store/project channel被owner拒绝",
+              "无跨scope菜单或操作记录泄露"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        }
+      ]
+    }
+  ]
+}

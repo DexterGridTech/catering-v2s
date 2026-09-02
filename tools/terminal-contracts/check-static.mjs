@@ -3,6 +3,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import ts from 'typescript';
+import {readPackageInvariant} from '../terminal-shared/package-invariants.mjs';
 
 const toolDirectory = path.dirname(fileURLToPath(import.meta.url));
 export const repoRoot = path.resolve(toolDirectory, '../..');
@@ -15,28 +16,6 @@ export const CONTRACT_RULE_NAMES = Object.freeze([
   'closed-literal-unions',
 ]);
 export const CONTRACT_SUPPORT_CHECK_COUNT = 1;
-
-const expectedRuntimeIdPrefixes = Object.freeze({
-  runtime: 'run',
-  request: 'req',
-  command: 'cmd',
-  session: 'ses',
-  node: 'nod',
-  connection: 'con',
-  envelope: 'env',
-  dispatch: 'dsp',
-  projection: 'prj',
-});
-
-const expectedLiteralUnions = Object.freeze({
-  ErrorCategory: ['BUSINESS', 'VALIDATION', 'AUTHENTICATION', 'AUTHORIZATION', 'NETWORK', 'DATABASE', 'EXTERNAL_API', 'SYSTEM', 'UNKNOWN'],
-  ErrorSeverity: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
-  ParameterValueType: ['string', 'number', 'boolean', 'json'],
-  RequestLifecycleStatus: ['started', 'completed', 'partial-failed', 'timed-out', 'error'],
-  'CommandRouteContext.workspace': ['MAIN', 'BRANCH'],
-  'CommandRouteContext.instanceMode': ['MASTER', 'SLAVE'],
-  'CommandRouteContext.displayMode': ['PRIMARY', 'SECONDARY'],
-});
 
 const forbiddenCapabilityIdentifiers = new Set([
   'fetch',
@@ -441,7 +420,8 @@ function stringLiteralUnion(checker, symbol, label) {
   return members.map(member => member.value).sort();
 }
 
-function runRuntimeIdPrefixExactSet({root, checker, indexSourceFile}) {
+function runRuntimeIdPrefixExactSet({root, checker, indexSourceFile, invariant}) {
+  const expectedRuntimeIdPrefixes = invariant.runtimeIdPrefixes;
   const kindSymbol = exportSymbol(checker, indexSourceFile, 'RuntimeIdKind');
   const kindValues = stringLiteralUnion(checker, kindSymbol, 'RuntimeIdKind');
   const expectedKinds = Object.keys(expectedRuntimeIdPrefixes).sort();
@@ -498,7 +478,8 @@ function requiredStringLiteralMembers(type, label, optional) {
   return literalMembers.map(member => member.value).sort();
 }
 
-function runClosedLiteralUnions({checker, indexSourceFile}) {
+function runClosedLiteralUnions({checker, indexSourceFile, invariant}) {
+  const expectedLiteralUnions = invariant.literalUnions;
   for (const [label, expectedValues] of Object.entries(expectedLiteralUnions)) {
     const actualValues = label.includes('.')
       ? (() => {
@@ -514,21 +495,10 @@ function runClosedLiteralUnions({checker, indexSourceFile}) {
   }
 }
 
-const expectedPublicExports = Object.freeze([
-  'moduleName', 'dependencyModuleNames', 'devDependencyModuleNames',
-  'TimestampMs', 'RuntimeInstanceId', 'RequestId', 'CommandId', 'SessionId', 'NodeId', 'ConnectionId', 'EnvelopeId', 'DispatchId', 'ProjectionId', 'RuntimeIdKind',
-  'runtimeIdPrefixes', 'createRuntimeId', 'createRuntimeInstanceId', 'createRequestId', 'createCommandId', 'createSessionId', 'createNodeId', 'createConnectionId', 'createEnvelopeId', 'createDispatchId', 'createProjectionId', 'nowTimestampMs',
-  'ErrorCategory', 'ErrorSeverity', 'ErrorDefinition', 'ErrorTemplateValue', 'ErrorTemplateArguments', 'RenderedErrorTemplate', 'AppError', 'CreateAppErrorContext', 'CreateAppErrorInput', 'renderErrorTemplate', 'createAppError', 'isAppError',
-  'ParameterValueType', 'ParameterDefinition', 'ParameterDescriptor', 'DefineErrorInput', 'DefineParameterInput', 'ModuleErrorFactory', 'ModuleParameterFactory', 'createModuleErrorFactory', 'createModuleParameterFactory', 'listDefinitions',
-  'AppModuleKind', 'AppModuleDependency', 'AppModuleCommandDescriptor', 'AppModuleActorDescriptor', 'AppModuleSliceDescriptor', 'AppModule',
-  'CommandLifecycleStatus', 'RequestLifecycleStatus', 'CommandResultPatch', 'CommandResultSnapshot', 'RequestCommandSnapshot', 'RequestLifecycleSnapshot', 'CommandRouteContext',
-  'TransportRequestContext', 'TransportServerAddress', 'TransportServerDefinition', 'TransportServerConfigSpace', 'TransportServerConfig', 'TransportServerAddressOverride', 'TransportServerOverride', 'ResolveTransportServerConfigOptions',
-]);
-
-function runPublicSupport({checker, indexSourceFile, root}) {
+function runPublicSupport({checker, indexSourceFile, root, invariant}) {
   const module = moduleSymbol(checker, indexSourceFile);
   const actual = checker.getExportsOfModule(module).map(symbol => symbol.name).sort();
-  const expected = [...expectedPublicExports].sort();
+  const expected = [...invariant.publicExports].sort();
   const missing = expected.filter(name => !actual.includes(name));
   const extra = actual.filter(name => !expected.includes(name));
   if (missing.length || extra.length || new Set(actual).size !== actual.length) {
@@ -543,6 +513,7 @@ function runPublicSupport({checker, indexSourceFile, root}) {
 
 export function runContractsStaticChecks({contractsRoot: root = contractsRoot} = {}) {
   const context = createProgram(root);
+  const invariant = readPackageInvariant(root, '@catering-v2s/kernel-base-contracts');
   const indexSourceFile = context.program.getSourceFile(path.join(root, 'src/index.ts'));
   if (!indexSourceFile) throw new Error(`contracts src/index.ts is missing under ${root}`);
   const checks = [
@@ -551,8 +522,8 @@ export function runContractsStaticChecks({contractsRoot: root = contractsRoot} =
       runTr05NamedBoundary({root, files: context.files});
       runTr05CheckerBoundary({root, ...context});
     }],
-    ['runtime-id-prefix-exact-set', () => runRuntimeIdPrefixExactSet({root, ...context, indexSourceFile})],
-    ['closed-literal-unions', () => runClosedLiteralUnions({root, ...context, indexSourceFile})],
+    ['runtime-id-prefix-exact-set', () => runRuntimeIdPrefixExactSet({root, ...context, indexSourceFile, invariant})],
+    ['closed-literal-unions', () => runClosedLiteralUnions({root, ...context, indexSourceFile, invariant})],
   ];
   const results = checks.map(([name, check]) => {
     try {
@@ -564,7 +535,7 @@ export function runContractsStaticChecks({contractsRoot: root = contractsRoot} =
   });
   let support;
   try {
-    runPublicSupport({checker: context.checker, indexSourceFile, root});
+    runPublicSupport({checker: context.checker, indexSourceFile, root, invariant});
     support = {status: 'PASS'};
   } catch (error) {
     support = {status: 'FAIL', error: error instanceof Error ? error.message : String(error)};

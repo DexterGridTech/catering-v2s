@@ -44,6 +44,26 @@ function withMutation(relativePath, mutate, assertion) {
   }
 }
 
+function withMutations(changes, assertion) {
+  const originals = changes.map(change => ({
+    ...change,
+    original: fs.readFileSync(path.join(fixtureRoot, change.relativePath), 'utf8'),
+  }));
+  try {
+    for (const change of originals) {
+      fs.writeFileSync(
+        path.join(fixtureRoot, change.relativePath),
+        change.mutate(change.original),
+      );
+    }
+    assertion(runRuntimeStaticChecks({runtimePackageRoot: fixtureRoot, graphPath: fixtureGraphPath}));
+  } finally {
+    for (const change of originals) {
+      fs.writeFileSync(path.join(fixtureRoot, change.relativePath), change.original);
+    }
+  }
+}
+
 function removeRuntimePlannedKind(source) {
   return source.replace(
     /('kernel\.base\.runtime': \{\n\s+batch: 1,\n)\s+plannedKind: '[^']+',\n/,
@@ -90,7 +110,7 @@ try {
   withMutation(
     'src/types/module.ts',
     source => source.replace(
-      '  installPeerDispatchGateway: (gateway: PeerDispatchGateway) => void\n',
+      '  registerResource: (cleanup: () => void) => () => void\n',
       '',
     ),
     report => {
@@ -121,6 +141,67 @@ try {
       assertVector(report, ['command-mount-shape']);
       assert.match(rule(report, 'command-mount-shape').error, /ActorCommandHandlerDefinition/);
     },
+  );
+
+  withMutation(
+    'src/application/createInternalRuntimeModule.ts',
+    source => source.replace(
+      '    kind: moduleKind,',
+      "    kind: 'toolkit',",
+    ),
+    report => {
+      assertVector(report, ['owner-kind']);
+      assert.match(rule(report, 'owner-kind').error, /src\/moduleName\.ts/);
+    },
+  );
+
+  // Namespace and intermediate const aliases are valid when TypeScript
+  // resolves their value back to moduleName.ts. The literal mutation above
+  // remains the targeted red control for a non-canonical local value.
+  withMutation(
+    'src/application/createInternalRuntimeModule.ts',
+    source => source
+      .replace(
+        "import {moduleKind, moduleName} from '../moduleName'",
+        "import {moduleName} from '../moduleName'\nimport * as moduleIdentity from '../moduleName'",
+      )
+      .replace('    kind: moduleKind,', '    kind: moduleIdentity.moduleKind,'),
+    report => assertVector(report),
+  );
+
+  withMutation(
+    'src/application/createInternalRuntimeModule.ts',
+    source => source
+      .replace(
+        "): RuntimeModule => {\n  const actor = createSetRuntimeInstanceModeActor(onRoleChange)",
+        "): RuntimeModule => {\n  const realizedKind = moduleKind\n  const actor = createSetRuntimeInstanceModeActor(onRoleChange)",
+      )
+      .replace('    kind: moduleKind,', '    kind: realizedKind,'),
+    report => assertVector(report),
+  );
+
+  // The command-name template must use the package's own moduleName binding,
+  // not a runtime-only replacement hidden in the checker.  Renaming the
+  // fixture package and its invariant together is a valid generic package
+  // shape; a hard-coded kernel.base.runtime expansion must fail this control.
+  withMutations(
+    [
+      {
+        relativePath: 'src/moduleName.ts',
+        mutate: source => source.replace("'kernel.base.runtime'", "'kernel.base.fixture'"),
+      },
+      {
+        relativePath: 'terminal-invariants.json',
+        mutate: source => {
+          const invariant = JSON.parse(source);
+          invariant.internalCommands = invariant.internalCommands.map(name =>
+            name.replaceAll('kernel.base.runtime', 'kernel.base.fixture'),
+          );
+          return `${JSON.stringify(invariant, null, 2)}\n`;
+        },
+      },
+    ],
+    report => assertVector(report),
   );
 
   const graphOriginal = fs.readFileSync(fixtureGraphPath, 'utf8');

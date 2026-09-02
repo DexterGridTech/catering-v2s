@@ -1195,6 +1195,36 @@
           },
           {
             "in": "query",
+            "name": "usage",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "SALES_MENU"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 20
+            }
+          },
+          {
+            "in": "query",
             "name": "sortKey",
             "required": false,
             "schema": {

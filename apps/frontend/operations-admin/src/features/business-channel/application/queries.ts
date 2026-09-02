@@ -48,7 +48,7 @@ export function readStoreBusinessChannels(
   return operationsClient
     .getOperationsStoreBusinessChannels(
       {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeRef: wireUuid(storeRef)},
-      {query: {sortKey: sort.sortKey, sortDirection: sort.sortDirection}},
+      {query: {usage: 'SALES_MENU', sortKey: sort.sortKey, sortDirection: sort.sortDirection}},
     )
     .then(page => ({items: page.items}));
 }

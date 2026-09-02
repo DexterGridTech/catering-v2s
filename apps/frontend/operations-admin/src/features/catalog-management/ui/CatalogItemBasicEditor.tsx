@@ -1,20 +1,6 @@
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Form,
-  Input,
-  InputNumber,
-  Row,
-  Select,
-  Space,
-  TreeSelect,
-  Typography,
-  Upload,
-} from 'antd';
+import {Alert, Button, Card, Col, Form, Input, InputNumber, Row, Select, Space, TreeSelect, Typography} from 'antd';
 import type {FormInstance} from 'antd';
-import {testId} from '@catering-v2s/admin-ui-foundation';
+import {AdminImageCollectionEditor, type AdminImageCollectionItem, testId} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, type ReactNode} from 'react';
 import type {CatalogUnitList} from '../../../app/api/generated/catalog-inventory-edge';
 import type {CatalogDetail} from '../model/catalogModel';
@@ -26,7 +12,6 @@ import type {CatalogManifest} from '../model/catalogItemSurfaceTypes';
 import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 import {CatalogAssetPreview} from './CatalogAssetPreview';
 import {CatalogDescriptorPicker} from './CatalogDescriptorPicker';
-import {EmptySection} from './CatalogItemReadOnlyPresenters';
 import {catalogFieldWidth} from './catalogFieldWidths';
 import {useCatalogCategoryCandidates} from './useCatalogCategoryCandidates';
 
@@ -37,7 +22,13 @@ function unitLabel(unit?: {name: string; code: string} | null) {
   return unit?.name || '未设置';
 }
 
-/** Owns the visual asset list; staging and release stay in the editor session. */
+type CatalogImageEditorItem = AdminImageCollectionItem & {
+  assetRef?: string;
+  staged: boolean;
+  error?: string;
+};
+
+/** Catalog adapter: keeps catalog copy, preview, locators, and staging semantics. */
 export function CatalogAssetEditor({
   mediaDraft,
   mediaLimits,
@@ -53,141 +44,73 @@ export function CatalogAssetEditor({
   onMoveMedia: (id: string, offset: -1 | 1) => void;
   onSetPrimaryMedia: (id: string) => void;
 }) {
-  const disabled = !mediaLimits || mediaDraft.length >= (mediaLimits?.maxImageCount ?? 0);
+  const items: CatalogImageEditorItem[] = mediaDraft.map(asset => ({
+    id: asset.id,
+    identity: asset.assetRef || asset.id,
+    fileName: asset.fileName,
+    status: asset.status,
+    file: asset.file,
+    hasPreview: Boolean(asset.assetRef || (asset.staged && asset.file)),
+    assetRef: asset.assetRef,
+    staged: asset.staged,
+    error: asset.error,
+  }));
   return (
-    <Space direction="vertical" size={8} style={{display: 'flex'}} {...testId(catalogTestIds.static.itemMediaEditor)}>
-      <Space style={{width: '100%', justifyContent: 'space-between'}}>
-        <Typography.Text strong>商品图片</Typography.Text>
-        <Typography.Text type="secondary">
-          {mediaLimits
-            ? `${mediaDraft.length}/${mediaLimits.maxImageCount}（1 张主图 + ${Math.max(mediaLimits.maxImageCount - 1, 0)} 张附图） · 单张上限 ${Math.floor(mediaLimits.maxImageBytes / 1024 / 1024)}MB`
-            : '媒体规则加载中'}
-        </Typography.Text>
-      </Space>
-      <Upload
-        accept="image/*"
-        showUploadList={false}
-        beforeUpload={file => {
-          void onStageMedia(file as File);
-          return Upload.LIST_IGNORE;
-        }}
-        disabled={disabled}
-        {...testId(catalogTestIds.static.itemMediaUpload)}
-      >
-        <Button disabled={disabled}>{!mediaLimits ? '媒体规则加载中' : disabled ? '已达图片上限' : '上传图片'}</Button>
-      </Upload>
-      <Space direction="vertical" size={8} style={{display: 'flex'}} {...testId(catalogTestIds.static.itemMediaList)}>
-        {mediaDraft.length === 0 && <EmptySection text="未配置图片" />}
-        {mediaDraft.map((asset, index) => {
-          const businessIdentity = asset.assetRef || asset.id;
-          return (
-            <Space
-              key={asset.id}
-              align="start"
-              style={{display: 'flex', border: '1px solid #f0f0f0', padding: 8, borderRadius: 6}}
-              {...testId(catalogTestIdControls.edit.media(businessIdentity, 'row'))}
-            >
-              {asset.assetRef || (asset.staged && asset.file) ? (
-                <CatalogAssetPreview
-                  assetRef={asset.assetRef}
-                  localFile={asset.staged ? asset.file : undefined}
-                  alt={`${index === 0 ? '主图' : `附图 ${index}`}预览`}
-                  width={96}
-                  height={72}
-                  testId={catalogTestIdControls.edit.media(businessIdentity, 'preview')}
-                />
-              ) : (
-                <span style={{width: 96, height: 72, display: 'grid', placeItems: 'center'}}>
-                  <Typography.Text type="secondary">待上传</Typography.Text>
-                </span>
-              )}
-              <Space direction="vertical" size={2} style={{minWidth: 220}}>
-                <Typography.Text strong>{index === 0 ? '★ 主图' : `附图 ${index}`}</Typography.Text>
-                <Typography.Text ellipsis={{tooltip: asset.fileName}}>{asset.fileName}</Typography.Text>
-                <Typography.Text
-                  type={asset.status === 'FAILED' ? 'danger' : asset.status === 'UPLOADING' ? 'warning' : 'secondary'}
-                  {...testId(catalogTestIdControls.edit.media(businessIdentity, 'status'))}
-                >
-                  {asset.status === 'UPLOADING'
-                    ? '上传中/处理中'
-                    : asset.status === 'FAILED'
-                      ? (asset.error ?? '上传失败')
-                      : asset.staged
-                        ? '待保存'
-                        : asset.assetRef
-                          ? '可用'
-                          : '待上传'}
-                </Typography.Text>
-              </Space>
-              <Space wrap>
-                <Upload
-                  accept="image/*"
-                  showUploadList={false}
-                  beforeUpload={file => {
-                    void onStageMedia(file as File, asset.id);
-                    return Upload.LIST_IGNORE;
-                  }}
-                  disabled={asset.status === 'UPLOADING'}
-                >
-                  <Button
-                    size="small"
-                    disabled={asset.status === 'UPLOADING'}
-                    {...testId(catalogTestIdControls.edit.media(businessIdentity, 'replace'))}
-                  >
-                    替换
-                  </Button>
-                </Upload>
-                {asset.status === 'FAILED' && asset.file && (
-                  <Button
-                    size="small"
-                    onClick={() => void onStageMedia(asset.file as File, asset.id)}
-                    {...testId(catalogTestIdControls.edit.media(businessIdentity, 'retry'))}
-                  >
-                    重试
-                  </Button>
-                )}
-                {index > 0 && (
-                  <Button
-                    size="small"
-                    onClick={() => onMoveMedia(asset.id, -1)}
-                    {...testId(catalogTestIdControls.edit.media(businessIdentity, 'move-up'))}
-                  >
-                    上移
-                  </Button>
-                )}
-                {index < mediaDraft.length - 1 && (
-                  <Button
-                    size="small"
-                    onClick={() => onMoveMedia(asset.id, 1)}
-                    {...testId(catalogTestIdControls.edit.media(businessIdentity, 'move-down'))}
-                  >
-                    下移
-                  </Button>
-                )}
-                {index > 0 && (
-                  <Button
-                    size="small"
-                    onClick={() => onSetPrimaryMedia(asset.id)}
-                    {...testId(catalogTestIdControls.edit.media(businessIdentity, 'set-primary'))}
-                  >
-                    设为主图
-                  </Button>
-                )}
-                <Button
-                  size="small"
-                  danger
-                  disabled={index === 0 && mediaDraft.length > 1}
-                  onClick={() => void onRemoveMedia(asset.id, index)}
-                  {...testId(catalogTestIdControls.edit.media(businessIdentity, 'remove'))}
-                >
-                  移除
-                </Button>
-              </Space>
-            </Space>
-          );
-        })}
-      </Space>
-    </Space>
+    <AdminImageCollectionEditor
+      items={items}
+      limits={mediaLimits}
+      labels={{
+        title: '商品图片',
+        formatLimits: (count, limits) =>
+          `${count}/${limits.maxImageCount}（1 张主图 + ${Math.max(limits.maxImageCount - 1, 0)} 张附图） · 单张上限 ${Math.floor(limits.maxImageBytes / 1024 / 1024)}MB`,
+        loading: '媒体规则加载中',
+        atLimit: '已达图片上限',
+        upload: '上传图片',
+        empty: '未配置图片',
+        pendingPreview: () => (
+          <span style={{width: 96, height: 72, display: 'grid', placeItems: 'center'}}>
+            <Typography.Text type="secondary">待上传</Typography.Text>
+          </span>
+        ),
+        renderPreview: (asset, index, previewTestId) => (
+          <CatalogAssetPreview
+            assetRef={asset.assetRef}
+            localFile={asset.staged ? asset.file : undefined}
+            alt={`${index === 0 ? '主图' : `附图 ${index}`}预览`}
+            width={96}
+            height={72}
+            testId={previewTestId}
+          />
+        ),
+        renderStatus: asset =>
+          asset.status === 'UPLOADING'
+            ? '上传中/处理中'
+            : asset.status === 'FAILED'
+              ? (asset.error ?? '上传失败')
+              : asset.staged
+                ? '待保存'
+                : asset.assetRef
+                  ? '可用'
+                  : '待上传',
+        positionLabel: index => (index === 0 ? '★ 主图' : `附图 ${index}`),
+        replace: '替换',
+        retry: '重试',
+        moveUp: '上移',
+        moveDown: '下移',
+        setPrimary: '设为主图',
+        remove: '移除',
+      }}
+      testIds={{
+        root: catalogTestIds.static.itemMediaEditor,
+        upload: catalogTestIds.static.itemMediaUpload,
+        list: catalogTestIds.static.itemMediaList,
+        item: (identity, action) => catalogTestIdControls.edit.media(identity, action),
+      }}
+      onStageMedia={onStageMedia}
+      onRemoveMedia={onRemoveMedia}
+      onMoveMedia={onMoveMedia}
+      onSetPrimaryMedia={onSetPrimaryMedia}
+    />
   );
 }
 

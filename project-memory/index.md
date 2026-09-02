@@ -30,6 +30,7 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 - [operations.phase-retrospective-and-systemic-repair](../project-memory/operations/phase-retrospective-and-systemic-repair.md)
 - [operations.roadmap-control-transfer](../project-memory/operations/roadmap-control-transfer.md)
 - [operations.test-closed-loop](../project-memory/operations/test-closed-loop.md)
+- [operations.execution-economics-and-failure-family-closure](../project-memory/operations/execution-economics-and-failure-family-closure.md)
 - [operations.verification-governance](../project-memory/operations/verification-governance.md)
 - [pitfalls.acceptance-scenario-count-freeze](../project-memory/pitfalls/acceptance-scenario-count-freeze.md)
 - [pitfalls.after-state-not-checked-against-other-gates](../project-memory/pitfalls/after-state-not-checked-against-other-gates.md)

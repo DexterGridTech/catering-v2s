@@ -226,6 +226,38 @@ public final class OperationBindingTypes {
     public record PublicInvitationOtpVerifyRequest() {}
     public record PublicInvitationReadiness() {}
     public record PublicInvitationView() {}
+    public record SalesMenuActivationRequest() {}
+    public record SalesMenuArchiveRequest() {}
+    public record SalesMenuAssetReleaseReadback() {}
+    public record SalesMenuAssetReleaseRequest() {}
+    public record SalesMenuAssetStageReadback() {}
+    public record SalesMenuAssetStageRequest() {}
+    public record SalesMenuCandidatePage() {}
+    public record SalesMenuCommandReadback() {}
+    public record SalesMenuCopyRequest() {}
+    public record SalesMenuCreateRequest() {}
+    public record SalesMenuDeleteRequest() {}
+    public record SalesMenuDetail() {}
+    public record SalesMenuDraftItemView() {}
+    public record SalesMenuItemMoveRequest() {}
+    public record SalesMenuItemPage() {}
+    public record SalesMenuItemUpdateRequest() {}
+    public record SalesMenuItemsAddRequest() {}
+    public record SalesMenuManualRestoreRequest() {}
+    public record SalesMenuManualSoldOutRequest() {}
+    public record SalesMenuOperationRecordPage() {}
+    public record SalesMenuPage() {}
+    public record SalesMenuPublicationPreview() {}
+    public record SalesMenuPublishRequest() {}
+    public record SalesMenuPublishedItemPage() {}
+    public record SalesMenuPublishedItemView() {}
+    public record SalesMenuPublishedSectionList() {}
+    public record SalesMenuRenameRequest() {}
+    public record SalesMenuScheduleUpdateRequest() {}
+    public record SalesMenuSectionCreateRequest() {}
+    public record SalesMenuSectionList() {}
+    public record SalesMenuSectionMoveRequest() {}
+    public record SalesMenuSectionRenameRequest() {}
     public record StagedCatalogAsset() {}
     public record StoreContract() {}
     public record StoreContractCandidatePage() {}

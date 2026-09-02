@@ -27,6 +27,21 @@ const staticCommands = Object.freeze([
   ],
   ['code-layout', 'scripts/check/code-layout', [], ['CODE_LAYOUT=PASS']],
   ['catalog-inventory-p1', 'node', ['tools/catalog-inventory-p1/cli.mjs'], ['CATALOG_INVENTORY_P1_CHECK=PASS']],
+  ['sales-menu-contract', 'scripts/check/sales-menu-contract', [], ['SALES_MENU_CONTRACT=PASS']],
+  ['sales-menu-schema', 'scripts/check/sales-menu-schema', [], ['SALES_MENU_SCHEMA=PASS']],
+  ['sales-menu-l2-p1', 'node', ['scripts/generate/sales-menu-p1.mjs', '--check'], ['SALES_MENU_P1=PASS']],
+  [
+    'sales-menu-l2-fixture',
+    'node',
+    ['scripts/test/sales-menu-l2-fixture.mjs', '--self-test'],
+    ['SALES_MENU_L2_FIXTURE_SELF_TEST=PASS'],
+  ],
+  [
+    'sales-menu-l2-runner-self-test',
+    'scripts/test/browser-l2',
+    ['--suite', 'sales-menu', '--self-test'],
+    ['BROWSER_L2_SALES_MENU_RUNTIME_SELF_TEST=PASS'],
+  ],
   ['runtime-environment-keys', 'scripts/check/runtime-environment-keys', [], ['R5_RUNTIME_ENVIRONMENT_KEYS=PASS']],
   [
     'backend-archunit',

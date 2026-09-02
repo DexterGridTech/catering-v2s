@@ -174,6 +174,82 @@ const RESOURCE_TYPE_CAPABILITY_OPERATIONS = new Map([
     "transitionOperationsBusinessChannelStatus|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}|operations-admin",
     {PROJECT: "BC-BUSINESS-CHANNEL-PROJECT-EDIT", STORE: "BC-BUSINESS-CHANNEL-STORE-EDIT"},
   ],
+  [
+    "createOperationsSalesMenu|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "copyOperationsSalesMenu|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "renameOperationsSalesMenu|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/name|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "archiveOperationsSalesMenu|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/archive|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "setOperationsSalesMenuActivation|PUT|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "updateOperationsSalesMenuSchedule|PUT|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "createOperationsSalesMenuSection|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "renameOperationsSalesMenuSection|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "deleteOperationsSalesMenuSection|DELETE|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "moveOperationsSalesMenuSection|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/move|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "addOperationsSalesMenuItems|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "updateOperationsSalesMenuItem|PUT|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "deleteOperationsSalesMenuItem|DELETE|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "moveOperationsSalesMenuItem|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "stageOperationsSalesMenuAsset|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "releaseOperationsSalesMenuStagedAsset|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "publishOperationsSalesMenu|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "setOperationsSalesMenuItemSoldOut|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
+  [
+    "restoreOperationsSalesMenuItemSale|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore|operations-admin",
+    {STORE: "EDIT_STORE_SALES_MENU"},
+  ],
 ]);
 const R24_OPERATION_REQUIREMENTS = new Map([
   [
@@ -258,8 +334,8 @@ const TYPED_OWNER_EXCEPTION_ROOTS = [
   "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application",
   "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application",
 ];
-const FROZEN_TYPED_OWNER_EXCEPTION_COUNT = 97;
-const FROZEN_TYPED_OWNER_EXCEPTION_SHA256 = "3e7daf5e844cbbcc0fd4a8ab3b0a4de67d6b153996ec3a52deb2767ba027143d";
+const FROZEN_TYPED_OWNER_EXCEPTION_COUNT = 98;
+const FROZEN_TYPED_OWNER_EXCEPTION_SHA256 = "686c9c12994ed90c34cb84fcce4764357741c8b588f20e14ac61ff4805ac5631";
 const EXACT_TYPED_OWNER_EXCEPTION_MAPPINGS = [
   "com.catering.v2s.organization.application.BusinessEntityService.HeadCompanyBrandAuthorizationInUseException",
 ];

@@ -8807,6 +8807,216 @@ final class CatalogAcceptanceScenarios {
         return readItem(context, fixture, session, code);
     }
 
+    /** Business-scenario fixture bridge; it delegates to the catalog owner’s existing item chain. */
+    JsonNode acceptanceCreatePlainItem(
+            BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String code, String name)
+            throws Exception {
+        JsonNode item = calibrationCreatePlainItem(context, fixture, session, code, name);
+        return enableAcceptanceItem(context, fixture, session, code, item);
+    }
+
+    /** Business-scenario fixture bridge for the existing catalog-to-inventory ITEM target chain. */
+    JsonNode acceptanceCreateInventoryBackedPlainItem(
+            BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String code, String name)
+            throws Exception {
+        CreatedItem created = createItemWithAttributes(context, fixture, session, code, name, Map.of());
+        saveDirectItem(context, fixture, session, code, created.version(), "sales-menu inventory fixture");
+        return enableAcceptanceItem(context, fixture, session, code, readItem(context, fixture, session, code));
+    }
+
+    /** Business-scenario bridge for the inventory owner's real count command; no direct DB fixture is used. */
+    void acceptanceCountInventoryTarget(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            JsonNode item,
+            String quantity,
+            boolean zeroConfirmation,
+            String operation)
+            throws Exception {
+        countTarget(context, fixture, session, inventoryTargetRef(item), quantity, zeroConfirmation, operation);
+    }
+
+    /** Business-scenario bridge for the inventory owner's real configuration command. */
+    void acceptanceConfigureInventoryTarget(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            JsonNode item,
+            boolean allowNegative,
+            String lowStockThreshold,
+            String operation)
+            throws Exception {
+        String targetRef = inventoryTargetRef(item);
+        Response current = context.get(
+                OPERATIONS_INVENTORY_TARGET_READ,
+                "/api/operations/catalog-inventory/inventory-targets/"
+                        + targetRef
+                        + "?dataNodeRef="
+                        + fixture.storeId(),
+                session.cookie(),
+                Set.of(200));
+        JsonNode currentConfiguration = current.json().path("configuration");
+        JsonNode countingSnapshot = currentConfiguration.path("countingUnitSnapshot");
+        Map<String, Object> configuration = new LinkedHashMap<>();
+        configuration.put("allowNegative", allowNegative);
+        configuration.put("lowStockThreshold", lowStockThreshold);
+        configuration.put(
+                "countingUnitRef",
+                countingSnapshot.isObject() ? countingSnapshot.path("unitRef").asText() : null);
+        configuration.put(
+                "conversionFactor",
+                currentConfiguration.path("conversionFactor").asText("1"));
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("dataNodeRef", fixture.storeId().toString());
+        request.put("targetRef", targetRef);
+        request.put("expectedVersion", current.json().path("version").asLong());
+        request.put("configuration", configuration);
+        Response updated = context.patch(
+                OPERATIONS_INVENTORY_TARGET_CONFIGURATION,
+                "/api/operations/catalog-inventory/inventory-targets/" + targetRef + "/configuration",
+                session.cookie(),
+                request,
+                idempotencyHeaders(operation),
+                Set.of(200));
+        assertEquals(
+                targetRef,
+                updated.json().path("target").path("targetRef").asText(),
+                "BUSINESS: inventory configuration readback keeps the target identity");
+        assertTrue(
+                updated.json().path("version").asLong()
+                        > current.json().path("version").asLong(),
+                "BUSINESS: inventory configuration command advances the target version");
+    }
+
+    /** Business-scenario bridge for the inventory owner's real directed adjustment command. */
+    void acceptanceAdjustInventoryTarget(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            JsonNode item,
+            String direction,
+            String quantity,
+            String reasonCode,
+            String operation)
+            throws Exception {
+        String targetRef = inventoryTargetRef(item);
+        Response current = context.get(
+                OPERATIONS_INVENTORY_TARGET_READ,
+                "/api/operations/catalog-inventory/inventory-targets/"
+                        + targetRef
+                        + "?dataNodeRef="
+                        + fixture.storeId(),
+                session.cookie(),
+                Set.of(200));
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("dataNodeRef", fixture.storeId().toString());
+        request.put("targetRef", targetRef);
+        request.put("expectedVersion", current.json().path("version").asLong());
+        request.put("direction", direction);
+        request.put("quantity", quantity);
+        request.put("countingUnitRef", null);
+        request.put("reasonCode", reasonCode);
+        request.put("note", "sales-menu availability fixture");
+        Response adjusted = context.post(
+                OPERATIONS_INVENTORY_TARGET_ADJUST,
+                "/api/operations/catalog-inventory/inventory-targets/" + targetRef + "/adjust",
+                session.cookie(),
+                request,
+                idempotencyHeaders(operation),
+                Set.of(200));
+        String before = current.json().path("balance").asText();
+        assertFalse(before.isBlank(), "BUSINESS: inventory target readback exposes a typed balance");
+        BigDecimal signedQuantity = new BigDecimal(quantity);
+        if ("DECREASE".equals(direction)) signedQuantity = signedQuantity.negate();
+        String change = signedQuantity.stripTrailingZeros().toPlainString();
+        String after =
+                new BigDecimal(before).add(signedQuantity).stripTrailingZeros().toPlainString();
+        String stockState =
+                new BigDecimal(after).signum() < 0 ? "NEGATIVE" : new BigDecimal(after).signum() == 0 ? "OUT" : "OK";
+        assertInventoryMutationOperationOracle(
+                adjusted.json(),
+                "adjustOperationsInventoryTarget",
+                targetRef,
+                before,
+                change,
+                after,
+                stockState,
+                "BUSINESS: inventory adjustment readback preserves the exact owner mutation result");
+    }
+
+    /** Business-scenario fixture bridge for the catalog owner’s existing SKU item chain. */
+    JsonNode acceptanceCreateSkuItem(
+            BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String code, String name)
+            throws Exception {
+        CreatedItem created = createSkuVariantItem(context, fixture, session, code, name);
+        String skuCode = "ACCEPTANCE-SKU-" + UUID.randomUUID().toString().substring(0, 8);
+        JsonNode current = readItem(context, fixture, session, code);
+        saveInventoryNodes(
+                context,
+                fixture,
+                session,
+                code,
+                created.version(),
+                List.of(),
+                draft -> {
+                    Map<String, Object> sku =
+                            acceptanceSkuFact(current, skuCode, List.of(), inheritPreparationOverride());
+                    sku.put("standardSalePrice", 1299L);
+                    draft.put("skus", List.of(sku));
+                },
+                Set.of(200));
+        return enableAcceptanceItem(context, fixture, session, code, readItem(context, fixture, session, code));
+    }
+
+    /** Business-scenario fixture bridge for the catalog owner’s existing shape-specific create chain. */
+    JsonNode acceptanceCreateItemWithShape(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String code,
+            String name,
+            String shapeKey)
+            throws Exception {
+        createItemWithShape(
+                context, fixture, session, fixture.storeId().toString(), code, name, Map.of(), Map.of(), shapeKey);
+        return enableAcceptanceItem(context, fixture, session, code, readItem(context, fixture, session, code));
+    }
+
+    /**
+     * Sales-menu and asset business scenarios need an enabled catalog predecessor. The generic catalog create fixture
+     * intentionally preserves its owner default (DISABLED), so this bridge performs the existing real HTTP status
+     * transition and reads the authoritative item back instead of changing catalog semantics for other cases.
+     */
+    private JsonNode enableAcceptanceItem(
+            BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String code, JsonNode item)
+            throws Exception {
+        Response enabled = context.post(
+                OPERATIONS_CATALOG_ITEM_STATUS,
+                itemPath(code) + "/status",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef",
+                        fixture.storeId().toString(),
+                        "itemCode",
+                        code,
+                        "expectedVersion",
+                        item.path("version").asLong(),
+                        "targetStatus",
+                        "ENABLED"),
+                Set.of(200));
+        assertEquals(
+                "ENABLED",
+                enabled.json().path("result").path("status").asText(),
+                "BUSINESS: sales-menu predecessor is enabled through the catalog owner command");
+        JsonNode readback = readItem(context, fixture, session, code);
+        assertEquals(
+                "ENABLED",
+                readback.path("lifecycle").path("status").asText(),
+                "BUSINESS: sales-menu predecessor status is enabled in authoritative catalog readback");
+        return readback;
+    }
+
     /**
      * Creates the same minimal catalog item through the real HTTP command at an explicitly selected catalog node.
      *

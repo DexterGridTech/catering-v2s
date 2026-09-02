@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root_dir="$(cd "$(dirname "$0")/../.." && pwd)"
+if [[ "${1:-}" == "--self-test" ]]; then
+  exec node "$root_dir/tools/sales-menu-contract/cli.mjs" --self-test
+fi
+exec node "$root_dir/tools/sales-menu-contract/cli.mjs"

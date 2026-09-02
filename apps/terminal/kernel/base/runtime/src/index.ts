@@ -49,7 +49,6 @@ export type {
   RuntimeModulePreSetupContext,
   RuntimeModuleContext,
   RuntimeModuleResetInput,
-  RuntimeRoleChangeEffect,
   RuntimeModule,
   RuntimeModuleDescriptor,
 } from './types/module'
@@ -61,6 +60,7 @@ export type {
 } from './types/role'
 export {
   initializeCommand,
+  runtimeInstanceModeChangedCommand,
   setRuntimeInstanceModeCommand,
 } from './features/commands'
 export {selectRuntimeInstanceMode} from './selectors/selectRuntimeInstanceMode'

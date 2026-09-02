@@ -13,12 +13,12 @@ import {
   type StateRoot,
 } from '@catering-v2s/kernel-base-state'
 import {
-  createSetRuntimeInstanceModeAction,
+  setRuntimeInstanceModeAction,
   runtimeInstanceModeSlice,
   runtimeInstanceModeSliceName,
 } from '../src/features/slices/runtimeInstanceMode'
 import {
-  createUpsertRequestLedgerRecordAction,
+  requestLedgerActionsForMode,
   readLiveRequestEnvelope,
   runtimeRequestLedgerMasterSlice,
   runtimeRequestLedgerMasterSliceName,
@@ -107,6 +107,15 @@ const envelope = (
 ) => Object.freeze({value: request, updatedAt})
 
 describe('runtime request ledger selectors', () => {
+  it('A-1 declares opposite sync intent for the two mode registrations', () => {
+    const masterRegistration = runtimeRequestLedgerMasterSlice
+    const slaveRegistration = runtimeRequestLedgerSlaveSlice
+
+    expect(masterRegistration).not.toBe(slaveRegistration)
+    expect(masterRegistration.syncIntent).toBe('master-to-slave')
+    expect(slaveRegistration.syncIntent).toBe('slave-to-master')
+  })
+
   it('L-3 calculates local-only and peer-only views from the only existing half', () => {
     const localRequestId = createRequestId()
     const peerRequestId = createRequestId()
@@ -219,6 +228,12 @@ describe('runtime request ledger selectors', () => {
     })
     const viewA1 = selectRequestExecutionView(state, requestA)
     const viewB1 = selectRequestExecutionView(state, requestB)
+    const listA = selectRequestExecutionViews(state)
+    const listAById = new Map(listA.map(view => [String(view.requestId), view]))
+    const listB = selectRequestExecutionViews(state)
+    const listBById = new Map(listB.map(view => [String(view.requestId), view]))
+    expect(listBById.get(String(requestA))).toBe(listAById.get(String(requestA)))
+    expect(listBById.get(String(requestB))).toBe(listAById.get(String(requestB)))
     const stateAfterA = stateWith({
       slave: {
         [requestA]: envelope(record(requestA, {commands: [observation({name: 'test.a2'})]}), 12),
@@ -229,6 +244,43 @@ describe('runtime request ledger selectors', () => {
     expect(selectRequestExecutionView(state, requestA)).toBe(viewA1)
     expect(selectRequestExecutionView(stateAfterA, requestB)).toBe(viewB1)
     expect(selectRequestExecutionView(stateWith({slave: {[requestA]: (stateAfterA[runtimeRequestLedgerSlaveSliceName] as RuntimeRequestLedgerState)[requestA]}}), requestB)).toBeNull()
+  })
+
+  it('A-1 routes per-mode slice actions and preserves empty clear references', async () => {
+    const requestId = createRequestId()
+    const ports = createTestPlatformPorts()
+    const runtime = await createStateRuntime({
+      runtimeName: 'runtime-request-ledger-actions',
+      environmentMode: 'TEST',
+      slices: [runtimeInstanceModeSlice, runtimeRequestLedgerMasterSlice, runtimeRequestLedgerSlaveSlice],
+      logger: ports.logger,
+      plainStorage: ports.persistKv,
+      protectedStorage: ports.persistSecure,
+      persistenceKey: 'runtime-request-ledger-actions',
+      storageTimeouts: {readMs: 50, writeMs: 50, resetMs: 50},
+      persistenceDebounceMs: 0,
+    })
+
+    runtime.getStore().dispatch(setRuntimeInstanceModeAction('SLAVE'))
+    expect(runtime.getState()[runtimeInstanceModeSliceName]).toEqual({instanceMode: 'SLAVE'})
+    runtime.getStore().dispatch(requestLedgerActionsForMode('MASTER').upsert({
+      record: record(requestId, {commands: [observation({name: 'master'})]}),
+      updatedAt: 10,
+    }))
+    runtime.getStore().dispatch(requestLedgerActionsForMode('SLAVE').upsert({
+      record: record(requestId, {commands: [observation({name: 'slave'})]}),
+      updatedAt: 20,
+    }))
+    expect(runtime.getState()[runtimeRequestLedgerMasterSliceName]).toHaveProperty(String(requestId))
+    expect(runtime.getState()[runtimeRequestLedgerSlaveSliceName]).toHaveProperty(String(requestId))
+
+    runtime.getStore().dispatch(requestLedgerActionsForMode('MASTER').deleteRecords({requestIds: [requestId]}))
+    expect(runtime.getState()[runtimeRequestLedgerMasterSliceName]).toEqual({})
+    runtime.getStore().dispatch(requestLedgerActionsForMode('SLAVE').deleteRecords({requestIds: [requestId]}))
+    expect(runtime.getState()[runtimeRequestLedgerSlaveSliceName]).toEqual({})
+    const emptySlave = runtime.getState()[runtimeRequestLedgerSlaveSliceName]
+    runtime.getStore().dispatch(requestLedgerActionsForMode('SLAVE').clear())
+    expect(runtime.getState()[runtimeRequestLedgerSlaveSliceName]).toBe(emptySlave)
   })
 
   it('S-2 consumes tombstones through state sync and treats defensive tombstones as absent', async () => {
@@ -245,11 +297,10 @@ describe('runtime request ledger selectors', () => {
       storageTimeouts: {readMs: 50, writeMs: 50, resetMs: 50},
       persistenceDebounceMs: 0,
     })
-    runtime.getStore().dispatch(createUpsertRequestLedgerRecordAction(
-      runtimeRequestLedgerSlaveSliceName,
-      record(requestId, {commands: [observation()]}),
-      10,
-    ))
+    runtime.getStore().dispatch(requestLedgerActionsForMode('SLAVE').upsert({
+      record: record(requestId, {commands: [observation()]}),
+      updatedAt: 10,
+    }))
     const applied = runtime.applyAuthoritativeSync(runtimeRequestLedgerSlaveSliceName, {
       mode: 'authoritative',
       replaceMissing: false,

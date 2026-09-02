@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -51,7 +52,7 @@ final class BusinessChannelAcceptanceScenarios {
     private static final RouteIdentity CHANNEL_LIST_PROJECT = new RouteIdentity(
             "getOperationsProjectBusinessChannels",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/business-channels");
-    private static final RouteIdentity CHANNEL_LIST_STORE = new RouteIdentity(
+    static final RouteIdentity CHANNEL_LIST_STORE = new RouteIdentity(
             "getOperationsStoreBusinessChannels",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels");
     private static final RouteIdentity CHANNEL_CREATE = new RouteIdentity(
@@ -69,6 +70,14 @@ final class BusinessChannelAcceptanceScenarios {
 
     private final BackendAcceptanceTest host;
 
+    private record CreatedTemplate(UUID templateRef, long version, JsonNode json) {}
+
+    private record CreatedChannel(UUID channelRef, long version, JsonNode json) {}
+
+    private record CreatedBinding(UUID bindingRef, long version, JsonNode json) {}
+
+    private record CreatedExternalStoreBinding(CreatedChannel channel, CreatedBinding binding) {}
+
     BusinessChannelAcceptanceScenarios(BackendAcceptanceTest host) {
         this.host = host;
     }
@@ -82,15 +91,36 @@ final class BusinessChannelAcceptanceScenarios {
             throws Exception {
         OperationsFixture operations = new OperationsFixture(fixture, session);
         enableProvider(context, fixture, providerCode);
-        return createExternalStoreBinding(
-                        context,
-                        operations,
-                        operations,
-                        providerCode,
-                        "GROUP_BUY",
-                        "calibration-owner-" + UUID.randomUUID(),
-                        "Calibration external binding")
-                .json();
+        BackendAcceptanceTest.Fixture projectFixture =
+                host.projectUserFixture(fixture, Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
+        host.completeInvitation(context, projectFixture);
+        OperationsFixture projectOperations =
+                new OperationsFixture(projectFixture, host.login(context, projectFixture));
+        String name = "Calibration external binding";
+        CreatedTemplate template = createTemplate(
+                context, projectOperations, name + " template", "EXTERNAL", "STORE", "GROUP_BUY", providerCode, null);
+        CreatedChannel channel = createChannel(
+                context,
+                operations,
+                template.json().path("templateRef").asText(),
+                "STORE",
+                fixture.storeId(),
+                name + " channel");
+        UUID channelRef = UUID.fromString(channel.json().path("channelRef").asText());
+        CreatedBinding binding = createBinding(
+                context,
+                operations,
+                channelRef,
+                providerCode,
+                "GROUP_BUY",
+                "STORE",
+                fixture.storeId(),
+                name + " binding",
+                "calibration-owner-" + UUID.randomUUID());
+        assertFalse(
+                binding.json().path("bindingRef").asText().isBlank(),
+                "BUSINESS: calibration external channel has a real owner binding");
+        return channel.json();
     }
 
     /** CP-05 calibration bridge: exercises legal local unbind on a real externally authorized binding. */
@@ -107,7 +137,7 @@ final class BusinessChannelAcceptanceScenarios {
         host.completeInvitation(context, projectFixture);
         OperationsFixture projectOperations =
                 new OperationsFixture(projectFixture, host.login(context, projectFixture));
-        BackendAcceptanceTest.Response template = createTemplate(
+        CreatedTemplate template = createTemplate(
                 context,
                 projectOperations,
                 "Calibration binding delete template",
@@ -116,7 +146,7 @@ final class BusinessChannelAcceptanceScenarios {
                 "GROUP_BUY",
                 providerCode,
                 null);
-        BackendAcceptanceTest.Response channel = createChannel(
+        CreatedChannel channel = createChannel(
                 context,
                 operations,
                 template.json().path("templateRef").asText(),
@@ -127,13 +157,18 @@ final class BusinessChannelAcceptanceScenarios {
         BackendAcceptanceTest.Response storeChannels = context.get(
                 CHANNEL_LIST_STORE,
                 "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/stores/" + fixture.storeId()
-                        + "/business-channels?pageSize=20",
+                        + "/business-channels?usage=SALES_MENU&pageSize=20",
                 session.cookie(),
                 Set.of(200));
-        assertTrue(
-                find(storeChannels.json().path("items"), "channelRef", channelRef.toString()) != null,
-                "BUSINESS: store channel task read returns the newly created channel");
-        BackendAcceptanceTest.Response binding = createBinding(
+        boolean listedInSalesMenu = false;
+        for (JsonNode row : storeChannels.json().path("items")) {
+            if (channelRef.toString().equals(row.path("channelRef").asText())) {
+                listedInSalesMenu = true;
+                break;
+            }
+        }
+        assertFalse(listedInSalesMenu, "BUSINESS: sales-menu channel task excludes the external group-buy channel");
+        CreatedBinding binding = createBinding(
                 context,
                 operations,
                 channelRef,
@@ -173,7 +208,7 @@ final class BusinessChannelAcceptanceScenarios {
     void calibrationUpdateInternalTemplateAndChannel(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         OperationsFixture projectOwner =
                 operationsFixture(context, "PROJECT", Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
-        BackendAcceptanceTest.Response template = createTemplate(
+        CreatedTemplate template = createTemplate(
                 context,
                 projectOwner,
                 "Performance calibration template",
@@ -199,7 +234,7 @@ final class BusinessChannelAcceptanceScenarios {
                 updatedTemplate.json().path("templateName").asText(),
                 "BUSINESS: normal calibration saves the internal template name");
 
-        BackendAcceptanceTest.Response channel = createChannel(
+        CreatedChannel channel = createChannel(
                 context,
                 projectOwner,
                 templateRef.toString(),
@@ -230,9 +265,9 @@ final class BusinessChannelAcceptanceScenarios {
             operation = "cascadeAndDraft")
     void cascadeAndDraft(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         OperationsFixture fixture = operationsFixture(context, "PROJECT", Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
-        BackendAcceptanceTest.Response template =
+        CreatedTemplate template =
                 createTemplate(context, fixture, "Internal takeaway", "INTERNAL", "PROJECT", "TAKEAWAY", null, null);
-        BackendAcceptanceTest.Response channel = createChannel(
+        CreatedChannel channel = createChannel(
                 context,
                 fixture,
                 template.json().path("templateRef").asText(),
@@ -535,7 +570,7 @@ final class BusinessChannelAcceptanceScenarios {
                 "BUSINESS: restoring the upstream template clears derived blockers without a channel write");
 
         String reusableTemplateCode = "TPL-VOIDED-" + UUID.randomUUID();
-        BackendAcceptanceTest.Response voidedTemplate = createTemplateWithCode(
+        CreatedTemplate voidedTemplate = createTemplateWithCode(
                 context,
                 fixture,
                 "Void and reuse template",
@@ -566,7 +601,7 @@ final class BusinessChannelAcceptanceScenarios {
                 "VOIDED",
                 voidedTemplateReadback.json().path("status").asText(),
                 "BUSINESS: voided template remains a historical fact");
-        BackendAcceptanceTest.Response replacementTemplate = createTemplateWithCode(
+        CreatedTemplate replacementTemplate = createTemplateWithCode(
                 context,
                 fixture,
                 "Replacement template after void",
@@ -582,7 +617,7 @@ final class BusinessChannelAcceptanceScenarios {
                 "BUSINESS: VOIDED template releases its project-scoped code");
 
         String reusableChannelCode = "CH-VOIDED-" + UUID.randomUUID();
-        BackendAcceptanceTest.Response voidedChannel = createChannelWithCode(
+        CreatedChannel voidedChannel = createChannelWithCode(
                 context,
                 fixture,
                 templateRef.toString(),
@@ -607,7 +642,7 @@ final class BusinessChannelAcceptanceScenarios {
                 "VOIDED",
                 voidedChannelReadback.json().path("status").asText(),
                 "BUSINESS: voided channel remains a historical fact");
-        BackendAcceptanceTest.Response replacementChannel = createChannelWithCode(
+        CreatedChannel replacementChannel = createChannelWithCode(
                 context,
                 fixture,
                 templateRef.toString(),
@@ -639,7 +674,7 @@ final class BusinessChannelAcceptanceScenarios {
                 "PLANNED",
                 planned.path("catalogStatus").asText(),
                 "BUSINESS: candidate retains PLANNED catalogue status");
-        BackendAcceptanceTest.Response template = createTemplate(
+        CreatedTemplate template = createTemplate(
                 context, fixture, "External group buy", "EXTERNAL", "PROJECT", "GROUP_BUY", "MEITUAN_ISV_B", null);
         assertEquals(
                 "EXTERNAL",
@@ -657,9 +692,9 @@ final class BusinessChannelAcceptanceScenarios {
             operation = "doubleSourceAndManualStop")
     void doubleSourceAndManualStop(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         OperationsFixture fixture = operationsFixture(context, "PROJECT", Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
-        BackendAcceptanceTest.Response template =
+        CreatedTemplate template =
                 createTemplate(context, fixture, "Manual stop test", "INTERNAL", "PROJECT", "TAKEAWAY", null, null);
-        BackendAcceptanceTest.Response channel = createChannel(
+        CreatedChannel channel = createChannel(
                 context,
                 fixture,
                 template.json().path("templateRef").asText(),
@@ -735,11 +770,11 @@ final class BusinessChannelAcceptanceScenarios {
     void storeTemplateScope(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         OperationsFixture projectOwner =
                 operationsFixture(context, "PROJECT", Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
-        BackendAcceptanceTest.Response projectTemplate = createTemplate(
+        CreatedTemplate projectTemplate = createTemplate(
                 context, projectOwner, "Project template", "INTERNAL", "PROJECT", "TAKEAWAY", null, null);
-        BackendAcceptanceTest.Response storeTemplate =
+        CreatedTemplate storeTemplate =
                 createTemplate(context, projectOwner, "Store template", "INTERNAL", "STORE", "TAKEAWAY", null, null);
-        BackendAcceptanceTest.Response disabledStoreTemplate = createTemplate(
+        CreatedTemplate disabledStoreTemplate = createTemplate(
                 context, projectOwner, "Disabled store template", "INTERNAL", "STORE", "TAKEAWAY", null, null);
         BackendAcceptanceTest.Response disabledStoreTemplateReadback = context.post(
                 TEMPLATE_STATUS,
@@ -788,7 +823,7 @@ final class BusinessChannelAcceptanceScenarios {
                         .contains(
                                 disabledStoreTemplate.json().path("templateRef").asText()),
                 "BUSINESS: disabled store template is not an effective candidate");
-        BackendAcceptanceTest.Response channel = createChannel(
+        CreatedChannel channel = createChannel(
                 context,
                 storeViewer,
                 storeTemplate.json().path("templateRef").asText(),
@@ -805,7 +840,7 @@ final class BusinessChannelAcceptanceScenarios {
         BackendAcceptanceTest.Response storeChannels = context.get(
                 CHANNEL_LIST_STORE,
                 "/api/operations/group-workspaces/" + storeViewer.fixture().groupWorkspaceKey() + "/stores/"
-                        + storeViewer.fixture().storeId() + "/business-channels?pageSize=20",
+                        + storeViewer.fixture().storeId() + "/business-channels?usage=SALES_MENU&pageSize=20",
                 storeViewer.session().cookie(),
                 Set.of(200));
         assertChannelPageFacts(
@@ -874,6 +909,190 @@ final class BusinessChannelAcceptanceScenarios {
                 "BUSINESS: project template remains project-owned");
     }
 
+    /**
+     * Shared acceptance fixture bridge for sales-menu scenarios. Channel/template ownership stays in this owner file;
+     * callers only receive the real STORE-scoped INTERNAL TAKEAWAY channel refs they need to exercise menu behavior.
+     */
+    List<UUID> acceptanceCreateSalesMenuEligibleStoreChannels(
+            BackendAcceptanceTest.ScenarioContext context,
+            BackendAcceptanceTest.Fixture storeFixture,
+            BackendAcceptanceTest.Session storeSession,
+            int count,
+            String namePrefix)
+            throws Exception {
+        return acceptanceCreateSalesMenuEligibleStoreChannels(
+                context, storeFixture, storeSession, count, namePrefix, "TAKEAWAY");
+    }
+
+    /** Creates real STORE-owned INTERNAL channels for a sales-menu fixture with the requested order kind. */
+    List<UUID> acceptanceCreateSalesMenuEligibleStoreChannels(
+            BackendAcceptanceTest.ScenarioContext context,
+            BackendAcceptanceTest.Fixture storeFixture,
+            BackendAcceptanceTest.Session storeSession,
+            int count,
+            String namePrefix,
+            String orderKind)
+            throws Exception {
+        if (count < 1) throw new IllegalArgumentException("count must be positive");
+        BackendAcceptanceTest.Fixture projectFixture =
+                host.projectUserFixture(storeFixture, Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
+        host.completeInvitation(context, projectFixture);
+        OperationsFixture projectOwner = new OperationsFixture(projectFixture, host.login(context, projectFixture));
+        String dineInForm = "DINE_IN".equals(orderKind) ? "POS" : null;
+        CreatedTemplate template = createTemplate(
+                context, projectOwner, namePrefix + " template", "INTERNAL", "STORE", orderKind, null, dineInForm);
+        String templateRef = template.json().path("templateRef").asText();
+        assertFalse(templateRef.isBlank(), "BUSINESS: sales-menu fixture obtains a STORE template ref");
+        assertEquals("INTERNAL", template.json().path("accessKind").asText(), "BUSINESS: channel template is INTERNAL");
+        assertEquals(
+                "STORE", template.json().path("operatorKind").asText(), "BUSINESS: channel template is STORE-owned");
+        assertEquals(
+                orderKind,
+                template.json().path("orderKind").asText(),
+                "BUSINESS: channel template has the requested order kind");
+        OperationsFixture storeOwner = new OperationsFixture(storeFixture, storeSession);
+        List<UUID> channels = new java.util.ArrayList<>();
+        for (int index = 0; index < count; index++) {
+            CreatedChannel channel = createChannel(
+                    context, storeOwner, templateRef, "STORE", storeFixture.storeId(), namePrefix + " " + index);
+            assertEquals(
+                    "ENABLED", channel.json().path("status").asText(), "BUSINESS: eligible store channel is enabled");
+            assertEquals("STORE", channel.json().path("ownerNodeType").asText(), "BUSINESS: channel owner is STORE");
+            channels.add(UUID.fromString(channel.json().path("channelRef").asText()));
+        }
+        return List.copyOf(channels);
+    }
+
+    @AcceptanceScenario(
+            id = "business-channel.sales-menu-eligible-cursor",
+            module = "BUSINESS_CHANNEL",
+            operation = "salesMenuEligibleCursor")
+    void salesMenuEligibleCursor(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        BackendAcceptanceTest.Fixture fixture = host.fixture("STORE", Set.of("BC-BUSINESS-CHANNEL-STORE-EDIT"));
+        host.completeInvitation(context, fixture);
+        BackendAcceptanceTest.Session session = selectStore(
+                        context, new OperationsFixture(fixture, host.login(context, fixture)))
+                .session();
+        List<UUID> expectedTakeaway = acceptanceCreateSalesMenuEligibleStoreChannels(
+                context, fixture, session, 20, "Sales menu eligible takeaway cursor", "TAKEAWAY");
+        List<UUID> expectedDineIn = acceptanceCreateSalesMenuEligibleStoreChannels(
+                context, fixture, session, 1, "Sales menu eligible dine-in cursor", "DINE_IN");
+        List<UUID> expected = new java.util.ArrayList<>(expectedTakeaway);
+        expected.addAll(expectedDineIn);
+        OperationsFixture storeOwner = new OperationsFixture(fixture, session);
+        BackendAcceptanceTest.Fixture projectFixture =
+                host.projectUserFixture(fixture, Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
+        host.completeInvitation(context, projectFixture);
+        OperationsFixture projectOwner = new OperationsFixture(projectFixture, host.login(context, projectFixture));
+
+        CreatedTemplate projectTemplate = createTemplate(
+                context,
+                projectOwner,
+                "Sales menu ineligible project template",
+                "INTERNAL",
+                "PROJECT",
+                "TAKEAWAY",
+                null,
+                null);
+        CreatedChannel projectChannel = createChannel(
+                context,
+                projectOwner,
+                projectTemplate.json().path("templateRef").asText(),
+                "PROJECT",
+                projectFixture.projectId(),
+                "Sales menu ineligible project channel");
+        UUID projectChannelRef =
+                UUID.fromString(projectChannel.json().path("channelRef").asText());
+        assertEquals(
+                "PROJECT",
+                projectChannel.json().path("ownerNodeType").asText(),
+                "BUSINESS: project-owned channel is an explicit ineligible counterexample");
+
+        CreatedTemplate groupBuyTemplate = createTemplate(
+                context,
+                projectOwner,
+                "Sales menu ineligible group-buy template",
+                "INTERNAL",
+                "STORE",
+                "GROUP_BUY",
+                null,
+                null);
+        CreatedChannel groupBuyChannel = createChannel(
+                context,
+                storeOwner,
+                groupBuyTemplate.json().path("templateRef").asText(),
+                "STORE",
+                fixture.storeId(),
+                "Sales menu ineligible group-buy channel");
+        UUID groupBuyChannelRef =
+                UUID.fromString(groupBuyChannel.json().path("channelRef").asText());
+
+        enableProvider(context, fixture, "MEITUAN_ISV_A");
+        CreatedExternalStoreBinding externalChannel = createExternalStoreBinding(
+                context,
+                projectOwner,
+                storeOwner,
+                "MEITUAN_ISV_A",
+                "TAKEAWAY",
+                "SALES-MENU-INELIGIBLE-EXTERNAL-" + UUID.randomUUID(),
+                "Sales menu ineligible external channel");
+        UUID externalChannelRef = externalChannel.channel().channelRef();
+        String root = "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/stores/" + fixture.storeId()
+                + "/business-channels";
+        BackendAcceptanceTest.Response first =
+                context.get(CHANNEL_LIST_STORE, root + "?usage=SALES_MENU&pageSize=20", session.cookie(), Set.of(200));
+        assertEquals(20, first.json().path("items").size(), "BUSINESS: eligible channel first page is exactly 20");
+        String cursor = first.json().path("nextCursor").asText();
+        assertFalse(cursor.isBlank(), "BUSINESS: eligible channel first page returns a cursor");
+        BackendAcceptanceTest.Response second = context.get(
+                CHANNEL_LIST_STORE,
+                root + "?usage=SALES_MENU&pageSize=20&cursor="
+                        + java.net.URLEncoder.encode(cursor, java.nio.charset.StandardCharsets.UTF_8),
+                session.cookie(),
+                Set.of(200));
+        assertEquals(1, second.json().path("items").size(), "BUSINESS: eligible channel second page has the 21st item");
+        assertTrue(second.json().path("nextCursor").isNull(), "BUSINESS: eligible channel cursor is exhausted");
+        Set<String> observed = new java.util.LinkedHashSet<>();
+        first.json()
+                .path("items")
+                .forEach(item -> observed.add(item.path("channelRef").asText()));
+        second.json()
+                .path("items")
+                .forEach(item -> observed.add(item.path("channelRef").asText()));
+        assertEquals(21, observed.size(), "BUSINESS: eligible channel pages have no duplicate refs");
+        expected.forEach(channelRef -> assertTrue(
+                observed.contains(channelRef.toString()),
+                "BUSINESS: eligible channel pages retain created ref " + channelRef));
+        assertFalse(
+                observed.contains(projectChannelRef.toString()),
+                "BUSINESS: project-owned channel is excluded from the STORE sales-menu projection");
+        assertFalse(
+                observed.contains(groupBuyChannelRef.toString()),
+                "BUSINESS: unsupported order kind is excluded from the sales-menu projection");
+        assertFalse(
+                observed.contains(externalChannelRef.toString()),
+                "BUSINESS: external channel is excluded from the INTERNAL sales-menu projection");
+        BackendAcceptanceTest.Response wrongQuery = context.get(
+                CHANNEL_LIST_STORE,
+                root + "?usage=SALES_MENU&pageSize=20&sortKey=CHANNEL_CODE&cursor="
+                        + java.net.URLEncoder.encode(cursor, java.nio.charset.StandardCharsets.UTF_8),
+                session.cookie(),
+                Set.of(422));
+        assertEquals("VALIDATION_ERROR", wrongQuery.problemCode(), "BUSINESS: cursor binds to its query identity");
+        BackendAcceptanceTest.Fixture sibling = host.siblingStoreFixtureSameBrand(fixture, Set.of());
+        BackendAcceptanceTest.Response wrongStore = context.get(
+                CHANNEL_LIST_STORE,
+                "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/stores/" + sibling.storeId()
+                        + "/business-channels?usage=SALES_MENU&pageSize=20&cursor="
+                        + java.net.URLEncoder.encode(cursor, java.nio.charset.StandardCharsets.UTF_8),
+                session.cookie(),
+                Set.of(403));
+        assertTrue(
+                wrongStore.problemCode().contains("ACCESS")
+                        || wrongStore.problemCode().contains("SCOPE"),
+                "BUSINESS: cursor cannot cross the selected store scope");
+    }
+
     @AcceptanceScenario(
             id = "business-channel.disabled-store-create",
             module = "BUSINESS_CHANNEL",
@@ -892,9 +1111,9 @@ final class BusinessChannelAcceptanceScenarios {
                 Map.of("targetStatus", "DISABLED", "expectedVersion", 1),
                 Set.of(200));
         assertEquals("DISABLED", disabled.json().path("status").asText(), "BUSINESS: store master status is disabled");
-        BackendAcceptanceTest.Response template = createTemplate(
+        CreatedTemplate template = createTemplate(
                 context, projectOwner, "Disabled store channel", "INTERNAL", "STORE", "TAKEAWAY", null, null);
-        BackendAcceptanceTest.Response channel = createChannel(
+        CreatedChannel channel = createChannel(
                 context,
                 fixture,
                 template.json().path("templateRef").asText(),
@@ -937,7 +1156,7 @@ final class BusinessChannelAcceptanceScenarios {
         OperationsFixture projectOwner = new OperationsFixture(projectFixture, host.login(context, projectFixture));
         enableProvider(context, owner.fixture(), "MEITUAN_ISV_B");
 
-        BackendAcceptanceTest.Response ownerTemplate = createTemplate(
+        CreatedTemplate ownerTemplate = createTemplate(
                 context,
                 projectOwner,
                 "M1 protected store channel",
@@ -946,7 +1165,7 @@ final class BusinessChannelAcceptanceScenarios {
                 "TAKEAWAY",
                 "MEITUAN_ISV_B",
                 null);
-        BackendAcceptanceTest.Response ownerChannel = createChannel(
+        CreatedChannel ownerChannel = createChannel(
                 context,
                 owner,
                 ownerTemplate.json().path("templateRef").asText(),
@@ -962,7 +1181,7 @@ final class BusinessChannelAcceptanceScenarios {
                 "BUSINESS: binding status presentation is owned by the frontend dictionary");
         UUID ownerChannelRef =
                 UUID.fromString(ownerChannel.json().path("channelRef").asText());
-        BackendAcceptanceTest.Response ownerBinding = createBinding(
+        CreatedBinding ownerBinding = createBinding(
                 context,
                 owner,
                 ownerChannelRef,
@@ -1023,7 +1242,8 @@ final class BusinessChannelAcceptanceScenarios {
         assertScopeDenied(
                 context.get(
                         CHANNEL_LIST_STORE,
-                        root + "/stores/" + owner.fixture().storeId() + "/business-channels?pageSize=20",
+                        root + "/stores/" + owner.fixture().storeId()
+                                + "/business-channels?usage=SALES_MENU&pageSize=20",
                         attacker.session().cookie(),
                         Set.of(403)),
                 ownerChannelRef.toString(),
@@ -1061,42 +1281,42 @@ final class BusinessChannelAcceptanceScenarios {
         enableProvider(context, fixture.fixture(), "MEITUAN_ISV_B");
         enableProvider(context, fixture.fixture(), "ELEME_OPEN");
 
-        BackendAcceptanceTest.Response meituanA = createExternalStoreBinding(
+        CreatedExternalStoreBinding meituanA = createExternalStoreBinding(
                 context, projectOwner, fixture, "MEITUAN_ISV_A", "TAKEAWAY", "MEITUAN-OWNER-A", "Meituan takeaway");
-        BackendAcceptanceTest.Response meituanB = createExternalStoreBinding(
+        CreatedExternalStoreBinding meituanB = createExternalStoreBinding(
                 context, projectOwner, fixture, "MEITUAN_ISV_B", "GROUP_BUY", "MEITUAN-OWNER-B", "Meituan group buy");
-        BackendAcceptanceTest.Response elemeA = createExternalStoreBinding(
+        CreatedExternalStoreBinding elemeA = createExternalStoreBinding(
                 context, projectOwner, fixture, "ELEME_OPEN", "TAKEAWAY", "ELEME-OWNER-SAME", "Eleme takeaway");
-        BackendAcceptanceTest.Response elemeB = createExternalStoreBinding(
+        CreatedExternalStoreBinding elemeB = createExternalStoreBinding(
                 context, projectOwner, fixture, "ELEME_OPEN", "GROUP_BUY", "ELEME-OWNER-SAME", "Eleme group buy");
 
         assertEquals(
                 4,
                 Set.of(
-                                meituanA.json().path("bindingRef").asText(),
-                                meituanB.json().path("bindingRef").asText(),
-                                elemeA.json().path("bindingRef").asText(),
-                                elemeB.json().path("bindingRef").asText())
+                                meituanA.binding().bindingRef().toString(),
+                                meituanB.binding().bindingRef().toString(),
+                                elemeA.binding().bindingRef().toString(),
+                                elemeB.binding().bindingRef().toString())
                         .size(),
                 "BUSINESS: four channel owner rows remain distinct despite repeated external owner ids");
         assertEquals(
                 "PENDING_AUTHORIZATION",
-                meituanA.json().path("status").asText(),
+                meituanA.binding().json().path("status").asText(),
                 "BUSINESS: Meituan grant remains callback-controlled");
         assertEquals(
                 "PENDING_AUTHORIZATION",
-                meituanB.json().path("status").asText(),
+                meituanB.binding().json().path("status").asText(),
                 "BUSINESS: second Meituan grant remains callback-controlled");
         assertEquals(
                 "PENDING_AUTHORIZATION",
-                elemeA.json().path("status").asText(),
+                elemeA.binding().json().path("status").asText(),
                 "BUSINESS: Eleme grant remains callback-controlled");
         assertEquals(
                 "PENDING_AUTHORIZATION",
-                elemeB.json().path("status").asText(),
+                elemeB.binding().json().path("status").asText(),
                 "BUSINESS: same Eleme owner id is not a global uniqueness key");
 
-        BackendAcceptanceTest.Response readbackTemplate = createTemplate(
+        CreatedTemplate readbackTemplate = createTemplate(
                 context,
                 projectOwner,
                 "Owner binding readback template",
@@ -1105,7 +1325,7 @@ final class BusinessChannelAcceptanceScenarios {
                 "TAKEAWAY",
                 "ELEME_OPEN",
                 null);
-        BackendAcceptanceTest.Response readbackChannel = createChannel(
+        CreatedChannel readbackChannel = createChannel(
                 context,
                 fixture,
                 readbackTemplate.json().path("templateRef").asText(),
@@ -1114,7 +1334,7 @@ final class BusinessChannelAcceptanceScenarios {
                 "Owner binding readback channel");
         UUID readbackChannelRef =
                 UUID.fromString(readbackChannel.json().path("channelRef").asText());
-        BackendAcceptanceTest.Response readbackBinding = createBinding(
+        CreatedBinding readbackBinding = createBinding(
                 context,
                 fixture,
                 readbackChannelRef,
@@ -1221,7 +1441,7 @@ final class BusinessChannelAcceptanceScenarios {
                 "BUSINESS: operations binding delete preserves provider scope");
     }
 
-    private BackendAcceptanceTest.Response createExternalStoreBinding(
+    private CreatedExternalStoreBinding createExternalStoreBinding(
             BackendAcceptanceTest.ScenarioContext context,
             OperationsFixture projectOwner,
             OperationsFixture fixture,
@@ -1230,25 +1450,26 @@ final class BusinessChannelAcceptanceScenarios {
             String externalOwnerId,
             String name)
             throws Exception {
-        BackendAcceptanceTest.Response template = createTemplate(
+        CreatedTemplate template = createTemplate(
                 context, projectOwner, name + " template", "EXTERNAL", "STORE", orderKind, providerCode, null);
-        BackendAcceptanceTest.Response channel = createChannel(
+        CreatedChannel channel = createChannel(
                 context,
                 fixture,
                 template.json().path("templateRef").asText(),
                 "STORE",
                 fixture.fixture().storeId(),
                 name + " channel");
-        return createBinding(
+        CreatedBinding binding = createBinding(
                 context,
                 fixture,
-                UUID.fromString(channel.json().path("channelRef").asText()),
+                channel.channelRef(),
                 providerCode,
                 orderKind,
                 "STORE",
                 fixture.fixture().storeId(),
                 name + " binding",
                 externalOwnerId);
+        return new CreatedExternalStoreBinding(channel, binding);
     }
 
     private void enableProvider(
@@ -1303,7 +1524,7 @@ final class BusinessChannelAcceptanceScenarios {
                         selected.json().path("contextVersion").asLong()));
     }
 
-    private BackendAcceptanceTest.Response createBinding(
+    private CreatedBinding createBinding(
             BackendAcceptanceTest.ScenarioContext context,
             OperationsFixture fixture,
             UUID channelRef,
@@ -1321,13 +1542,20 @@ final class BusinessChannelAcceptanceScenarios {
         body.put("nodeRef", nodeRef.toString());
         body.put("bindingDisplayName", bindingDisplayName);
         body.put("externalOwnerId", externalOwnerId);
-        return context.post(
+        BackendAcceptanceTest.Response response = context.post(
                 OWNER_BINDING_CREATE,
                 channelPath(fixture.fixture(), channelRef) + "/owner-binding",
                 fixture.session().cookie(),
                 body,
                 headers(),
                 Set.of(200));
+        JsonNode json = response.json();
+        UUID bindingRef = UUID.fromString(
+                requiredJsonNode(json, "/bindingRef", JsonNodeType.STRING, "BUSINESS: owner binding identity")
+                        .asText());
+        long version = requiredJsonNode(json, "/version", JsonNodeType.NUMBER, "BUSINESS: owner binding version")
+                .asLong();
+        return new CreatedBinding(bindingRef, version, json);
     }
 
     private static void assertScopeDenied(
@@ -1346,7 +1574,7 @@ final class BusinessChannelAcceptanceScenarios {
         return new OperationsFixture(fixture, host.login(context, fixture));
     }
 
-    private BackendAcceptanceTest.Response createTemplate(
+    private CreatedTemplate createTemplate(
             BackendAcceptanceTest.ScenarioContext context,
             OperationsFixture fixture,
             String name,
@@ -1368,7 +1596,7 @@ final class BusinessChannelAcceptanceScenarios {
                 "TPL-" + UUID.randomUUID());
     }
 
-    private BackendAcceptanceTest.Response createTemplateWithCode(
+    private CreatedTemplate createTemplateWithCode(
             BackendAcceptanceTest.ScenarioContext context,
             OperationsFixture fixture,
             String name,
@@ -1388,7 +1616,7 @@ final class BusinessChannelAcceptanceScenarios {
         body.put("orderKind", orderKind);
         body.put("dineInForm", dineInForm);
         body.put("providerCode", providerCode);
-        return context.post(
+        BackendAcceptanceTest.Response response = context.post(
                 TEMPLATE_CREATE,
                 "/api/operations/group-workspaces/" + fixture.fixture().groupWorkspaceKey()
                         + "/business-channel-templates",
@@ -1396,9 +1624,16 @@ final class BusinessChannelAcceptanceScenarios {
                 body,
                 headers(),
                 Set.of(200));
+        JsonNode json = response.json();
+        UUID templateRef = UUID.fromString(
+                requiredJsonNode(json, "/templateRef", JsonNodeType.STRING, "BUSINESS: channel template identity")
+                        .asText());
+        long version = requiredJsonNode(json, "/version", JsonNodeType.NUMBER, "BUSINESS: channel template version")
+                .asLong();
+        return new CreatedTemplate(templateRef, version, json);
     }
 
-    private BackendAcceptanceTest.Response createChannel(
+    private CreatedChannel createChannel(
             BackendAcceptanceTest.ScenarioContext context,
             OperationsFixture fixture,
             String templateRef,
@@ -1410,7 +1645,7 @@ final class BusinessChannelAcceptanceScenarios {
                 context, fixture, templateRef, ownerNodeType, ownerNodeRef, channelName, "CH-" + UUID.randomUUID());
     }
 
-    private BackendAcceptanceTest.Response createChannelWithCode(
+    private CreatedChannel createChannelWithCode(
             BackendAcceptanceTest.ScenarioContext context,
             OperationsFixture fixture,
             String templateRef,
@@ -1426,13 +1661,20 @@ final class BusinessChannelAcceptanceScenarios {
         body.put("channelCode", channelCode);
         body.put("channelName", channelName);
         body.put("bindingRef", null);
-        return context.post(
+        BackendAcceptanceTest.Response response = context.post(
                 CHANNEL_CREATE,
                 "/api/operations/group-workspaces/" + fixture.fixture().groupWorkspaceKey() + "/business-channels",
                 fixture.session().cookie(),
                 body,
                 headers(),
                 Set.of(200));
+        JsonNode json = response.json();
+        UUID channelRef =
+                UUID.fromString(requiredJsonNode(json, "/channelRef", JsonNodeType.STRING, "BUSINESS: channel identity")
+                        .asText());
+        long version = requiredJsonNode(json, "/version", JsonNodeType.NUMBER, "BUSINESS: channel version")
+                .asLong();
+        return new CreatedChannel(channelRef, version, json);
     }
 
     private static String templatePath(BackendAcceptanceTest.Fixture fixture, UUID templateRef) {

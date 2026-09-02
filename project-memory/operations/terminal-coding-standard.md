@@ -12,7 +12,7 @@ consumerFaces: ["all"]
 owners: ["platform","frontend-platform"]
 impacts: ["governance","architecture"]
 triggers: ["task-start","implementation","review"]
-assertions: ["TERMINAL_STANDARD_SINGLE_SOURCE","TERMINAL_STANDARD_POINTERS_ONLY","TERMINAL_TEN_HARD_RULES","TERMINAL_TRIPLE_NAMING_DERIVED","TERMINAL_PORT_REGISTRY_WITH_DEFAULTS","TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README"]
+assertions: ["TERMINAL_STANDARD_SINGLE_SOURCE","TERMINAL_STANDARD_POINTERS_ONLY","TERMINAL_HARD_RULES_NUMBERING_STABLE","TERMINAL_TRIPLE_NAMING_DERIVED","TERMINAL_PORT_REGISTRY_WITH_DEFAULTS","TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README"]
 sourceRefs: ["doc/platform/terminal-coding-standard.md"]
 ---
 
@@ -24,8 +24,9 @@ sourceRefs: ["doc/platform/terminal-coding-standard.md"]
 - `TERMINAL_STANDARD_POINTERS_ONLY`：项目记忆、skill、评审文档**只写"见正本"**，不复述规则内容。
   通用工作纪律（`currentData`/`isFetching`、`initiate` 义务、同一事实一个住址、幂等键、
   否定式全称命题、finding 带业务场景、动笔前查五处）由正本 §0 指针引用前端规范，同样不复述。
-- `TERMINAL_TEN_HARD_RULES`：十条硬规则编号稳定为 `TR-01`…`TR-10`（门的名字、红夹具、
-  review checklist 都引用该编号）：
+- `TERMINAL_HARD_RULES_NUMBERING_STABLE`：硬规则**编号只增不改**，`TR-01` 起（门的名字、红夹具、
+  review checklist 都引用该编号）。⚠️ **条数不在此处复述** —— 2026-09-02 加 `TR-11` 时，
+  这里写死的「十条」与正本标题里的数量一起使路由失败。**要查有几条、各是什么，去读正本**：
   reducer 只能 actor 调用 · 「什么都没做」不得返回成功 · 跨包读只走 selector ·
   持久化必须有正反双断言重启测试 · 端口禁 `Record<string,unknown>`/`any` ·
   foundations 不得触达 store/网络/平台 API · 集合先声明形态 ·

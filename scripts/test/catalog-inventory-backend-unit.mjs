@@ -28,9 +28,15 @@ const phases = [];
 let firstFailure = null;
 let lastKnownGood = null;
 let brokenBoundary = null;
+const focusedProjectionEnvironment = Object.freeze({
+  ...process.env,
+  V2S_BACKEND_ACCEPTANCE_OPERATION: 'focused-catalog-inventory-backend-unit',
+  V2S_BACKEND_PERFORMANCE_PROJECTION_MODE: 'IDENTITY_ONLY',
+});
 const fail = (code) => { const error = new Error(`CATALOG_INVENTORY_BACKEND_UNIT=${code}`); error.code = code; throw error; };
 const command = (binary, args) => spawnSync(binary, args, {
   cwd: root,
+  env: focusedProjectionEnvironment,
   encoding: 'utf8',
   maxBuffer: childOutputBudgetBytes,
 });
@@ -69,7 +75,9 @@ function writeReport(status) {
 function selfTest() {
   if (remoteModuleTasks.length !== 2 || !remoteModuleTasks.includes(':apps:backend:catering-business-server:modules:catalog:test') || !remoteModuleTasks.includes(':apps:backend:catering-business-server:modules:inventory:test')) fail('REMOTE_MODULE_TASK_DENOMINATOR_INVALID');
   if (remoteApplicationTests.length !== 2 || remoteApplicationTests.some((name) => !name.endsWith('Test'))) fail('REMOTE_TEST_DENOMINATOR_INVALID');
-  process.stdout.write('CATALOG_INVENTORY_BACKEND_UNIT_SELF_TEST=PASS\nLOCAL_MODULE_TESTS=0\nREMOTE_MODULE_TESTS=2\nREMOTE_APPLICATION_TESTS=2\nSEED_RUNTIME_INPUT=false\n');
+  if (focusedProjectionEnvironment.V2S_BACKEND_ACCEPTANCE_OPERATION === 'all') fail('FOCUSED_PROJECTION_OPERATION_INVALID');
+  if (focusedProjectionEnvironment.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE !== 'IDENTITY_ONLY') fail('FOCUSED_PROJECTION_MODE_INVALID');
+  process.stdout.write('CATALOG_INVENTORY_BACKEND_UNIT_SELF_TEST=PASS\nLOCAL_MODULE_TESTS=0\nREMOTE_MODULE_TESTS=2\nREMOTE_APPLICATION_TESTS=2\nFOCUSED_PROJECTION=IDENTITY_ONLY\nSEED_RUNTIME_INPUT=false\n');
 }
 
 function execute() {

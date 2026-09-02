@@ -16,6 +16,7 @@ import type {
 } from '../types/module'
 import type {PeerDispatchGateway} from '../types/peer'
 import type {RuntimeUnknownAction} from '../types/runtime'
+import {createStateSubscription} from './createStateSubscription'
 
 type DispatchCommand = <TPayload extends import('@catering-v2s/kernel-base-state').StateJsonValue>(
   definition: CommandDefinition<TPayload>,
@@ -55,17 +56,12 @@ const createModuleContext = (
     descriptors: input.descriptors,
     getState: (): StateRoot => stateRuntime.getState(),
     flushPersistence: (): Promise<PersistenceOperationResult> => stateRuntime.flushPersistence(),
-    subscribeState: (listener: () => void): (() => void) => {
-      const unsubscribe = stateRuntime.getStore().subscribe(listener)
-      const unregister = input.registerResource(unsubscribe)
-      let active = true
-      return () => {
-        if (!active) return
-        active = false
-        unsubscribe()
-        unregister()
-      }
-    },
+    subscribeState: (listener: () => void): (() => void) => createStateSubscription(
+      stateRuntime.getStore(),
+      listener,
+      input.registerResource,
+    ),
+    registerResource: input.registerResource,
     dispatchCommand: input.dispatchCommand,
     installPeerDispatchGateway: input.installPeerDispatchGateway,
   })

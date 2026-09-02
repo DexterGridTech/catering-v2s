@@ -17,6 +17,7 @@ import {BrandCatalogManagementPage, StoreCatalogManagementPage} from '../../feat
 import {InventoryManagementPage} from '../../features/inventory-management';
 import {ProjectBusinessChannelPage} from '../../features/business-channel/ui/ProjectBusinessChannelPage';
 import {StoreBusinessChannelPage} from '../../features/business-channel/ui/StoreBusinessChannelPage';
+import {SalesMenuPage} from '../../features/sales-menu/ui/SalesMenuPage';
 
 type Registration = {
   pageDesignKey: OperationsPageDesignKey;
@@ -170,6 +171,11 @@ export const operationsPageRegistry: Record<OperationsPageDesignKey, Registratio
     pageDesignKey: operationsPageDesignKeys.PgCatalogBrandItems,
     routeSegment: 'catalog/brand-items',
     Component: BrandCatalogManagementPage,
+  },
+  [operationsPageDesignKeys.PgSalesMenuStore]: {
+    pageDesignKey: operationsPageDesignKeys.PgSalesMenuStore,
+    routeSegment: 'catalog/sales-menus',
+    Component: SalesMenuPage,
   },
 } satisfies Record<OperationsPageDesignKey, Registration>;
 

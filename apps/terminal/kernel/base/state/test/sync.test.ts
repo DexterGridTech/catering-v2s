@@ -2,8 +2,6 @@ import {describe, expect, it} from 'vitest'
 import {
   applySliceSyncDiff,
   createFullSliceSyncPayload,
-  createSliceSyncDiff,
-  createSliceSyncSummary,
   createSyncTombstone,
   type StateRuntimeSyncRecordDescriptor,
 } from '../src/index'
@@ -32,42 +30,6 @@ const descriptor: StateRuntimeSyncRecordDescriptor<ExampleState> = {
 }
 
 describe('S group: authoritative stateless sync', () => {
-  it('S-1 creates full serialization summaries, not a cheap hash', () => {
-    const summary = createSliceSyncSummary(descriptor, {
-      enabled: true,
-      count: 1,
-      entries: {b: 2, a: 1},
-    })
-
-    expect(summary.a?.valueHash).toBe('json:1')
-    expect(summary.b?.valueHash).toBe('json:2')
-  })
-
-  it('S-2 creates partial authoritative diff without receiver ledger', () => {
-    const diff = createSliceSyncDiff(descriptor, {
-      enabled: true,
-      count: 1,
-      entries: {a: 1, b: 2},
-    }, {a: {updatedAt: 100, valueHash: 'json:1'}}, {mode: 'authoritative'})
-
-    expect(diff).toMatchObject({
-      mode: 'authoritative',
-      replaceMissing: false,
-    })
-    expect(diff.entries.map((entry) => entry.key).sort()).toEqual(['b'])
-  })
-
-  it('S-3 creates tombstones for keys present only in remote summary', () => {
-    const diff = createSliceSyncDiff(descriptor, {
-      enabled: true,
-      count: 1,
-      entries: {},
-    }, {missing: {updatedAt: 1, valueHash: 'json:true'}}, {mode: 'authoritative'})
-
-    expect(diff.entries).toHaveLength(1)
-    expect(diff.entries[0]?.value.tombstone).toBe(true)
-  })
-
   it('S-4 creates full payloads with replaceMissing true', () => {
     const payload = createFullSliceSyncPayload(descriptor, {
       enabled: true,

@@ -26,6 +26,7 @@ import com.catering.v2s.platform.iam.application.PlatformCommandReceiptService;
 import com.catering.v2s.platform.iam.application.PlatformCommandReceiptService.PlatformIdempotencyConflictException;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
 import com.catering.v2s.platform.workspace.application.WorkspaceCommandReceiptService;
+import com.catering.v2s.salesmenu.api.SalesMenuOwnerApi;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceAccountService;
 import com.catering.v2s.workspace.iam.application.WorkspaceAssignmentScopeService;
@@ -58,6 +59,8 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 @Order
 @RestControllerAdvice
 public final class ContractProblemAdvice {
+    private static final String SALES_MENU_OWNER_REJECTED = "销售菜单 owner 不接受该请求";
+
     private static final Logger log = LoggerFactory.getLogger(ContractProblemAdvice.class);
     private static final tools.jackson.databind.ObjectMapper RESPONSE_JSON = new tools.jackson.databind.ObjectMapper();
 
@@ -163,6 +166,11 @@ public final class ContractProblemAdvice {
                 exception.code(),
                 "business-channel owner rejected request",
                 request);
+    }
+
+    @ExceptionHandler(SalesMenuOwnerApi.Problem.class)
+    ResponseEntity<Problem> salesMenuProblem(SalesMenuOwnerApi.Problem exception, HttpServletRequest request) {
+        return problem(HttpStatus.valueOf(exception.status()), exception.code(), SALES_MENU_OWNER_REJECTED, request);
     }
 
     @ExceptionHandler(PlatformAssetService.AssetOwnerScopeForbiddenException.class)

@@ -69,6 +69,7 @@ function createExampleStateRegistration(
     readonly protection?: 'plain' | 'protected'
     readonly fieldFlushMode?: 'immediate' | 'debounced'
     readonly recordFlushMode?: 'immediate' | 'debounced'
+    readonly shouldPersistField?: (value: unknown, state: Readonly<ExampleState>) => boolean
     readonly shouldPersistEntry?: (key: string, value: StateJsonValue) => boolean
   } = {},
 ) {
@@ -82,6 +83,7 @@ function createExampleStateRegistration(
         stateKey: 'enabled',
         protection: input.protection,
         flushMode: input.fieldFlushMode,
+        shouldPersist: input.shouldPersistField,
       },
       {
         kind: 'record',
@@ -178,29 +180,73 @@ describe('P/R/F/H/C/M/X groups: persistence runtime', () => {
     ].sort())
   })
 
-  it('P-3b keeps debounced descriptors out of an immediate flush', async () => {
+  it('P-3b keeps an existing debounce deadline when an immediate descriptor changes', async () => {
+    vi.useFakeTimers()
     const plainStorage = createFakeStorage()
-    const registration = createExampleStateRegistration({
-      fieldFlushMode: 'immediate',
-      recordFlushMode: 'debounced',
-    })
-    const {runtime} = await createRuntime({
-      plainStorage,
-      registration,
-      debounceMs: 25,
-    })
+    try {
+      const registration = createExampleStateRegistration({
+        fieldFlushMode: 'immediate',
+        recordFlushMode: 'debounced',
+      })
+      const {runtime} = await createRuntime({
+        plainStorage,
+        registration,
+        debounceMs: 25,
+      })
+      const settle = async () => {
+        for (let index = 0; index < 8; index += 1) await Promise.resolve()
+      }
 
-    runtime.getStore().dispatch({type: 'example/setEntry', key: 'debounced', value: 1})
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(plainStorage.calls.write.map((entry) => entry.key)).not.toContain(recordKey('debounced'))
+      runtime.getStore().dispatch({type: 'example/setEntry', key: 'debounced', value: 1})
+      vi.advanceTimersByTime(10)
+      runtime.getStore().dispatch({type: 'example/setEnabled', value: true})
+      await settle()
+      expect(plainStorage.calls.write.map((entry) => entry.key)).toContain(fieldKey)
+      expect(plainStorage.calls.write.map((entry) => entry.key)).not.toContain(recordKey('debounced'))
 
-    runtime.getStore().dispatch({type: 'example/setEnabled', value: true})
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(plainStorage.calls.write.map((entry) => entry.key)).toContain(fieldKey)
-    expect(plainStorage.calls.write.map((entry) => entry.key)).not.toContain(recordKey('debounced'))
+      vi.advanceTimersByTime(14)
+      await settle()
+      expect(plainStorage.calls.write.map((entry) => entry.key)).not.toContain(recordKey('debounced'))
 
-    await new Promise((resolve) => setTimeout(resolve, 40))
-    expect(plainStorage.calls.write.map((entry) => entry.key)).toContain(recordKey('debounced'))
+      vi.advanceTimersByTime(1)
+      await settle()
+      expect(plainStorage.calls.write.map((entry) => entry.key)).toContain(recordKey('debounced'))
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('P-3c does not select immediate persistence for a debounced-only descriptor change', async () => {
+    vi.useFakeTimers()
+    try {
+      const shouldPersistField = vi.fn(() => true)
+      const {runtime} = await createRuntime({
+        plainStorage: createFakeStorage(),
+        registration: createExampleStateRegistration({
+          fieldFlushMode: 'immediate',
+          recordFlushMode: 'debounced',
+          shouldPersistField,
+        }),
+        debounceMs: 25,
+      })
+      const settle = async () => {
+        for (let index = 0; index < 8; index += 1) await Promise.resolve()
+      }
+
+      runtime.getStore().dispatch({type: 'example/setEntry', key: 'debounced-only', value: 1})
+      await settle()
+      expect(shouldPersistField).not.toHaveBeenCalled()
+
+      vi.advanceTimersByTime(24)
+      await settle()
+      expect(shouldPersistField).not.toHaveBeenCalled()
+
+      vi.advanceTimersByTime(1)
+      await settle()
+      expect(shouldPersistField).toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('P-4 removes cached record entries that disappeared from owner state', async () => {
@@ -363,6 +409,28 @@ describe('P/R/F/H/C/M/X groups: persistence runtime', () => {
     if (result.status === 'failed') {
       expect(result.dirtyKeys).toContain(recordKey('bad'))
     }
+  })
+
+  it('B-5 reports an invalid record key as a typed failure and continues with valid entries', async () => {
+    const {runtime, plainStorage} = await createRuntime()
+
+    runtime.getStore().dispatch({type: 'example/setEntry', key: '   ', value: 1})
+    runtime.getStore().dispatch({type: 'example/setEntry', key: 'good', value: 2})
+    const result = await runtime.flushPersistence()
+
+    expect(result.status).toBe('failed')
+    if (result.status === 'failed') {
+      expect(result.failures).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'ENCODE_REJECTED',
+          phase: 'flush',
+          operation: 'encode',
+        }),
+      ]))
+    }
+    expect(plainStorage.values.get(recordKey('good'))).toBe('2')
+    expect(plainStorage.calls.write.map((entry) => entry.key)).toContain(recordKey('good'))
+    expect(runtime.getPersistenceHealth().status).toBe('degraded')
   })
 
   it('F-3 retries failed keys on the next flush because cache was not advanced', async () => {
@@ -714,6 +782,12 @@ describe('P/R/F/H/C/M/X groups: persistence runtime', () => {
     const circular: {self?: unknown} = {}
     circular.self = circular
     const sparse = [1, , 3]
+    const accessor = {}
+    Object.defineProperty(accessor, 'value', {
+      enumerable: true,
+      get: () => 1,
+    })
+    const symbolKey = {[Symbol('state')]: 1}
     const invalidValues: readonly unknown[] = [
       Number.NaN,
       Number.POSITIVE_INFINITY,
@@ -725,6 +799,8 @@ describe('P/R/F/H/C/M/X groups: persistence runtime', () => {
       new Map(),
       circular,
       sparse,
+      accessor,
+      symbolKey,
     ]
 
     for (const value of invalidValues) {

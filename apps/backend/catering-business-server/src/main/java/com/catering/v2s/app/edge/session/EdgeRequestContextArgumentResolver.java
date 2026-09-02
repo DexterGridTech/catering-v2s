@@ -49,7 +49,8 @@ public final class EdgeRequestContextArgumentResolver implements HandlerMethodAr
                 servlet.getHeader("X-Request-Id"),
                 trustedBrand == null ? servlet.getHeader("X-Workspace-Brand-Ref") : trustedBrand.toString(),
                 servlet.getHeader("X-Catalog-Test-Failure-Point"),
-                servlet.getHeader("X-Catalog-Asset-Bind-Grants"));
+                servlet.getHeader("X-Catalog-Asset-Bind-Grants"),
+                servlet.getHeader("X-Sales-Menu-Asset-Bind-Grants"));
     }
 
     private static String cookie(HttpServletRequest request, String name) {

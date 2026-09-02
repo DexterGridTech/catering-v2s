@@ -385,6 +385,88 @@ class BackendAcceptanceTest {
             "/api/operations/catalog-inventory/inventory-consumption-target-candidates");
     static final RouteIdentity OPERATIONS_CATALOG_UNIT_UPDATE =
             new RouteIdentity("updateOperationsCatalogUnit", "/api/operations/catalog-inventory/units/{unitRef}");
+    static final String OPERATIONS_SALES_MENU_BASE =
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus";
+    static final RouteIdentity OPERATIONS_SALES_MENUS =
+            new RouteIdentity("getOperationsSalesMenus", OPERATIONS_SALES_MENU_BASE);
+    static final RouteIdentity OPERATIONS_SALES_MENU =
+            new RouteIdentity("getOperationsSalesMenu", OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}");
+    static final RouteIdentity OPERATIONS_SALES_MENU_DRAFT_SECTIONS = new RouteIdentity(
+            "getOperationsSalesMenuDraftSections", OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/sections");
+    static final RouteIdentity OPERATIONS_SALES_MENU_DRAFT_ITEMS = new RouteIdentity(
+            "getOperationsSalesMenuDraftItems",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/sections/{salesSectionRef}/items");
+    static final RouteIdentity OPERATIONS_SALES_MENU_DRAFT_ITEM = new RouteIdentity(
+            "getOperationsSalesMenuDraftItem",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/items/{salesItemRef}");
+    static final RouteIdentity OPERATIONS_SALES_MENU_PUBLISHED_SECTIONS = new RouteIdentity(
+            "getOperationsSalesMenuPublishedSections",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/published/sections");
+    static final RouteIdentity OPERATIONS_SALES_MENU_PUBLISHED_ITEMS = new RouteIdentity(
+            "getOperationsSalesMenuPublishedItems",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/published/sections/{salesSectionRef}/items");
+    static final RouteIdentity OPERATIONS_SALES_MENU_PUBLISHED_ITEM = new RouteIdentity(
+            "getOperationsSalesMenuPublishedItem",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/published/items/{salesItemRef}");
+    static final RouteIdentity OPERATIONS_SALES_MENU_CANDIDATES = new RouteIdentity(
+            "getOperationsSalesMenuItemCandidates",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/item-candidates");
+    static final RouteIdentity OPERATIONS_SALES_MENU_PREVIEW = new RouteIdentity(
+            "getOperationsSalesMenuPublicationPreview",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/publication-preview");
+    static final RouteIdentity OPERATIONS_SALES_MENU_RECORDS = new RouteIdentity(
+            "getOperationsSalesMenuOperationRecords",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/sales-menu-operation-records");
+    static final RouteIdentity OPERATIONS_SALES_MENU_CREATE =
+            new RouteIdentity("createOperationsSalesMenu", OPERATIONS_SALES_MENU_BASE);
+    static final RouteIdentity OPERATIONS_SALES_MENU_COPY =
+            new RouteIdentity("copyOperationsSalesMenu", OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/copies");
+    static final RouteIdentity OPERATIONS_SALES_MENU_RENAME =
+            new RouteIdentity("renameOperationsSalesMenu", OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/name");
+    static final RouteIdentity OPERATIONS_SALES_MENU_ARCHIVE =
+            new RouteIdentity("archiveOperationsSalesMenu", OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/archive");
+    static final RouteIdentity OPERATIONS_SALES_MENU_ACTIVATION = new RouteIdentity(
+            "setOperationsSalesMenuActivation",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/channels/{channelRef}/activation");
+    static final RouteIdentity OPERATIONS_SALES_MENU_SCHEDULE = new RouteIdentity(
+            "updateOperationsSalesMenuSchedule", OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/schedule");
+    static final RouteIdentity OPERATIONS_SALES_MENU_SECTION_CREATE = new RouteIdentity(
+            "createOperationsSalesMenuSection", OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/sections");
+    static final RouteIdentity OPERATIONS_SALES_MENU_SECTION_RENAME = new RouteIdentity(
+            "renameOperationsSalesMenuSection",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/sections/{salesSectionRef}/name");
+    static final RouteIdentity OPERATIONS_SALES_MENU_SECTION_DELETE = new RouteIdentity(
+            "deleteOperationsSalesMenuSection",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/sections/{salesSectionRef}");
+    static final RouteIdentity OPERATIONS_SALES_MENU_SECTION_MOVE = new RouteIdentity(
+            "moveOperationsSalesMenuSection",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/sections/{salesSectionRef}/move");
+    static final RouteIdentity OPERATIONS_SALES_MENU_ITEMS_ADD = new RouteIdentity(
+            "addOperationsSalesMenuItems",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/sections/{salesSectionRef}/items");
+    static final RouteIdentity OPERATIONS_SALES_MENU_ITEM_UPDATE = new RouteIdentity(
+            "updateOperationsSalesMenuItem", OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/items/{salesItemRef}");
+    static final RouteIdentity OPERATIONS_SALES_MENU_ITEM_DELETE = new RouteIdentity(
+            "deleteOperationsSalesMenuItem", OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/items/{salesItemRef}");
+    static final RouteIdentity OPERATIONS_SALES_MENU_ITEM_MOVE = new RouteIdentity(
+            "moveOperationsSalesMenuItem",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/items/{salesItemRef}/move");
+    static final RouteIdentity OPERATIONS_SALES_MENU_PUBLISH = new RouteIdentity(
+            "publishOperationsSalesMenu", OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/publications");
+    static final RouteIdentity OPERATIONS_SALES_MENU_SOLD_OUT = new RouteIdentity(
+            "setOperationsSalesMenuItemSoldOut",
+            OPERATIONS_SALES_MENU_BASE
+                    + "/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out");
+    static final RouteIdentity OPERATIONS_SALES_MENU_RESTORE = new RouteIdentity(
+            "restoreOperationsSalesMenuItemSale",
+            OPERATIONS_SALES_MENU_BASE
+                    + "/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore");
+    static final RouteIdentity OPERATIONS_SALES_MENU_ASSET_STAGE = new RouteIdentity(
+            "stageOperationsSalesMenuAsset",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage");
+    static final RouteIdentity OPERATIONS_SALES_MENU_ASSET_RELEASE = new RouteIdentity(
+            "releaseOperationsSalesMenuStagedAsset",
+            OPERATIONS_SALES_MENU_BASE + "/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release");
     static final RouteIdentity PLATFORM_PASSWORD_LOGIN =
             new RouteIdentity("platformPasswordLogin", "/api/platform/auth/password-login");
     static final RouteIdentity PLATFORM_ADMIN_PAGE =
@@ -874,6 +956,44 @@ class BackendAcceptanceTest {
                 existing.groupWorkspaceKey(),
                 mobile,
                 List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "PROJECT", existing.projectId())),
+                now + 3_600_000L);
+        return new Fixture(
+                existing.workspaceUuid(),
+                existing.groupWorkspaceKey(),
+                existing.groupId(),
+                existing.regionId(),
+                existing.projectId(),
+                existing.brandId(),
+                existing.tenantId(),
+                existing.storeId(),
+                existing.headCompanyId(),
+                invitation.id(),
+                invitation.rawInvitationToken(),
+                mobile,
+                loginName);
+    }
+
+    /** Creates a second user on the existing store so capability denial is separated from store-scope denial. */
+    Fixture storeUserFixture(Fixture existing, Set<String> capabilities) {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        long now = Instant.now().toEpochMilli();
+        UUID roleId = roles.create(
+                        existing.workspaceUuid(),
+                        existing.groupWorkspaceKey(),
+                        "Acceptance Store Operator " + suffix,
+                        "STORE",
+                        null,
+                        Set.of(),
+                        capabilities)
+                .id();
+        String mobile =
+                "139" + String.format("%08d", Math.floorMod(UUID.randomUUID().hashCode(), 100_000_000));
+        String loginName = "operator-store-" + suffix;
+        var invitation = invitations.create(
+                existing.workspaceUuid(),
+                existing.groupWorkspaceKey(),
+                mobile,
+                List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "STORE", existing.storeId())),
                 now + 3_600_000L);
         return new Fixture(
                 existing.workspaceUuid(),
@@ -1467,6 +1587,26 @@ class BackendAcceptanceTest {
                     expected);
         }
 
+        Response multipartSalesMenuAsset(
+                RouteIdentity route,
+                String path,
+                String cookie,
+                long expectedDraftVersion,
+                String fileName,
+                String mediaType,
+                String digest,
+                byte[] bytes,
+                Set<Integer> expected)
+                throws Exception {
+            String boundary = "----backend-acceptance-" + UUID.randomUUID();
+            ByteArrayOutputStream content = new ByteArrayOutputStream();
+            writePart(content, boundary, "content", fileName, mediaType, bytes);
+            content.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+            String query = "?expectedDraftVersion=" + expectedDraftVersion + "&fileName=" + encode(fileName)
+                    + "&mediaType=" + encode(mediaType) + "&contentDigest=" + encode(digest);
+            return send(route, "POST", path + query, cookie, content.toByteArray(), boundary, expected);
+        }
+
         Response multipartPlatformAsset(
                 RouteIdentity route,
                 String path,
@@ -1574,6 +1714,18 @@ class BackendAcceptanceTest {
                         + expected
                         + " unexpected HTTP status="
                         + result.status()
+                        + " requestMethod="
+                        + method
+                        + " requestPath="
+                        + path
+                        + " operationId="
+                        + route.operationId()
+                        + " responseUri="
+                        + result.http().uri()
+                        + " allow="
+                        + result.http().headers().firstValue("Allow").orElse("")
+                        + " responseContentType="
+                        + result.http().headers().firstValue("Content-Type").orElse("")
                         + " problem="
                         + result.problemCode()
                         + " detail="
@@ -1714,6 +1866,8 @@ class BackendAcceptanceTest {
     private static String compact(String value) {
         if (value == null || value.isBlank()) return "UNKNOWN";
         String normalized = value.replaceAll("\\s+", "_").replaceAll("[\\r\\n]", "");
-        return normalized.substring(0, Math.min(240, normalized.length()));
+        // Keep the bounded, non-payload diagnostic long enough to retain the typed problem and
+        // detail after the opaque request path. The response body itself is never recorded here.
+        return normalized.substring(0, Math.min(1024, normalized.length()));
     }
 }

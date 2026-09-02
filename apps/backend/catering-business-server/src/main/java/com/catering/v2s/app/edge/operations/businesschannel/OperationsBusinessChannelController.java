@@ -21,6 +21,7 @@ import com.catering.v2s.app.edge.platform.externalcollaboration.ExternalCollabor
 import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
+import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
 import com.catering.v2s.collaboration.api.CollaborationBindingReadApi;
@@ -51,6 +52,7 @@ import org.springframework.web.bind.annotation.RestController;
 public final class OperationsBusinessChannelController {
     private static final int DEFAULT_PAGE_SIZE = 50;
     private static final int MAX_PAGE_SIZE = 100;
+    private static final int SALES_MENU_PAGE_SIZE = 20;
     private static final String REQ_CREATE_TEMPLATE = "REQ_CREATE_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE";
     private static final String REQ_UPDATE_TEMPLATE = "REQ_UPDATE_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE";
     private static final String REQ_TRANSITION_TEMPLATE = "REQ_TRANSITION_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE_STATUS";
@@ -61,6 +63,7 @@ public final class OperationsBusinessChannelController {
 
     private final OperationsSessionResolver sessions;
     private final BusinessChannelReadApi businessChannels;
+    private final BusinessChannelOwnerApi businessChannelOwner;
     private final BackendPerformanceM1CommandExecutionBindings commandBindings;
     private final WorkspaceCapabilityScopeResolver capabilities;
     private final CollaborationBindingReadApi collaborationBindings;
@@ -71,6 +74,7 @@ public final class OperationsBusinessChannelController {
     public OperationsBusinessChannelController(
             OperationsSessionResolver sessions,
             BusinessChannelReadApi businessChannels,
+            BusinessChannelOwnerApi businessChannelOwner,
             BackendPerformanceM1CommandExecutionBindings commandBindings,
             WorkspaceCapabilityScopeResolver capabilities,
             CollaborationBindingReadApi collaborationBindings,
@@ -79,6 +83,7 @@ public final class OperationsBusinessChannelController {
             ExternalCollaborationBusinessChannelCoordinator coordinator) {
         this.sessions = sessions;
         this.businessChannels = businessChannels;
+        this.businessChannelOwner = businessChannelOwner;
         this.commandBindings = commandBindings;
         this.capabilities = capabilities;
         this.collaborationBindings = collaborationBindings;
@@ -146,9 +151,28 @@ public final class OperationsBusinessChannelController {
             EdgeRequestContext request,
             @PathVariable String groupWorkspaceKey,
             @PathVariable UUID storeRef,
+            @RequestParam String usage,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) Integer pageSize,
             @RequestParam(required = false) String sortKey,
             @RequestParam(required = false) String sortDirection) {
-        return channels(request, groupWorkspaceKey, ServiceNodeTypes.STORE, storeRef, sortKey, sortDirection);
+        if (!"SALES_MENU".equals(usage)) {
+            throw new InvalidEdgeRequestException("usage must be SALES_MENU");
+        }
+        WorkspaceSessionReadback session = sessions.requireWorkspaceRead(request, groupWorkspaceKey);
+        requireScopedStore(session, groupWorkspaceKey, storeRef);
+        int normalizedPageSize = salesMenuPageSize(pageSize);
+        if (businessChannelOwner == null) {
+            throw new IllegalStateException("business-channel sales-menu owner is unavailable");
+        }
+        return BusinessChannelWireMapper.salesMenuChannelPage(businessChannelOwner.listSalesMenuEligibleChannels(
+                session.workspaceUuid(),
+                session.groupWorkspaceKey(),
+                storeRef.toString(),
+                cursor,
+                normalizedPageSize,
+                sortKey,
+                sortDirection));
     }
 
     @GetMapping("/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}")
@@ -519,5 +543,12 @@ public final class OperationsBusinessChannelController {
             throw new InvalidEdgeRequestException("pageSize must be between 1 and 100");
         }
         return normalized;
+    }
+
+    private static int salesMenuPageSize(Integer value) {
+        if (value != null && value != SALES_MENU_PAGE_SIZE) {
+            throw new InvalidEdgeRequestException("pageSize must be 20");
+        }
+        return SALES_MENU_PAGE_SIZE;
     }
 }

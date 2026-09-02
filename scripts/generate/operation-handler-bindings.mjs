@@ -62,6 +62,7 @@ const OWNER_NAMESPACES = Object.freeze({
   inventory: "inventory",
   collaboration: "collaboration",
   "business-channel": "business.channel",
+  "sales-menu": "salesmenu",
 });
 // Only the app-owned operation adapters physically moved during the split-package
 // repair use application.operations.  Owner reads/protocols in the same namespace
@@ -139,6 +140,25 @@ const OPERATIONS_ADAPTER_OPERATION_IDS = new Set([
   "createOperationsBusinessChannel",
   "updateOperationsBusinessChannel",
   "transitionOperationsBusinessChannelStatus",
+  "createOperationsSalesMenu",
+  "copyOperationsSalesMenu",
+  "renameOperationsSalesMenu",
+  "archiveOperationsSalesMenu",
+  "setOperationsSalesMenuActivation",
+  "updateOperationsSalesMenuSchedule",
+  "createOperationsSalesMenuSection",
+  "renameOperationsSalesMenuSection",
+  "deleteOperationsSalesMenuSection",
+  "moveOperationsSalesMenuSection",
+  "addOperationsSalesMenuItems",
+  "updateOperationsSalesMenuItem",
+  "deleteOperationsSalesMenuItem",
+  "moveOperationsSalesMenuItem",
+  "stageOperationsSalesMenuAsset",
+  "releaseOperationsSalesMenuStagedAsset",
+  "publishOperationsSalesMenu",
+  "setOperationsSalesMenuItemSoldOut",
+  "restoreOperationsSalesMenuItemSale",
 ]);
 const COPY_ROLE_BY_OPERATION = Object.freeze({
   getOperationsLocalCatalogCopyCandidates: "COPY_SOURCE",
@@ -317,6 +337,9 @@ function expectedAdapter(operation) {
   if (operation.operationId === "stageOperationsCatalogAsset") {
     return "com.catering.v2s.platform.asset.application.operations.StageOperationsCatalogAssetMultipartOperation";
   }
+  if (operation.operationId === "stageOperationsSalesMenuAsset") {
+    return "com.catering.v2s.salesmenu.application.operations.StageOperationsSalesMenuAssetMultipartOperation";
+  }
   const packageSegment = OPERATIONS_ADAPTER_OPERATION_IDS.has(operation.operationId) ? "application.operations" : "application";
   return `com.catering.v2s.${namespace}.${packageSegment}.${pascal(operation.operationId)}Operation`;
 }
@@ -395,7 +418,7 @@ function validateBindingContract(root, binding, routes = routeOperations(root)) 
     if (expectedContextKind && row.contextKind !== expectedContextKind) {
       fail("BP_U02_BINDING_OPERATION_CONTEXT_DRIFT", `${row.operationId}:${row.contextKind}:${expectedContextKind}`);
     }
-    if (row.operationId === "stageOperationsCatalogAsset" && !row.adapter.endsWith("MultipartOperation")) {
+    if (["stageOperationsCatalogAsset", "stageOperationsSalesMenuAsset"].includes(row.operationId) && !row.adapter.endsWith("MultipartOperation")) {
       fail("BP_U02_MULTIPART_ADAPTER_REQUIRED", row.operationId);
     }
     if (row.adapter !== expectedAdapter(route)) fail("BP_U02_BINDING_ADAPTER_IDENTITY_DRIFT", `${row.operationId}:${row.adapter}`);
@@ -656,7 +679,7 @@ function expectedJavaSources(root = ROOT) {
 // registry is itself generated, so a write must expand the registry from the
 // route source before validating exact-set/count invariants; hand-editing a
 // generated row would create a second source of truth.
-const CATALOG_UNIT_WIRE_TYPES = Object.freeze({
+const ADDITIONAL_ROUTE_WIRE_TYPES = Object.freeze({
   listOperationsCatalogUnits: ["CatalogUnitListQuery", "CatalogUnitList"],
   createOperationsCatalogUnit: ["CatalogUnitCreateRequest", "CatalogUnitReadback"],
   updateOperationsCatalogUnit: ["CatalogUnitUpdateRequest", "CatalogUnitReadback"],
@@ -667,6 +690,36 @@ const CATALOG_UNIT_WIRE_TYPES = Object.freeze({
   getOperationsInventoryConsumptionTargetCandidates: ["InventoryConsumptionTargetCandidateQuery", "InventoryConsumptionTargetCandidatePage"],
   getOperationsCatalogCategoryCandidates: ["CatalogCategoryCandidateQuery", "CatalogCategoryCandidatePage"],
   getOperationsCatalogItemSkus: ["CatalogItemSkusQuery", "CatalogItemSkuPage"],
+  getOperationsSalesMenus: ["NoBody", "SalesMenuPage"],
+  getOperationsSalesMenu: ["NoBody", "SalesMenuDetail"],
+  getOperationsSalesMenuDraftSections: ["NoBody", "SalesMenuSectionList"],
+  getOperationsSalesMenuDraftItems: ["NoBody", "SalesMenuItemPage"],
+  getOperationsSalesMenuDraftItem: ["NoBody", "SalesMenuDraftItemView"],
+  getOperationsSalesMenuPublishedSections: ["NoBody", "SalesMenuPublishedSectionList"],
+  getOperationsSalesMenuPublishedItems: ["NoBody", "SalesMenuPublishedItemPage"],
+  getOperationsSalesMenuPublishedItem: ["NoBody", "SalesMenuPublishedItemView"],
+  getOperationsSalesMenuItemCandidates: ["NoBody", "SalesMenuCandidatePage"],
+  getOperationsSalesMenuPublicationPreview: ["NoBody", "SalesMenuPublicationPreview"],
+  getOperationsSalesMenuOperationRecords: ["NoBody", "SalesMenuOperationRecordPage"],
+  createOperationsSalesMenu: ["SalesMenuCreateRequest", "SalesMenuCommandReadback"],
+  copyOperationsSalesMenu: ["SalesMenuCopyRequest", "SalesMenuCommandReadback"],
+  renameOperationsSalesMenu: ["SalesMenuRenameRequest", "SalesMenuCommandReadback"],
+  archiveOperationsSalesMenu: ["SalesMenuArchiveRequest", "SalesMenuCommandReadback"],
+  setOperationsSalesMenuActivation: ["SalesMenuActivationRequest", "SalesMenuCommandReadback"],
+  updateOperationsSalesMenuSchedule: ["SalesMenuScheduleUpdateRequest", "SalesMenuCommandReadback"],
+  createOperationsSalesMenuSection: ["SalesMenuSectionCreateRequest", "SalesMenuCommandReadback"],
+  renameOperationsSalesMenuSection: ["SalesMenuSectionRenameRequest", "SalesMenuCommandReadback"],
+  deleteOperationsSalesMenuSection: ["SalesMenuDeleteRequest", "SalesMenuCommandReadback"],
+  moveOperationsSalesMenuSection: ["SalesMenuSectionMoveRequest", "SalesMenuCommandReadback"],
+  addOperationsSalesMenuItems: ["SalesMenuItemsAddRequest", "SalesMenuCommandReadback"],
+  updateOperationsSalesMenuItem: ["SalesMenuItemUpdateRequest", "SalesMenuCommandReadback"],
+  deleteOperationsSalesMenuItem: ["SalesMenuDeleteRequest", "SalesMenuCommandReadback"],
+  moveOperationsSalesMenuItem: ["SalesMenuItemMoveRequest", "SalesMenuCommandReadback"],
+  stageOperationsSalesMenuAsset: ["SalesMenuAssetStageRequest", "SalesMenuAssetStageReadback"],
+  releaseOperationsSalesMenuStagedAsset: ["SalesMenuAssetReleaseRequest", "SalesMenuAssetReleaseReadback"],
+  publishOperationsSalesMenu: ["SalesMenuPublishRequest", "SalesMenuCommandReadback"],
+  setOperationsSalesMenuItemSoldOut: ["SalesMenuManualSoldOutRequest", "SalesMenuCommandReadback"],
+  restoreOperationsSalesMenuItemSale: ["SalesMenuManualRestoreRequest", "SalesMenuCommandReadback"],
 });
 function expandGeneratedCatalogUnitRows(binding, root) {
   const routes = routeOperations(root);
@@ -674,7 +727,7 @@ function expandGeneratedCatalogUnitRows(binding, root) {
   const rows = binding.operations.filter((row) => routeById.has(row.operationId));
   const present = new Set(rows.map((row) => row.operationId));
   for (const route of routes.filter((candidate) => !present.has(candidate.operationId))) {
-    const wire = CATALOG_UNIT_WIRE_TYPES[route.operationId];
+    const wire = ADDITIONAL_ROUTE_WIRE_TYPES[route.operationId];
     if (!wire) fail("BP_U02_NEW_ROUTE_BINDING_UNMAPPED", route.operationId);
     const mode = route.method === "GET" ? "READ" : "COMMAND";
     rows.push({
@@ -713,7 +766,15 @@ function writeText(root, relative, value) {
 function writeOutputs(root = ROOT) {
   const binding = readJson(root, BINDINGS_PATH);
   const expandedBinding = expandGeneratedCatalogUnitRows(binding, root);
-  const refreshedBinding = {...expandedBinding, routeSources: routeSourceMetadata(root)};
+  const routeById = new Map(routeOperations(root).map((route) => [route.operationId, route]));
+  const adapterRefreshedBinding = {
+    ...expandedBinding,
+    operations: expandedBinding.operations.map((row) => {
+      const route = routeById.get(row.operationId);
+      return route ? {...row, adapter: expectedAdapter(route)} : row;
+    }),
+  };
+  const refreshedBinding = {...adapterRefreshedBinding, routeSources: routeSourceMetadata(root)};
   const rows = validateBindingContract(root, refreshedBinding);
   writeJson(root, BINDINGS_PATH, refreshedBinding);
   const outputs = outputMap(root, rows);
@@ -879,7 +940,9 @@ function mutateCountSource(root, mutate) {
 
 function selfTest(root = ROOT) {
   const binding = readJson(root, BINDINGS_PATH);
-  validateBindingContract(root, binding);
+  const baselineRows = validateBindingContract(root, binding);
+  const expectedJsonOutputCount = outputMap(root, baselineRows).size;
+  const expectedJavaOutputCount = javaOutputMap(baselineRows).size;
   for (const field of ["operations", "reads"]) {
     mutateAndExpect(root, (scratch) => {
       mutateCountSource(scratch, (value) => {
@@ -942,7 +1005,9 @@ function selfTest(root = ROOT) {
       fail("BP_U02_RETIRED_ROUTE_BINDING_ROW_RETAINED", removedOperationId);
     }
     validateBindingContract(staleDeletionScratch, refreshedBinding);
-    if (result.json !== 14 || result.java !== 14) fail("BP_U02_RETIRED_ROUTE_OUTPUT_SHAPE_DRIFT");
+    if (result.json !== expectedJsonOutputCount || result.java !== expectedJavaOutputCount) {
+      fail("BP_U02_RETIRED_ROUTE_OUTPUT_SHAPE_DRIFT");
+    }
   } finally {
     fs.rmSync(staleDeletionScratch, { recursive: true, force: true });
   }

@@ -75,16 +75,6 @@ interface StorageState {
 
 type PersistenceFlushSelection = 'all' | 'immediate'
 
-type HydratedPortRead =
-  | {
-      readonly status: 'succeeded'
-      readonly values: ReadonlyMap<string, string>
-    }
-  | {
-      readonly status: 'failed'
-      readonly failure: PersistenceFailure
-    }
-
 const storageKinds: readonly PersistenceStorageKind[] = ['plain', 'protected']
 
 const oppositeStorageKind = (
@@ -97,6 +87,26 @@ const defaultProtection = (entry: RegisteredStateRuntimePersistence): Persistenc
 const descriptorStorageKey = (
   entry: RegisteredStateRuntimePersistence,
 ): string => entry.kind === 'field' ? entry.storageKey : entry.storageKeyPrefix
+
+const planStorageMigration = (
+  entry: PersistenceEntry,
+  key: string,
+  currentRaw: string | undefined,
+  oldRaw: string | undefined,
+): MigrationEntry | undefined => {
+  if (entry.oldStorageKind === undefined || oldRaw === undefined) {
+    return undefined
+  }
+  return {
+    fromStorageKind: entry.oldStorageKind,
+    toStorageKind: entry.storageKind,
+    oldKey: key,
+    newKey: key,
+    encoded: oldRaw,
+    writeRequired: currentRaw === undefined,
+    flushMode: entry.descriptor.flushMode,
+  }
+}
 
 const makeFailure = (
   input: Omit<PersistenceFailure, 'message'> & {readonly message?: string},
@@ -464,12 +474,26 @@ export class PersistenceEngine {
         }
         const shouldPersist =
           entry.descriptor.shouldPersistEntry?.(entryKey, value, sliceState) ?? true
-        const storageKey = createPersistenceRecordEntryKey({
-          persistenceKey: this.#persistenceKey,
-          sliceName: entry.sliceName,
-          storageKeyPrefix: descriptorStorageKey(entry.descriptor),
-          entryKey,
-        })
+        let storageKey: string
+        try {
+          storageKey = createPersistenceRecordEntryKey({
+            persistenceKey: this.#persistenceKey,
+            sliceName: entry.sliceName,
+            storageKeyPrefix: descriptorStorageKey(entry.descriptor),
+            entryKey,
+          })
+        } catch (error) {
+          failures.push(makeFailure({
+            kind: 'ENCODE_REJECTED',
+            phase: 'flush',
+            storageKind: entry.storageKind,
+            operation: 'encode',
+            message: error instanceof Error
+              ? `record entry key rejected: ${error.message}`
+              : 'record entry key rejected',
+          }))
+          continue
+        }
         currentKeys.add(storageKey)
         if (!shouldPersist) {
           if (this.#hasCached(entry.storageKind, storageKey)) {
@@ -670,29 +694,10 @@ export class PersistenceEngine {
       for (const key of [...candidateKeys].sort()) {
         const currentRaw = currentValues.get(key)
         const oldRaw = oldValues.get(key)
-        if (oldRaw === undefined || currentRaw !== undefined) {
-          if (oldRaw !== undefined && currentRaw !== undefined) {
-            this.#migrations.push({
-              fromStorageKind: oldStorageKind,
-              toStorageKind: entry.storageKind,
-              oldKey: key,
-              newKey: key,
-              encoded: oldRaw,
-              writeRequired: false,
-              flushMode: entry.descriptor.flushMode,
-            })
-          }
-          continue
+        const migration = planStorageMigration(entry, key, currentRaw, oldRaw)
+        if (migration !== undefined) {
+          this.#migrations.push(migration)
         }
-        this.#migrations.push({
-          fromStorageKind: oldStorageKind,
-          toStorageKind: entry.storageKind,
-          oldKey: key,
-          newKey: key,
-          encoded: oldRaw,
-          writeRequired: true,
-          flushMode: entry.descriptor.flushMode,
-        })
       }
     }
     this.#updateHealth()
@@ -824,7 +829,6 @@ export const hydrateStateRuntime = async (
   const migrations: MigrationEntry[] = []
   const hydrated = new Map<string, object>()
   const failures: PersistenceFailure[] = []
-  const portReads = new Map<StateStoragePort, HydratedPortRead>()
   const readValuesByKind = new Map<PersistenceStorageKind, ReadonlyMap<string, string>>()
 
   for (const storageKind of storageKinds) {
@@ -842,77 +846,68 @@ export const hydrateStateRuntime = async (
       continue
     }
     const port = input.storagePorts[storageKind]
-    const portStorageKinds = storageKinds.filter(
-      (candidate) => input.storagePorts[candidate] === port
-        && groupEntries(entries, candidate, true).length > 0,
-    )
-    if (!portReads.has(port)) {
-      const portEntries = portStorageKinds.flatMap((candidate) =>
-        [...groupEntries(entries, candidate, true)],
-      )
-      const listed = await port.listKeys({
-        timeoutMs: input.timeouts.readMs,
+    const listed = await port.listKeys({
+      timeoutMs: input.timeouts.readMs,
+    })
+    if (!isSucceeded(listed)) {
+      const failure = portFailure('hydrate', storageKind, 'listKeys', listed)
+      failures.push(failure)
+      input.logger.error({
+        category: 'state.persistence',
+        event: 'state.persistence.hydrate.failure',
+        message: failure.message,
+        data: {
+          phase: failure.phase,
+          operation: failure.operation,
+          storageKind: failure.storageKind,
+        },
       })
-      if (!isSucceeded(listed)) {
-        const failure = portFailure('hydrate', storageKind, 'listKeys', listed)
-        portReads.set(port, {
-          status: 'failed',
-          failure,
-        })
-      } else {
-        const keys = keysForStorage(listed.value, portEntries)
-        const read = await port.readMany({
-          keys,
-          timeoutMs: input.timeouts.readMs,
-        })
-        if (!isSucceeded(read)) {
-          const failure = portFailure('hydrate', storageKind, 'readMany', read)
-          portReads.set(port, {
-            status: 'failed',
-            failure,
-          })
-        } else {
-          portReads.set(port, {
-            status: 'succeeded',
-            values: new Map(
-              read.value
-                .filter((item) => item.result.state === 'found')
-                .map((item) => [
-                  item.key,
-                  item.result.state === 'found' ? item.result.value : '',
-                ]),
-            ),
-          })
-        }
-      }
-    }
-    const portRead = portReads.get(port)
-    if (portRead?.status === 'failed') {
-      if (!failures.includes(portRead.failure)) {
-        failures.push(portRead.failure)
-        input.logger.error({
-          category: 'state.persistence',
-          event: 'state.persistence.hydrate.failure',
-          message: portRead.failure.message,
-          data: {
-            phase: portRead.failure.phase,
-            operation: portRead.failure.operation,
-            storageKind: portRead.failure.storageKind,
-          },
-        })
-      }
-      for (const blockedKind of portStorageKinds) {
-        storageState.set(blockedKind, {
-          cache: new Map<string, string>(),
-          dirty: new Set<string>(),
-          blocked: true,
-          rebaselineAttempted: false,
-        })
-      }
+      storageState.set(storageKind, {
+        cache: new Map<string, string>(),
+        dirty: new Set<string>(),
+        blocked: true,
+        rebaselineAttempted: false,
+      })
       continue
     }
+
+    const keys = keysForStorage(listed.value, storageEntries)
+    const read = await port.readMany({
+      keys,
+      timeoutMs: input.timeouts.readMs,
+    })
+    if (!isSucceeded(read)) {
+      const failure = portFailure('hydrate', storageKind, 'readMany', read)
+      failures.push(failure)
+      input.logger.error({
+        category: 'state.persistence',
+        event: 'state.persistence.hydrate.failure',
+        message: failure.message,
+        data: {
+          phase: failure.phase,
+          operation: failure.operation,
+          storageKind: failure.storageKind,
+        },
+      })
+      storageState.set(storageKind, {
+        cache: new Map<string, string>(),
+        dirty: new Set<string>(),
+        blocked: true,
+        rebaselineAttempted: false,
+      })
+      continue
+    }
+
+    const portValues = new Map(
+      read.value
+        .filter((item) => item.result.state === 'found')
+        .map((item) => [
+          item.key,
+          item.result.state === 'found' ? item.result.value : '',
+        ]),
+    )
     const values = new Map<string, string>()
-    for (const [key, value] of portRead?.values ?? []) {
+    for (const [key, value] of portValues) {
       if (keysForStorage([key], storageEntries).includes(key)) {
         values.set(key, value)
       }
@@ -986,16 +981,9 @@ export const hydrateStateRuntime = async (
       if (slice !== undefined) {
         applyDecodedEntry(hydrated, slice, entry, key, decoded.value)
       }
-      if (oldStorageKind !== undefined && oldRaw !== undefined) {
-        migrations.push({
-          fromStorageKind: oldStorageKind,
-          toStorageKind: entry.storageKind,
-          oldKey: key,
-          newKey: key,
-          encoded: oldRaw,
-          writeRequired: currentRaw === undefined,
-          flushMode: entry.descriptor.flushMode,
-        })
+      const migration = planStorageMigration(entry, key, currentRaw, oldRaw)
+      if (migration !== undefined) {
+        migrations.push(migration)
       }
     }
   }

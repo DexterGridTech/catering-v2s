@@ -1,0 +1,14 @@
+package com.catering.v2s.salesmenu.domain;
+
+public enum SalesMenuPublicationBlockerKind {
+    STORE_DISABLED,
+    CHANNEL_DISABLED,
+    CHANNEL_INELIGIBLE,
+    CATALOG_ITEM_INVALID,
+    SKU_SELECTION_EMPTY,
+    SKU_INVALID,
+    LISTED_PRICE_MISSING,
+    ORDERING_CONSTRAINT_INVALID,
+    DISPLAY_ASSET_PENDING_OR_INVALID,
+    SCHEDULE_INVALID
+}

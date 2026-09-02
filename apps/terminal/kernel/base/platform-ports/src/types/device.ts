@@ -9,6 +9,9 @@ export interface DeviceInfo {
   readonly systemVersion: string;
   readonly logicalProcessorCount: number;
 }
+export interface DisplayInfo {
+  readonly displayCount: number;
+}
 export interface ProcessorStatus {
   readonly logicalProcessorCount: number;
   readonly processUtilizationRatio: number;
@@ -50,6 +53,7 @@ export interface PowerStatusSubscriptionInput extends DeviceCall {
 export interface PowerStatusUnsubscribeInput extends DeviceCall { readonly subscriptionId: string }
 export interface DevicePort {
   getDeviceInfo(input: DeviceCall): Promise<PortResult<DeviceInfo>>;
+  getDisplayInfo(input: DeviceCall): Promise<PortResult<DisplayInfo>>;
   getSystemStatus(input: DeviceCall): Promise<PortResult<SystemStatus>>;
   getPowerStatus(input: DeviceCall): Promise<PortResult<PowerStatus>>;
   subscribePowerStatus(input: PowerStatusSubscriptionInput): Promise<PortResult<{readonly subscriptionId: string}>>;

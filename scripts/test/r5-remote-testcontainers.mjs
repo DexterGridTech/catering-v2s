@@ -207,7 +207,9 @@ export const backendAcceptanceEnvironment = (
   batchCardinality = null,
 ) =>
   runId === null
-    ? []
+    ? operation === 'all'
+      ? []
+      : ['export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY']
     : [
         'export V2S_RUNTIME_ENVIRONMENT=non-production',
         'export V2S_DEV_PROFILE=backend-acceptance',
@@ -221,6 +223,7 @@ export const backendAcceptanceEnvironment = (
         'export V2S_DB_STATEMENT_DICTIONARY="$root/results/statement-dictionary.json"',
         `export V2S_BACKEND_ACCEPTANCE_OPERATION=${quote(operation)}`,
         `export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=${quote(verificationMode)}`,
+        ...(operation === 'all' ? [] : ['export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY']),
         ...(batchCardinality === null || batchCardinality === undefined || batchCardinality === ''
           ? []
           : [`export V2S_BACKEND_ACCEPTANCE_BATCH_CARDINALITY=${quote(batchCardinality)}`]),
@@ -961,6 +964,13 @@ const uploadSource = async remoteWorkspace => {
   upload.stderr.setEncoding('utf8').on('data', chunk => {
     diagnostics += chunk;
   });
+  const captureStreamError = error => {
+    diagnostics += `${error.name ?? 'Error'}: ${error.message ?? String(error)}\n`;
+  };
+  source.on('error', captureStreamError);
+  upload.on('error', captureStreamError);
+  source.stdout.on('error', captureStreamError);
+  upload.stdin.on('error', captureStreamError);
   source.stdout.pipe(upload.stdin);
   const [sourceStatus, uploadStatus] = await Promise.all([sourceExit, uploadExit]);
   if (sourceStatus !== 0 || uploadStatus !== 0) throw new Error(`SOURCE_UPLOAD_FAILED:${compact(diagnostics)}`);

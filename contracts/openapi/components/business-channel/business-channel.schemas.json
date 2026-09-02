@@ -622,7 +622,9 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "items"
+          "items",
+          "cursor",
+          "nextCursor"
         ],
         "properties": {
           "items": {
@@ -630,6 +632,16 @@
             "items": {
               "$ref": "#/components/schemas/BusinessChannelView"
             }
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 512,
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "maxLength": 512,
+            "nullable": true
           }
         }
       },

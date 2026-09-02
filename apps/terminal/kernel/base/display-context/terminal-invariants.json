@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/kernel-base-display-context",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-display-context", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": [
+    "DisplayContextEligibility", "DisplayMode", "DisplayRole", "DisplayRoleChangeReasonCode", "createDisplayContextModule", "dependencyModuleNames", "devDependencyModuleNames", "getDisplayRoleChangeEligibility", "getSwitchInstanceModeEligibility", "moduleName", "powerStatusChangedCommand", "resolvePowerRoleTarget", "resolveSurfaceDisplayMode", "resolveWorkspace", "selectDisplayRole", "switchDisplayRoleCommand", "switchInstanceModeCommand"
+  ],
+  "ownerKind": "owner",
+  "sliceName": "kernel.base.display-context.display-role",
+  "sliceFields": ["displayRole"],
+  "requiredTestIds": ["display-context-restart-positive"]
+}

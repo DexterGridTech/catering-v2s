@@ -4,7 +4,6 @@ import {
   nowTimestampMs,
   type AppError,
   type CommandId,
-  type RequestId,
 } from '@catering-v2s/kernel-base-contracts'
 import type {
   LoggerPort,
@@ -50,8 +49,12 @@ import {
 } from './createLifecycleEmitter'
 import {aggregateCommandStatus} from './aggregateCommandStatus'
 import {normalizeRuntimeError} from './normalizeRuntimeError'
+import {createStateSubscription} from './createStateSubscription'
+import {freezeList} from './freezeList'
+import {findExpiredRequestLedgerIds} from './findExpiredRequestLedgerIds'
 import {
-  createUpsertRequestLedgerRecordAction,
+  createRequestLedgerActionDispatcher,
+  requestLedgerActionsForMode,
   readLiveRequestEnvelope,
   requestLedgerSliceNameForMode,
 } from '../features/slices/requestLedger'
@@ -97,6 +100,7 @@ type DispatcherInput = Readonly<{
 }>
 
 type CommandChainEntry = Readonly<{commandName: string; commandId: CommandId}>
+type ActorInvocationAncestor = Readonly<{actorKey: string; commandName: string}>
 
 const toLedgerError = (error: AppError): LedgerError => Object.freeze({
   key: error.key,
@@ -178,6 +182,7 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
     if (requestId === null || observation === undefined) return
     const mode = selectRuntimeInstanceMode(input.stateRuntime.getState())
     const sliceName = requestLedgerSliceNameForMode(mode)
+    const now = nowTimestampMs()
     const currentState = input.stateRuntime.getState()[sliceName]
     const currentRecord = readLiveRequestEnvelope(
       typeof currentState === 'object' && currentState !== null
@@ -190,26 +195,44 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
     const nextCommands = commandIndex < 0
       ? [...existingCommands, observation]
       : existingCommands.map((item, index) => index === commandIndex ? observation : item)
-    const record: RequestExecutionRecord = Object.freeze({
-      requestId,
-      workspace: currentRecord === undefined
-        ? transition.context.routeContext?.workspace ?? null
-        : currentRecord.workspace,
-      startedAt: currentRecord === undefined ? observation.startedAt : currentRecord.startedAt,
-      commands: Object.freeze(nextCommands),
-    })
     const updatedAt = 'completedAt' in transition && typeof transition.completedAt === 'number'
       ? transition.completedAt
-      : nowTimestampMs()
+      : now
     // StateRuntime owns the reducer and sync shape; lifecycle remains the
     // single fact-producing call point while this action is only a transport
     // into the owner slice.
     try {
-      input.stateRuntime.getStore().dispatch(createUpsertRequestLedgerRecordAction(
-        sliceName,
+      const dispatchRequestLedgerAction = createRequestLedgerActionDispatcher(
+        () => selectRuntimeInstanceMode(input.stateRuntime.getState()),
+        action => input.stateRuntime.getStore().dispatch(action),
+      )
+      if (currentRecord === undefined) {
+        const expiredRequestIds = findExpiredRequestLedgerIds(
+          input.stateRuntime.getState(),
+          mode,
+          input.limits,
+          now,
+        )
+        if (expiredRequestIds.length > 0) {
+          dispatchRequestLedgerAction(currentMode => requestLedgerActionsForMode(currentMode).deleteRecords({
+            requestIds: expiredRequestIds,
+          }))
+        }
+      }
+      const record: RequestExecutionRecord = Object.freeze({
+        requestId,
+        workspace: currentRecord === undefined
+          ? transition.context.routeContext?.workspace ?? null
+          : currentRecord.workspace,
+        startedAt: currentRecord === undefined
+          ? observation.startedAt
+          : Math.min(currentRecord.startedAt, observation.startedAt),
+        commands: Object.freeze(nextCommands),
+      })
+      dispatchRequestLedgerAction(mode => requestLedgerActionsForMode(mode).upsert({
         record,
         updatedAt,
-      ))
+      }))
     } catch (error) {
       throw ledgerWriteFailureError(transition.context, error)
     }
@@ -225,12 +248,6 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
     journal: input.journal,
     onLedgerTransition: writeLedgerTransition,
   })
-  const executionStack: Array<Readonly<{
-    requestId: RequestId | null
-    commandName: string
-    actorKey: string
-    commandId: CommandId
-  }>> = []
   const commandChains = new Map<string, readonly CommandChainEntry[]>()
   const pendingResetByRoot = new Map<string, string | undefined>()
   const activeRoleContexts = new Map<string, Readonly<{
@@ -312,17 +329,11 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
     return recordFromEmitter(result)
   }
 
-  const subscribeState = (listener: () => void): (() => void) => {
-    const unsubscribe = input.stateRuntime.getStore().subscribe(listener)
-    const unregister = input.registerResource?.(unsubscribe)
-    let active = true
-    return () => {
-      if (!active) return
-      active = false
-      unsubscribe()
-      unregister?.()
-    }
-  }
+  const subscribeState = (listener: () => void): (() => void) => createStateSubscription(
+    input.stateRuntime.getStore(),
+    listener,
+    input.registerResource,
+  )
 
   const commandLogger = (context: LifecycleCommandContext): LoggerPort => input.logger.withContext({
     requestId: context.requestId ?? undefined,
@@ -407,6 +418,7 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
     payload: TPayload,
     options: CommandDispatchOptions | ActorDispatchOptions = {},
     observer?: import('../types/journal').RuntimeLifecycleObserver,
+    actorAncestors: readonly ActorInvocationAncestor[] = [],
   ): Promise<CommandDispatchResult> => {
     validateRegisteredDefinition(definition)
 
@@ -445,11 +457,12 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
     const parentChain = parentCommandId === null
       ? []
       : commandChains.get(String(parentCommandId)) ?? []
-    const chain: readonly CommandChainEntry[] = Object.freeze([
+      const chain: readonly CommandChainEntry[] = freezeList([
       ...parentChain,
       Object.freeze({commandName: command.commandName, commandId}),
     ])
     commandChains.set(String(commandId), chain)
+    let resetStarted = false
     try {
       if (requestId !== null) {
         const currentView = selectRequestExecutionView(input.stateRuntime.getState(), requestId)
@@ -499,8 +512,8 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
           commandId,
           status: 'error',
           actorResults: depthResult.record === undefined
-            ? Object.freeze([])
-            : Object.freeze([depthResult.record]),
+            ? freezeList([])
+            : freezeList([depthResult.record]),
         })
       }
 
@@ -512,7 +525,7 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
         : []
       const actorResults = target === 'peer'
         ? [await dispatchPeer(command, definition, context, observer)]
-        : await Promise.all(handlers.map(handler => dispatchActor(handler, command, definition, context, observer)))
+        : await Promise.all(handlers.map(handler => dispatchActor(handler, command, definition, context, observer, actorAncestors)))
 
       const completedAt = nowTimestampMs()
       emit({kind: 'command.completed', context, completedAt}, observer)
@@ -527,18 +540,34 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
         requestId,
         commandId,
         status,
-        actorResults: Object.freeze([...resultActorResults]),
+        actorResults: freezeList(resultActorResults),
       })
 
       if (parentCommandId === null) {
-        const pendingReason = pendingResetByRoot.get(String(commandId))
-        if (pendingResetByRoot.has(String(commandId))) {
-          pendingResetByRoot.delete(String(commandId))
+        const resetKey = String(commandId)
+        const pendingReason = pendingResetByRoot.get(resetKey)
+        if (pendingResetByRoot.has(resetKey)) {
+          resetStarted = true
           await input.performReset?.(pendingReason, commandId)
         }
       }
       return result
     } finally {
+      if (parentCommandId === null) {
+        const resetKey = String(commandId)
+        if (pendingResetByRoot.has(resetKey) && !resetStarted) {
+          commandLogger(context).warn({
+            category: 'runtime.reset',
+            event: 'runtime.reset.request-discarded-after-root-failure',
+            message: 'reset request discarded after root command failure',
+            data: {
+              rootCommandId: String(commandId),
+              hasReason: pendingResetByRoot.get(resetKey) !== undefined,
+            },
+          })
+        }
+        pendingResetByRoot.delete(resetKey)
+      }
       activeRoleContexts.delete(String(commandId))
       commandChains.delete(String(commandId))
       emitter.releaseCommand(commandId)
@@ -551,11 +580,11 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
     definition: CommandDefinition<TPayload>,
     lifecycleContext: LifecycleCommandContext,
     observer?: import('../types/journal').RuntimeLifecycleObserver,
+    actorAncestors: readonly ActorInvocationAncestor[] = [],
   ): Promise<ActorExecutionRecord> => {
     const actorKey = handler.actor.actorKey
-    const reentry = executionStack.some(entry =>
-      entry.requestId === command.requestId
-      && entry.commandName === command.commandName
+    const reentry = actorAncestors.some(entry =>
+      entry.commandName === command.commandName
       && entry.actorKey === actorKey,
     )
     if (reentry && !definition.allowReentry) {
@@ -592,14 +621,6 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
       && runningRecord.error?.key === ledgerWriteFailureErrorKey) {
       return runningRecord
     }
-    const stackEntry = Object.freeze({
-      requestId: command.requestId,
-      commandName: command.commandName,
-      actorKey,
-      commandId: command.commandId,
-    })
-    executionStack.push(stackEntry)
-
     let timedOut = false
     // Promise executors run synchronously, so the timer is assigned before
     // the promise can be observed or any cleanup callback can be registered.
@@ -636,12 +657,16 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
           const childRouteContext = childOptions.routeContext === undefined
             ? command.routeContext
             : childOptions.routeContext
+          const childAncestors = freezeList([
+            ...actorAncestors,
+            Object.freeze({actorKey, commandName: command.commandName}),
+          ])
           return dispatchInternal(childDefinition, childPayload, {
             ...childOptions,
             requestId: childRequestId,
             parentCommandId: childParent,
             routeContext: childRouteContext,
-          })
+          }, undefined, childAncestors)
         },
         requestApplicationReset: (reason?: string): void => {
           const chain = commandChains.get(String(command.commandId))
@@ -713,10 +738,6 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
     const settled = await Promise.race([execution, timeout])
     clearTimeout(timer)
     unregisterTimeout?.()
-    const releaseExecutionStack = (): void => {
-      const index = executionStack.indexOf(stackEntry)
-      if (index >= 0) executionStack.splice(index, 1)
-    }
 
     const finish = (
       outcome: Readonly<{status: 'completed' | 'error' | 'timed-out'; result: StateJsonValue; error: LedgerError | null}>,
@@ -751,9 +772,7 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
       let timeoutRecord: ActorExecutionRecord | undefined
       try {
         timeoutRecord = finish(settled, false)
-      } finally {
-        releaseExecutionStack()
-      }
+      } finally { /* actor ancestry is call-local and needs no release */ }
       if (timeoutRecord === undefined) throw new Error('Timed-out actor did not produce a record')
       void execution.then(outcome => {
         finish(outcome, true)
@@ -764,9 +783,7 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
     let record: ActorExecutionRecord | undefined
     try {
       record = finish(settled, false)
-    } finally {
-      releaseExecutionStack()
-    }
+    } finally { /* actor ancestry is call-local and needs no release */ }
     if (record === undefined) throw new Error('Actor did not produce a record')
     return record
   }

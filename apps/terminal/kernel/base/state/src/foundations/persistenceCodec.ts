@@ -42,13 +42,21 @@ const validateJsonValue = (
     return Number.isFinite(value)
   }
   if (Array.isArray(value)) {
-    if (value.length !== Object.keys(value).length || active.has(value)) {
+    if (
+      value.length !== Object.keys(value).length
+      || Object.getOwnPropertySymbols(value).length > 0
+      || active.has(value)
+    ) {
       return false
     }
     active.add(value)
     try {
-      for (const entry of value) {
-        if (!validateJsonValue(entry, active)) {
+      for (let index = 0; index < value.length; index += 1) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, String(index))
+        if (descriptor === undefined || !('value' in descriptor)) {
+          return false
+        }
+        if (!validateJsonValue(descriptor.value, active)) {
           return false
         }
       }
@@ -58,13 +66,17 @@ const validateJsonValue = (
     }
   }
   if (isPlainObject(value)) {
-    if (active.has(value)) {
+    if (Object.getOwnPropertySymbols(value).length > 0 || active.has(value)) {
       return false
     }
     active.add(value)
     try {
       for (const key of Object.keys(value)) {
-        if (!validateJsonValue(Reflect.get(value, key), active)) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, key)
+        if (descriptor === undefined || !('value' in descriptor)) {
+          return false
+        }
+        if (!validateJsonValue(descriptor.value, active)) {
           return false
         }
       }

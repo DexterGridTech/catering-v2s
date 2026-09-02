@@ -7,7 +7,7 @@ import {
   EXPECTED_OPERATION_COUNT,
   buildCp05CalibrationIdentityProjection,
   buildBudgetProjection,
-  isCp05CalibrationBootstrapMode,
+  isCp05IdentityOnlyProjectionMode,
   readCp05CalibrationReport,
   validateDatabaseOperationBudget,
   validateBudgetRegistry,
@@ -38,7 +38,7 @@ const projectedCatalogOperationMetadata = entries => {
   const edgeOperations = readJson(edgeCatalogIdentityPath).operations;
   if (edgeOperations.length + entries.length !== EXPECTED_OPERATION_COUNT)
     throw new Error('P1_BUDGET_SOURCE_DENOMINATOR_INVALID');
-  if (isCp05CalibrationBootstrapMode()) {
+  if (isCp05IdentityOnlyProjectionMode()) {
     const projection = buildCp05CalibrationIdentityProjection({
       operations: [...edgeOperations, ...entries].map(({databaseOperationBudget: _retired, ...identity}) => identity),
     });

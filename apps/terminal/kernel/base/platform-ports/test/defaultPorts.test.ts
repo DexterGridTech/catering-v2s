@@ -125,6 +125,7 @@ describe('D-3/D-4/D-5/D-6/D-7/D-8/D-9/D-10: unavailable defaults', () => {
     const listener = vi.fn();
     const onError = vi.fn();
     expectUnavailable(await unavailableDevicePort.getDeviceInfo(call), 'device', 'getDeviceInfo');
+    expectUnavailable(await unavailableDevicePort.getDisplayInfo(call), 'device', 'getDisplayInfo');
     expectUnavailable(await unavailableDevicePort.getSystemStatus(call), 'device', 'getSystemStatus');
     expectUnavailable(await unavailableDevicePort.getPowerStatus(call), 'device', 'getPowerStatus');
     expectUnavailable(await unavailableDevicePort.subscribePowerStatus({...call, listener, onError}), 'device', 'subscribePowerStatus');

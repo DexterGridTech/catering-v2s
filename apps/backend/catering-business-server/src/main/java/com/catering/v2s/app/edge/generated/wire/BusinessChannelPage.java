@@ -2,5 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record BusinessChannelPage(
-    java.util.List<BusinessChannelView> items
+    java.util.List<BusinessChannelView> items,
+    String cursor,
+    String nextCursor
 ) {}

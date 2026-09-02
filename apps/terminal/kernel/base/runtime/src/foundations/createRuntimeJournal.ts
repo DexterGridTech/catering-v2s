@@ -1,4 +1,5 @@
 import type {RuntimeJournal, RuntimeJournalEvent} from '../types/journal'
+import {freezeList} from './freezeList'
 
 export type RuntimeJournalSink = Readonly<{
   append?: (event: RuntimeJournalEvent) => void
@@ -18,7 +19,7 @@ export const createRuntimeJournal = (
   const limit = Math.max(1, Math.floor(maxRecords))
 
   return Object.freeze({
-    list: (): readonly RuntimeJournalEvent[] => Object.freeze([...records]),
+    list: (): readonly RuntimeJournalEvent[] => freezeList(records),
     subscribe: (listener: (event: RuntimeJournalEvent) => void): (() => void) => {
       listeners.add(listener)
       return () => listeners.delete(listener)

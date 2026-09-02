@@ -32,8 +32,7 @@ export const skeletonGraph = {
   },
   'kernel.base.display-context': {
     batch: 1,
-    plannedKind: 'owner',
-    dependencies: ['kernel.base.contracts', 'kernel.base.state', 'kernel.base.runtime'],
+    dependencies: ['kernel.base.contracts', 'kernel.base.platform-ports', 'kernel.base.state', 'kernel.base.runtime'],
     devDependencies: [],
   },
   'kernel.base.workflow': {
@@ -44,7 +43,7 @@ export const skeletonGraph = {
   },
   'kernel.base.ui-state': {
     batch: 1,
-    plannedKind: 'owner',
+    kind: 'owner',
     dependencies: [
       'kernel.base.contracts',
       'kernel.base.platform-ports',
