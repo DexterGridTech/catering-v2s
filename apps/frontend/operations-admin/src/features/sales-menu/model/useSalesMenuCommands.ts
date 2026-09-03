@@ -347,6 +347,10 @@ export function useSalesMenuCommands() {
           fileName: file.name,
           mediaType: body.mediaType,
           contentDigest,
+          groupWorkspaceKey: path.groupWorkspaceKey,
+          storeRef: String(path.storeRef),
+          salesMenuRef: String(path.salesMenuRef),
+          salesItemRef: String(path.salesItemRef),
         },
         stageAsset as unknown as MutationTrigger,
         key => operationsAdminRtkRequest.stageOperationsSalesMenuAsset(path, {body, headers: {'Idempotency-Key': key}}),
@@ -359,7 +363,14 @@ export function useSalesMenuCommands() {
     (path: SalesMenuItemPath & {assetRef: Uuid}, body: SalesMenuAssetReleaseRequest) =>
       runMutation<SalesMenuAssetReleaseReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.releaseOperationsSalesMenuStagedAsset,
-        body,
+        {
+          ...body,
+          groupWorkspaceKey: path.groupWorkspaceKey,
+          storeRef: String(path.storeRef),
+          salesMenuRef: String(path.salesMenuRef),
+          salesItemRef: String(path.salesItemRef),
+          assetRef: String(path.assetRef),
+        },
         releaseAsset as unknown as MutationTrigger,
         key =>
           operationsAdminRtkRequest.releaseOperationsSalesMenuStagedAsset(path, {

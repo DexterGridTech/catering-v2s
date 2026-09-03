@@ -49,6 +49,10 @@ const salesMenuL2Source = readFileSync(
   path.join(root, 'apps/frontend/operations-admin/src/tests/l2/sales-menu.spec.ts'),
   'utf8',
 );
+const operationsL2Source = readFileSync(
+  path.join(root, 'apps/frontend/operations-admin/src/tests/l2/operationsL2.ts'),
+  'utf8',
+);
 const fixtureSource = readFileSync(path.join(root, 'scripts/test/catalog-inventory-l2-fixture.mjs'), 'utf8');
 const p1Source = readFileSync(path.join(root, 'scripts/generate/catalog-inventory-p1.mjs'), 'utf8');
 
@@ -79,6 +83,17 @@ test('sales-menu L2 consumes the managed timing report field contract', () => {
 test('sales-menu L2 never treats an observed HTTP failure as a completed operation', () => {
   assert.match(salesMenuL2Source, /completion\.status < 200 \|\| completion\.status >= 300/);
   assert.match(salesMenuL2Source, /SALES_MENU_L2_OPERATION_HTTP_FAILED/);
+});
+
+test('shared option selection waits on the native input before opening an owner-backed portal', () => {
+  assert.match(
+    operationsL2Source,
+    /const input = control\.locator\('input'\);\s+await expect\(input\)\.toBeVisible\(\);[\s\S]*?await expect\(input\)\.toBeEnabled\(\);\s+await control\.click\(\)/,
+  );
+  assert.doesNotMatch(
+    operationsL2Source,
+    /await expect\(control\)\.toBeEnabled\(\);\s+await control\.click\(\);\s+const input = control\.locator\('input'\)/,
+  );
 });
 
 test('browser L2 contract denominators and the target exact set are explicit', () => {
@@ -730,6 +745,13 @@ test('sales-menu operation-record readiness reads the required channel-scoped qu
   );
   assert.match(runtimeSource, /operation-records-read-page-2/);
   assert.match(runtimeSource, /operationCursor = salesMenuNextCursor\(operationPage\)/);
+});
+
+test('sales-menu owner facts use the actual eligible-channel page order', () => {
+  assert.match(runtimeSource, /const ownerChannelRows = \[\.\.\.channelPageRows, \.\.\.salesMenuPageItems\(channelPage2\)\]/);
+  assert.match(runtimeSource, /const ownerChannelRefs = ownerChannelRows\.map\(row =>[\s\S]*channelRef/);
+  assert.match(runtimeSource, /const primaryChannel = ownerOrderedChannels\[0\]/);
+  assert.match(runtimeSource, /channelRefs: ownerChannelRefs/);
 });
 
 test('browser L2 owner client binds body idempotency fields to the request header', () => {

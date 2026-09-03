@@ -16,7 +16,7 @@ const instanceModes = ['MASTER', 'SLAVE'] as const satisfies readonly RuntimeIns
 const approvedEntryKeys = [
   'partKey',
   'rendererKey',
-  'containerKey',
+  'containerKeys',
   'displayModes',
   'workspaces',
   'instanceModes',
@@ -24,24 +24,38 @@ const approvedEntryKeys = [
   'description',
 ] as const
 
+const assertStringArray = (
+  value: unknown,
+  label: string,
+  allowEmpty: boolean,
+): readonly string[] => {
+  if (!Array.isArray(value) || (!allowEmpty && value.length === 0) || Object.getOwnPropertySymbols(value).length > 0) {
+    throw new Error(`[ui-state] ${label} must be a ${allowEmpty ? '' : 'non-empty '}array`)
+  }
+  const result: string[] = []
+  for (let index = 0; index < value.length; index += 1) {
+    const item = value[index]
+    if (typeof item !== 'string' || item.trim().length === 0) {
+      throw new Error(`[ui-state] ${label} contains an invalid value`)
+    }
+    if (result.includes(item)) throw new Error(`[ui-state] ${label} contains a duplicate value`)
+    result.push(item)
+  }
+  return Object.freeze(result)
+}
+
 const assertClosedArray = <TValue extends string>(
   value: unknown,
   label: string,
   allowed: readonly TValue[],
 ): readonly TValue[] => {
-  if (!Array.isArray(value) || value.length === 0 || Object.getOwnPropertySymbols(value).length > 0) {
-    throw new Error(`[ui-state] ${label} must be a non-empty closed array`)
-  }
-  const result: TValue[] = []
-  for (let index = 0; index < value.length; index += 1) {
-    const item = value[index]
-    if (typeof item !== 'string' || !allowed.includes(item as TValue)) {
+  const result = assertStringArray(value, label, false)
+  for (const item of result) {
+    if (!allowed.includes(item as TValue)) {
       throw new Error(`[ui-state] ${label} contains an invalid value`)
     }
-    if (result.includes(item as TValue)) throw new Error(`[ui-state] ${label} contains a duplicate value`)
-    result.push(item as TValue)
   }
-  return Object.freeze(result)
+  return result as readonly TValue[]
 }
 
 const assertEntryKeys = (entry: object): void => {
@@ -64,13 +78,13 @@ const canonicalEntry = (raw: UiCatalogEntry): UiCatalogEntry => {
   assertEntryKeys(raw)
   assertNonEmptyString(raw.partKey, 'ui-state', 'catalog.partKey')
   assertNonEmptyString(raw.rendererKey, 'ui-state', 'catalog.rendererKey')
-  assertNonEmptyString(raw.containerKey, 'ui-state', 'catalog.containerKey')
   assertNonEmptyString(raw.title, 'ui-state', 'catalog.title')
   assertNonEmptyString(raw.description, 'ui-state', 'catalog.description')
   const result: UiCatalogEntry = {
     partKey: raw.partKey,
     rendererKey: raw.rendererKey,
-    containerKey: raw.containerKey,
+    // An empty container list intentionally means layer-only: the part is not eligible for screen enumeration.
+    containerKeys: assertStringArray(raw.containerKeys, 'catalog.containerKeys', true),
     displayModes: assertClosedArray(raw.displayModes, 'catalog.displayModes', displayModes),
     workspaces: assertClosedArray(raw.workspaces, 'catalog.workspaces', workspaces),
     instanceModes: assertClosedArray(raw.instanceModes, 'catalog.instanceModes', instanceModes),
@@ -117,7 +131,7 @@ export const selectAvailableParts = (
   if (!workspaces.includes(context.workspace)) throw new Error('[ui-state] invalid catalog workspace')
   if (!instanceModes.includes(context.instanceMode)) throw new Error('[ui-state] invalid catalog instanceMode')
   return Object.freeze(catalog.entries.filter(entry =>
-    entry.containerKey === containerKey
+    entry.containerKeys.includes(containerKey)
       && entry.displayModes.includes(context.displayMode)
       && entry.workspaces.includes(context.workspace)
       && entry.instanceModes.includes(context.instanceMode),

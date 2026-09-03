@@ -2,6 +2,7 @@ import {describe, expect, it} from 'vitest';
 import {
   SALES_MENU_PAGE_SIZE,
   SALES_MENU_OPERATION_COLUMN_TITLE,
+  mergeSalesMenuCandidateSelection,
   salesMenuCandidateSelection,
   salesMenuManualSaleStatusLabel,
   salesMenuOperationLabel,
@@ -49,6 +50,7 @@ describe('sales menu frontend model', () => {
     expect(salesMenuTestIds.channelCard('channel-1')).toBe('sales-menu-channel-channel-1');
     expect(salesMenuTestIds.mode('DRAFT')).toBe('sales-menu-mode-draft');
     expect(salesMenuTestIds.menuSelector).toBe('sales-menu-selector');
+    expect(salesMenuTestIds.menuOption('menu-1')).toBe('sales-menu-option-menu-1');
     expect(salesMenuTestIds.candidateCategoryTree).toBe('sales-menu-candidate-category-tree');
   });
 
@@ -65,17 +67,24 @@ describe('sales menu frontend model', () => {
     expect(salesMenuOperationLabel('unregistered-operation')).toBe('菜单操作');
   });
 
-  it('keeps operation-column copy centralized and prevents hidden candidate selection from being submitted', () => {
+  it('keeps operation-column copy centralized and preserves selected candidate identity across cursor pages', () => {
     expect(SALES_MENU_OPERATION_COLUMN_TITLE).toBe('操作');
     expect(salesMenuCandidateSelection(['candidate-1', 'candidate-2'], ['candidate-2'])).toEqual({
       hiddenSelectedCount: 1,
       visibleSelected: ['candidate-2'],
-      canSubmit: false,
+      canSubmit: true,
     });
     expect(salesMenuCandidateSelection(['candidate-2'], ['candidate-2'])).toEqual({
       hiddenSelectedCount: 0,
       visibleSelected: ['candidate-2'],
       canSubmit: true,
     });
+    expect(mergeSalesMenuCandidateSelection(['candidate-1'], ['candidate-2'], ['candidate-2'])).toEqual([
+      'candidate-1',
+      'candidate-2',
+    ]);
+    expect(mergeSalesMenuCandidateSelection(['candidate-1', 'candidate-2'], ['candidate-2'], [])).toEqual([
+      'candidate-1',
+    ]);
   });
 });

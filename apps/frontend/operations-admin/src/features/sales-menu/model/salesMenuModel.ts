@@ -15,8 +15,19 @@ export function salesMenuCandidateSelection(selected: readonly string[], visible
   return {
     hiddenSelectedCount: hidden.length,
     visibleSelected: selected.filter(candidateRef => visibleRefs.has(candidateRef)),
-    canSubmit: selected.length > 0 && hidden.length === 0,
+    canSubmit: selected.length > 0,
   };
+}
+
+export function mergeSalesMenuCandidateSelection(
+  selected: readonly string[],
+  visible: readonly string[],
+  nextVisible: readonly string[],
+): string[] {
+  const visibleRefs = new Set(visible);
+  const next = new Set(selected.filter(candidateRef => !visibleRefs.has(candidateRef)));
+  for (const candidateRef of nextVisible) next.add(candidateRef);
+  return [...next];
 }
 
 export type SalesMenuQueryIdentityInput = {

@@ -1,4 +1,4 @@
-import {DeleteOutlined, DownOutlined, MoreOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
+import {DeleteOutlined, MoreOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
 import {
   Alert,
   Button,
@@ -36,8 +36,18 @@ import {
   testId,
   useDrawerFormLifecycle,
 } from '@catering-v2s/admin-ui-foundation';
-import {useCallback, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
-import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
+import {
+  cloneElement,
+  isValidElement,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
+import {operationsLogger, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {
   buildCatalogNavigationCategoryTree,
   type CatalogNavigationCategory,
@@ -46,6 +56,7 @@ import {
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import {publicRtkRequest} from '../../../app/api/generated/public-edge.rtk';
 import {OPERATIONS_ADMIN_OPERATION_IDS} from '../../../app/api/generated/operations-edge';
+import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {
   SalesMenuCommandReadback,
   SalesMenuDetail,
@@ -75,6 +86,7 @@ import {
   salesMenuProductShapeLabel,
   salesMenuScheduleLabel,
   salesMenuCandidateSelection,
+  mergeSalesMenuCandidateSelection,
   type SalesMenuMode,
 } from '../model/salesMenuModel';
 import {useSalesMenuCommands} from '../model/useSalesMenuCommands';
@@ -290,6 +302,15 @@ function SalesMenuMediaEditor({
   const lastSessionKey = useRef<string | undefined>(undefined);
 
   useEffect(() => {
+    operationsLogger.info({
+      event: 'sales-menu.media.editor',
+      phase: 'MEDIA_MODE',
+      outcome: mediaMode,
+      operationId: 'sales-menu-item-media',
+    });
+  }, [mediaMode]);
+
+  useEffect(() => {
     const sessionKey = `${item.salesItemRef}:${open ? 'open' : 'closed'}`;
     if (lastSessionKey.current === sessionKey) return;
     lastSessionKey.current = sessionKey;
@@ -357,10 +378,22 @@ function SalesMenuMediaEditor({
     async (file: File, existingId?: string) => {
       setProblem(undefined);
       if (file.size > MEDIA_LIMITS.maxImageBytes) {
+        operationsLogger.warn({
+          event: 'sales-menu.media.stage',
+          phase: 'VALIDATION',
+          outcome: 'REJECTED_SIZE',
+          operationId: OPERATIONS_ADMIN_OPERATION_IDS.stageOperationsSalesMenuAsset,
+        });
         setProblem('单张图片不能超过 2MB。');
         return;
       }
       if (!existingId && items.length >= MEDIA_LIMITS.maxImageCount) {
+        operationsLogger.warn({
+          event: 'sales-menu.media.stage',
+          phase: 'VALIDATION',
+          outcome: 'REJECTED_COUNT_LIMIT',
+          operationId: OPERATIONS_ADMIN_OPERATION_IDS.stageOperationsSalesMenuAsset,
+        });
         setProblem('最多维护 6 张图片（1 张主图 + 5 张附图）。');
         return;
       }
@@ -383,6 +416,12 @@ function SalesMenuMediaEditor({
         : [...before, placeholder];
       setItems(optimistic);
       onPendingChange(true);
+      operationsLogger.info({
+        event: 'sales-menu.media.stage',
+        phase: 'MEDIA_STAGE',
+        outcome: 'STARTED',
+        operationId: OPERATIONS_ADMIN_OPERATION_IDS.stageOperationsSalesMenuAsset,
+      });
       try {
         const response = await commands.stage(
           {
@@ -455,6 +494,12 @@ function SalesMenuMediaEditor({
         const nextGrants = {...bindGrants, [String(response.assetRef)]: response.bindGrant};
         if (existingId && placeholder.assetRef) delete nextGrants[String(placeholder.assetRef)];
         publishChange(nextItems, nextGrants);
+        operationsLogger.info({
+          event: 'sales-menu.media.stage',
+          phase: 'MEDIA_STAGE',
+          outcome: 'SUCCEEDED',
+          operationId: OPERATIONS_ADMIN_OPERATION_IDS.stageOperationsSalesMenuAsset,
+        });
       } catch (error) {
         const failed = optimistic.map(current =>
           current.id === id
@@ -463,8 +508,21 @@ function SalesMenuMediaEditor({
         );
         setItems(failed);
         setProblem(commandErrorMessage(error, '图片上传失败，请重试。'));
+        operationsLogger.warn({
+          event: 'sales-menu.media.stage',
+          phase: 'MEDIA_STAGE',
+          outcome: 'FAILED',
+          operationId: OPERATIONS_ADMIN_OPERATION_IDS.stageOperationsSalesMenuAsset,
+          errorCode: String(operationsProblemOf(error).errorCode),
+        });
       } finally {
         onPendingChange(false);
+        operationsLogger.info({
+          event: 'sales-menu.media.stage',
+          phase: 'MEDIA_STAGE',
+          outcome: 'FINISHED',
+          operationId: OPERATIONS_ADMIN_OPERATION_IDS.stageOperationsSalesMenuAsset,
+        });
       }
     },
     [bindGrants, commands, item, items, menuRef, onPendingChange, publishChange, queryContext],
@@ -532,8 +590,12 @@ function SalesMenuMediaEditor({
         }}
         {...testId(salesMenuTestIds.itemMediaMode)}
       >
-        <Radio value="INHERIT_CATALOG">沿用商品图片</Radio>
-        <Radio value="CUSTOM">单独设置</Radio>
+        <Radio value="INHERIT_CATALOG" {...testId(salesMenuTestIds.itemMediaChoice('INHERIT_CATALOG'))}>
+          沿用商品图片
+        </Radio>
+        <Radio value="CUSTOM" {...testId(salesMenuTestIds.itemMediaChoice('CUSTOM'))}>
+          单独设置
+        </Radio>
       </Radio.Group>
       {mediaMode === 'INHERIT_CATALOG' ? (
         <Typography.Text type="secondary">预览使用商品当前主图；菜单不会复制出另一份图片。</Typography.Text>
@@ -601,13 +663,44 @@ function SalesMenuMediaEditor({
 function SalesMenuItemDetailDrawer({
   item,
   open,
+  queryContext,
+  menuRef,
+  channelRef,
   onClose,
 }: {
   item?: DraftOrPublishedItem;
   open: boolean;
+  queryContext: OperationsPageContext;
+  menuRef?: Uuid;
+  channelRef?: Uuid;
   onClose: () => void;
 }) {
-  const published = item && 'inventoryAvailability' in item;
+  const publishedRow = item && 'inventoryAvailability' in item ? item : undefined;
+  const publishedDetailRequest = useMemo(
+    () =>
+      operationsAdminRtkRequest.getOperationsSalesMenuPublishedItem(
+        {
+          groupWorkspaceKey: queryContext.groupWorkspaceKey,
+          storeRef: wireUuid(queryContext.scopeRef ?? ''),
+          salesMenuRef: menuRef ?? ('' as Uuid),
+          salesItemRef: publishedRow?.salesItemRef ?? ('' as Uuid),
+        },
+        {query: {channelRef: channelRef ?? ('' as Uuid)}},
+      ),
+    [channelRef, menuRef, publishedRow?.salesItemRef, queryContext.groupWorkspaceKey, queryContext.scopeRef],
+  );
+  const publishedDetailQuery = operationsRtk.useGetOperationsSalesMenuPublishedItemQuery(publishedDetailRequest, {
+    skip: !open || !publishedRow || !queryContext.scopeRef || !menuRef || !channelRef,
+  });
+  // The published list is a paginated read model.  Detail must come from the
+  // owner operation and must never reuse a previous row when the identity changes.
+  const publishedDetail = useMemo(() => {
+    if (publishedDetailQuery.isError) return undefined;
+    const current = publishedDetailQuery.currentData ?? publishedDetailQuery.data;
+    return current && publishedRow && current.salesItemRef === publishedRow.salesItemRef ? current : undefined;
+  }, [publishedDetailQuery.currentData, publishedDetailQuery.data, publishedDetailQuery.isError, publishedRow]);
+  const displayedItem = publishedRow ? publishedDetail : item;
+  const published = Boolean(publishedRow);
   return (
     <Drawer
       open={open}
@@ -618,33 +711,45 @@ function SalesMenuItemDetailDrawer({
       {...adminDrawerSurfaceProps}
       {...testId(salesMenuTestIds.itemDetail)}
     >
-      {item && (
+      {publishedDetailQuery.isLoading && !displayedItem && <Typography.Text>正在读取前台销售项详情…</Typography.Text>}
+      {publishedDetailQuery.error && (
+        <Alert
+          type="error"
+          showIcon
+          title="前台销售项详情暂时无法获取"
+          description="请重试或稍后再试。"
+          action={<Button onClick={() => void publishedDetailQuery.refetch()}>重试</Button>}
+        />
+      )}
+      {displayedItem && (
         <Space direction="vertical" size={16} style={{display: 'flex'}}>
           <Descriptions bordered size="small" column={1}>
             <Descriptions.Item label="菜单商品">
-              <NameCodeText name={item.displayName} code={item.itemCode} />
+              <NameCodeText name={displayedItem.displayName} code={displayedItem.itemCode} />
             </Descriptions.Item>
-            <Descriptions.Item label="商品形态">{salesMenuProductShapeLabel(item.productShape)}</Descriptions.Item>
-            <Descriptions.Item label="销售内容">{saleContentLabel(item)}</Descriptions.Item>
+            <Descriptions.Item label="商品形态">
+              {salesMenuProductShapeLabel(displayedItem.productShape)}
+            </Descriptions.Item>
+            <Descriptions.Item label="销售内容">{saleContentLabel(displayedItem)}</Descriptions.Item>
             <Descriptions.Item label="适用挂牌价">
-              {item.saleContent.kind === 'SKU_SELECTION'
+              {displayedItem.saleContent.kind === 'SKU_SELECTION'
                 ? '按规格分别设置'
-                : formatSalesMenuPrice(item.saleContent.listedPriceCents)}
+                : formatSalesMenuPrice(displayedItem.saleContent.listedPriceCents)}
             </Descriptions.Item>
             <Descriptions.Item label="适用约束">
-              {item.saleContent.kind === 'WEIGHTED'
+              {displayedItem.saleContent.kind === 'WEIGHTED'
                 ? '称重销售不显示按份约束'
-                : `起售量 ${item.orderingConstraints.minItemQuantity ?? '未设置'}；订购倍数 ${item.orderingConstraints.quantityStep ?? '未设置'}`}
+                : `起售量 ${displayedItem.orderingConstraints.minItemQuantity ?? '未设置'}；订购倍数 ${displayedItem.orderingConstraints.quantityStep ?? '未设置'}`}
             </Descriptions.Item>
-            <Descriptions.Item label="展示图片">{itemMediaLabel(item)}</Descriptions.Item>
+            <Descriptions.Item label="展示图片">{itemMediaLabel(displayedItem)}</Descriptions.Item>
           </Descriptions>
-          {item.saleContent.kind === 'SKU_SELECTION' && (
+          {displayedItem.saleContent.kind === 'SKU_SELECTION' && (
             <Card size="small" title="规格与挂牌价">
               <Table<SalesMenuSkuPrice>
                 size="small"
                 rowKey="skuRef"
                 pagination={false}
-                dataSource={item.saleContent.skuPrices}
+                dataSource={displayedItem.saleContent.skuPrices}
                 columns={[
                   {title: '规格', dataIndex: 'skuName', key: 'skuName'},
                   {title: '规格编码', dataIndex: 'skuCode', key: 'skuCode'},
@@ -662,26 +767,29 @@ function SalesMenuItemDetailDrawer({
               />
             </Card>
           )}
-          {item.saleContent.kind === 'WEIGHTED' && (
+          {displayedItem.saleContent.kind === 'WEIGHTED' && (
             <Card size="small" title="销售单位">
               <Descriptions bordered size="small" column={1}>
                 <Descriptions.Item label="单位">
-                  <NameCodeText name={item.saleContent.salesUnit.name} code={item.saleContent.salesUnit.code} />
+                  <NameCodeText
+                    name={displayedItem.saleContent.salesUnit.name}
+                    code={displayedItem.saleContent.salesUnit.code}
+                  />
                 </Descriptions.Item>
-                <Descriptions.Item label="精度">{item.saleContent.salesUnit.precision}</Descriptions.Item>
+                <Descriptions.Item label="精度">{displayedItem.saleContent.salesUnit.precision}</Descriptions.Item>
               </Descriptions>
             </Card>
           )}
-          {published && (
+          {published && publishedDetail && (
             <Row gutter={[12, 12]}>
               <Col span={12}>
                 <Card size="small" title="库存状态">
-                  {salesMenuInventoryAvailabilityLabel(item.inventoryAvailability)}
+                  {salesMenuInventoryAvailabilityLabel(publishedDetail.inventoryAvailability)}
                 </Card>
               </Col>
               <Col span={12}>
                 <Card size="small" title="销售状态">
-                  {salesMenuManualSaleStatusLabel(item.manualSaleStatus)}
+                  {salesMenuManualSaleStatusLabel(publishedDetail.manualSaleStatus)}
                 </Card>
               </Col>
             </Row>
@@ -693,10 +801,11 @@ function SalesMenuItemDetailDrawer({
 }
 
 function SalesMenuItemEditorDrawer({
-  item,
+  item: rowItem,
   open,
   queryContext,
   menuRef,
+  menuVersion,
   commands,
   onSave,
   onClose,
@@ -708,6 +817,7 @@ function SalesMenuItemEditorDrawer({
   open: boolean;
   queryContext: OperationsPageContext;
   menuRef?: Uuid;
+  menuVersion?: number;
   commands: SalesMenuCommands;
   onSave: (
     item: SalesMenuDraftItemView,
@@ -719,6 +829,31 @@ function SalesMenuItemEditorDrawer({
   onDelete: (item: SalesMenuDraftItemView, beforeDelete?: () => Promise<boolean>) => void;
   onClosedFocus: () => void;
 }) {
+  const detailRequest = useMemo(
+    () =>
+      operationsAdminRtkRequest.getOperationsSalesMenuDraftItem(
+        {
+          groupWorkspaceKey: queryContext.groupWorkspaceKey,
+          storeRef: wireUuid(queryContext.scopeRef ?? ''),
+          salesMenuRef: menuRef ?? ('' as Uuid),
+          salesItemRef: rowItem?.salesItemRef ?? ('' as Uuid),
+        },
+        {},
+      ),
+    [menuRef, queryContext.groupWorkspaceKey, queryContext.scopeRef, rowItem?.salesItemRef],
+  );
+  const detailQuery = operationsRtk.useGetOperationsSalesMenuDraftItemQuery(detailRequest, {
+    skip: !open || !rowItem || !queryContext.scopeRef || !menuRef,
+  });
+  // A drawer is opened from a paginated row, but the editor must hydrate from the
+  // owner detail operation.  Never reuse a previous item's detail while identity changes
+  // or while the current owner readback is still in flight.
+  const detail = useMemo(() => {
+    if (detailQuery.isError || detailQuery.isFetching) return undefined;
+    const current = detailQuery.currentData;
+    return current && rowItem && current.salesItemRef === rowItem.salesItemRef ? current : undefined;
+  }, [detailQuery.currentData, detailQuery.isError, detailQuery.isFetching, rowItem]);
+  const item = detail ?? rowItem;
   const [displayName, setDisplayName] = useState('');
   const [listedPriceCents, setListedPriceCents] = useState<number | null>(null);
   const [skuPrices, setSkuPrices] = useState<SalesMenuSkuPrice[]>([]);
@@ -774,6 +909,10 @@ function SalesMenuItemEditorDrawer({
         });
     },
     dirtyMessage: '已填写的内容不会保存。',
+    dirtyGuardTestIds: {
+      confirm: testId(salesMenuTestIds.itemDiscardConfirm),
+      cancel: testId(salesMenuTestIds.itemDiscardCancel),
+    },
     onSuccessClosed: onSaved,
     diagnosticOperationId: OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsSalesMenuItem,
     idempotencyKey: true,
@@ -782,13 +921,38 @@ function SalesMenuItemEditorDrawer({
   const resetLifecycle = lifecycle.reset;
 
   useEffect(() => {
-    if (!item || !open) return;
+    if (!detail || !open) return;
+    if (lifecycle.dirty) {
+      operationsLogger.info({
+        event: 'sales-menu.item.editor',
+        phase: 'DRAFT_HYDRATION',
+        outcome: 'SKIPPED_DIRTY_DRAFT',
+        operationId: OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsSalesMenuItem,
+        diagnostic: {
+          itemVersion: detail.version,
+          menuVersion: menuVersion ?? null,
+          draftState: 'DIRTY',
+        },
+      });
+      return;
+    }
+    operationsLogger.info({
+      event: 'sales-menu.item.editor',
+      phase: 'EDITOR',
+      outcome: 'OPENED',
+      operationId: OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsSalesMenuItem,
+      diagnostic: {
+        itemVersion: detail.version,
+        menuVersion: menuVersion ?? null,
+        expectedVersionSource: 'SALES_MENU_DETAIL',
+      },
+    });
     openedRef.current = true;
-    setDisplayName(item.displayName);
-    setListedPriceCents(item.saleContent.listedPriceCents);
-    setSkuPrices(item.saleContent.skuPrices);
-    setConstraints(item.orderingConstraints);
-    setDisplayMedia(item.displayMedia);
+    setDisplayName(detail.displayName);
+    setListedPriceCents(detail.saleContent.listedPriceCents);
+    setSkuPrices(detail.saleContent.skuPrices);
+    setConstraints(detail.orderingConstraints);
+    setDisplayMedia(detail.displayMedia);
     setAssetBindGrants({});
     setMediaPending(false);
     setProblem(undefined);
@@ -796,7 +960,7 @@ function SalesMenuItemEditorDrawer({
     closeInFlightRef.current = false;
     closingAfterSaveRef.current = false;
     resetLifecycle();
-  }, [item, open, resetLifecycle]);
+  }, [detail, lifecycle, menuVersion, open, resetLifecycle]);
 
   const markDirty = useCallback(() => {
     lifecycle.setDirty(true);
@@ -828,11 +992,23 @@ function SalesMenuItemEditorDrawer({
   }, []);
 
   const save = useCallback(async () => {
-    if (!item || !menuRef || mediaPending) return;
+    if (!item || !menuRef || menuVersion === undefined || mediaPending) return;
     setProblem(undefined);
     setSaving(true);
     lifecycle.setSubmitting(true);
     const isSku = item.saleContent.kind === 'SKU_SELECTION';
+    operationsLogger.info({
+      event: 'sales-menu.item.editor',
+      phase: 'COMMAND_INPUT',
+      outcome: 'VERSION_BOUND',
+      operationId: OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsSalesMenuItem,
+      diagnostic: {
+        itemVersion: item.version,
+        menuVersion,
+        expectedVersion: menuVersion,
+        expectedVersionSource: 'SALES_MENU_DETAIL',
+      },
+    });
     try {
       const saved = await onSave(
         item,
@@ -846,7 +1022,7 @@ function SalesMenuItemEditorDrawer({
           orderingConstraints:
             item.saleContent.kind === 'WEIGHTED' ? {minItemQuantity: null, quantityStep: null} : constraints,
           displayMedia,
-          expectedVersion: item.version,
+          expectedVersion: menuVersion,
         },
         assetBindGrants,
       );
@@ -872,6 +1048,7 @@ function SalesMenuItemEditorDrawer({
     listedPriceCents,
     mediaPending,
     menuRef,
+    menuVersion,
     onSave,
     skuPrices,
   ]);
@@ -898,12 +1075,13 @@ function SalesMenuItemEditorDrawer({
           <Button
             danger
             icon={<DeleteOutlined />}
-            onClick={() => onDelete(item, stagedReleaseRef.current)}
-            disabled={saving || closing}
+            onClick={() => detail && onDelete(detail, stagedReleaseRef.current)}
+            disabled={!detail || saving || closing}
+            {...testId(salesMenuTestIds.itemDelete)}
           >
             删除销售项
           </Button>
-          <Button onClick={lifecycle.requestClose} disabled={saving || closing}>
+          <Button onClick={lifecycle.requestClose} disabled={saving || closing} {...testId(salesMenuTestIds.itemClose)}>
             关闭
           </Button>
         </Space>
@@ -913,7 +1091,13 @@ function SalesMenuItemEditorDrawer({
           <Button onClick={lifecycle.requestClose} disabled={saving || closing}>
             取消
           </Button>
-          <Button type="primary" onClick={() => void save()} loading={saving} disabled={mediaPending || closing}>
+          <Button
+            type="primary"
+            onClick={() => void save()}
+            loading={saving}
+            disabled={!detail || mediaPending || closing}
+            {...testId(salesMenuTestIds.itemSave)}
+          >
             保存
           </Button>
         </Space>
@@ -921,147 +1105,158 @@ function SalesMenuItemEditorDrawer({
       {...testId(salesMenuTestIds.itemEditor)}
       {...adminWideDrawerSurfaceProps}
     >
-      <Space direction="vertical" size={16} style={{display: 'flex'}}>
-        {problem && <Alert type="error" showIcon title={problem} />}
-        <Card size="small" title="菜单展示名称">
-          <Input
-            value={displayName}
-            placeholder="留空则沿用商品名称"
-            onChange={event => {
-              setDisplayName(event.target.value);
-              markDirty();
-            }}
-            {...testId(salesMenuTestIds.itemDisplayName)}
-          />
-        </Card>
-        <Card size="small" title="销售内容与挂牌价">
-          <Space direction="vertical" size={12} style={{display: 'flex'}}>
-            <Typography.Text type="secondary">
-              {item.saleContent.kind === 'SKU_SELECTION'
-                ? '按规格销售；每个规格分别维护菜单挂牌价。'
-                : item.saleContent.kind === 'WEIGHTED'
-                  ? '按称重数量销售；销售单位来自商品结构化事实。'
-                  : item.saleContent.kind === 'COMPOSITE'
-                    ? '当前按套餐整体销售。'
-                    : '该商品无规格，直接销售该商品。'}
-            </Typography.Text>
-            {isSku ? (
-              <Table<SalesMenuSkuPrice>
-                size="small"
-                rowKey="skuRef"
-                pagination={false}
-                dataSource={skuPrices}
-                columns={[
-                  {title: '规格', dataIndex: 'skuName', key: 'skuName'},
-                  {title: '规格编码', dataIndex: 'skuCode', key: 'skuCode'},
-                  {
-                    title: '商品默认价',
-                    key: 'standardPrice',
-                    render: (_, row) => formatSalesMenuPrice(row.standardPriceCents),
-                  },
-                  {
-                    title: '菜单挂牌价',
-                    key: 'listedPrice',
-                    render: (_, row) => (
-                      <InputNumber
-                        min={0}
-                        precision={2}
-                        value={row.listedPriceCents / 100}
-                        addonBefore="¥"
-                        onChange={value => {
-                          const nextCents = value === null || value === undefined ? 0 : Math.round(value * 100);
-                          setSkuPrices(current =>
-                            current.map(price =>
-                              price.skuRef === row.skuRef ? {...price, listedPriceCents: nextCents} : price,
-                            ),
-                          );
-                          markDirty();
-                        }}
-                      />
-                    ),
-                  },
-                ]}
-              />
-            ) : (
-              <Space direction="vertical" size={4} style={{display: 'flex'}}>
-                <Descriptions bordered size="small" column={1}>
-                  <Descriptions.Item label="商品默认价">
-                    {formatSalesMenuPrice(item.defaultPriceCents)}
-                  </Descriptions.Item>
-                </Descriptions>
-                <Typography.Text strong>挂牌价</Typography.Text>
-                <InputNumber
-                  min={0}
-                  precision={2}
-                  addonBefore="¥"
-                  value={listedPriceCents === null ? undefined : listedPriceCents / 100}
-                  onChange={value => {
-                    setListedPriceCents(value === null || value === undefined ? null : Math.round(value * 100));
-                    markDirty();
-                  }}
-                  {...testId(salesMenuTestIds.itemListedPrice)}
+      {!detail ? (
+        detailQuery.error ? (
+          <Alert type="error" showIcon title="销售项详情暂时无法获取" description="请关闭后重试。" />
+        ) : (
+          <Space direction="vertical" align="center" style={{display: 'flex', padding: '32px 0'}}>
+            <Spin />
+            <Typography.Text type="secondary">正在读取销售项详情…</Typography.Text>
+          </Space>
+        )
+      ) : (
+        <Space direction="vertical" size={16} style={{display: 'flex'}}>
+          {problem && <Alert type="error" showIcon title={problem} />}
+          <Card size="small" title="菜单展示名称">
+            <Input
+              value={displayName}
+              placeholder="留空则沿用商品名称"
+              onChange={event => {
+                setDisplayName(event.target.value);
+                markDirty();
+              }}
+              {...testId(salesMenuTestIds.itemDisplayName)}
+            />
+          </Card>
+          <Card size="small" title="销售内容与挂牌价">
+            <Space direction="vertical" size={12} style={{display: 'flex'}}>
+              <Typography.Text type="secondary">
+                {item.saleContent.kind === 'SKU_SELECTION'
+                  ? '按规格销售；每个规格分别维护菜单挂牌价。'
+                  : item.saleContent.kind === 'WEIGHTED'
+                    ? '按称重数量销售；销售单位来自商品结构化事实。'
+                    : item.saleContent.kind === 'COMPOSITE'
+                      ? '当前按套餐整体销售。'
+                      : '该商品无规格，直接销售该商品。'}
+              </Typography.Text>
+              {isSku ? (
+                <Table<SalesMenuSkuPrice>
+                  size="small"
+                  rowKey="skuRef"
+                  pagination={false}
+                  dataSource={skuPrices}
+                  columns={[
+                    {title: '规格', dataIndex: 'skuName', key: 'skuName'},
+                    {title: '规格编码', dataIndex: 'skuCode', key: 'skuCode'},
+                    {
+                      title: '商品默认价',
+                      key: 'standardPrice',
+                      render: (_, row) => formatSalesMenuPrice(row.standardPriceCents),
+                    },
+                    {
+                      title: '菜单挂牌价',
+                      key: 'listedPrice',
+                      render: (_, row) => (
+                        <InputNumber
+                          min={0}
+                          precision={2}
+                          value={row.listedPriceCents / 100}
+                          addonBefore="¥"
+                          onChange={value => {
+                            const nextCents = value === null || value === undefined ? 0 : Math.round(value * 100);
+                            setSkuPrices(current =>
+                              current.map(price =>
+                                price.skuRef === row.skuRef ? {...price, listedPriceCents: nextCents} : price,
+                              ),
+                            );
+                            markDirty();
+                          }}
+                        />
+                      ),
+                    },
+                  ]}
                 />
-                {isWeighted && (
+              ) : (
+                <Space direction="vertical" size={4} style={{display: 'flex'}}>
                   <Descriptions bordered size="small" column={1}>
-                    <Descriptions.Item label="销售单位">
-                      <NameCodeText name={item.saleContent.salesUnit.name} code={item.saleContent.salesUnit.code} />
+                    <Descriptions.Item label="商品默认价">
+                      {formatSalesMenuPrice(item.defaultPriceCents)}
                     </Descriptions.Item>
-                    <Descriptions.Item label="精度">{item.saleContent.salesUnit.precision}</Descriptions.Item>
                   </Descriptions>
-                )}
+                  <Typography.Text strong>挂牌价</Typography.Text>
+                  <InputNumber
+                    min={0}
+                    precision={2}
+                    addonBefore="¥"
+                    value={listedPriceCents === null ? undefined : listedPriceCents / 100}
+                    onChange={value => {
+                      setListedPriceCents(value === null || value === undefined ? null : Math.round(value * 100));
+                      markDirty();
+                    }}
+                    {...testId(salesMenuTestIds.itemListedPrice)}
+                  />
+                  {isWeighted && (
+                    <Descriptions bordered size="small" column={1}>
+                      <Descriptions.Item label="销售单位">
+                        <NameCodeText name={item.saleContent.salesUnit.name} code={item.saleContent.salesUnit.code} />
+                      </Descriptions.Item>
+                      <Descriptions.Item label="精度">{item.saleContent.salesUnit.precision}</Descriptions.Item>
+                    </Descriptions>
+                  )}
+                </Space>
+              )}
+            </Space>
+          </Card>
+          <Card size="small" title="适用约束">
+            {isWeighted ? (
+              <Typography.Text type="secondary">称重销售商品不显示按份定义的起售量与订购倍数。</Typography.Text>
+            ) : (
+              <Space>
+                <label>
+                  起售量
+                  <InputNumber
+                    min={1}
+                    value={constraints.minItemQuantity ?? undefined}
+                    onChange={value => {
+                      setConstraints(current => ({...current, minItemQuantity: value ?? null}));
+                      markDirty();
+                    }}
+                  />
+                </label>
+                <label>
+                  订购倍数
+                  <InputNumber
+                    min={1}
+                    value={constraints.quantityStep ?? undefined}
+                    onChange={value => {
+                      setConstraints(current => ({...current, quantityStep: value ?? null}));
+                      markDirty();
+                    }}
+                  />
+                </label>
               </Space>
             )}
-          </Space>
-        </Card>
-        <Card size="small" title="适用约束">
-          {isWeighted ? (
-            <Typography.Text type="secondary">称重销售商品不显示按份定义的起售量与订购倍数。</Typography.Text>
-          ) : (
-            <Space>
-              <label>
-                起售量
-                <InputNumber
-                  min={1}
-                  value={constraints.minItemQuantity ?? undefined}
-                  onChange={value => {
-                    setConstraints(current => ({...current, minItemQuantity: value ?? null}));
-                    markDirty();
-                  }}
-                />
-              </label>
-              <label>
-                订购倍数
-                <InputNumber
-                  min={1}
-                  value={constraints.quantityStep ?? undefined}
-                  onChange={value => {
-                    setConstraints(current => ({...current, quantityStep: value ?? null}));
-                    markDirty();
-                  }}
-                />
-              </label>
-            </Space>
-          )}
-        </Card>
-        <Divider />
-        <Card size="small" title="展示图片">
-          <SalesMenuMediaEditor
-            item={item}
-            menuRef={menuRef as Uuid}
-            open={open}
-            media={displayMedia}
-            queryContext={queryContext}
-            commands={commands}
-            onChange={(next, grants) => {
-              setDisplayMedia(next);
-              setAssetBindGrants(grants);
-              markDirty();
-            }}
-            onPendingChange={handleMediaPendingChange}
-            onRegisterRelease={registerStagedRelease}
-          />
-        </Card>
-      </Space>
+          </Card>
+          <Divider />
+          <Card size="small" title="展示图片">
+            <SalesMenuMediaEditor
+              item={item}
+              menuRef={menuRef as Uuid}
+              open={open}
+              media={displayMedia}
+              queryContext={queryContext}
+              commands={commands}
+              onChange={(next, grants) => {
+                setDisplayMedia(next);
+                setAssetBindGrants(grants);
+                markDirty();
+              }}
+              onPendingChange={handleMediaPendingChange}
+              onRegisterRelease={registerStagedRelease}
+            />
+          </Card>
+        </Space>
+      )}
     </Drawer>
   );
 }
@@ -1112,6 +1307,23 @@ function SalesMenuCandidateDrawer({
   }, [open, resetLifecycle]);
   const page = read.candidates.page;
   const rows = useMemo(() => page?.items ?? [], [page?.items]);
+  const candidatePageOutcome = read.candidates.query.isError
+    ? 'FAILED'
+    : read.candidates.query.isFetching
+      ? 'FETCHING'
+      : page
+        ? rows.length > 0
+          ? 'READY_WITH_ITEMS'
+          : 'READY_EMPTY'
+        : 'WAITING';
+  useEffect(() => {
+    operationsLogger.info({
+      event: 'sales-menu.candidates.page',
+      phase: 'CANDIDATE_READ_MODEL',
+      outcome: candidatePageOutcome,
+      operationId: OPERATIONS_ADMIN_OPERATION_IDS.getOperationsSalesMenuItemCandidates,
+    });
+  }, [candidatePageOutcome]);
   const selection = useMemo(
     () =>
       salesMenuCandidateSelection(
@@ -1165,6 +1377,7 @@ function SalesMenuCandidateDrawer({
             disabled={!selection.canSubmit}
             loading={lifecycle.submitting}
             onClick={() => void submit()}
+            {...testId(salesMenuTestIds.candidateSubmit)}
           >
             添加已选商品
           </Button>
@@ -1186,6 +1399,8 @@ function SalesMenuCandidateDrawer({
                 selectedKeys={read.candidateCategoryRef ? [read.candidateCategoryRef] : []}
                 onSelect={keys => {
                   const next = String(keys[0] ?? '');
+                  setSelected([]);
+                  lifecycle.setDirty(false);
                   read.setCandidateCategoryRef(next ? (next as Uuid) : undefined);
                   read.candidates.cursor.reset();
                 }}
@@ -1201,23 +1416,29 @@ function SalesMenuCandidateDrawer({
               allowClear
               placeholder="搜索商品名称或编码"
               onChange={event => {
+                setSelected([]);
+                lifecycle.setDirty(false);
                 read.setCandidateQuery(event.target.value);
                 read.candidates.cursor.reset();
               }}
-              onSearch={() => read.candidates.cursor.reset()}
+              onSearch={() => {
+                setSelected([]);
+                lifecycle.setDirty(false);
+                read.candidates.cursor.reset();
+              }}
             />
             <Typography.Text type="secondary">分类只用于查找商品；候选商品按商品形态展示。</Typography.Text>
             {hiddenSelectedCount > 0 && (
               <Alert
                 type="warning"
                 showIcon
-                title={`当前还有 ${hiddenSelectedCount} 个已选商品不在本页；请返回其所在结果页，或清除不可见选择后再提交。`}
+                title={`当前还有 ${hiddenSelectedCount} 个已选商品不在本页；提交按钮会包含这些已选商品。`}
                 action={
                   <Button
                     size="small"
                     onClick={() => {
                       setSelected(selection.visibleSelected as Uuid[]);
-                      lifecycle.setDirty(false);
+                      lifecycle.setDirty(selection.visibleSelected.length > 0);
                     }}
                   >
                     清除不可见选择
@@ -1240,8 +1461,35 @@ function SalesMenuCandidateDrawer({
               dataSource={rows}
               rowSelection={{
                 selectedRowKeys: selected,
+                preserveSelectedRowKeys: true,
+                renderCell: (_checked, row, _index, originNode) =>
+                  isValidElement(originNode)
+                    ? cloneElement(
+                        originNode as ReactElement<{['data-testid']?: string}>,
+                        testId(salesMenuTestIds.candidateRow(row.candidateRef)),
+                      )
+                    : originNode,
                 onChange: keys => {
-                  const next = keys as Uuid[];
+                  const visibleRefs = rows.map(row => row.candidateRef);
+                  const next = mergeSalesMenuCandidateSelection(
+                    selected,
+                    visibleRefs,
+                    (keys as Array<string | number>)
+                      .map(String)
+                      .filter((candidateRef): candidateRef is Uuid => visibleRefs.includes(candidateRef as Uuid)),
+                  ) as Uuid[];
+                  const visibleRefSet = new Set(visibleRefs);
+                  operationsLogger.debug({
+                    event: 'sales-menu.candidates.selection',
+                    phase: 'CANDIDATE_SELECTION',
+                    outcome: 'UPDATED',
+                    operationId: OPERATIONS_ADMIN_OPERATION_IDS.getOperationsSalesMenuItemCandidates,
+                    diagnostic: {
+                      selectedCount: next.length,
+                      visibleSelectedCount: next.filter(candidateRef => visibleRefSet.has(candidateRef)).length,
+                      preservedOffPageCount: next.filter(candidateRef => !visibleRefSet.has(candidateRef)).length,
+                    },
+                  });
                   setSelected(next);
                   lifecycle.setDirty(next.length > 0);
                   lifecycle.markBusinessIntentChanged();
@@ -1288,6 +1536,9 @@ function SalesMenuManagerDrawer({
   onClose,
   onSelect,
   onToggle,
+  onRename,
+  onCopy,
+  onArchive,
   canEdit,
 }: {
   open: boolean;
@@ -1295,10 +1546,14 @@ function SalesMenuManagerDrawer({
   onClose: () => void;
   onSelect: (menu: SalesMenuDetail | SalesMenuSummary) => void;
   onToggle: (menu: SalesMenuSummary) => void;
+  onRename: (menu: SalesMenuSummary) => void;
+  onCopy: (menu: SalesMenuSummary) => void;
+  onArchive: (menu: SalesMenuSummary) => void;
   canEdit: boolean;
 }) {
   const page = read.manager.page;
   const rows = page?.items ?? [];
+  const managerReadModelReady = !read.manager.query.isFetching && !read.manager.query.isError;
   return (
     <Drawer
       open={open}
@@ -1332,7 +1587,12 @@ function SalesMenuManagerDrawer({
               title: '菜单名称',
               key: 'name',
               render: (_, row) => (
-                <Button type="link" onClick={() => onSelect(row)} style={{padding: 0}}>
+                <Button
+                  type="link"
+                  onClick={() => onSelect(row)}
+                  style={{padding: 0}}
+                  {...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'select'))}
+                >
                   {row.name}
                 </Button>
               ),
@@ -1347,9 +1607,57 @@ function SalesMenuManagerDrawer({
               title: '启停',
               key: 'toggle',
               render: (_, row) => (
-                <Button type="link" disabled={!canEdit || row.archived} onClick={() => onToggle(row)}>
+                <Button
+                  type="link"
+                  disabled={!canEdit || row.archived || !managerReadModelReady}
+                  onClick={() => onToggle(row)}
+                  {...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'toggle'))}
+                >
                   {row.activation?.status === 'ENABLED' ? '停用' : '启用'}
                 </Button>
+              ),
+            },
+            {
+              key: 'actions',
+              render: (_, row) => (
+                <Dropdown
+                  menu={{
+                    items: [
+                      {
+                        key: 'rename',
+                        label: '重命名',
+                        disabled: !canEdit || row.archived || !managerReadModelReady,
+                        ...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'rename')),
+                      },
+                      {
+                        key: 'copy',
+                        label: '复制',
+                        disabled: !canEdit || !managerReadModelReady,
+                        ...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'copy')),
+                      },
+                      {
+                        key: 'archive',
+                        label: '归档',
+                        danger: true,
+                        disabled: !canEdit || row.archived || !managerReadModelReady,
+                        ...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'archive')),
+                      },
+                    ],
+                    onClick: event => {
+                      if (event.key === 'rename') onRename(row);
+                      if (event.key === 'copy') onCopy(row);
+                      if (event.key === 'archive') onArchive(row);
+                    },
+                  }}
+                >
+                  <Button
+                    type="text"
+                    icon={<MoreOutlined />}
+                    aria-label="更多菜单操作"
+                    disabled={!managerReadModelReady}
+                    {...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'menu'))}
+                  />
+                </Dropdown>
               ),
             },
           ]}
@@ -1404,7 +1712,13 @@ function SalesMenuSectionPanel({
       size="small"
       title="销售分区"
       extra={
-        <Button type="link" icon={<PlusOutlined />} onClick={onCreate} disabled={!canEdit}>
+        <Button
+          type="link"
+          icon={<PlusOutlined />}
+          onClick={onCreate}
+          disabled={!canEdit}
+          {...testId(salesMenuTestIds.sectionCreate)}
+        >
           新建分区
         </Button>
       }
@@ -1414,22 +1728,47 @@ function SalesMenuSectionPanel({
         {rows.length === 0 && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无销售分区" />}
         {rows.map(section => {
           const menuItems: MenuProps['items'] = [
-            {key: 'rename', label: '重命名', disabled: !canEdit},
-            {key: 'up', label: '上移', disabled: !canEdit || !section.canMoveUp},
-            {key: 'down', label: '下移', disabled: !canEdit || !section.canMoveDown},
+            {
+              key: 'rename',
+              label: '重命名',
+              disabled: !canEdit,
+              ...testId(salesMenuTestIds.sectionMenuAction(section.salesSectionRef, 'rename')),
+            },
+            {
+              key: 'up',
+              label: '上移',
+              disabled: !canEdit || !section.canMoveUp,
+              ...testId(salesMenuTestIds.sectionMenuAction(section.salesSectionRef, 'up')),
+            },
+            {
+              key: 'down',
+              label: '下移',
+              disabled: !canEdit || !section.canMoveDown,
+              ...testId(salesMenuTestIds.sectionMenuAction(section.salesSectionRef, 'down')),
+            },
             {type: 'divider'},
-            {key: 'delete', label: '删除分区', danger: true, disabled: !canEdit},
+            {
+              key: 'delete',
+              label: '删除分区',
+              danger: true,
+              disabled: !canEdit,
+              ...testId(salesMenuTestIds.sectionMenuAction(section.salesSectionRef, 'delete')),
+            },
           ];
           return (
-            <div
-              key={section.salesSectionRef}
-              style={{display: 'flex', alignItems: 'center', gap: 4}}
-              {...testId(salesMenuTestIds.section(section.salesSectionRef))}
-            >
+            <div key={section.salesSectionRef} style={{display: 'flex', alignItems: 'center', gap: 4, minWidth: 0}}>
               <Button
                 type={read.selectedSectionRef === section.salesSectionRef ? 'primary' : 'text'}
                 onClick={() => read.setSelectedSectionRef(section.salesSectionRef)}
-                style={{flex: 1, textAlign: 'left'}}
+                style={{
+                  flex: '1 1 auto',
+                  minWidth: 0,
+                  textAlign: 'left',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+                {...testId(salesMenuTestIds.section(section.salesSectionRef))}
               >
                 {section.name} <Typography.Text type="secondary">({section.itemCount})</Typography.Text>
               </Button>
@@ -1443,7 +1782,12 @@ function SalesMenuSectionPanel({
                   },
                 }}
               >
-                <Button type="text" icon={<MoreOutlined />} aria-label="更多分区操作" />
+                <Button
+                  type="text"
+                  icon={<MoreOutlined />}
+                  aria-label="更多分区操作"
+                  {...testId(salesMenuTestIds.sectionAction(section.salesSectionRef))}
+                />
               </Dropdown>
             </div>
           );
@@ -1478,10 +1822,7 @@ function DraftSalesItemTable({
       render: (_, row) => (
         <Space align="start" size={8}>
           {row.displayMedia.mode === 'CUSTOM' && row.displayMedia.primaryAssetRef ? (
-            <SalesMenuAssetPreview
-              assetRef={row.displayMedia.primaryAssetRef}
-              alt={`${row.displayName}展示图`}
-            />
+            <SalesMenuAssetPreview assetRef={row.displayMedia.primaryAssetRef} alt={`${row.displayName}展示图`} />
           ) : (
             <span
               style={{width: 96, height: 72, display: 'grid', placeItems: 'center', background: '#f5f5f5'}}
@@ -1523,8 +1864,18 @@ function DraftSalesItemTable({
         <Dropdown
           menu={{
             items: [
-              {key: 'up', label: '上移', disabled: !canEdit || !row.canMoveUp},
-              {key: 'down', label: '下移', disabled: !canEdit || !row.canMoveDown},
+              {
+                key: 'up',
+                label: '上移',
+                disabled: !canEdit || !row.canMoveUp,
+                ...testId(salesMenuTestIds.itemMenuAction(row.salesItemRef, 'up')),
+              },
+              {
+                key: 'down',
+                label: '下移',
+                disabled: !canEdit || !row.canMoveDown,
+                ...testId(salesMenuTestIds.itemMenuAction(row.salesItemRef, 'down')),
+              },
             ],
             onClick: event => {
               if (event.key === 'up' || event.key === 'down') onMove(row, event.key === 'up' ? 'UP' : 'DOWN');
@@ -1551,6 +1902,7 @@ function DraftSalesItemTable({
           icon={<PlusOutlined />}
           onClick={event => onAdd(event.currentTarget)}
           disabled={!canEdit}
+          {...testId(salesMenuTestIds.candidateAdd)}
         >
           添加商品到菜单
         </Button>
@@ -1648,7 +2000,7 @@ function PublishedSalesItemTable({
       fixed: 'right',
       width: 130,
       render: (_, row) => (
-        <Button type="link" onClick={() => onStatus(row)}>
+        <Button type="link" onClick={() => onStatus(row)} {...testId(salesMenuTestIds.statusAction(row.salesItemRef))}>
           {salesMenuManualSaleStatusLabel(row.manualSaleStatus)}
         </Button>
       ),
@@ -1757,6 +2109,7 @@ function PublishDrawer({
             type="primary"
             onClick={onPublish}
             disabled={!canEdit || !preview || !preview.hasChanges || preview.violations.length > 0}
+            {...testId(salesMenuTestIds.publishSubmit)}
           >
             更新到前台
           </Button>
@@ -1811,6 +2164,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState('');
   const [renameName, setRenameName] = useState('');
+  const [menuActionTarget, setMenuActionTarget] = useState<SalesMenuSummary>();
   const [renameOpen, setRenameOpen] = useState(false);
   const [sectionDialog, setSectionDialog] = useState<{kind: 'create' | 'rename'; section?: SalesMenuSectionView}>();
   const [sectionName, setSectionName] = useState('');
@@ -1902,6 +2256,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
       renameLifecycle.afterOpenChange(visible);
       if (!visible) {
         setRenameName('');
+        setMenuActionTarget(undefined);
         if (menuActionTriggerRef.current) {
           window.requestAnimationFrame(() => {
             menuActionTriggerRef.current?.focus();
@@ -1930,7 +2285,6 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
       setFeedback(undefined);
       try {
         const result = await operation();
-        read.refresh();
         after?.(result);
         setFeedback({type: 'success', message: success});
         return true;
@@ -1939,7 +2293,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
         return false;
       }
     },
-    [read],
+    [],
   );
 
   const askConfirmation = useCallback((title: string, content: ReactNode, run: () => Promise<void>) => {
@@ -1962,15 +2316,23 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
   }, [commands, createLifecycle, createName, queryContext.groupWorkspaceKey, runCommand, selectedChannelRef, storeRef]);
 
   const renameMenu = useCallback(async () => {
-    if (!basePath || !selectedMenu || !renameName.trim()) return;
+    if (!storeRef || !menuActionTarget || !renameName.trim()) return;
     renameLifecycle.setSubmitting(true);
     const succeeded = await runCommand(
-      () => commands.rename(basePath, {name: renameName.trim(), expectedVersion: selectedMenu.version}),
+      () =>
+        commands.rename(
+          {
+            groupWorkspaceKey: queryContext.groupWorkspaceKey,
+            storeRef,
+            salesMenuRef: menuActionTarget.salesMenuRef,
+          },
+          {name: renameName.trim(), expectedVersion: menuActionTarget.version},
+        ),
       '菜单名称已更新。',
       () => renameLifecycle.closeAfterSuccess(),
     );
     if (!succeeded) renameLifecycle.setSubmitting(false);
-  }, [basePath, commands, renameLifecycle, renameName, runCommand, selectedMenu]);
+  }, [commands, menuActionTarget, queryContext.groupWorkspaceKey, renameLifecycle, renameName, runCommand, storeRef]);
 
   const saveSchedule = useCallback(async () => {
     if (!basePath || !selectedMenu) return;
@@ -1984,21 +2346,74 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
     if (!succeeded) scheduleLifecycle.setSubmitting(false);
   }, [basePath, commands, runCommand, schedule, scheduleLifecycle, selectedMenu]);
 
-  const copyMenu = useCallback(() => {
-    if (!basePath || !selectedMenu) return;
-    void runCommand(
-      () => commands.copy(basePath, {expectedVersion: selectedMenu.version}),
-      '菜单已复制，并已刷新菜单列表。',
-      result => {
-        const targetRef = (result as SalesMenuCommandReadback).targetRef;
-        if (targetRef) read.selectMenu(targetRef);
-      },
-    );
-  }, [basePath, commands, read, runCommand, selectedMenu]);
+  const openRenameMenu = useCallback((menu: SalesMenuSummary) => {
+    setManagerOpen(false);
+    setMenuActionTarget(menu);
+    setRenameName(menu.name);
+    setRenameOpen(true);
+  }, []);
+
+  const copyMenu = useCallback(
+    (menu: SalesMenuSummary) => {
+      if (!storeRef) return;
+      void runCommand(
+        () =>
+          commands.copy(
+            {
+              groupWorkspaceKey: queryContext.groupWorkspaceKey,
+              storeRef,
+              salesMenuRef: menu.salesMenuRef,
+            },
+            {expectedVersion: menu.version},
+          ),
+        '菜单已复制，并已刷新菜单列表。',
+        result => {
+          const targetRef = (result as SalesMenuCommandReadback).targetRef;
+          if (targetRef) read.selectMenu(targetRef);
+        },
+      );
+    },
+    [commands, queryContext.groupWorkspaceKey, read, runCommand, storeRef],
+  );
+
+  const archiveMenu = useCallback(
+    (menu: SalesMenuSummary) => {
+      if (!storeRef) return;
+      askConfirmation('归档当前菜单？', '归档只会停止当前菜单的管理使用，不会删除商品或历史操作记录。', async () => {
+        await runCommand(
+          () =>
+            commands.archive(
+              {
+                groupWorkspaceKey: queryContext.groupWorkspaceKey,
+                storeRef,
+                salesMenuRef: menu.salesMenuRef,
+              },
+              {expectedVersion: menu.version},
+            ),
+          '菜单已归档。',
+        );
+      });
+    },
+    [askConfirmation, commands, queryContext.groupWorkspaceKey, runCommand, storeRef],
+  );
 
   const toggleMenu = useCallback(
     (menu: SalesMenuSummary) => {
       if (!storeRef || !selectedChannelRef || !canEdit) return;
+      const nextStatus = menu.activation?.status === 'ENABLED' ? 'DISABLED' : 'ENABLED';
+      operationsLogger.info({
+        event: 'sales-menu.manager.activation',
+        phase: 'COMMAND_INPUT',
+        outcome: 'VERSION_BOUND',
+        operationId: OPERATIONS_ADMIN_OPERATION_IDS.setOperationsSalesMenuActivation,
+        diagnostic: {
+          salesMenuRef: menu.salesMenuRef,
+          menuVersion: menu.version,
+          selectedMenuVersion: selectedMenu?.salesMenuRef === menu.salesMenuRef ? (selectedMenu.version ?? null) : null,
+          status: nextStatus,
+          expectedVersionSource: 'SALES_MENU_MANAGER_READ_MODEL',
+        },
+      });
       void runCommand(
         () =>
           commands.activate(
@@ -2009,14 +2424,14 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
               channelRef: selectedChannelRef,
             },
             {
-              status: menu.activation?.status === 'ENABLED' ? 'DISABLED' : 'ENABLED',
+              status: nextStatus,
               expectedVersion: menu.version,
             },
           ),
-        menu.activation?.status === 'ENABLED' ? '菜单已停用。' : '菜单已启用。',
+        nextStatus === 'DISABLED' ? '菜单已停用。' : '菜单已启用。',
       );
     },
-    [canEdit, commands, queryContext.groupWorkspaceKey, runCommand, selectedChannelRef, storeRef],
+    [canEdit, commands, queryContext.groupWorkspaceKey, runCommand, selectedChannelRef, selectedMenu, storeRef],
   );
 
   const saveItem = useCallback(
@@ -2028,7 +2443,6 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
       if (!basePath) return false;
       try {
         await commands.updateItem({...basePath, salesItemRef: item.salesItemRef}, body, grants);
-        read.refresh();
         setFeedback({type: 'success', message: '销售项已保存。'});
         return true;
       } catch (error) {
@@ -2036,7 +2450,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
         throw error;
       }
     },
-    [basePath, commands, read],
+    [basePath, commands],
   );
 
   const deleteItem = useCallback(
@@ -2093,7 +2507,6 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
           {...basePath, salesSectionRef: read.selectedSectionRef},
           {catalogItemRefs: refs, expectedVersion: selectedMenu.version},
         );
-        read.refresh();
         setFeedback({type: 'success', message: '商品已添加到菜单。'});
         return true;
       } catch (error) {
@@ -2111,11 +2524,30 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
   }, []);
 
   const submitStatus = useCallback(() => {
-    if (!statusItem || !basePath || !selectedChannelRef || !canEdit) return;
+    if (!statusItem || !basePath || !selectedChannelRef || !selectedMenu || !canEdit) return;
     if (statusChoice === 'SOLD_OUT' && !soldOutReason.trim()) {
       setFeedback({type: 'error', message: '设置人工沽清时必须填写原因。'});
       return;
     }
+    const expectedVersion = selectedMenu.version;
+    const operationId =
+      statusChoice === 'NORMAL'
+        ? OPERATIONS_ADMIN_OPERATION_IDS.restoreOperationsSalesMenuItemSale
+        : OPERATIONS_ADMIN_OPERATION_IDS.setOperationsSalesMenuItemSoldOut;
+    operationsLogger.info({
+      event: 'sales-menu.status',
+      phase: 'COMMAND_INPUT',
+      outcome: 'VERSION_BOUND',
+      operationId,
+      diagnostic: {
+        salesItemRef: String(statusItem.salesItemRef),
+        channelRef: String(selectedChannelRef),
+        itemVersion: statusItem.version,
+        menuVersion: expectedVersion,
+        expectedVersion,
+        expectedVersionSource: 'SALES_MENU_DETAIL',
+      },
+    });
     if (statusChoice === 'NORMAL') {
       setStatusItem(undefined);
       askConfirmation('确认恢复销售？', '恢复的是人工销售状态；库存自动不可售不会在此处恢复。', async () => {
@@ -2123,7 +2555,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
           () =>
             commands.restore(
               {...basePath, salesItemRef: statusItem.salesItemRef, channelRef: selectedChannelRef},
-              {confirm: true, expectedVersion: statusItem.version},
+              {confirm: true, expectedVersion},
             ),
           '销售状态已恢复为正常销售。',
         );
@@ -2134,7 +2566,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
       () =>
         commands.soldOut(
           {...basePath, salesItemRef: statusItem.salesItemRef, channelRef: selectedChannelRef},
-          {reason: soldOutReason.trim(), expectedVersion: statusItem.version},
+          {reason: soldOutReason.trim(), expectedVersion},
         ),
       '销售状态已设置为沽清。',
       () => setStatusItem(undefined),
@@ -2146,6 +2578,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
     commands,
     runCommand,
     selectedChannelRef,
+    selectedMenu,
     soldOutReason,
     statusChoice,
     statusItem,
@@ -2171,6 +2604,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
             title={feedback.message}
             closable
             onClose={() => setFeedback(undefined)}
+            {...testId(salesMenuTestIds.feedback)}
           />
         )}
         {!read.scopeReady ? (
@@ -2229,9 +2663,15 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                       value={read.mode}
                       onChange={value => read.setMode(value)}
                       options={[
-                        {label: '前台菜单', value: 'PUBLISHED'},
-                        {label: '草稿菜单', value: 'DRAFT'},
-                        {label: '操作记录', value: 'OPERATIONS'},
+                        {
+                          label: <span {...testId(salesMenuTestIds.mode('PUBLISHED'))}>前台菜单</span>,
+                          value: 'PUBLISHED',
+                        },
+                        {label: <span {...testId(salesMenuTestIds.mode('DRAFT'))}>草稿菜单</span>, value: 'DRAFT'},
+                        {
+                          label: <span {...testId(salesMenuTestIds.mode('OPERATIONS'))}>操作记录</span>,
+                          value: 'OPERATIONS',
+                        },
                       ]}
                       {...testId(salesMenuTestIds.modes)}
                     />
@@ -2247,7 +2687,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                         options={selectorItems.map(menu => ({
                           value: menu.salesMenuRef,
                           label: (
-                            <Space>
+                            <Space {...testId(salesMenuTestIds.menuOption(menu.salesMenuRef))}>
                               <span>{menu.name}</span>
                               <Typography.Text type="secondary">{menuStateLabel(menu)}</Typography.Text>
                             </Space>
@@ -2256,7 +2696,11 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                         onChange={value => read.selectMenu(value as Uuid)}
                         {...testId(salesMenuTestIds.menuSelector)}
                       />
-                      <Button onClick={() => setManagerOpen(true)} disabled={!selectedChannelRef}>
+                      <Button
+                        onClick={() => setManagerOpen(true)}
+                        disabled={!selectedChannelRef}
+                        {...testId(salesMenuTestIds.managerOpen)}
+                      >
                         管理菜单
                       </Button>
                       <Button
@@ -2267,6 +2711,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                           setCreateOpen(true);
                         }}
                         disabled={!canEdit || !selectedChannelRef}
+                        {...testId(salesMenuTestIds.menuCreate)}
                       >
                         新建菜单
                       </Button>
@@ -2292,70 +2737,28 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                     <Typography.Text type="secondary">
                       {salesMenuScheduleLabel(selectedMenu.draftSchedule)}
                     </Typography.Text>
-                    <Dropdown
-                      menu={{
-                        items: [
-                          {key: 'rename', label: '重命名', disabled: !canEdit},
-                          {key: 'copy', label: '复制', disabled: !canEdit},
-                          {
-                            key: 'activation',
-                            label: selectedMenu.activation?.status === 'ENABLED' ? '停用' : '启用',
-                            disabled: !canEdit,
-                          },
-                          {key: 'schedule', label: '生效与时段', disabled: !canEdit},
-                          {key: 'publish', label: '更新到前台', disabled: !canEdit},
-                          {type: 'divider'},
-                          {
-                            key: 'archive',
-                            label: '归档菜单',
-                            danger: true,
-                            disabled: !canEdit || selectedMenu.archived,
-                          },
-                        ],
-                        onClick: event => {
-                          if (event.key === 'rename') {
-                            setRenameName(selectedMenu.name);
-                            setRenameOpen(true);
-                          }
-                          if (event.key === 'copy') copyMenu();
-                          if (event.key === 'activation' && basePath && selectedChannelRef) {
-                            void runCommand(
-                              () =>
-                                commands.activate(
-                                  {...basePath, channelRef: selectedChannelRef},
-                                  {
-                                    status: selectedMenu.activation?.status === 'ENABLED' ? 'DISABLED' : 'ENABLED',
-                                    expectedVersion: selectedMenu.version,
-                                  },
-                                ),
-                              selectedMenu.activation?.status === 'ENABLED' ? '菜单已停用。' : '菜单已启用。',
-                            );
-                          }
-                          if (event.key === 'schedule') {
-                            setSchedule(selectedMenu.draftSchedule);
-                            setScheduleOpen(true);
-                          }
-                          if (event.key === 'publish') setPublishOpen(true);
-                          if (event.key === 'archive' && basePath) {
-                            askConfirmation(
-                              '归档当前菜单？',
-                              '归档只会停止当前菜单的管理使用，不会删除商品或历史操作记录。',
-                              async () => {
-                                await runCommand(
-                                  () => commands.archive(basePath, {expectedVersion: selectedMenu.version}),
-                                  '菜单已归档。',
-                                );
-                              },
-                            );
-                          }
-                        },
+                    <Button
+                      disabled={!canEdit}
+                      onMouseDown={event => (menuActionTriggerRef.current = event.currentTarget)}
+                      onClick={() => {
+                        setSchedule(selectedMenu.draftSchedule);
+                        setScheduleOpen(true);
                       }}
+                      {...testId(salesMenuTestIds.menuSchedule)}
                     >
-                      <Button onMouseDown={event => (menuActionTriggerRef.current = event.currentTarget)}>
-                        菜单动作 <DownOutlined />
+                      生效与时段
+                    </Button>
+                    {read.mode === 'DRAFT' && (
+                      <Button
+                        type="primary"
+                        disabled={!canEdit || selectedMenu.archived}
+                        onClick={() => setPublishOpen(true)}
+                        {...testId(salesMenuTestIds.menuPublish)}
+                      >
+                        更新到前台
                       </Button>
-                    </Dropdown>
-                    <Button icon={<ReloadOutlined />} onClick={() => read.refresh()}>
+                    )}
+                    <Button icon={<ReloadOutlined />} onClick={() => void read.refresh()}>
                       刷新
                     </Button>
                   </Space>
@@ -2368,7 +2771,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
               </Card>
             ) : (
               <Row gutter={[16, 16]} align="top">
-                <Col xs={24} lg={6}>
+                <Col xs={24} lg={6} style={{minWidth: 0}}>
                   <SalesMenuSectionPanel
                     read={read}
                     menu={selectedMenu}
@@ -2395,7 +2798,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                     }}
                   />
                 </Col>
-                <Col xs={24} lg={18}>
+                <Col xs={24} lg={18} style={{minWidth: 0}}>
                   {read.mode === 'DRAFT' && (
                     <DraftSalesItemTable
                       read={read}
@@ -2443,6 +2846,9 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
           setManagerOpen(false);
         }}
         onToggle={toggleMenu}
+        onRename={openRenameMenu}
+        onCopy={copyMenu}
+        onArchive={archiveMenu}
         canEdit={canEdit}
       />
       <SalesMenuCandidateDrawer
@@ -2465,6 +2871,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
         open={editorOpen}
         queryContext={queryContext}
         menuRef={selectedMenuRef}
+        menuVersion={selectedMenu?.version}
         commands={commands}
         onSave={saveItem}
         onClose={() => setEditorOpen(false)}
@@ -2478,6 +2885,9 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
       <SalesMenuItemDetailDrawer
         item={detailItem}
         open={Boolean(detailItem)}
+        queryContext={queryContext}
+        menuRef={selectedMenuRef}
+        channelRef={selectedChannelRef}
         onClose={() => setDetailItem(undefined)}
       />
 
@@ -2499,12 +2909,14 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
               onClick={() => void createMenu()}
               disabled={!createName.trim() || createLifecycle.submitting}
               loading={createLifecycle.submitting}
+              {...testId(salesMenuTestIds.menuCreateSubmit)}
             >
               创建菜单
             </Button>
           </Space>
         }
         {...adminDrawerSurfaceProps}
+        {...testId(salesMenuTestIds.menuCreateDrawer)}
       >
         <Input
           value={createName}
@@ -2515,6 +2927,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
           }}
           placeholder="请输入菜单名称"
           autoFocus
+          {...testId(salesMenuTestIds.menuCreateName)}
         />
       </Drawer>
       <Drawer
@@ -2532,15 +2945,17 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
             </Button>
             <Button
               type="primary"
-              disabled={!renameName.trim() || !basePath || !selectedMenu || renameLifecycle.submitting}
+              disabled={!renameName.trim() || !basePath || !menuActionTarget || renameLifecycle.submitting}
               loading={renameLifecycle.submitting}
               onClick={() => void renameMenu()}
+              {...testId(salesMenuTestIds.menuRenameSubmit)}
             >
               保存名称
             </Button>
           </Space>
         }
         {...adminDrawerSurfaceProps}
+        {...testId(salesMenuTestIds.menuRenameDrawer)}
       >
         <Input
           value={renameName}
@@ -2551,6 +2966,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
           }}
           placeholder="请输入菜单名称"
           autoFocus
+          {...testId(salesMenuTestIds.menuRenameName)}
         />
       </Drawer>
       <Modal
@@ -2562,7 +2978,10 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
         closable={!commands.isBusy}
         okText="保存"
         cancelText="取消"
-        okButtonProps={{disabled: !sectionName.trim() || !basePath || !selectedMenu || commands.isBusy}}
+        okButtonProps={{
+          disabled: !sectionName.trim() || !basePath || !selectedMenu || commands.isBusy,
+          ...testId(salesMenuTestIds.sectionSave),
+        }}
         cancelButtonProps={{disabled: commands.isBusy}}
         confirmLoading={commands.isBusy}
         onOk={() => {
@@ -2589,6 +3008,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
           onChange={event => setSectionName(event.target.value)}
           placeholder="请输入分区名称"
           autoFocus
+          {...testId(salesMenuTestIds.sectionName)}
         />
       </Modal>
       <Drawer
@@ -2613,6 +3033,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
               }
               loading={scheduleLifecycle.submitting}
               onClick={() => void saveSchedule()}
+              {...testId(salesMenuTestIds.scheduleSave)}
             >
               保存时段
             </Button>
@@ -2636,8 +3057,12 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
               scheduleLifecycle.markBusinessIntentChanged();
             }}
           >
-            <Radio value="ALL_DAY">全天</Radio>
-            <Radio value="DAILY_TIME_RANGE">每日时段</Radio>
+            <Radio value="ALL_DAY" {...testId(salesMenuTestIds.scheduleKind('ALL_DAY'))}>
+              全天
+            </Radio>
+            <Radio value="DAILY_TIME_RANGE" {...testId(salesMenuTestIds.scheduleKind('DAILY_TIME_RANGE'))}>
+              每日时段
+            </Radio>
           </Radio.Group>
           {schedule.kind === 'DAILY_TIME_RANGE' && (
             <Space>
@@ -2649,6 +3074,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                   scheduleLifecycle.setDirty(true);
                   scheduleLifecycle.markBusinessIntentChanged();
                 }}
+                {...testId(salesMenuTestIds.scheduleStart)}
               />
               <span>至</span>
               <Input
@@ -2659,6 +3085,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                   scheduleLifecycle.setDirty(true);
                   scheduleLifecycle.markBusinessIntentChanged();
                 }}
+                {...testId(salesMenuTestIds.scheduleEnd)}
               />
             </Space>
           )}
@@ -2688,14 +3115,19 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
         closable={!commands.isBusy}
         okText={statusChoice === 'SOLD_OUT' ? '设置为沽清' : '恢复正常销售'}
         cancelText="取消"
+        okButtonProps={{disabled: commands.isBusy, ...testId(salesMenuTestIds.statusSubmit)}}
         cancelButtonProps={{disabled: commands.isBusy}}
         confirmLoading={commands.isBusy}
         onOk={submitStatus}
       >
         <Space direction="vertical" size={12} style={{display: 'flex'}}>
           <Radio.Group value={statusChoice} onChange={event => setStatusChoice(event.target.value)}>
-            <Radio value="NORMAL">正常销售</Radio>
-            <Radio value="SOLD_OUT">人工沽清</Radio>
+            <Radio value="NORMAL" {...testId(salesMenuTestIds.statusChoice('NORMAL'))}>
+              正常销售
+            </Radio>
+            <Radio value="SOLD_OUT" {...testId(salesMenuTestIds.statusChoice('SOLD_OUT'))}>
+              人工沽清
+            </Radio>
           </Radio.Group>
           {statusChoice === 'SOLD_OUT' && (
             <Input.TextArea
@@ -2703,6 +3135,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
               onChange={event => setSoldOutReason(event.target.value)}
               placeholder="请填写人工沽清原因"
               rows={4}
+              {...testId(salesMenuTestIds.statusReason)}
             />
           )}
           <Typography.Text type="secondary">库存状态是独立事实；本弹窗不能恢复库存自动不可售。</Typography.Text>
@@ -2717,6 +3150,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
         closable={!commands.isBusy}
         okText="确认"
         cancelText="取消"
+        okButtonProps={{disabled: commands.isBusy, ...testId(salesMenuTestIds.confirmationSubmit)}}
         cancelButtonProps={{disabled: commands.isBusy}}
         confirmLoading={commands.isBusy}
         onOk={() => {

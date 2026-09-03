@@ -21,6 +21,7 @@ const adminCatalogPath = "contracts/catalog/admin-catalog.json";
 const frontendManifestPath = "contracts/policy/frontend-asset-carryover-manifest.json";
 const reportPath = "doc/evidence/platform/r5-u01-edge-placement-resolution.json";
 const problemComponentPath = "contracts/openapi/components/common/problem.schemas.json";
+const salesMenuTagPolicyPath = "contracts/policy/sales-menu-rtk-tag-policy.json";
 const targets = {
   errorsJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/EdgeProblemCode.java",
   r3CompatibilityJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CommercialGroupProblemCode.java",
@@ -225,6 +226,7 @@ function load(base = root) {
         : {...projected, databaseOperationBudget};
     })
     .sort((left, right) => left.operationId.localeCompare(right.operationId));
+  const salesMenuTagPolicyByOperation = validateSalesMenuTagPolicy(read(salesMenuTagPolicyPath, base), operations);
   assertRootOpenApiRouteRegistryExactSet(base, operations);
   const faceCounts = Object.fromEntries(["platform-admin", "operations-admin", "public"].map((face) => [face, operations.filter((operation) => operation.face === face).length]));
   if (JSON.stringify(faceCounts) !== JSON.stringify(catalog.denominator.faces)) fail("R5_EDGE_CODEGEN_FACE_COUNT");
@@ -232,10 +234,57 @@ function load(base = root) {
   if (codes.length !== errors.closure.totalActiveTargetCount) fail("R5_EDGE_CODEGEN_ERROR_COUNT");
   const activeCodeSet = new Set(codes);
   const codesByFace = Object.fromEntries(["platform-admin", "operations-admin", "public"].map((face) => [face, faceErrorCodes(catalog, face, activeCodeSet)]));
-  return { catalog, operations, faceCounts, codes, codesByFace, expectedOperationCount, calibrationReportDigest: budgetProjection.calibrationReportDigest };
+  return { catalog, operations, faceCounts, codes, codesByFace, expectedOperationCount, calibrationReportDigest: budgetProjection.calibrationReportDigest, salesMenuTagPolicyByOperation };
 }
 function sameSet(left, right) {
   return left.length === right.length && [...left].sort().every((value, index) => value === [...right].sort()[index]);
+}
+function validateSalesMenuTagDescriptor(operation, descriptor, collection) {
+  if (!descriptor || typeof descriptor !== "object" || typeof descriptor.kind !== "string") {
+    fail("R5_SALES_MENU_RTK_TAG_DESCRIPTOR_INVALID", `${operation.operationId}:${collection}`);
+  }
+  if (descriptor.kind === "static") {
+    if (typeof descriptor.id !== "string" || descriptor.id.trim() === "" || descriptor.id === "LIST") {
+      fail("R5_SALES_MENU_RTK_TAG_STATIC_ID_INVALID", `${operation.operationId}:${collection}`);
+    }
+    return;
+  }
+  const pathNames = descriptor.kind === "requestPath"
+    ? operation.openApi.pathParameters.map(parameter => parameter.name)
+    : descriptor.kind === "requestQuery"
+      ? operation.openApi.queryParameters.map(parameter => parameter.name)
+      : undefined;
+  if ((descriptor.kind !== "requestPath" && descriptor.kind !== "requestQuery")
+    || typeof descriptor.prefix !== "string" || descriptor.prefix.trim() === ""
+    || typeof descriptor.path !== "string" || descriptor.path.trim() === ""
+    || !pathNames.includes(descriptor.path)) {
+    fail("R5_SALES_MENU_RTK_TAG_REQUEST_PATH_INVALID", `${operation.operationId}:${collection}`);
+  }
+}
+function validateSalesMenuTagPolicy(policy, operations) {
+  if (policy?.kind !== "sales-menu-rtk-tag-policy") fail("R5_SALES_MENU_RTK_TAG_POLICY_KIND_INVALID");
+  if (policy?.tagType !== "salesMenu") fail("R5_SALES_MENU_RTK_TAG_TYPE_INVALID");
+  const salesMenuOperations = operations.filter((operation) => operation.face === "operations-admin" && operation.path.includes("/sales-menus"));
+  if (policy?.operationCount !== salesMenuOperations.length) fail("R5_SALES_MENU_RTK_TAG_OPERATION_COUNT_INVALID");
+  if (!Array.isArray(policy?.operations) || policy.operations.length !== salesMenuOperations.length) fail("R5_SALES_MENU_RTK_TAG_OPERATION_LIST_INVALID");
+  const operationById = new Map(salesMenuOperations.map((operation) => [operation.operationId, operation]));
+  const policyById = new Map();
+  for (const entry of policy.operations) {
+    const operation = operationById.get(entry?.operationId);
+    if (!operation) fail("R5_SALES_MENU_RTK_TAG_OPERATION_UNKNOWN", entry?.operationId || "MISSING");
+    if (policyById.has(operation.operationId)) fail("R5_SALES_MENU_RTK_TAG_OPERATION_DUPLICATE", operation.operationId);
+    if (!Array.isArray(entry.provides) || !Array.isArray(entry.invalidates)) fail("R5_SALES_MENU_RTK_TAG_OPERATION_SHAPE_INVALID", operation.operationId);
+    if (operation.method === "GET" && (entry.provides.length === 0 || entry.invalidates.length !== 0)) fail("R5_SALES_MENU_RTK_TAG_GET_SHAPE_INVALID", operation.operationId);
+    if (operation.method !== "GET" && entry.provides.length !== 0) fail("R5_SALES_MENU_RTK_TAG_MUTATION_PROVIDER_PRESENT", operation.operationId);
+    for (const descriptor of entry.provides) validateSalesMenuTagDescriptor(operation, descriptor, "provides");
+    for (const descriptor of entry.invalidates) validateSalesMenuTagDescriptor(operation, descriptor, "invalidates");
+    if (["stageOperationsSalesMenuAsset", "releaseOperationsSalesMenuStagedAsset"].includes(operation.operationId) && entry.invalidates.length !== 0) {
+      fail("R5_SALES_MENU_RTK_TAG_UNRELATED_INVALIDATION", operation.operationId);
+    }
+    policyById.set(operation.operationId, entry);
+  }
+  for (const operation of salesMenuOperations) if (!policyById.has(operation.operationId)) fail("R5_SALES_MENU_RTK_TAG_OPERATION_MISSING", operation.operationId);
+  return policyById;
 }
 function loadAdminCatalog(base = root) {
   const source = read(adminCatalogPath, base);
@@ -749,11 +798,15 @@ function tsFaceWithBudget(face, operations, codes, components) {
  * The request stays a FaceOperationRequest, so routes, methods, headers and
  * request-shape continue to come only from the accepted edge catalog.
  */
-function tsRtkEndpoint(operation) {
+function tsRtkEndpoint(operation, tagPolicyByOperation = new Map()) {
   const operationId = JSON.stringify(operation.operationId);
   const result = `FaceOperationContracts[${operationId}]["response"]`;
   const request = `FaceOperationRequest<${operationId}>`;
-  const tags = `[{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}]`;
+  const policy = tagPolicyByOperation.get(operation.operationId);
+  const tagKey = operation.method === "GET" ? "provides" : "invalidates";
+  const tags = policy
+    ? `resolveSalesMenuTags<TagTypes>(${JSON.stringify(policy[tagKey])} as const, request)`
+    : `[{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}]`;
   if (operation.method === "GET") {
     return `    ${operation.operationId}: build.query<${result}, ${request}>({\n      query: (request) => toWireRequest(request),\n      providesTags: (_result, _error, request) => ${tags},\n    })`;
   }
@@ -768,21 +821,27 @@ function tsRtkRequestHelper(operation) {
   const operationId = JSON.stringify(operation.operationId);
   return `    ${operation.operationId}: (pathParameters: FaceOperationContracts[${operationId}]["path"], options: FaceOperationOptions<${operationId}>): FaceOperationRequest<${operationId}> => ({\n      operationId: ${operationId},\n      method: ${JSON.stringify(operation.method)},\n      path: ${JSON.stringify(operation.path)},\n      pathParameters,\n      requiresSession: ${operation.openApi.requiresSession},\n      ...options,\n    })`;
 }
-function tsRtkFace(face, operations) {
+function tsRtkFace(face, operations, tagPolicyByOperation = new Map()) {
   const selected = operations.filter((operation) => operation.face === face);
   const faceType = faceTypeName(face);
   const source = `./${face === "platform-admin" ? "platform-edge" : face === "operations-admin" ? "operations-edge" : "public-edge"}`;
   const endpointFactory = `create${faceType}RtkEndpoints`;
   const requestHelper = `${faceType[0].toLowerCase()}${faceType.slice(1)}RtkRequest`;
-  return `// Generated from accepted R5 edge catalog; do not edit.\n\nimport type {BaseQueryFn, EndpointBuilder, FetchArgs, FetchBaseQueryError, FetchBaseQueryMeta} from "@reduxjs/toolkit/query";\nimport type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest} from ${JSON.stringify(source)};\n\ntype EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;\nexport type ${faceType}OperationId = keyof FaceOperationContracts;\nexport type ${faceType}RtkWireRequest = <I extends ${faceType}OperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};\n\n/**\n * Operation-shaped request constructors for RTK hooks. Consumers supply only\n * typed path parameters and operation options; catalog id, method and path are\n * frozen here rather than handwritten in pages.\n */\nexport const ${requestHelper} = {\n${selected.map(tsRtkRequestHelper).join(",\n")}\n} as const;\n\n/**\n * Operation-shaped RTK definitions generated from the face catalog.  The app\n * supplies only HTTP encoding; it cannot invent paths, methods or endpoint ids.\n */\nexport function ${endpointFactory}(\n  build: EndpointBuilder<EdgeBaseQuery, "wire", string>,\n  toWireRequest: ${faceType}RtkWireRequest,\n) {\n  return {\n${selected.map(tsRtkEndpoint).join(",\n")}\n  };\n}\n`;
+  const salesMenuSupport = face === "operations-admin" && tagPolicyByOperation.size > 0
+    ? `\nexport type SalesMenuRtkTagDescriptor =\n  | {kind: "static"; id: string}\n  | {kind: "requestPath"; prefix: string; path: string}\n  | {kind: "requestQuery"; prefix: string; path: string};\nfunction readSalesMenuTagPath(value: unknown, path: readonly string[]): unknown {\n  return path.reduce<unknown>((current, segment) => {\n    if (current === null || typeof current !== "object") return undefined;\n    return (current as Record<string, unknown>)[segment];\n  }, value);\n}\nfunction resolveSalesMenuTags<TagTypes extends ${faceType}RtkTagType>(\n  descriptors: readonly SalesMenuRtkTagDescriptor[],\n  request: {pathParameters: object; query?: object},\n): Array<{type: Extract<TagTypes, "salesMenu">; id: string}> {\n  const tags: Array<{type: Extract<TagTypes, "salesMenu">; id: string}> = [];\n  const seen = new Set<string>();\n  const add = (id: string) => {\n    if (id.trim() === "" || seen.has(id)) return;\n    seen.add(id);\n    tags.push({type: "salesMenu" as Extract<TagTypes, "salesMenu">, id});\n  };\n  for (const descriptor of descriptors) {\n    if (descriptor.kind === "static") add(descriptor.id);\n    else if (descriptor.kind === "requestPath") {\n      const value = readSalesMenuTagPath(request.pathParameters, descriptor.path.split("."));\n      if (typeof value === "string") add(descriptor.prefix + ":" + value);\n    } else {\n      const value = readSalesMenuTagPath(request.query, descriptor.path.split("."));\n      if (typeof value === "string") add(descriptor.prefix + ":" + value);\n    }\n  }\n  return tags;\n}\n`
+    : "";
+  return `// Generated from accepted R5 edge catalog; do not edit.\n\nimport type {BaseQueryFn, EndpointBuilder, FetchArgs, FetchBaseQueryError, FetchBaseQueryMeta} from "@reduxjs/toolkit/query";\nimport type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest} from ${JSON.stringify(source)};\n\ntype EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;\nexport type ${faceType}OperationId = keyof FaceOperationContracts;\nexport type ${faceType}RtkWireRequest = <I extends ${faceType}OperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};\n${salesMenuSupport}\n/**\n * Operation-shaped request constructors for RTK hooks. Consumers supply only\n * typed path parameters and operation options; catalog id, method and path are\n * frozen here rather than handwritten in pages.\n */\nexport const ${requestHelper} = {\n${selected.map(tsRtkRequestHelper).join(",\n")}\n} as const;\n\n/**\n * Operation-shaped RTK definitions generated from the face catalog.  The app\n * supplies only HTTP encoding; it cannot invent paths, methods or endpoint ids.\n */\nexport function ${endpointFactory}(\n  build: EndpointBuilder<EdgeBaseQuery, "wire", string>,\n  toWireRequest: ${faceType}RtkWireRequest,\n) {\n  return {\n${selected.map((operation) => tsRtkEndpoint(operation, tagPolicyByOperation)).join(",\n")}\n  };\n}\n`;
 }
-function tsRtkFaceWithFlexibleTagTypes(face, operations) {
+function tsRtkFaceWithFlexibleTagTypes(face, operations, tagPolicyByOperation = new Map()) {
   const faceType = faceTypeName(face);
   const endpointFactory = `create${faceType}RtkEndpoints`;
-  return tsRtkFace(face, operations)
+  const tagTypeUnion = face === "platform-admin"
+    ? `"wire" | "catalogInventory"`
+    : `"wire" | "catalogInventory" | "salesMenu"`;
+  return tsRtkFace(face, operations, tagPolicyByOperation)
     .replace(
       `export type ${faceType}RtkWireRequest = <I extends ${faceType}OperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};\n`,
-      `export type ${faceType}RtkWireRequest = <I extends ${faceType}OperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};\nexport type ${faceType}RtkTagType = "wire" | "catalogInventory";\n`,
+      `export type ${faceType}RtkWireRequest = <I extends ${faceType}OperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};\nexport type ${faceType}RtkTagType = ${tagTypeUnion};\n`,
     )
     .replace(
       `export function ${endpointFactory}(\n  build: EndpointBuilder<EdgeBaseQuery, "wire", string>,`,
@@ -913,7 +972,7 @@ function capabilityOutputs(base) {
   ];
 }
 function expected(base = root) {
-  const { operations, faceCounts, codes, codesByFace, expectedOperationCount, calibrationReportDigest } = load(base);
+  const { operations, faceCounts, codes, codesByFace, expectedOperationCount, calibrationReportDigest, salesMenuTagPolicyByOperation } = load(base);
   const components = generatedWireComponents(base);
   return new Map([
     [targets.errorsJava, javaErrors(codes)],
@@ -923,7 +982,7 @@ function expected(base = root) {
     [targets.operationsTs, tsFaceWithBudget("operations-admin", operations, codesByFace["operations-admin"], components)],
     [targets.publicTs, tsFaceWithBudget("public", operations, codesByFace.public, components)],
     [targets.platformRtkTs, tsRtkFaceWithFlexibleTagTypes("platform-admin", operations)],
-    [targets.operationsRtkTs, tsRtkFaceWithFlexibleTagTypes("operations-admin", operations)],
+    [targets.operationsRtkTs, tsRtkFaceWithFlexibleTagTypes("operations-admin", operations, salesMenuTagPolicyByOperation)],
     [targets.publicRtkTs, tsRtkFaceWithFlexibleTagTypes("public", operations)],
     [targets.platformAdminCatalogTs, tsAdminCatalog("platform-admin", base)],
     [targets.operationsAdminCatalogTs, tsAdminCatalog("operations-admin", base)],
@@ -949,7 +1008,7 @@ function writeOutputs(base = root) {
 }
 function checkOutputs(base = root) {
   const outputs = expected(base);
-  const { operations, codesByFace } = load(base);
+  const { operations, codesByFace, salesMenuTagPolicyByOperation } = load(base);
   const components = generatedWireComponents(base);
   const tsFaces = new Map([
     [targets.platformTs, "platform-admin"],
@@ -986,7 +1045,7 @@ function checkOutputs(base = root) {
     if (!fs.existsSync(actual)) fail("R5_EDGE_RTK_GENERATED_MISSING", relative);
     const source = fs.readFileSync(actual, "utf8");
     for (const operation of operations.filter((candidate) => candidate.face === face)) {
-      const endpoint = tsRtkEndpoint(operation);
+      const endpoint = tsRtkEndpoint(operation, face === "operations-admin" ? salesMenuTagPolicyByOperation : new Map());
       if (!source.includes(endpoint)) fail("R5_EDGE_RTK_ENDPOINT_MISSING", `${relative}:${operation.operationId}`);
       const helper = tsRtkRequestHelper(operation);
       if (!source.includes(helper)) fail("R5_EDGE_RTK_REQUEST_HELPER_MISSING", `${relative}:${operation.operationId}`);
@@ -1044,6 +1103,28 @@ function selfTest() {
       if (error.code !== "R5_EDGE_CODEGEN_OPERATION_COUNT") throw error;
     }
     fs.writeFileSync(path.join(scratch, reportPath), fs.readFileSync(path.join(root, reportPath)));
+    const salesMenuPolicy = read(salesMenuTagPolicyPath, scratch);
+    salesMenuPolicy.operations = salesMenuPolicy.operations.slice(1);
+    salesMenuPolicy.operationCount -= 1;
+    fs.writeFileSync(path.join(scratch, salesMenuTagPolicyPath), normalized(salesMenuPolicy));
+    try {
+      load(scratch);
+      fail("R5_SALES_MENU_RTK_TAG_OPERATION_DENOMINATOR_RED_NOT_DETECTED");
+    } catch (error) {
+      if (error.code !== "R5_SALES_MENU_RTK_TAG_OPERATION_COUNT_INVALID") throw error;
+    }
+    fs.writeFileSync(path.join(scratch, salesMenuTagPolicyPath), fs.readFileSync(path.join(root, salesMenuTagPolicyPath)));
+    const globalTagPolicy = read(salesMenuTagPolicyPath, scratch);
+    const globalTagEntry = globalTagPolicy.operations.find((entry) => entry.operationId === "getOperationsSalesMenus");
+    globalTagEntry.provides.push({kind: "static", id: "LIST"});
+    fs.writeFileSync(path.join(scratch, salesMenuTagPolicyPath), normalized(globalTagPolicy));
+    try {
+      load(scratch);
+      fail("R5_SALES_MENU_RTK_GLOBAL_TAG_RED_NOT_DETECTED");
+    } catch (error) {
+      if (error.code !== "R5_SALES_MENU_RTK_TAG_STATIC_ID_INVALID") throw error;
+    }
+    fs.writeFileSync(path.join(scratch, salesMenuTagPolicyPath), fs.readFileSync(path.join(root, salesMenuTagPolicyPath)));
     const capabilityRequirementCatalogSource = fs.readFileSync(path.join(scratch, targets.workspaceCapabilityRequirementCatalogJava), "utf8");
     for (const capability of ["EDIT_HEAD_COMPANY_CATALOG", "EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"]) {
       if (!capabilityRequirementCatalogSource.includes(`WorkspaceAuthorizationCatalog.CapabilityKeys.${capability}`)) {
@@ -1232,7 +1313,7 @@ function selfTest() {
     bodyRequest.required = false;
     fs.writeFileSync(path.join(scratch, bodyPathFile), normalized(bodyPathDocument));
     try { checkOutputs(scratch); fail("R5_EDGE_REQUEST_REQUIRED_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_TS_OPERATION_CONTRACT_MISSING") throw error; }
-    process.stdout.write("R5_EDGE_CODEGEN_EDIT_CAPABILITY_CONSTANT=PASS\nR5_EDGE_CODEGEN_SELF_TEST=PASS\nRED=R5_EDGE_CODEGEN_OPERATION_DENOMINATOR,R5_EDGE_CODEGEN_REPORT_DENOMINATOR,R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT,R5_EDGE_CODEGEN_OPENAPI_SECURITY_REQUIRED,R5_EDGE_WIRE_UNTYPED_MAP,R5_EDGE_CODEGEN_DRIFT,R5_EDGE_WIRE_MANUAL_FILE,R5_EDGE_TS_GENERATED_DRIFT,R5_EDGE_RTK_ENDPOINT_MISSING,R5_EDGE_RTK_REQUEST_HELPER_MISSING,R5_EDGE_TS_OPERATION_CONTRACT_MISSING,R5_EDGE_TS_UNTYPED_DTO,R5_ADMIN_CATALOG_PAGE_SET_DRIFT,R5_ADMIN_CATALOG_ACTION_SET_DRIFT,R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT,R5_ADMIN_CATALOG_PAGE_KIND_SET_DRIFT,R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT,R5_ADMIN_CATALOG_UX_DRIFT,R5_ADMIN_CATALOG_ACTION_BINDING_DRIFT,R5_ADMIN_CATALOG_NAVIGATION_BINDING_DRIFT,R5_ADMIN_CATALOG_ROLE_HOME_INVALID,R5_ADMIN_CATALOG_ROLE_HOME_WORKSPACE_REQUIREMENT_RED,R5_EDGE_TS_FACE_CATALOG_LEAK,R5_EDGE_TS_PROBLEM_CODE_FACE_DRIFT,R5_EDGE_WIRE_REFERENCE_FRAGMENT_MISSING,R5_EDGE_CODEGEN_OPENAPI_SUCCESS_STATUS_DRIFT,P3_C_PAGE_KEY_REQUEST,R5_EDGE_REQUEST_REQUIRED\n");
+    process.stdout.write("R5_EDGE_CODEGEN_EDIT_CAPABILITY_CONSTANT=PASS\nR5_EDGE_CODEGEN_SELF_TEST=PASS\nRED=R5_EDGE_CODEGEN_OPERATION_DENOMINATOR,R5_EDGE_CODEGEN_REPORT_DENOMINATOR,R5_SALES_MENU_RTK_TAG_OPERATION_DENOMINATOR,R5_SALES_MENU_RTK_TAG_STATIC_ID_INVALID,R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT,R5_EDGE_CODEGEN_OPENAPI_SECURITY_REQUIRED,R5_EDGE_WIRE_UNTYPED_MAP,R5_EDGE_CODEGEN_DRIFT,R5_EDGE_WIRE_MANUAL_FILE,R5_EDGE_TS_GENERATED_DRIFT,R5_EDGE_RTK_ENDPOINT_MISSING,R5_EDGE_RTK_REQUEST_HELPER_MISSING,R5_EDGE_TS_OPERATION_CONTRACT_MISSING,R5_EDGE_TS_UNTYPED_DTO,R5_ADMIN_CATALOG_PAGE_SET_DRIFT,R5_ADMIN_CATALOG_ACTION_SET_DRIFT,R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT,R5_ADMIN_CATALOG_PAGE_KIND_SET_DRIFT,R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT,R5_ADMIN_CATALOG_UX_DRIFT,R5_ADMIN_CATALOG_ACTION_BINDING_DRIFT,R5_ADMIN_CATALOG_NAVIGATION_BINDING_DRIFT,R5_ADMIN_CATALOG_ROLE_HOME_INVALID,R5_ADMIN_CATALOG_ROLE_HOME_WORKSPACE_REQUIREMENT_RED,R5_EDGE_TS_FACE_CATALOG_LEAK,R5_EDGE_TS_PROBLEM_CODE_FACE_DRIFT,R5_EDGE_WIRE_REFERENCE_FRAGMENT_MISSING,R5_EDGE_CODEGEN_OPENAPI_SUCCESS_STATUS_DRIFT,P3_C_PAGE_KEY_REQUEST,R5_EDGE_REQUEST_REQUIRED\n");
   } finally { fs.rmSync(scratch, { recursive: true, force: true }); }
 }
 try {

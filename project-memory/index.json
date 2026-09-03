@@ -2056,6 +2056,219 @@
       ]
     },
     {
+      "id": "operations.ui-testid-preflight-before-l2",
+      "path": "project-memory/operations/ui-testid-preflight-before-l2.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "testing",
+          "review"
+        ],
+        "domains": [
+          "admin-ui",
+          "platform"
+        ],
+        "consumerFaces": [
+          "operations-admin"
+        ],
+        "owners": [
+          "frontend-platform"
+        ],
+        "impacts": [
+          "governance",
+          "evidence",
+          "memory"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "L2_UI_DESIGN_AND_TESTID_PREFLIGHT",
+        "L2_SCRIPT_BLOCKED_UNTIL_UI_PREFLIGHT",
+        "L2_TESTID_MUST_TARGET_ACTUAL_CONTROL",
+        "IMPLEMENTATION_DESIGN_MUST_RECORD_UI_PREFLIGHT",
+        "UI_INTERACTION_DESIGN_MUST_ENUMERATE_TEST_CONTROLS"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "L2_UI_DESIGN_AND_TESTID_PREFLIGHT",
+          "path": "doc/platform/browser-l2-execution-standard.md",
+          "anchor": "### 3.1 · L2 脚本开发前 UI/testId 前置复核"
+        },
+        {
+          "assertionKey": "L2_SCRIPT_BLOCKED_UNTIL_UI_PREFLIGHT",
+          "path": "doc/platform/implementation-task-template.md",
+          "anchor": "━━ L2 脚本开发前 UI/testId 前置门(强制)━━"
+        },
+        {
+          "assertionKey": "L2_TESTID_MUST_TARGET_ACTUAL_CONTROL",
+          "path": "doc/platform/frontend-coding-standard.md",
+          "anchor": "#### 3-K-9 · L2 自动化前 UI/testId 可测性前置"
+        },
+        {
+          "assertionKey": "IMPLEMENTATION_DESIGN_MUST_RECORD_UI_PREFLIGHT",
+          "path": "doc/decisions/templates/implementation-design-template.md",
+          "anchor": "## 3a · L2 脚本开发前 UI/testId 前置复核（UI-bearing 或 L2 适用时强制）"
+        },
+        {
+          "assertionKey": "UI_INTERACTION_DESIGN_MUST_ENUMERATE_TEST_CONTROLS",
+          "path": "doc/decisions/templates/ui-interaction-design-template.md",
+          "anchor": "#### L2/自动化前控件 testId 清单（适用 screen 强制）"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/templates/implementation-design-template.md",
+        "doc/decisions/templates/ui-interaction-design-template.md",
+        "doc/platform/browser-l2-execution-standard.md",
+        "doc/platform/frontend-coding-standard.md",
+        "doc/platform/implementation-task-template.md"
+      ]
+    },
+    {
+      "id": "operations.l2-read-model-settle-before-control-binding",
+      "path": "project-memory/operations/l2-read-model-settle-before-control-binding.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "testing",
+          "review"
+        ],
+        "domains": [
+          "admin-ui",
+          "platform"
+        ],
+        "consumerFaces": [
+          "operations-admin"
+        ],
+        "owners": [
+          "frontend-platform"
+        ],
+        "impacts": [
+          "runtime",
+          "evidence",
+          "governance"
+        ],
+        "triggers": [
+          "failure",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "L2_WAITS_FOR_EXACT_OWNER_READ_MODEL",
+        "CONTROL_BINDING_FOLLOWS_RENDERED_DATA",
+        "NO_ARBITRARY_WAIT_FOR_UI_SETTLE",
+        "READ_MODEL_RACE_IS_NOT_FIXED_BY_TESTID_RELAXATION"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "L2_WAITS_FOR_EXACT_OWNER_READ_MODEL",
+          "path": "project-memory/operations/l2-read-model-settle-before-control-binding.md",
+          "anchor": "# L2 控件绑定前必须等待精确 owner read-model 收敛"
+        },
+        {
+          "assertionKey": "CONTROL_BINDING_FOLLOWS_RENDERED_DATA",
+          "path": "apps/frontend/operations-admin/src/tests/l2/sales-menu.spec.ts",
+          "anchor": "    checkpoint: 'SELECTED_MENU_READ_MODEL_READY',"
+        },
+        {
+          "assertionKey": "NO_ARBITRARY_WAIT_FOR_UI_SETTLE",
+          "path": "project-memory/operations/l2-read-model-settle-before-control-binding.md",
+          "anchor": "# L2 控件绑定前必须等待精确 owner read-model 收敛"
+        },
+        {
+          "assertionKey": "READ_MODEL_RACE_IS_NOT_FIXED_BY_TESTID_RELAXATION",
+          "path": "project-memory/operations/ui-testid-preflight-before-l2.md",
+          "anchor": "# L2 脚本前 UI/testId 前置门"
+        }
+      ],
+      "sourceRefs": [
+        "apps/frontend/operations-admin/src/tests/l2/sales-menu.spec.ts",
+        "project-memory/operations/l2-read-model-settle-before-control-binding.md",
+        "project-memory/operations/ui-testid-preflight-before-l2.md"
+      ]
+    },
+    {
+      "id": "operations.owner-cas-version-source",
+      "path": "project-memory/operations/owner-cas-version-source.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "testing",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "admin-ui",
+          "platform"
+        ],
+        "consumerFaces": [
+          "operations-admin",
+          "platform-admin"
+        ],
+        "owners": [
+          "backend",
+          "frontend-platform"
+        ],
+        "impacts": [
+          "runtime",
+          "contract",
+          "evidence"
+        ],
+        "triggers": [
+          "implementation",
+          "failure",
+          "review"
+        ]
+      },
+      "assertions": [
+        "COMMAND_EXPECTED_VERSION_MUST_MATCH_OWNER_AGGREGATE",
+        "ROW_VERSION_IS_NOT_AGGREGATE_CAS_VERSION",
+        "FRONTEND_COMMAND_USES_OWNER_READ_VERSION",
+        "VERSION_CONFLICT_IS_NOT_FIXED_BY_RETRY"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "COMMAND_EXPECTED_VERSION_MUST_MATCH_OWNER_AGGREGATE",
+          "path": "project-memory/operations/owner-cas-version-source.md",
+          "anchor": "# owner CAS 版本必须来自 CAS 目标聚合"
+        },
+        {
+          "assertionKey": "COMMAND_EXPECTED_VERSION_MUST_MATCH_OWNER_AGGREGATE",
+          "path": "apps/backend/catering-business-server/modules/sales-menu/src/main/java/com/catering/v2s/salesmenu/application/SalesMenuOwnerService.java",
+          "anchor": "    public SalesMenuReadback.Command updateItem(SalesMenuOwnerApi.ItemUpdateCommand command) {"
+        },
+        {
+          "assertionKey": "ROW_VERSION_IS_NOT_AGGREGATE_CAS_VERSION",
+          "path": "apps/backend/catering-business-server/modules/sales-menu/src/main/java/com/catering/v2s/salesmenu/infrastructure/JdbcSalesMenuRepository.java",
+          "anchor": "    public boolean compareAndSetVersion(SalesMenuTarget target, long expectedVersion) {"
+        },
+        {
+          "assertionKey": "FRONTEND_COMMAND_USES_OWNER_READ_VERSION",
+          "path": "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx",
+          "anchor": "        expectedVersionSource: 'SALES_MENU_DETAIL',"
+        },
+        {
+          "assertionKey": "VERSION_CONFLICT_IS_NOT_FIXED_BY_RETRY",
+          "path": "project-memory/operations/owner-cas-version-source.md",
+          "anchor": "# owner CAS 版本必须来自 CAS 目标聚合"
+        }
+      ],
+      "sourceRefs": [
+        "apps/backend/catering-business-server/modules/sales-menu/src/main/java/com/catering/v2s/salesmenu/application/SalesMenuOwnerService.java",
+        "apps/backend/catering-business-server/modules/sales-menu/src/main/java/com/catering/v2s/salesmenu/infrastructure/JdbcSalesMenuRepository.java",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx",
+        "project-memory/operations/owner-cas-version-source.md"
+      ]
+    },
+    {
       "id": "operations.verification-governance",
       "path": "project-memory/operations/verification-governance.md",
       "layer": "routed",

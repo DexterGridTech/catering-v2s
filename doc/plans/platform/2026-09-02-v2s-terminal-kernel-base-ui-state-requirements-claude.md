@@ -233,11 +233,14 @@ PartitionState = { contentSets: Record<DisplayMode, ContentSet> }   // 键是闭
 
 ### 4.2 catalog —— 只答"能显示什么"
 
+🔴 **2026-09-02 变更**:`containerKey` 改为 **`containerKeys: readonly ContainerKey[]`,允许为空**。
+理由见下方 §4.2a。
+
 ```
 CatalogEntry = {
     partKey: PartKey
     rendererKey: string
-    containerKey: ContainerKey
+    containerKeys: readonly ContainerKey[]     // 🔴 列表,允许 []
     displayModes:  readonly DisplayMode[]
     workspaces:    readonly WorkspaceKey[]
     instanceModes: readonly RuntimeInstanceMode[]
@@ -257,6 +260,31 @@ CatalogEntry = {
 
 **什么会推翻"不做写入门"**:若出现"顾客屏绝不能显示收银界面"这类**安全级**约束,
 就该做成写入门并配红向量。当前没有这样的需求陈述。
+
+### 4.2a 🔴 `containerKeys` 列表化(2026-09-02 裁决,取代首版的必填标量)
+
+**首版把 `containerKey` 写成必填标量,那是错的。** 三条事实:
+
+1. **它不是放置机制** ✅ —— `showScreenCommand` 的载荷自带 `containerKey`,
+   actor 直接写 `payload.containerKey`,**从不查 catalog**。
+   catalog 里这个字段的**唯一消费者**是 `selectAvailableParts` 的过滤。
+2. **形状与另外三个维度不对称** —— `displayModes` / `workspaces` / `instanceModes` 都是非空闭集**列表**,
+   唯独它是标量。凭什么一个 part 能在两个 workspace 可用,却只能在一个容器可用?
+3. 🔴 **只作为层用的 part(如 alert)在零个容器里可用** —— 这对列表是自然值 `[]`,
+   对必填标量**无法表达**,只能造假值。
+   POC 造了 `'overlay.alert'`,那个假值随后被拿去做 `id.startsWith(...)`,变成真实的误判 bug。
+   **假值不是症状,是"用标量表达一个本该是集合的东西"的必然产物。**
+
+**改动**:字段改列表;`selectAvailableParts` 的过滤由 `=== containerKey` 改 `.includes(containerKey)`
+⇒ 空数组天然不匹配任何容器,**层专用 part 不进枚举从"约定"变成数据结构的直接结果**。
+
+⚠️ **`Reflect.ownKeys` 的精确相等校验保持不变** —— 字段永远在,不得以放宽它为代价。
+⚠️ **与另外三个维度的唯一差异必须显式注释**:那三个校验为**非空**
+(`displayModes: []` 的 part 永远显示不了,是无意义值),而 **`containerKeys: []` 有意义**。
+这处差异是刻意的,防止后来的人"顺手统一"回去。
+
+**为什么现在改**:ui-state 目前**零生产消费者**,render 尚未开工
+⇒ 这是该改动在项目生命周期里**最便宜的时刻**,每晚一天成本单调上升。
 
 ### 4.3 命令面
 
@@ -411,6 +439,9 @@ export const orderNo = defineUiVariable<string>('order.no', {
 | A-12 | 本包源码零 React / RN 依赖 | 任一源文件 import react ⇒ 必须变红(骨架 §10 已有此门) |
 | A-13 | 本包不存在 `readyToEnter` / `indexInContainer` / 队列解析符号 | 重新引入 ⇒ 必须变红 |
 
+| A-19 | `containerKeys: []` 的 part 不出现在任何真实容器的 `selectAvailableParts` 结果里 | 给它填任一真实容器键 ⇒ 必须变红 |
+| A-20 | `containerKeys` 允许 `[]`,而另外三个维度仍拒空数组 | 把 `containerKeys` 也校验成非空,或把另三个放宽为可空 ⇒ 必须变红 |
+| A-21 | `UiCatalogEntry` 的 `Reflect.ownKeys` 校验**仍是精确相等** | 放宽为子集判定 ⇒ 必须变红 |
 | A-16 | 在 MAIN 分区 `showScreen` 后,用 BRANCH 分区读 ⇒ 空;变量同理 | 把两个分区拍平成一份 slice ⇒ 必须变红 |
 | A-17 | 本包 slice 全部由 `createSlice` 产出;包内**零**手写 action type 常量 | 引入一个 `@@` 前缀的手写 action type 常量 ⇒ 必须变红 |
 | A-18 | 本包**不定义**任何自有的分区键生成/路由实现,只消费 state 的 workspace 三件套 | 包内出现自造的分区键拼接或 action 路由 ⇒ 必须变红(公共导出精确集 A-11 亦覆盖) |
@@ -458,6 +489,7 @@ export const orderNo = defineUiVariable<string>('order.no', {
 | D-K | 容器缺省时由渲染侧落 default 空页面 | Dexter 裁定;本包不引入任何首屏/默认内容屏机制 |
 | D-L | 🔴 **内容集与变量都按 workspace 分区** | 单屏 SLAVE 接一次电源即跨 workspace(`resolveWorkspace` + `resolvePowerRoleTarget`),两侧状态必须隔离。**推翻本文首版的"只落一份 slice"** |
 | D-M | 分区不自造,用 state 的 workspace 三件套 | 与 `requestLedger` 用 instanceMode 维同源;本包将是 workspace 维的**第一个真实生产消费者** |
+| D-O | 🔴 `containerKeys` 列表化,允许 `[]` | 它不是放置机制只是枚举过滤;四维度形状应统一;层专用 part 的"零容器"只有列表能正面表达;标量必然逼出假值,而假值在 POC 已造成真实 bug。零消费者的现在是最便宜时刻 |
 | D-N | slice 一律用 RTK `createSlice`,保留 reducer 内类型守卫 | 2026-09-02 整改后 kernel 已统一该形态,手写 action type 常量零残留 |
 
 ---

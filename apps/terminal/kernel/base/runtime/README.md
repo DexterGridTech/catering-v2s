@@ -20,12 +20,12 @@ topology/adapter 包负责。
 ```text
 src/
   application/   createRuntime、四阶段生命周期接线、模块 descriptor
-  foundations/   拓扑解析、dispatcher、lifecycle emitter、journal、错误归一化
+  foundations/   拓扑解析、dispatcher、lifecycle emitter、journal、资源注册表、错误归一化
   features/      runtime initialize、instance-mode 与 request-ledger command/actor/slice
   selectors/     instance-mode 与 request execution view selector
   types/         command、actor、execution、requestLedger、peer、journal、limits、module、runtime
-  testing/       仅测试资源释放接缝，不是生产能力
-  index.ts       唯一公开面（当前 63 项）
+  testing/       仅测试接缝：资源释放与 state 同步读取，不是生产能力
+  index.ts       唯一公开面（当前 64 项）
 test/            runtime 行为与类型夹具（test 目录已纳入 tsc）
 ```
 
@@ -69,8 +69,13 @@ runtime 才进入 `started`；任何阶段失败都会进入不可继续的 `fai
 ## 4 · 状态、角色、request ledger 与 reset
 
 runtime facade 的 `getState`/`getStore` 只暴露 Redux 原生根，created/starting 阶段不可用；
-module/actor context 在 state runtime 建成后直接读取它。状态订阅若在回调中派发命令，模块
-必须自己提供幂等判据，runtime 不替业务发明幂等键。
+module/actor context 在 state runtime 建成后直接读取它。只读订阅通过
+`subscribe(listener)` 暴露，不要求调用方传入 store；它对 `starting`、`started`、`failed`
+状态转变以及 started 后的同步 Redux state dispatch 同步通知。订阅可以在 start 前建立，
+不会立即回调；进入 failed 后先完成最终一次 `failed` 通知，再关闭 facade 订阅，之后的新订阅
+是 no-op。退订幂等，测试可通过退订后的真实 state command 观察通知计数不再增加。消费侧应
+组合既有 `status`、`getState` 与 `subscribe` 三件套，不应把 `getStore` 当作读侧接缝。
+状态订阅若在回调中派发命令，模块必须自己提供幂等判据，runtime 不替业务发明幂等键。
 
 instance-mode 是本包的角色 slice：`owner-only`、`isolated`、进程内角色值可持久化；角色切换
 先写角色字段，提交成功后再派发内部 `instance-mode-changed` command。request ledger 由
@@ -133,7 +138,8 @@ runtime 的角色提交后通知是内部 `runtimeInstanceModeChangedCommand`，
 并在角色字段成功写入后派发。display-context 与 request-ledger 等消费者各自注册 actor，
 不注册回调、不接收写能力，也不恢复已退役的 `RuntimeRoleChangeEffect`/`roleChangeEffects`。
 
-`RuntimeModuleContext.registerResource` 是模块安装期登记测试与未来 teardown 资源的唯一接缝；
-当前 Runtime 没有生产 `stop`/`dispose`，因此生产电源订阅的释放依赖进程退出，测试释放只用于
-隔离测试资源。`start()`、模块 context 的 `getState` 与 actor context 的 `getState` 仍按各自
-阶段契约执行，context 读取不受 runtime 门面 created/starting 限制。
+`RuntimeModuleContext.registerResource` 是模块安装期登记未来 teardown 资源的唯一接缝；资源
+注册表本身是生产设施，`src/testing` 只保留测试读取/释放接缝。当前 Runtime 没有生产
+`stop`/`dispose`，因此生产电源订阅与 facade 订阅的释放依赖进程退出，测试释放只用于隔离
+测试资源。`start()`、模块 context 的 `getState` 与 actor context 的 `getState` 仍按各自阶段
+契约执行，context 读取不受 runtime 门面 created/starting 限制。

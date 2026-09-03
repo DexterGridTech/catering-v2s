@@ -202,6 +202,15 @@ try {
   )
 
   withMutation(
+    'src/types/content.ts',
+    source => `${source}\ntype LeakedCatalogContainerKeys = {containerKeys: readonly string[]}\n`,
+    report => {
+      printVector('UI_STATE_RED_CATALOG_CONTAINER_KEYS_IN_STATE', report)
+      assertVector(report, ['ui-state-catalog-state-boundary'])
+    },
+  )
+
+  withMutation(
     'src/foundations/catalog.ts',
     source => source.replace("  'description',\n] as const", "  'description',\n  'unexpected',\n] as const"),
     report => {

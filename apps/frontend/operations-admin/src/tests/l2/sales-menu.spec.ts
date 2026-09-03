@@ -6,7 +6,7 @@ import {CATALOG_INVENTORY_OPERATIONS} from '../../app/api/generated/catalog-inve
 import {OPERATIONS_ADMIN_OPERATIONS} from '../../app/api/generated/operations-edge';
 import {PUBLIC_OPERATIONS} from '../../app/api/generated/public-edge';
 import {salesMenuTestIds} from '../../features/sales-menu/salesMenuTestIds';
-import {selectOperationsDataScope, selectOperationsOption, visibleOperationsMenuItem} from './operationsL2';
+import {selectOperationsDataScope, selectOperationsOption} from './operationsL2';
 
 type JsonObject = Record<string, unknown>;
 type SalesMenuCase = {
@@ -85,6 +85,7 @@ type OwnerCase = JsonObject & {
   itemName?: string;
   displayName?: string;
   soldOutReason?: string;
+  mode?: string;
   createMenuName?: string;
   createSectionName?: string;
   renameSectionName?: string;
@@ -106,6 +107,11 @@ type CaseRuntime = {
   row: SalesMenuCase;
   facts: OwnerCase;
   observations: OperationObservation[];
+};
+type SignInProfile = {
+  loginNameEnv: string;
+  passwordEnv: string;
+  roleLabelEnv: string;
 };
 
 function requiredEnvironment(name: string): string {
@@ -279,6 +285,23 @@ function appendJoinEvent(value: Record<string, unknown>): void {
   appendFileSync(filePath, `${JSON.stringify(value)}\n`, {mode: 0o600});
 }
 
+function appendDebugEvent(value: Record<string, unknown>): void {
+  const filePath = process.env.R5_L2_DEBUG_EVENTS;
+  if (!filePath) return;
+  appendFileSync(filePath, `${JSON.stringify({at: new Date().toISOString(), ...value})}\n`, {mode: 0o600});
+}
+
+function frontendConsoleEvent(message: string): JsonObject | undefined {
+  const marker = '[operations-admin] ';
+  if (!message.startsWith(marker)) return undefined;
+  try {
+    const value = JSON.parse(message.slice(marker.length)) as unknown;
+    return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function installGeneratedL2Diagnostics(page: Page): Promise<void> {
   await page.route('**/*', async route => {
     if (!isGeneratedApiPath(new URL(route.request().url()).pathname)) {
@@ -296,13 +319,32 @@ function observeGeneratedResponses(page: Page): {drain: () => Promise<void>} {
     const runtime = activeRuntime;
     const caseContext = activeCaseContext;
     const actionContext = activeActionContext;
-    if (!runtime || !caseContext || !actionContext || !generatedOperationForRequest(request)) return;
+    const operation = generatedOperationForRequest(request);
+    if (!runtime || !caseContext || !actionContext || !operation) return;
     actionContextsByRequest.set(request, {runtime, actionId: actionContext.actionId});
+    appendDebugEvent({
+      kind: 'BROWSER_HTTP_REQUEST',
+      caseId: runtime.row.caseId,
+      scenarioId: runtime.row.scenarioId,
+      actionId: actionContext.actionId,
+      operationId: operation.operationId,
+      routeTemplate: operation.path,
+      method: request.method(),
+    });
   });
   page.on('response', response => {
     const operation = generatedOperationForRequest(response.request());
     const actionContext = actionContextsByRequest.get(response.request());
     if (!operation || !actionContext) return;
+    appendDebugEvent({
+      kind: 'BROWSER_HTTP_RESPONSE',
+      caseId: actionContext.runtime.row.caseId,
+      scenarioId: actionContext.runtime.row.scenarioId,
+      actionId: actionContext.actionId,
+      operationId: operation.operationId,
+      routeTemplate: operation.path,
+      status: response.status(),
+    });
     responseWrites.push(
       (async () => {
         const headers = await response.headers();
@@ -341,6 +383,21 @@ function observeGeneratedResponses(page: Page): {drain: () => Promise<void>} {
       })(),
     );
   });
+  page.on('requestfailed', request => {
+    const operation = generatedOperationForRequest(request);
+    const actionContext = actionContextsByRequest.get(request);
+    if (!operation && !actionContext) return;
+    appendDebugEvent({
+      kind: 'BROWSER_HTTP_FAILED',
+      caseId: actionContext?.runtime.row.caseId ?? activeCaseContext?.caseId ?? null,
+      scenarioId: actionContext?.runtime.row.scenarioId ?? activeCaseContext?.scenarioId ?? null,
+      actionId: actionContext?.actionId ?? activeActionContext?.actionId ?? null,
+      operationId: operation?.operationId ?? null,
+      routeTemplate: operation?.path ?? null,
+      pathname: new URL(request.url()).pathname,
+      errorText: request.failure()?.errorText ?? 'UNKNOWN',
+    });
+  });
   return {
     drain: async () => {
       while (responseWrites.length > 0) {
@@ -353,6 +410,8 @@ function observeGeneratedResponses(page: Page): {drain: () => Promise<void>} {
 
 function recordControlTouch(controlKey: string, testId: string, interaction: 'LOCATOR' | 'ACTION' = 'LOCATOR'): void {
   if (!activeCaseContext) throw new Error('SALES_MENU_L2_CASE_CONTEXT_MISSING');
+  if (activeRuntime && activeActionContext && !activeRuntime.row.parameter.controlKeys.includes(controlKey))
+    throw new Error(`SALES_MENU_L2_CONTROL_TOUCH_UNDECLARED:${activeRuntime.row.caseId}:${controlKey}`);
   appendJoinEvent({
     kind: interaction === 'ACTION' ? 'ACTION_TOUCH' : 'CONTROL_TOUCH',
     caseId: activeCaseContext.caseId,
@@ -432,21 +491,24 @@ function routeFromStoreProfile(): string {
   return `${prefix}/catalog/sales-menus`;
 }
 
-async function signIn(page: Page): Promise<void> {
+async function signIn(
+  page: Page,
+  profile: SignInProfile = {
+    loginNameEnv: 'R5_L2_OPERATIONS_LOGIN_NAME',
+    passwordEnv: 'R5_L2_OPERATIONS_LOGIN_PASSWORD',
+    roleLabelEnv: 'R5_L2_OPERATIONS_ROLE_LABEL',
+  },
+): Promise<void> {
   await page.goto(requiredEnvironment('R5_L2_OPERATIONS_LOGIN_ROUTE'));
   await expect(page.getByTestId('operations-login-name')).toBeVisible();
-  await page.getByTestId('operations-login-name').fill(requiredEnvironment('R5_L2_OPERATIONS_LOGIN_NAME'));
-  await page.getByTestId('operations-login-password').fill(requiredEnvironment('R5_L2_OPERATIONS_LOGIN_PASSWORD'));
+  await page.getByTestId('operations-login-name').fill(requiredEnvironment(profile.loginNameEnv));
+  await page.getByTestId('operations-login-password').fill(requiredEnvironment(profile.passwordEnv));
   await page.getByTestId('operations-login-submit').click();
   const roleSelector = page.getByTestId('operations-role-context-select');
   const shellMenu = page.getByTestId('operations-shell-menu');
   await roleSelector.or(shellMenu).waitFor({state: 'visible'});
   if (await roleSelector.isVisible()) {
-    await selectOperationsOption(
-      page,
-      'operations-role-context-select',
-      requiredEnvironment('R5_L2_OPERATIONS_ROLE_LABEL'),
-    );
+    await selectOperationsOption(page, 'operations-role-context-select', requiredEnvironment(profile.roleLabelEnv));
     await page.getByTestId('operations-role-context-enter').click();
   }
   await expect(shellMenu).toBeVisible();
@@ -495,41 +557,64 @@ function interpolate(value: string, facts: OwnerCase): string {
   return value.replace(/\$\{([^}]+)\}/g, (_, key: string) => slug(factText(facts, [key])));
 }
 
-async function boundControlWithMetadata(
-  page: Page,
-  key: string,
-  facts: OwnerCase,
-): Promise<{locator: Locator; testId: string}> {
+function boundControlIds(key: string, facts: OwnerCase): string[] {
   const binding = bindings.controls[key];
   if (!binding) throw new Error(`SALES_MENU_L2_CONTROL_UNBOUND:${key}`);
   const ids = [binding.testId, binding.testIdTemplate]
     .filter((value): value is string => typeof value === 'string' && value.length > 0)
     .map(value => interpolate(value, facts));
-  if (ids.length) {
-    for (const id of ids) {
-      const locator = page.locator(`[data-testid=${JSON.stringify(id)}]:visible`).first();
-      if ((await locator.count()) > 0) {
-        locatorMetadata.set(locator, {controlKey: key, testId: id});
-        return {locator, testId: id};
-      }
-    }
-    const locator = page.getByTestId(ids[0]);
-    locatorMetadata.set(locator, {controlKey: key, testId: ids[0]});
-    return {locator, testId: ids[0]};
+  if (ids.length === 0) throw new Error(`SALES_MENU_L2_CONTROL_LOCATOR_INVALID:${key}`);
+  return ids;
+}
+
+async function boundControlWithMetadata(
+  page: Page,
+  key: string,
+  facts: OwnerCase,
+): Promise<{locator: Locator; testId: string}> {
+  const ids = boundControlIds(key, facts);
+  for (const id of ids) {
+    const locator = page.getByTestId(id);
+    const count = await locator.count();
+    if (count === 0) continue;
+    if (count !== 1) throw new Error(`SALES_MENU_L2_TEST_ID_NOT_UNIQUE:${key}:${id}:${count}`);
+    locatorMetadata.set(locator, {controlKey: key, testId: id});
+    return {locator, testId: id};
   }
-  const parentTestId = typeof binding.parentTestId === 'string' ? interpolate(binding.parentTestId, facts) : undefined;
-  const role = typeof binding.role === 'string' ? binding.role : undefined;
-  if (!parentTestId || !role) throw new Error(`SALES_MENU_L2_CONTROL_LOCATOR_INVALID:${key}`);
-  const parent = page.getByTestId(parentTestId);
-  const name = typeof binding.name === 'string' ? binding.name : undefined;
-  const locator = name ? parent.getByRole(role as 'button', {name, exact: true}) : parent.getByRole(role as 'button');
-  locatorMetadata.set(locator, {controlKey: key, testId: parentTestId});
-  return {locator, testId: parentTestId};
+  throw new Error(`SALES_MENU_L2_TEST_ID_NOT_FOUND:${key}:${ids.join('|')}`);
+}
+
+async function waitForBoundControl(
+  page: Page,
+  key: string,
+  facts: OwnerCase,
+): Promise<{locator: Locator; testId: string}> {
+  const ids = boundControlIds(key, facts);
+  await expect
+    .poll(
+      async () => {
+        const counts = await Promise.all(ids.map(id => page.getByTestId(id).count()));
+        return counts.some(count => count === 1);
+      },
+      {timeout: 5_000},
+    )
+    .toBe(true);
+  return boundControlWithMetadata(page, key, facts);
 }
 
 async function requireControl(page: Page, key: string, facts: OwnerCase): Promise<Locator> {
   const resolved = await boundControlWithMetadata(page, key, facts);
   await expect(resolved.locator).toBeVisible();
+  recordControlTouch(key, resolved.testId);
+  return resolved.locator;
+}
+
+async function requireNativeFileInput(page: Page, key: string, facts: OwnerCase): Promise<Locator> {
+  const resolved = await waitForBoundControl(page, key, facts);
+  await expect(resolved.locator).toBeAttached();
+  await expect(resolved.locator).toHaveAttribute('type', 'file');
+  await expect(resolved.locator).toHaveAttribute('accept', 'image/*');
+  await expect(resolved.locator).toBeEnabled();
   recordControlTouch(key, resolved.testId);
   return resolved.locator;
 }
@@ -542,14 +627,10 @@ async function clickRequiredControl(page: Page, key: string, facts: OwnerCase): 
 }
 
 function visibleTestId(page: Page, testId: string): Locator {
-  return page.locator(`[data-testid=${JSON.stringify(testId)}]:visible`).first();
+  return page.getByTestId(testId);
 }
 
-async function waitForOperation(
-  runtime: CaseRuntime,
-  operationId: string,
-  count = 1,
-): Promise<OperationObservation> {
+async function waitForOperation(runtime: CaseRuntime, operationId: string, count = 1): Promise<OperationObservation> {
   await expect
     .poll(() => runtime.observations.filter(entry => entry.operationId === operationId).length, {timeout: 20_000})
     .toBeGreaterThanOrEqual(count);
@@ -558,6 +639,88 @@ async function waitForOperation(
     throw new Error(
       `SALES_MENU_L2_OPERATION_HTTP_FAILED:${runtime.row.caseId}:${operationId}:${completion?.status ?? 'MISSING'}`,
     );
+  return completion;
+}
+
+async function waitForSelectedMenuOperation(
+  runtime: CaseRuntime,
+  facts: OwnerCase,
+  operationId: string,
+  minimumCount = 1,
+): Promise<OperationObservation> {
+  const menuRef = factText(facts, ['menuRef']);
+  const matchesSelectedMenu = (entry: OperationObservation) =>
+    entry.operationId === operationId && entry.pathname.includes(`/sales-menus/${menuRef}`);
+  await expect
+    .poll(() => runtime.observations.filter(matchesSelectedMenu).length, {timeout: 20_000})
+    .toBeGreaterThanOrEqual(minimumCount);
+  const completion = [...runtime.observations].reverse().find(matchesSelectedMenu);
+  if (!completion || completion.status < 200 || completion.status >= 300)
+    throw new Error(
+      `SALES_MENU_L2_SELECTED_MENU_OPERATION_FAILED:${runtime.row.caseId}:${operationId}:${completion?.status ?? 'MISSING'}`,
+    );
+  appendDebugEvent({
+    kind: 'TEST_CHECKPOINT',
+    caseId: runtime.row.caseId,
+    scenarioId: runtime.row.scenarioId,
+    checkpoint: 'SELECTED_MENU_READ_MODEL_READY',
+    operationId,
+    menuRef,
+    observedPath: completion.pathname,
+    completionCount: runtime.observations.filter(matchesSelectedMenu).length,
+    minimumCount,
+    status: completion.status,
+  });
+  return completion;
+}
+
+function selectedSectionItemsOperation(mode: 'DRAFT' | 'PUBLISHED'): string {
+  return mode === 'PUBLISHED' ? 'getOperationsSalesMenuPublishedItems' : 'getOperationsSalesMenuDraftItems';
+}
+
+function selectedSectionItemsObservations(
+  runtime: CaseRuntime,
+  facts: OwnerCase,
+  mode: 'DRAFT' | 'PUBLISHED',
+): OperationObservation[] {
+  const menuRef = factText(facts, ['menuRef']);
+  const sectionRef = factText(facts, ['sectionRef', 'salesSectionRef']);
+  const version = mode === 'PUBLISHED' ? 'published' : 'draft';
+  const sectionPath = `/sales-menus/${menuRef}/${version}/sections/${sectionRef}/items`;
+  const operationId = selectedSectionItemsOperation(mode);
+  return runtime.observations.filter(
+    entry => entry.operationId === operationId && entry.pathname.includes(sectionPath),
+  );
+}
+
+async function waitForSelectedSectionItemsOperation(
+  runtime: CaseRuntime,
+  facts: OwnerCase,
+  mode: 'DRAFT' | 'PUBLISHED',
+  count = 1,
+): Promise<OperationObservation> {
+  const operationId = selectedSectionItemsOperation(mode);
+  await expect
+    .poll(() => selectedSectionItemsObservations(runtime, facts, mode).length, {timeout: 20_000})
+    .toBeGreaterThanOrEqual(count);
+  const completion = selectedSectionItemsObservations(runtime, facts, mode).at(-1);
+  if (!completion || completion.status < 200 || completion.status >= 300)
+    throw new Error(
+      `SALES_MENU_L2_SELECTED_SECTION_ITEMS_OPERATION_FAILED:${runtime.row.caseId}:${operationId}:${completion?.status ?? 'MISSING'}`,
+    );
+  appendDebugEvent({
+    kind: 'TEST_CHECKPOINT',
+    caseId: runtime.row.caseId,
+    scenarioId: runtime.row.scenarioId,
+    checkpoint: 'SELECTED_SECTION_ITEMS_READ_MODEL_READY',
+    operationId,
+    menuRef: factText(facts, ['menuRef']),
+    sectionRef: factText(facts, ['sectionRef', 'salesSectionRef']),
+    mode,
+    observedPath: completion.pathname,
+    completionCount: selectedSectionItemsObservations(runtime, facts, mode).length,
+    status: completion.status,
+  });
   return completion;
 }
 
@@ -570,7 +733,7 @@ async function waitForFailedOperation(
     .poll(() => runtime.observations.filter(entry => entry.operationId === operationId).length, {timeout: 20_000})
     .toBeGreaterThanOrEqual(count);
   const completion = runtime.observations.filter(entry => entry.operationId === operationId)[count - 1];
-  if (!completion || completion.status < 400 || completion.status >= 500)
+  if (!completion || completion.status < 400 || completion.status >= 600)
     throw new Error(
       `SALES_MENU_L2_EXPECTED_FAILURE_MISSING:${runtime.row.caseId}:${operationId}:${completion?.status ?? 'MISSING'}`,
     );
@@ -605,9 +768,15 @@ async function assertExpectedOperations(runtime: CaseRuntime): Promise<void> {
 function responseObject(payload: unknown): JsonObject | undefined {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return undefined;
   const record = payload as JsonObject;
-  return record.data && typeof record.data === 'object' && !Array.isArray(record.data)
-    ? (record.data as JsonObject)
-    : record;
+  const data =
+    record.data && typeof record.data === 'object' && !Array.isArray(record.data)
+      ? (record.data as JsonObject)
+      : undefined;
+  if (data?.result && typeof data.result === 'object' && !Array.isArray(data.result)) return data.result as JsonObject;
+  if (data) return data;
+  if (record.result && typeof record.result === 'object' && !Array.isArray(record.result))
+    return record.result as JsonObject;
+  return record;
 }
 
 function responseErrorCode(payload: unknown): string | undefined {
@@ -641,6 +810,79 @@ function ownerCandidateByCatalogRef(catalogItemRef: string): JsonObject {
   return candidate;
 }
 
+function ownerCandidateItemRef(catalogItemRef: string): string {
+  const candidate = ownerCandidateByCatalogRef(catalogItemRef);
+  const itemRef = candidate.itemRef;
+  if (typeof itemRef !== 'string' || itemRef.length === 0)
+    throw new Error(`SALES_MENU_L2_OWNER_CANDIDATE_ITEM_REF_MISSING:${catalogItemRef}`);
+  return itemRef;
+}
+
+function ownerSalesItemByRef(salesItemRef: string): JsonObject {
+  const salesItems = ownerFixture?.ownerFacts?.salesItems;
+  if (!Array.isArray(salesItems)) throw new Error('SALES_MENU_L2_OWNER_SALES_ITEM_FACTS_MISSING');
+  const item = salesItems.find(
+    (entry): entry is JsonObject => Boolean(entry) && typeof entry === 'object' && entry.ref === salesItemRef,
+  );
+  if (!item) throw new Error(`SALES_MENU_L2_OWNER_SALES_ITEM_REF_MISSING:${salesItemRef}`);
+  return item;
+}
+
+function ownerMenuByRef(salesMenuRef: string): JsonObject {
+  const menus = ownerFixture?.ownerFacts?.menus;
+  if (!Array.isArray(menus)) throw new Error('SALES_MENU_L2_OWNER_MENU_FACTS_MISSING');
+  const menu = menus.find(
+    (entry): entry is JsonObject => Boolean(entry) && typeof entry === 'object' && entry.ref === salesMenuRef,
+  );
+  if (!menu) throw new Error(`SALES_MENU_L2_OWNER_MENU_REF_MISSING:${salesMenuRef}`);
+  return menu;
+}
+
+async function assertCurrentSalesItemPageReadModel(
+  page: Page,
+  facts: OwnerCase,
+  runtime: CaseRuntime,
+  mode: 'DRAFT' | 'PUBLISHED',
+): Promise<void> {
+  const salesItemRef = factText(facts, ['itemRef', 'salesItemRef']);
+  const item = ownerSalesItemByRef(salesItemRef);
+  const itemCode = item.itemCode;
+  if (typeof itemCode !== 'string' || itemCode.length === 0)
+    throw new Error(`SALES_MENU_L2_OWNER_SALES_ITEM_CODE_MISSING:${salesItemRef}`);
+  const table = await requireControl(page, 'SALES_MENU_ITEM_TABLE', facts);
+  await expect(table).toContainText(itemCode);
+  appendDebugEvent({
+    kind: 'TEST_CHECKPOINT',
+    caseId: runtime.row.caseId,
+    scenarioId: runtime.row.scenarioId,
+    checkpoint: 'SALES_MENU_ITEM_PAGE_READ_MODEL_READY',
+    mode,
+    salesItemRef,
+    expectedItemCode: itemCode,
+    readModelSourceBasis: 'CURRENT_DOM_READ_MODEL',
+  });
+}
+
+async function assertPublishedItemDetailReadModel(page: Page, facts: OwnerCase, runtime: CaseRuntime): Promise<void> {
+  const salesItemRef = factText(facts, ['itemRef', 'salesItemRef']);
+  const item = ownerSalesItemByRef(salesItemRef);
+  const itemCode = item.itemCode;
+  if (typeof itemCode !== 'string' || itemCode.length === 0)
+    throw new Error(`SALES_MENU_L2_OWNER_SALES_ITEM_CODE_MISSING:${salesItemRef}`);
+  const detail = await requireControl(page, 'SALES_MENU_ITEM_DETAIL', facts);
+  await expect(detail).toContainText('菜单商品');
+  await expect(detail).toContainText(itemCode);
+  appendDebugEvent({
+    kind: 'TEST_CHECKPOINT',
+    caseId: runtime.row.caseId,
+    scenarioId: runtime.row.scenarioId,
+    checkpoint: 'SALES_MENU_PUBLISHED_ITEM_DETAIL_READ_MODEL_READY',
+    salesItemRef,
+    expectedItemCode: itemCode,
+    readModelSourceBasis: 'CURRENT_DOM_READ_MODEL',
+  });
+}
+
 async function waitForLatestItemRef(
   runtime: CaseRuntime,
   operationId: string,
@@ -664,13 +906,24 @@ async function waitForLatestItemRef(
   return ref;
 }
 
+function responseString(payload: unknown, field: string, code: string): string {
+  const value = responseObject(payload)?.[field];
+  if (typeof value !== 'string' || value.length === 0) throw new Error(code);
+  return value;
+}
+
 async function selectStoreScope(page: Page, facts: OwnerCase): Promise<void> {
   const scope = (facts.scope ?? ownerFixture?.ownerFacts.scope ?? {}) as NonNullable<OwnerCase['scope']>;
-  await selectOperationsDataScope(page, 'STORE', {
-    regionName: scope.regionName,
-    projectName: scope.projectName,
-    storeName: scope.storeName,
-  });
+  await selectOperationsDataScope(
+    page,
+    'STORE',
+    {
+      regionName: scope.regionName,
+      projectName: scope.projectName,
+      storeName: scope.storeName,
+    },
+    testId => recordControlTouch('STORE_SCOPE', testId),
+  );
 }
 
 async function openSalesMenu(page: Page, facts: OwnerCase): Promise<void> {
@@ -685,81 +938,397 @@ async function openSalesMenu(page: Page, facts: OwnerCase): Promise<void> {
     await expect(page.getByTestId(salesMenuTestIds.channelCard(channelRef))).toBeVisible();
 }
 
-async function chooseChannel(page: Page, facts: OwnerCase): Promise<void> {
-  await clickRequiredControl(page, 'SALES_MENU_CHANNEL_CARD', facts);
+async function findChannelCard(
+  page: Page,
+  facts: OwnerCase,
+  channelRef = factText(facts, ['channelRef']),
+): Promise<Locator> {
+  await resetCursorToFirstPage(page, salesMenuTestIds.pageCursor, 'SALES_MENU_CHANNEL_PAGINATION');
+  const testId = salesMenuTestIds.channelCard(channelRef);
+  for (let pageIndex = 1; pageIndex <= 20; pageIndex += 1) {
+    const candidate = page.getByTestId(testId);
+    const count = await candidate.count();
+    if (count > 1) throw new Error(`SALES_MENU_L2_TEST_ID_NOT_UNIQUE:SALES_MENU_CHANNEL_CARD:${testId}:${count}`);
+    if (count === 1) {
+      locatorMetadata.set(candidate, {controlKey: 'SALES_MENU_CHANNEL_CARD', testId});
+      await expect(candidate).toBeVisible();
+      recordControlTouch('SALES_MENU_CHANNEL_CARD', testId);
+      appendDebugEvent({
+        kind: 'TEST_CHECKPOINT',
+        caseId: activeCaseContext?.caseId ?? null,
+        scenarioId: activeCaseContext?.scenarioId ?? null,
+        checkpoint: 'SALES_MENU_CHANNEL_CARD_VISIBLE',
+        channelRef,
+        pageIndex,
+        testId,
+      });
+      return candidate;
+    }
+    const next = page.getByTestId(`${salesMenuTestIds.pageCursor}-next`);
+    await expect(next).toBeVisible();
+    if (!(await next.isEnabled())) break;
+    appendDebugEvent({
+      kind: 'TEST_CHECKPOINT',
+      caseId: activeCaseContext?.caseId ?? null,
+      scenarioId: activeCaseContext?.scenarioId ?? null,
+      checkpoint: 'SALES_MENU_CHANNEL_PAGINATION_REQUIRED',
+      channelRef,
+      pageIndex,
+      testId: `${salesMenuTestIds.pageCursor}-next`,
+      controlKey: 'SALES_MENU_CHANNEL_PAGINATION',
+    });
+    await next.click();
+    recordControlTouch('SALES_MENU_CHANNEL_PAGINATION', `${salesMenuTestIds.pageCursor}-next`, 'ACTION');
+    await expect(page.getByTestId(salesMenuTestIds.pageCursor)).toContainText(`第 ${pageIndex + 1} 页`);
+  }
+  throw new Error(`SALES_MENU_L2_CHANNEL_REF_NOT_VISIBLE:${channelRef}`);
 }
 
-async function ensureMenuSelected(page: Page, facts: OwnerCase): Promise<void> {
-  await requireControl(page, 'SALES_MENU_SELECTOR', facts);
-  if (facts.menuName) await selectOperationsOption(page, salesMenuTestIds.menuSelector, facts.menuName);
+async function chooseChannel(page: Page, facts: OwnerCase, runtime: CaseRuntime): Promise<void> {
+  const channel = await findChannelCard(page, facts);
+  const wasSelected = (await channel.getByText('当前入口', {exact: true}).count()) > 0;
+  const menuRequestsBefore = runtime.observations.filter(
+    entry => entry.operationId === 'getOperationsSalesMenus',
+  ).length;
+  await channel.click();
+  recordActionForLocator(channel, 'click');
+  if (!wasSelected) {
+    await expect
+      .poll(() => runtime.observations.filter(entry => entry.operationId === 'getOperationsSalesMenus').length, {
+        timeout: 20_000,
+      })
+      .toBeGreaterThan(menuRequestsBefore);
+    appendDebugEvent({
+      kind: 'TEST_CHECKPOINT',
+      caseId: runtime.row.caseId,
+      scenarioId: runtime.row.scenarioId,
+      checkpoint: 'SALES_MENU_CHANNEL_READ_MODEL_READY',
+      channelRef: factText(facts, ['channelRef']),
+      menuRequestsBefore,
+      menuRequestsAfter: runtime.observations.filter(entry => entry.operationId === 'getOperationsSalesMenus').length,
+      selectedBeforeClick: wasSelected,
+    });
+  } else {
+    appendDebugEvent({
+      kind: 'TEST_CHECKPOINT',
+      caseId: runtime.row.caseId,
+      scenarioId: runtime.row.scenarioId,
+      checkpoint: 'SALES_MENU_CHANNEL_READ_MODEL_ALREADY_SELECTED',
+      channelRef: factText(facts, ['channelRef']),
+      menuRequestsBefore,
+      selectedBeforeClick: wasSelected,
+    });
+  }
+}
+
+async function ensureMenuSelected(page: Page, facts: OwnerCase, runtime: CaseRuntime): Promise<void> {
+  const menuSelector = await waitForBoundControl(page, 'SALES_MENU_SELECTOR', facts);
+  await expect(menuSelector.locator).toBeVisible();
+  recordControlTouch('SALES_MENU_SELECTOR', menuSelector.testId);
+  if (facts.menuName) {
+    const menuOptionTestId = salesMenuTestIds.menuOption(factText(facts, ['menuRef']));
+    await selectOperationsOption(page, salesMenuTestIds.menuSelector, facts.menuName, menuOptionTestId);
+    recordControlTouch('SALES_MENU_SELECTOR', menuOptionTestId, 'ACTION');
+  }
+  await waitForSelectedMenuOperation(runtime, facts, 'getOperationsSalesMenu');
 }
 
 async function switchMode(page: Page, mode: 'DRAFT' | 'PUBLISHED' | 'OPERATIONS', facts: OwnerCase): Promise<void> {
-  const label = {DRAFT: '草稿菜单', PUBLISHED: '前台菜单', OPERATIONS: '操作记录'}[mode];
-  const control = page.getByTestId(salesMenuTestIds.modes).getByText(label, {exact: true});
-  await expect(control).toBeVisible();
-  await control.click();
-  recordControlTouch('SALES_MENU_MODE', salesMenuTestIds.mode(mode), 'ACTION');
+  await clickRequiredControl(page, 'SALES_MENU_MODE', {...facts, mode});
 }
 
-async function chooseSection(page: Page, facts: OwnerCase): Promise<void> {
-  await requireControl(page, 'SALES_MENU_SECTION_LIST', facts);
-  await clickRequiredControl(page, 'SALES_MENU_SECTION', facts);
+async function chooseSection(
+  page: Page,
+  facts: OwnerCase,
+  runtime: CaseRuntime,
+  mode: 'DRAFT' | 'PUBLISHED' = 'DRAFT',
+): Promise<void> {
+  const sectionList = await waitForBoundControl(page, 'SALES_MENU_SECTION_LIST', facts);
+  await expect(sectionList.locator).toBeVisible();
+  recordControlTouch('SALES_MENU_SECTION_LIST', sectionList.testId);
+  const section = await waitForBoundControl(page, 'SALES_MENU_SECTION', facts);
+  await expect(section.locator).toBeVisible();
+  recordControlTouch('SALES_MENU_SECTION', section.testId);
+  const sectionOperationId =
+    mode === 'PUBLISHED' ? 'getOperationsSalesMenuPublishedSections' : 'getOperationsSalesMenuDraftSections';
+  appendDebugEvent({
+    kind: 'TEST_CHECKPOINT',
+    caseId: runtime.row.caseId,
+    scenarioId: runtime.row.scenarioId,
+    checkpoint: 'SALES_MENU_SECTION_READ_MODEL_READY',
+    mode,
+    sectionRef: factText(facts, ['sectionRef', 'salesSectionRef']),
+    sectionListTestId: sectionList.testId,
+    sectionTestId: section.testId,
+    readModelSourceBasis: 'CURRENT_DOM_READ_MODEL',
+    observedOperationCount: runtime.observations.filter(entry => entry.operationId === sectionOperationId).length,
+  });
+  await section.locator.click();
+  recordActionForLocator(section.locator, 'click');
+  await waitForSelectedSectionItemsOperation(runtime, facts, mode);
 }
 
-async function prepareDraft(page: Page, facts: OwnerCase): Promise<void> {
-  await chooseChannel(page, facts);
-  await ensureMenuSelected(page, facts);
+async function prepareDraft(page: Page, facts: OwnerCase, runtime: CaseRuntime): Promise<void> {
+  await chooseChannel(page, facts, runtime);
+  await ensureMenuSelected(page, facts, runtime);
   await switchMode(page, 'DRAFT', facts);
-  await chooseSection(page, facts);
+  await chooseSection(page, facts, runtime, 'DRAFT');
 }
 
-async function preparePublished(page: Page, facts: OwnerCase): Promise<void> {
-  await chooseChannel(page, facts);
-  await ensureMenuSelected(page, facts);
+async function preparePublished(page: Page, facts: OwnerCase, runtime: CaseRuntime): Promise<void> {
+  await chooseChannel(page, facts, runtime);
+  await ensureMenuSelected(page, facts, runtime);
   await switchMode(page, 'PUBLISHED', facts);
-  await chooseSection(page, facts);
+  await chooseSection(page, facts, runtime, 'PUBLISHED');
 }
 
 async function clickCursorNext(page: Page, prefix: string, controlKey: string): Promise<void> {
-  const next = page.getByTestId(`${prefix}-next`);
+  const binding = bindings.controls[controlKey];
+  if (!binding || binding.testIdPrefix !== prefix)
+    throw new Error(`SALES_MENU_L2_PAGINATION_BINDING_DRIFT:${controlKey}:${prefix}`);
+  const nextTestId = `${prefix}-next`;
+  const next = page.getByTestId(nextTestId);
   await expect(next).toBeVisible();
   await expect(next).toBeEnabled();
   await next.click();
-  recordControlTouch(controlKey, prefix, 'ACTION');
+  recordControlTouch(controlKey, nextTestId, 'ACTION');
   await expect(page.getByTestId(prefix)).toContainText('第 2 页');
 }
 
-async function clickMenuAction(page: Page, label: string | RegExp): Promise<void> {
-  await page.getByRole('button', {name: /菜单动作/}).click();
-  const item = await visibleOperationsMenuItem(page, label);
-  await expect(item).toBeVisible();
-  await item.click();
+async function clickCursorPrevious(page: Page, prefix: string, controlKey: string): Promise<void> {
+  const binding = bindings.controls[controlKey];
+  if (!binding || binding.testIdPrefix !== prefix)
+    throw new Error(`SALES_MENU_L2_PAGINATION_BINDING_DRIFT:${controlKey}:${prefix}`);
+  const previousTestId = `${prefix}-previous`;
+  const previous = page.getByTestId(previousTestId);
+  await expect(previous).toBeVisible();
+  await expect(previous).toBeEnabled();
+  await previous.click();
+  recordControlTouch(controlKey, previousTestId, 'ACTION');
+  await expect(page.getByTestId(prefix)).toContainText('第 1 页');
 }
 
-async function chooseDropdownAction(page: Page, trigger: Locator, label: string): Promise<void> {
+async function resetCursorToFirstPage(page: Page, prefix: string, controlKey: string): Promise<number> {
+  let transitions = 0;
+  const previous = page.getByTestId(`${prefix}-previous`);
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await expect(previous).toBeVisible();
+    if (!(await previous.isEnabled())) return transitions;
+    await clickCursorPrevious(page, prefix, controlKey);
+    transitions += 1;
+  }
+  throw new Error(`SALES_MENU_L2_PAGINATION_RESET_LIMIT:${controlKey}`);
+}
+
+async function waitForManagerPageReadModel(
+  page: Page,
+  runtime: CaseRuntime,
+  menuRef: string,
+  action: string,
+  pageIndex: number,
+  managerRequestsBefore: number,
+): Promise<{targetVisible: boolean; hasNext: boolean}> {
+  const candidate = page.getByTestId(salesMenuTestIds.managerAction(menuRef, action));
+  const next = page.getByTestId(`${salesMenuTestIds.managerCursor}-next`);
+  await expect(page.getByTestId(salesMenuTestIds.managerCursor)).toContainText(`第 ${pageIndex} 页`);
+  await expect
+    .poll(
+      async () => {
+        if ((await candidate.count()) === 1) return 'TARGET_VISIBLE';
+        // The manager query can have overlapping HTTP completions when a command
+        // refreshes the list while cursor reset is also in flight. The DOM is
+        // backed by currentData, so a visible target or an enabled next cursor
+        // is the only safe signal that the current page read model has settled.
+        return (await next.isEnabled()) ? 'CURRENT_PAGE_WITH_NEXT' : false;
+      },
+      {timeout: 20_000},
+    )
+    .toBeTruthy();
+
+  const managerRequestsAfter = runtime.observations.filter(
+    entry => entry.operationId === 'getOperationsSalesMenus',
+  ).length;
+  const targetVisible = (await candidate.count()) === 1;
+  const hasNext = await next.isEnabled();
+  const readModelSource: 'HTTP' | 'CACHE' = managerRequestsAfter > managerRequestsBefore ? 'HTTP' : 'CACHE';
+  appendDebugEvent({
+    kind: 'TEST_CHECKPOINT',
+    caseId: runtime.row.caseId,
+    scenarioId: runtime.row.scenarioId,
+    checkpoint: 'SALES_MENU_MANAGER_PAGE_READ_MODEL_READY',
+    page: pageIndex,
+    menuRef,
+    action,
+    operationId: 'getOperationsSalesMenus',
+    completionCount: managerRequestsAfter,
+    readModelSource,
+    targetVisible,
+    hasNext,
+    readModelSourceBasis: 'CURRENT_DOM_READ_MODEL',
+  });
+  return {targetVisible, hasNext};
+}
+
+async function findManagerAction(page: Page, runtime: CaseRuntime, menuRef: string, action: string): Promise<Locator> {
+  const managerRequestsBeforeReset = runtime.observations.filter(
+    entry => entry.operationId === 'getOperationsSalesMenus',
+  ).length;
+  await resetCursorToFirstPage(page, salesMenuTestIds.managerCursor, 'SALES_MENU_MANAGER_PAGINATION');
+  const testId = salesMenuTestIds.managerAction(menuRef, action);
+  let pageIndex = 1;
+  let pageReadModel = await waitForManagerPageReadModel(
+    page,
+    runtime,
+    menuRef,
+    action,
+    pageIndex,
+    managerRequestsBeforeReset,
+  );
+  if (pageReadModel.targetVisible) {
+    const candidate = page.getByTestId(testId);
+    locatorMetadata.set(candidate, {controlKey: 'SALES_MENU_MANAGER_ACTION', testId});
+    await expect(candidate).toBeVisible();
+    recordControlTouch('SALES_MENU_MANAGER_ACTION', testId);
+    return candidate;
+  }
+  for (pageIndex = 1; pageIndex <= 20; pageIndex += 1) {
+    const candidate = page.getByTestId(testId);
+    const count = await candidate.count();
+    if (count > 1) throw new Error(`SALES_MENU_L2_TEST_ID_NOT_UNIQUE:SALES_MENU_MANAGER_ACTION:${testId}:${count}`);
+    if (count === 1) {
+      locatorMetadata.set(candidate, {controlKey: 'SALES_MENU_MANAGER_ACTION', testId});
+      await expect(candidate).toBeVisible();
+      recordControlTouch('SALES_MENU_MANAGER_ACTION', testId);
+      return candidate;
+    }
+    const next = page.getByTestId(`${salesMenuTestIds.managerCursor}-next`);
+    await expect(next).toBeVisible();
+    if (!pageReadModel.hasNext || !(await next.isEnabled())) break;
+    const managerRequestsBefore = runtime.observations.filter(
+      entry => entry.operationId === 'getOperationsSalesMenus',
+    ).length;
+    await next.click();
+    recordControlTouch('SALES_MENU_MANAGER_PAGINATION', `${salesMenuTestIds.managerCursor}-next`, 'ACTION');
+    pageReadModel = await waitForManagerPageReadModel(
+      page,
+      runtime,
+      menuRef,
+      action,
+      pageIndex + 1,
+      managerRequestsBefore,
+    );
+    if (pageReadModel.targetVisible) {
+      locatorMetadata.set(candidate, {controlKey: 'SALES_MENU_MANAGER_ACTION', testId});
+      await expect(candidate).toBeVisible();
+      recordControlTouch('SALES_MENU_MANAGER_ACTION', testId);
+      return candidate;
+    }
+  }
+  throw new Error(`SALES_MENU_L2_MANAGER_MENU_REF_NOT_VISIBLE:${menuRef}:${action}`);
+}
+
+async function clickManagerMenuAction(page: Page, facts: OwnerCase, action: string, label: string): Promise<void> {
+  const resolved = await waitForBoundControl(page, 'SALES_MENU_MANAGER_ACTION', {...facts, action});
+  const item = resolved.locator;
+  recordControlTouch('SALES_MENU_MANAGER_ACTION', resolved.testId);
+  await expect(item).toContainText(label);
+  await item.click();
+  recordActionForLocator(item, 'click');
+}
+
+async function chooseDropdownAction(
+  page: Page,
+  trigger: Locator,
+  controlKey: string,
+  facts: OwnerCase,
+  action: string,
+  label: string,
+): Promise<void> {
   await trigger.click();
-  const item = await visibleOperationsMenuItem(page, label);
+  recordActionForLocator(trigger, 'click');
+  const resolved = await waitForBoundControl(page, controlKey, {...facts, action});
+  const item = resolved.locator;
+  await expect(item).toBeVisible();
+  recordControlTouch(controlKey, resolved.testId);
+  await expect(item).toContainText(uiLabelPattern(label));
   await item.click();
+  recordActionForLocator(item, 'click');
 }
 
-async function fillVisibleInput(page: Page, placeholder: string, value: string): Promise<void> {
-  const input = page.getByPlaceholder(placeholder).last();
+function uiLabelPattern(label: string | RegExp): string | RegExp {
+  if (label instanceof RegExp) return label;
+  const escaped = [...label].map(character =>
+    /\s/.test(character) ? '\\s+' : character.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+  );
+  return new RegExp(escaped.join('\\s*'));
+}
+
+async function fillBoundControl(page: Page, key: string, facts: OwnerCase, value: string): Promise<void> {
+  const control = await requireControl(page, key, facts);
+  const textboxes = control.getByRole('textbox');
+  const spinbuttons = control.getByRole('spinbutton');
+  const textboxCount = await textboxes.count();
+  const spinbuttonCount = await spinbuttons.count();
+  if (textboxCount > 1 || spinbuttonCount > 1)
+    throw new Error(`SALES_MENU_L2_INPUT_NOT_UNIQUE:${key}:${textboxCount}:${spinbuttonCount}`);
+  const input = textboxCount === 1 ? textboxes : spinbuttonCount === 1 ? spinbuttons : control;
   await expect(input).toBeVisible();
   await input.fill(value);
+  const metadata = locatorMetadata.get(control);
+  if (!metadata) throw new Error('SALES_MENU_L2_FILL_CONTROL_METADATA_MISSING');
+  recordControlTouch(key, metadata.testId, 'ACTION');
 }
 
-async function clickVisibleButton(page: Page, name: string | RegExp): Promise<void> {
-  const button = page.getByRole('button', {name}).last();
+async function clickBoundControl(page: Page, key: string, facts: OwnerCase, label?: string | RegExp): Promise<void> {
+  const button = await requireControl(page, key, facts);
   await expect(button).toBeVisible();
   await expect(button).toBeEnabled();
+  if (label) await expect(button).toContainText(uiLabelPattern(label));
   await button.click();
+  recordActionForLocator(button, 'click');
 }
 
-async function openDraftEditor(page: Page, facts: OwnerCase): Promise<void> {
+async function checkBoundControl(page: Page, key: string, facts: OwnerCase): Promise<void> {
+  const control = await requireControl(page, key, facts);
+  const radios = control.getByRole('radio');
+  const checkboxes = control.getByRole('checkbox');
+  const radioCount = await radios.count();
+  const checkboxCount = await checkboxes.count();
+  if (radioCount > 1 || checkboxCount > 1)
+    throw new Error(`SALES_MENU_L2_CHECK_CONTROL_NOT_UNIQUE:${key}:${radioCount}:${checkboxCount}`);
+  const target = radioCount === 1 ? radios : checkboxCount === 1 ? checkboxes : control;
+  await expect(target).toBeVisible();
+  await target.check();
+  const metadata = locatorMetadata.get(control);
+  if (!metadata) throw new Error('SALES_MENU_L2_CHECK_CONTROL_METADATA_MISSING');
+  recordControlTouch(key, metadata.testId, 'ACTION');
+}
+
+async function openDraftEditor(page: Page, facts: OwnerCase, runtime: CaseRuntime): Promise<void> {
   await requireControl(page, 'SALES_MENU_ITEM_TABLE', facts);
+  const detailReadsBefore = runtime.observations.filter(
+    entry => entry.operationId === 'getOperationsSalesMenuDraftItem',
+  ).length;
   await clickRequiredControl(page, 'SALES_MENU_ITEM', facts);
   await requireControl(page, 'SALES_MENU_ITEM_EDITOR', facts);
+  const save = await waitForBoundControl(page, 'SALES_MENU_ITEM_SAVE', facts);
+  await expect(save.locator).toBeEnabled();
+  recordControlTouch('SALES_MENU_ITEM_SAVE', save.testId);
+  const detailReadsAfter = runtime.observations.filter(
+    entry => entry.operationId === 'getOperationsSalesMenuDraftItem',
+  ).length;
+  if (detailReadsAfter > detailReadsBefore)
+    await waitForOperation(runtime, 'getOperationsSalesMenuDraftItem', detailReadsAfter);
+  appendDebugEvent({
+    kind: 'TEST_CHECKPOINT',
+    caseId: runtime.row.caseId,
+    scenarioId: runtime.row.scenarioId,
+    checkpoint: 'SALES_MENU_ITEM_DETAIL_READ_MODEL_READY',
+    operationId: 'getOperationsSalesMenuDraftItem',
+    detailReadsBefore,
+    detailReadsAfter,
+    readModelSource: detailReadsAfter > detailReadsBefore ? 'HTTP' : 'CACHE',
+  });
 }
 
 async function installOneShotFailure(
@@ -805,17 +1374,26 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
   const facts = runtime.facts;
   switch (runtime.row.caseId) {
     case 'sales-menu-entry-and-channels':
-      await chooseChannel(page, facts);
-      await clickCursorNext(page, salesMenuTestIds.pageCursor, 'SALES_MENU_CHANNEL_PAGINATION');
+      {
+        const channelRefs = factStringArray(facts, 'channelRefs');
+        const channelPageSize = factNumber((ownerFixture?.ownerFacts ?? {}) as OwnerCase, ['channelPageSize'], 20);
+        const secondPageRefs = channelRefs.slice(channelPageSize);
+        if (secondPageRefs.length === 0) throw new Error('SALES_MENU_L2_CHANNEL_SECOND_PAGE_FACT_MISSING');
+        await clickCursorNext(page, salesMenuTestIds.pageCursor, 'SALES_MENU_CHANNEL_PAGINATION');
+        await waitForOperation(runtime, 'getOperationsStoreBusinessChannels');
+        for (const channelRef of secondPageRefs)
+          await expect(page.getByTestId(salesMenuTestIds.channelCard(channelRef))).toBeVisible();
+        await resetCursorToFirstPage(page, salesMenuTestIds.pageCursor, 'SALES_MENU_CHANNEL_PAGINATION');
+      }
+      await chooseChannel(page, facts, runtime);
       await waitForOperation(runtime, 'getOperationsStoreBusinessChannels');
-      await ensureMenuSelected(page, facts);
+      await ensureMenuSelected(page, facts, runtime);
       if (await page.getByTestId(`${salesMenuTestIds.selectorCursor}-next`).isEnabled())
         await clickCursorNext(page, salesMenuTestIds.selectorCursor, 'SALES_MENU_SELECTOR_PAGINATION');
       await waitForOperation(runtime, 'getOperationsSalesMenus');
       break;
     case 'sales-menu-section-actions': {
-      await prepareDraft(page, facts);
-      const list = await requireControl(page, 'SALES_MENU_SECTION_LIST', facts);
+      await prepareDraft(page, facts, runtime);
       const sectionRefs = factStringArray(facts, 'sectionRefs');
       const initialSections = latestItems(runtime, 'getOperationsSalesMenuDraftSections');
       if (initialSections.length !== sectionRefs.length)
@@ -826,9 +1404,9 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
         throw new Error('SALES_MENU_L2_SECTION_EDGE_MOVE_ORACLE_INVALID');
       const createSectionName = factText(facts, ['createSectionName'], `L2分区${Date.now()}`);
       const renameSectionName = factText(facts, ['renameSectionName'], `L2改名${Date.now()}`);
-      await list.getByRole('button', {name: /新建分区/}).click();
-      await fillVisibleInput(page, '请输入分区名称', createSectionName);
-      await clickVisibleButton(page, /保\s*存/);
+      await clickBoundControl(page, 'SALES_MENU_SECTION_CREATE', facts, '新建分区');
+      await fillBoundControl(page, 'SALES_MENU_SECTION_NAME', facts, createSectionName);
+      await clickBoundControl(page, 'SALES_MENU_SECTION_SAVE', facts, '保存');
       await waitForOperation(runtime, 'createOperationsSalesMenuSection');
       const createdSectionRef = await waitForLatestItemRef(
         runtime,
@@ -838,70 +1416,131 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       );
       const createdFacts = {...facts, sectionRef: createdSectionRef, salesSectionRef: createdSectionRef};
       let action = await requireControl(page, 'SALES_MENU_SECTION_ACTION', createdFacts);
-      await chooseDropdownAction(page, action, '重命名');
-      await fillVisibleInput(page, '请输入分区名称', renameSectionName);
-      await clickVisibleButton(page, /保\s*存/);
+      await chooseDropdownAction(page, action, 'SALES_MENU_SECTION_MENU_ACTION', createdFacts, 'rename', '重命名');
+      await fillBoundControl(page, 'SALES_MENU_SECTION_NAME', createdFacts, renameSectionName);
+      await clickBoundControl(page, 'SALES_MENU_SECTION_SAVE', createdFacts, '保存');
       await waitForOperation(runtime, 'renameOperationsSalesMenuSection');
-      action = await requireControl(page, 'SALES_MENU_SECTION_ACTION', createdFacts);
-      await chooseDropdownAction(page, action, '上移');
+      await expect
+        .poll(() =>
+          latestItems(runtime, 'getOperationsSalesMenuDraftSections').some(
+            item => item.salesSectionRef === createdSectionRef && item.name === renameSectionName,
+          ),
+        )
+        .toBe(true);
+      break;
+    }
+    case 'sales-menu-section-move-and-delete': {
+      await prepareDraft(page, facts, runtime);
+      const sectionRefs = factStringArray(facts, 'sectionRefs');
+      const initialSections = latestItems(runtime, 'getOperationsSalesMenuDraftSections');
+      if (initialSections.length !== sectionRefs.length)
+        throw new Error(`SALES_MENU_L2_SECTION_DENOMINATOR_INVALID:${initialSections.length}`);
+      const firstInitialSection = initialSections[0];
+      const lastInitialSection = initialSections.at(-1);
+      if (firstInitialSection?.canMoveUp !== false || lastInitialSection?.canMoveDown !== false)
+        throw new Error('SALES_MENU_L2_SECTION_EDGE_MOVE_ORACLE_INVALID');
+      const middleSection = initialSections[1];
+      const movedSectionRef = String(middleSection?.salesSectionRef ?? '');
+      if (!movedSectionRef) throw new Error('SALES_MENU_L2_MIDDLE_SECTION_REF_MISSING');
+      const movedFacts = {...facts, sectionRef: movedSectionRef, salesSectionRef: movedSectionRef};
+      const action = await requireControl(page, 'SALES_MENU_SECTION_ACTION', movedFacts);
+      await chooseDropdownAction(page, action, 'SALES_MENU_SECTION_MENU_ACTION', movedFacts, 'up', '上移');
       await waitForOperation(runtime, 'moveOperationsSalesMenuSection');
-      const orderAfterMove = latestItems(runtime, 'getOperationsSalesMenuDraftSections');
-      const orderAfterMoveKey = orderAfterMove.map(item =>
+      const expectedOrderAfterMove = [
+        movedSectionRef,
+        String(firstInitialSection?.salesSectionRef ?? ''),
+        String(lastInitialSection?.salesSectionRef ?? ''),
+      ];
+      await expect
+        .poll(() =>
+          latestItems(runtime, 'getOperationsSalesMenuDraftSections').map(item => String(item.salesSectionRef)),
+        )
+        .toEqual(expectedOrderAfterMove);
+      const movedAction = await requireControl(page, 'SALES_MENU_SECTION_ACTION', movedFacts);
+      await chooseDropdownAction(page, movedAction, 'SALES_MENU_SECTION_MENU_ACTION', movedFacts, 'delete', '删除分区');
+      await clickBoundControl(page, 'SALES_MENU_CONFIRMATION_SUBMIT', movedFacts, '确认');
+      await waitForOperation(runtime, 'deleteOperationsSalesMenuSection');
+      await expect.poll(() => latestItems(runtime, 'getOperationsSalesMenuDraftSections').length).toBe(2);
+      await expect
+        .poll(() =>
+          latestItems(runtime, 'getOperationsSalesMenuDraftSections').some(
+            item => item.salesSectionRef === movedSectionRef,
+          ),
+        )
+        .toBe(false);
+      break;
+    }
+    case 'sales-menu-section-delete-non-empty': {
+      await prepareDraft(page, facts, runtime);
+      const sectionRefs = factStringArray(facts, 'sectionRefs');
+      const initialSections = latestItems(runtime, 'getOperationsSalesMenuDraftSections');
+      if (initialSections.length !== sectionRefs.length)
+        throw new Error(`SALES_MENU_L2_SECTION_DENOMINATOR_INVALID:${initialSections.length}`);
+      const nonEmptySection = initialSections.find(item => Number(item.itemCount ?? 0) > 0);
+      const nonEmptySectionRef = String(nonEmptySection?.salesSectionRef ?? '');
+      if (!nonEmptySectionRef) throw new Error('SALES_MENU_L2_NONEMPTY_SECTION_REF_MISSING');
+      const beforeDelete = initialSections.map(item =>
         [item.salesSectionRef, item.name, item.itemCount, item.displayOrder].join(':'),
       );
-      const nonEmptySectionRef = String(
-        initialSections.find(item => Number(item.itemCount ?? 0) > 0)?.salesSectionRef ?? sectionRefs[0] ?? '',
-      );
-      if (!nonEmptySectionRef) throw new Error('SALES_MENU_L2_NONEMPTY_SECTION_REF_MISSING');
       const nonEmptyFacts = {...facts, sectionRef: nonEmptySectionRef, salesSectionRef: nonEmptySectionRef};
-      action = await requireControl(page, 'SALES_MENU_SECTION_ACTION', nonEmptyFacts);
-      await chooseDropdownAction(page, action, '删除分区');
-      await clickVisibleButton(page, '确认');
+      const action = await requireControl(page, 'SALES_MENU_SECTION_ACTION', nonEmptyFacts);
+      await chooseDropdownAction(page, action, 'SALES_MENU_SECTION_MENU_ACTION', nonEmptyFacts, 'delete', '删除分区');
+      await clickBoundControl(page, 'SALES_MENU_CONFIRMATION_SUBMIT', nonEmptyFacts, '确认');
       const failedDelete = await waitForFailedOperation(runtime, 'deleteOperationsSalesMenuSection');
       if (responseErrorCode(failedDelete.payload) !== 'SECTION_NOT_EMPTY')
-        throw new Error(`SALES_MENU_L2_SECTION_DELETE_ERROR_CODE_INVALID:${responseErrorCode(failedDelete.payload) ?? 'MISSING'}`);
-      const orderAfterRejectedDelete = latestItems(runtime, 'getOperationsSalesMenuDraftSections').map(item =>
-        [item.salesSectionRef, item.name, item.itemCount, item.displayOrder].join(':'),
-      );
-      expect(orderAfterRejectedDelete).toEqual(orderAfterMoveKey);
-      action = await requireControl(page, 'SALES_MENU_SECTION_ACTION', createdFacts);
-      await chooseDropdownAction(page, action, '删除分区');
-      await clickVisibleButton(page, '确认');
-      await waitForOperation(runtime, 'deleteOperationsSalesMenuSection', 2);
+        throw new Error(
+          `SALES_MENU_L2_SECTION_DELETE_ERROR_CODE_INVALID:${responseErrorCode(failedDelete.payload) ?? 'MISSING'}`,
+        );
+      await expect
+        .poll(() =>
+          latestItems(runtime, 'getOperationsSalesMenuDraftSections').map(item =>
+            [item.salesSectionRef, item.name, item.itemCount, item.displayOrder].join(':'),
+          ),
+        )
+        .toEqual(beforeDelete);
       break;
     }
     case 'sales-menu-add-candidates': {
-      await prepareDraft(page, facts);
-      const table = visibleTestId(page, salesMenuTestIds.itemTable);
-      await table.getByRole('button', {name: '添加商品到菜单'}).click();
+      await prepareDraft(page, facts, runtime);
+      await requireControl(page, 'SALES_MENU_ITEM_TABLE', facts);
+      await clickBoundControl(page, 'SALES_MENU_CANDIDATE_ADD', facts, '添加商品到菜单');
       const candidateDrawer = await requireControl(page, 'SALES_MENU_CANDIDATE_DRAWER', facts);
+      await waitForOperation(runtime, 'getOperationsCatalogNavigation');
       await requireControl(page, 'SALES_MENU_CANDIDATE_CATEGORY_TREE', facts);
       const candidateRefs = factStringArray(facts, 'candidateRefs');
-      const firstCandidate = ownerCandidateByCatalogRef(candidateRefs[0]);
-      const secondCandidate = ownerCandidateByCatalogRef(candidateRefs[1]);
-      const candidateRows = visibleTestId(page, salesMenuTestIds.candidateDrawer).locator('tbody tr:visible');
-      const candidateRow = (candidateFacts: JsonObject): Locator =>
-        candidateRows.filter({hasText: String(candidateFacts.itemCode)}).first();
-      const firstPageRows = await candidateRows.count();
-      if (firstPageRows !== 20)
-        throw new Error(`SALES_MENU_L2_CANDIDATE_PAGE_ONE_DENOMINATOR_INVALID:${firstPageRows}`);
-      const firstRow = candidateRow(firstCandidate);
-      await expect(firstRow).toBeVisible();
-      const firstCheckbox = firstRow.getByRole('checkbox');
-      await expect(firstCheckbox).toBeVisible();
-      if (!(await firstCheckbox.isChecked())) await firstCheckbox.check();
-      await expect(firstCheckbox).toBeChecked();
+      const firstCandidateRef = ownerCandidateItemRef(candidateRefs[0]);
+      const secondCandidateRef = ownerCandidateItemRef(candidateRefs[1]);
+      const candidatePageSize = factNumber(facts, ['candidatePageSize'], 20);
+      appendDebugEvent({
+        kind: 'TEST_CHECKPOINT',
+        caseId: runtime.row.caseId,
+        scenarioId: runtime.row.scenarioId,
+        checkpoint: 'CANDIDATE_PAGE_BEFORE_HTTP_COMPLETION',
+        observedCandidateRequests: runtime.observations.filter(
+          entry => entry.operationId === 'getOperationsSalesMenuItemCandidates',
+        ).length,
+        expectedVisibleCandidateCount: candidatePageSize,
+      });
+      await waitForOperation(runtime, 'getOperationsSalesMenuItemCandidates');
+      appendDebugEvent({
+        kind: 'TEST_CHECKPOINT',
+        caseId: runtime.row.caseId,
+        scenarioId: runtime.row.scenarioId,
+        checkpoint: 'CANDIDATE_PAGE_AFTER_HTTP_COMPLETION',
+        observedCandidateRequests: runtime.observations.filter(
+          entry => entry.operationId === 'getOperationsSalesMenuItemCandidates',
+        ).length,
+        expectedVisibleCandidateCount: candidatePageSize,
+      });
+      await expect(visibleTestId(page, salesMenuTestIds.candidateRow(firstCandidateRef))).toBeVisible();
+      await checkBoundControl(page, 'SALES_MENU_CANDIDATE_ROW', {...facts, candidateRef: firstCandidateRef});
+      await expect(visibleTestId(page, salesMenuTestIds.candidateRow(firstCandidateRef))).toBeChecked();
       await clickCursorNext(page, salesMenuTestIds.candidateCursor, 'SALES_MENU_CANDIDATE_PAGINATION');
-      const secondPageRows = await candidateRows.count();
-      if (secondPageRows !== 1)
-        throw new Error(`SALES_MENU_L2_CANDIDATE_PAGE_TWO_DENOMINATOR_INVALID:${secondPageRows}`);
-      const secondRow = candidateRow(secondCandidate);
-      await expect(secondRow).toBeVisible();
-      const secondCheckbox = secondRow.getByRole('checkbox');
-      await expect(secondCheckbox).toBeVisible();
-      if (!(await secondCheckbox.isChecked())) await secondCheckbox.check();
-      await expect(secondCheckbox).toBeChecked();
-      await clickVisibleButton(page, '添加已选商品');
+      await expect(visibleTestId(page, salesMenuTestIds.candidateRow(firstCandidateRef))).toBeHidden();
+      await expect(visibleTestId(page, salesMenuTestIds.candidateRow(secondCandidateRef))).toBeVisible();
+      await checkBoundControl(page, 'SALES_MENU_CANDIDATE_ROW', {...facts, candidateRef: secondCandidateRef});
+      await expect(visibleTestId(page, salesMenuTestIds.candidateRow(secondCandidateRef))).toBeChecked();
+      await clickBoundControl(page, 'SALES_MENU_CANDIDATE_SUBMIT', facts, '添加已选商品');
       await waitForOperation(runtime, 'addOperationsSalesMenuItems');
       await expect
         .poll(() => latestItems(runtime, 'getOperationsSalesMenuDraftItems').length, {timeout: 20_000})
@@ -912,152 +1551,386 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       if (duplicateItems.length !== 2 || new Set(duplicateItems.map(item => String(item.salesItemRef))).size !== 2)
         throw new Error('SALES_MENU_L2_DUPLICATE_CANDIDATE_READBACK_INVALID');
       const lastCandidateItems = addedItems.filter(item => String(item.catalogItemRef) === candidateRefs[1]);
-      if (lastCandidateItems.length !== 1)
-        throw new Error('SALES_MENU_L2_LAST_CANDIDATE_READBACK_INVALID');
+      if (lastCandidateItems.length !== 1) throw new Error('SALES_MENU_L2_LAST_CANDIDATE_READBACK_INVALID');
       break;
     }
-    case 'sales-menu-edit-direct-item-and-media':
-      await prepareDraft(page, facts);
-      await openDraftEditor(page, facts);
-      await (
-        await requireControl(page, 'SALES_MENU_ITEM_DISPLAY_NAME', facts)
-      ).fill(factText(facts, ['displayName'], `L2销售项${Date.now()}`));
-      await (
-        await requireControl(page, 'SALES_MENU_ITEM_LISTED_PRICE', facts)
-      )
-        .locator('input')
-        .fill(String(factNumber(facts, ['listedPriceCents'], 1888)));
-      await page.getByLabel('单独设置').check();
+    case 'sales-menu-edit-direct-item-and-media': {
+      await prepareDraft(page, facts, runtime);
+      await openDraftEditor(page, facts, runtime);
+      await fillBoundControl(
+        page,
+        'SALES_MENU_ITEM_DISPLAY_NAME',
+        facts,
+        factText(facts, ['displayName'], `L2销售项${Date.now()}`),
+      );
+      await fillBoundControl(
+        page,
+        'SALES_MENU_ITEM_LISTED_PRICE',
+        facts,
+        String(factNumber(facts, ['listedPriceCents'], 1888)),
+      );
+      const customMediaRadio = visibleTestId(page, salesMenuTestIds.itemMediaChoice('CUSTOM'));
+      const customMediaRadioCount = await customMediaRadio.count();
+      appendDebugEvent({
+        kind: 'TEST_CHECKPOINT',
+        caseId: runtime.row.caseId,
+        scenarioId: runtime.row.scenarioId,
+        checkpoint: 'MEDIA_BEFORE_CUSTOM_MODE',
+        radioCount: customMediaRadioCount,
+        radioVisible: customMediaRadioCount > 0 ? await customMediaRadio.isVisible() : false,
+      });
+      await checkBoundControl(page, 'SALES_MENU_ITEM_MEDIA_CHOICE', {...facts, mode: 'CUSTOM'});
+      appendDebugEvent({
+        kind: 'TEST_CHECKPOINT',
+        caseId: runtime.row.caseId,
+        scenarioId: runtime.row.scenarioId,
+        checkpoint: 'MEDIA_AFTER_CUSTOM_MODE',
+        radioChecked: await customMediaRadio.isChecked(),
+        mediaEditorCount: await visibleTestId(page, salesMenuTestIds.itemMediaEditor).count(),
+      });
       await requireControl(page, 'SALES_MENU_ITEM_MEDIA_EDITOR', facts);
-      await requireControl(page, 'SALES_MENU_ITEM_MEDIA_UPLOAD', facts);
-      await visibleTestId(page, salesMenuTestIds.itemMediaEditor)
-        .locator('input[type="file"]')
-        .first()
-        .setInputFiles({
-          name: 'sales-menu-l2.png',
-          mimeType: 'image/png',
-          buffer: Buffer.from(
-            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
-            'base64',
-          ),
-        });
+      const mediaFileInput = await requireNativeFileInput(page, 'SALES_MENU_ITEM_MEDIA_UPLOAD', facts);
+      const mediaFileInputCount = await mediaFileInput.count();
+      appendDebugEvent({
+        kind: 'TEST_CHECKPOINT',
+        caseId: runtime.row.caseId,
+        scenarioId: runtime.row.scenarioId,
+        checkpoint: 'MEDIA_BEFORE_FILE_INPUT',
+        fileInputCount: mediaFileInputCount,
+        fileInputVisible: mediaFileInputCount > 0 ? await mediaFileInput.isVisible() : false,
+        fileInputEnabled: mediaFileInputCount > 0 ? await mediaFileInput.isEnabled() : false,
+      });
+      await mediaFileInput.setInputFiles({
+        name: 'sales-menu-l2.png',
+        mimeType: 'image/png',
+        buffer: Buffer.from(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+          'base64',
+        ),
+      });
+      recordControlTouch('SALES_MENU_ITEM_MEDIA_UPLOAD', salesMenuTestIds.itemMediaUpload, 'ACTION');
+      appendDebugEvent({
+        kind: 'TEST_CHECKPOINT',
+        caseId: runtime.row.caseId,
+        scenarioId: runtime.row.scenarioId,
+        checkpoint: 'MEDIA_AFTER_FILE_INPUT',
+        fileInputCount: await mediaFileInput.count(),
+      });
       await waitForOperation(runtime, 'stageOperationsSalesMenuAsset');
       await requireControl(page, 'SALES_MENU_ITEM_MEDIA_LIST', facts);
-      await clickVisibleButton(page, '保存');
+      await clickBoundControl(page, 'SALES_MENU_ITEM_SAVE', facts, '保存');
       await waitForOperation(runtime, 'updateOperationsSalesMenuItem');
+      await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).toBeHidden();
+
+      await openDraftEditor(page, facts, runtime);
+      await checkBoundControl(page, 'SALES_MENU_ITEM_MEDIA_CHOICE', {...facts, mode: 'CUSTOM'});
+      const secondMediaFileInput = await requireNativeFileInput(page, 'SALES_MENU_ITEM_MEDIA_UPLOAD', facts);
+      await secondMediaFileInput.setInputFiles({
+        name: 'sales-menu-l2-second.png',
+        mimeType: 'image/png',
+        buffer: Buffer.from(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+          'base64',
+        ),
+      });
+      recordControlTouch('SALES_MENU_ITEM_MEDIA_UPLOAD', salesMenuTestIds.itemMediaUpload, 'ACTION');
+      const secondStage = await waitForOperation(runtime, 'stageOperationsSalesMenuAsset', 2);
+      const secondAssetRef = responseString(
+        secondStage.payload,
+        'assetRef',
+        `SALES_MENU_L2_STAGE_READBACK_REF_MISSING:${runtime.row.caseId}:second`,
+      );
+      await requireControl(page, 'SALES_MENU_ITEM_MEDIA_LIST', facts);
+      await clickBoundControl(page, 'SALES_MENU_ITEM_MEDIA_ACTION', {
+        ...facts,
+        mediaIdentity: secondAssetRef,
+        action: 'move-up',
+      });
+      await clickBoundControl(page, 'SALES_MENU_ITEM_DELETE', facts, '删除销售项');
+      await clickBoundControl(page, 'SALES_MENU_CONFIRMATION_SUBMIT', facts, '确认');
+      await waitForOperation(runtime, 'releaseOperationsSalesMenuStagedAsset');
+      await waitForOperation(runtime, 'deleteOperationsSalesMenuItem');
+      await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).toBeHidden();
       break;
+    }
     case 'sales-menu-edit-sku-prices':
     case 'sales-menu-edit-weighted-item':
-      await prepareDraft(page, facts);
-      await openDraftEditor(page, facts);
+      await prepareDraft(page, facts, runtime);
+      await openDraftEditor(page, facts, runtime);
       await requireControl(page, 'SALES_MENU_ITEM_EDITOR', facts);
       if (runtime.row.caseId === 'sales-menu-edit-sku-prices') {
         await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).toContainText('规格');
         await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).not.toContainText('公共挂牌价');
       } else {
         await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).toContainText(/称重|单位/);
-        await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).not.toContainText('起售量');
+        const weightedEditor = visibleTestId(page, salesMenuTestIds.itemEditor);
+        await expect(weightedEditor.getByText('起售量', {exact: true})).toHaveCount(0);
+        await expect(weightedEditor.getByText('订购倍数', {exact: true})).toHaveCount(0);
       }
-      await clickVisibleButton(page, '保存');
+      await clickBoundControl(page, 'SALES_MENU_ITEM_SAVE', facts, '保存');
       await waitForOperation(runtime, 'updateOperationsSalesMenuItem');
       break;
     case 'sales-menu-draft-order-and-pagination': {
-      await prepareDraft(page, facts);
+      await prepareDraft(page, facts, runtime);
       const table = await requireControl(page, 'SALES_MENU_ITEM_TABLE', facts);
-      await expect(table.locator('tbody tr:visible')).toHaveCount(20);
+      const itemRefs = factStringArray(facts, 'salesItemRefs');
+      const itemPageSize = factNumber(facts, ['draftItemPageSize'], 20);
+      for (const itemRef of itemRefs.slice(0, itemPageSize))
+        await expect(visibleTestId(page, salesMenuTestIds.item(itemRef))).toBeVisible();
       await expect(page.getByTestId(`${salesMenuTestIds.draftCursor}-next`)).toBeEnabled();
-      await clickCursorNext(page, salesMenuTestIds.draftCursor, 'SALES_MENU_DRAFT_PAGINATION');
       const targetFacts = lastSalesItemFacts(facts);
+      await clickCursorNext(page, salesMenuTestIds.draftCursor, 'SALES_MENU_DRAFT_PAGINATION');
+      await assertCurrentSalesItemPageReadModel(page, targetFacts, runtime, 'DRAFT');
       const action = await requireControl(page, 'SALES_MENU_ITEM_ACTION', targetFacts);
-      await chooseDropdownAction(page, action, '上移');
+      await chooseDropdownAction(page, action, 'SALES_MENU_ITEM_MENU_ACTION', targetFacts, 'up', '上移');
       await waitForOperation(runtime, 'moveOperationsSalesMenuItem');
       break;
     }
     case 'sales-menu-publish-and-front-structure':
-      await prepareDraft(page, facts);
-      await clickMenuAction(page, '更新到前台');
+      await prepareDraft(page, facts, runtime);
+      await clickBoundControl(page, 'SALES_MENU_MENU_PUBLISH', facts, '更新到前台');
       await requireControl(page, 'SALES_MENU_PUBLISH_DRAWER', facts);
-      await clickVisibleButton(page, '更新到前台');
+      await clickBoundControl(page, 'SALES_MENU_PUBLISH_SUBMIT', facts, '更新到前台');
       await waitForOperation(runtime, 'publishOperationsSalesMenu');
-      await expect(page.getByText('本系统已生成新的前台菜单')).toBeVisible();
+      await expect(visibleTestId(page, salesMenuTestIds.feedback)).toContainText('本系统已生成新的前台菜单');
       await switchMode(page, 'PUBLISHED', facts);
-      await chooseSection(page, facts);
+      await chooseSection(page, facts, runtime, 'PUBLISHED');
       const publishedTable = await requireControl(page, 'SALES_MENU_ITEM_TABLE', facts);
       await expect(publishedTable).toContainText('库存状态');
       await expect(publishedTable).toContainText('销售状态');
-      const publishedHeaders = await publishedTable.locator('thead th').allTextContents();
+      const publishedHeaders = await publishedTable.getByRole('columnheader').allTextContents();
       if (publishedHeaders.some(header => /操作|查看/.test(header)))
         throw new Error(`SALES_MENU_L2_PUBLISHED_OPERATION_COLUMN_PRESENT:${publishedHeaders.join('|')}`);
+      await clickRequiredControl(page, 'SALES_MENU_ITEM', facts);
+      await assertPublishedItemDetailReadModel(page, facts, runtime);
       break;
     case 'sales-menu-front-status-and-pagination':
-      await preparePublished(page, facts);
-      if (await page.getByTestId(`${salesMenuTestIds.publishedCursor}-next`).isEnabled())
+      await preparePublished(page, facts, runtime);
+      await requireControl(page, 'SALES_MENU_ITEM_TABLE', facts);
+      if (await page.getByTestId(`${salesMenuTestIds.publishedCursor}-next`).isEnabled()) {
+        const targetFacts = lastSalesItemFacts(facts);
         await clickCursorNext(page, salesMenuTestIds.publishedCursor, 'SALES_MENU_PUBLISHED_PAGINATION');
-      await clickRequiredControl(page, 'SALES_MENU_ITEM', facts);
-      await requireControl(page, 'SALES_MENU_ITEM_DETAIL', facts);
-      await expect(visibleTestId(page, salesMenuTestIds.itemDetail)).toContainText('库存状态');
-      await expect(visibleTestId(page, salesMenuTestIds.itemDetail)).toContainText('销售状态');
+        await assertCurrentSalesItemPageReadModel(page, targetFacts, runtime, 'PUBLISHED');
+      }
+      const targetFacts = lastSalesItemFacts(facts);
+      await clickRequiredControl(page, 'SALES_MENU_ITEM', targetFacts);
+      await assertPublishedItemDetailReadModel(page, targetFacts, runtime);
+      const itemDetail = visibleTestId(page, salesMenuTestIds.itemDetail);
+      await expect(itemDetail).toContainText('库存状态');
+      await expect(itemDetail).toContainText('销售状态');
       break;
     case 'sales-menu-manual-sold-out-and-restore':
-      await preparePublished(page, facts);
-      await visibleTestId(page, salesMenuTestIds.itemTable)
-        .getByRole('button', {name: /正常销售|已沽清/})
-        .first()
-        .click();
-      await page.getByLabel('人工沽清').check();
-      await clickVisibleButton(page, '设置为沽清');
-      await expect(page.getByText('设置人工沽清时必须填写原因')).toBeVisible();
-      await page.getByPlaceholder('请填写人工沽清原因').fill(factText(facts, ['soldOutReason'], 'L2人工沽清'));
-      await clickVisibleButton(page, '设置为沽清');
+      await preparePublished(page, facts, runtime);
+      await requireControl(page, 'SALES_MENU_ITEM_TABLE', facts);
+      await clickRequiredControl(page, 'SALES_MENU_ITEM_STATUS_ACTION', facts);
+      await checkBoundControl(page, 'SALES_MENU_ITEM_STATUS_CHOICE', {...facts, status: 'SOLD_OUT'});
+      await clickBoundControl(page, 'SALES_MENU_ITEM_STATUS_SUBMIT', facts, '设置为沽清');
+      await expect(visibleTestId(page, salesMenuTestIds.feedback)).toContainText('设置人工沽清时必须填写原因');
+      await fillBoundControl(
+        page,
+        'SALES_MENU_ITEM_STATUS_REASON',
+        facts,
+        factText(facts, ['soldOutReason'], 'L2人工沽清'),
+      );
+      await clickBoundControl(page, 'SALES_MENU_ITEM_STATUS_SUBMIT', facts, '设置为沽清');
       await waitForOperation(runtime, 'setOperationsSalesMenuItemSoldOut');
-      await visibleTestId(page, salesMenuTestIds.itemTable)
-        .getByRole('button', {name: /已沽清|人工沽清/})
-        .first()
-        .click();
-      await page.getByLabel('正常销售').check();
-      await clickVisibleButton(page, '恢复正常销售');
-      await clickVisibleButton(page, '确认');
+      await clickRequiredControl(page, 'SALES_MENU_ITEM_STATUS_ACTION', facts);
+      await checkBoundControl(page, 'SALES_MENU_ITEM_STATUS_CHOICE', {...facts, status: 'NORMAL'});
+      await clickBoundControl(page, 'SALES_MENU_ITEM_STATUS_SUBMIT', facts, '恢复正常销售');
+      await clickBoundControl(page, 'SALES_MENU_CONFIRMATION_SUBMIT', facts, '确认');
       await waitForOperation(runtime, 'restoreOperationsSalesMenuItemSale');
       await switchMode(page, 'OPERATIONS', facts);
       await requireControl(page, 'SALES_MENU_OPERATION_LOG', facts);
+      await waitForOperation(runtime, 'getOperationsSalesMenuOperationRecords');
       break;
-    case 'sales-menu-menu-management-and-multi-active':
-      await chooseChannel(page, facts);
-      await ensureMenuSelected(page, facts);
+    case 'sales-menu-menu-management-and-multi-active': {
+      await chooseChannel(page, facts, runtime);
+      await ensureMenuSelected(page, facts, runtime);
       if (await page.getByTestId(`${salesMenuTestIds.selectorCursor}-next`).isEnabled())
         await clickCursorNext(page, salesMenuTestIds.selectorCursor, 'SALES_MENU_SELECTOR_PAGINATION');
-      await page.getByRole('button', {name: '管理菜单'}).click();
+      await clickBoundControl(page, 'SALES_MENU_MANAGER_OPEN', facts, '管理菜单');
       await requireControl(page, 'SALES_MENU_MANAGER', facts);
-      if (await page.getByTestId(`${salesMenuTestIds.managerCursor}-next`).isEnabled())
-        await clickCursorNext(page, salesMenuTestIds.managerCursor, 'SALES_MENU_MANAGER_PAGINATION');
+      const menuRefs = factStringArray(facts, 'menuRefs');
+      const targetMenuRef = menuRefs.at(-1);
+      if (!targetMenuRef) throw new Error('SALES_MENU_L2_MANAGER_TARGET_REF_MISSING');
+      const targetSelect = await findManagerAction(page, runtime, targetMenuRef, 'select');
+      const targetFacts = {...facts, menuRef: targetMenuRef};
+      await targetSelect.click();
+      recordActionForLocator(targetSelect, 'click');
+      await expect(page.getByTestId(salesMenuTestIds.menuManager)).toBeHidden();
+      const targetMenu = ownerMenuByRef(targetMenuRef);
+      const targetMenuName = targetMenu.name;
+      if (typeof targetMenuName !== 'string' || targetMenuName.length === 0)
+        throw new Error(`SALES_MENU_L2_OWNER_MENU_NAME_MISSING:${targetMenuRef}`);
+      const menuSelector = await requireControl(page, 'SALES_MENU_SELECTOR', targetFacts);
+      await expect(menuSelector).toContainText(targetMenuName);
+      appendDebugEvent({
+        kind: 'TEST_CHECKPOINT',
+        caseId: runtime.row.caseId,
+        scenarioId: runtime.row.scenarioId,
+        checkpoint: 'SALES_MENU_SELECTED_MENU_READ_MODEL_READY',
+        salesMenuRef: targetMenuRef,
+        expectedMenuName: targetMenuName,
+        readModelSourceBasis: 'CURRENT_DOM_READ_MODEL',
+      });
+      await clickBoundControl(page, 'SALES_MENU_MENU_SCHEDULE', targetFacts, '生效与时段');
+      await requireControl(page, 'SALES_MENU_SCHEDULE_DRAWER', facts);
+      await checkBoundControl(page, 'SALES_MENU_SCHEDULE_KIND', {...facts, kind: 'DAILY_TIME_RANGE'});
+      await fillBoundControl(page, 'SALES_MENU_SCHEDULE_START', facts, '09:00');
+      await fillBoundControl(page, 'SALES_MENU_SCHEDULE_END', facts, '21:00');
+      await clickBoundControl(page, 'SALES_MENU_SCHEDULE_SAVE', facts, '保存时段');
+      await waitForOperation(runtime, 'updateOperationsSalesMenuSchedule');
+      await clickBoundControl(page, 'SALES_MENU_MANAGER_OPEN', facts, '管理菜单');
+      await requireControl(page, 'SALES_MENU_MANAGER', facts);
+      const targetToggle = await findManagerAction(page, runtime, targetMenuRef, 'toggle');
+      await targetToggle.click();
+      recordActionForLocator(targetToggle, 'click');
+      await waitForOperation(runtime, 'setOperationsSalesMenuActivation');
+
       await page.keyboard.press('Escape');
       await expect(page.getByTestId(salesMenuTestIds.menuManager)).toBeHidden();
-      await clickMenuAction(page, '生效与时段');
-      await requireControl(page, 'SALES_MENU_SCHEDULE_DRAWER', facts);
-      await page.getByLabel('每日时段').check();
-      await page.getByPlaceholder('开始时间，如 09:00').fill('09:00');
-      await page.getByPlaceholder('结束时间，如 21:00').fill('21:00');
-      await clickVisibleButton(page, '保存时段');
-      await waitForOperation(runtime, 'updateOperationsSalesMenuSchedule');
-      await clickMenuAction(page, /启用|停用/);
+      const createMenuName = factText(facts, ['createMenuName'], `L2菜单${Date.now()}`);
+      await clickBoundControl(page, 'SALES_MENU_MENU_CREATE', facts, '新建菜单');
+      await requireControl(page, 'SALES_MENU_MENU_CREATE_DRAWER', facts);
+      await fillBoundControl(page, 'SALES_MENU_MENU_CREATE_NAME', facts, createMenuName);
+      await clickBoundControl(page, 'SALES_MENU_MENU_CREATE_SUBMIT', facts, '创建菜单');
+      const createdMenu = await waitForOperation(runtime, 'createOperationsSalesMenu');
+      const createdMenuRef = responseString(
+        createdMenu.payload,
+        'salesMenuRef',
+        `SALES_MENU_L2_CREATE_READBACK_REF_MISSING:${runtime.row.caseId}`,
+      );
+      await expect(visibleTestId(page, salesMenuTestIds.menuCreateDrawer)).toBeHidden();
+
+      await clickBoundControl(page, 'SALES_MENU_MANAGER_OPEN', facts, '管理菜单');
+      await requireControl(page, 'SALES_MENU_MANAGER', facts);
+      const createdMenuAction = await findManagerAction(page, runtime, createdMenuRef, 'menu');
+      await createdMenuAction.click();
+      recordActionForLocator(createdMenuAction, 'click');
+      const createdMenuFacts = {...facts, menuRef: createdMenuRef};
+      await clickManagerMenuAction(page, createdMenuFacts, 'rename', '重命名');
+      const renamedMenuName = `${createMenuName}-已重命名`;
+      await requireControl(page, 'SALES_MENU_MENU_RENAME_DRAWER', createdMenuFacts);
+      await fillBoundControl(page, 'SALES_MENU_MENU_RENAME_NAME', createdMenuFacts, renamedMenuName);
+      await clickBoundControl(page, 'SALES_MENU_MENU_RENAME_SUBMIT', createdMenuFacts, '保存名称');
+      await waitForOperation(runtime, 'renameOperationsSalesMenu');
+      await expect(visibleTestId(page, salesMenuTestIds.menuRenameDrawer)).toBeHidden();
+
+      await clickBoundControl(page, 'SALES_MENU_MANAGER_OPEN', facts, '管理菜单');
+      await requireControl(page, 'SALES_MENU_MANAGER', facts);
+      const renamedMenuAction = await findManagerAction(page, runtime, createdMenuRef, 'menu');
+      await renamedMenuAction.click();
+      recordActionForLocator(renamedMenuAction, 'click');
+      await clickManagerMenuAction(page, createdMenuFacts, 'archive', '归档');
+      await clickBoundControl(page, 'SALES_MENU_CONFIRMATION_SUBMIT', createdMenuFacts, '确认');
+      await waitForOperation(runtime, 'archiveOperationsSalesMenu');
+      break;
+    }
+    case 'sales-menu-copy-boundary': {
+      await prepareDraft(page, facts, runtime);
+      const sourceDetail = await waitForSelectedMenuOperation(runtime, facts, 'getOperationsSalesMenu');
+      const sourceDetailData = responseObject(sourceDetail.payload);
+      const sourceDraftSchedule = sourceDetailData?.draftSchedule;
+      if (!sourceDraftSchedule || typeof sourceDraftSchedule !== 'object')
+        throw new Error('SALES_MENU_L2_COPY_SOURCE_SCHEDULE_READBACK_MISSING');
+      await clickBoundControl(page, 'SALES_MENU_MANAGER_OPEN', facts, '管理菜单');
+      await requireControl(page, 'SALES_MENU_MANAGER', facts);
+      await clickBoundControl(page, 'SALES_MENU_MANAGER_ACTION', {...facts, action: 'menu'});
+      await clickManagerMenuAction(page, facts, 'copy', '复制');
+      const copied = await waitForOperation(runtime, 'copyOperationsSalesMenu');
+      const copiedMenuRef = responseString(
+        copied.payload,
+        'targetRef',
+        `SALES_MENU_L2_COPY_TARGET_REF_MISSING:${runtime.row.caseId}`,
+      );
+      const sourceMenuRef = factText(facts, ['menuRef']);
+      if (copiedMenuRef === sourceMenuRef) throw new Error('SALES_MENU_L2_COPY_IDENTITY_NOT_INDEPENDENT');
+      const copiedFacts = {...facts, menuRef: copiedMenuRef};
+      const copiedDetail = await waitForSelectedMenuOperation(runtime, copiedFacts, 'getOperationsSalesMenu');
+      const copiedDetailData = responseObject(copiedDetail.payload);
+      if (!copiedDetailData) throw new Error('SALES_MENU_L2_COPY_DETAIL_READBACK_MISSING');
+      expect(copiedDetailData.draftSchedule).toEqual(sourceDraftSchedule);
+      expect(copiedDetailData.activation ?? null).toBeNull();
+      expect(copiedDetailData.latestPublishedRevision ?? null).toBeNull();
+      const copiedSections = await waitForSelectedMenuOperation(
+        runtime,
+        copiedFacts,
+        'getOperationsSalesMenuDraftSections',
+      );
+      const copiedSection = responseItems(copiedSections.payload)[0];
+      const copiedSectionRef = copiedSection?.salesSectionRef;
+      if (typeof copiedSectionRef !== 'string' || copiedSectionRef.length === 0)
+        throw new Error('SALES_MENU_L2_COPY_SECTION_READBACK_MISSING');
+      const copiedSectionFacts = {
+        ...copiedFacts,
+        sectionRef: copiedSectionRef,
+        salesSectionRef: copiedSectionRef,
+      };
+      await waitForSelectedSectionItemsOperation(runtime, copiedSectionFacts, 'DRAFT');
+      await requireControl(page, 'SALES_MENU_ITEM_TABLE', copiedSectionFacts);
+      appendDebugEvent({
+        kind: 'TEST_CHECKPOINT',
+        caseId: runtime.row.caseId,
+        scenarioId: runtime.row.scenarioId,
+        checkpoint: 'SALES_MENU_COPY_TARGET_READ_MODEL_READY',
+        sourceMenuRef,
+        copiedMenuRef,
+        copiedSectionRef,
+        activation: copiedDetailData.activation ?? null,
+        latestPublishedRevision: copiedDetailData.latestPublishedRevision ?? null,
+      });
+      break;
+    }
+    case 'sales-menu-publish-blockers': {
+      await chooseChannel(page, facts, runtime);
+      await ensureMenuSelected(page, facts, runtime);
+      await clickBoundControl(page, 'SALES_MENU_MANAGER_OPEN', facts, '管理菜单');
+      await requireControl(page, 'SALES_MENU_MANAGER', facts);
+      const menuRef = factText(facts, ['menuRef']);
+      const activation = await findManagerAction(page, runtime, menuRef, 'toggle');
+      await activation.click();
+      recordActionForLocator(activation, 'click');
       await waitForOperation(runtime, 'setOperationsSalesMenuActivation');
-      break;
-    case 'sales-menu-copy-boundary':
-      await prepareDraft(page, facts);
-      await clickMenuAction(page, '复制');
-      await waitForOperation(runtime, 'copyOperationsSalesMenu');
+      await page.keyboard.press('Escape');
+      await expect(page.getByTestId(salesMenuTestIds.menuManager)).toBeHidden();
+
+      const blockerChannelRef = factText(facts, ['blockerChannelRef']);
+      await chooseChannel(page, {...facts, channelRef: blockerChannelRef}, runtime);
+      await ensureMenuSelected(page, facts, runtime);
+      await switchMode(page, 'DRAFT', facts);
+      await chooseSection(page, facts, runtime, 'DRAFT');
       await requireControl(page, 'SALES_MENU_ITEM_TABLE', facts);
-      break;
-    case 'sales-menu-publish-blockers':
-      await prepareDraft(page, facts);
-      await clickMenuAction(page, '更新到前台');
+      await clickBoundControl(page, 'SALES_MENU_MENU_PUBLISH', facts, '更新到前台');
       await requireControl(page, 'SALES_MENU_PUBLISH_DRAWER', facts);
       await expect(visibleTestId(page, salesMenuTestIds.publishDrawer)).toContainText(/未满足|停用|阻断/);
-      await waitForOperation(runtime, 'getOperationsSalesMenuPublicationPreview');
+      await expect
+        .poll(
+          () => {
+            const latest = [...runtime.observations]
+              .reverse()
+              .find(entry => entry.operationId === 'getOperationsSalesMenuPublicationPreview');
+            const violations = responseObject(latest?.payload)?.violations;
+            return latest?.status === 200 && Array.isArray(violations)
+              ? violations.some(item => (item as JsonObject).kind === 'CHANNEL_DISABLED')
+              : false;
+          },
+          {timeout: 20_000},
+        )
+        .toBe(true);
+      const preview = [...runtime.observations]
+        .reverse()
+        .find(entry => entry.operationId === 'getOperationsSalesMenuPublicationPreview');
+      if (!preview) throw new Error('SALES_MENU_L2_PUBLICATION_PREVIEW_READBACK_MISSING');
+      const violations = responseObject(preview.payload)?.violations;
+      if (!Array.isArray(violations) || !violations.some(item => (item as JsonObject).kind === 'CHANNEL_DISABLED'))
+        throw new Error('SALES_MENU_L2_CHANNEL_DISABLED_BLOCKER_READBACK_MISSING');
+      const publishSubmit = await requireControl(page, 'SALES_MENU_PUBLISH_SUBMIT', facts);
+      await expect(publishSubmit).toBeDisabled();
       break;
+    }
     case 'sales-menu-operation-records':
-      await chooseChannel(page, facts);
-      await ensureMenuSelected(page, facts);
+      await chooseChannel(page, facts, runtime);
+      await ensureMenuSelected(page, facts, runtime);
       await switchMode(page, 'OPERATIONS', facts);
       await requireControl(page, 'SALES_MENU_OPERATION_LOG', facts);
       await expect(visibleTestId(page, salesMenuTestIds.operationLog)).toContainText('操作人');
@@ -1066,28 +1939,100 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await waitForOperation(runtime, 'getOperationsSalesMenuOperationRecords');
       break;
     case 'sales-menu-failure-recovery-and-focus': {
-      await prepareDraft(page, facts);
-      await openDraftEditor(page, facts);
+      await prepareDraft(page, facts, runtime);
+      await openDraftEditor(page, facts, runtime);
       const failure = await installOneShotFailure(page, 'updateOperationsSalesMenuItem');
-      const displayName = await requireControl(page, 'SALES_MENU_ITEM_DISPLAY_NAME', facts);
       const name = factText(facts, ['displayName'], `L2失败恢复${Date.now()}`);
-      await displayName.fill(name);
-      await clickVisibleButton(page, '保存');
+      await fillBoundControl(page, 'SALES_MENU_ITEM_DISPLAY_NAME', facts, name);
+      const displayName = await requireControl(page, 'SALES_MENU_ITEM_DISPLAY_NAME', facts);
+      await clickBoundControl(page, 'SALES_MENU_ITEM_SAVE', facts, '保存');
       await failure.waitForIntercept();
       await expect(displayName).toHaveValue(name);
-      await clickVisibleButton(page, '保存');
+      await clickBoundControl(page, 'SALES_MENU_ITEM_SAVE', facts, '保存');
       await waitForOperation(runtime, 'updateOperationsSalesMenuItem', 2);
-      await page.keyboard.press('Escape');
       await expect(page.getByTestId(salesMenuTestIds.itemEditor)).toBeHidden();
+
+      await prepareDraft(page, facts, runtime);
+      const moveItemRef = factStringArray(facts, 'salesItemRefs')[0];
+      const moveFacts = {...facts, itemRef: moveItemRef};
+      const moveAction = await requireControl(page, 'SALES_MENU_ITEM_ACTION', moveFacts);
+      const moveFailure = await installOneShotFailure(page, 'moveOperationsSalesMenuItem');
+      await chooseDropdownAction(page, moveAction, 'SALES_MENU_ITEM_MENU_ACTION', moveFacts, 'down', '下移');
+      await moveFailure.waitForIntercept();
+      await waitForFailedOperation(runtime, 'moveOperationsSalesMenuItem');
+      const moveRetryAction = await requireControl(page, 'SALES_MENU_ITEM_ACTION', moveFacts);
+      await chooseDropdownAction(page, moveRetryAction, 'SALES_MENU_ITEM_MENU_ACTION', moveFacts, 'down', '下移');
+      await waitForOperation(runtime, 'moveOperationsSalesMenuItem', 2);
+
+      await prepareDraft(page, facts, runtime);
+      await openDraftEditor(page, facts, runtime);
+      await checkBoundControl(page, 'SALES_MENU_ITEM_MEDIA_CHOICE', {...facts, mode: 'CUSTOM'});
+      await requireControl(page, 'SALES_MENU_ITEM_MEDIA_EDITOR', facts);
+      const stageFileInput = await requireNativeFileInput(page, 'SALES_MENU_ITEM_MEDIA_UPLOAD', facts);
+      const stageFailure = await installOneShotFailure(page, 'stageOperationsSalesMenuAsset');
+      await stageFileInput.setInputFiles({
+        name: 'sales-menu-l2-failure.png',
+        mimeType: 'image/png',
+        buffer: Buffer.from(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+          'base64',
+        ),
+      });
+      recordControlTouch('SALES_MENU_ITEM_MEDIA_UPLOAD', salesMenuTestIds.itemMediaUpload, 'ACTION');
+      await stageFailure.waitForIntercept();
+      await waitForFailedOperation(runtime, 'stageOperationsSalesMenuAsset');
+      await expect(visibleTestId(page, salesMenuTestIds.itemMediaEditor)).toContainText('上传失败');
+      await stageFileInput.setInputFiles({
+        name: 'sales-menu-l2-failure-retry.png',
+        mimeType: 'image/png',
+        buffer: Buffer.from(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+          'base64',
+        ),
+      });
+      recordControlTouch('SALES_MENU_ITEM_MEDIA_UPLOAD', salesMenuTestIds.itemMediaUpload, 'ACTION');
+      await waitForOperation(runtime, 'stageOperationsSalesMenuAsset', 2);
+      await requireControl(page, 'SALES_MENU_ITEM_MEDIA_LIST', facts);
+      await clickBoundControl(page, 'SALES_MENU_ITEM_CLOSE', facts, '关闭');
+      await clickBoundControl(page, 'SALES_MENU_ITEM_DISCARD_CANCEL', facts, '继续编辑');
+      await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).toBeVisible();
+      await clickBoundControl(page, 'SALES_MENU_ITEM_CLOSE', facts, '关闭');
+      await clickBoundControl(page, 'SALES_MENU_ITEM_DISCARD_CONFIRM', facts, '放弃并关闭');
+      await waitForOperation(runtime, 'releaseOperationsSalesMenuStagedAsset');
+      await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).toBeHidden();
+      await expect(page.getByTestId(salesMenuTestIds.item(factText(facts, ['itemRef'])))).toBeFocused();
+
+      await prepareDraft(page, facts, runtime);
+      await clickBoundControl(page, 'SALES_MENU_MENU_PUBLISH', facts, '更新到前台');
+      await requireControl(page, 'SALES_MENU_PUBLISH_DRAWER', facts);
+      const publishFailure = await installOneShotFailure(page, 'publishOperationsSalesMenu');
+      await clickBoundControl(page, 'SALES_MENU_PUBLISH_SUBMIT', facts, '更新到前台');
+      await publishFailure.waitForIntercept();
+      await waitForFailedOperation(runtime, 'publishOperationsSalesMenu');
+      await clickBoundControl(page, 'SALES_MENU_PUBLISH_SUBMIT', facts, '更新到前台');
+      await waitForOperation(runtime, 'publishOperationsSalesMenu', 2);
+      await expect(visibleTestId(page, salesMenuTestIds.feedback)).toContainText('本系统已生成新的前台菜单');
       break;
     }
-    case 'sales-menu-auth-and-scope-isolation':
-      await chooseChannel(page, facts);
-      await requireControl(page, 'SALES_MENU_CHANNEL_CARDS', facts);
-      await page.getByRole('button', {name: '管理菜单'}).click();
+    case 'sales-menu-auth-and-scope-isolation': {
+      await chooseChannel(page, facts, runtime);
+      await ensureMenuSelected(page, facts, runtime);
+      await waitForSelectedMenuOperation(runtime, facts, 'getOperationsSalesMenuDraftSections');
+      await requireControl(page, 'SALES_MENU_SECTION_LIST', facts);
+      await expect(await requireControl(page, 'SALES_MENU_MENU_SCHEDULE', facts)).toBeDisabled();
+      await expect(await requireControl(page, 'SALES_MENU_MENU_PUBLISH', facts)).toBeDisabled();
+      await expect(await requireControl(page, 'SALES_MENU_MENU_CREATE', facts)).toBeDisabled();
+      await clickBoundControl(page, 'SALES_MENU_MANAGER_OPEN', facts, '管理菜单');
       await requireControl(page, 'SALES_MENU_MANAGER', facts);
-      await expect(page.getByRole('button', {name: '新建菜单'})).toBeVisible();
+      const targetMenuRef = factText(facts, ['menuRef']);
+      const targetToggle = await findManagerAction(page, runtime, targetMenuRef, 'toggle');
+      await expect(targetToggle).toBeDisabled();
+      const foreignProjectChannelRef = factText(facts, ['foreignProjectChannelRef']);
+      const foreignStoreChannelRef = factText(facts, ['foreignStoreChannelRef']);
+      await expect(page.getByTestId(salesMenuTestIds.channelCard(foreignProjectChannelRef))).toHaveCount(0);
+      await expect(page.getByTestId(salesMenuTestIds.channelCard(foreignStoreChannelRef))).toHaveCount(0);
       break;
+    }
     default:
       throw new Error(`SALES_MENU_L2_CASE_UNKNOWN:${runtime.row.caseId}`);
   }
@@ -1112,11 +2057,59 @@ test.describe('销售菜单 · generated browser-L2 contract', () => {
       const runtime: CaseRuntime = {row, facts, observations: []};
       activeCaseContext = {caseId: row.caseId, scenarioId: row.scenarioId};
       activeRuntime = runtime;
+      page.on('console', message => {
+        const event = frontendConsoleEvent(message.text());
+        if (!event) return;
+        appendDebugEvent({
+          kind: 'FRONTEND_LOG',
+          caseId: row.caseId,
+          scenarioId: row.scenarioId,
+          actionId: activeActionContext?.actionId ?? null,
+          level: event.level ?? null,
+          event: event.event ?? null,
+          phase: event.phase ?? null,
+          outcome: event.outcome ?? null,
+          operationId: event.operationId ?? null,
+          operationInstanceId: event.operationInstanceId ?? null,
+          errorCode: event.errorCode ?? null,
+          durationMs: event.durationMs ?? null,
+        });
+      });
+      page.on('pageerror', error => {
+        appendDebugEvent({
+          kind: 'BROWSER_PAGE_ERROR',
+          caseId: row.caseId,
+          scenarioId: row.scenarioId,
+          actionId: activeActionContext?.actionId ?? null,
+          errorName: error.name,
+          errorMessage: error.message.slice(0, 240),
+        });
+      });
+      page.on('requestfailed', request => {
+        if (generatedOperationForRequest(request)) return;
+        appendDebugEvent({
+          kind: 'BROWSER_REQUEST_FAILED',
+          caseId: row.caseId,
+          scenarioId: row.scenarioId,
+          actionId: activeActionContext?.actionId ?? null,
+          pathname: new URL(request.url()).pathname,
+          errorText: request.failure()?.errorText ?? 'UNKNOWN',
+        });
+      });
       appendJoinEvent({kind: 'CASE_START', caseId: row.caseId, scenarioId: row.scenarioId, fixtureRef: row.fixtureRef});
       try {
         await installGeneratedL2Diagnostics(page);
         const responseObserver = observeGeneratedResponses(page);
-        await signIn(page);
+        await signIn(
+          page,
+          row.caseId === 'sales-menu-auth-and-scope-isolation'
+            ? {
+                loginNameEnv: 'R5_L2_OPERATIONS_READONLY_LOGIN_NAME',
+                passwordEnv: 'R5_L2_OPERATIONS_READONLY_LOGIN_PASSWORD',
+                roleLabelEnv: 'R5_L2_OPERATIONS_READONLY_ROLE_LABEL',
+              }
+            : undefined,
+        );
         await openSalesMenu(page, facts);
         await runDeclaredAction(runtime, async () => {
           await runCaseJourney(page, runtime);

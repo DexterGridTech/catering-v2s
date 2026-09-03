@@ -25,7 +25,11 @@ import type {
 
 const logger = createSafeLogger({
   service: 'operations-admin',
-  enabled: import.meta.env.DEV,
+  // Managed browser-L2 preview runs are production builds, so DEV is false.
+  // The runner explicitly enables the existing foundation logger for those
+  // runs; ordinary preview/build usage stays quiet unless opted in.
+  enabled: import.meta.env.DEV || import.meta.env.VITE_FRONTEND_DEBUG_LOGS === 'true',
+  runId: import.meta.env.VITE_FRONTEND_DEBUG_RUN_ID,
   sink: createBeaconLogSink(import.meta.env.VITE_FRONTEND_LOG_SINK_URL),
 });
 /** Shared safe logger for feature-level workflow diagnostics. */
@@ -104,7 +108,7 @@ export const operationsApi = createApi({
       return () => activeControllers.delete(controller);
     },
   }),
-  tagTypes: ['wire', 'catalogInventory'],
+  tagTypes: ['wire', 'catalogInventory', 'salesMenu'],
   endpoints: build => ({
     ...createOperationsAdminRtkEndpoints(build, toOperationsWireRequest),
     ...createCatalogInventoryRtkEndpoints(build, toCatalogInventoryWireRequest),

@@ -10,14 +10,14 @@
     "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
   },
   "dependencies": {
-    "@reduxjs/toolkit": "2.12.0",
     "@catering-v2s/kernel-base-contracts": "workspace:*",
     "@catering-v2s/kernel-base-platform-ports": "workspace:*",
     "@catering-v2s/kernel-base-runtime": "workspace:*",
-    "@catering-v2s/kernel-base-state": "workspace:*"
+    "@catering-v2s/kernel-base-state": "workspace:*",
+    "@reduxjs/toolkit": "2.12.0"
   },
   "devDependencies": {
-    "vitest": "^4.1.10",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.10"
   }
 }

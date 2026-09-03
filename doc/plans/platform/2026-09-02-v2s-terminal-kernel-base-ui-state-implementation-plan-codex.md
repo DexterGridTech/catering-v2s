@@ -69,7 +69,8 @@ L2、UAT 或部署。未来动态命令不得在本计划授权下运行。
 - 新增 types/foundations：catalog entry/context/value、catalog builder，UI variable declaration/write 与
   module factory；
 - catalog 对 `Reflect.ownKeys` 做批准字段精确校验，拒绝 component/element/lazy/function/symbol/non-enumerable
-  extra key；再构造新的 canonical 冻结 entry/list/record index。duplicate `partKey` 拒绝、三维闭集输入验证、无 React component；
+  extra key；再构造新的 canonical 冻结 entry/list/record index。duplicate `partKey` 拒绝、`containerKeys` 为可空的
+  非空字符串列表、其余三维仍为非空闭集列表、无 React component；
 - variable full key 由 moduleName 工厂生成；default/persistIntent 留在 declaration；duplicate full key 在
   module factory composition registry 构建时拒绝；declaration 带包内 factory brand，组合边界校验 exact own-key
   集合与 `key` 的 `moduleName.` 前缀，拒绝结构伪造或前缀错配的变量进入 registry；
@@ -78,9 +79,10 @@ L2、UAT 或部署。未来动态命令不得在本计划授权下运行。
 - root index 只接入 §6 的这部分 public types/helpers；`selectUiVariable` 不作脱离 module 的 root export，
   它是 `UiStateModule` 上绑定冻结 declaration registry 的 instance method。
 
-**focused proof**：duplicate partKey throw；builder result/entries/index immutable；catalog 无 register；同 local key 的
+**focused proof**：duplicate partKey throw；builder result/entries/index immutable；catalog 无 register；`containerKeys: []`
+可构建但不进入任何容器枚举，且 `displayModes`/`workspaces`/`instanceModes` 的空数组仍拒绝；同 local key 的
 不同 module 得到不同 key；write helper 保持 T；模块组合拒绝无 factory brand 或 `key`/`moduleName` 前缀错配的
-declaration；`never`/`owner-only` 类型来源为 state；枚举三维过滤；
+declaration；`never`/`owner-only` 类型来源为 state；枚举按 `containerKeys.includes` 与三维过滤；
 状态 DTO 不含 title/description/renderer。反向改 map 覆盖、去 module prefix、传入 `{component(){}}`、symbol 或
 non-enumerable extra key、或让 show validation 调 catalog 时各自红。
 
@@ -185,10 +187,38 @@ yarn workspace @catering-v2s/terminal verify
 actor 精确集合、U-1..U-11 的实际绿色用例、不可证明边界。随后发起 fresh
 `REVIEW_TARGET=IMPLEMENTATION`，再由 Dexter/Claude 静态 review；“按详设实现”不构成复核豁免。
 
-**本次实施记录（2026-09-02）**：ui-state package typecheck 通过；package test 为 6 files/27 tests；U-1～U-11
+**P0-P5 历史实施记录（2026-09-02）**：ui-state package typecheck 通过；package test 为 6 files/27 tests；U-1～U-11
 acceptance 为 12/12；behavior harness 基线 12/12，U1～U11 及 U6_CLEAR/U6_FORGED/U8_REGISTRATION/U9_SYMBOL/U9_REGISTER
 全部以 focused mutation 变红并 cleanup PASS；ui-state static 八道规则、support 与 target-only red vector 全部回绿；
 terminal `verify:static` 与修复后 `verify` 均 PASS。机器不可判项仍按 §7.3 保留为评审边界。
+
+### UI-P6 · S-7 catalog eligibility shape
+
+**授权边界**：本 CP 只修 ui-state catalog 的准入字段，不触碰 `showScreen` payload 中单数
+`containerKey`、actor 放置写入、S-6、render、动态环境或其他 kernel 包。
+
+**变更**：`UiCatalogEntry` 的准入字段为只读 `containerKeys` 列表；列表允许为空，表示该 part 不参与
+任何容器枚举；`displayModes`、`workspaces`、`instanceModes` 继续要求非空闭集列表。批准字段仍由
+`Reflect.ownKeys` 做精确相等校验，枚举改为 `containerKeys.includes(containerKey)`，public export 集合不变。
+README 与本计划/详设同步记录单数放置键和复数准入列表的边界。
+
+**focused proof 与红向量**：A-19 证明空 `containerKeys` 不出现在任一真实容器枚举结果；A-20 的两个方向
+分别证明 containerKeys 空数组可接受、另三组空数组仍拒绝；A-21 证明 exact own-keys 不能退化为子集。
+这些反例均改写临时副本中的生产实现（过滤实现、空值校验、元素校验、own-keys 条件），不得修改夹具
+输入冒充生产 mutation；每个变异必须先使对应 proof 失败，恢复实现后再回绿。catalog-only 的
+`containerKeys` 进入 state 也必须使 state-boundary gate 变红。
+
+**完成信号**：S-7 的源码、测试、static checker、behavior harness、README、详设与本计划均使用一致的
+catalog contract；placement 仍使用单数 `containerKey`；package public surface 与其他行为保持不变。
+
+**S-7 新鲜验收记录（2026-09-03）**：package typecheck 退出码 0；package test 为 6 files/31 tests；
+`check-static.test.mjs` 的 model cleanup 与 static red vectors PASS，新增的
+`UI_STATE_RED_CATALOG_CONTAINER_KEYS_IN_STATE` 只使 catalog-state-boundary 目标门变红；
+`check-static.mjs` 八道 ui-state 规则与 support PASS；`check-behavior.mjs` 的 catalog baseline 7/7、既有
+acceptance baseline 12/12，以及 A-19、A20_CONTAINER_EMPTY、A20_DIMENSIONS_NON_EMPTY、A21、
+S7_CONTAINER_ITEM_NON_EMPTY、S7_CONTAINER_ITEM_UNIQUE 的生产实现变异均按预期失败并 cleanup PASS；
+`terminal verify:static` 与 `terminal verify` 均 PASS。实际 public export 仍为 28，放置侧仍保留单数
+`containerKey`；S-7 不包含 S-6、render、动态环境或数据操作。
 
 ## 4 · 逐文件变更清单（本次已实施范围）
 

@@ -47,6 +47,9 @@ const inventoryManagementPage = read(
 );
 const catalogContract = JSON.parse(read('contracts/catalog/catalog-inventory-edge-contract.json'));
 const catalogTagPolicy = JSON.parse(read('contracts/catalog/catalog-inventory-rtk-tag-policy.json'));
+const salesMenuTagPolicy = JSON.parse(read('contracts/policy/sales-menu-rtk-tag-policy.json'));
+const edgeCatalog = JSON.parse(read('doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json'));
+const salesMenuPage = read('apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx');
 
 test('command transports release RTK query and mutation lifecycle state', () => {
   for (const source of [operationsTransport, platformTransport]) {
@@ -65,7 +68,7 @@ test('catalog-inventory RTK generation uses the policy-defined fact tags', () =>
   assert.equal((catalogRtk.match(/invalidatesTags:/g) ?? []).length, mutationCount);
   assert.equal(catalogTagPolicy.operationCount, catalogContract.operations.length);
   assert.equal(catalogTagPolicy.operations.length, catalogContract.operations.length);
-  assert.match(operationsApi, /tagTypes: \['wire', 'catalogInventory'\]/);
+  assert.match(operationsApi, /tagTypes: \['wire', 'catalogInventory', 'salesMenu'\]/);
   assert.match(catalogRtk, /type: "catalogInventory"/);
   assert.match(catalogRtk, /resolveCatalogInventoryTags/);
   assert.match(catalogRtk, /catalog-item-ref/);
@@ -78,6 +81,89 @@ test('catalog-inventory RTK generation uses the policy-defined fact tags', () =>
   assert.match(operationsRtk, /createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdminRtkTagType = "wire">/);
   for (const operation of catalogTagPolicy.operations)
     assert.match(catalogRtk, new RegExp(`${operation.operationId}: build\\.`));
+});
+
+test('sales-menu RTK generation uses scoped policy tags and one automatic refresh chain', () => {
+  const salesMenuOperations = edgeCatalog.operations.filter(
+    operation => operation.face === 'operations-admin' && operation.path.includes('/sales-menus'),
+  );
+  assert.equal(salesMenuTagPolicy.operationCount, salesMenuOperations.length);
+  assert.equal(salesMenuTagPolicy.operations.length, salesMenuOperations.length);
+  assert.equal(salesMenuTagPolicy.tagType, 'salesMenu');
+  assert.match(operationsApi, /tagTypes: \['wire', 'catalogInventory', 'salesMenu'\]/);
+  assert.match(operationsRtk, /OperationsAdminRtkTagType = "wire" \| "catalogInventory" \| "salesMenu"/);
+  assert.match(operationsRtk, /resolveSalesMenuTags/);
+  for (const operation of salesMenuTagPolicy.operations) {
+    const start = operationsRtk.indexOf(`    ${operation.operationId}: build.`);
+    assert.notEqual(start, -1, `missing generated endpoint ${operation.operationId}`);
+    const next = operationsRtk.indexOf('\n    }),', start + 5);
+    const endpoint = operationsRtk.slice(start, next === -1 ? operationsRtk.length : next);
+    assert.doesNotMatch(endpoint, /id: "LIST"/);
+    if (operation.provides.length > 0 || operation.invalidates.length > 0)
+      assert.match(endpoint, /resolveSalesMenuTags/);
+    for (const descriptor of [...operation.provides, ...operation.invalidates]) {
+      assert.notEqual(descriptor.id, 'LIST');
+    }
+  }
+  for (const operationId of [
+    'createOperationsSalesMenuSection',
+    'renameOperationsSalesMenuSection',
+    'deleteOperationsSalesMenuSection',
+    'moveOperationsSalesMenuSection',
+  ]) {
+    const operation = salesMenuTagPolicy.operations.find(candidate => candidate.operationId === operationId);
+    assert.ok(operation, `missing sales-menu section policy: ${operationId}`);
+    assert.equal(
+      operation.invalidates.some(
+        descriptor => descriptor.kind === 'static' && descriptor.id === 'sales-menu-draft-items',
+      ),
+      false,
+      `${operationId} must not refetch an unaffected selected-section item collection`,
+    );
+    assert.equal(
+      operation.invalidates.some(
+        descriptor => descriptor.kind === 'requestPath' && descriptor.prefix === 'sales-menu-section',
+      ),
+      false,
+      `${operationId} must not invalidate an unchanged section item collection`,
+    );
+  }
+  for (const operationId of [
+    'getOperationsSalesMenuDraftSections',
+    'getOperationsSalesMenuDraftItems',
+    'getOperationsSalesMenuDraftItem',
+    'getOperationsSalesMenuPublishedSections',
+    'getOperationsSalesMenuPublishedItems',
+    'getOperationsSalesMenuPublishedItem',
+    'getOperationsSalesMenuItemCandidates',
+    'getOperationsSalesMenuPublicationPreview',
+    'getOperationsSalesMenuOperationRecords',
+  ]) {
+    const operation = salesMenuTagPolicy.operations.find(candidate => candidate.operationId === operationId);
+    assert.ok(operation, `missing sales-menu read policy: ${operationId}`);
+    assert.equal(
+      operation.provides.some(descriptor => descriptor.kind === 'requestPath' && descriptor.prefix === 'sales-menu'),
+      false,
+      `${operationId} must not share the menu-detail invalidation tag`,
+    );
+  }
+  const schedule = salesMenuTagPolicy.operations.find(
+    operation => operation.operationId === 'updateOperationsSalesMenuSchedule',
+  );
+  assert.ok(schedule);
+  assert.ok(
+    schedule.invalidates.some(
+      descriptor => descriptor.kind === 'requestPath' && descriptor.prefix === 'sales-menu-store',
+    ),
+    'schedule changes must refresh the manager list scope',
+  );
+  assert.ok(
+    schedule.invalidates.some(descriptor => descriptor.kind === 'static' && descriptor.id === 'sales-menu-list'),
+    'schedule changes must refresh the manager list read model',
+  );
+  assert.doesNotMatch(salesMenuPage, /const result = await operation\(\);\s*await read\.refresh\(\);/);
+  assert.doesNotMatch(salesMenuPage, /await commands\.updateItem\([\s\S]*?\);\s*await read\.refresh\(\);/);
+  assert.doesNotMatch(salesMenuPage, /await commands\.addItems\([\s\S]*?\);\s*await read\.refresh\(\);/);
 });
 
 test('catalog-inventory content refresh reaches every open read model without overwriting drafts', () => {

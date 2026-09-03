@@ -369,10 +369,15 @@ function generatedOutputs() {
     )
     .replace(`: {headers?: never};`, `: {headers?: FaceOperationContracts[I]["headers"]};`);
   writeGeneratedOutput(path.join(outputDir, 'catalog-inventory-edge.ts'), generatedEdgeText);
-  const generatedRtkText = generatedRtkWithExactStaticTags().replace(
-    'CatalogInventoryEnvelope, CatalogInventoryOperationId',
-    'CatalogInventoryEnvelope, CatalogQueryEnvelope, CatalogInventoryOperationId',
-  );
+  const generatedRtkText = generatedRtkWithExactStaticTags()
+    .replace(
+      'CatalogInventoryEnvelope, CatalogInventoryOperationId',
+      'CatalogInventoryEnvelope, CatalogQueryEnvelope, CatalogInventoryOperationId',
+    )
+    .replace(
+      'EndpointBuilder<EdgeBaseQuery, "wire" | "catalogInventory", string>',
+      'EndpointBuilder<EdgeBaseQuery, "wire" | "catalogInventory" | "salesMenu", string>',
+    );
   writeGeneratedOutput(path.join(outputDir, 'catalog-inventory-edge.rtk.ts'), generatedRtkText);
   console.log(`CATALOG_INVENTORY_P3_FRONTEND_GENERATED operations=${operations.length} revision=${catalog.revision}`);
 }

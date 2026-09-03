@@ -49,16 +49,46 @@ L2 的真实启动、远端 namespace 创建/清理、凭据与 session 创建�
 
 每一个事实仅有一个住址；L2 只能消费下表的来源，不能复制为手写名单、正则、选择器或第二套数据。
 
-| L2 事实 | 唯一事实源 | 允许的消费方式 | 禁止的平行事实 |
-| --- | --- | --- | --- |
-| scenario/case、Journey 与业务 oracle | L2 blueprint 的 `executionSuite`、fixture ref、action 与 expected facts | P1 生成 active candidate、execution profile、Playwright scenario | spec 内手写 case id 列表、删 case 降分母 |
-| 实际激活集合 | P1 candidate exact-set + 同 run PASS held readiness manifest | P1 原子写 execution binding，runner exact-match | `enabledCaseIds` 人工编辑、按文件名/glob 选 case |
-| TEST fixture 和 readback | P1 fixture descriptor + managed owner bootstrap/readback | 由 runner 物化、以 owner/API readback 验真 | DEV seed、长期 DEV 数据、浏览器 DOM 充当 fixture 真相 |
-| 可交互控件 | app 的 `*TestIds.ts` 常量模块 | locator bindings 和 L2 touch record 从常量导出 | raw CSS/XPath、index 选择器、testId 字符串散写 |
-| operation/route | generated operation registry 与 blueprint 的 network declaration | observed request 按 method/route 解析并逐 action 对账 | 手写 endpoint 表、page.evaluate/fetch 绕过 UI |
-| 允许/禁止的网络行为 | P1 `l2NetworkFlows` 等生成声明 | action window 的 required/forbidden/background exact-set | 宽泛“等待网络空闲”、未声明自动刷新 |
-| timeout | P1 timing report（基于已声明操作与拓扑成本） | runner 逐 case watchdog 使用报告值 | 人工加大 timeout、无依据全局 timeout |
-| 页面状态、草稿与控件级联 | 批准 IA 的 state/control 矩阵，应用真实 state owner | 通过用户动作和 readback 验证 | L2 自造状态、直接写 Redux/RTK/sessionStorage 绕过 Journey |
+| L2 事实                              | 唯一事实源                                                              | 允许的消费方式                                                   | 禁止的平行事实                                            |
+| ------------------------------------ | ----------------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------- |
+| scenario/case、Journey 与业务 oracle | L2 blueprint 的 `executionSuite`、fixture ref、action 与 expected facts | P1 生成 active candidate、execution profile、Playwright scenario | spec 内手写 case id 列表、删 case 降分母                  |
+| 实际激活集合                         | P1 candidate exact-set + 同 run PASS held readiness manifest            | P1 原子写 execution binding，runner exact-match                  | `enabledCaseIds` 人工编辑、按文件名/glob 选 case          |
+| TEST fixture 和 readback             | P1 fixture descriptor + managed owner bootstrap/readback                | 由 runner 物化、以 owner/API readback 验真                       | DEV seed、长期 DEV 数据、浏览器 DOM 充当 fixture 真相     |
+| 可交互控件                           | app 的 `*TestIds.ts` 常量模块                                           | locator bindings 和 L2 touch record 从常量导出                   | raw CSS/XPath、index 选择器、testId 字符串散写            |
+| operation/route                      | generated operation registry 与 blueprint 的 network declaration        | observed request 按 method/route 解析并逐 action 对账            | 手写 endpoint 表、page.evaluate/fetch 绕过 UI             |
+| 允许/禁止的网络行为                  | P1 `l2NetworkFlows` 等生成声明                                          | action window 的 required/forbidden/background exact-set         | 宽泛“等待网络空闲”、未声明自动刷新                        |
+| timeout                              | P1 timing report（基于已声明操作与拓扑成本）                            | runner 逐 case watchdog 使用报告值                               | 人工加大 timeout、无依据全局 timeout                      |
+| 页面状态、草稿与控件级联             | 批准 IA 的 state/control 矩阵，应用真实 state owner                     | 通过用户动作和 readback 验证                                     | L2 自造状态、直接写 Redux/RTK/sessionStorage 绕过 Journey |
+
+### 3.1 · L2 脚本开发前 UI/testId 前置复核
+
+这是 L2 脚本开发的硬准入，不是动态运行失败后的补救。凡新增或修改 L2 spec、runner adapter、locator
+binding、blueprint action 的控件声明，必须先完成本节；前置复核未通过时，L2 脚本开发保持阻断。
+
+1. **先对 UI 设计**：重开批准的需求、IA、交互工件、implementation-facing 详设和前端规范，逐项把当前
+   UI 源码与行为、形态、动作、关系、位置、可见文案、限制、state/control、失败/恢复、可访问性/焦点、
+   数据来源/invalidation 对齐；同时查看同类既有模块与 `libraries/frontend/admin-ui-foundation` 的实际
+   消费者，复用已有形态，不因 L2 方便另造控件或交互。
+2. **列出实际控件分母**：按每个拟执行的 case/action 穷举 Playwright 将真实 `click`、`fill`、`select`、
+   `upload`、`press` 或分页触发的用户控件；Modal/Drawer 的提交与取消、动态行菜单、分页按钮、AntD
+   wrapper 后的 native input/file input 都分别列出。只断言文本而不操作的内容不伪装成控件分母。
+3. **逐控件核对 testId**：每个控件必须由 app 的 `*TestIds.ts` 唯一源定义稳定 testId，并绑定到真正承载
+   用户动作的语义节点；动态行使用稳定业务身份，不使用数组下标。wrapper 有可见触发节点且动作落在
+   native input/按钮时，必须让绑定与 touch 记录能区分实际动作节点，不能只给外层容器贴 id。
+   对于 AntD `Segmented` 等仓内既有、且组件 API 不暴露 option-level `data-*` 的复合控件，仅当 testId
+   挂在该 option 的可见 label/option anchor、点击该 anchor 会触发同一个 option 值、并在分母中注明
+   `COMPOSITE_OPTION_ANCHOR` 与 focused/static proof 时允许；这不是给外层 wrapper 或宽 locator 开例外，
+   也不得把该特例推广到可直接标记的 Button、MenuItem、Checkbox、Radio 或 file input。
+4. **逐项核对 L2 binding**：binding 只能从 testId 常量源导出，spec 不得用 raw CSS/XPath、index、全局
+   role/label/placeholder/text 或散写 `data-testid` 补偿缺失 testId。UI 没有合理 testId、testId 不在真实
+   动作节点、binding 指向父级而不是动作节点，任一情况都先修 UI 及其 focused/static proof，再回到 L2。
+5. **留下准入证据**：详设/实施记录必须附 UI 设计对账、控件分母、`testId` 常量及实际绑定节点、UI
+   focused/static proof 和 fresh 独立复核结果；只有 `UI_DESIGN_REVIEW=PASS`、`TESTID_REVIEW=PASS`、
+   `L2_SCRIPT_ADMISSION=PASS` 才能写或改 L2 脚本。
+
+可证伪失败条件：任一 L2 action 没有对应 `*TestIds.ts` 常量、常量未挂到真实动作节点、binding/touch 与
+实际动作节点不一致，或 UI 与批准设计/既有模块形态存在未处置偏差，则该前置门 FAIL；不得以增加等待、
+改用宽 locator、放宽 oracle 或动态运行结果替代修复。
 
 repository byte binding 只覆盖可作为当前仓库输入的文件；managed runtime、build/cache/tool state、
 测试产物以及 `.DS_Store`、日志、安装包等瞬态/忽略文件不得进入 binding。当前 runner 的排除策略

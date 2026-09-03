@@ -1,11 +1,13 @@
 {
   "schemaVersion": 1,
   "kind": "sales-menu-l2-activation-candidate",
-  "revision": "SALES_MENU_L2_P1_20260902",
-  "sourceRevision": "SALES_MENU_L2_P1_20260902",
+  "revision": "SALES_MENU_L2_P1_20260903",
+  "sourceRevision": "SALES_MENU_L2_P1_20260903",
   "approvedCaseIds": [
     "sales-menu-entry-and-channels",
     "sales-menu-section-actions",
+    "sales-menu-section-move-and-delete",
+    "sales-menu-section-delete-non-empty",
     "sales-menu-add-candidates",
     "sales-menu-edit-direct-item-and-media",
     "sales-menu-edit-sku-prices",
@@ -24,6 +26,8 @@
   "fixtureRefs": [
     "FIXTURE-SALES-MENU-ENTRY",
     "FIXTURE-SALES-MENU-SECTIONS",
+    "FIXTURE-SALES-MENU-SECTION-MOVE-DELETE",
+    "FIXTURE-SALES-MENU-SECTION-DELETE-NONEMPTY",
     "FIXTURE-SALES-MENU-CANDIDATES",
     "FIXTURE-SALES-MENU-DIRECT",
     "FIXTURE-SALES-MENU-SKU",
@@ -42,5 +46,5 @@
   "testIdSource": "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
   "locatorBinding": "contracts/policy/sales-menu-l2-locator-bindings.json",
   "noSeedRuntimeInput": true,
-  "candidateDigest": "b20c2ae87a0e6c7d82f6dffe9a3a1d5aab4779bdff08a32abf86409fb563a81a"
+  "candidateDigest": "c890ff2520fbbd23d46febe76ced59d311dabe44b973af4a8c3657ab43080419"
 }

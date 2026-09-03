@@ -52,7 +52,13 @@ export {
   normalizePageSize,
   usePageQuery,
 } from './list/usePageQuery';
-export type {FrontendLogEvent, FrontendLogInput, FrontendLogLevel, SafeLogger} from './observability';
+export type {
+  FrontendLogDiagnostic,
+  FrontendLogEvent,
+  FrontendLogInput,
+  FrontendLogLevel,
+  SafeLogger,
+} from './observability';
 export {createBeaconLogSink, createObservedBaseQuery, createSafeLogger} from './observability';
 export {platformHttpProtocol} from './http/platformHttpProtocol';
 export type {PlatformHttpProtocolKey} from './http/platformHttpProtocol';

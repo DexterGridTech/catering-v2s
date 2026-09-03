@@ -6,7 +6,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
   },
   "dependencies": {
     "@catering-v2s/kernel-base-platform-ports": "workspace:*",
@@ -21,6 +22,8 @@
     "@types/react": "~19.2.2",
     "react": "19.2.3",
     "react-native": "0.86.3",
-    "typescript": "~6.0.3"
+    "react-test-renderer": "19.2.3",
+    "typescript": "~6.0.3",
+    "vitest": "4.1.10"
   }
 }

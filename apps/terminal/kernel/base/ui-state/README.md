@@ -16,8 +16,9 @@
 构建并冻结。
 
 当前已完成 P0 包边界、P1 catalog/variable 输入能力、P2 内容 workspace slice/command/actor/selector、P3
-变量 workspace slice/command/actor、P4 机械 gate/red vector 与完整 `createUiStateModule`。U-1～U-11 的整体验收
-由 `test/acceptance.test.ts` 和临时副本 mutation harness 覆盖；`owner` 表示本包的最终责任归属。
+变量 workspace slice/command/actor、P4 机械 gate/red vector 与完整 `createUiStateModule`，以及 S-7 catalog
+准入列表契约。U-1～U-11 的整体验收与 S-7 catalog proof 由对应测试和临时副本 mutation harness 覆盖；`owner`
+表示本包的最终责任归属。
 
 它不是 React renderer、空页面外观、screen queue、设备能力、业务流程、跨节点同步或 automation owner。
 这些职责必须留在对应的 render、platform、业务或 automation 包中。
@@ -71,7 +72,7 @@ import {
 const catalog = createUiCatalog([{
   partKey: 'orders',
   rendererKey: 'orders-screen',
-  containerKey: 'root',
+  containerKeys: ['root'],
   displayModes: ['PRIMARY'],
   workspaces: ['MAIN'],
   instanceModes: ['MASTER'],
@@ -89,7 +90,9 @@ void catalog
 void write
 ```
 
-`catalog` 是安装期值，不提供运行期 `register`；变量 key 由工厂生成，不能在调用点手写 namespace。
+`catalog` 是安装期值，不提供运行期 `register`；entry 的 `containerKeys` 是 catalog 准入列表，允许为空，
+空列表表示该 part 不参与任何容器枚举。它不改变 screen/layer 放置 command 载荷中仍为单数的
+`containerKey`。变量 key 由工厂生成，不能在调用点手写 namespace。
 screen/layer command 的 `displayMode` 是命令载荷必填字段，读取则使用显式的 `selectScreen(root, displayMode,
 containerKey)` 与 `selectLayers(root, displayMode)`；两侧都不从 routeContext 推断 surface identity。写入完成后
 仍不得绕过 actor 直接 dispatch 内部 slice action。
@@ -114,8 +117,8 @@ void selectScreen
 1. 先确认新增能力属于 UI 状态协议，而不是 renderer、业务或平台；不得加入 React、默认空页面、队列或
    environment-state 推断。
 2. 新分区必须复用 state workspace 三件套；新 slice 必须由 `createSlice` 创建，并显式声明 `isolated`。
-3. `displayMode` 在 command payload 和 selector 入参中都必须显式；catalog 三维准入只用于枚举，不能变成
-   写入门；文案和 renderer 引用不能进入 state 或 persistence payload。
+3. `displayMode` 在 command payload 和 selector 入参中都必须显式；catalog 的 `containerKeys` 与三维准入只
+   用于枚举，不能变成写入门；文案和 renderer 引用不能进入 state 或 persistence payload。
 4. 新变量只能复用 `PersistIntent` 与 record descriptor，必须保持 module 前缀、泛型和 declaration default。
 5. 变更后必跑：
 

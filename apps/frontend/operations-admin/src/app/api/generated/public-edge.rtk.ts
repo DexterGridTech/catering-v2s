@@ -6,7 +6,7 @@ import type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest}
 type EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;
 export type PublicOperationId = keyof FaceOperationContracts;
 export type PublicRtkWireRequest = <I extends PublicOperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};
-export type PublicRtkTagType = "wire" | "catalogInventory";
+export type PublicRtkTagType = "wire" | "catalogInventory" | "salesMenu";
 
 /**
  * Operation-shaped request constructors for RTK hooks. Consumers supply only

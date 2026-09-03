@@ -1,0 +1,289 @@
+{
+  "schemaVersion": 1,
+  "kind": "sales-menu-rtk-tag-policy",
+  "revision": "SALES_MENU_RTK_TAGS_20260903",
+  "tagType": "salesMenu",
+  "operationCount": 30,
+  "operations": [
+    {
+      "operationId": "getOperationsSalesMenus",
+      "provides": [
+        {"kind": "static", "id": "sales-menu-list"},
+        {"kind": "requestPath", "prefix": "sales-menu-store", "path": "storeRef"},
+        {"kind": "requestQuery", "prefix": "sales-menu-channel", "path": "channelRef"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsSalesMenu",
+      "provides": [
+        {"kind": "requestPath", "prefix": "sales-menu-store", "path": "storeRef"},
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "requestQuery", "prefix": "sales-menu-channel", "path": "channelRef"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsSalesMenuDraftSections",
+      "provides": [{"kind": "static", "id": "sales-menu-draft-sections"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsSalesMenuDraftItems",
+      "provides": [
+        {"kind": "requestPath", "prefix": "sales-menu-section", "path": "salesSectionRef"},
+        {"kind": "static", "id": "sales-menu-draft-items"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsSalesMenuDraftItem",
+      "provides": [
+        {"kind": "requestPath", "prefix": "sales-menu-item", "path": "salesItemRef"},
+        {"kind": "static", "id": "sales-menu-draft-item"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublishedSections",
+      "provides": [{"kind": "static", "id": "sales-menu-published-sections"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublishedItems",
+      "provides": [
+        {"kind": "requestPath", "prefix": "sales-menu-section", "path": "salesSectionRef"},
+        {"kind": "requestQuery", "prefix": "sales-menu-channel", "path": "channelRef"},
+        {"kind": "static", "id": "sales-menu-published-items"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublishedItem",
+      "provides": [
+        {"kind": "requestPath", "prefix": "sales-menu-item", "path": "salesItemRef"},
+        {"kind": "requestQuery", "prefix": "sales-menu-channel", "path": "channelRef"},
+        {"kind": "static", "id": "sales-menu-published-item"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsSalesMenuItemCandidates",
+      "provides": [{"kind": "static", "id": "sales-menu-candidates"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsSalesMenuPublicationPreview",
+      "provides": [
+        {"kind": "requestQuery", "prefix": "sales-menu-channel", "path": "channelRef"},
+        {"kind": "static", "id": "sales-menu-preview"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsSalesMenuOperationRecords",
+      "provides": [
+        {"kind": "requestQuery", "prefix": "sales-menu-channel", "path": "channelRef"},
+        {"kind": "static", "id": "sales-menu-operation-records"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "createOperationsSalesMenu",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu-store", "path": "storeRef"},
+        {"kind": "static", "id": "sales-menu-list"}
+      ]
+    },
+    {
+      "operationId": "copyOperationsSalesMenu",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu-store", "path": "storeRef"},
+        {"kind": "static", "id": "sales-menu-list"}
+      ]
+    },
+    {
+      "operationId": "renameOperationsSalesMenu",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu-store", "path": "storeRef"},
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "static", "id": "sales-menu-list"}
+      ]
+    },
+    {
+      "operationId": "archiveOperationsSalesMenu",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu-store", "path": "storeRef"},
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "static", "id": "sales-menu-list"}
+      ]
+    },
+    {
+      "operationId": "setOperationsSalesMenuActivation",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu-store", "path": "storeRef"},
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "requestPath", "prefix": "sales-menu-channel", "path": "channelRef"},
+        {"kind": "static", "id": "sales-menu-list"},
+        {"kind": "static", "id": "sales-menu-published-sections"},
+        {"kind": "static", "id": "sales-menu-published-items"},
+        {"kind": "static", "id": "sales-menu-published-item"}
+      ]
+    },
+    {
+      "operationId": "updateOperationsSalesMenuSchedule",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "requestPath", "prefix": "sales-menu-store", "path": "storeRef"},
+        {"kind": "static", "id": "sales-menu-list"},
+        {"kind": "static", "id": "sales-menu-preview"}
+      ]
+    },
+    {
+      "operationId": "createOperationsSalesMenuSection",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "static", "id": "sales-menu-draft-sections"},
+        {"kind": "static", "id": "sales-menu-preview"},
+        {"kind": "static", "id": "sales-menu-operation-records"}
+      ]
+    },
+    {
+      "operationId": "renameOperationsSalesMenuSection",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "static", "id": "sales-menu-draft-sections"},
+        {"kind": "static", "id": "sales-menu-preview"},
+        {"kind": "static", "id": "sales-menu-operation-records"}
+      ]
+    },
+    {
+      "operationId": "deleteOperationsSalesMenuSection",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "static", "id": "sales-menu-draft-sections"},
+        {"kind": "static", "id": "sales-menu-preview"},
+        {"kind": "static", "id": "sales-menu-operation-records"}
+      ]
+    },
+    {
+      "operationId": "moveOperationsSalesMenuSection",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "static", "id": "sales-menu-draft-sections"},
+        {"kind": "static", "id": "sales-menu-preview"},
+        {"kind": "static", "id": "sales-menu-operation-records"}
+      ]
+    },
+    {
+      "operationId": "addOperationsSalesMenuItems",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "requestPath", "prefix": "sales-menu-section", "path": "salesSectionRef"},
+        {"kind": "static", "id": "sales-menu-draft-sections"},
+        {"kind": "static", "id": "sales-menu-draft-items"},
+        {"kind": "static", "id": "sales-menu-candidates"},
+        {"kind": "static", "id": "sales-menu-preview"},
+        {"kind": "static", "id": "sales-menu-operation-records"}
+      ]
+    },
+    {
+      "operationId": "updateOperationsSalesMenuItem",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "requestPath", "prefix": "sales-menu-item", "path": "salesItemRef"},
+        {"kind": "static", "id": "sales-menu-draft-sections"},
+        {"kind": "static", "id": "sales-menu-draft-items"},
+        {"kind": "static", "id": "sales-menu-draft-item"},
+        {"kind": "static", "id": "sales-menu-preview"},
+        {"kind": "static", "id": "sales-menu-operation-records"}
+      ]
+    },
+    {
+      "operationId": "deleteOperationsSalesMenuItem",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "requestPath", "prefix": "sales-menu-item", "path": "salesItemRef"},
+        {"kind": "static", "id": "sales-menu-draft-sections"},
+        {"kind": "static", "id": "sales-menu-draft-items"},
+        {"kind": "static", "id": "sales-menu-draft-item"},
+        {"kind": "static", "id": "sales-menu-preview"},
+        {"kind": "static", "id": "sales-menu-operation-records"}
+      ]
+    },
+    {
+      "operationId": "moveOperationsSalesMenuItem",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "requestPath", "prefix": "sales-menu-item", "path": "salesItemRef"},
+        {"kind": "static", "id": "sales-menu-draft-sections"},
+        {"kind": "static", "id": "sales-menu-draft-items"},
+        {"kind": "static", "id": "sales-menu-draft-item"},
+        {"kind": "static", "id": "sales-menu-preview"},
+        {"kind": "static", "id": "sales-menu-operation-records"}
+      ]
+    },
+    {
+      "operationId": "stageOperationsSalesMenuAsset",
+      "provides": [],
+      "invalidates": []
+    },
+    {
+      "operationId": "releaseOperationsSalesMenuStagedAsset",
+      "provides": [],
+      "invalidates": []
+    },
+    {
+      "operationId": "publishOperationsSalesMenu",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu-store", "path": "storeRef"},
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "static", "id": "sales-menu-list"},
+        {"kind": "static", "id": "sales-menu-published-sections"},
+        {"kind": "static", "id": "sales-menu-published-items"},
+        {"kind": "static", "id": "sales-menu-published-item"},
+        {"kind": "static", "id": "sales-menu-preview"},
+        {"kind": "static", "id": "sales-menu-operation-records"}
+      ]
+    },
+    {
+      "operationId": "setOperationsSalesMenuItemSoldOut",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "requestPath", "prefix": "sales-menu-item", "path": "salesItemRef"},
+        {"kind": "requestPath", "prefix": "sales-menu-channel", "path": "channelRef"},
+        {"kind": "static", "id": "sales-menu-published-items"},
+        {"kind": "static", "id": "sales-menu-published-item"},
+        {"kind": "static", "id": "sales-menu-operation-records"}
+      ]
+    },
+    {
+      "operationId": "restoreOperationsSalesMenuItemSale",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "sales-menu", "path": "salesMenuRef"},
+        {"kind": "requestPath", "prefix": "sales-menu-item", "path": "salesItemRef"},
+        {"kind": "requestPath", "prefix": "sales-menu-channel", "path": "channelRef"},
+        {"kind": "static", "id": "sales-menu-published-items"},
+        {"kind": "static", "id": "sales-menu-published-item"},
+        {"kind": "static", "id": "sales-menu-operation-records"}
+      ]
+    }
+  ]
+}

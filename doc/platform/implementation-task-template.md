@@ -70,8 +70,8 @@
 因为 IA 写 `bounded`、详设写 `Page`,**两份设计文档在实施开始前就自相矛盾**。
 
 ⇒ **只调 skill 不够**(skill 保证走到,不保证写全);
-   **只给规范也不够**(点名两次仍违反)。
-   真正起作用的是「逐步骤填三列 + 看不见的维度写成观察 + 两份文档交叉对账」。
+**只给规范也不够**(点名两次仍违反)。
+真正起作用的是「逐步骤填三列 + 看不见的维度写成观察 + 两份文档交叉对账」。
 
 另有两条缺陷的规范**本仓根本不存在**,只有代码先例(读侧节点授权 · owner Problem 登记处) ——
 作者既无「现成的」可指,也无「该长成什么样」的约束,只能发明。第 3 列专治这个。
@@ -149,6 +149,26 @@ problem、审计和权威 readback 不变,共享机制已复用且不存在安�
   即使静态复核花两小时,也比再来 20 次"跑—失败—改—再跑"便宜。
   ⛔ 提速方向不是缩短单次运行时长,是**减少运行次数**。
 
+━━ L2 脚本开发前 UI/testId 前置门(强制)━━
+
+进入或修改任何 L2 spec、runner adapter、locator binding、blueprint action 控件声明之前,必须先完成:
+1. 按批准需求、IA、交互工件、详设和前端规范复核 UI 代码;同时查看同类既有模块与 foundation 的真实消费者,
+   采用仓内已有形态,不为测试另造交互。
+2. 按每个 case/action 穷举将被真实 click/fill/select/upload/press 的控件分母,包括 Modal/Drawer 按钮、
+   动态行菜单、分页、wrapper 后的 native input/file input。
+3. 对每个控件核对 `*TestIds.ts` 唯一常量、实际动作节点、稳定业务身份和 locator binding/touch；不得以
+   role/label/placeholder/text/index/CSS/XPath 或外层容器替代缺失 testId。
+4. 缺失或不合理 testId 时,先修 UI 并完成 UI focused/static proof 与 fresh 独立复核;在
+   `UI_DESIGN_REVIEW=PASS`、`TESTID_REVIEW=PASS`、`L2_SCRIPT_ADMISSION=PASS` 之前,不得继续写 L2 脚本。
+
+可证伪失败条件:任一实际 L2 action 没有 testId 唯一源、testId 没挂在真实动作节点、binding/touch 指向错误
+节点,或 UI 对账存在 OPEN,即前置门 FAIL;不得用等待、宽 locator、放宽 oracle 或动态运行通过止血。
+
+复合控件只允许仓内已有且可证明的窄例外：组件 API 不暴露 option-level `data-*` 时，可将 testId 挂到该
+option 的可见 label/option anchor，但实施记录必须注明 `COMPOSITE_OPTION_ANCHOR`、点击语义和 focused/static
+proof；这不放宽 Button、MenuItem、Checkbox、Radio、输入框、file input 的真实节点要求，也不允许以外层
+wrapper 或宽 locator 补偿。
+
 正本见 `project-memory/operations/execution-economics-and-failure-family-closure.md`;
 夹具与断言的对应约束见 `project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md`。
 
@@ -217,10 +237,10 @@ PROOF 贴真实运行输出,不接受「预期会绿」。
 
 派活时除了上面那块,另附三样 —— 它们每批都不同,**不要写进本模板**:
 
-| 项 | 说明 |
-|---|---|
-| 工单路径 | 本批的完整规格在哪 |
-| 本批范围 | 做哪几项;范围外看到也不动 |
+| 项       | 说明                                   |
+| -------- | -------------------------------------- |
+| 工单路径 | 本批的完整规格在哪                     |
+| 本批范围 | 做哪几项;范围外看到也不动              |
 | 当前红门 | ⛔ **不要用任何文档里的快照**,现跑现取 |
 
 ## 第二类停机为什么单列

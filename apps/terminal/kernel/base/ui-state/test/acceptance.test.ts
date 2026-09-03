@@ -307,7 +307,7 @@ describe('ui-state approved acceptance proofs', () => {
 
   it('U-9 builds an immutable catalog and rejects duplicate keys', () => {
     const base: UiCatalogEntry = {
-      partKey: 'orders', rendererKey: 'orders-screen', containerKey: 'root',
+      partKey: 'orders', rendererKey: 'orders-screen', containerKeys: ['root'],
       displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'],
       title: 'Orders', description: 'Orders screen',
     }
@@ -315,7 +315,7 @@ describe('ui-state approved acceptance proofs', () => {
     expect(Object.isFrozen(catalog)).toBe(true)
     expect(Object.isFrozen(catalog.entries[0])).toBe(true)
     expect(Reflect.ownKeys(catalog.entries[0]).sort()).toEqual([
-      'containerKey', 'description', 'displayModes', 'instanceModes', 'partKey', 'rendererKey', 'title', 'workspaces',
+      'containerKeys', 'description', 'displayModes', 'instanceModes', 'partKey', 'rendererKey', 'title', 'workspaces',
     ])
     expect(Object.prototype.hasOwnProperty.call(catalog, 'register')).toBe(false)
     expect(() => createUiCatalog([base, base])).toThrow(/duplicate partKey/)
@@ -325,7 +325,7 @@ describe('ui-state approved acceptance proofs', () => {
 
   it('U-10 filters catalog enumeration but does not gate a business write', async () => {
     const entry: UiCatalogEntry = {
-      partKey: 'listed', rendererKey: 'listed-screen', containerKey: 'root',
+      partKey: 'listed', rendererKey: 'listed-screen', containerKeys: ['root'],
       displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'],
       title: 'Listed', description: 'Listed screen',
     }

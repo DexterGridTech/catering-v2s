@@ -16,12 +16,12 @@
 
 ## 0 · 怎么用这份文件
 
-| | |
-|---|---|
-| **规则来源** | 2026-08-16 一轮六路逐文件评审,212 个手写文件,113 条 finding,全部经第二轮独立验证 |
-| **实例台账** | `doc/review/platform/2026-08-16-v2s-frontend-findings-ledger-claude.md` |
+|              |                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------- |
+| **规则来源** | 2026-08-16 一轮六路逐文件评审,212 个手写文件,113 条 finding,全部经第二轮独立验证            |
+| **实例台账** | `doc/review/platform/2026-08-16-v2s-frontend-findings-ledger-claude.md`                     |
 | **版本基线** | React 19.2.5 · RTK 2.12.0 · react-redux 9.3.0 · antd 6.5.0 · react-router 7.18.1 · TS 6.0.3 |
-| **门的清单** | `tools/verify-gates/cli.mjs`(44 条前端断言)· `scripts/verify` |
+| **门的清单** | `tools/verify-gates/cli.mjs`(44 条前端断言)· `scripts/verify`                               |
 
 ⚠️ **版本对不上的"官方用法"结论一律作废。** 本文所有 antd/RTK 判断均针对上表版本。
 
@@ -49,9 +49,9 @@
 
 **仓内实测的分布**(这条规则不是主张,是从字节里读出来的):
 
-| | 禁止性 | 存在性 | 禁止占比 |
-|---|---|---|---|
-| `verify-gates/cli.mjs`(真门) | `assertNoMatch` **34** | `assertMatch` **7** | **82.9%** |
+|                                  | 禁止性                       | 存在性                 | 禁止占比  |
+| -------------------------------- | ---------------------------- | ---------------------- | --------- |
+| `verify-gates/cli.mjs`(真门)     | `assertNoMatch` **34**       | `assertMatch` **7**    | **82.9%** |
 | `tests/architecture/*.mjs`(假门) | `assert.doesNotMatch` **42** | `assert.match` **175** | **19.4%** |
 
 **倒置成立。**
@@ -63,15 +63,18 @@
 > 「这条规则不是主张,是从字节里读出来的」这句话的权威性建立在没数准的字节上。
 
 **门**:**存在性断言不得单独承载约束**。允许两种形态:
+
 1. 与禁止性断言**配对**(存在性负责"该有的有",禁止性负责"不该有的没有")
 2. 换成行为测试
 
 **⚠️ 判据不是"归零"(2026-08-16 对抗审查更正)**。原文写的是「`assert.match` 归零」,
 实测 `default-list-page-size.test.mjs` 是:
+
 ```js
-assert.match(source, /useState\(10\)/, path);        // 该有的有
-assert.doesNotMatch(source, /useState\(20\)/, path);  // 不该有的没有
+assert.match(source, /useState\(10\)/, path); // 该有的有
+assert.doesNotMatch(source, /useState\(20\)/, path); // 不该有的没有
 ```
+
 **配对使用。归零存在性那半,只剩「不是 20」——`useState(50)` 就过了**,默认页长这条约束变成无人守。
 **先归零后补行为测试的顺序,会制造一段没有覆盖的窗口期。**
 
@@ -83,10 +86,10 @@ assert.doesNotMatch(source, /useState\(20\)/, path);  // 不该有的没有
 
 **现有能力(⚠️ 2026-08-16 对抗审查更正,原文在此处犯了 §4-A)**:
 
-| 有的 | 没有的 |
-|---|---|
-| **Playwright L2:两个 `playwright.config.ts` + 19 个 spec,真实 Chromium** | `jsdom` / `happy-dom` / `@testing-library` 全域 0 命中 |
-| 用的是同一套 `testId()` 选择器(全仓 104 处) | 单元层渲染测试走 `renderToStaticMarkup`,**effect 不跑、remount 观察不到** |
+| 有的                                                                     | 没有的                                                                    |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| **Playwright L2:两个 `playwright.config.ts` + 19 个 spec,真实 Chromium** | `jsdom` / `happy-dom` / `@testing-library` 全域 0 命中                    |
+| 用的是同一套 `testId()` 选择器(全仓 104 处)                              | 单元层渲染测试走 `renderToStaticMarkup`,**effect 不跑、remount 观察不到** |
 
 **原文写的是「都没有 DOM 环境…必须先补」—— 那是搜了三个包名没命中就下的断言,
 没查 Playwright,正是 §4-A 点名的否定式全称命题失败模式,发生在本规范内部。**
@@ -128,7 +131,7 @@ assert.doesNotMatch(source, /useState\(20\)/, path);  // 不该有的没有
 
 **规则**:`key` 的每个组成部分,在同一子树内**不得**存在编辑它的输入控件。
 
-**反例**:`CatalogItemDrawer.tsx:947` `` key={`${sku.skuCode}-${skuIndex}`} `` 而 `:950` 就是 `value={sku.skuCode}` 的 `<Input>`。
+**反例**:`CatalogItemDrawer.tsx:947` ``key={`${sku.skuCode}-${skuIndex}`}`` 而 `:950` 就是 `value={sku.skuCode}` 的 `<Input>`。
 
 **后果实例**:每敲一个字符 key 变 → React 卸载重建子树 → **输入框失焦**。新建 SKU 敲 `LATTE-L` 要点 7 次。
 三处(`:947` · `:1017` · `:860`)**都在创建路径上**(已落库 SKU 的编码是 disabled 的)。
@@ -158,14 +161,14 @@ assert.doesNotMatch(source, /useState\(20\)/, path);  // 不该有的没有
 
 **已登记的 16 组**见台账第五部分。其中最锋利的:
 
-| 事 | 写对的那处(正例) | 写错的那处 |
-|---|---|---|
-| 表格 loading | ⚠️ **无干净正例,见下** | O 段 7 处用 `isLoading`(有旧数据时**永不为 true**) |
-| List 级校验错误 | `ContractCreateDrawer.tsx:56` `rules` + `Form.ErrorList` | `ProjectPhaseFieldList` 丢弃 `{errors}`,是全仓唯一一处 |
-| hook 返回值 memo | `useSubmissionLifecycle.ts:16-20`(专门写了注释说明为什么) | `useDetailDrawer.ts:24` 返回裸对象字面量 |
-| `expectedVersion` 取哪版 | 11 处取「用户当时看到的那版」 | `PlatformInvitationPanel.tsx:118` 提交前重读,**把乐观并发保护删掉了** |
-| 提交失败 · **保留抽屉与输入** | `ContractEditDrawer.tsx:catch` 非版本冲突分支 `setProblem(feedback.detail)` | 失败时强制关闭抽屉、丢稿或继续提交 |
-| 提交失败 · **保留服务端原因** | `ContractEditDrawer.tsx:catch` 先 `operationsProblemOf(error)`，仅 `CONTRACT_VERSION_CONFLICT` 进入冲突分支 | `catch` 丢弃 error 或把所有失败改写成无关的通用原因 |
+| 事                            | 写对的那处(正例)                                                                                            | 写错的那处                                                            |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 表格 loading                  | ⚠️ **无干净正例,见下**                                                                                      | O 段 7 处用 `isLoading`(有旧数据时**永不为 true**)                    |
+| List 级校验错误               | `ContractCreateDrawer.tsx:56` `rules` + `Form.ErrorList`                                                    | `ProjectPhaseFieldList` 丢弃 `{errors}`,是全仓唯一一处                |
+| hook 返回值 memo              | `useSubmissionLifecycle.ts:16-20`(专门写了注释说明为什么)                                                   | `useDetailDrawer.ts:24` 返回裸对象字面量                              |
+| `expectedVersion` 取哪版      | 11 处取「用户当时看到的那版」                                                                               | `PlatformInvitationPanel.tsx:118` 提交前重读,**把乐观并发保护删掉了** |
+| 提交失败 · **保留抽屉与输入** | `ContractEditDrawer.tsx:catch` 非版本冲突分支 `setProblem(feedback.detail)`                                 | 失败时强制关闭抽屉、丢稿或继续提交                                    |
+| 提交失败 · **保留服务端原因** | `ContractEditDrawer.tsx:catch` 先 `operationsProblemOf(error)`，仅 `CONTRACT_VERSION_CONFLICT` 进入冲突分支 | `catch` 丢弃 error 或把所有失败改写成无关的通用原因                   |
 
 > ✅ **ContractEditDrawer 现为两半同时满足的正例**(2026-08-16 remediation)：它先保留
 > `operationsProblemOf(error)` 的服务端原因；只有明确的 `CONTRACT_VERSION_CONFLICT` 才进入冲突处置，
@@ -173,6 +176,7 @@ assert.doesNotMatch(source, /useState\(20\)/, path);  // 不该有的没有
 
 > ⚠️ **表格 loading 这一行的正例已撤回(2026-08-16 对抗审查)**。
 > 原文举 `CatalogWorkbenchPage.tsx:424`,**三个问题叠在同一处**:
+>
 > 1. **截断引用** —— 真实调用是
 >    `adminListState({loading: itemsQuery.isFetching && scopeReady, failed: failed || !scopeReady || noAuthorizedBrand, ...})`,
 >    而 **`failed` 才是让空态/失败态互斥的那个参数**(`adminListState.tsx:15` 是
@@ -186,7 +190,6 @@ assert.doesNotMatch(source, /useState\(20\)/, path);  // 不该有的没有
 > 这三件事仓内没有一处同时做对,本行状态为 `未验证`。
 
 **为什么不做成门**:判断"这两处是不是同一件事"需要理解语义,做成关键词匹配就会变成"门全绿而功能是坏的"。
-
 
 ### 3-B · 读 RTK 数据用 `currentData`,判加载用 `isFetching`
 
@@ -234,6 +237,7 @@ Dexter 在 DEV 体验时报出「切 tab 后内容漂移回上一个 tab」,根�
 **规则**:任何失败路径都必须给用户一个**能区分**的信号;不得把服务端失败改写成不相干的原因。
 
 **反例三种**:
+
 1. `OperationsTransport.ts:110` —— RTK 的 `PARSING_ERROR`(data 是字符串)与空体错误(data 是 null)
    全部落进 `NETWORK_ERROR` →「请检查网络连接」。**服务端答了,UI 怪网络。** 正确兜底桶 `RESULT_UNKNOWN` 就在隔壁且已用于 object 分支。
 2. `RolesPage.tsx:56-65` —— `catch` 里 `setProblem(错误)`,`finally` 立刻 `await loadDetail()`,
@@ -267,6 +271,7 @@ Dexter 在 DEV 体验时报出「切 tab 后内容漂移回上一个 tab」,根�
 `adminDrawerSurfaceProps` 37 处 · 两个 lifecycle 59 处。
 
 **判别口径**:
+
 - 目的地**已存在且已被广泛使用** → 现在就抽
 - 目的地**要新造、且只有 1–2 个调用点** → 不抽
 
@@ -279,16 +284,17 @@ Dexter 在 DEV 体验时报出「切 tab 后内容漂移回上一个 tab」,根�
 
 **规则**:
 
-| 操作性质 | 键怎么来 |
-|---|---|
-| **设值类** —— 做两次与做一次**结果相同**(保存商品、作废 SKU、状态流转、上传某个文件) | **内容派生键**:`key = hash(operationId + payload)` |
-| **增减类** —— 做两次与做一次**结果不同**(库存入库/出库/调整) | **意图轮换键**:lifecycle 发键 + 意图改变时 `markBusinessIntentChanged()` |
+| 操作性质                                                                             | 键怎么来                                                                 |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| **设值类** —— 做两次与做一次**结果相同**(保存商品、作废 SKU、状态流转、上传某个文件) | **内容派生键**:`key = hash(operationId + payload)`                       |
+| **增减类** —— 做两次与做一次**结果不同**(库存入库/出库/调整)                         | **意图轮换键**:lifecycle 发键 + 意图改变时 `markBusinessIntentChanged()` |
 
 **为什么这样分**:内容派生键把"记得轮换""记得 reset"这一整类 bug 从根上消掉 —— 不需要人记得任何事。
 但它会把**内容完全相同而用户确实想做两次**的操作合并成一次;这对设值类无害,对增减类是吞掉真实业务
 (上午入库 10 件、下午又入库 10 件,payload 一模一样但是两笔账)。
 
 **后端语义(决定了上面这张表)**:
+
 ```java
 if (rows.isEmpty()) return null;                       // 没见过 → 执行
 if (!operationId.equals(…) || !requestHash.equals(…))
@@ -297,6 +303,7 @@ return receipt.response();                             // 键同且完全相同 
 ```
 
 **反例三种**:
+
 1. **一个抽屉多条命令共用一个键** —— 保存商品用掉键 K,再点「暂存图片」也用 K,`operationId` 不同 → **409「幂等键已绑定其他请求」**,用户看到"上传失败",重试还是失败。
 2. **每次现铸新 UUID**(catalog **18 处**现状,其中 **2 处就在本条原正例文件里**)—— 等于放弃幂等。上传超时但服务端已处理,用户重试 → **MinIO 多一份孤儿资产**(客户端从未拿到 assetRef,永远不会被释放);新建字典条目 → **两个同名销售单位**。
 3. **`reset()` 只在成功路径执行** —— 保存失败 → 用户改内容 → 再存 → 复用同一键但内容已变 → **409**,此后每次改动重存都是同一个报错,只能关掉抽屉重开。内容派生键**自动免疫**这一条。
@@ -306,13 +313,14 @@ return receipt.response();                             // 键同且完全相同 
 原文举 `BrandCatalogCopyDrawer` 与 `LocalCatalogCopyDrawer` 的 6 处 `markBusinessIntentChanged()` 为正范例。
 **实测这两个文件本身就带着本条的两个反例**:
 
-| 位置 | 问题 |
-|---|---|
-| `BrandCatalogCopyDrawer` 的 `STALE_COPY_PREFLIGHT` 恢复分支 | **不轮换键**,而 `LocalCatalogCopyDrawer` 同一分支**轮换**。重新预检 → 新 digest/版本 → 点确认 → 同键异内容 → **409,关掉重开才能恢复**。唯一救它的确认勾选在零确认项时 `disabled`,所以**干净的重新预检必然踩中** |
-| 两个文件各有一处 `'Idempotency-Key': globalThis.crypto.randomUUID()` | 本条**反例2 逐字出现在正例文件里** |
+| 位置                                                                 | 问题                                                                                                                                                                                                            |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BrandCatalogCopyDrawer` 的 `STALE_COPY_PREFLIGHT` 恢复分支          | **不轮换键**,而 `LocalCatalogCopyDrawer` 同一分支**轮换**。重新预检 → 新 digest/版本 → 点确认 → 同键异内容 → **409,关掉重开才能恢复**。唯一救它的确认勾选在零确认项时 `disabled`,所以**干净的重新预检必然踩中** |
+| 两个文件各有一处 `'Idempotency-Key': globalThis.crypto.randomUUID()` | 本条**反例2 逐字出现在正例文件里**                                                                                                                                                                              |
 
 **另一个反例(增减类,危害最大)**:`InventoryActionModal.tsx:155` 在 `submit` 开头调
 `markBusinessIntentChanged()`,紧接 `:156 getIdempotencyKey()` —— **每次点提交都铸新键**,等同反例2。
+
 > 业务后果:入库 10 件提交超时但服务端已落账,用户再点一次 → 新键 → **第二笔 10 件真的入进去**。
 > 这正是本条那张表为它而写的那一行。
 > 同形态还有 `StoreStatusModal.tsx:13` · `HeadCompanyBrandAuthorizationDrawer.tsx:77` ·
@@ -446,16 +454,16 @@ LIST tag 失效链回读。列表、详情和 Drawer 分别声明自己的读边
 
 **统一动词表**:
 
-| 动词 | 唯一语义 |
-| --- | --- |
-| 新建 | 建立一个此前不存在的业务事实 |
-| 编辑 | 修改一个仍然存在的业务事实 |
-| 保存 | 提交当前编辑任务的全部获批变更 |
-| 取消 | 结束当前输入任务，不提交本次修改 |
-| 停用 | 保留事实和既有关系，但不再进入后续候选或正常业务使用 |
-| 启用 | 让既有事实重新进入后续候选或正常业务使用 |
-| 移除 | 解除当前对象与另一个事实的关系，不消灭被关联事实 |
-| 删除 | 消灭可删除的事实本身 |
+| 动词       | 唯一语义                                                     |
+| ---------- | ------------------------------------------------------------ |
+| 新建       | 建立一个此前不存在的业务事实                                 |
+| 编辑       | 修改一个仍然存在的业务事实                                   |
+| 保存       | 提交当前编辑任务的全部获批变更                               |
+| 取消       | 结束当前输入任务，不提交本次修改                             |
+| 停用       | 保留事实和既有关系，但不再进入后续候选或正常业务使用         |
+| 启用       | 让既有事实重新进入后续候选或正常业务使用                     |
+| 移除       | 解除当前对象与另一个事实的关系，不消灭被关联事实             |
+| 删除       | 消灭可删除的事实本身                                         |
 | 作废并重建 | 保留旧事实的历史身份并建立新事实，不在原身份上改写受保护属性 |
 
 **禁止**:不得用“解除、去掉、清除、删掉”混称“移除”；不得用“禁用、下线、关闭”混称“停用”；
@@ -515,13 +523,13 @@ LIST tag 失效链回读。列表、详情和 Drawer 分别声明自己的读边
 
 **统一语义**:
 
-| 状态 | 颜色语义 | 禁止挪用 |
-| --- | --- | --- |
-| 草稿 | 中性灰 `default` | 不得用绿色暗示已经生效 |
-| 启用 | 成功绿 `success` | 只表示该事实已启用，不表示已发布、可售或有库存 |
-| 停用 | 警示橙 `warning` | 不得用红色伪装成已删除 |
-| 归档 | 信息蓝 `processing` | 不得与启用共用绿色 |
-| 作废 | 错误红 `error` | 不得用于普通校验提示或临时加载状态 |
+| 状态 | 颜色语义            | 禁止挪用                                       |
+| ---- | ------------------- | ---------------------------------------------- |
+| 草稿 | 中性灰 `default`    | 不得用绿色暗示已经生效                         |
+| 启用 | 成功绿 `success`    | 只表示该事实已启用，不表示已发布、可售或有库存 |
+| 停用 | 警示橙 `warning`    | 不得用红色伪装成已删除                         |
+| 归档 | 信息蓝 `processing` | 不得与启用共用绿色                             |
+| 作废 | 错误红 `error`      | 不得用于普通校验提示或临时加载状态             |
 
 Tag 文案必须是业务中文；不得显示 `DRAFT`、`ENABLED`、`DISABLED` 等原始枚举。来源、权限、库存和
 校验结果不是生命周期状态，不得挪用这五种颜色制造同义状态。
@@ -539,6 +547,31 @@ Tag 文案必须是业务中文；不得显示 `DRAFT`、`ENABLED`、`DISABLED` 
 机械上可验证的常量集合、testId、locator binding 与 case 分母可以建门；业务可理解性、按钮层级、焦点归还、
 真实滚动和叠层行为必须在获授权的浏览器 L2 中验证。focused test、静态 markup 或“元素存在”不能冒充用户行为。
 
+#### 3-K-9 · L2 自动化前 UI/testId 可测性前置
+
+**规则**：UI-bearing screen 在进入 L2 脚本、locator binding 或 blueprint 控件声明之前，必须先按批准的
+需求/IA/交互工件/详设复核 UI 代码是否符合前端规范、既有同类模块和 foundation 形态，并按 L2 action
+穷举实际会被操作的控件。每个实际操作控件都必须由 app 的 `*TestIds.ts` 唯一源提供稳定 testId，且
+testId 挂在真正承载 click/fill/select/upload/press 的语义节点；动态控件使用稳定业务身份。缺失或挂错
+节点时，必须先修 UI 和 UI focused/static proof，不能先写 L2 再靠 locator 绕过。
+
+**反例**：L2 通过全局 `getByRole`、label、placeholder、文本、数组下标、CSS/XPath 或外层 wrapper 找到
+提交按钮、动态行菜单或文件 input，却没有对应的 testId 常量和真实动作节点绑定；这种脚本即使暂时通过，
+也无法证明操作的是批准 screen 中的那个控件，组件库 DOM 变化后还会把失败伪装成业务问题。
+
+**可证伪判据**：逐 case/action 建立控件分母；任一实际动作缺 `*TestIds.ts` 常量、常量未渲染到动作节点、
+locator binding 与 touch 记录指向父级/错误节点，或 UI 对账仍有 OPEN，即 `L2_SCRIPT_ADMISSION=FAIL`。
+`UI_DESIGN_REVIEW`、`TESTID_REVIEW` 和 UI focused/static proof 均 PASS 后才允许新增或修改 L2 脚本。
+
+**复合控件窄例外**：若仓内既有复合控件（例如 `Segmented`）的组件 API 不暴露 option-level `data-*`，
+可把 testId 挂在该 option 的可见 label/option anchor，前提是点击该 anchor 与用户点击该 option 具有相同动作
+语义，并在控件分母中记录 `COMPOSITE_OPTION_ANCHOR`、实际触点与 focused/static proof。该窄例外不适用于
+可以直接标记的 Button、MenuItem、Checkbox、Radio、输入框或 file input，也不允许以外层 wrapper、文本、role、
+CSS/XPath 或宽 locator 代替真实触点。
+
+**仓内正例**：`未验证`。当前规则建立后，首个通过逐控件分母、真实节点绑定和独立复核的 screen 才可登记为
+正例；在此之前不得把“有一个 testId”或“元素存在”当作完整正例。
+
 ---
 
 ## 4 · 评审纪律
@@ -550,15 +583,15 @@ Tag 文案必须是业务中文；不得显示 `DRAFT`、`ENABLED`、`DISABLED` 
 
 **为什么**:2026-08-16 这轮 113 条 finding 的第二轮验证中,**被推翻的 7 条无一例外是这类句式**:
 
-| 写的 | 实测 |
-|---|---|
-| 「全仓零处用 `isFetching`」 | 30 余处在用 |
-| 「全仓无 `Form.ErrorList`」 | 4 处在用 |
-| 「`markBusinessIntentChanged` 零调用」 | 6 处 |
-| 「已 grep 确认无人放进依赖数组」 | 8 文件 13 处都放了(方向完全反了) |
-| 「生成 client catalog 与 RTK endpoints 是两份独立产物」 | 一次 pass 出两份,还有门守着 |
-| 「全部只有自身测试引用」 | 6/8 有真实生产消费者 |
-| 「完全绕开 RTK Query」 | 走的是同一条 RTK 路径 |
+| 写的                                                    | 实测                             |
+| ------------------------------------------------------- | -------------------------------- |
+| 「全仓零处用 `isFetching`」                             | 30 余处在用                      |
+| 「全仓无 `Form.ErrorList`」                             | 4 处在用                         |
+| 「`markBusinessIntentChanged` 零调用」                  | 6 处                             |
+| 「已 grep 确认无人放进依赖数组」                        | 8 文件 13 处都放了(方向完全反了) |
+| 「生成 client catalog 与 RTK endpoints 是两份独立产物」 | 一次 pass 出两份,还有门守着      |
+| 「全部只有自身测试引用」                                | 6/8 有真实生产消费者             |
+| 「完全绕开 RTK Query」                                  | 走的是同一条 RTK 路径            |
 
 **根因**:证明"存在"只需一个实例,证明"不存在"要穷举。
 **声称缺陷成立的部分基本都对,声称缺陷不成立的部分错得最多。**
@@ -596,11 +629,11 @@ Tag 文案必须是业务中文；不得显示 `DRAFT`、`ENABLED`、`DISABLED` 
 
 **为什么(2026-08-17 一天内漏了三次,前两次是别人抓出来的)**:
 
-| # | 漏查什么 | 后果 |
-|---|---|---|
-| 1 | `HANDOFF.md` 的 `HEALTH_READINESS` | 已裁「不建第二端点」,却把它当成「用哪个依赖」的技术选型重裁了一遍 |
-| 2 | `backend-coding-standard.md` §2-E | 里面记着 Dexter 对 P-1 的原话与根因诊断,而设计文档在不引用、不处置的情况下把 P-1 列入「本轮明确不做」 |
-| 3 | 本文件 §3-B | 规则一字不差已存在(且反例比新写的更重),仍新起了一节 3-A2 —— 写完才撞见,已删 |
+| #   | 漏查什么                           | 后果                                                                                                  |
+| --- | ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 1   | `HANDOFF.md` 的 `HEALTH_READINESS` | 已裁「不建第二端点」,却把它当成「用哪个依赖」的技术选型重裁了一遍                                     |
+| 2   | `backend-coding-standard.md` §2-E  | 里面记着 Dexter 对 P-1 的原话与根因诊断,而设计文档在不引用、不处置的情况下把 P-1 列入「本轮明确不做」 |
+| 3   | 本文件 §3-B                        | 规则一字不差已存在(且反例比新写的更重),仍新起了一节 3-A2 —— 写完才撞见,已删                           |
 
 **根因**:「我知道这件事该怎么办」与「这件事仓内已经办过」是两件事。
 **前者成立不代表后者不成立**,而后者成立时,新写一份就是制造第二个真相源。
@@ -610,20 +643,19 @@ Tag 文案必须是业务中文；不得显示 `DRAFT`、`ENABLED`、`DISABLED` 
 
 ⛔ 不接受「我搜过了没有」——按 4-A,那是否定式全称命题,一种写法没命中不算。
 
-
 ## 5 · 明确不上的
 
 **这些经穷举确认不构成问题,不写规范也不建门**(2026-08-16 实测):
 
-| | 实测 |
-|---|---|
-| Redux 反模式 | 全仓 **1 个 `useSelector`**、**1 个 `createSlice`**、0 个 `createSelector`、0 个 `createAsyncThunk`;immer 写法标准 |
-| AntD Form 受控/非受控混用 | **0 处** `<Form initialValues>`;137 个 `Form.Item name=` 全走 `setFieldsValue`/`resetFields` |
-| `destroyOnClose` 残留 | **0 处**(v6 已 deprecated),全部用新名 `destroyOnHidden` |
-| Table `rowKey` | 14 处**全部有**;4 处 index 派生都是只读表 |
-| AntD 废弃 API | 穷举 10 类 **0 命中**;反向确认正确用了 v6 形态。**全仓最干净的一块** |
-| hook 依赖数组缺项 | `exhaustive-deps` 已设为 error,三处 fresh 跑 exit 0 |
-| TS 逃逸 | 1 个 `any`(测试)、3 个 `@ts-expect-error`(故意的负向断言)、**0 个 `@ts-ignore`/`eslint-disable`** |
+|                           | 实测                                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Redux 反模式              | 全仓 **1 个 `useSelector`**、**1 个 `createSlice`**、0 个 `createSelector`、0 个 `createAsyncThunk`;immer 写法标准 |
+| AntD Form 受控/非受控混用 | **0 处** `<Form initialValues>`;137 个 `Form.Item name=` 全走 `setFieldsValue`/`resetFields`                       |
+| `destroyOnClose` 残留     | **0 处**(v6 已 deprecated),全部用新名 `destroyOnHidden`                                                            |
+| Table `rowKey`            | 14 处**全部有**;4 处 index 派生都是只读表                                                                          |
+| AntD 废弃 API             | 穷举 10 类 **0 命中**;反向确认正确用了 v6 形态。**全仓最干净的一块**                                               |
+| hook 依赖数组缺项         | `exhaustive-deps` 已设为 error,三处 fresh 跑 exit 0                                                                |
+| TS 逃逸                   | 1 个 `any`(测试)、3 个 `@ts-expect-error`(故意的负向断言)、**0 个 `@ts-ignore`/`eslint-disable`**                  |
 
 **`<StrictMode>` 缺失**归 `HANDOFF.md` 欠账(9 处 render 期写 ref 目前都幂等)。
 **`VITE_FRONTEND_LOG_SINK_URL` 未配置**同样归 `HANDOFF.md` —— 代码侧 WARN/ERROR 已无条件出网(`safeLogger.ts:117`)。
@@ -652,8 +684,8 @@ Tag 文案必须是业务中文；不得显示 `DRAFT`、`ENABLED`、`DISABLED` 
 - **仓内正例是分级要求,不是准入门槛**(2026-08-16 对抗审查后放宽):
   - **有正例** → 规则可直接执行,整改指令是「照那一处改」
   - **无正例** → 规则标注 **`未验证`**,整改时要**建立**正例而不是照抄现有写法
-  原判据写的是「找不到正例的规则不进本文」,而实测本文 16 条里 **10 条没有正例**
-  (2-A · 2-B · 2-C · 2-D · 3-B · 3-C · 3-E · 4-A · 4-B · 4-C);
-  按原判据这 10 条都该被删,但它们对应的都是已证实的真缺陷。**是判据过严,不是规则无效。**
+    原判据写的是「找不到正例的规则不进本文」,而实测本文 16 条里 **10 条没有正例**
+    (2-A · 2-B · 2-C · 2-D · 3-B · 3-C · 3-E · 4-A · 4-B · 4-C);
+    按原判据这 10 条都该被删,但它们对应的都是已证实的真缺陷。**是判据过严,不是规则无效。**
 - **`未验证` 的规则不得作为"照抄某处"的指令下发** —— 反例:§3-A 曾把一个裸 `catch {}` 举为正例,
   若照抄会把该缺陷复制到两个 App 的每个抽屉。

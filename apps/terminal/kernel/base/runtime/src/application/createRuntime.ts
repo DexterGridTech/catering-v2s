@@ -28,6 +28,7 @@ import type {
   Runtime,
   CreateRuntimeInput,
   RuntimeStatus,
+  RuntimeSubscriptionListener,
 } from '../types/runtime'
 import type {RuntimeUnknownAction, RuntimeStore} from '../types/runtime'
 import type {RuntimeModule, RuntimeRoleChangeSignal} from '../types/module'
@@ -43,6 +44,7 @@ import {createRuntimeJournal} from '../foundations/createRuntimeJournal'
 import {createActorRegistry} from '../foundations/createActorRegistry'
 import {assertNonEmptyString} from '../foundations/assertNonEmptyString'
 import {createRuntimeResourceRegistry} from '../foundations/createRuntimeResourceRegistry'
+import {createStateSubscription} from '../foundations/createStateSubscription'
 import {commandDefinitionBrand} from '../types/command'
 import {registerRuntimeResourceAccessorForTest} from '../testing/releaseRuntimeForTest'
 import {registerRuntimeStateSyncAccessorForTest} from '../testing/runtimeStateSyncForTest'
@@ -110,6 +112,12 @@ const resolveLimits = (
     throw new Error('Runtime requestMaxResidenceMs must exceed the maximum command chain residence')
   }
   return limits
+}
+
+type RuntimeSubscriptionRecord = {
+  readonly listener: RuntimeSubscriptionListener
+  active: boolean
+  unregisterResource?: () => void
 }
 
 const validateModuleShape = (
@@ -206,6 +214,56 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
   let startPromise: Promise<void> | undefined
   let resetting = false
   const resources = createRuntimeResourceRegistry()
+  const subscriptions = new Set<RuntimeSubscriptionRecord>()
+  let stateSubscription: (() => void) | undefined
+
+  const notifyRuntimeSubscribers = (): void => {
+    for (const subscription of [...subscriptions]) {
+      if (!subscription.active) continue
+      try {
+        subscription.listener()
+      } catch {
+        logger.error({
+          category: 'runtime.lifecycle',
+          event: 'runtime.subscription.listener-failed',
+          message: 'Runtime subscription listener failed',
+          data: {status},
+        })
+      }
+    }
+  }
+
+  const detachStateSubscription = (): void => {
+    stateSubscription?.()
+    stateSubscription = undefined
+  }
+
+  const attachStateSubscription = (): void => {
+    if (stateSubscription !== undefined || stateRuntime === undefined || subscriptions.size === 0) return
+    stateSubscription = createStateSubscription(stateRuntime.getStore(), notifyRuntimeSubscribers)
+  }
+
+  const removeRuntimeSubscription = (subscription: RuntimeSubscriptionRecord): void => {
+    if (!subscription.active) return
+    subscription.active = false
+    subscriptions.delete(subscription)
+    subscription.unregisterResource?.()
+    if (subscriptions.size === 0) detachStateSubscription()
+  }
+
+  const closeRuntimeSubscriptions = (): void => {
+    detachStateSubscription()
+    for (const subscription of [...subscriptions]) removeRuntimeSubscription(subscription)
+  }
+
+  const subscribe = (listener: RuntimeSubscriptionListener): (() => void) => {
+    if (status === 'failed') return () => undefined
+    const subscription: RuntimeSubscriptionRecord = {listener, active: true}
+    subscriptions.add(subscription)
+    subscription.unregisterResource = resources.register(() => removeRuntimeSubscription(subscription))
+    attachStateSubscription()
+    return () => removeRuntimeSubscription(subscription)
+  }
 
   const dispatchForContext = <TPayload extends StateJsonValue>(
     definition: CommandDefinition<TPayload>,
@@ -270,6 +328,7 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
     if (startPromise !== undefined) return startPromise
 
     status = 'starting'
+    notifyRuntimeSubscribers()
     startPromise = (async () => {
       try {
         await lifecycle.runPreSetup()
@@ -286,6 +345,7 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
           persistenceDebounceMs: input.state.persistenceDebounceMs,
           storeEnhancers: input.state.storeEnhancers,
         })
+        attachStateSubscription()
         dispatcher = createCommandDispatcher({
           runtimeId,
           localNodeId: input.localNodeId,
@@ -309,9 +369,13 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
           throw lifecycleError(`Initialize did not complete: ${initializeResult.status}`)
         }
         status = 'started'
+        notifyRuntimeSubscribers()
       } catch (error) {
         failure = isAppError(error) ? error : lifecycleError('Runtime start failed', error)
         status = 'failed'
+        detachStateSubscription()
+        notifyRuntimeSubscribers()
+        closeRuntimeSubscriptions()
         logger.error({
           category: 'runtime.lifecycle',
           event: 'runtime.start.failed',
@@ -361,6 +425,7 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
     get status(): RuntimeStatus { return status },
     get failure(): AppError | null { return failure },
     start,
+    subscribe,
     getState,
     getStore,
     dispatchCommand,

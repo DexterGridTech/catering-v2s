@@ -1,1 +1,31 @@
-{"schemaVersion":1,"package":"@catering-v2s/ui-base-render","owned":{"test":{"kind":"ABSENT"},"lint":{"kind":"ABSENT"},"clean":{"kind":"ABSENT"}}}
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/ui-base-render",
+  "owned": {
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/ui-base-render",
+      "runner": "vitest"
+    },
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": [
+    "LayerTier",
+    "LayerStack",
+    "RenderProvider",
+    "RenderProviderProps",
+    "RendererBinding",
+    "RendererCatalog",
+    "ScreenContainer",
+    "SurfaceRootProps",
+    "SurfaceRoot",
+    "createRendererCatalog",
+    "definePart",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName",
+    "useSurfaceDisplayMode",
+    "useUiStateSelector"
+  ]
+}

@@ -55,6 +55,8 @@ export const SECRET_CLASS_KEYS = Object.freeze({
     'V2S_L2_PLATFORM_PASSWORD',
     'V2S_L2_OPERATIONS_LOGIN',
     'V2S_L2_OPERATIONS_PASSWORD',
+    'V2S_L2_OPERATIONS_READONLY_LOGIN',
+    'V2S_L2_OPERATIONS_READONLY_PASSWORD',
     'V2S_L2_HEAD_OPERATIONS_LOGIN',
     'V2S_L2_HEAD_OPERATIONS_PASSWORD',
     'V2S_L2_TEST_OTP',
@@ -93,6 +95,8 @@ export const CHILD_PROCESS_ENV_ALLOWLISTS = Object.freeze({
   operationsPlaywright: freezeList([
     'V2S_L2_OPERATIONS_LOGIN',
     'V2S_L2_OPERATIONS_PASSWORD',
+    'V2S_L2_OPERATIONS_READONLY_LOGIN',
+    'V2S_L2_OPERATIONS_READONLY_PASSWORD',
     'V2S_L2_HEAD_OPERATIONS_LOGIN',
     'V2S_L2_HEAD_OPERATIONS_PASSWORD',
     'V2S_L2_DIAGNOSTIC_SECRET',
@@ -521,6 +525,8 @@ function buildGeneratedCredentialValues({runId, assetStorage, testLogin} = {}) {
     'platformPassword',
     'operationsUsername',
     'operationsPassword',
+    'operationsReadonlyUsername',
+    'operationsReadonlyPassword',
     'otp',
   ];
   for (const field of requiredLoginFields) assert(typeof testLogin[field] === 'string', 'L2_SECRET_FORMAT_INVALID');
@@ -538,6 +544,8 @@ function buildGeneratedCredentialValues({runId, assetStorage, testLogin} = {}) {
     V2S_L2_PLATFORM_PASSWORD: testLogin.platformPassword,
     V2S_L2_OPERATIONS_LOGIN: testLogin.operationsUsername,
     V2S_L2_OPERATIONS_PASSWORD: testLogin.operationsPassword,
+    V2S_L2_OPERATIONS_READONLY_LOGIN: testLogin.operationsReadonlyUsername,
+    V2S_L2_OPERATIONS_READONLY_PASSWORD: testLogin.operationsReadonlyPassword,
     V2S_L2_HEAD_OPERATIONS_LOGIN: testLogin.headOperationsUsername,
     V2S_L2_HEAD_OPERATIONS_PASSWORD: testLogin.headOperationsPassword,
     V2S_L2_TEST_OTP: testLogin.otp,

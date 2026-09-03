@@ -1,40 +1,14 @@
 {
   "schemaVersion": 1,
   "kind": "sales-menu-l2-execution-profile",
-  "revision": "SALES_MENU_L2_P1_20260902",
-  "mode": "INCREMENTAL",
-  "enabledCaseIds": [
-    "sales-menu-entry-and-channels",
-    "sales-menu-section-actions",
-    "sales-menu-add-candidates",
-    "sales-menu-edit-direct-item-and-media",
-    "sales-menu-edit-sku-prices",
-    "sales-menu-edit-weighted-item",
-    "sales-menu-draft-order-and-pagination",
-    "sales-menu-publish-and-front-structure",
-    "sales-menu-front-status-and-pagination",
-    "sales-menu-manual-sold-out-and-restore",
-    "sales-menu-menu-management-and-multi-active",
-    "sales-menu-copy-boundary",
-    "sales-menu-publish-blockers",
-    "sales-menu-operation-records",
-    "sales-menu-failure-recovery-and-focus",
-    "sales-menu-auth-and-scope-isolation"
-  ],
+  "revision": "SALES_MENU_L2_P1_20260903",
+  "mode": "FRAMEWORK_ONLY",
+  "enabledCaseIds": [],
   "sourceOfTruth": "contracts/policy/sales-menu-l2-case-blueprint.json",
   "noSeedRuntimeInput": true,
   "activationCandidate": {
     "path": "contracts/policy/sales-menu-l2-activation-candidate.json",
-    "digest": "b20c2ae87a0e6c7d82f6dffe9a3a1d5aab4779bdff08a32abf86409fb563a81a"
+    "digest": "c890ff2520fbbd23d46febe76ced59d311dabe44b973af4a8c3657ab43080419"
   },
-  "enablementRule": "P1 enables only the candidate exact set after a matching PASS held readiness manifest; generated output is never hand-edited.",
-  "readiness": {
-    "manifestPath": ".runtime/browser-l2/l2-1788355293842-1651-9eb90022-cc39-49ce-9194-b42af151e4f3/readiness-manifest.json",
-    "runBinding": {
-      "runId": "l2-1788355293842-1651-9eb90022-cc39-49ce-9194-b42af151e4f3",
-      "namespace": "v2s_l2_fcf805a7c977feef",
-      "database": "catering_v2s_l2_fcf805a7c977feef",
-      "assetPrefix": "s3://catering-v2s-r5-assets/catering-v2s/l2/l2-1788355293842-1651-9eb90022-cc39-49ce-9194-b42af151e4f3/"
-    }
-  }
+  "enablementRule": "P1 enables only the candidate exact set after a matching PASS held readiness manifest; generated output is never hand-edited."
 }

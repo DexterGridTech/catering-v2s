@@ -175,7 +175,7 @@ workspace 的 value record 查 key，缺项返回**注册 declaration** 的 `def
 type UiCatalogEntry = Readonly<{
   partKey: PartKey
   rendererKey: string
-  containerKey: ContainerKey
+  containerKeys: readonly ContainerKey[]
   displayModes: readonly DisplayMode[]
   workspaces: readonly WorkspaceKey[]
   instanceModes: readonly RuntimeInstanceMode[]
@@ -211,9 +211,10 @@ createUiStateModule({catalog, variables}): UiStateModule
 不放 module-scope mutable Map，也不提供运行期 `register` API。`createUiCatalog` 一次性校验后深冻结
 entry list、entry 和索引：
 
-- `partKey`、`rendererKey`、`containerKey`、`title`、`description` 必须是非空字符串；
+- `partKey`、`rendererKey`、`title`、`description` 必须是非空字符串；`containerKeys` 是只读的字符串列表，
+  每项必须是非空且不重复的字符串，允许为空；
 - `partKey` 重复立即 throw，绝不覆盖；
-- 三个准入数组必须为非空、无重复且仅包含各自的闭集值；
+- `displayModes`、`workspaces`、`instanceModes` 三个准入数组必须为非空、无重复且仅包含各自的闭集值；
 - 输入 entry 的 `Reflect.ownKeys` 必须精确等于批准字段集合；多余 enumerable/non-enumerable/symbol key 均拒绝，
   而不是悄悄丢弃；
 - 校验后构造**新的** canonical entry，只复制批准的 string 与闭集 array 值并冻结；索引用冻结的 plain record，
@@ -224,8 +225,19 @@ entry list、entry 和索引：
 `UiStateModule` 只携带对已冻结 catalog 的 readonly 引用，以便模块实例可作为组合产物被交给下游；
 它不创建共享全局。公开枚举函数改为
 `selectAvailableParts(catalog, containerKey, {displayMode, workspace, instanceMode})`，而不是需求稿草案中的
-`state` 首参：可用项来自 catalog，刻意不来自 Redux。它精确以三个维度和 containerKey 过滤，稳定保留
+`state` 首参：可用项来自 catalog，刻意不来自 Redux。它精确以三个维度和 `containerKeys.includes(containerKey)` 过滤，稳定保留
 catalog 的声明顺序。
+
+### 3.1a S-7：准入容器列表与放置容器键分离
+
+`UiCatalogEntry.containerKeys` 只描述 catalog 枚举准入；它为空时表示该 part 不属于任何容器，
+可作为 layer-only part 的自然值。它不参与 command 写入，也不改变 `showScreen` payload 中仍为单数的
+`containerKey` 或 actor 的放置路径。`createUiCatalog` 继续以 `Reflect.ownKeys` 对 entry 做精确相等校验，
+并把批准字段复制到新的冻结 canonical entry。
+
+S-7 的 focused proof 必须同时保持三条边界：`containerKeys: []` 构建成功且不被任何容器枚举；另外三个
+准入列表仍拒绝空数组；以及把 exact-own-keys 改为子集判定、或把 `selectAvailableParts` 的 `includes`
+改坏，均须由生产实现变异使对应 proof 变红。
 
 ### 3.2 准入不是写入门
 
@@ -398,7 +410,7 @@ U-11 不是 ui-state 对 display-context 的所有权扩张；它是 `displayMod
 | RTK/action form | 所有 registration reducer 与 canonical action creator 均来自 `createSlice`；本包无手写 action creator/`type` string | 注入 `const rogue = () => ({type:'legacy/action'})`（无 `@@`），门红 |
 | workspace reuse | state 的 partition API import 精确为 workspace 三件套；无 `createPartitioned*`、任意命名的 package-local key/router declaration、直接 `.MAIN/.BRANCH` 拼接或非 descriptor 的 `{MAIN, BRANCH}` key pair | 将一个 import 替成任意命名的本地 key/router helper，或直接拼接 workspace suffix，门红 |
 | package boundary | 无 React/RN import、无 queue symbols、无自有 persistence type、无 layer persistence field；四 registration 均显式 isolated 且无 sync descriptor/API | 分别注入 `react` import、`readyToEnter`、私有 persist union、layer descriptor 或 sync descriptor，目标门红 |
-| catalog state boundary | state types/actions/persistence payload 不含 title/description/renderer component；catalog canonical entry/record own keys exact | 将 title 写入 placement，或输入 `{component(){}}` / symbol extra key，目标 assertion 红 |
+| catalog state boundary | state types/actions/persistence payload 不含 title/description/renderer component/`containerKeys`；catalog canonical entry/record own keys exact；`containerKeys` 形状与空值语义正确 | 将 catalog-only 字段写入 state、放宽 own keys、或把空数组不对称改掉，目标 assertion 红 |
 
 workspace gate 只判断可诚实判定的 import origin 与本包声明；U-5 是它的行为反证，二者不得互相冒充。
 所有 red vector 均要求真实树回绿，且不以文本存在检查代替 focused behavior。

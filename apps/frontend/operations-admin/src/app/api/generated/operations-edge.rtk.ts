@@ -6,7 +6,41 @@ import type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest}
 type EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;
 export type OperationsAdminOperationId = keyof FaceOperationContracts;
 export type OperationsAdminRtkWireRequest = <I extends OperationsAdminOperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};
-export type OperationsAdminRtkTagType = "wire" | "catalogInventory";
+export type OperationsAdminRtkTagType = "wire" | "catalogInventory" | "salesMenu";
+
+export type SalesMenuRtkTagDescriptor =
+  | {kind: "static"; id: string}
+  | {kind: "requestPath"; prefix: string; path: string}
+  | {kind: "requestQuery"; prefix: string; path: string};
+function readSalesMenuTagPath(value: unknown, path: readonly string[]): unknown {
+  return path.reduce<unknown>((current, segment) => {
+    if (current === null || typeof current !== "object") return undefined;
+    return (current as Record<string, unknown>)[segment];
+  }, value);
+}
+function resolveSalesMenuTags<TagTypes extends OperationsAdminRtkTagType>(
+  descriptors: readonly SalesMenuRtkTagDescriptor[],
+  request: {pathParameters: object; query?: object},
+): Array<{type: Extract<TagTypes, "salesMenu">; id: string}> {
+  const tags: Array<{type: Extract<TagTypes, "salesMenu">; id: string}> = [];
+  const seen = new Set<string>();
+  const add = (id: string) => {
+    if (id.trim() === "" || seen.has(id)) return;
+    seen.add(id);
+    tags.push({type: "salesMenu" as Extract<TagTypes, "salesMenu">, id});
+  };
+  for (const descriptor of descriptors) {
+    if (descriptor.kind === "static") add(descriptor.id);
+    else if (descriptor.kind === "requestPath") {
+      const value = readSalesMenuTagPath(request.pathParameters, descriptor.path.split("."));
+      if (typeof value === "string") add(descriptor.prefix + ":" + value);
+    } else {
+      const value = readSalesMenuTagPath(request.query, descriptor.path.split("."));
+      if (typeof value === "string") add(descriptor.prefix + ":" + value);
+    }
+  }
+  return tags;
+}
 
 /**
  * Operation-shaped request constructors for RTK hooks. Consumers supply only
@@ -1127,11 +1161,11 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     addOperationsSalesMenuItems: build.mutation<FaceOperationContracts["addOperationsSalesMenuItems"]["response"], FaceOperationRequest<"addOperationsSalesMenuItems">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"requestPath","prefix":"sales-menu-section","path":"salesSectionRef"},{"kind":"static","id":"sales-menu-draft-sections"},{"kind":"static","id":"sales-menu-draft-items"},{"kind":"static","id":"sales-menu-candidates"},{"kind":"static","id":"sales-menu-preview"},{"kind":"static","id":"sales-menu-operation-records"}] as const, request),
     }),
     archiveOperationsSalesMenu: build.mutation<FaceOperationContracts["archiveOperationsSalesMenu"]["response"], FaceOperationRequest<"archiveOperationsSalesMenu">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-store","path":"storeRef"},{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"static","id":"sales-menu-list"}] as const, request),
     }),
     cancelOperationsWorkspaceGroupInvitation: build.mutation<FaceOperationContracts["cancelOperationsWorkspaceGroupInvitation"]["response"], FaceOperationRequest<"cancelOperationsWorkspaceGroupInvitation">>({
       query: (request) => toWireRequest(request),
@@ -1159,7 +1193,7 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     copyOperationsSalesMenu: build.mutation<FaceOperationContracts["copyOperationsSalesMenu"]["response"], FaceOperationRequest<"copyOperationsSalesMenu">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-store","path":"storeRef"},{"kind":"static","id":"sales-menu-list"}] as const, request),
     }),
     createOperationsBusinessChannel: build.mutation<FaceOperationContracts["createOperationsBusinessChannel"]["response"], FaceOperationRequest<"createOperationsBusinessChannel">>({
       query: (request) => toWireRequest(request),
@@ -1203,11 +1237,11 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     createOperationsSalesMenu: build.mutation<FaceOperationContracts["createOperationsSalesMenu"]["response"], FaceOperationRequest<"createOperationsSalesMenu">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-store","path":"storeRef"},{"kind":"static","id":"sales-menu-list"}] as const, request),
     }),
     createOperationsSalesMenuSection: build.mutation<FaceOperationContracts["createOperationsSalesMenuSection"]["response"], FaceOperationRequest<"createOperationsSalesMenuSection">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"static","id":"sales-menu-draft-sections"},{"kind":"static","id":"sales-menu-preview"},{"kind":"static","id":"sales-menu-operation-records"}] as const, request),
     }),
     createOperationsWorkspaceGroupInvitation: build.mutation<FaceOperationContracts["createOperationsWorkspaceGroupInvitation"]["response"], FaceOperationRequest<"createOperationsWorkspaceGroupInvitation">>({
       query: (request) => toWireRequest(request),
@@ -1235,11 +1269,11 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     deleteOperationsSalesMenuItem: build.mutation<FaceOperationContracts["deleteOperationsSalesMenuItem"]["response"], FaceOperationRequest<"deleteOperationsSalesMenuItem">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"requestPath","prefix":"sales-menu-item","path":"salesItemRef"},{"kind":"static","id":"sales-menu-draft-sections"},{"kind":"static","id":"sales-menu-draft-items"},{"kind":"static","id":"sales-menu-draft-item"},{"kind":"static","id":"sales-menu-preview"},{"kind":"static","id":"sales-menu-operation-records"}] as const, request),
     }),
     deleteOperationsSalesMenuSection: build.mutation<FaceOperationContracts["deleteOperationsSalesMenuSection"]["response"], FaceOperationRequest<"deleteOperationsSalesMenuSection">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"static","id":"sales-menu-draft-sections"},{"kind":"static","id":"sales-menu-preview"},{"kind":"static","id":"sales-menu-operation-records"}] as const, request),
     }),
     getOperationsBusinessChannelDetail: build.query<FaceOperationContracts["getOperationsBusinessChannelDetail"]["response"], FaceOperationRequest<"getOperationsBusinessChannelDetail">>({
       query: (request) => toWireRequest(request),
@@ -1343,47 +1377,47 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     getOperationsSalesMenu: build.query<FaceOperationContracts["getOperationsSalesMenu"]["response"], FaceOperationRequest<"getOperationsSalesMenu">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-store","path":"storeRef"},{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"requestQuery","prefix":"sales-menu-channel","path":"channelRef"}] as const, request),
     }),
     getOperationsSalesMenuDraftItem: build.query<FaceOperationContracts["getOperationsSalesMenuDraftItem"]["response"], FaceOperationRequest<"getOperationsSalesMenuDraftItem">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-item","path":"salesItemRef"},{"kind":"static","id":"sales-menu-draft-item"}] as const, request),
     }),
     getOperationsSalesMenuDraftItems: build.query<FaceOperationContracts["getOperationsSalesMenuDraftItems"]["response"], FaceOperationRequest<"getOperationsSalesMenuDraftItems">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-section","path":"salesSectionRef"},{"kind":"static","id":"sales-menu-draft-items"}] as const, request),
     }),
     getOperationsSalesMenuDraftSections: build.query<FaceOperationContracts["getOperationsSalesMenuDraftSections"]["response"], FaceOperationRequest<"getOperationsSalesMenuDraftSections">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"static","id":"sales-menu-draft-sections"}] as const, request),
     }),
     getOperationsSalesMenuItemCandidates: build.query<FaceOperationContracts["getOperationsSalesMenuItemCandidates"]["response"], FaceOperationRequest<"getOperationsSalesMenuItemCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"static","id":"sales-menu-candidates"}] as const, request),
     }),
     getOperationsSalesMenuOperationRecords: build.query<FaceOperationContracts["getOperationsSalesMenuOperationRecords"]["response"], FaceOperationRequest<"getOperationsSalesMenuOperationRecords">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestQuery","prefix":"sales-menu-channel","path":"channelRef"},{"kind":"static","id":"sales-menu-operation-records"}] as const, request),
     }),
     getOperationsSalesMenuPublicationPreview: build.query<FaceOperationContracts["getOperationsSalesMenuPublicationPreview"]["response"], FaceOperationRequest<"getOperationsSalesMenuPublicationPreview">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestQuery","prefix":"sales-menu-channel","path":"channelRef"},{"kind":"static","id":"sales-menu-preview"}] as const, request),
     }),
     getOperationsSalesMenuPublishedItem: build.query<FaceOperationContracts["getOperationsSalesMenuPublishedItem"]["response"], FaceOperationRequest<"getOperationsSalesMenuPublishedItem">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-item","path":"salesItemRef"},{"kind":"requestQuery","prefix":"sales-menu-channel","path":"channelRef"},{"kind":"static","id":"sales-menu-published-item"}] as const, request),
     }),
     getOperationsSalesMenuPublishedItems: build.query<FaceOperationContracts["getOperationsSalesMenuPublishedItems"]["response"], FaceOperationRequest<"getOperationsSalesMenuPublishedItems">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-section","path":"salesSectionRef"},{"kind":"requestQuery","prefix":"sales-menu-channel","path":"channelRef"},{"kind":"static","id":"sales-menu-published-items"}] as const, request),
     }),
     getOperationsSalesMenuPublishedSections: build.query<FaceOperationContracts["getOperationsSalesMenuPublishedSections"]["response"], FaceOperationRequest<"getOperationsSalesMenuPublishedSections">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"static","id":"sales-menu-published-sections"}] as const, request),
     }),
     getOperationsSalesMenus: build.query<FaceOperationContracts["getOperationsSalesMenus"]["response"], FaceOperationRequest<"getOperationsSalesMenus">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"static","id":"sales-menu-list"},{"kind":"requestPath","prefix":"sales-menu-store","path":"storeRef"},{"kind":"requestQuery","prefix":"sales-menu-channel","path":"channelRef"}] as const, request),
     }),
     getOperationsStoreBusinessChannels: build.query<FaceOperationContracts["getOperationsStoreBusinessChannels"]["response"], FaceOperationRequest<"getOperationsStoreBusinessChannels">>({
       query: (request) => toWireRequest(request),
@@ -1491,11 +1525,11 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     moveOperationsSalesMenuItem: build.mutation<FaceOperationContracts["moveOperationsSalesMenuItem"]["response"], FaceOperationRequest<"moveOperationsSalesMenuItem">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"requestPath","prefix":"sales-menu-item","path":"salesItemRef"},{"kind":"static","id":"sales-menu-draft-sections"},{"kind":"static","id":"sales-menu-draft-items"},{"kind":"static","id":"sales-menu-draft-item"},{"kind":"static","id":"sales-menu-preview"},{"kind":"static","id":"sales-menu-operation-records"}] as const, request),
     }),
     moveOperationsSalesMenuSection: build.mutation<FaceOperationContracts["moveOperationsSalesMenuSection"]["response"], FaceOperationRequest<"moveOperationsSalesMenuSection">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"static","id":"sales-menu-draft-sections"},{"kind":"static","id":"sales-menu-preview"},{"kind":"static","id":"sales-menu-operation-records"}] as const, request),
     }),
     operationsWorkspaceLogout: build.mutation<FaceOperationContracts["operationsWorkspaceLogout"]["response"], FaceOperationRequest<"operationsWorkspaceLogout">>({
       query: (request) => toWireRequest(request),
@@ -1507,7 +1541,7 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     publishOperationsSalesMenu: build.mutation<FaceOperationContracts["publishOperationsSalesMenu"]["response"], FaceOperationRequest<"publishOperationsSalesMenu">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-store","path":"storeRef"},{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"static","id":"sales-menu-list"},{"kind":"static","id":"sales-menu-published-sections"},{"kind":"static","id":"sales-menu-published-items"},{"kind":"static","id":"sales-menu-published-item"},{"kind":"static","id":"sales-menu-preview"},{"kind":"static","id":"sales-menu-operation-records"}] as const, request),
     }),
     reissueOperationsWorkspaceGroupInvitation: build.mutation<FaceOperationContracts["reissueOperationsWorkspaceGroupInvitation"]["response"], FaceOperationRequest<"reissueOperationsWorkspaceGroupInvitation">>({
       query: (request) => toWireRequest(request),
@@ -1531,7 +1565,7 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     releaseOperationsSalesMenuStagedAsset: build.mutation<FaceOperationContracts["releaseOperationsSalesMenuStagedAsset"]["response"], FaceOperationRequest<"releaseOperationsSalesMenuStagedAsset">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([] as const, request),
     }),
     removeOperationsOrganizationHeadCompanyBrandAuthorization: build.mutation<FaceOperationContracts["removeOperationsOrganizationHeadCompanyBrandAuthorization"]["response"], FaceOperationRequest<"removeOperationsOrganizationHeadCompanyBrandAuthorization">>({
       query: (request) => toWireRequest(request),
@@ -1539,15 +1573,15 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     renameOperationsSalesMenu: build.mutation<FaceOperationContracts["renameOperationsSalesMenu"]["response"], FaceOperationRequest<"renameOperationsSalesMenu">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-store","path":"storeRef"},{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"static","id":"sales-menu-list"}] as const, request),
     }),
     renameOperationsSalesMenuSection: build.mutation<FaceOperationContracts["renameOperationsSalesMenuSection"]["response"], FaceOperationRequest<"renameOperationsSalesMenuSection">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"static","id":"sales-menu-draft-sections"},{"kind":"static","id":"sales-menu-preview"},{"kind":"static","id":"sales-menu-operation-records"}] as const, request),
     }),
     restoreOperationsSalesMenuItemSale: build.mutation<FaceOperationContracts["restoreOperationsSalesMenuItemSale"]["response"], FaceOperationRequest<"restoreOperationsSalesMenuItemSale">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"requestPath","prefix":"sales-menu-item","path":"salesItemRef"},{"kind":"requestPath","prefix":"sales-menu-channel","path":"channelRef"},{"kind":"static","id":"sales-menu-published-items"},{"kind":"static","id":"sales-menu-published-item"},{"kind":"static","id":"sales-menu-operation-records"}] as const, request),
     }),
     revokeOperationsWorkspaceGroupUserAssignment: build.mutation<FaceOperationContracts["revokeOperationsWorkspaceGroupUserAssignment"]["response"], FaceOperationRequest<"revokeOperationsWorkspaceGroupUserAssignment">>({
       query: (request) => toWireRequest(request),
@@ -1583,15 +1617,15 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     setOperationsSalesMenuActivation: build.mutation<FaceOperationContracts["setOperationsSalesMenuActivation"]["response"], FaceOperationRequest<"setOperationsSalesMenuActivation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-store","path":"storeRef"},{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"requestPath","prefix":"sales-menu-channel","path":"channelRef"},{"kind":"static","id":"sales-menu-list"},{"kind":"static","id":"sales-menu-published-sections"},{"kind":"static","id":"sales-menu-published-items"},{"kind":"static","id":"sales-menu-published-item"}] as const, request),
     }),
     setOperationsSalesMenuItemSoldOut: build.mutation<FaceOperationContracts["setOperationsSalesMenuItemSoldOut"]["response"], FaceOperationRequest<"setOperationsSalesMenuItemSoldOut">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"requestPath","prefix":"sales-menu-item","path":"salesItemRef"},{"kind":"requestPath","prefix":"sales-menu-channel","path":"channelRef"},{"kind":"static","id":"sales-menu-published-items"},{"kind":"static","id":"sales-menu-published-item"},{"kind":"static","id":"sales-menu-operation-records"}] as const, request),
     }),
     stageOperationsSalesMenuAsset: build.mutation<FaceOperationContracts["stageOperationsSalesMenuAsset"]["response"], FaceOperationRequest<"stageOperationsSalesMenuAsset">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([] as const, request),
     }),
     transitionOperationsBusinessChannelStatus: build.mutation<FaceOperationContracts["transitionOperationsBusinessChannelStatus"]["response"], FaceOperationRequest<"transitionOperationsBusinessChannelStatus">>({
       query: (request) => toWireRequest(request),
@@ -1659,11 +1693,11 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     updateOperationsSalesMenuItem: build.mutation<FaceOperationContracts["updateOperationsSalesMenuItem"]["response"], FaceOperationRequest<"updateOperationsSalesMenuItem">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"requestPath","prefix":"sales-menu-item","path":"salesItemRef"},{"kind":"static","id":"sales-menu-draft-sections"},{"kind":"static","id":"sales-menu-draft-items"},{"kind":"static","id":"sales-menu-draft-item"},{"kind":"static","id":"sales-menu-preview"},{"kind":"static","id":"sales-menu-operation-records"}] as const, request),
     }),
     updateOperationsSalesMenuSchedule: build.mutation<FaceOperationContracts["updateOperationsSalesMenuSchedule"]["response"], FaceOperationRequest<"updateOperationsSalesMenuSchedule">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"requestPath","prefix":"sales-menu-store","path":"storeRef"},{"kind":"static","id":"sales-menu-list"},{"kind":"static","id":"sales-menu-preview"}] as const, request),
     }),
     verifyOperationsWorkspaceOtp: build.mutation<FaceOperationContracts["verifyOperationsWorkspaceOtp"]["response"], FaceOperationRequest<"verifyOperationsWorkspaceOtp">>({
       query: (request) => toWireRequest(request),

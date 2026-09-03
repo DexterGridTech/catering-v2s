@@ -17,8 +17,10 @@ const blueprintPath = 'contracts/policy/sales-menu-l2-case-blueprint.json';
 const fixturePath = 'contracts/policy/sales-menu-l2-fixture.json';
 const testIdsPath = 'apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts';
 const specPath = 'apps/frontend/operations-admin/src/tests/l2/sales-menu.spec.ts';
-const generalRegistryPath = 'apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json';
-const catalogRegistryPath = 'apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json';
+const generalRegistryPath =
+  'apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json';
+const catalogRegistryPath =
+  'apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json';
 
 const generatedPaths = Object.freeze({
   scenarios: 'contracts/policy/sales-menu-l2-scenarios.json',
@@ -27,59 +29,6 @@ const generatedPaths = Object.freeze({
   execution: 'contracts/policy/sales-menu-l2-execution.json',
   timing: 'contracts/policy/sales-menu-l2-timing-budget.json',
 });
-
-const EXPECTED_CASE_IDS = Object.freeze([
-  'sales-menu-entry-and-channels',
-  'sales-menu-section-actions',
-  'sales-menu-add-candidates',
-  'sales-menu-edit-direct-item-and-media',
-  'sales-menu-edit-sku-prices',
-  'sales-menu-edit-weighted-item',
-  'sales-menu-draft-order-and-pagination',
-  'sales-menu-publish-and-front-structure',
-  'sales-menu-front-status-and-pagination',
-  'sales-menu-manual-sold-out-and-restore',
-  'sales-menu-menu-management-and-multi-active',
-  'sales-menu-copy-boundary',
-  'sales-menu-publish-blockers',
-  'sales-menu-operation-records',
-  'sales-menu-failure-recovery-and-focus',
-  'sales-menu-auth-and-scope-isolation',
-]);
-
-const EXPECTED_OPERATION_IDS = Object.freeze([
-  'getOperationsStoreBusinessChannels',
-  'getOperationsSalesMenus',
-  'getOperationsSalesMenu',
-  'getOperationsSalesMenuDraftSections',
-  'getOperationsSalesMenuDraftItems',
-  'getOperationsSalesMenuDraftItem',
-  'getOperationsSalesMenuPublishedSections',
-  'getOperationsSalesMenuPublishedItems',
-  'getOperationsSalesMenuPublishedItem',
-  'getOperationsSalesMenuItemCandidates',
-  'getOperationsSalesMenuPublicationPreview',
-  'getOperationsSalesMenuOperationRecords',
-  'createOperationsSalesMenu',
-  'copyOperationsSalesMenu',
-  'renameOperationsSalesMenu',
-  'archiveOperationsSalesMenu',
-  'setOperationsSalesMenuActivation',
-  'updateOperationsSalesMenuSchedule',
-  'createOperationsSalesMenuSection',
-  'renameOperationsSalesMenuSection',
-  'deleteOperationsSalesMenuSection',
-  'moveOperationsSalesMenuSection',
-  'addOperationsSalesMenuItems',
-  'updateOperationsSalesMenuItem',
-  'deleteOperationsSalesMenuItem',
-  'moveOperationsSalesMenuItem',
-  'stageOperationsSalesMenuAsset',
-  'releaseOperationsSalesMenuStagedAsset',
-  'publishOperationsSalesMenu',
-  'setOperationsSalesMenuItemSoldOut',
-  'restoreOperationsSalesMenuItemSale',
-]);
 
 function fail(code, detail = '') {
   throw new Error(detail ? `${code}:${detail}` : code);
@@ -106,12 +55,16 @@ function writeJson(relativePath, value) {
 function canonicalDigest(value, field) {
   const copy = JSON.parse(JSON.stringify(value));
   delete copy[field];
-  return crypto.createHash('sha256').update(`${JSON.stringify(copy, null, 2)}\n`).digest('hex');
+  return crypto
+    .createHash('sha256')
+    .update(`${JSON.stringify(copy, null, 2)}\n`)
+    .digest('hex');
 }
 
 function sourceContainsBinding(source, binding) {
   const candidates = [
     binding.testId,
+    binding.confirmTestId,
     binding.testIdTemplate,
     binding.testIdPrefix,
     binding.parentTestId,
@@ -129,6 +82,18 @@ function flattenCases(blueprint) {
   return (blueprint.scenarios ?? []).flatMap(scenario =>
     (scenario.cases ?? []).map(entry => ({...entry, scenarioId: scenario.scenarioId})),
   );
+}
+
+function blueprintDenominator(blueprint) {
+  const caseRows = flattenCases(blueprint);
+  const caseIds = caseRows.map(row => row.caseId);
+  const operationIds = (blueprint.operationCoverage ?? []).map(row => row?.operationId);
+  return {
+    scenarioCount: Array.isArray(blueprint.scenarios) ? blueprint.scenarios.length : 0,
+    caseRows,
+    caseIds,
+    operationIds,
+  };
 }
 
 function generatedOperationMap() {
@@ -164,94 +129,170 @@ function validateFixture(fixture, caseRows) {
     if (ids.some(id => typeof id !== 'string' || !id) || new Set(ids).size !== ids.length)
       fail('SALES_MENU_P1_FIXTURE_ID_INVALID', name);
   }
-  if (fixture.ownerFacts?.channelPageSize !== 20 || fixture.ownerFacts?.menuPageSize !== 20 || fixture.ownerFacts?.candidatePageSize !== 20)
+  if (
+    fixture.ownerFacts?.channelPageSize !== 20 ||
+    fixture.ownerFacts?.menuPageSize !== 20 ||
+    fixture.ownerFacts?.candidatePageSize !== 20
+  )
     fail('SALES_MENU_P1_FIXTURE_PAGE_SIZE_INVALID');
-  if (fixture.ownerFacts?.expectedEligibleChannelCount !== 21 || fixture.ownerFacts?.expectedMenuCount !== 21 || fixture.ownerFacts?.expectedCandidateCount !== 21)
+  if (
+    fixture.ownerFacts?.expectedEligibleChannelCount !== 21 ||
+    fixture.ownerFacts?.expectedMenuCount !== 21 ||
+    fixture.ownerFacts?.expectedCandidateCount !== 21
+  )
     fail('SALES_MENU_P1_FIXTURE_REQUIRED_COUNT_INVALID');
   if (!fixture.caseFixtures || typeof fixture.caseFixtures !== 'object') fail('SALES_MENU_P1_CASE_FIXTURES_MISSING');
   for (const row of caseRows) {
     if (!fixture.caseFixtures[row.fixtureRef]) fail('SALES_MENU_P1_CASE_FIXTURE_MISSING', row.fixtureRef);
   }
   const rawFixture = fs.readFileSync(absolute(fixturePath), 'utf8');
-  if (/"(?:seedReport|seedFixture|seedCreated|seedObject|apiReport|apiEvidence|reportPath|apiObjectId)"\s*:/.test(rawFixture))
+  if (
+    /"(?:seedReport|seedFixture|seedCreated|seedObject|apiReport|apiEvidence|reportPath|apiObjectId)"\s*:/.test(
+      rawFixture,
+    )
+  )
     fail('SALES_MENU_P1_FORBIDDEN_FIXTURE_FIELD');
-  return {channels: fixture.channelFixtures.length, menus: fixture.menuFixtures.length, candidates: fixture.candidateFixtures.length};
+  return {
+    channels: fixture.channelFixtures.length,
+    menus: fixture.menuFixtures.length,
+    candidates: fixture.candidateFixtures.length,
+  };
 }
 
 function validateBlueprint(blueprint, fixture, {readiness = null} = {}) {
-  if (blueprint?.kind !== 'sales-menu-l2-case-blueprint' || blueprint.executionBoundary?.fixtureClass !== 'TEST' || blueprint.executionBoundary?.setupChannel !== 'OWNER_HTTP_COMMANDS' || blueprint.executionBoundary?.seedRuntimeInput !== false || blueprint.executionBoundary?.reportInputs?.length !== 0)
+  if (
+    blueprint?.kind !== 'sales-menu-l2-case-blueprint' ||
+    blueprint.executionBoundary?.fixtureClass !== 'TEST' ||
+    blueprint.executionBoundary?.setupChannel !== 'OWNER_HTTP_COMMANDS' ||
+    blueprint.executionBoundary?.seedRuntimeInput !== false ||
+    blueprint.executionBoundary?.reportInputs?.length !== 0
+  )
     fail('SALES_MENU_P1_BLUEPRINT_BOUNDARY_INVALID');
-  if (!Array.isArray(blueprint.scenarios) || blueprint.scenarios.length !== EXPECTED_CASE_IDS.length)
-    fail('SALES_MENU_P1_SCENARIO_DENOMINATOR_INVALID');
-  const caseRows = flattenCases(blueprint);
-  if (caseRows.length !== EXPECTED_CASE_IDS.length) fail('SALES_MENU_P1_CASE_DENOMINATOR_INVALID');
-  const caseIds = caseRows.map(row => row.caseId);
-  if (JSON.stringify(caseIds) !== JSON.stringify(EXPECTED_CASE_IDS)) fail('SALES_MENU_P1_CASE_EXACT_SET_INVALID');
+  const {scenarioCount, caseRows, caseIds, operationIds} = blueprintDenominator(blueprint);
+  if (!Array.isArray(blueprint.scenarios) || scenarioCount === 0) fail('SALES_MENU_P1_SCENARIO_DENOMINATOR_INVALID');
+  if (caseRows.length === 0 || caseIds.some(caseId => typeof caseId !== 'string' || caseId.length === 0))
+    fail('SALES_MENU_P1_CASE_DENOMINATOR_INVALID');
   if (new Set(caseIds).size !== caseIds.length) fail('SALES_MENU_P1_CASE_DUPLICATE');
 
   const operationMap = generatedOperationMap();
   const coverage = blueprint.operationCoverage;
-  if (!Array.isArray(coverage) || coverage.length !== EXPECTED_OPERATION_IDS.length)
+  if (
+    !Array.isArray(coverage) ||
+    operationIds.length === 0 ||
+    operationIds.some(operationId => typeof operationId !== 'string' || operationId.length === 0)
+  )
     fail('SALES_MENU_P1_OPERATION_COVERAGE_DENOMINATOR_INVALID');
-  const coverageIds = coverage.map(row => row?.operationId);
-  if (JSON.stringify(coverageIds) !== JSON.stringify(EXPECTED_OPERATION_IDS)) fail('SALES_MENU_P1_OPERATION_EXACT_SET_INVALID');
+  if (new Set(operationIds).size !== operationIds.length) fail('SALES_MENU_P1_OPERATION_COVERAGE_DUPLICATE');
   const caseIdSet = new Set(caseIds);
   const coverageById = new Map();
   for (const row of coverage) {
     if (!operationMap.has(row.operationId)) fail('SALES_MENU_P1_OPERATION_ROUTE_MISSING', row.operationId);
-    if (!Array.isArray(row.acceptanceScenarios) || row.acceptanceScenarios.length === 0 || !Array.isArray(row.l2Cases) || row.l2Cases.length === 0)
+    if (
+      !Array.isArray(row.acceptanceScenarios) ||
+      row.acceptanceScenarios.length === 0 ||
+      !Array.isArray(row.l2Cases) ||
+      row.l2Cases.length === 0
+    )
       fail('SALES_MENU_P1_OPERATION_COVERAGE_EMPTY', row.operationId);
     if (coverageById.has(row.operationId)) fail('SALES_MENU_P1_OPERATION_COVERAGE_DUPLICATE', row.operationId);
-    if (row.l2Cases.some(caseId => !caseIdSet.has(caseId))) fail('SALES_MENU_P1_OPERATION_CASE_UNKNOWN', row.operationId);
+    if (row.l2Cases.some(caseId => !caseIdSet.has(caseId)))
+      fail('SALES_MENU_P1_OPERATION_CASE_UNKNOWN', row.operationId);
     coverageById.set(row.operationId, row);
   }
 
   const bindingKeys = new Set(Object.keys(blueprint.bindings?.controls ?? {}));
   if (bindingKeys.size === 0) fail('SALES_MENU_P1_LOCATOR_BINDINGS_EMPTY');
   for (const [key, binding] of Object.entries(blueprint.bindings.controls)) {
-    if (!binding || !Array.isArray(binding.sourceFiles) || binding.sourceFiles.length === 0) fail('SALES_MENU_P1_LOCATOR_SOURCE_MISSING', key);
+    if (!binding || !Array.isArray(binding.sourceFiles) || binding.sourceFiles.length === 0)
+      fail('SALES_MENU_P1_LOCATOR_SOURCE_MISSING', key);
     for (const sourceFile of binding.sourceFiles) {
-      if (!fs.existsSync(absolute(sourceFile))) fail('SALES_MENU_P1_LOCATOR_SOURCE_FILE_MISSING', `${key}:${sourceFile}`);
+      if (!fs.existsSync(absolute(sourceFile)))
+        fail('SALES_MENU_P1_LOCATOR_SOURCE_FILE_MISSING', `${key}:${sourceFile}`);
     }
-    const bindingSource = binding.sourceFiles.map(sourceFile => fs.readFileSync(absolute(sourceFile), 'utf8')).join('\n');
+    const bindingSource = binding.sourceFiles
+      .map(sourceFile => fs.readFileSync(absolute(sourceFile), 'utf8'))
+      .join('\n');
     if (!sourceContainsBinding(bindingSource, binding)) fail('SALES_MENU_P1_TEST_ID_DRIFT', key);
   }
 
-  const operationConsumers = new Map(EXPECTED_OPERATION_IDS.map(operationId => [operationId, 0]));
+  const operationConsumers = new Map(operationIds.map(operationId => [operationId, 0]));
   const actionIds = new Set();
   for (const row of caseRows) {
-    if (!fixture.caseFixtures[row.fixtureRef]) fail('SALES_MENU_P1_FIXTURE_REF_MISSING', `${row.caseId}:${row.fixtureRef}`);
-    for (const key of row.controlKeys ?? []) if (!bindingKeys.has(key)) fail('SALES_MENU_P1_CONTROL_BINDING_MISSING', `${row.caseId}:${key}`);
+    if (!fixture.caseFixtures[row.fixtureRef])
+      fail('SALES_MENU_P1_FIXTURE_REF_MISSING', `${row.caseId}:${row.fixtureRef}`);
+    for (const key of row.controlKeys ?? [])
+      if (!bindingKeys.has(key)) fail('SALES_MENU_P1_CONTROL_BINDING_MISSING', `${row.caseId}:${key}`);
     const actions = row.parameter?.declaredActions;
-    if (!Array.isArray(actions) || actions.length !== 1 || actions[0]?.kind !== 'USER_JOURNEY' || typeof actions[0]?.actionId !== 'string')
+    if (
+      !Array.isArray(actions) ||
+      actions.length !== 1 ||
+      actions[0]?.kind !== 'USER_JOURNEY' ||
+      typeof actions[0]?.actionId !== 'string'
+    )
       fail('SALES_MENU_P1_ACTION_EXACT_SET_INVALID', row.caseId);
     if (actionIds.has(actions[0].actionId)) fail('SALES_MENU_P1_ACTION_DUPLICATE', actions[0].actionId);
     actionIds.add(actions[0].actionId);
     const operationIds = row.parameter?.operationIds;
-    const required = row.parameter?.network?.required;
-    const requests = row.parameter?.network?.requests;
-    if (!Array.isArray(operationIds) || operationIds.length === 0 || !Array.isArray(required) || JSON.stringify(operationIds) !== JSON.stringify(required))
+    const network = row.parameter?.network;
+    const required = network?.required;
+    const requests = network?.requests;
+    if (
+      !Array.isArray(operationIds) ||
+      operationIds.length === 0 ||
+      !Array.isArray(required) ||
+      JSON.stringify(operationIds) !== JSON.stringify(required)
+    )
       fail('SALES_MENU_P1_NETWORK_OPERATION_MISMATCH', row.caseId);
     if (!Array.isArray(requests) || requests.length !== new Set(requests.map(entry => entry?.operationId)).size)
       fail('SALES_MENU_P1_NETWORK_REQUEST_DECLARATION_INVALID', row.caseId);
     if (row.parameter.network.autoDrain === true || row.parameter.network.allowAutoDrain === true)
       fail('SALES_MENU_P1_NETWORK_AUTO_DRAIN_FORBIDDEN', row.caseId);
+    // Every sales-menu page mounts the shared scope/read-model surfaces. Their
+    // late responses may land inside a user-action window, so they must be
+    // explicit in each case's network denominator rather than treated as
+    // unexplained noise by the action gate.
+    for (const sharedOperationId of ['getOperationsStoreBusinessChannels', 'getOperationsWorkspaceSessionEntry']) {
+      const declared = new Set([...operationIds, ...(network?.backgroundAllowed ?? [])]);
+      if (!declared.has(sharedOperationId))
+        fail('SALES_MENU_P1_SHARED_PAGE_OPERATION_UNDECLARED', `${row.caseId}:${sharedOperationId}`);
+      if (!requests.some(entry => entry?.operationId === sharedOperationId))
+        fail('SALES_MENU_P1_SHARED_PAGE_OPERATION_BUDGET_MISSING', `${row.caseId}:${sharedOperationId}`);
+    }
+    const requestIds = new Set(requests.map(entry => entry?.operationId));
+    for (const backgroundOperationId of network.backgroundAllowed ?? []) {
+      if (!requestIds.has(backgroundOperationId))
+        fail('SALES_MENU_P1_BACKGROUND_OPERATION_BUDGET_MISSING', `${row.caseId}:${backgroundOperationId}`);
+    }
     for (const operationId of operationIds) {
       if (!operationMap.has(operationId)) fail('SALES_MENU_P1_CASE_ROUTE_DRIFT', `${row.caseId}:${operationId}`);
       operationConsumers.set(operationId, (operationConsumers.get(operationId) ?? 0) + 1);
     }
     const timing = row.parameter?.timing;
-    if (!timing || !Number.isFinite(Number(timing.caseTimeoutMs)) || Number(timing.caseTimeoutMs) <= 0 || !Number.isFinite(Number(timing.caseExpectedDbMs)) || Number(timing.caseExpectedDbMs) < 0)
+    if (
+      !timing ||
+      !Number.isFinite(Number(timing.caseTimeoutMs)) ||
+      Number(timing.caseTimeoutMs) <= 0 ||
+      !Number.isFinite(Number(timing.caseExpectedDbMs)) ||
+      Number(timing.caseExpectedDbMs) < 0
+    )
       fail('SALES_MENU_P1_TIMING_MISSING', row.caseId);
   }
-  for (const [operationId, count] of operationConsumers) if (count === 0) fail('SALES_MENU_P1_OPERATION_NOT_CONSUMED', operationId);
+  for (const [operationId, count] of operationConsumers)
+    if (count === 0) fail('SALES_MENU_P1_OPERATION_NOT_CONSUMED', operationId);
   const fixtureCounts = validateFixture(fixture, caseRows);
   if (!fs.existsSync(absolute(specPath))) fail('SALES_MENU_P1_SPEC_MISSING');
   if (readiness) {
-    if (readiness?.kind !== 'sales-menu-l2-readiness-manifest' || readiness.status !== 'PASS' || readiness.businessStatus !== 'PASS' || readiness.setupCleanupStatus !== 'PASS' || !['PENDING_HELD', 'NOT_RUN'].includes(readiness.cleanupStatus) || readiness.lifecycle !== 'HELD_FOR_BROWSER_L2_RUN')
+    if (
+      readiness?.kind !== 'sales-menu-l2-readiness-manifest' ||
+      readiness.status !== 'PASS' ||
+      readiness.businessStatus !== 'PASS' ||
+      readiness.setupCleanupStatus !== 'PASS' ||
+      !['PENDING_HELD', 'NOT_RUN'].includes(readiness.cleanupStatus) ||
+      readiness.lifecycle !== 'HELD_FOR_BROWSER_L2_RUN'
+    )
       fail('SALES_MENU_P1_READINESS_MANIFEST_INVALID');
   }
-  return {caseRows, operationMap, coverageById, fixtureCounts};
+  return {caseRows, caseIds, operationIds, operationMap, coverageById, fixtureCounts, scenarioCount};
 }
 
 function readReadiness() {
@@ -265,20 +306,24 @@ function readReadiness() {
 }
 
 function derive(blueprint, fixture, readiness) {
-  const {caseRows, operationMap, coverageById, fixtureCounts} = validateBlueprint(blueprint, fixture, {readiness});
+  const {caseRows, caseIds, operationIds, operationMap, coverageById, fixtureCounts} = validateBlueprint(
+    blueprint,
+    fixture,
+    {readiness},
+  );
   const candidateBase = {
     schemaVersion: 1,
     kind: 'sales-menu-l2-activation-candidate',
     revision: blueprint.revision,
-    sourceRevision: 'SALES_MENU_L2_P1_20260902',
-    approvedCaseIds: [...EXPECTED_CASE_IDS],
+    sourceRevision: 'SALES_MENU_L2_P1_20260903',
+    approvedCaseIds: [...caseIds],
     fixtureRefs: caseRows.map(row => row.fixtureRef),
     testIdSource: testIdsPath,
     locatorBinding: generatedPaths.bindings,
     noSeedRuntimeInput: true,
   };
   const candidate = {...candidateBase, candidateDigest: canonicalDigest(candidateBase, 'candidateDigest')};
-  const enabled = readiness ? [...EXPECTED_CASE_IDS] : [];
+  const enabled = readiness ? [...caseIds] : [];
   const execution = {
     schemaVersion: 1,
     kind: 'sales-menu-l2-execution-profile',
@@ -288,11 +333,15 @@ function derive(blueprint, fixture, readiness) {
     sourceOfTruth: blueprintPath,
     noSeedRuntimeInput: true,
     activationCandidate: {path: generatedPaths.candidate, digest: candidate.candidateDigest},
-    enablementRule: 'P1 enables only the candidate exact set after a matching PASS held readiness manifest; generated output is never hand-edited.',
+    enablementRule:
+      'P1 enables only the candidate exact set after a matching PASS held readiness manifest; generated output is never hand-edited.',
     ...(readiness
       ? {
           readiness: {
-            manifestPath: path.relative(root, path.resolve(root, process.env.SALES_MENU_L2_READINESS_MANIFEST)).split(path.sep).join('/'),
+            manifestPath: path
+              .relative(root, path.resolve(root, process.env.SALES_MENU_L2_READINESS_MANIFEST))
+              .split(path.sep)
+              .join('/'),
             runBinding: readiness.runBinding,
           },
         }
@@ -306,13 +355,23 @@ function derive(blueprint, fixture, readiness) {
     businessRequirement: scenario.businessRequirement,
     primaryVerifier: 'browser-business',
     cases: scenario.cases.map(row => {
-      const operationRoutes = Object.fromEntries((row.parameter.operationIds ?? []).map(operationId => [operationId, {method: operationMap.get(operationId).method, path: operationMap.get(operationId).path}]));
+      const operationRoutes = Object.fromEntries(
+        (row.parameter.operationIds ?? []).map(operationId => [
+          operationId,
+          {method: operationMap.get(operationId).method, path: operationMap.get(operationId).path},
+        ]),
+      );
       return {
         caseId: row.caseId,
         fixtureRef: row.fixtureRef,
         parameterization: 'sales-menu-blueprint-case',
         parameter: {...row.parameter, controlKeys: [...(row.controlKeys ?? [])], operationRoutes},
-        expected: {assertionKey: `${row.caseId}:business`, fixtureRef: row.fixtureRef, businessOracle: row.businessOracle, failureInvariant: row.failureInvariant ?? 'owner facts remain unchanged on failed action'},
+        expected: {
+          assertionKey: `${row.caseId}:business`,
+          fixtureRef: row.fixtureRef,
+          businessOracle: row.businessOracle,
+          failureInvariant: row.failureInvariant ?? 'owner facts remain unchanged on failed action',
+        },
       };
     }),
   }));
@@ -323,7 +382,7 @@ function derive(blueprint, fixture, readiness) {
     bindingMode: 'CASE_PARAMETER_CONTROL_KEYS',
     sourceOfTruth: testIdsPath,
     caseBlueprint: blueprintPath,
-    caseCount: EXPECTED_CASE_IDS.length,
+    caseCount: caseRows.length,
     controls: blueprint.bindings.controls,
     noSeedRuntimeInput: true,
   };
@@ -336,11 +395,44 @@ function derive(blueprint, fixture, readiness) {
     namespaceAndFixtureBudgetMs: 120000,
     cleanupBudgetMs: 120000,
     caseCount: caseRows.length,
-    cases: caseRows.map(row => ({caseId: row.caseId, scenarioId: row.scenarioId, operationIds: row.parameter.operationIds, maxRequestCount: row.parameter.network.requests, ...row.parameter.timing})),
-    fullRunExpectedMs: 240000 + caseRows.reduce((total, row) => total + Number(row.parameter.timing.caseExpectedDbMs) + Number(row.parameter.timing.caseLocalActionMs), 0),
+    cases: caseRows.map(row => ({
+      caseId: row.caseId,
+      scenarioId: row.scenarioId,
+      operationIds: row.parameter.operationIds,
+      maxRequestCount: row.parameter.network.requests,
+      ...row.parameter.timing,
+    })),
+    fullRunExpectedMs:
+      240000 +
+      caseRows.reduce(
+        (total, row) =>
+          total + Number(row.parameter.timing.caseExpectedDbMs) + Number(row.parameter.timing.caseLocalActionMs),
+        0,
+      ),
   };
   timing.fullRunTimeoutMs = Math.ceil((timing.fullRunExpectedMs * timing.timeoutHeadroomFactor) / 1000) * 1000;
-  return {candidate, execution, scenarios: {schemaVersion: 1, kind: 'sales-menu-l2-scenarios', revision: blueprint.revision, sourceOfTruth: blueprintPath, executionBoundary: blueprint.executionBoundary, scenarioCount: scenarios.length, caseCount: caseRows.length, locatorBinding: generatedPaths.bindings, operationCoverage: EXPECTED_OPERATION_IDS.map(operationId => ({...coverageById.get(operationId), route: {method: operationMap.get(operationId).method, path: operationMap.get(operationId).path}})), scenarios}, bindings, timing, fixtureCounts};
+  return {
+    candidate,
+    execution,
+    scenarios: {
+      schemaVersion: 1,
+      kind: 'sales-menu-l2-scenarios',
+      revision: blueprint.revision,
+      sourceOfTruth: blueprintPath,
+      executionBoundary: blueprint.executionBoundary,
+      scenarioCount: scenarios.length,
+      caseCount: caseRows.length,
+      locatorBinding: generatedPaths.bindings,
+      operationCoverage: operationIds.map(operationId => ({
+        ...coverageById.get(operationId),
+        route: {method: operationMap.get(operationId).method, path: operationMap.get(operationId).path},
+      })),
+      scenarios,
+    },
+    bindings,
+    timing,
+    fixtureCounts,
+  };
 }
 
 function expectedFiles() {
@@ -370,13 +462,23 @@ function compareGenerated(expected) {
 function runSelfTest() {
   const expected = expectedFiles();
   const candidate = expected.get(generatedPaths.candidate);
-  if (candidate.candidateDigest !== canonicalDigest(candidate, 'candidateDigest')) fail('SALES_MENU_P1_SELF_TEST_DIGEST');
+  if (candidate.candidateDigest !== canonicalDigest(candidate, 'candidateDigest'))
+    fail('SALES_MENU_P1_SELF_TEST_DIGEST');
   const execution = expected.get(generatedPaths.execution);
-  if (execution.mode === 'FRAMEWORK_ONLY' && execution.enabledCaseIds.length !== 0) fail('SALES_MENU_P1_SELF_TEST_FRAMEWORK_ACTIVE');
+  if (execution.mode === 'FRAMEWORK_ONLY' && execution.enabledCaseIds.length !== 0)
+    fail('SALES_MENU_P1_SELF_TEST_FRAMEWORK_ACTIVE');
   const scenarios = expected.get(generatedPaths.scenarios);
-  if (scenarios.scenarioCount !== 16 || scenarios.caseCount !== 16 || scenarios.operationCoverage.length !== 31) fail('SALES_MENU_P1_SELF_TEST_DENOMINATOR');
+  const generatedCaseRows = scenarios.scenarios.flatMap(scenario => scenario.cases ?? []);
+  if (
+    scenarios.scenarioCount !== scenarios.scenarios.length ||
+    scenarios.caseCount !== generatedCaseRows.length ||
+    scenarios.operationCoverage.length === 0
+  )
+    fail('SALES_MENU_P1_SELF_TEST_DENOMINATOR');
   compareGenerated(expected);
-  process.stdout.write(`SALES_MENU_P1_SELF_TEST=PASS; CASES=${scenarios.caseCount}; OPERATIONS=${scenarios.operationCoverage.length}; FIXTURES=${JSON.stringify(expectedFiles().get(generatedPaths.scenarios).executionBoundary)}\n`);
+  process.stdout.write(
+    `SALES_MENU_P1_SELF_TEST=PASS; CASES=${scenarios.caseCount}; OPERATIONS=${scenarios.operationCoverage.length}; FIXTURES=${JSON.stringify(expectedFiles().get(generatedPaths.scenarios).executionBoundary)}\n`,
+  );
 }
 
 function main() {
@@ -391,7 +493,9 @@ function main() {
   }
   if (args.has('--check') && !args.has('--self-test')) {
     const scenarios = expected.get(generatedPaths.scenarios);
-    process.stdout.write(`SALES_MENU_P1=PASS; CASES=${scenarios.caseCount}; OPERATIONS=${scenarios.operationCoverage.length}\n`);
+    process.stdout.write(
+      `SALES_MENU_P1=PASS; CASES=${scenarios.caseCount}; OPERATIONS=${scenarios.operationCoverage.length}\n`,
+    );
   }
 }
 

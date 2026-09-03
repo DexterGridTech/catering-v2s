@@ -404,11 +404,11 @@ scripts/test/backend-acceptance --operation all
 ### 9.1 composition 顺序
 
 1. channel cards + modes + menu selector/actions；
-2.真实 section panel；
-3. draft/front/log 三种主 surface；
-4. candidate/editor/detail/manage/schedule/publish drawers；
-5. section/manual status/delete confirm overlays；
-6. empty/loading/failure/refresh/focus/dirty states。
+   2.真实 section panel；
+2. draft/front/log 三种主 surface；
+3. candidate/editor/detail/manage/schedule/publish drawers；
+4. section/manual status/delete confirm overlays；
+5. empty/loading/failure/refresh/focus/dirty states。
 
 ### 9.2 UI 红线逐字执行
 
@@ -433,9 +433,33 @@ scripts/test/backend-acceptance --operation all
 
 ## 10 · SM-08 · sales-menu P1 与同一 browser L2 runner
 
+### 10.0 · L2 脚本开发前 UI/testId 前置准入（必须先完成）
+
+在 SM-08 开始或继续修改任何 L2 spec、runner adapter、locator binding 或 blueprint 控件声明之前，先按
+`doc/platform/browser-l2-execution-standard.md` §3.1、`doc/platform/frontend-coding-standard.md` §3-K-9
+和 implementation-facing 详设模板 §3a 完成 UI 前置复核。顺序固定为：重开需求/IA/详设与前端规范 → 查看
+Catalog 等既有同类模块及 foundation 消费者 → 按每个 case/action 穷举真实操作控件 → 为每个控件核对
+`*TestIds.ts` 唯一常量、真实动作节点、稳定业务身份和 binding/touch → UI focused/static proof → fresh
+独立复核。
+
+Modal/Drawer 操作、动态行菜单、分页及 AntD wrapper 后的 native input/file input 都必须进入控件分母；
+role/label/placeholder/text/index/CSS/XPath 或外层 wrapper 不能替代 testId。任一 UI 设计对账、testId 节点
+绑定或 focused/static proof 为 OPEN，都不得进入 10.1 的 L2 source/generator/spec 修改。
+
+当前销售菜单执行前置状态：`UI_DESIGN_REVIEW=PASS`、`TESTID_REVIEW=PASS`、`L2_SCRIPT_ADMISSION=PASS`。
+依据 `doc/review/platform/2026-09-03-v2s-sales-menu-ui-testid-preflight-cycle-c-round2-codex.md` 的 fresh independent
+Round 2 final review，前置门已关闭；该 PASS 仅解除 L2 脚本开发准入，不代表动态浏览器 L2、HTTP、business 或 cleanup 已通过。
+
+当前准入分母已按唯一 blueprint 复算为 18 个 case/action、240 个声明控件条目、68 个 unique binding
+control key；公共 STORE scope 确认是每个 case 的 setup 控件，使用 `roleHomeTestIds` 唯一源并记录
+trigger/confirm touch；逐 case/action 的常量、实际节点、binding/touch、focused/static proof 与 fresh review 表在
+详设 §11.2a，实施以该表为唯一逐控件清单。菜单级直接按钮、manager 动态行 MenuItem、Modal/Drawer 提交与
+取消、分页、候选 Checkbox、Radio、Upload native input 和既有 Segmented option label anchor 均不得从分母
+省略。当前已为 `PASS/PASS/PASS`；后续动态运行必须继续按受管入口取得独立 business/cleanup 证据，不能把本前置 PASS 当作浏览器 PASS。
+
 ### 10.1 写唯一 source 和红测试
 
-- `sales-menu-l2-case-blueprint.json` 16 case exact set、actions、fixture refs、network、oracles；
+- `sales-menu-l2-case-blueprint.json` 18 case exact set、actions、fixture refs、network、oracles；
 - `sales-menu-p1.mjs` 生成 scenario/locator/candidate/execution/timing；
 - `sales-menu-l2-fixture.json` + validator；
 - `sales-menu.spec.ts` 只读 generated profile；
@@ -472,7 +496,7 @@ scripts/test/browser-l2 --suite sales-menu finalize
 scripts/test/browser-l2 --suite sales-menu run
 ```
 
-命令参数以实现后唯一 entry help 为准；不得手工启动 Spring/Vite/Playwright/tunnel/DB/assets。运行中每 case START/COMPLETE 和 30 秒进度；首败后不盲重试。完成必须同时满足 16/16 business、action join、repository binding、local cleanup、remote DB cleanup、remote asset cleanup、secret/session cleanup PASS。
+命令参数以实现后唯一 entry help 为准；不得手工启动 Spring/Vite/Playwright/tunnel/DB/assets。运行中每 case START/COMPLETE 和 30 秒进度；首败后不盲重试。完成必须同时满足 18/18 business、action join、repository binding、local cleanup、remote DB cleanup、remote asset cleanup、secret/session cleanup PASS。
 
 **阶段对账重点**：真实用户动作/焦点/文案/状态与 owner readback；browser L2 不冒充 UAT。
 
@@ -538,12 +562,12 @@ R5_SEED_CONFIRMATION=EXPLICIT_R5_SEED scripts/dev/seed --profile r5-full
 
 ### 14.2 整体验证分账
 
-| 档位 | 证明 | 不证明 |
-| --- | --- | --- |
-| generator/static/compile | source-generated equality、类型、模块边界、IA静态形态 | HTTP/runtime/browser |
-| backend-acceptance | Testcontainers真实HTTP/owner业务 | frontend/browser/DEV/UAT |
-| browser L2 | 真浏览器+真实HTTP+TEST fixture Journey | DEV seed/UAT/终端 |
-| managed seed | reset后DEV体验数据和owner readback | L2/UAT/生产 |
+| 档位                     | 证明                                                  | 不证明                   |
+| ------------------------ | ----------------------------------------------------- | ------------------------ |
+| generator/static/compile | source-generated equality、类型、模块边界、IA静态形态 | HTTP/runtime/browser     |
+| backend-acceptance       | Testcontainers真实HTTP/owner业务                      | frontend/browser/DEV/UAT |
+| browser L2               | 真浏览器+真实HTTP+TEST fixture Journey                | DEV seed/UAT/终端        |
+| managed seed             | reset后DEV体验数据和owner readback                    | L2/UAT/生产              |
 
 business 与 cleanup分别报告。任何未授权/未执行项写 `NOT_RUN_NO_AUTHORITY`，不得“设计完成”替代动态 PASS。
 
@@ -556,7 +580,7 @@ business 与 cleanup分别报告。任何未授权/未执行项写 `NOT_RUN_NO_A
 只有同时满足以下条件，实施 task才可结束：
 
 - 31 条受影响 operations（30新增+1既有修改）/19 commands/38 owner rules 当前 source重新计数一致；
-- 15 个本批 backend scenarios（13 个 SalesMenu 聚合场景 + 1 个 BusinessChannel owner 场景 + 1 个 Asset owner 场景）和16 L2 cases exact source闭合；该 15 不是全仓固定 scenario 总数；
+- 15 个本批 backend scenarios（13 个 SalesMenu 聚合场景 + 1 个 BusinessChannel owner 场景 + 1 个 Asset owner 场景）和18 L2 cases exact source闭合；该 15 不是全仓固定 scenario 总数；
 - §5 与 §11.1a 的 31 operationId exact equality；每行 acceptance/L2 映射有效，backend-acceptance actual completion events 与 L2 action join 分别证明真实覆盖，无 operation 只靠文档字符串或 route 壳通过；
 - UI-01..31逐条有 focused + 适用L2事实，IA无OPEN；
 - contract/backend/frontend/Testcontainers/L2/Seed各自适用proof真实完成；

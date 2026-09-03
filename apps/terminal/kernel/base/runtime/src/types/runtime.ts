@@ -40,6 +40,8 @@ import type {
 
 export type RuntimeStatus = 'created' | 'starting' | 'started' | 'failed'
 
+export type RuntimeSubscriptionListener = () => void
+
 export type RuntimeStateInput = Readonly<{
   runtimeName: string
   environmentMode: EnvironmentMode
@@ -67,6 +69,7 @@ export interface Runtime {
   readonly status: RuntimeStatus
   readonly failure: import('@catering-v2s/kernel-base-contracts').AppError | null
   start(): Promise<void>
+  subscribe(listener: RuntimeSubscriptionListener): () => void
   getState(): StateRoot
   getStore(): RuntimeStore
   dispatchCommand<TPayload extends import('@catering-v2s/kernel-base-state').StateJsonValue>(

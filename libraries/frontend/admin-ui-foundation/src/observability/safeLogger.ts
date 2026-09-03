@@ -1,4 +1,5 @@
 export type FrontendLogLevel = 'INFO' | 'WARN' | 'ERROR' | 'DEBUG';
+export type FrontendLogDiagnostic = Readonly<Record<string, string | number | boolean | null>>;
 
 export type FrontendLogEvent = {
   eventId: string;
@@ -30,6 +31,8 @@ export type FrontendLogEvent = {
   requiresSession?: boolean;
   errorCode?: string;
   durationMs?: number;
+  /** Scalar diagnostic facts only; never put request/response payloads here. */
+  diagnostic?: FrontendLogDiagnostic;
 };
 
 export type FrontendLogInput = Omit<
@@ -64,6 +67,9 @@ const clean = (event: FrontendLogEvent): FrontendLogEvent => {
   const copy = {...event};
   for (const key of Object.keys(copy)) {
     if (blockedKeys.test(key)) delete (copy as Record<string, unknown>)[key];
+  }
+  if (copy.diagnostic) {
+    copy.diagnostic = Object.fromEntries(Object.entries(copy.diagnostic).filter(([key]) => !blockedKeys.test(key)));
   }
   return copy;
 };

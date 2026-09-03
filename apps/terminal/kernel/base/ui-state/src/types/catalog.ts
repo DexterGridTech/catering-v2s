@@ -8,7 +8,7 @@ export type PartKey = string
 export type UiCatalogEntry = Readonly<{
   readonly partKey: PartKey
   readonly rendererKey: string
-  readonly containerKey: ContainerKey
+  readonly containerKeys: readonly ContainerKey[]
   readonly displayModes: readonly DisplayMode[]
   readonly workspaces: readonly WorkspaceKey[]
   readonly instanceModes: readonly RuntimeInstanceMode[]

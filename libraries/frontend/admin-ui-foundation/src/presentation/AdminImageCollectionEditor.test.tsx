@@ -51,6 +51,7 @@ describe('AdminImageCollectionEditor', () => {
 
     expect(markup).toContain('data-testid="image-editor"');
     expect(markup).toContain('data-testid="image-upload"');
+    expect(markup).toMatch(/<input[^>]*data-testid="image-upload"[^>]*type="file"/);
     expect(markup).toContain('data-testid="image-list"');
     expect(markup).toContain('data-testid="image-asset-1-row"');
     expect(markup).toContain('data-testid="image-asset-2-retry"');

@@ -106,9 +106,9 @@ Drawer/Modal/Tab，宿主与被打开面必须拆成各自 screen id，各自提
 交付前逐屏填写并复核下表；任一元素的 `surface owner` 不是当前 screen，或任何 `USER_VISIBLE_COPY`
 没有实际呈现位置，均为 `REVISE`，不得交 Dexter 看图：
 
-| screen id | 声明 UI_SURFACE | 线框可见元素分母 | 每项是否属于当前 surface | USER_VISIBLE_COPY 可见项是否全有位置 | 结论 |
-| --- | --- | --- | --- | --- | --- |
-| `<screen-id>` | `<...>` | `<标题/字段/按钮/提示>` | `是/否，否则拆出 owner screen` | `是/否，补齐或移出` | `PASS/REVISE/REVISE_PENDING_DEXTER` |
+| screen id     | 声明 UI_SURFACE | 线框可见元素分母        | 每项是否属于当前 surface       | USER_VISIBLE_COPY 可见项是否全有位置 | 结论                                |
+| ------------- | --------------- | ----------------------- | ------------------------------ | ------------------------------------ | ----------------------------------- |
+| `<screen-id>` | `<...>`         | `<标题/字段/按钮/提示>` | `是/否，否则拆出 owner screen` | `是/否，补齐或移出`                  | `PASS/REVISE/REVISE_PENDING_DEXTER` |
 
 `REVISE_PENDING_DEXTER` 只用于已保留互相冲突的 owning-source 候选、等待 Dexter 产品/物理 surface
 裁决的 screen；它不是通过结论，不能作为 implementation-facing input，也不能用来掩盖可由作者自行
@@ -156,9 +156,9 @@ Drawer/Modal/Tab，宿主与被打开面必须拆成各自 screen id，各自提
 
 ## 2. Interaction map
 
-| 顺序 | 前提 | route / 屏幕 | 用户目的 | 可见信息与可操作项 | server/owner readback | 成功去向 | 失败/退出恢复 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | <来自 Journey 前提链> | <route/screen> | <...> | <...> | <...> | <...> | <...> |
+| 顺序 | 前提                  | route / 屏幕   | 用户目的 | 可见信息与可操作项 | server/owner readback | 成功去向 | 失败/退出恢复 |
+| ---- | --------------------- | -------------- | -------- | ------------------ | --------------------- | -------- | ------------- |
+| 1    | <来自 Journey 前提链> | <route/screen> | <...>    | <...>              | <...>                 | <...>    | <...>         |
 
 ## 3. v2 对应页面盘点（强制）
 
@@ -172,9 +172,9 @@ Dexter 可对一个明确范围免画静态摹本，但表格的“静态基线 
 `DEXTER_WAIVED_<YYYY-MM-DD>；等价证据：<review/source path#anchor>`。豁免只替代视觉副本，
 不替代 path@hash、原始业务来源、差异理由或逐 screen foundation 声明。
 
-| screen id | 对应关系 | all-v2 Heritage path@SHA-256 | 静态基线 / 摹本标注 | 差异及原因（新裁决/新范围/质量修复/未裁决不得继承） |
-| --- | --- | --- | --- | --- |
-| `<screen-id>` | `EXACT_COUNTERPART` / `PARTIAL_COUNTERPART` / `NO_V2_COUNTERPART` | `all-v2 <path>@<sha>` / `PENDING_HERITAGE_REGISTRATION` | `<image/link/anchor>` | `<...>` |
+| screen id     | 对应关系                                                          | all-v2 Heritage path@SHA-256                            | 静态基线 / 摹本标注   | 差异及原因（新裁决/新范围/质量修复/未裁决不得继承） |
+| ------------- | ----------------------------------------------------------------- | ------------------------------------------------------- | --------------------- | --------------------------------------------------- |
+| `<screen-id>` | `EXACT_COUNTERPART` / `PARTIAL_COUNTERPART` / `NO_V2_COUNTERPART` | `all-v2 <path>@<sha>` / `PENDING_HERITAGE_REGISTRATION` | `<image/link/anchor>` | `<...>`                                             |
 
 ## 4. 低保真线框
 
@@ -203,6 +203,26 @@ LOGIN_FORM_PAGE_VERSION=<installed @ant-design/pro-components version>
 LOGIN_FORM_PAGE_OFFICIAL_COMPOSITION=logo:<...>; title:<...>; subTitle:<...>; message:<...>; children:<...>; submitter:<...>; actions:<...>; activityConfig:<not used | reason>; background:<not used | reason>
 ```
 
+#### L2/自动化前控件 testId 清单（适用 screen 强制）
+
+在任何 L2 脚本、locator binding 或 blueprint 控件声明之前，按本 screen 预计被真实操作的控件完成下表；
+没有 L2/自动化适用性时必须填写 `NOT_APPLICABLE_WITH_REASON` 并回指业务与授权边界。此表不以“页面元素存在”
+代替 UI 设计复核，也不允许测试层用宽 locator 补偿 UI 缺口。
+
+| 用户动作 / case-action             | 实际控件                      | UI owning source | `*TestIds.ts` 常量 | testId 实际挂载节点        | wrapper/native 区分       | L2 binding/touch   | UI focused/static proof | 复核结论       |
+| ---------------------------------- | ----------------------------- | ---------------- | ------------------ | -------------------------- | ------------------------- | ------------------ | ----------------------- | -------------- |
+| `<click/fill/select/upload/press>` | `<按钮/输入/分页/动态行菜单>` | `<path#anchor>`  | `<path#symbol>`    | `<真实语义或 native 节点>` | `<无 / wrapper + native>` | `<binding/action>` | `<path + result>`       | `MATCHED/OPEN` |
+
+判定条件：每个实际动作控件必须先完成需求/IA/详设与当前 UI 代码对账，并查看同类既有模块和 foundation
+消费者；testId 必须来自 app 的 `*TestIds.ts` 唯一源，动态控件使用稳定业务身份，且挂在真正承载动作的节点。
+缺失、挂错、只给 wrapper、binding 指向父级，或 UI 对账存在 OPEN 时，本 screen 不得进入 implementation-facing
+详设的 L2 脚本开发，必须先修 UI 并完成 UI focused/static proof 与 fresh 独立复核。
+
+复合控件窄例外：仓内已有且组件 API 不暴露 option-level `data-*` 的复合控件（如 `Segmented`），可把 testId
+挂在可见 option label/anchor；必须在本 screen 控件表注明 `COMPOSITE_OPTION_ANCHOR`、同一点击语义和
+focused/static proof。该例外不适用于可直接标记的 Button、MenuItem、Checkbox、Radio、输入框或 file input，
+也不允许以外层 wrapper、文本或宽 locator 替代真实动作节点。
+
 ### 1.2 表单控件依赖图（每个输入-bearing wireframe 强制）
 
 每个包含输入控件的线框，在其线框后必须逐控件写出下表；包括登录字段、选择器、搜索框、单选/多选、
@@ -210,9 +230,9 @@ LOGIN_FORM_PAGE_OFFICIAL_COMPOSITION=logo:<...>; title:<...>; subTitle:<...>; me
 字段清单中暗示。其目的不是把前端当作授权方，而是让用户知道先做什么、后做什么、改变前项会怎样
 影响后项。
 
-| 用户可见控件 | 控件形态/搜索方式 | owner 候选或初始值来源 | 上游依赖与可用条件 | 变更后的级联清理/重载 | 可选项约束 | loading/empty/failed | 提交时 owner 再核验 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `<字段>` | `<Input / searchable Select / multi Select ...>` | `<readback / 用户填写>` | `<无 / 先选字段>` | `<无 / clear ...>` | `<业务约束>` | `<...>` | `<...>` |
+| 用户可见控件 | 控件形态/搜索方式                                | owner 候选或初始值来源  | 上游依赖与可用条件 | 变更后的级联清理/重载 | 可选项约束   | loading/empty/failed | 提交时 owner 再核验 |
+| ------------ | ------------------------------------------------ | ----------------------- | ------------------ | --------------------- | ------------ | -------------------- | ------------------- |
+| `<字段>`     | `<Input / searchable Select / multi Select ...>` | `<readback / 用户填写>` | `<无 / 先选字段>`  | `<无 / clear ...>`    | `<业务约束>` | `<...>`              | `<...>`             |
 
 若一个下拉框依赖另一控件，线框必须把“先选择 A，才可选择 B”画出来；在 `onChange` 中被清空的
 下游值、由 owner 重新返回的候选集、不可选提示及失败恢复都必须在上表说明。禁止依据本地角色、
@@ -225,9 +245,9 @@ URL、页面 key 或旧选择猜测候选；前端过滤只改善可用性，不
 字段”为分母；它以批准 Journey 的业务任务、当前 OpenAPI request、edge mapping 与 owner command 的
 交集为分母。其目的，是防止把名称相近的实体、可见控件和 command 真相错误合并。
 
-| 业务字段或 command 事实 | 用户可见文案/控件 | 分类 | 原始业务来源 | request 取值与唯一来源 | 变更、级联与校验 | command owner 最终复核 | 冲突/失败恢复 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `<事实>` | `<文案/控件或不显示>` | `EDITABLE` / `FIXED_READONLY` / `CONDITIONAL_EDITABLE` / `HIDDEN_OWNER_FACT` / `GAP` | `<Journey/corpus/source>` | `<用户输入 / latest detail / owner candidate / session / owner default>` | `<...>` | `<状态、关系、版本、授权等>` | `<...>` |
+| 业务字段或 command 事实 | 用户可见文案/控件     | 分类                                                                                 | 原始业务来源              | request 取值与唯一来源                                                   | 变更、级联与校验 | command owner 最终复核       | 冲突/失败恢复 |
+| ----------------------- | --------------------- | ------------------------------------------------------------------------------------ | ------------------------- | ------------------------------------------------------------------------ | ---------------- | ---------------------------- | ------------- |
+| `<事实>`                | `<文案/控件或不显示>` | `EDITABLE` / `FIXED_READONLY` / `CONDITIONAL_EDITABLE` / `HIDDEN_OWNER_FACT` / `GAP` | `<Journey/corpus/source>` | `<用户输入 / latest detail / owner candidate / session / owner default>` | `<...>`          | `<状态、关系、版本、授权等>` | `<...>`       |
 
 - `EDITABLE` 只用于业务用户在当前任务中可以改变、且 command 允许改变的事实；`FIXED_READONLY`
   必须展示其业务含义，但不得允许用户改写；`CONDITIONAL_EDITABLE` 必须给出条件、清理与重读；
@@ -325,9 +345,9 @@ candidate-query protocol，而不是由每张表单新造搜索接口、分页�
 
 ## 5. 状态与边界表
 
-| 屏幕/动作 | initial/loading | validation | submitting | success | conflict/denied | timeout/unknown | owner/face 边界 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| <screen/action> | <...> | <...> | <...> | <...> | <...> | <先查询/重试/退出> | <server final authority> |
+| 屏幕/动作       | initial/loading | validation | submitting | success | conflict/denied | timeout/unknown    | owner/face 边界          |
+| --------------- | --------------- | ---------- | ---------- | ------- | --------------- | ------------------ | ------------------------ |
+| <screen/action> | <...>           | <...>      | <...>      | <...>   | <...>           | <先查询/重试/退出> | <server final authority> |
 
 ## 6. 逐操作任务合理性
 
@@ -340,15 +360,15 @@ anchor 和该操作的真实 owner/surface。不得因为一个接口存在、�
 裁决前不得把任一候选画成既定交互。实体列表默认遵循“名称/业务标识链接→详情 Drawer→详情右上动作→
 关闭详情后打开下一 surface”；只有批准 Journey 明确例外才可出现行内动作。
 
-| 操作 | 批准 Journey 来源 | 用户为何此时操作 | 是否有更短路径 | 不选替代的理由 | 约束归因（产品/owner/contract/旧文档） | Dexter 裁决是否必要 |
-| --- | --- | --- | --- | --- | --- | --- |
-| <action> | <path#anchor> | <...> | <...> | <...> | <...> | 是 / 否 |
+| 操作     | 批准 Journey 来源 | 用户为何此时操作 | 是否有更短路径 | 不选替代的理由 | 约束归因（产品/owner/contract/旧文档） | Dexter 裁决是否必要 |
+| -------- | ----------------- | ---------------- | -------------- | -------------- | -------------------------------------- | ------------------- |
+| <action> | <path#anchor>     | <...>            | <...>          | <...>          | <...>                                  | 是 / 否             |
 
 ## 7. Face / owner 对齐矩阵
 
-| 屏幕/动作 | consumer face | 页面准入 | server operation | owner readback / command | 不可由前端替代的判定 |
-| --- | --- | --- | --- | --- | --- |
-| <screen/action> | <...> | <...> | <...> | <...> | <...> |
+| 屏幕/动作       | consumer face | 页面准入 | server operation | owner readback / command | 不可由前端替代的判定 |
+| --------------- | ------------- | -------- | ---------------- | ------------------------ | -------------------- |
+| <screen/action> | <...>         | <...>    | <...>            | <...>                    | <...>                |
 
 ## 8. Manifest B.4/B.5 命中对照
 
@@ -357,9 +377,9 @@ anchor 和该操作的真实 owner/surface。不得因为一个接口存在、�
 以“未填写”假装不适用。Heritage 原文只能从
 `doc/heritage/registry.json` 已选择的冻结副本引用，并以 `path@sha256` 回指。
 
-| manifest 条文 | 本 Journey 的命中或不适用理由 | 遵循方式 / 待 Dexter 裁决 | Heritage 原文（冻结路径@hash） |
-| --- | --- | --- | --- |
-| B.4-<n> / B.5-<n> | <...> | <...> | `doc/heritage/frozen/...@<sha256>` |
+| manifest 条文     | 本 Journey 的命中或不适用理由 | 遵循方式 / 待 Dexter 裁决 | Heritage 原文（冻结路径@hash）     |
+| ----------------- | ----------------------------- | ------------------------- | ---------------------------------- |
+| B.4-<n> / B.5-<n> | <...>                         | <...>                     | `doc/heritage/frozen/...@<sha256>` |
 
 ## 9. 可选：高保真静态 demo
 
@@ -380,9 +400,9 @@ anchor 和该操作的真实 owner/surface。不得因为一个接口存在、�
 
 如使用本节，追加以下记录：
 
-| demo 路径 | 升级原因 | 假数据出处 / 待裁决水印位置 | 视觉基线（如适用） | Dexter 高保真看图结论 |
-| --- | --- | --- | --- | --- |
-| `doc/plans/platform/mockups/<JOURNEY_ID>/<screen>.html` | <...> | <...> | `all-v2 <path>@<sha256>` / 不适用 | `UNSET/ACCEPTED/REVISE` |
+| demo 路径                                               | 升级原因 | 假数据出处 / 待裁决水印位置 | 视觉基线（如适用）                | Dexter 高保真看图结论   |
+| ------------------------------------------------------- | -------- | --------------------------- | --------------------------------- | ----------------------- |
+| `doc/plans/platform/mockups/<JOURNEY_ID>/<screen>.html` | <...>    | <...>                       | `all-v2 <path>@<sha256>` / 不适用 | `UNSET/ACCEPTED/REVISE` |
 
 ## 10. Dexter 看图结论
 

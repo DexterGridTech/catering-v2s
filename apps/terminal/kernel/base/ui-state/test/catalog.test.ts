@@ -8,7 +8,7 @@ import {
 const entry = (overrides: Partial<UiCatalogEntry> = {}): UiCatalogEntry => ({
   partKey: 'orders',
   rendererKey: 'orders-screen',
-  containerKey: 'root',
+  containerKeys: ['root'],
   displayModes: ['PRIMARY'],
   workspaces: ['MAIN'],
   instanceModes: ['MASTER'],
@@ -32,9 +32,10 @@ describe('ui-state catalog', () => {
     expect(Object.isFrozen(catalog)).toBe(true)
     expect(Object.isFrozen(catalog.entries)).toBe(true)
     expect(Object.isFrozen(catalog.entries[0])).toBe(true)
+    expect(Object.isFrozen(catalog.entries[0].containerKeys)).toBe(true)
     expect(Object.isFrozen(catalog.entries[0].displayModes)).toBe(true)
     expect(Reflect.ownKeys(catalog.entries[0]).sort()).toEqual([
-      'containerKey',
+      'containerKeys',
       'description',
       'displayModes',
       'instanceModes',
@@ -63,5 +64,48 @@ describe('ui-state catalog', () => {
     const withHidden = entry()
     Object.defineProperty(withHidden, 'hidden', {value: true, enumerable: false})
     expect(() => createUiCatalog([withHidden])).toThrow(/own keys/)
+  })
+
+  it('allows a layer-only entry but excludes it from every container enumeration', () => {
+    const catalog = createUiCatalog([entry({partKey: 'layer-only', containerKeys: []})])
+
+    expect(catalog.entries[0].containerKeys).toEqual([])
+    expect(selectAvailableParts(catalog, 'root', {
+      displayMode: 'PRIMARY',
+      workspace: 'MAIN',
+      instanceMode: 'MASTER',
+    })).toEqual([])
+    expect(selectAvailableParts(catalog, 'overlay', {
+      displayMode: 'PRIMARY',
+      workspace: 'MAIN',
+      instanceMode: 'MASTER',
+    })).toEqual([])
+  })
+
+  it('keeps only containerKeys allowed to be empty', () => {
+    expect(() => createUiCatalog([entry({containerKeys: []})])).not.toThrow()
+    expect(() => createUiCatalog([entry({displayModes: []})])).toThrow(/array/)
+    expect(() => createUiCatalog([entry({workspaces: []})])).toThrow(/array/)
+    expect(() => createUiCatalog([entry({instanceModes: []})])).toThrow(/array/)
+  })
+
+  it('matches any declared container key during enumeration', () => {
+    const catalog = createUiCatalog([entry({containerKeys: ['root', 'sidebar']})])
+
+    expect(selectAvailableParts(catalog, 'sidebar', {
+      displayMode: 'PRIMARY',
+      workspace: 'MAIN',
+      instanceMode: 'MASTER',
+    }).map(candidate => candidate.partKey)).toEqual(['orders'])
+  })
+
+  it('rejects missing, invalid, and duplicate container key entries', () => {
+    const missing = {...entry()}
+    expect(Reflect.deleteProperty(missing, 'containerKeys')).toBe(true)
+    expect(() => createUiCatalog([missing as UiCatalogEntry])).toThrow(/approved field set/)
+
+    expect(() => createUiCatalog([entry({containerKeys: null as unknown as readonly string[]})])).toThrow(/array/)
+    expect(() => createUiCatalog([entry({containerKeys: ['']})])).toThrow(/invalid value/)
+    expect(() => createUiCatalog([entry({containerKeys: ['root', 'root']})])).toThrow(/duplicate value/)
   })
 })

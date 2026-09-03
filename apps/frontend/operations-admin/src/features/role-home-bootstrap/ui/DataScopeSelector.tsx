@@ -12,6 +12,7 @@ import {useSelector} from 'react-redux';
 import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import type {WorkspaceScopeNode, WorkspaceSessionEntry} from '../../../app/api/generated/operations-edge';
 import type {OperationsRootState} from '../../../app/state/OperationsStore';
+import {roleHomeTestIds} from '../roleHomeTestIds';
 
 type RequiredDataNodeType = 'NONE' | 'REGION' | 'PROJECT' | 'HEAD_COMPANY' | 'STORE';
 type Option = {value: string; label: ReactNode};
@@ -227,7 +228,7 @@ export function DataScopeSelector({entry, page, collapsed = false, disabled = fa
             placeholder="选择总公司"
             disabled={!canChangeHeadCompany || submitting || locked || disabled}
             onChange={setHeadCompanyRef}
-            {...testId('operations-data-scope-head-company')}
+            {...testId(roleHomeTestIds.dataScope.headCompany)}
           />
         </>
       ) : (
@@ -246,7 +247,7 @@ export function DataScopeSelector({entry, page, collapsed = false, disabled = fa
               setProjectRef(undefined);
               setStoreRef(undefined);
             }}
-            {...testId('operations-data-scope-region')}
+            {...testId(roleHomeTestIds.dataScope.region)}
           />
           {type !== 'REGION' && (
             <>
@@ -263,7 +264,7 @@ export function DataScopeSelector({entry, page, collapsed = false, disabled = fa
                   setProjectRef(value);
                   setStoreRef(undefined);
                 }}
-                {...testId('operations-data-scope-project')}
+                {...testId(roleHomeTestIds.dataScope.project)}
               />
             </>
           )}
@@ -279,7 +280,7 @@ export function DataScopeSelector({entry, page, collapsed = false, disabled = fa
                 placeholder={projectRef ? '选择门店' : '请先选择项目'}
                 disabled={!projectRef || !canChangeStore || submitting || locked || disabled}
                 onChange={setStoreRef}
-                {...testId('operations-data-scope-store')}
+                {...testId(roleHomeTestIds.dataScope.store)}
               />
             </>
           )}
@@ -292,7 +293,7 @@ export function DataScopeSelector({entry, page, collapsed = false, disabled = fa
             setOpen(false);
           }}
           disabled={submitting}
-          {...testId('operations-data-scope-cancel')}
+          {...testId(roleHomeTestIds.dataScope.cancel)}
         >
           取消
         </Button>
@@ -301,6 +302,7 @@ export function DataScopeSelector({entry, page, collapsed = false, disabled = fa
           disabled={!candidate || !canConfirm || submitting || locked || disabled}
           loading={submitting}
           onClick={() => void submit(candidate)}
+          {...testId(roleHomeTestIds.dataScope.confirm)}
         >
           确认{scopeName(type)}
         </Button>
@@ -319,7 +321,7 @@ export function DataScopeSelector({entry, page, collapsed = false, disabled = fa
       }
       icon={collapsed ? <ApartmentOutlined /> : undefined}
       disabled={!entry.selected || disabled || locked || submitting}
-      {...testId('operations-data-scope-trigger')}
+      {...testId(roleHomeTestIds.dataScope.trigger)}
     >
       {collapsed ? null : (
         <span className="operations-scope-trigger-summary">

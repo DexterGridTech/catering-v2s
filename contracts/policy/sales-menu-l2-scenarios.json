@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "sales-menu-l2-scenarios",
-  "revision": "SALES_MENU_L2_P1_20260902",
+  "revision": "SALES_MENU_L2_P1_20260903",
   "sourceOfTruth": "contracts/policy/sales-menu-l2-case-blueprint.json",
   "executionBoundary": {
     "fixtureClass": "TEST",
@@ -15,7 +15,7 @@
     ]
   },
   "scenarioCount": 16,
-  "caseCount": 16,
+  "caseCount": 18,
   "locatorBinding": "contracts/policy/sales-menu-l2-locator-bindings.json",
   "operationCoverage": [
     {
@@ -69,6 +69,8 @@
       ],
       "l2Cases": [
         "sales-menu-section-actions",
+        "sales-menu-section-move-and-delete",
+        "sales-menu-section-delete-non-empty",
         "sales-menu-draft-order-and-pagination"
       ],
       "route": {
@@ -98,7 +100,8 @@
       "l2Cases": [
         "sales-menu-edit-direct-item-and-media",
         "sales-menu-edit-sku-prices",
-        "sales-menu-edit-weighted-item"
+        "sales-menu-edit-weighted-item",
+        "sales-menu-failure-recovery-and-focus"
       ],
       "route": {
         "method": "GET",
@@ -310,7 +313,7 @@
         "sales-menu.ordered-sections-and-items"
       ],
       "l2Cases": [
-        "sales-menu-section-actions",
+        "sales-menu-section-delete-non-empty",
         "sales-menu-failure-recovery-and-focus"
       ],
       "route": {
@@ -324,7 +327,7 @@
         "sales-menu.ordered-sections-and-items"
       ],
       "l2Cases": [
-        "sales-menu-section-actions",
+        "sales-menu-section-move-and-delete",
         "sales-menu-failure-recovery-and-focus"
       ],
       "route": {
@@ -432,7 +435,6 @@
       ],
       "l2Cases": [
         "sales-menu-publish-and-front-structure",
-        "sales-menu-publish-blockers",
         "sales-menu-failure-recovery-and-focus"
       ],
       "route": {
@@ -506,7 +508,8 @@
               "backgroundAllowed": [
                 "getOperationsSalesMenuDraftSections",
                 "getOperationsSalesMenuDraftItems",
-                "getOperationsSalesMenuPublicationPreview"
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsWorkspaceSessionEntry"
               ],
               "requests": [
                 {
@@ -532,6 +535,10 @@
                 {
                   "operationId": "getOperationsSalesMenuPublicationPreview",
                   "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 4
                 }
               ]
             },
@@ -541,6 +548,7 @@
               "caseTimeoutMs": 45000
             },
             "controlKeys": [
+              "STORE_SCOPE",
               "SALES_MENU_PAGE",
               "SALES_MENU_CHANNEL_CARDS",
               "SALES_MENU_CHANNEL_CARD",
@@ -579,9 +587,11 @@
     {
       "scenarioId": "SM-L2-002",
       "layer": "L2",
-      "caseCount": 1,
+      "caseCount": 3,
       "fixtureRefs": [
-        "FIXTURE-SALES-MENU-SECTIONS"
+        "FIXTURE-SALES-MENU-SECTIONS",
+        "FIXTURE-SALES-MENU-SECTION-MOVE-DELETE",
+        "FIXTURE-SALES-MENU-SECTION-DELETE-NONEMPTY"
       ],
       "businessRequirement": "在销售菜单中维护分区及其权威顺序。",
       "primaryVerifier": "browser-business",
@@ -600,24 +610,22 @@
             "operationIds": [
               "getOperationsSalesMenuDraftSections",
               "createOperationsSalesMenuSection",
-              "renameOperationsSalesMenuSection",
-              "moveOperationsSalesMenuSection",
-              "deleteOperationsSalesMenuSection"
+              "renameOperationsSalesMenuSection"
             ],
             "network": {
               "required": [
                 "getOperationsSalesMenuDraftSections",
                 "createOperationsSalesMenuSection",
-                "renameOperationsSalesMenuSection",
-                "moveOperationsSalesMenuSection",
-                "deleteOperationsSalesMenuSection"
+                "renameOperationsSalesMenuSection"
               ],
               "forbidden": [],
               "backgroundAllowed": [
                 "getOperationsSalesMenus",
                 "getOperationsSalesMenu",
                 "getOperationsSalesMenuDraftItems",
-                "getOperationsSalesMenuPublicationPreview"
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
               ],
               "requests": [
                 {
@@ -633,41 +641,51 @@
                   "maxRequestCount": 2
                 },
                 {
-                  "operationId": "moveOperationsSalesMenuSection",
-                  "maxRequestCount": 2
-                },
-                {
-                  "operationId": "deleteOperationsSalesMenuSection",
-                  "maxRequestCount": 2
-                },
-                {
                   "operationId": "getOperationsSalesMenus",
                   "maxRequestCount": 4
                 },
                 {
                   "operationId": "getOperationsSalesMenu",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 4
                 },
                 {
                   "operationId": "getOperationsSalesMenuDraftItems",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 3
                 },
                 {
                   "operationId": "getOperationsSalesMenuPublicationPreview",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 4
                 }
               ]
             },
             "timing": {
-              "caseExpectedDbMs": 1500,
-              "caseLocalActionMs": 3000,
-              "caseTimeoutMs": 45000
+              "caseExpectedDbMs": 900,
+              "caseLocalActionMs": 1500,
+              "caseTimeoutMs": 20000
             },
             "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
               "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
               "SALES_MENU_SECTION_LIST",
               "SALES_MENU_SECTION",
-              "SALES_MENU_SECTION_ACTION"
+              "SALES_MENU_SECTION_ACTION",
+              "SALES_MENU_SECTION_MENU_ACTION",
+              "SALES_MENU_SECTION_CREATE",
+              "SALES_MENU_SECTION_NAME",
+              "SALES_MENU_SECTION_SAVE",
+              "SALES_MENU_CONFIRMATION_SUBMIT"
             ],
             "operationRoutes": {
               "getOperationsSalesMenuDraftSections": {
@@ -681,6 +699,112 @@
               "renameOperationsSalesMenuSection": {
                 "method": "PATCH",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-section-actions:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-SECTIONS",
+            "businessOracle": [
+              "分区操作紧邻分区且只显示允许动作",
+              "新分区创建后获得稳定 ref",
+              "重命名结果由 owner readback 确认"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        },
+        {
+          "caseId": "sales-menu-section-move-and-delete",
+          "fixtureRef": "FIXTURE-SALES-MENU-SECTION-MOVE-DELETE",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "move-and-delete-empty-section",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsSalesMenuDraftSections",
+              "moveOperationsSalesMenuSection",
+              "deleteOperationsSalesMenuSection"
+            ],
+            "network": {
+              "required": [
+                "getOperationsSalesMenuDraftSections",
+                "moveOperationsSalesMenuSection",
+                "deleteOperationsSalesMenuSection"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
+              ],
+              "requests": [
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 8
+                },
+                {
+                  "operationId": "moveOperationsSalesMenuSection",
+                  "maxRequestCount": 1
+                },
+                {
+                  "operationId": "deleteOperationsSalesMenuSection",
+                  "maxRequestCount": 1
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 3
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 4
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 900,
+              "caseLocalActionMs": 1500,
+              "caseTimeoutMs": 20000
+            },
+            "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
+              "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_SECTION",
+              "SALES_MENU_SECTION_ACTION",
+              "SALES_MENU_SECTION_MENU_ACTION",
+              "SALES_MENU_CONFIRMATION_SUBMIT"
+            ],
+            "operationRoutes": {
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
               },
               "moveOperationsSalesMenuSection": {
                 "method": "POST",
@@ -693,12 +817,114 @@
             }
           },
           "expected": {
-            "assertionKey": "sales-menu-section-actions:business",
-            "fixtureRef": "FIXTURE-SALES-MENU-SECTIONS",
+            "assertionKey": "sales-menu-section-move-and-delete:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-SECTION-MOVE-DELETE",
             "businessOracle": [
-              "分区操作紧邻分区且只显示允许动作",
-              "首尾移动来自owner canMove",
-              "非空删除失败且顺序不变"
+              "首尾移动来自 owner canMove",
+              "空分区删除成功且 owner 顺序无洞"
+            ],
+            "failureInvariant": "owner facts remain unchanged on failed action"
+          }
+        },
+        {
+          "caseId": "sales-menu-section-delete-non-empty",
+          "fixtureRef": "FIXTURE-SALES-MENU-SECTION-DELETE-NONEMPTY",
+          "parameterization": "sales-menu-blueprint-case",
+          "parameter": {
+            "declaredActions": [
+              {
+                "actionId": "reject-non-empty-section-delete",
+                "kind": "USER_JOURNEY"
+              }
+            ],
+            "operationIds": [
+              "getOperationsSalesMenuDraftSections",
+              "deleteOperationsSalesMenuSection"
+            ],
+            "network": {
+              "required": [
+                "getOperationsSalesMenuDraftSections",
+                "deleteOperationsSalesMenuSection"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
+              ],
+              "requests": [
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 8
+                },
+                {
+                  "operationId": "deleteOperationsSalesMenuSection",
+                  "maxRequestCount": 1
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 3
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 4
+                }
+              ]
+            },
+            "timing": {
+              "caseExpectedDbMs": 700,
+              "caseLocalActionMs": 1000,
+              "caseTimeoutMs": 20000
+            },
+            "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
+              "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_SECTION",
+              "SALES_MENU_SECTION_ACTION",
+              "SALES_MENU_SECTION_MENU_ACTION",
+              "SALES_MENU_CONFIRMATION_SUBMIT"
+            ],
+            "operationRoutes": {
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "deleteOperationsSalesMenuSection": {
+                "method": "DELETE",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}"
+              }
+            }
+          },
+          "expected": {
+            "assertionKey": "sales-menu-section-delete-non-empty:business",
+            "fixtureRef": "FIXTURE-SALES-MENU-SECTION-DELETE-NONEMPTY",
+            "businessOracle": [
+              "非空分区删除返回 SECTION_NOT_EMPTY",
+              "失败后销售项与分区顺序保持不变"
             ],
             "failureInvariant": "owner facts remain unchanged on failed action"
           }
@@ -766,19 +992,19 @@
                 },
                 {
                   "operationId": "getOperationsSalesMenu",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 3
                 },
                 {
                   "operationId": "getOperationsSalesMenuDraftSections",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 3
                 },
                 {
                   "operationId": "getOperationsSalesMenuDraftItems",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 3
                 },
                 {
                   "operationId": "getOperationsSalesMenuPublicationPreview",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 3
                 },
                 {
                   "operationId": "getOperationsStoreBusinessChannels",
@@ -796,11 +1022,21 @@
               "caseTimeoutMs": 50000
             },
             "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
               "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_SECTION",
               "SALES_MENU_CANDIDATE_DRAWER",
               "SALES_MENU_CANDIDATE_CATEGORY_TREE",
               "SALES_MENU_CANDIDATE_PAGINATION",
-              "SALES_MENU_ITEM_TABLE"
+              "SALES_MENU_ITEM_TABLE",
+              "SALES_MENU_CANDIDATE_ADD",
+              "SALES_MENU_CANDIDATE_ROW",
+              "SALES_MENU_CANDIDATE_SUBMIT"
             ],
             "operationRoutes": {
               "getOperationsCatalogNavigation": {
@@ -873,7 +1109,9 @@
                 "getOperationsSalesMenuDraftSections",
                 "getOperationsSalesMenuDraftItems",
                 "getOperationsSalesMenuPublicationPreview",
-                "getPublicAssetContent"
+                "getPublicAssetContent",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
               ],
               "requests": [
                 {
@@ -902,23 +1140,31 @@
                 },
                 {
                   "operationId": "getOperationsSalesMenu",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 5
                 },
                 {
                   "operationId": "getOperationsSalesMenuDraftSections",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 5
                 },
                 {
                   "operationId": "getOperationsSalesMenuDraftItems",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 3
                 },
                 {
                   "operationId": "getOperationsSalesMenuPublicationPreview",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 5
                 },
                 {
                   "operationId": "getPublicAssetContent",
                   "maxRequestCount": 5
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 4
                 }
               ]
             },
@@ -928,7 +1174,14 @@
               "caseTimeoutMs": 60000
             },
             "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
               "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_SECTION",
               "SALES_MENU_ITEM_TABLE",
               "SALES_MENU_ITEM",
               "SALES_MENU_ITEM_EDITOR",
@@ -936,7 +1189,12 @@
               "SALES_MENU_ITEM_LISTED_PRICE",
               "SALES_MENU_ITEM_MEDIA_EDITOR",
               "SALES_MENU_ITEM_MEDIA_UPLOAD",
-              "SALES_MENU_ITEM_MEDIA_LIST"
+              "SALES_MENU_ITEM_MEDIA_LIST",
+              "SALES_MENU_ITEM_MEDIA_CHOICE",
+              "SALES_MENU_ITEM_MEDIA_ACTION",
+              "SALES_MENU_ITEM_DELETE",
+              "SALES_MENU_ITEM_SAVE",
+              "SALES_MENU_CONFIRMATION_SUBMIT"
             ],
             "operationRoutes": {
               "getOperationsSalesMenuDraftItem": {
@@ -1010,7 +1268,9 @@
                 "getOperationsSalesMenu",
                 "getOperationsSalesMenuDraftSections",
                 "getOperationsSalesMenuDraftItems",
-                "getOperationsSalesMenuPublicationPreview"
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
               ],
               "requests": [
                 {
@@ -1027,11 +1287,11 @@
                 },
                 {
                   "operationId": "getOperationsSalesMenu",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 3
                 },
                 {
                   "operationId": "getOperationsSalesMenuDraftSections",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 3
                 },
                 {
                   "operationId": "getOperationsSalesMenuDraftItems",
@@ -1040,6 +1300,14 @@
                 {
                   "operationId": "getOperationsSalesMenuPublicationPreview",
                   "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 4
                 }
               ]
             },
@@ -1049,10 +1317,18 @@
               "caseTimeoutMs": 40000
             },
             "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
               "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_SECTION",
               "SALES_MENU_ITEM_TABLE",
               "SALES_MENU_ITEM",
-              "SALES_MENU_ITEM_EDITOR"
+              "SALES_MENU_ITEM_EDITOR",
+              "SALES_MENU_ITEM_SAVE"
             ],
             "operationRoutes": {
               "getOperationsSalesMenuDraftItem": {
@@ -1113,7 +1389,9 @@
                 "getOperationsSalesMenu",
                 "getOperationsSalesMenuDraftSections",
                 "getOperationsSalesMenuDraftItems",
-                "getOperationsSalesMenuPublicationPreview"
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
               ],
               "requests": [
                 {
@@ -1130,11 +1408,11 @@
                 },
                 {
                   "operationId": "getOperationsSalesMenu",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 3
                 },
                 {
                   "operationId": "getOperationsSalesMenuDraftSections",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 3
                 },
                 {
                   "operationId": "getOperationsSalesMenuDraftItems",
@@ -1143,6 +1421,14 @@
                 {
                   "operationId": "getOperationsSalesMenuPublicationPreview",
                   "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 4
                 }
               ]
             },
@@ -1152,10 +1438,18 @@
               "caseTimeoutMs": 40000
             },
             "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
               "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_SECTION",
               "SALES_MENU_ITEM_TABLE",
               "SALES_MENU_ITEM",
-              "SALES_MENU_ITEM_EDITOR"
+              "SALES_MENU_ITEM_EDITOR",
+              "SALES_MENU_ITEM_SAVE"
             ],
             "operationRoutes": {
               "getOperationsSalesMenuDraftItem": {
@@ -1216,7 +1510,9 @@
                 "getOperationsSalesMenus",
                 "getOperationsSalesMenu",
                 "getOperationsSalesMenuDraftSections",
-                "getOperationsSalesMenuPublicationPreview"
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
               ],
               "requests": [
                 {
@@ -1233,15 +1529,23 @@
                 },
                 {
                   "operationId": "getOperationsSalesMenu",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 3
                 },
                 {
                   "operationId": "getOperationsSalesMenuDraftSections",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 3
                 },
                 {
                   "operationId": "getOperationsSalesMenuPublicationPreview",
                   "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 4
                 }
               ]
             },
@@ -1251,11 +1555,18 @@
               "caseTimeoutMs": 45000
             },
             "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
               "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SECTION",
               "SALES_MENU_SECTION_LIST",
               "SALES_MENU_ITEM_TABLE",
               "SALES_MENU_ITEM",
               "SALES_MENU_ITEM_ACTION",
+              "SALES_MENU_ITEM_MENU_ACTION",
               "SALES_MENU_DRAFT_PAGINATION"
             ],
             "operationRoutes": {
@@ -1307,17 +1618,26 @@
               "getOperationsSalesMenuPublicationPreview",
               "publishOperationsSalesMenu",
               "getOperationsSalesMenuPublishedSections",
-              "getOperationsSalesMenuPublishedItems"
+              "getOperationsSalesMenuPublishedItems",
+              "getOperationsSalesMenuPublishedItem"
             ],
             "network": {
               "required": [
                 "getOperationsSalesMenuPublicationPreview",
                 "publishOperationsSalesMenu",
                 "getOperationsSalesMenuPublishedSections",
-                "getOperationsSalesMenuPublishedItems"
+                "getOperationsSalesMenuPublishedItems",
+                "getOperationsSalesMenuPublishedItem"
               ],
               "forbidden": [],
-              "backgroundAllowed": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
+              ],
               "requests": [
                 {
                   "operationId": "getOperationsSalesMenuPublicationPreview",
@@ -1334,6 +1654,34 @@
                 {
                   "operationId": "getOperationsSalesMenuPublishedItems",
                   "maxRequestCount": 5
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublishedItem",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 4
                 }
               ]
             },
@@ -1343,10 +1691,20 @@
               "caseTimeoutMs": 50000
             },
             "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
               "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_SECTION",
+              "SALES_MENU_MENU_PUBLISH",
               "SALES_MENU_PUBLISH_DRAWER",
+              "SALES_MENU_PUBLISH_SUBMIT",
               "SALES_MENU_ITEM_TABLE",
               "SALES_MENU_PUBLISHED_PAGINATION",
+              "SALES_MENU_ITEM",
               "SALES_MENU_ITEM_DETAIL"
             ],
             "operationRoutes": {
@@ -1365,6 +1723,10 @@
               "getOperationsSalesMenuPublishedItems": {
                 "method": "GET",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublishedItem": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}"
               }
             }
           },
@@ -1412,7 +1774,16 @@
                 "getOperationsSalesMenuPublishedItem"
               ],
               "forbidden": [],
-              "backgroundAllowed": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublishedSections",
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
+              ],
               "requests": [
                 {
                   "operationId": "getOperationsSalesMenuPublishedItems",
@@ -1421,6 +1792,38 @@
                 {
                   "operationId": "getOperationsSalesMenuPublishedItem",
                   "maxRequestCount": 3
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublishedSections",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 4
                 }
               ]
             },
@@ -1430,7 +1833,14 @@
               "caseTimeoutMs": 40000
             },
             "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
               "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_SECTION",
               "SALES_MENU_ITEM_TABLE",
               "SALES_MENU_ITEM",
               "SALES_MENU_PUBLISHED_PAGINATION",
@@ -1482,25 +1892,29 @@
               }
             ],
             "operationIds": [
-              "getOperationsSalesMenuPublishedItem",
               "setOperationsSalesMenuItemSoldOut",
               "restoreOperationsSalesMenuItemSale",
               "getOperationsSalesMenuOperationRecords"
             ],
             "network": {
               "required": [
-                "getOperationsSalesMenuPublishedItem",
                 "setOperationsSalesMenuItemSoldOut",
                 "restoreOperationsSalesMenuItemSale",
                 "getOperationsSalesMenuOperationRecords"
               ],
               "forbidden": [],
-              "backgroundAllowed": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublishedSections",
+                "getOperationsSalesMenuPublishedItems",
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
+              ],
               "requests": [
-                {
-                  "operationId": "getOperationsSalesMenuPublishedItem",
-                  "maxRequestCount": 5
-                },
                 {
                   "operationId": "setOperationsSalesMenuItemSoldOut",
                   "maxRequestCount": 2
@@ -1512,6 +1926,42 @@
                 {
                   "operationId": "getOperationsSalesMenuOperationRecords",
                   "maxRequestCount": 3
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 8
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 6
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublishedSections",
+                  "maxRequestCount": 6
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublishedItems",
+                  "maxRequestCount": 6
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 6
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 4
                 }
               ]
             },
@@ -1521,16 +1971,24 @@
               "caseTimeoutMs": 45000
             },
             "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
               "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_SECTION",
               "SALES_MENU_ITEM_TABLE",
               "SALES_MENU_ITEM",
-              "SALES_MENU_ITEM_DETAIL"
+              "SALES_MENU_ITEM_STATUS_ACTION",
+              "SALES_MENU_ITEM_STATUS_CHOICE",
+              "SALES_MENU_ITEM_STATUS_REASON",
+              "SALES_MENU_ITEM_STATUS_SUBMIT",
+              "SALES_MENU_CONFIRMATION_SUBMIT",
+              "SALES_MENU_OPERATION_LOG"
             ],
             "operationRoutes": {
-              "getOperationsSalesMenuPublishedItem": {
-                "method": "GET",
-                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}"
-              },
               "setOperationsSalesMenuItemSoldOut": {
                 "method": "POST",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out"
@@ -1599,15 +2057,21 @@
                 "updateOperationsSalesMenuSchedule"
               ],
               "forbidden": [],
-              "backgroundAllowed": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
+              ],
               "requests": [
                 {
                   "operationId": "getOperationsSalesMenus",
-                  "maxRequestCount": 12
+                  "maxRequestCount": 14
                 },
                 {
                   "operationId": "getOperationsSalesMenu",
-                  "maxRequestCount": 6
+                  "maxRequestCount": 8
                 },
                 {
                   "operationId": "createOperationsSalesMenu",
@@ -1628,6 +2092,26 @@
                 {
                   "operationId": "updateOperationsSalesMenuSchedule",
                   "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 8
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 8
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 8
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 8
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 8
                 }
               ]
             },
@@ -1637,12 +2121,30 @@
               "caseTimeoutMs": 60000
             },
             "controlKeys": [
+              "STORE_SCOPE",
               "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_MENU_SCHEDULE",
               "SALES_MENU_SELECTOR",
               "SALES_MENU_SELECTOR_PAGINATION",
+              "SALES_MENU_MANAGER_OPEN",
               "SALES_MENU_MANAGER",
               "SALES_MENU_MANAGER_PAGINATION",
-              "SALES_MENU_SCHEDULE_DRAWER"
+              "SALES_MENU_MANAGER_ACTION",
+              "SALES_MENU_MENU_CREATE",
+              "SALES_MENU_MENU_CREATE_DRAWER",
+              "SALES_MENU_MENU_CREATE_NAME",
+              "SALES_MENU_MENU_CREATE_SUBMIT",
+              "SALES_MENU_MENU_RENAME_DRAWER",
+              "SALES_MENU_MENU_RENAME_NAME",
+              "SALES_MENU_MENU_RENAME_SUBMIT",
+              "SALES_MENU_CONFIRMATION_SUBMIT",
+              "SALES_MENU_SCHEDULE_DRAWER",
+              "SALES_MENU_SCHEDULE_KIND",
+              "SALES_MENU_SCHEDULE_START",
+              "SALES_MENU_SCHEDULE_END",
+              "SALES_MENU_SCHEDULE_SAVE"
             ],
             "operationRoutes": {
               "getOperationsSalesMenus": {
@@ -1719,7 +2221,14 @@
                 "copyOperationsSalesMenu"
               ],
               "forbidden": [],
-              "backgroundAllowed": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
+              ],
               "requests": [
                 {
                   "operationId": "getOperationsSalesMenu",
@@ -1728,6 +2237,30 @@
                 {
                   "operationId": "copyOperationsSalesMenu",
                   "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 6
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 4
                 }
               ]
             },
@@ -1737,7 +2270,16 @@
               "caseTimeoutMs": 40000
             },
             "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
               "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_SECTION",
+              "SALES_MENU_MANAGER_OPEN",
+              "SALES_MENU_MANAGER_ACTION",
               "SALES_MENU_MANAGER",
               "SALES_MENU_ITEM_TABLE"
             ],
@@ -1788,29 +2330,54 @@
             ],
             "operationIds": [
               "getOperationsSalesMenuPublicationPreview",
-              "publishOperationsSalesMenu",
               "setOperationsSalesMenuActivation"
             ],
             "network": {
               "required": [
                 "getOperationsSalesMenuPublicationPreview",
-                "publishOperationsSalesMenu",
                 "setOperationsSalesMenuActivation"
               ],
               "forbidden": [],
-              "backgroundAllowed": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
+              ],
               "requests": [
                 {
                   "operationId": "getOperationsSalesMenuPublicationPreview",
-                  "maxRequestCount": 4
-                },
-                {
-                  "operationId": "publishOperationsSalesMenu",
-                  "maxRequestCount": 2
+                  "maxRequestCount": 5
                 },
                 {
                   "operationId": "setOperationsSalesMenuActivation",
                   "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 8
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 6
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 6
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 6
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 4
                 }
               ]
             },
@@ -1820,18 +2387,27 @@
               "caseTimeoutMs": 45000
             },
             "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
               "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_SECTION",
+              "SALES_MENU_MENU_PUBLISH",
               "SALES_MENU_PUBLISH_DRAWER",
+              "SALES_MENU_PUBLISH_SUBMIT",
+              "SALES_MENU_MANAGER_OPEN",
+              "SALES_MENU_MANAGER",
+              "SALES_MENU_MANAGER_PAGINATION",
+              "SALES_MENU_MANAGER_ACTION",
               "SALES_MENU_ITEM_TABLE"
             ],
             "operationRoutes": {
               "getOperationsSalesMenuPublicationPreview": {
                 "method": "GET",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
-              },
-              "publishOperationsSalesMenu": {
-                "method": "POST",
-                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications"
               },
               "setOperationsSalesMenuActivation": {
                 "method": "PUT",
@@ -1881,10 +2457,46 @@
                 "getOperationsSalesMenuOperationRecords"
               ],
               "forbidden": [],
-              "backgroundAllowed": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
+              ],
               "requests": [
                 {
                   "operationId": "getOperationsSalesMenuOperationRecords",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 5
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 3
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
                 }
               ]
@@ -1895,7 +2507,11 @@
               "caseTimeoutMs": 35000
             },
             "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
               "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_SELECTOR",
               "SALES_MENU_OPERATION_LOG",
               "SALES_MENU_LOG_PAGINATION"
             ],
@@ -1956,7 +2572,17 @@
                 "publishOperationsSalesMenu"
               ],
               "forbidden": [],
-              "backgroundAllowed": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsSalesMenuDraftItem",
+                "getPublicAssetContent",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry"
+              ],
               "requests": [
                 {
                   "operationId": "updateOperationsSalesMenuItem",
@@ -1977,6 +2603,42 @@
                 {
                   "operationId": "publishOperationsSalesMenu",
                   "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 12
+                },
+                {
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 8
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 10
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 10
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 10
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItem",
+                  "maxRequestCount": 5
+                },
+                {
+                  "operationId": "getPublicAssetContent",
+                  "maxRequestCount": 8
+                },
+                {
+                  "operationId": "getOperationsStoreBusinessChannels",
+                  "maxRequestCount": 8
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 8
                 }
               ]
             },
@@ -1986,11 +2648,31 @@
               "caseTimeoutMs": 50000
             },
             "controlKeys": [
+              "STORE_SCOPE",
+              "SALES_MENU_MODE",
               "SALES_MENU_PAGE",
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_SECTION",
               "SALES_MENU_ITEM_TABLE",
+              "SALES_MENU_ITEM",
               "SALES_MENU_ITEM_EDITOR",
-              "SALES_MENU_CANDIDATE_DRAWER",
-              "SALES_MENU_PUBLISH_DRAWER"
+              "SALES_MENU_ITEM_ACTION",
+              "SALES_MENU_ITEM_MENU_ACTION",
+              "SALES_MENU_ITEM_DISPLAY_NAME",
+              "SALES_MENU_ITEM_MEDIA_EDITOR",
+              "SALES_MENU_ITEM_MEDIA_UPLOAD",
+              "SALES_MENU_ITEM_MEDIA_LIST",
+              "SALES_MENU_ITEM_MEDIA_CHOICE",
+              "SALES_MENU_ITEM_CLOSE",
+              "SALES_MENU_ITEM_DISCARD_CONFIRM",
+              "SALES_MENU_ITEM_DISCARD_CANCEL",
+              "SALES_MENU_MENU_PUBLISH",
+              "SALES_MENU_PUBLISH_DRAWER",
+              "SALES_MENU_PUBLISH_SUBMIT",
+              "SALES_MENU_ITEM_SAVE"
             ],
             "operationRoutes": {
               "updateOperationsSalesMenuItem": {
@@ -2050,30 +2732,50 @@
               }
             ],
             "operationIds": [
-              "getOperationsStoreBusinessChannels",
-              "createOperationsSalesMenu",
-              "setOperationsSalesMenuActivation"
+              "getOperationsSalesMenu",
+              "getOperationsSalesMenuDraftSections"
             ],
             "network": {
               "required": [
-                "getOperationsStoreBusinessChannels",
-                "createOperationsSalesMenu",
-                "setOperationsSalesMenuActivation"
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftSections"
               ],
               "forbidden": [],
-              "backgroundAllowed": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsWorkspaceSessionEntry"
+              ],
               "requests": [
                 {
                   "operationId": "getOperationsStoreBusinessChannels",
                   "maxRequestCount": 3
                 },
                 {
-                  "operationId": "createOperationsSalesMenu",
-                  "maxRequestCount": 1
+                  "operationId": "getOperationsSalesMenus",
+                  "maxRequestCount": 5
                 },
                 {
-                  "operationId": "setOperationsSalesMenuActivation",
-                  "maxRequestCount": 1
+                  "operationId": "getOperationsSalesMenu",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftSections",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuDraftItems",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsSalesMenuPublicationPreview",
+                  "maxRequestCount": 2
+                },
+                {
+                  "operationId": "getOperationsWorkspaceSessionEntry",
+                  "maxRequestCount": 4
                 }
               ]
             },
@@ -2083,22 +2785,29 @@
               "caseTimeoutMs": 35000
             },
             "controlKeys": [
+              "STORE_SCOPE",
               "SALES_MENU_PAGE",
               "SALES_MENU_CHANNEL_CARDS",
-              "SALES_MENU_MANAGER"
+              "SALES_MENU_CHANNEL_CARD",
+              "SALES_MENU_CHANNEL_PAGINATION",
+              "SALES_MENU_SELECTOR",
+              "SALES_MENU_SECTION_LIST",
+              "SALES_MENU_MANAGER",
+              "SALES_MENU_MANAGER_OPEN",
+              "SALES_MENU_MANAGER_PAGINATION",
+              "SALES_MENU_MANAGER_ACTION",
+              "SALES_MENU_MENU_SCHEDULE",
+              "SALES_MENU_MENU_PUBLISH",
+              "SALES_MENU_MENU_CREATE"
             ],
             "operationRoutes": {
-              "getOperationsStoreBusinessChannels": {
+              "getOperationsSalesMenu": {
                 "method": "GET",
-                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
               },
-              "createOperationsSalesMenu": {
-                "method": "POST",
-                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
-              },
-              "setOperationsSalesMenuActivation": {
-                "method": "PUT",
-                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation"
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
               }
             }
           },

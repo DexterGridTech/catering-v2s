@@ -33,6 +33,8 @@ const TEST_LOGIN = {
   platformPassword: 'platform-password-value-0123456789',
   operationsUsername: 'operations.l2@example.test',
   operationsPassword: 'operations-password-value-0123456789',
+  operationsReadonlyUsername: 'operations-readonly.l2@example.test',
+  operationsReadonlyPassword: 'operations-readonly-password-value-0123456789',
   headOperationsUsername: 'head-operations.l2@example.test',
   headOperationsPassword: 'head-operations-password-value-0123456789',
   otp: '123456',
@@ -97,7 +99,7 @@ test('creates 0700 run material, 0600 private files, exact binding metadata, and
     assert.equal(created.binding.assetPrefix, ASSET_PREFIX);
     assert.equal(created.binding.files.credentialsMode, 0o600);
     assert.equal(created.binding.files.runDirectoryMode, 0o700);
-    assert.equal((created.binding.allowedKeys ?? []).length, 15);
+    assert.equal((created.binding.allowedKeys ?? []).length, 17);
     const loaded = readSource(created);
     assert.equal(loaded.values.V2S_L2_TEST_OTP, '123456');
     assert.equal(JSON.stringify(loaded).includes(TEST_LOGIN.platformPassword), false);
@@ -116,6 +118,8 @@ test('creates 0700 run material, 0600 private files, exact binding metadata, and
       {
         V2S_L2_OPERATIONS_LOGIN: TEST_LOGIN.operationsUsername,
         V2S_L2_OPERATIONS_PASSWORD: TEST_LOGIN.operationsPassword,
+        V2S_L2_OPERATIONS_READONLY_LOGIN: TEST_LOGIN.operationsReadonlyUsername,
+        V2S_L2_OPERATIONS_READONLY_PASSWORD: TEST_LOGIN.operationsReadonlyPassword,
         V2S_L2_HEAD_OPERATIONS_LOGIN: TEST_LOGIN.headOperationsUsername,
         V2S_L2_HEAD_OPERATIONS_PASSWORD: TEST_LOGIN.headOperationsPassword,
         V2S_L2_DIAGNOSTIC_SECRET: loaded.values.V2S_L2_DIAGNOSTIC_SECRET,

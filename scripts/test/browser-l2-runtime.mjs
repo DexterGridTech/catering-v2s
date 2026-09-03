@@ -74,6 +74,7 @@ const operationsSpec = path.join(root, 'apps/frontend/operations-admin');
 const viteCliPath = path.join(root, 'node_modules/vite/bin/vite.js');
 const playwrightCliPath = path.join(root, 'node_modules/playwright/cli.js');
 const now = () => new Date().toISOString();
+const L2_FRONTEND_MODES = new Set(['dev', 'preview']);
 
 const L2_SUITE_CONFIGS = Object.freeze({
   'catalog-inventory': Object.freeze({
@@ -303,6 +304,16 @@ function fail(code, detail = '') {
   const error = new Error(detail ? `${code}:${detail}` : code);
   error.code = code;
   throw error;
+}
+
+function validateFrontendMode(value) {
+  const mode = String(value ?? '');
+  if (!L2_FRONTEND_MODES.has(mode)) fail('L2_FRONTEND_MODE_INVALID', mode);
+  return mode;
+}
+
+function requestedFrontendMode() {
+  return validateFrontendMode(process.env.R5_L2_FRONTEND_MODE ?? 'dev');
 }
 
 export function l2FixtureStageSuffix(value) {
@@ -1040,7 +1051,17 @@ function validateSalesMenuContractDenominators({
   const cases = activeCaseIds(execution);
   const scenarioRows = Array.isArray(scenarios.scenarios) ? scenarios.scenarios : [];
   const scenarioCaseIds = scenarioRows.flatMap(scenario => (scenario.cases ?? []).map(entry => entry.caseId));
-  if (scenarioRows.length !== 16 || scenarioCaseIds.length !== 16) fail('SALES_MENU_L2_POLICY_DENOMINATOR_INVALID');
+  const expectedScenarioCount = Number(scenarios.scenarioCount);
+  const expectedCaseCount = Number(scenarios.caseCount);
+  if (
+    !Number.isInteger(expectedScenarioCount) ||
+    expectedScenarioCount <= 0 ||
+    scenarioRows.length !== expectedScenarioCount ||
+    !Number.isInteger(expectedCaseCount) ||
+    expectedCaseCount <= 0 ||
+    scenarioCaseIds.length !== expectedCaseCount
+  )
+    fail('SALES_MENU_L2_POLICY_DENOMINATOR_INVALID');
   if (fixture.kind !== 'sales-menu-l2-fixture' || fixture.fixtureClass !== 'TEST' || fixture.seedRuntimeInput !== false)
     fail('SALES_MENU_L2_FIXTURE_BOUNDARY_INVALID');
   if (
@@ -1063,13 +1084,13 @@ function validateSalesMenuContractDenominators({
   if (
     bindings.kind !== 'sales-menu-l2-locator-bindings' ||
     bindings.bindingMode !== 'CASE_PARAMETER_CONTROL_KEYS' ||
-    bindings.caseCount !== 16 ||
+    bindings.caseCount !== expectedCaseCount ||
     bindings.noSeedRuntimeInput !== true ||
     Object.keys(bindings.controls ?? {}).length === 0
   )
     fail('SALES_MENU_L2_BINDINGS_INVALID');
   const timingRows = Array.isArray(timing.cases) ? timing.cases : [];
-  if (timingRows.length !== 16) fail('SALES_MENU_L2_TIMING_DENOMINATOR_INVALID');
+  if (timingRows.length !== expectedCaseCount) fail('SALES_MENU_L2_TIMING_DENOMINATOR_INVALID');
   if (cases.length > 0 && cases.some(id => !scenarioCaseIds.includes(id)))
     fail('SALES_MENU_L2_ACTIVE_CASE_NOT_IN_POLICY');
   return Object.freeze({
@@ -1204,6 +1225,7 @@ export function buildIncompleteExecutionManifest({
     kind: config.executionManifestKind,
     runId: state.identity.runId,
     topology: 'LOCAL_SPRING_LOCAL_VITE_LOCAL_PLAYWRIGHT_REMOTE_DB_ASSET_TUNNEL',
+    frontendMode: state.frontendMode ?? null,
     discovered: 0,
     selected: activeCaseIds.length,
     results: 0,
@@ -1335,14 +1357,17 @@ function createDiagnostics(runDirectory, identity, credentials) {
   const events = path.join(runDirectory, 'http-request-events.jsonl');
   const dbEvents = path.join(runDirectory, 'db-operation-events.jsonl');
   const dictionary = path.join(runDirectory, 'statement-dictionary.json');
+  const debugEvents = path.join(runDirectory, 'browser-debug-events.jsonl');
   privateWrite(events, '');
   privateWrite(dbEvents, '');
   privateWrite(dictionary, {});
+  privateWrite(debugEvents, '');
   const values = credentials.values;
   return {
     events,
     dbEvents,
     dictionary,
+    debugEvents,
     secret: values.V2S_L2_DIAGNOSTIC_SECRET,
     hmac: values.V2S_DB_OPERATIONS_HMAC_KEY,
     runId: identity.runId,
@@ -1413,6 +1438,7 @@ export function buildReadinessManifest({
   credentialsPath,
   ownerFixturePath,
   sourceByteBinding,
+  frontendMode = 'dev',
   status = 'PASS',
   firstFailure = null,
   lastKnownGood = 'CONTRACT_DENOMINATORS',
@@ -1470,6 +1496,7 @@ export function buildReadinessManifest({
     namespace: identity.namespace,
     database: identity.database,
     assetPrefix: identity.assetPrefix,
+    frontendMode: validateFrontendMode(frontendMode),
     ports,
     remote,
     denominators,
@@ -1480,6 +1507,7 @@ export function buildReadinessManifest({
       eventsPath: publicPath(diagnostics?.events),
       databaseOperationsPath: publicPath(diagnostics?.dbEvents),
       statementDictionaryPath: publicPath(diagnostics?.dictionary),
+      debugEventsPath: publicPath(diagnostics?.debugEvents),
     },
     credentialsFile: publicPath(credentialsPath),
     ownerFixturePath: publicPath(ownerFixturePath),
@@ -1595,26 +1623,106 @@ function frontendLogPath(runDirectory, name, refreshIndex = 0) {
   return path.join(runDirectory, `${name}${suffix}.log`);
 }
 
-async function startLocalFrontendProcesses({ports, runDirectory, refreshIndex = 0}) {
+function frontendBuildDirectory(runDirectory, name, refreshIndex = 0) {
+  const suffix = refreshIndex > 0 ? `.refresh-${refreshIndex}` : '';
+  return path.join(runDirectory, 'frontend-build', `${name}${suffix}`);
+}
+
+function frontendBuildLogPath(runDirectory, name, refreshIndex = 0) {
+  const suffix = refreshIndex > 0 ? `.refresh-${refreshIndex}` : '';
+  return path.join(runDirectory, `${name}${suffix}.build.log`);
+}
+
+function buildLocalFrontendDistribution({name, appRoot, buildDirectory, env, logPath}) {
+  ensureDirectory(buildDirectory);
+  const result = spawnSync(process.execPath, [viteCliPath, 'build', '--outDir', buildDirectory, '--emptyOutDir'], {
+    cwd: appRoot,
+    encoding: 'utf8',
+    env,
+    maxBuffer: 16 * 1024 * 1024,
+    timeout: 180_000,
+  });
+  const output = `${result.stdout ?? ''}${result.stderr ? `\n${result.stderr}` : ''}`;
+  privateWrite(logPath, output);
+  if (result.error) fail('L2_FRONTEND_BUILD_FAILED', `${name}:${compact(result.error.code ?? result.error.message)}`);
+  if (result.signal) fail('L2_FRONTEND_BUILD_FAILED', `${name}:${result.signal}`);
+  if (result.status !== 0) fail('L2_FRONTEND_BUILD_FAILED', `${name}:EXIT_${result.status}`);
+  if (!existsSync(path.join(buildDirectory, 'index.html'))) fail('L2_FRONTEND_BUILD_OUTPUT_MISSING', name);
+}
+
+function startLocalFrontendProcess({
+  name,
+  port,
+  appRoot,
+  gatewayProxyTarget,
+  runDirectory,
+  refreshIndex,
+  frontendMode,
+  runId,
+}) {
+  const mode = validateFrontendMode(frontendMode);
+  const env = {
+    ...process.env,
+    [name === 'platform-admin-vite' ? 'VITE_PLATFORM_GATEWAY_PROXY_TARGET' : 'VITE_OPERATIONS_GATEWAY_PROXY_TARGET']:
+      gatewayProxyTarget,
+    // The managed run owns this opt-in. It makes the existing admin-ui
+    // foundation logger visible in preview builds without changing ordinary
+    // local preview/build behavior.
+    VITE_FRONTEND_DEBUG_LOGS: process.env.R5_L2_FRONTEND_DEBUG_LOGS ?? 'true',
+    VITE_FRONTEND_DEBUG_RUN_ID: runId,
+  };
+  let args;
+  if (mode === 'preview') {
+    const buildDirectory = frontendBuildDirectory(runDirectory, name.replace(/-vite$/, ''), refreshIndex);
+    buildLocalFrontendDistribution({
+      name,
+      appRoot,
+      buildDirectory,
+      env,
+      logPath: frontendBuildLogPath(runDirectory, name, refreshIndex),
+    });
+    args = [
+      viteCliPath,
+      'preview',
+      '--host',
+      '0.0.0.0',
+      '--port',
+      String(port),
+      '--strictPort',
+      '--outDir',
+      buildDirectory,
+    ];
+  } else {
+    args = [viteCliPath, '--host', '0.0.0.0', '--port', String(port)];
+  }
+  return spawnManaged(name, process.execPath, args, env, frontendLogPath(runDirectory, name, refreshIndex), appRoot);
+}
+
+async function startLocalFrontendProcesses({ports, runDirectory, refreshIndex = 0, frontendMode, runId}) {
+  const mode = validateFrontendMode(frontendMode);
   const started = [];
   try {
-    const platform = spawnManaged(
-      'platform-admin-vite',
-      process.execPath,
-      [viteCliPath, '--host', '0.0.0.0', '--port', String(ports.platform)],
-      {...process.env, VITE_PLATFORM_GATEWAY_PROXY_TARGET: `http://127.0.0.1:${ports.spring}`},
-      frontendLogPath(runDirectory, 'platform-admin-vite', refreshIndex),
-      path.join(root, 'apps/frontend/platform-admin'),
-    );
+    const platform = startLocalFrontendProcess({
+      name: 'platform-admin-vite',
+      port: ports.platform,
+      appRoot: path.join(root, 'apps/frontend/platform-admin'),
+      gatewayProxyTarget: `http://127.0.0.1:${ports.spring}`,
+      runDirectory,
+      refreshIndex,
+      frontendMode: mode,
+      runId,
+    });
     started.push(platform);
-    const operations = spawnManaged(
-      'operations-admin-vite',
-      process.execPath,
-      [viteCliPath, '--host', '0.0.0.0', '--port', String(ports.operations)],
-      {...process.env, VITE_OPERATIONS_GATEWAY_PROXY_TARGET: `http://127.0.0.1:${ports.spring}`},
-      frontendLogPath(runDirectory, 'operations-admin-vite', refreshIndex),
-      operationsSpec,
-    );
+    const operations = startLocalFrontendProcess({
+      name: 'operations-admin-vite',
+      port: ports.operations,
+      appRoot: operationsSpec,
+      gatewayProxyTarget: `http://127.0.0.1:${ports.spring}`,
+      runDirectory,
+      refreshIndex,
+      frontendMode: mode,
+      runId,
+    });
     started.push(operations);
     await waitForLog(platform, 'Local:');
     await waitForLog(operations, 'Local:');
@@ -1628,7 +1736,7 @@ async function startLocalFrontendProcesses({ports, runDirectory, refreshIndex = 
   }
 }
 
-async function startLocalRuntime({identity, ports, host, credentials, runDirectory, diagnostics}) {
+async function startLocalRuntime({identity, ports, host, credentials, runDirectory, diagnostics, frontendMode}) {
   const occupied = [ports.spring, ports.db, ports.asset, ports.platform, ports.operations].flatMap(port =>
     listenerPids(port).map(pid => ({port, pid})),
   );
@@ -1649,7 +1757,12 @@ async function startLocalRuntime({identity, ports, host, credentials, runDirecto
     );
     started.push(spring);
     await waitForLog(spring, 'Started CateringV2sApplication');
-    const frontend = await startLocalFrontendProcesses({ports, runDirectory});
+    const frontend = await startLocalFrontendProcesses({
+      ports,
+      runDirectory,
+      frontendMode,
+      runId: identity.runId,
+    });
     return {tunnel, spring, ...frontend, appEnv};
   } catch (error) {
     error.cleanupErrors = [
@@ -1661,6 +1774,7 @@ async function startLocalRuntime({identity, ports, host, credentials, runDirecto
 }
 
 async function refreshLocalFrontendProcesses(state) {
+  const frontendMode = validateFrontendMode(state.frontendMode);
   const frontendNames = new Set(['platform-admin-vite', 'operations-admin-vite']);
   const frontends = (Array.isArray(state.processes) ? state.processes : []).filter(process =>
     frontendNames.has(process?.name),
@@ -1685,6 +1799,8 @@ async function refreshLocalFrontendProcesses(state) {
     ports: state.ports,
     runDirectory: state.runDirectory,
     refreshIndex,
+    frontendMode,
+    runId: state.identity.runId,
   });
   const replacementByName = new Map([
     [frontend.platform.name, frontend.platform],
@@ -1978,15 +2094,21 @@ function makeDiagnosticManifest(identity, diagnostics) {
   };
 }
 
-function makeTestLogin(identity, credentials) {
+function makeTestLogin(identity, credentials = null) {
+  const digest = sha256(identity.runId);
+  const values = credentials?.values;
   return {
     platformUsername: 'root',
-    platformPassword: `l2-platform-unused-${sha256(identity.runId).slice(0, 20)}`,
-    operationsUsername: credentials.values.V2S_L2_OPERATIONS_LOGIN,
-    operationsPassword: credentials.values.V2S_L2_OPERATIONS_PASSWORD,
-    headOperationsUsername: credentials.values.V2S_L2_HEAD_OPERATIONS_LOGIN,
-    headOperationsPassword: credentials.values.V2S_L2_HEAD_OPERATIONS_PASSWORD,
-    otp: credentials.values.V2S_L2_TEST_OTP,
+    platformPassword: `l2-platform-unused-${digest.slice(0, 20)}`,
+    operationsUsername: values?.V2S_L2_OPERATIONS_LOGIN ?? `l2-operations-${digest.slice(0, 12)}`,
+    operationsPassword: values?.V2S_L2_OPERATIONS_PASSWORD ?? `l2-operations-password-${digest.slice(0, 28)}`,
+    operationsReadonlyUsername:
+      values?.V2S_L2_OPERATIONS_READONLY_LOGIN ?? `l2-operations-readonly-${digest.slice(0, 12)}`,
+    operationsReadonlyPassword:
+      values?.V2S_L2_OPERATIONS_READONLY_PASSWORD ?? `l2-operations-readonly-password-${digest.slice(0, 24)}`,
+    headOperationsUsername: values?.V2S_L2_HEAD_OPERATIONS_LOGIN ?? `l2-head-${digest.slice(0, 12)}`,
+    headOperationsPassword: values?.V2S_L2_HEAD_OPERATIONS_PASSWORD ?? `l2-head-password-${digest.slice(0, 24)}`,
+    otp: values?.V2S_L2_TEST_OTP ?? '246810',
   };
 }
 
@@ -2092,6 +2214,7 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
           'BC-ORG-TENANT-CREATE',
           'BC-ORG-TENANT-STATUS',
           'BC-BUSINESS-CHANNEL-PROJECT-EDIT',
+          'BC-BUSINESS-CHANNEL-STORE-EDIT',
         ],
       },
     },
@@ -2119,6 +2242,26 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
     },
   );
   const storeRoleId = requiredObjectValue(storeRole.json, ['id', 'roleId'], 'L2_STORE_ROLE_REF_MISSING');
+  const storeReadonlyRole = await request(
+    stage('store-readonly-role'),
+    'createWorkspaceRole',
+    {groupWorkspaceKey: workspaceKey},
+    {
+      cookie: platformCookie,
+      expected: [201],
+      body: {
+        name: 'L2 销售菜单只读用户',
+        serviceNodeType: 'STORE',
+        pageAccessKeys: ['PG-SALES-MENU-STORE'],
+        capabilityKeys: [],
+      },
+    },
+  );
+  const storeReadonlyRoleId = requiredObjectValue(
+    storeReadonlyRole.json,
+    ['id', 'roleId'],
+    'L2_STORE_READONLY_ROLE_REF_MISSING',
+  );
   const headCompanyRole = await request(
     stage('head-company-role'),
     'createWorkspaceRole',
@@ -2350,6 +2493,15 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
     storeRoleId,
     credentials.values.V2S_L2_OPERATIONS_LOGIN,
     credentials.values.V2S_L2_OPERATIONS_PASSWORD,
+  );
+  await completeInvitation(
+    'store-readonly',
+    '+8613800000026',
+    'STORE',
+    org.storeRef,
+    storeReadonlyRoleId,
+    credentials.values.V2S_L2_OPERATIONS_READONLY_LOGIN,
+    credentials.values.V2S_L2_OPERATIONS_READONLY_PASSWORD,
   );
 
   const operationsLogin = await request(
@@ -4291,9 +4443,10 @@ async function bootstrapSalesMenuFacts({identity, base}) {
     });
   }
 
-  const createTemplate = async (orderKind, dineInForm) => {
+  const createTemplate = async (orderKind, dineInForm, operatorKind = 'STORE') => {
+    const templateKey = `${operatorKind}-${orderKind}`;
     const created = await request(
-      stage(`channel-template-${orderKind}`),
+      stage(`channel-template-${templateKey}`),
       'createOperationsBusinessChannelTemplate',
       {
         groupWorkspaceKey: workspaceKey,
@@ -4304,9 +4457,9 @@ async function bootstrapSalesMenuFacts({identity, base}) {
         body: {
           projectRef,
           templateName: `销售菜单${orderKind}模板-${suffix}`,
-          templateCode: `SM-${suffix}-${orderKind}`,
+          templateCode: `SM-${suffix}-${templateKey}`,
           accessKind: 'INTERNAL',
-          operatorKind: 'STORE',
+          operatorKind,
           orderKind,
           dineInForm,
           providerCode: null,
@@ -4319,6 +4472,114 @@ async function bootstrapSalesMenuFacts({identity, base}) {
   };
   const takeawayTemplateRef = await createTemplate('TAKEAWAY', null);
   const dineInTemplateRef = await createTemplate('DINE_IN', 'POS');
+  // The auth counterexample is a real PROJECT-owned channel. Its template must
+  // carry the same owner kind; reusing a STORE template makes the owner reject
+  // the request with BUSINESS_SCOPE_EXCEEDED before the scope-isolation case can
+  // be materialized.
+  const projectTakeawayTemplateRef = await createTemplate('TAKEAWAY', null, 'PROJECT');
+  const authFixture = fixture.caseFixtures?.['FIXTURE-SALES-MENU-AUTH'];
+  let scopeIsolationChannels = null;
+  if (authFixture?.foreignProjectChannelFixtureId && authFixture?.foreignStoreChannelFixtureId) {
+    const foreignProjectChannel = await request(
+      stage('auth-foreign-project-channel'),
+      'createOperationsBusinessChannel',
+      {groupWorkspaceKey: workspaceKey},
+      {
+        cookie: groupCookie,
+        expected: [200],
+        body: {
+          templateRef: projectTakeawayTemplateRef,
+          ownerNodeType: 'PROJECT',
+          ownerNodeRef: projectRef,
+          channelCode: `SM-${suffix}-AUTH-PROJECT`,
+          channelName: `销售菜单权限隔离项目入口-${suffix}`,
+          bindingRef: null,
+        },
+      },
+    );
+    const foreignStore = await request(
+      stage('auth-foreign-store'),
+      'createOperationsOrganizationStore',
+      {groupWorkspaceKey: workspaceKey},
+      {
+        cookie: groupCookie,
+        expected: [201],
+        body: {
+          brandId: String(base.org.brandRef),
+          tenantId: String(base.org.tenantRef),
+          headCompanyId: String(base.org.headCompanyRef),
+          code: `L2-AUTH-FOREIGN-STORE-${suffix}`,
+          name: `销售菜单权限隔离门店-${suffix}`,
+          extensionValues: {},
+        },
+      },
+    );
+    const foreignStoreRef = requiredObjectValue(
+      foreignStore.json,
+      ['id', 'storeId', 'nodeRef'],
+      'SALES_MENU_AUTH_FOREIGN_STORE_REF_MISSING',
+    );
+    const groupStoreSession = await request(
+      stage('auth-foreign-store-session'),
+      'getOperationsWorkspaceSessionEntry',
+      {groupWorkspaceKey: workspaceKey},
+      {cookie: groupCookie},
+    );
+    const groupStoreContextVersion = requiredObjectValue(
+      groupStoreSession.json,
+      ['contextVersion'],
+      'SALES_MENU_AUTH_GROUP_STORE_CONTEXT_VERSION_MISSING',
+    );
+    await request(
+      stage('auth-foreign-store-context'),
+      'selectOperationsWorkspaceSessionDataNode',
+      {groupWorkspaceKey: workspaceKey},
+      {
+        cookie: groupCookie,
+        expected: [200],
+        body: {
+          dataNodeRef: foreignStoreRef,
+          dataNodeType: 'STORE',
+          requiredContextVersion: groupStoreContextVersion,
+        },
+      },
+    );
+    const foreignStoreChannel = await request(
+      stage('auth-foreign-store-channel'),
+      'createOperationsBusinessChannel',
+      {groupWorkspaceKey: workspaceKey},
+      {
+        cookie: groupCookie,
+        expected: [200],
+        body: {
+          templateRef: takeawayTemplateRef,
+          ownerNodeType: 'STORE',
+          ownerNodeRef: foreignStoreRef,
+          channelCode: `SM-${suffix}-AUTH-STORE`,
+          channelName: `销售菜单权限隔离门店入口-${suffix}`,
+          bindingRef: null,
+        },
+      },
+    );
+    scopeIsolationChannels = {
+      foreignProjectChannelRef: String(
+        requiredObjectValue(
+          foreignProjectChannel.json,
+          ['channelRef', 'id', 'ref'],
+          'SALES_MENU_AUTH_FOREIGN_PROJECT_CHANNEL_REF_MISSING',
+        ),
+      ),
+      foreignStoreChannelRef: String(
+        requiredObjectValue(
+          foreignStoreChannel.json,
+          ['channelRef', 'id', 'ref'],
+          'SALES_MENU_AUTH_FOREIGN_STORE_CHANNEL_REF_MISSING',
+        ),
+      ),
+    };
+  } else {
+    fail('SALES_MENU_AUTH_SCOPE_FIXTURE_INVALID');
+  }
   const channelRecords = [];
   for (const channel of fixture.channelFixtures) {
     const templateRef = channel.orderKind === 'DINE_IN' ? dineInTemplateRef : takeawayTemplateRef;
@@ -4352,8 +4613,66 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       version: Number(requiredObjectValue(created.json, ['version'], 'SALES_MENU_CHANNEL_VERSION_MISSING')),
     });
   }
-  const primaryChannel = channelRecords[0];
-  const secondaryChannel = channelRecords.at(-1);
+
+  const blockerChannelFixtureId = fixture.caseFixtures?.['FIXTURE-SALES-MENU-BLOCKERS']?.blockerChannelFixtureId;
+  if (blockerChannelFixtureId) {
+    const blockerChannel = channelRecords.find(channel => channel.fixtureId === blockerChannelFixtureId);
+    if (!blockerChannel) fail('SALES_MENU_BLOCKER_CHANNEL_FIXTURE_MISSING', blockerChannelFixtureId);
+    const disabled = await request(
+      stage(`channel-disable-${blockerChannelFixtureId}`),
+      'transitionOperationsBusinessChannelStatus',
+      {groupWorkspaceKey: workspaceKey, channelRef: blockerChannel.ref},
+      {
+        cookie: operationsCookie,
+        expected: [200],
+        body: {status: 'DISABLED', expectedVersion: blockerChannel.version},
+      },
+    );
+    blockerChannel.status = 'DISABLED';
+    blockerChannel.version = Number(
+      requiredObjectValue(disabled.json, ['version'], 'SALES_MENU_BLOCKER_CHANNEL_VERSION_MISSING'),
+    );
+  }
+
+  const readPage = async (operationId, pathParameters, queryParameters, name) => {
+    const response = await request(stage(name), operationId, pathParameters, {
+      cookie: operationsCookie,
+      expected: [200],
+      queryParameters,
+    });
+    return response.json;
+  };
+  const channelPage = await readPage(
+    'getOperationsStoreBusinessChannels',
+    {groupWorkspaceKey: workspaceKey, storeRef},
+    {usage: 'SALES_MENU', pageSize: 20},
+    'channels-read-page-1',
+  );
+  const channelPageRows = salesMenuPageItems(channelPage);
+  const channelCursor = salesMenuNextCursor(channelPage);
+  const channelPage2 = channelCursor
+    ? await readPage(
+        'getOperationsStoreBusinessChannels',
+        {groupWorkspaceKey: workspaceKey, storeRef},
+        {usage: 'SALES_MENU', pageSize: 20, cursor: channelCursor},
+        'channels-read-page-2',
+      )
+    : {items: []};
+  const ownerChannelRows = [...channelPageRows, ...salesMenuPageItems(channelPage2)];
+  const ownerChannelRefs = ownerChannelRows.map(row =>
+    String(requiredObjectValue(row, ['channelRef'], 'SALES_MENU_OWNER_CHANNEL_REF_MISSING')),
+  );
+  if (
+    ownerChannelRefs.length !== 21 ||
+    new Set(ownerChannelRefs).size !== ownerChannelRefs.length ||
+    ownerChannelRefs.some(ref => !channelRecords.some(channel => channel.ref === ref))
+  ) {
+    fail('SALES_MENU_OWNER_CHANNEL_ORDER_READBACK_INVALID');
+  }
+  const ownerOrderedChannels = ownerChannelRefs.map(ref => channelRecords.find(channel => channel.ref === ref));
+  const primaryChannel = ownerOrderedChannels[0];
+  const secondaryChannel = ownerOrderedChannels[1];
+  if (!primaryChannel || !secondaryChannel) fail('SALES_MENU_OWNER_CHANNEL_PRIMARY_FACT_MISSING');
 
   const menuRecords = [];
   for (const menuFixture of fixture.menuFixtures) {
@@ -4535,6 +4854,54 @@ async function bootstrapSalesMenuFacts({identity, base}) {
   );
   primaryMenu.publication = {status: 'PUBLISHED', revision: 1};
 
+  // The browser publish journey needs a real unpublished draft to present an
+  // enabled publish command. Keep the initial publication as the frozen
+  // baseline for the front/status/copy cases, then make one owner-authorized
+  // draft mutation and verify the preview readback before handing facts to
+  // Playwright. This is fixture preparation, not a production fallback.
+  const publishBaselineItem = salesItems[0];
+  if (!publishBaselineItem) fail('SALES_MENU_PUBLISH_BASELINE_ITEM_MISSING');
+  const dirtyDraft = await request(
+    stage('menu-post-publication-draft-update'),
+    'updateOperationsSalesMenuItem',
+    {...primaryPath, salesItemRef: publishBaselineItem.ref},
+    {
+      cookie: operationsCookie,
+      expected: [200],
+      body: {
+        displayNameOverride: `${publishBaselineItem.itemName}-待更新-${suffix}`,
+        saleContent: publishBaselineItem.saleContent,
+        orderingConstraints:
+          publishBaselineItem.shape === 'WEIGHTED'
+            ? {minItemQuantity: null, quantityStep: null}
+            : {minItemQuantity: 1, quantityStep: 1},
+        displayMedia: salesMenuInheritedMedia(),
+        expectedVersion: primaryMenu.draftRevision,
+      },
+    },
+  );
+  primaryMenu.draftRevision = Number(
+    requiredObjectValue(dirtyDraft.json, ['version'], 'SALES_MENU_POST_PUBLICATION_UPDATE_VERSION_MISSING'),
+  );
+  const publishPreview = await request(
+    stage('menu-post-publication-preview'),
+    'getOperationsSalesMenuPublicationPreview',
+    primaryPath,
+    {
+      cookie: operationsCookie,
+      expected: [200],
+      queryParameters: {channelRef: primaryChannel.ref},
+    },
+  );
+  const publishPreviewValue = unwrapResponse(publishPreview.json);
+  if (
+    publishPreviewValue?.hasChanges !== true ||
+    !Array.isArray(publishPreviewValue?.violations) ||
+    publishPreviewValue.violations.length !== 0
+  ) {
+    fail('SALES_MENU_PUBLISH_FIXTURE_NOT_VALID_DIRTY_DRAFT');
+  }
+
   // Mutating browser cases must not share the published primary menu. Catalog
   // L2 uses an independent owner scaffold per case; keep the same boundary here
   // by materializing only the small menu graph each sales-menu case needs.
@@ -4668,30 +5035,6 @@ async function bootstrapSalesMenuFacts({identity, base}) {
     menuFactsByFixture.set(menuFixtureId, {sectionRecords: isolatedSections, salesItems: isolatedItems});
   }
 
-  const readPage = async (operationId, pathParameters, queryParameters, name) => {
-    const response = await request(stage(name), operationId, pathParameters, {
-      cookie: operationsCookie,
-      expected: [200],
-      queryParameters,
-    });
-    return response.json;
-  };
-  const channelPage = await readPage(
-    'getOperationsStoreBusinessChannels',
-    {groupWorkspaceKey: workspaceKey, storeRef},
-    {usage: 'SALES_MENU', pageSize: 20},
-    'channels-read-page-1',
-  );
-  const channelPageRows = salesMenuPageItems(channelPage);
-  const channelCursor = salesMenuNextCursor(channelPage);
-  const channelPage2 = channelCursor
-    ? await readPage(
-        'getOperationsStoreBusinessChannels',
-        {groupWorkspaceKey: workspaceKey, storeRef},
-        {usage: 'SALES_MENU', pageSize: 20, cursor: channelCursor},
-        'channels-read-page-2',
-      )
-    : {items: []};
   const menuPage = await readPage(
     'getOperationsSalesMenus',
     {groupWorkspaceKey: workspaceKey, storeRef},
@@ -4754,6 +5097,7 @@ async function bootstrapSalesMenuFacts({identity, base}) {
   for (const row of scenarioRows) {
     const caseFixture = fixture.caseFixtures[row.fixtureRef] ?? {};
     const menuFixtureId = caseFixture.menuFixtureId ?? 'MENU-01';
+    const channelFixtureId = caseFixture.channelFixtureId ?? 'CHANNEL-01';
     const candidateFixtureId = caseFixture.candidateFixtureId ?? caseFixture.candidateFixtureIds?.[0] ?? 'CANDIDATE-01';
     const candidate = candidateByFixture[candidateFixtureId] ?? candidateRecords[0];
     const menuFacts = menuFactsByFixture.get(menuFixtureId) ?? menuFactsByFixture.get(primaryMenu.fixtureId);
@@ -4761,6 +5105,13 @@ async function bootstrapSalesMenuFacts({identity, base}) {
     const salesItem = menuFacts.salesItems.find(item => item.candidateFixtureId === candidate.fixtureId);
     const menu = menuByFixture[menuFixtureId] ?? primaryMenu;
     const menuSection = menuFacts.sectionRecords[0];
+    const channel = channelRecords.find(channelRow => channelRow.fixtureId === channelFixtureId);
+    if (!channel) fail('SALES_MENU_CASE_CHANNEL_FIXTURE_MISSING', `${row.caseId}:${channelFixtureId}`);
+    const blockerChannel = caseFixture.blockerChannelFixtureId
+      ? channelRecords.find(channelRow => channelRow.fixtureId === caseFixture.blockerChannelFixtureId)
+      : undefined;
+    if (caseFixture.blockerChannelFixtureId && !blockerChannel)
+      fail('SALES_MENU_CASE_BLOCKER_CHANNEL_FIXTURE_MISSING', `${row.caseId}:${caseFixture.blockerChannelFixtureId}`);
     cases[row.caseId] = {
       fixtureRef: row.fixtureRef,
       scope: {kind: 'STORE', regionName: 'L2验证大区', projectName: 'L2验证项目', storeName: 'L2验证门店'},
@@ -4769,7 +5120,8 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       menuRef: menu.ref,
       menuName: menu.name,
       menuVersion: menu.draftRevision,
-      channelRef: primaryChannel.ref,
+      channelRef: channel.ref,
+      ...(blockerChannel ? {blockerChannelRef: blockerChannel.ref} : {}),
       secondaryChannelRef: secondaryChannel.ref,
       sectionRef: menuSection?.ref,
       sectionRefs: menuFacts.sectionRecords.map(section => section.ref),
@@ -4787,7 +5139,8 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       candidateName: candidate.itemName,
       defaultPriceCents: candidate.defaultPriceCents,
       skuRefs: candidate.skus.map(sku => sku.skuRef),
-      channelRefs: channelRecords.map(channel => channel.ref),
+      ...(row.fixtureRef === 'FIXTURE-SALES-MENU-AUTH' ? scopeIsolationChannels : {}),
+      channelRefs: ownerChannelRefs,
       menuRefs: menuRecords.map(menuRow => menuRow.ref),
       salesItemRefs: menuFacts.salesItems.map(item => item.ref),
       expectedChannelCount: 21,
@@ -4810,7 +5163,7 @@ async function bootstrapSalesMenuFacts({identity, base}) {
     dataNodeRef,
     brandRef,
     category: {categoryRefs: Object.fromEntries(categoryRefs)},
-    channels: channelRecords,
+    channels: ownerOrderedChannels,
     menus: menuRecords,
     candidates: candidateRecords,
     items: salesItems,
@@ -4831,7 +5184,7 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       expectedDraftItemCount: 21,
       expectedOperationRecordCount: operationRows.length,
       supportedChannelBoundary: {accessKind: 'INTERNAL', operatorKind: 'STORE', orderKinds: ['DINE_IN', 'TAKEAWAY']},
-      channels: channelRecords,
+      channels: ownerOrderedChannels,
       menus: menuRecords,
       candidates: candidateRecords,
       sections: sectionRecords,
@@ -5050,6 +5403,9 @@ function createPlaywrightEnvironment({state, credentials, suite = state.suite ??
     R5_L2_OPERATIONS_LOGIN_NAME: projected.V2S_L2_OPERATIONS_LOGIN,
     R5_L2_OPERATIONS_LOGIN_PASSWORD: projected.V2S_L2_OPERATIONS_PASSWORD,
     R5_L2_OPERATIONS_ROLE_LABEL: 'L2 门店商品管理员',
+    R5_L2_OPERATIONS_READONLY_LOGIN_NAME: projected.V2S_L2_OPERATIONS_READONLY_LOGIN,
+    R5_L2_OPERATIONS_READONLY_LOGIN_PASSWORD: projected.V2S_L2_OPERATIONS_READONLY_PASSWORD,
+    R5_L2_OPERATIONS_READONLY_ROLE_LABEL: 'L2 销售菜单只读用户',
     R5_L2_HEAD_OPERATIONS_LOGIN_NAME: projected.V2S_L2_HEAD_OPERATIONS_LOGIN,
     R5_L2_HEAD_OPERATIONS_LOGIN_PASSWORD: projected.V2S_L2_HEAD_OPERATIONS_PASSWORD,
     R5_L2_HEAD_OPERATIONS_ROLE_LABEL: 'L2 总公司商品管理员',
@@ -5057,6 +5413,7 @@ function createPlaywrightEnvironment({state, credentials, suite = state.suite ??
     R5_L2_RUN_ID: state.identity.runId,
     R5_L2_SECRET: projected.V2S_L2_DIAGNOSTIC_SECRET,
     R5_L2_JOIN_EVENTS: path.join(state.runDirectory, 'l2-join-events.jsonl'),
+    R5_L2_DEBUG_EVENTS: state.diagnostics?.debugEvents ?? '',
     [config.ownerFixtureEnv]: state.ownerFixturePath,
     [config.casesEnv]: config.scenarioPath,
     [config.bindingsEnv]: config.bindingPath,
@@ -5761,6 +6118,7 @@ function buildL2JoinArtifact({
 
 async function readiness(suite = 'catalog-inventory') {
   const config = suiteConfig(suite);
+  const frontendMode = requestedFrontendMode();
   ensureDirectory(runtimeRoot);
   const identity = makeRunIdentity();
   const trust = resolveTrustedRemoteHost(process.env);
@@ -5769,16 +6127,7 @@ async function readiness(suite = 'catalog-inventory') {
   const runDirectory = path.join(runtimeRoot, identity.runId);
   const playwrightArtifactDirectory = playwrightArtifactDirectoryForRun(runDirectory);
   const assetStorage = readRemoteAssetCredentials(trust.host);
-  const suffix = sha256(identity.runId).slice(0, 16);
-  const testLogin = {
-    platformUsername: 'root',
-    platformPassword: `l2-platform-password-${sha256(identity.runId).slice(0, 24)}`,
-    operationsUsername: `l2-operations-${sha256(identity.runId).slice(0, 12)}`,
-    operationsPassword: `l2-operations-password-${sha256(identity.runId).slice(0, 28)}`,
-    headOperationsUsername: `l2-head-${sha256(identity.runId).slice(0, 12)}`,
-    headOperationsPassword: `l2-head-password-${sha256(identity.runId).slice(0, 24)}`,
-    otp: '246810',
-  };
+  const testLogin = makeTestLogin(identity);
   const created = createRunCredentials({
     runtimeRoot,
     runId: identity.runId,
@@ -5815,7 +6164,15 @@ async function readiness(suite = 'catalog-inventory') {
       username: credentials.values.CATERING_BUSINESS_DB_USERNAME,
       password: credentials.values.CATERING_BUSINESS_DB_PASSWORD,
     });
-    runtime = await startLocalRuntime({identity, ports, host: trust.host, credentials, runDirectory, diagnostics});
+    runtime = await startLocalRuntime({
+      identity,
+      ports,
+      host: trust.host,
+      credentials,
+      runDirectory,
+      diagnostics,
+      frontendMode,
+    });
     remoteBootstrapRoot(trust.host, identity.database, credentials.values.V2S_L2_PLATFORM_PASSWORD);
     const catalogBootstrapCaseIds = catalogBootstrapCaseIdsForSuite(suite, activeExecutionCaseIds);
     bootstrap = await bootstrapOwnerFacts({
@@ -5871,6 +6228,7 @@ async function readiness(suite = 'catalog-inventory') {
       credentialsPath: created.paths.credentialsPath,
       ownerFixturePath,
       sourceByteBinding,
+      frontendMode,
       status: 'PASS',
       firstFailure: null,
       lastKnownGood: 'OWNER_HTTP_FIXTURE_READY',
@@ -5898,6 +6256,7 @@ async function readiness(suite = 'catalog-inventory') {
       workspaceKey: bootstrap.workspaceKey,
       ports,
       remote: {host: trust.host, fingerprint: trust.fingerprint, allowlistVersion: trust.allowlistVersion},
+      frontendMode,
       diagnostics,
       processes,
       activeCaseIds: [...activeExecutionCaseIds],
@@ -5932,6 +6291,7 @@ async function readiness(suite = 'catalog-inventory') {
       credentialsPath: created.paths.credentialsPath,
       ownerFixturePath,
       sourceByteBinding,
+      frontendMode,
       status: 'FAIL',
       firstFailure,
       lastKnownGood: runtime ? 'LOCAL_RUNTIME_STARTED' : 'REMOTE_NAMESPACE_PROVISIONED',
@@ -6294,6 +6654,7 @@ async function runBrowserL2(suite = 'catalog-inventory') {
       joinArtifactPath: repositoryRelativePath(joinPath),
       diagnosticEventsPath: repositoryRelativePath(state.diagnostics.events),
       databaseOperationsPath: repositoryRelativePath(state.diagnostics.dbEvents),
+      debugEventsPath: state.diagnostics?.debugEvents ? repositoryRelativePath(state.diagnostics.debugEvents) : null,
       firstFailure,
       lastKnownGood,
       brokenBoundary: firstFailure,
@@ -6390,6 +6751,21 @@ async function runBrowserL2(suite = 'catalog-inventory') {
 }
 
 function salesMenuSelfTest() {
+  const testLogin = makeTestLogin({runId: 'sales-menu-l2-self-test'});
+  const requiredTestLoginFields = [
+    'platformUsername',
+    'platformPassword',
+    'operationsUsername',
+    'operationsPassword',
+    'operationsReadonlyUsername',
+    'operationsReadonlyPassword',
+    'headOperationsUsername',
+    'headOperationsPassword',
+    'otp',
+  ];
+  if (requiredTestLoginFields.some(field => typeof testLogin[field] !== 'string')) {
+    fail('SALES_MENU_L2_RUNTIME_TEST_LOGIN_INVALID');
+  }
   const policy = readJson(salesMenuScenarioPath);
   const fixture = readJson(salesMenuFixturePath);
   const bindings = readJson(salesMenuBindingPath);
@@ -6397,18 +6773,24 @@ function salesMenuSelfTest() {
   const execution = readJson(salesMenuExecutionPath);
   const timing = readJson(salesMenuTimingPath);
   if (!existsSync(salesMenuSpecPath)) fail('SALES_MENU_L2_SPEC_MISSING');
+  const salesMenuScenarioCount = Number(policy.scenarioCount);
+  const salesMenuCaseCount = Number(policy.caseCount);
+  const salesMenuOperationCount = Array.isArray(policy.operationCoverage) ? policy.operationCoverage.length : 0;
   if (
     policy.kind !== 'sales-menu-l2-scenarios' ||
-    policy.caseCount !== 16 ||
+    !Number.isInteger(salesMenuScenarioCount) ||
+    salesMenuScenarioCount <= 0 ||
+    !Number.isInteger(salesMenuCaseCount) ||
+    salesMenuCaseCount <= 0 ||
     !Array.isArray(policy.scenarios) ||
-    policy.scenarios.length !== 16 ||
+    policy.scenarios.length !== salesMenuScenarioCount ||
     !Array.isArray(policy.operationCoverage) ||
-    policy.operationCoverage.length !== 31
+    salesMenuOperationCount <= 0
   ) {
     fail('SALES_MENU_L2_POLICY_DENOMINATOR_INVALID');
   }
   const caseRows = policy.scenarios.flatMap(scenario => scenario.cases ?? []);
-  if (caseRows.length !== 16 || new Set(caseRows.map(row => row.caseId)).size !== 16)
+  if (caseRows.length !== salesMenuCaseCount || new Set(caseRows.map(row => row.caseId)).size !== salesMenuCaseCount)
     fail('SALES_MENU_L2_CASE_EXACT_SET_INVALID');
   if (
     fixture.kind !== 'sales-menu-l2-fixture' ||
@@ -6419,14 +6801,14 @@ function salesMenuSelfTest() {
     fixture.channelFixtures?.length !== 21 ||
     fixture.menuFixtures?.length !== 21 ||
     fixture.candidateFixtures?.length !== 21 ||
-    Object.keys(fixture.caseFixtures ?? {}).length !== 16
+    Object.keys(fixture.caseFixtures ?? {}).length !== salesMenuCaseCount
   ) {
     fail('SALES_MENU_L2_FIXTURE_DENOMINATOR_INVALID');
   }
   if (
     bindings.kind !== 'sales-menu-l2-locator-bindings' ||
     bindings.bindingMode !== 'CASE_PARAMETER_CONTROL_KEYS' ||
-    bindings.caseCount !== 16 ||
+    bindings.caseCount !== salesMenuCaseCount ||
     bindings.noSeedRuntimeInput !== true ||
     Object.keys(bindings.controls ?? {}).length === 0
   ) {
@@ -6435,7 +6817,7 @@ function salesMenuSelfTest() {
   if (
     candidate.kind !== 'sales-menu-l2-activation-candidate' ||
     candidate.noSeedRuntimeInput !== true ||
-    candidate.approvedCaseIds?.length !== 16 ||
+    candidate.approvedCaseIds?.length !== salesMenuCaseCount ||
     candidate.candidateDigest !== candidateDigest(candidate)
   ) {
     fail('SALES_MENU_L2_CANDIDATE_INVALID');
@@ -6450,9 +6832,9 @@ function salesMenuSelfTest() {
   }
   if (
     timing.kind !== 'sales-menu-l2-timing-budget' ||
-    timing.caseCount !== 16 ||
+    timing.caseCount !== salesMenuCaseCount ||
     !Array.isArray(timing.cases) ||
-    timing.cases.length !== 16 ||
+    timing.cases.length !== salesMenuCaseCount ||
     timing.cases.some(row => !Number.isFinite(Number(row.caseTimeoutMs)) || Number(row.caseTimeoutMs) <= 0)
   ) {
     fail('SALES_MENU_L2_TIMING_INVALID');
@@ -6461,10 +6843,11 @@ function salesMenuSelfTest() {
   if (policy.operationCoverage.some(row => !operations.has(row.operationId)))
     fail('SALES_MENU_L2_OPERATION_ROUTE_MISSING');
   const active = activeCaseIds(execution);
-  if (execution.mode === 'INCREMENTAL' && active.length !== 16) fail('SALES_MENU_L2_ACTIVE_CASE_SET_INVALID');
+  if (execution.mode === 'INCREMENTAL' && active.length !== salesMenuCaseCount)
+    fail('SALES_MENU_L2_ACTIVE_CASE_SET_INVALID');
   if (execution.mode === 'FRAMEWORK_ONLY' && active.length !== 0) fail('SALES_MENU_L2_FRAMEWORK_HAS_ACTIVE_CASES');
   process.stdout.write(
-    `BROWSER_L2_SALES_MENU_RUNTIME_SELF_TEST=PASS; POLICY=16; OPERATIONS=31; DATASETS=21/21/21; TARGET_CASES=${active.length}; MODE=${execution.mode}\n`,
+    `BROWSER_L2_SALES_MENU_RUNTIME_SELF_TEST=PASS; POLICY=${salesMenuCaseCount}; OPERATIONS=${salesMenuOperationCount}; DATASETS=21/21/21; TARGET_CASES=${active.length}; MODE=${execution.mode}\n`,
   );
 }
 

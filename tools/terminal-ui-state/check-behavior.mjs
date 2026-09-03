@@ -248,7 +248,80 @@ const mutations = Object.freeze([
       "    : {allowed: true, reasonCode: 'allowed'}",
     ),
   },
+  {
+    id: 'A19',
+    testNamePattern: 'allows a layer-only',
+    testFile: 'test/catalog.test.ts',
+    apply: (sandbox) => replaceOnce(
+      path.join(sandbox.uiStateRoot, 'src/foundations/catalog.ts'),
+      'entry.containerKeys.includes(containerKey)',
+      'true',
+    ),
+  },
+  {
+    id: 'A20_CONTAINER_EMPTY',
+    testNamePattern: 'keeps only containerKeys',
+    testFile: 'test/catalog.test.ts',
+    apply: (sandbox) => replaceOnce(
+      path.join(sandbox.uiStateRoot, 'src/foundations/catalog.ts'),
+      "assertStringArray(raw.containerKeys, 'catalog.containerKeys', true)",
+      "assertStringArray(raw.containerKeys, 'catalog.containerKeys', false)",
+    ),
+  },
+  {
+    id: 'A20_DIMENSIONS_NON_EMPTY',
+    testNamePattern: 'keeps only containerKeys',
+    testFile: 'test/catalog.test.ts',
+    apply: (sandbox) => replaceOnce(
+      path.join(sandbox.uiStateRoot, 'src/foundations/catalog.ts'),
+      '(!allowEmpty && value.length === 0)',
+      'false',
+    ),
+  },
+  {
+    id: 'A21',
+    testNamePattern: 'rejects React-like and non-enumerable additions',
+    testFile: 'test/catalog.test.ts',
+    apply: (sandbox) => replaceOnce(
+      path.join(sandbox.uiStateRoot, 'src/foundations/catalog.ts'),
+      'actual.length !== approvedEntryKeys.length || approvedEntryKeys.some(key => !actual.includes(key))',
+      'approvedEntryKeys.some(key => !actual.includes(key))',
+    ),
+  },
+  {
+    id: 'S7_CONTAINER_ITEM_NON_EMPTY',
+    testNamePattern: 'rejects missing, invalid, and duplicate container key entries',
+    testFile: 'test/catalog.test.ts',
+    apply: (sandbox) => replaceOnce(
+      path.join(sandbox.uiStateRoot, 'src/foundations/catalog.ts'),
+      "typeof item !== 'string' || item.trim().length === 0",
+      "typeof item !== 'string' || false",
+    ),
+  },
+  {
+    id: 'S7_CONTAINER_ITEM_UNIQUE',
+    testNamePattern: 'rejects missing, invalid, and duplicate container key entries',
+    testFile: 'test/catalog.test.ts',
+    apply: (sandbox) => replaceOnce(
+      path.join(sandbox.uiStateRoot, 'src/foundations/catalog.ts'),
+      "if (result.includes(item)) throw new Error(`[ui-state] ${label} contains a duplicate value`)",
+      "if (false) throw new Error(`[ui-state] ${label} contains a duplicate value`)",
+    ),
+  },
 ])
+
+const catalogBaseline = createSandbox()
+try {
+  const result = runVitest(catalogBaseline, 'ui-state catalog', 'test/catalog.test.ts')
+  if (result.status !== 0) {
+    printTail(result.output)
+    throw new Error(`catalog baseline failed with status ${result.status}`)
+  }
+  console.log('UI_STATE_CATALOG_BEHAVIOR_BASELINE=PASS')
+  printTail(result.output)
+} finally {
+  fs.rmSync(catalogBaseline.root, {recursive: true, force: true})
+}
 
 const baseline = createSandbox()
 try {
@@ -267,7 +340,7 @@ for (const mutation of mutations) {
   const sandbox = createSandbox()
   try {
     mutation.apply(sandbox)
-    const result = runVitest(sandbox, mutation.testNamePattern)
+    const result = runVitest(sandbox, mutation.testNamePattern, mutation.testFile)
     if (result.status === 0) {
       printTail(result.output)
       throw new Error(`${mutation.id} mutation did not turn its focused proof red`)

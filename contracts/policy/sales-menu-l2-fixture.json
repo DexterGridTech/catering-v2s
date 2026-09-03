@@ -92,7 +92,9 @@
   ],
   "caseFixtures": {
     "FIXTURE-SALES-MENU-ENTRY": {"channelFixtureIds": ["CHANNEL-01", "CHANNEL-21"], "menuFixtureIds": ["MENU-01", "MENU-02", "MENU-21"]},
-    "FIXTURE-SALES-MENU-SECTIONS": {"menuFixtureId": "MENU-02", "sectionCount": 3, "baselineCandidateFixtureIds": ["CANDIDATE-01"]},
+    "FIXTURE-SALES-MENU-SECTIONS": {"menuFixtureId": "MENU-02", "sectionCount": 3, "baselineCandidateFixtureIds": []},
+    "FIXTURE-SALES-MENU-SECTION-MOVE-DELETE": {"menuFixtureId": "MENU-09", "sectionCount": 3, "baselineCandidateFixtureIds": []},
+    "FIXTURE-SALES-MENU-SECTION-DELETE-NONEMPTY": {"menuFixtureId": "MENU-10", "sectionCount": 1, "baselineCandidateFixtureIds": ["CANDIDATE-01"]},
     "FIXTURE-SALES-MENU-CANDIDATES": {"menuFixtureId": "MENU-03", "sectionCount": 1, "baselineCandidateFixtureIds": ["CANDIDATE-01"], "candidateFixtureIds": ["CANDIDATE-01", "CANDIDATE-21"], "duplicateCandidateFixtureId": "CANDIDATE-01"},
     "FIXTURE-SALES-MENU-DIRECT": {"menuFixtureId": "MENU-04", "sectionCount": 1, "baselineCandidateFixtureIds": ["CANDIDATE-01"], "candidateFixtureId": "CANDIDATE-01", "shape": "ORDINARY"},
     "FIXTURE-SALES-MENU-SKU": {"menuFixtureId": "MENU-05", "sectionCount": 1, "baselineCandidateFixtureIds": ["CANDIDATE-03"], "candidateFixtureId": "CANDIDATE-03", "shape": "SKU"},
@@ -103,10 +105,10 @@
     "FIXTURE-SALES-MENU-MANUAL-STATUS": {"menuFixtureId": "MENU-01", "targetChannelFixtureId": "CHANNEL-01", "unchangedChannelFixtureId": "CHANNEL-21"},
     "FIXTURE-SALES-MENU-MANAGER": {"menuFixtureIds": ["MENU-01", "MENU-02", "MENU-21"]},
     "FIXTURE-SALES-MENU-COPY": {"menuFixtureId": "MENU-01", "excludedFacts": ["publication", "operationRecords", "manualSaleStatus", "inventoryAvailability", "sourceActivation"]},
-    "FIXTURE-SALES-MENU-BLOCKERS": {"menuFixtureId": "MENU-08", "sectionCount": 1, "baselineCandidateFixtureIds": [], "expectedBlockerKinds": ["CHANNEL_DISABLED", "STORE_DISABLED"]},
+    "FIXTURE-SALES-MENU-BLOCKERS": {"menuFixtureId": "MENU-08", "channelFixtureId": "CHANNEL-01", "blockerChannelFixtureId": "CHANNEL-21", "sectionCount": 1, "baselineCandidateFixtureIds": [], "expectedBlockerKinds": ["CHANNEL_DISABLED"], "storeDisabledCoverage": "BACKEND_ACCEPTANCE_ONLY"},
     "FIXTURE-SALES-MENU-RECORDS": {"menuFixtureId": "MENU-01", "minimumRecordCount": 21},
     "FIXTURE-SALES-MENU-FAILURE-RECOVERY": {"menuFixtureId": "MENU-01", "failureSeam": "PLAYWRIGHT_ROUTE_INTERCEPT", "expectedUnchanged": true},
-    "FIXTURE-SALES-MENU-AUTH": {"menuFixtureId": "MENU-01", "foreignChannelFixtureId": "CHANNEL-21", "requiresCapability": "EDIT_STORE_SALES_MENU"}
+    "FIXTURE-SALES-MENU-AUTH": {"menuFixtureId": "MENU-01", "foreignProjectChannelFixtureId": "AUTH-FOREIGN-PROJECT-CHANNEL", "foreignStoreChannelFixtureId": "AUTH-FOREIGN-STORE-CHANNEL", "requiresCapability": "EDIT_STORE_SALES_MENU"}
   },
   "business": {"status": "PENDING_RUNTIME"},
   "cleanup": {"status": "PENDING_RUNTIME"}

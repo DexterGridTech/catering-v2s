@@ -300,10 +300,10 @@ function runCatalogStateBoundary({root}) {
   assertExactList(
     'ui-state catalog approved entry keys',
     approved ?? [],
-    ['partKey', 'rendererKey', 'containerKey', 'displayModes', 'workspaces', 'instanceModes', 'title', 'description'],
+    ['partKey', 'rendererKey', 'containerKeys', 'displayModes', 'workspaces', 'instanceModes', 'title', 'description'],
   )
   const statePathPattern = /(?:types[\\/]content|types[\\/]variable|foundations[\\/]workspaceSlices|foundations[\\/]variableSlices|features[\\/]commands|features[\\/]actors|selectors[\\/])/
-  const forbiddenStateNames = new Set(['title', 'description', 'rendererKey'])
+  const forbiddenStateNames = new Set(['title', 'description', 'rendererKey', 'containerKeys'])
   const leaks = []
   for (const filePath of sourceFiles(root)) {
     const relativePath = path.relative(root, filePath)

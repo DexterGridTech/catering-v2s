@@ -85,6 +85,7 @@ export type {
 
 export type {
   RuntimeStatus,
+  RuntimeSubscriptionListener,
   RuntimeStateInput,
   CreateRuntimeInput,
   Runtime,

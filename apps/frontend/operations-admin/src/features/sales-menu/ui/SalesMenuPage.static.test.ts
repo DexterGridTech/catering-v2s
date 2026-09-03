@@ -73,12 +73,9 @@ const uiTrace: Array<[string, keyof typeof traceSources, string[]]> = [
   [
     'UI-03',
     'section',
-    [
-      "{key: 'up', label: '上移', disabled: !canEdit || !section.canMoveUp}",
-      "onMove(section, event.key === 'up' ? 'UP' : 'DOWN')",
-    ],
+    ["sectionMenuAction(section.salesSectionRef, 'up')", "onMove(section, event.key === 'up' ? 'UP' : 'DOWN')"],
   ],
-  ['UI-04', 'section', ["{key: 'delete', label: '删除分区'", 'onDelete(section)']],
+  ['UI-04', 'section', ["sectionMenuAction(section.salesSectionRef, 'delete')", 'onDelete(section)']],
   [
     'UI-05',
     'candidate',
@@ -88,7 +85,7 @@ const uiTrace: Array<[string, keyof typeof traceSources, string[]]> = [
   [
     'UI-07',
     'editor',
-    ['onDelete(item, stagedReleaseRef.current)', '删除销售项', 'testId(salesMenuTestIds.itemEditor)'],
+    ['onDelete(detail, stagedReleaseRef.current)', '删除销售项', 'testId(salesMenuTestIds.itemEditor)'],
   ],
   ['UI-08', 'draft', ["title: '商品形态'", 'salesMenuProductShapeLabel(row.productShape)']],
   ['UI-09', 'media', ["title: '展示图片'", '<AdminImageCollectionEditor', 'onStageMedia={stageMedia}']],
@@ -97,7 +94,15 @@ const uiTrace: Array<[string, keyof typeof traceSources, string[]]> = [
     'editor',
     ['称重销售商品不显示按份定义的起售量与订购倍数。', "const isWeighted = item.saleContent.kind === 'WEIGHTED'"],
   ],
-  ['UI-11', 'draft', ['SALES_MENU_OPERATION_COLUMN_TITLE', "{key: 'up', label: '上移'", "{key: 'down', label: '下移'"]],
+  [
+    'UI-11',
+    'draft',
+    [
+      'SALES_MENU_OPERATION_COLUMN_TITLE',
+      "itemMenuAction(row.salesItemRef, 'up')",
+      "itemMenuAction(row.salesItemRef, 'down')",
+    ],
+  ],
   ['UI-12', 'page', ['catalogItemRefs: refs', "setFeedback({type: 'success', message: '商品已添加到菜单。'})"]],
   [
     'UI-13',
@@ -114,20 +119,24 @@ const uiTrace: Array<[string, keyof typeof traceSources, string[]]> = [
     'published',
     ["title: '销售状态'", 'salesMenuManualSaleStatusLabel(row.manualSaleStatus)', 'onStatus(row)'],
   ],
-  ['UI-20', 'page', ['菜单动作', '同一经营入口可以同时启用多份菜单']],
+  ['UI-20', 'page', ['生效与时段', '更新到前台', '同一经营入口可以同时启用多份菜单']],
   [
     'UI-21',
     'draft',
     ['SALES_MENU_OPERATION_COLUMN_TITLE', "testId(salesMenuTestIds.itemAction(row.salesItemRef, 'menu'))"],
   ],
-  ['UI-22', 'editor', ['onDelete(item, stagedReleaseRef.current)', '删除销售项']],
+  ['UI-22', 'editor', ['onDelete(detail, stagedReleaseRef.current)', '删除销售项']],
   ['UI-23', 'editor', ['onClick={lifecycle.requestClose}', '关闭']],
-  ['UI-24', 'page', ['commands.activate(', "label: selectedMenu.activation?.status === 'ENABLED' ? '停用' : '启用'"]],
-  ['UI-25', 'page', ['commands.copy(basePath', "label: '复制'"]],
+  [
+    'UI-24',
+    'manager',
+    ["managerAction(row.salesMenuRef, 'toggle')", "row.activation?.status === 'ENABLED' ? '停用' : '启用'"],
+  ],
+  ['UI-25', 'all', ['commands.copy(', "managerAction(row.salesMenuRef, 'copy')"]],
   ['UI-26', 'page', ['菜单已停用。', 'commands.activate(']],
   ['UI-27', 'editor', ["title: '商品默认价'", "title: '菜单挂牌价'"]],
   ['UI-28', 'editor', ["const isSku = item.saleContent.kind === 'SKU_SELECTION'", 'salesMenuTestIds.itemListedPrice']],
-  ['UI-29', 'page', ["{label: '前台菜单', value: 'PUBLISHED'}", '<PublishedSalesItemTable']],
+  ['UI-29', 'page', ["salesMenuTestIds.mode('PUBLISHED')", "value: 'PUBLISHED'", '<PublishedSalesItemTable']],
   ['UI-30', 'detail', ['title="销售项详情"', '<Descriptions', '适用约束']],
   ['UI-31', 'all', ['testIdPrefix={salesMenuTestIds.draftCursor}', 'testIdPrefix={salesMenuTestIds.logCursor}']],
 ];
@@ -175,6 +184,59 @@ describe('sales menu IA static trace', () => {
     expect(candidateDrawerSource).toContain('title="商品分类"');
   });
 
+  it('retains candidate selection across cursor pages and makes off-page submission explicit', () => {
+    expect(candidateDrawerSource).toContain('preserveSelectedRowKeys: true');
+    expect(candidateDrawerSource).toContain('mergeSalesMenuCandidateSelection(');
+    expect(candidateDrawerSource).toContain('提交按钮会包含这些已选商品');
+    expect(candidateDrawerSource).toContain('setSelected([])');
+  });
+
+  it('gives each sales-menu selector option a stable business-identity test id', () => {
+    expect(source).toContain('salesMenuTestIds.menuOption(menu.salesMenuRef)');
+  });
+
+  it('uses generated exact invalidation for command readback and keeps broad refresh user initiated', () => {
+    expect(pageSource).toContain('const result = await operation();\n        after?.(result);');
+    expect(pageSource).toContain('onClick={() => void read.refresh()}');
+    expect(pageSource).not.toMatch(/const result = await operation\(\);\s*await read\.refresh\(\);/);
+    expect(pageSource).not.toMatch(/await commands\.updateItem\([\s\S]*?\);\s*await read\.refresh\(\);/);
+    expect(pageSource).not.toMatch(/await commands\.addItems\([\s\S]*?\);\s*await read\.refresh\(\);/);
+    expect(sectionSource).toContain('gap: 4, minWidth: 0');
+    expect(sectionSource).toContain("flex: '1 1 auto',");
+    expect(sectionSource).toContain("textOverflow: 'ellipsis'");
+  });
+
+  it('hydrates the editor from the owner draft-item detail operation', () => {
+    expect(editorSource).toContain('operationsAdminRtkRequest.getOperationsSalesMenuDraftItem(');
+    expect(editorSource).toContain('useGetOperationsSalesMenuDraftItemQuery');
+    expect(editorSource).toContain('if (detailQuery.isError || detailQuery.isFetching) return undefined;');
+    expect(editorSource).toContain('const current = detailQuery.currentData;');
+    expect(editorSource).toContain('current.salesItemRef === rowItem.salesItemRef');
+    expect(editorSource).toContain('if (!detail || !open) return;');
+    expect(editorSource).toContain("outcome: 'SKIPPED_DIRTY_DRAFT'");
+    expect(editorSource).toContain('if (lifecycle.dirty)');
+    expect(editorSource).toContain('disabled={!detail || mediaPending || closing}');
+  });
+
+  it('does not expose stale manager versions while the manager read model refreshes', () => {
+    expect(managerSource).toContain(
+      'const managerReadModelReady = !read.manager.query.isFetching && !read.manager.query.isError;',
+    );
+    expect(managerSource).toContain('disabled={!canEdit || row.archived || !managerReadModelReady}');
+    expect(managerSource).toContain('disabled={!managerReadModelReady}');
+  });
+
+  it('hydrates published read-only detail from the owner published-item operation', () => {
+    expect(detailSource).toContain('operationsAdminRtkRequest.getOperationsSalesMenuPublishedItem(');
+    expect(detailSource).toContain('useGetOperationsSalesMenuPublishedItemQuery');
+    expect(detailSource).toContain('if (publishedDetailQuery.isError) return undefined;');
+    expect(detailSource).toContain('current.salesItemRef === publishedRow.salesItemRef');
+    expect(detailSource).toContain('正在读取前台销售项详情');
+    expect(detailSource).toContain('前台销售项详情暂时无法获取');
+    expect(detailSource).not.toContain('onStatus');
+    expect(pageSource).toContain('channelRef={selectedChannelRef}');
+  });
+
   it('centralizes sales-menu locators and records every approved UI trace item', () => {
     expect(source).not.toMatch(/testId\('sales-menu-/);
     expect(uiTrace).toHaveLength(31);
@@ -183,6 +245,34 @@ describe('sales menu IA static trace', () => {
       for (const anchor of anchors)
         expect(traceSources[segment], `${requirement} missing ${anchor} in ${segment}`).toContain(anchor);
     }
+  });
+
+  it('exposes stable ids for every interactive control used by the current L2 journeys', () => {
+    for (const anchor of [
+      'testId(salesMenuTestIds.section(section.salesSectionRef))',
+      'testId(salesMenuTestIds.sectionAction(section.salesSectionRef))',
+      "testId(salesMenuTestIds.sectionMenuAction(section.salesSectionRef, 'rename'))",
+      'testId(salesMenuTestIds.menuPublish)',
+      'testId(salesMenuTestIds.menuCreate)',
+      "testId(salesMenuTestIds.itemMenuAction(row.salesItemRef, 'up'))",
+      "testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'menu'))",
+      "testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'rename'))",
+      'testId(salesMenuTestIds.candidateRow(row.candidateRef))',
+      'testId(salesMenuTestIds.menuSchedule)',
+      'testId(salesMenuTestIds.menuPublish)',
+      'testId(salesMenuTestIds.itemDiscardConfirm)',
+      'testId(salesMenuTestIds.itemDiscardCancel)',
+      "testId(salesMenuTestIds.itemMediaChoice('CUSTOM'))",
+      'testId(salesMenuTestIds.statusAction(row.salesItemRef))',
+    ]) {
+      expect(source, `missing interactive control testId: ${anchor}`).toContain(anchor);
+    }
+  });
+
+  it('binds manual sales-status CAS to the aggregate menu read-model version', () => {
+    expect(pageSource).toContain('const expectedVersion = selectedMenu.version;');
+    expect(pageSource).toContain("expectedVersionSource: 'SALES_MENU_DETAIL'");
+    expect(pageSource).not.toContain('expectedVersion: statusItem.version');
   });
 
   it('keeps weighted constraints out of the editor and reuses the foundation image primitive', () => {
@@ -203,6 +293,9 @@ describe('sales menu IA static trace', () => {
     expect(editorSource).toContain('maskClosable={!lifecycle.submitting}');
     expect(editorSource).toContain('keyboard={!lifecycle.submitting}');
     expect(editorSource).toContain('lifecycle.setSubmitting(pending)');
+    expect(editorSource).toContain('dirtyGuardTestIds');
+    expect(editorSource).toContain('testId(salesMenuTestIds.itemDiscardConfirm)');
+    expect(editorSource).toContain('testId(salesMenuTestIds.itemDiscardCancel)');
     expect(editorSource).toContain('window.requestAnimationFrame(onClosedFocus)');
     expect((editorSource.match(/min=\{1\}/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });

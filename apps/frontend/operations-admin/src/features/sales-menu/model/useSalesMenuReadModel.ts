@@ -1,6 +1,6 @@
 import {useCursorStack, useRefreshVersion} from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {operationsContentTabRefreshSignal, operationsRtk} from '../../../app/api/OperationsTransport';
+import {operationsContentTabRefreshSignal, operationsLogger, operationsRtk} from '../../../app/api/OperationsTransport';
 import type {
   BusinessChannelPage,
   SalesMenuCandidatePage,
@@ -14,6 +14,7 @@ import type {
   SalesMenuSectionList,
   Uuid,
 } from '../../../app/api/generated/operations-edge';
+import {OPERATIONS_ADMIN_OPERATION_IDS} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {SALES_MENU_PAGE_SIZE, salesMenuQueryIdentity, type SalesMenuMode} from './salesMenuModel';
@@ -21,6 +22,10 @@ import {SALES_MENU_PAGE_SIZE, salesMenuQueryIdentity, type SalesMenuMode} from '
 type SalesMenuPageProps = Pick<OperationsPageProps, 'queryContext'>;
 
 const emptyUuid = '' as Uuid;
+
+function queryRefetchFailed(value: unknown): boolean {
+  return Boolean(value && typeof value === 'object' && 'error' in value && (value as {error?: unknown}).error);
+}
 
 export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
   const storeRef = queryContext.scopeRef;
@@ -375,22 +380,46 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
   }, [draftSectionsQuery.currentData, mode, publishedSectionsQuery.currentData, selectedMenuRef]);
 
   const selectChannel = useCallback((next: Uuid) => {
+    operationsLogger.info({
+      event: 'sales-menu.read-model.selection',
+      phase: 'SELECTION',
+      outcome: 'CHANNEL_SELECTED',
+      operationId: 'sales-menu-read-model',
+    });
     setSelectedChannelRef(next);
     setSelectedMenuRef(undefined);
     setSelectedSectionRef(undefined);
     setCandidateOpen(false);
   }, []);
   const selectMenu = useCallback((next: Uuid | undefined) => {
+    operationsLogger.info({
+      event: 'sales-menu.read-model.selection',
+      phase: 'SELECTION',
+      outcome: next ? 'MENU_SELECTED' : 'MENU_CLEARED',
+      operationId: 'sales-menu-read-model',
+    });
     setSelectedMenuRef(next);
     setSelectedSectionRef(undefined);
     setCandidateOpen(false);
   }, []);
   const changeMode = useCallback((next: SalesMenuMode) => {
+    operationsLogger.info({
+      event: 'sales-menu.read-model.mode',
+      phase: 'MODE_CHANGE',
+      outcome: next,
+      operationId: 'sales-menu-read-model',
+    });
     setMode(next);
     setSelectedSectionRef(undefined);
     setCandidateOpen(false);
   }, []);
   const openCandidates = useCallback(() => {
+    operationsLogger.info({
+      event: 'sales-menu.candidates.drawer',
+      phase: 'CANDIDATE_DRAWER',
+      outcome: 'OPEN_REQUESTED',
+      operationId: OPERATIONS_ADMIN_OPERATION_IDS.getOperationsSalesMenuItemCandidates,
+    });
     setCandidateOpen(true);
     setCandidateCategoryRef(undefined);
     setCandidateQuery('');
@@ -430,6 +459,79 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     refetchPublishedItems,
     refetchPublishedSections,
     refetchSelector,
+    selectedChannelRef,
+    selectedMenuRef,
+    selectedSectionRef,
+  ]);
+
+  const refresh = useCallback(async () => {
+    if (!scopeReady) {
+      operationsLogger.debug({
+        event: 'sales-menu.read-model.refresh',
+        phase: 'READ_MODEL_REFRESH',
+        outcome: 'SKIPPED_SCOPE_NOT_READY',
+        operationId: 'sales-menu-read-model',
+      });
+      return;
+    }
+
+    const startedAt = performance.now();
+    operationsLogger.info({
+      event: 'sales-menu.read-model.refresh',
+      phase: 'READ_MODEL_REFRESH',
+      outcome: 'STARTED',
+      operationId: 'sales-menu-read-model',
+    });
+    try {
+      const refetches: Array<Promise<unknown>> = [refetchChannels()];
+      if (selectedChannelRef) {
+        refetches.push(refetchSelector(), refetchManager());
+      }
+      if (selectedMenuRef) {
+        refetches.push(refetchMenu(), refetchPublicationPreview());
+        if (mode === 'DRAFT') refetches.push(refetchDraftSections());
+        if (mode === 'PUBLISHED') refetches.push(refetchPublishedSections());
+        if (mode === 'OPERATIONS') refetches.push(refetchOperationRecords());
+      }
+      if (selectedSectionRef && mode === 'DRAFT') refetches.push(refetchDraftItems());
+      if (selectedSectionRef && mode === 'PUBLISHED') refetches.push(refetchPublishedItems());
+      if (candidateOpen) refetches.push(refetchCandidates());
+
+      const results = await Promise.all(refetches);
+      if (results.some(queryRefetchFailed)) throw new Error('SALES_MENU_REFRESH_FAILED');
+      operationsLogger.info({
+        event: 'sales-menu.read-model.refresh',
+        phase: 'READ_MODEL_REFRESH',
+        outcome: 'SUCCEEDED',
+        operationId: 'sales-menu-read-model',
+        durationMs: Math.round(performance.now() - startedAt),
+      });
+    } catch (error) {
+      operationsLogger.error({
+        event: 'sales-menu.read-model.refresh',
+        phase: 'READ_MODEL_REFRESH',
+        outcome: 'FAILED',
+        operationId: 'sales-menu-read-model',
+        errorCode: error instanceof Error ? error.message : 'SALES_MENU_REFRESH_FAILED',
+        durationMs: Math.round(performance.now() - startedAt),
+      });
+      throw error;
+    }
+  }, [
+    candidateOpen,
+    mode,
+    refetchCandidates,
+    refetchChannels,
+    refetchDraftItems,
+    refetchDraftSections,
+    refetchManager,
+    refetchMenu,
+    refetchOperationRecords,
+    refetchPublicationPreview,
+    refetchPublishedItems,
+    refetchPublishedSections,
+    refetchSelector,
+    scopeReady,
     selectedChannelRef,
     selectedMenuRef,
     selectedSectionRef,
@@ -505,12 +607,6 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
       page: candidateQueryState.currentData as SalesMenuCandidatePage | undefined,
       cursor: candidateCursor,
     },
-    refresh: () => {
-      void channelsQuery.refetch();
-      void selectorQueryState.refetch();
-      void managerQueryState.refetch();
-      void menuQuery.refetch();
-      void publicationPreviewQuery.refetch();
-    },
+    refresh,
   };
 }

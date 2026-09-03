@@ -34,6 +34,7 @@ import type {
   RuntimeModuleResetInput,
   RuntimeStateInput,
   RuntimeStatus,
+  RuntimeSubscriptionListener,
   SetRuntimeInstanceModePayload,
   SetRuntimeInstanceModeResult,
 } from '../src/index'
@@ -85,12 +86,19 @@ type PublicTypeReferences = [
   RuntimeModuleResetInput,
   RuntimeStateInput,
   RuntimeStatus,
+  RuntimeSubscriptionListener,
   SetRuntimeInstanceModePayload,
   SetRuntimeInstanceModeResult,
 ]
 
 declare const publicTypeReferences: PublicTypeReferences | undefined
 void publicTypeReferences
+
+type RuntimeSubscription = ReturnType<Runtime['subscribe']>
+declare const runtimeSubscriptionListener: RuntimeSubscriptionListener
+declare const runtimeUnsubscribe: RuntimeSubscription
+void runtimeSubscriptionListener
+void runtimeUnsubscribe
 
 const commandWithValue = defineCommand<{value: string}>('type.fixture', {
   name: 'run',
