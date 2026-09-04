@@ -1,53 +1,51 @@
 import {readFileSync} from 'node:fs';
 import {describe, expect, it} from 'vitest';
 
-const source = readFileSync(new URL('./SalesMenuPage.tsx', import.meta.url), 'utf8');
+const pageFileSource = readFileSync(new URL('./SalesMenuPage.tsx', import.meta.url), 'utf8');
+const mediaFileSource = readFileSync(new URL('./SalesMenuItemMediaEditor.tsx', import.meta.url), 'utf8');
+const detailFileSource = readFileSync(new URL('./SalesMenuItemDetailDrawer.tsx', import.meta.url), 'utf8');
+const editorFileSource = readFileSync(new URL('./SalesMenuItemEditorDrawer.tsx', import.meta.url), 'utf8');
+const candidateFileSource = readFileSync(new URL('./SalesMenuCandidateDrawer.tsx', import.meta.url), 'utf8');
+const managerFileSource = readFileSync(new URL('./SalesMenuManagerDrawer.tsx', import.meta.url), 'utf8');
+const publishFileSource = readFileSync(new URL('./SalesMenuPublishDrawer.tsx', import.meta.url), 'utf8');
+const taskSurfacesSource = readFileSync(new URL('./SalesMenuTaskSurfaces.tsx', import.meta.url), 'utf8');
+const sharedSource = readFileSync(new URL('./salesMenuUiShared.ts', import.meta.url), 'utf8');
+const source = [
+  pageFileSource,
+  mediaFileSource,
+  detailFileSource,
+  editorFileSource,
+  candidateFileSource,
+  managerFileSource,
+  publishFileSource,
+  taskSurfacesSource,
+  sharedSource,
+].join('\n');
 const testIdsSource = readFileSync(new URL('../salesMenuTestIds.ts', import.meta.url), 'utf8');
-const draftTableSource = source.slice(
-  source.indexOf('function DraftSalesItemTable'),
-  source.indexOf('function PublishedSalesItemTable'),
+const pageSource = pageFileSource.slice(pageFileSource.indexOf('export function SalesMenuPage'));
+const draftTableSource = pageFileSource.slice(
+  pageFileSource.indexOf('function DraftSalesItemTable'),
+  pageFileSource.indexOf('function PublishedSalesItemTable'),
 );
-const candidateDrawerSource = source.slice(
-  source.indexOf('function SalesMenuCandidateDrawer'),
-  source.indexOf('function SalesMenuManagerDrawer'),
+const candidateDrawerSource = candidateFileSource;
+const editorSource = editorFileSource;
+const detailSource = detailFileSource;
+const mediaSource = mediaFileSource;
+const candidateSource = candidateFileSource;
+const managerSource = managerFileSource;
+const sectionSource = pageFileSource.slice(
+  pageFileSource.indexOf('function SalesMenuSectionPanel'),
+  pageFileSource.indexOf('function DraftSalesItemTable'),
 );
-const editorSource = source.slice(
-  source.indexOf('function SalesMenuItemEditorDrawer'),
-  source.indexOf('function SalesMenuCandidateDrawer'),
+const publishedSource = pageFileSource.slice(
+  pageFileSource.indexOf('function PublishedSalesItemTable'),
+  pageFileSource.indexOf('function SalesMenuOperationTable'),
 );
-const detailSource = source.slice(
-  source.indexOf('function SalesMenuItemDetailDrawer'),
-  source.indexOf('function SalesMenuItemEditorDrawer'),
+const operationSource = pageFileSource.slice(
+  pageFileSource.indexOf('function SalesMenuOperationTable'),
+  pageFileSource.indexOf('export function SalesMenuPage'),
 );
-const mediaSource = source.slice(
-  source.indexOf('function SalesMenuMediaEditor'),
-  source.indexOf('function SalesMenuItemDetailDrawer'),
-);
-const candidateSource = source.slice(
-  source.indexOf('function SalesMenuCandidateDrawer'),
-  source.indexOf('function SalesMenuManagerDrawer'),
-);
-const managerSource = source.slice(
-  source.indexOf('function SalesMenuManagerDrawer'),
-  source.indexOf('function SalesMenuSectionPanel'),
-);
-const sectionSource = source.slice(
-  source.indexOf('function SalesMenuSectionPanel'),
-  source.indexOf('function DraftSalesItemTable'),
-);
-const publishedSource = source.slice(
-  source.indexOf('function PublishedSalesItemTable'),
-  source.indexOf('function SalesMenuOperationTable'),
-);
-const operationSource = source.slice(
-  source.indexOf('function SalesMenuOperationTable'),
-  source.indexOf('function PublishDrawer'),
-);
-const publishSource = source.slice(
-  source.indexOf('function PublishDrawer'),
-  source.indexOf('export function SalesMenuPage'),
-);
-const pageSource = source.slice(source.indexOf('export function SalesMenuPage'));
+const publishSource = publishFileSource;
 
 const traceSources = {
   all: source,
@@ -203,6 +201,10 @@ describe('sales menu IA static trace', () => {
     );
     expect(selectorSource).toContain('virtual={false}');
     expect(selectorSource).toContain('components={{input: SalesMenuSelectorInput}}');
+    expect(selectorSource).toContain('showSearch');
+    expect(selectorSource).toContain('filterOption={false}');
+    expect(selectorSource).toContain('searchValue={read.selectorQuery}');
+    expect(selectorSource).toContain('read.setSelectorQuery(value)');
     expect(selectorSource).toContain("'data-testid': salesMenuTestIds.menuOption(menu.salesMenuRef)");
     expect(selectorSource).not.toContain('<Space {...testId(salesMenuTestIds.menuOption(menu.salesMenuRef))}>');
   });
@@ -255,11 +257,14 @@ describe('sales menu IA static trace', () => {
     expect(detailSource).toContain('operationsAdminRtkRequest.getOperationsSalesMenuPublishedItem(');
     expect(detailSource).toContain('useGetOperationsSalesMenuPublishedItemQuery');
     expect(detailSource).toContain('if (publishedDetailQuery.isError) return undefined;');
+    expect(detailSource).toContain('const current = publishedDetailQuery.currentData;');
+    expect(detailSource).not.toContain('publishedDetailQuery.data');
+    expect(detailSource).toContain('publishedDetailQuery.isFetching && !displayedItem');
     expect(detailSource).toContain('current.salesItemRef === publishedRow.salesItemRef');
     expect(detailSource).toContain('正在读取前台销售项详情');
     expect(detailSource).toContain('前台销售项详情暂时无法获取');
     expect(detailSource).not.toContain('onStatus');
-    expect(pageSource).toContain('channelRef={selectedChannelRef}');
+    expect(pageSource).toContain('channelRef: selectedChannelRef');
   });
 
   it('centralizes sales-menu locators and records every approved UI trace item', () => {
@@ -292,6 +297,10 @@ describe('sales menu IA static trace', () => {
     ]) {
       expect(source, `missing interactive control testId: ${anchor}`).toContain(anchor);
     }
+    expect(testIdsSource).toContain("managerSearch: 'sales-menu-manager-search'");
+    expect(testIdsSource).toContain("candidateSearch: 'sales-menu-candidate-search'");
+    expect(managerSource).toContain('testId(salesMenuTestIds.managerSearch)');
+    expect(candidateDrawerSource).toContain('testId(salesMenuTestIds.candidateSearch)');
   });
 
   it('binds manual sales-status CAS to the aggregate menu read-model version', () => {

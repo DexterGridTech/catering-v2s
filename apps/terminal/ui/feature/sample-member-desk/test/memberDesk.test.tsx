@@ -132,4 +132,33 @@ describe('sample member desk UI feature', () => {
     expectTextValue(renderer, 'sample.desk.member-list:row:content', 'Alice 010-1234-5678')
     act(() => { renderer.unmount() })
   })
+
+  it('diagnoses infrastructure rejection from a customer decision without treating it as success', async () => {
+    const {logger, events} = createLogger()
+    const failure = new Error('ledger write failed')
+    const dispatchCommand = (async () => { throw failure }) as RenderProviderProps['dispatchCommand']
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: createStateSource(memberRoot({name: 'Pending', phone: '010-0000-0000'})),
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        dispatchCommand,
+        selectUiVariable: (_root, declaration) => declaration.defaultValue,
+      },
+      createElement(CustomerMember, {mode: 'confirm'}),
+    ))
+
+    const confirm = renderer.root.findByProps({testID: 'sample.desk.customer-member:confirm'})
+    await act(async () => {
+      await expect((confirm.props.onPress as () => Promise<unknown>)()).rejects.toBe(failure)
+    })
+    expect(events).toContainEqual(expect.objectContaining({
+      category: 'ui.base.render',
+      event: 'command-dispatch-rejected',
+      data: {failure: 'promise-rejected'},
+    }))
+    act(() => { renderer.unmount() })
+  })
 })

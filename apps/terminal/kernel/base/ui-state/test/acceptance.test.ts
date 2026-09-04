@@ -39,7 +39,7 @@ import {
   type UiVariableDeclaration,
 } from '../src/index'
 import {createDisplayPlatformPorts, FakeDevicePort} from '../../display-context/test/testSupport'
-import {releaseRuntimeForTest} from '../../runtime/src/testing/releaseRuntimeForTest'
+import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
 import {createFakeStorage} from '../../state/test/testSupport'
 
 const createDependencies = (): readonly RuntimeModule[] => [

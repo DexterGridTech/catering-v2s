@@ -59,6 +59,16 @@ try {
     "import {defineCommand, type RuntimeModule} from '@catering-v2s/kernel-base-runtime'\nimport type {StateJsonValue} from '@catering-v2s/kernel-base-state'\n\nconst ownerCommand = defineCommand<Readonly<{}>>('ui.feature.fixture-auth', {name: 'probe', visibility: 'public'})\nconst ownerModule: RuntimeModule = {\n  moduleName: 'ui.feature.fixture-auth',\n  kind: 'owner',\n  dependencies: [],\n  commands: [],\n  commandDefinitions: [],\n  actors: [],\n  actorDefinitions: [],\n  slices: [],\n  stateSlices: [],\n}\nconst ownerValue = null as unknown as StateJsonValue\nvoid ownerCommand\nvoid ownerModule\nvoid ownerValue\n",
     'index.tsx',
   )
+  const devHostFile = packageFixture(
+    'apps/terminal/ui/base/dev-host',
+    "export const hostProbe = 1\n",
+    'index.tsx',
+  )
+  const sampleConsoleFile = packageFixture(
+    'apps/terminal/ui/integration/sample-console',
+    "export const consoleProbe = 1\n",
+    'index.tsx',
+  )
 
   assert.deepEqual(LAYERING_RULE_NAMES, [
     'p-5a-direction',
@@ -114,6 +124,21 @@ try {
       console.log(`TERMINAL_LAYERING_RED_P5C_STATE_ROOT_IMPORT=${rule(report, 'p-5c-state-edge').status}`)
     },
   )
+  const uiNativePackageMutations = [
+    ['DEV_HOST', devHostFile],
+    ['SAMPLE_CONSOLE', sampleConsoleFile],
+  ]
+  for (const [label, filePath] of uiNativePackageMutations) {
+    withMutation(
+      filePath,
+      source => `${source}\nimport {createElement as createControl} from 'react'\nconst illegalControl = createControl(\`terminal-button\`, {})\nvoid illegalControl\n`,
+      report => {
+        assertVector(report, ['p-5d-ui-feature-native-elements'])
+        assert.match(rule(report, 'p-5d-ui-feature-native-elements').error, /createElement/)
+        console.log(`TERMINAL_LAYERING_RED_P5D_${label}=${rule(report, 'p-5d-ui-feature-native-elements').status}`)
+      },
+    )
+  }
 
   withMutation(
     uiFile,
@@ -306,6 +331,8 @@ try {
 
   fs.rmSync(path.join(fixtureRoot, 'apps/terminal/kernel/feature/fixture-session'), {recursive: true, force: true})
   fs.rmSync(path.join(fixtureRoot, 'apps/terminal/ui/feature/fixture-auth'), {recursive: true, force: true})
+  fs.rmSync(path.join(fixtureRoot, 'apps/terminal/ui/base/dev-host'), {recursive: true, force: true})
+  fs.rmSync(path.join(fixtureRoot, 'apps/terminal/ui/integration/sample-console'), {recursive: true, force: true})
   fs.rmSync(emptyPackageRoot, {recursive: true, force: true})
   const emptyDenominatorReport = runLayeringChecks({root: fixtureRoot})
   assert.equal(rule(emptyDenominatorReport, 'p-5c-state-edge').status, 'FAIL')

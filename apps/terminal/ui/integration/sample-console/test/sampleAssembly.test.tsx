@@ -1,6 +1,6 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {describe, expect, it} from 'vitest'
-import {releaseRuntimeForTest} from '../../../../kernel/base/runtime/src/testing/releaseRuntimeForTest'
+import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
 import {createSampleAssembly} from '../src'
 import {createTestPlatformPorts} from './support'
 

@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 import {resolveSecondarySurfaceAvailable, readDisplayInfo} from '@catering-v2s/kernel-base-display-context'
-import {createWebDevicePort, type SurfaceMode} from '@catering-v2s/ui-base-test-support'
+import {createWebDevicePort, type SurfaceMode} from '@catering-v2s/ui-base-dev-host'
 
 describe('sample-console Web host bindings', () => {
   it('maps the host mode to a display count through the DevicePort seam', async () => {

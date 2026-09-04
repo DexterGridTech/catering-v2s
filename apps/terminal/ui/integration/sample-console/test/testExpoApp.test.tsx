@@ -1,8 +1,7 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
+import {StyleSheet} from 'react-native'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {FakeWebStorage} from './support'
-
-vi.mock('expo-status-bar', () => ({StatusBar: () => null}))
 
 vi.mock('../src', async importOriginal => {
   const actual = await importOriginal<typeof import('../src')>()
@@ -58,14 +57,27 @@ describe('test-expo host shell', () => {
     expect(renderer!.root.findByProps({testID: 'sample-console:test-expo:header-status'})).toBeDefined()
     expect(renderer!.root.findByProps({testID: 'sample-console:test-expo:surface-summary:PRIMARY'})).toBeDefined()
     expect(renderer!.root.findByProps({testID: 'sample-console:test-expo:surface-summary:SECONDARY'})).toBeDefined()
-    expect(renderer!.root.findAllByProps({children: 'TER Sample Console'})).toHaveLength(0)
-    expect(renderer!.root.findAllByProps({testID: 'sample-console:test-expo:surface-topology'})).toHaveLength(0)
     expect(createAssembly).toHaveBeenCalledTimes(1)
     expect(info.mock.calls.map(([event]) => (event as {readonly event?: string}).event)).toContain('startup-ready')
     expect(info.mock.calls.map(([event]) => (event as {readonly event?: string}).event)).toContain('surface-decision-ready')
     expect(error.mock.calls.some(([event]) =>
       typeof event === 'object' && event !== null && (event as {readonly event?: string}).event === 'startup-failed',
     )).toBe(false)
+
+    const layoutTargets = renderer!.root.findAll(node =>
+      typeof node.type === 'string' && typeof node.props.onLayout === 'function',
+    )
+    expect(layoutTargets).toHaveLength(1)
+    await act(async () => {
+      ;(layoutTargets[0].props.onLayout as (event: {readonly nativeEvent: {readonly layout: {readonly width: number}}}) => void)({
+        nativeEvent: {layout: {width: 1000}},
+      })
+      await nextTurn()
+    })
+    const canvas = renderer!.root.findByProps({testID: 'sample-console:test-expo:canvas'})
+    const canvasStyle = StyleSheet.flatten(canvas.props.style) as {readonly alignSelf?: string; readonly width?: number}
+    expect(canvasStyle.width).toBe(944)
+    expect(canvasStyle.alignSelf).toBe('center')
 
     const toggle = renderer!.root.findByProps({testID: 'sample-console:test-expo:surface-toggle'})
     expect(typeof toggle.props.onPress).toBe('function')

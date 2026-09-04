@@ -24,7 +24,7 @@ src/
   features/      runtime initialize、instance-mode 与 request-ledger command/actor/slice
   selectors/     instance-mode 与 request execution view selector
   types/         command、actor、execution、requestLedger、peer、journal、limits、module、runtime
-  testing/       仅测试接缝：资源释放与 state 同步读取，不是生产能力
+  testing/       仅测试接缝：资源释放与 state 同步读取，不是生产能力；通过 `/testing` 子路径访问
   index.ts       唯一公开面（当前 64 项）
 test/            runtime 行为与类型夹具（test 目录已纳入 tsc）
 ```
@@ -139,7 +139,9 @@ runtime 的角色提交后通知是内部 `runtimeInstanceModeChangedCommand`，
 不注册回调、不接收写能力，也不恢复已退役的 `RuntimeRoleChangeEffect`/`roleChangeEffects`。
 
 `RuntimeModuleContext.registerResource` 是模块安装期登记未来 teardown 资源的唯一接缝；资源
-注册表本身是生产设施，`src/testing` 只保留测试读取/释放接缝。当前 Runtime 没有生产
+注册表本身是生产设施，`src/testing` 只保留测试读取/释放接缝；跨包测试必须从
+`@catering-v2s/kernel-base-runtime/testing` 子路径导入 `releaseRuntimeForTest`，不能穿透包边界引用
+源码路径。当前 Runtime 没有生产
 `stop`/`dispose`，因此生产电源订阅与 facade 订阅的释放依赖进程退出，测试释放只用于隔离
 测试资源。`start()`、模块 context 的 `getState` 与 actor context 的 `getState` 仍按各自阶段
 契约执行，context 读取不受 runtime 门面 created/starting 限制。

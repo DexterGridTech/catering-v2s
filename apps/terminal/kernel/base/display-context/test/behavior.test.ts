@@ -4,7 +4,7 @@ import {
   selectRuntimeInstanceMode,
 } from '@catering-v2s/kernel-base-runtime'
 import type {DisplayInfo, LogEvent, PortResult} from '@catering-v2s/kernel-base-platform-ports'
-import {releaseRuntimeForTest} from '../../runtime/src/testing/releaseRuntimeForTest'
+import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
 import {getDisplayRoleChangeEligibility} from '../src/foundations/displayDerivation'
 import {
   powerStatusChangedCommand,

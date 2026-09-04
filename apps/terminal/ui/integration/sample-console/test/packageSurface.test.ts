@@ -16,7 +16,7 @@ describe('sample-console package surface', () => {
       'ui.feature.sample-member-desk',
       'ui.feature.sample-staff-auth',
     ]);
-    expect([...devDependencyModuleNames]).toEqual(['ui.base.test-support']);
+    expect([...devDependencyModuleNames]).toEqual(['ui.base.dev-host']);
     expect(terminalSurfaces).toEqual({
       layout: 'column',
       scaleToFit: true,

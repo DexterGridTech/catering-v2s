@@ -8,7 +8,7 @@ import {moduleName as memberRegistry} from '@catering-v2s/kernel-feature-sample-
 import {moduleName as render} from '@catering-v2s/ui-base-render'
 import {moduleName as staffAuth} from '@catering-v2s/ui-feature-sample-staff-auth'
 import {moduleName as memberDesk} from '@catering-v2s/ui-feature-sample-member-desk'
-import {moduleName as testSupport} from '@catering-v2s/ui-base-test-support'
+import {moduleName as devHost} from '@catering-v2s/ui-base-dev-host'
 
 export const dependencyModuleNames = [
   contracts,
@@ -23,4 +23,4 @@ export const dependencyModuleNames = [
   memberDesk,
 ] as const;
 
-export const devDependencyModuleNames = [testSupport] as const
+export const devDependencyModuleNames = [devHost] as const

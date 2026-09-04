@@ -295,8 +295,8 @@ function runTripleNaming(context) {
       throw new Error(`${moduleName} package.json must not carry plannedKind/kind`);
     }
   }
-  if (Object.keys(spec.graph).length !== 26)
-    throw new Error(`skeleton spec must contain 26 nodes, got ${Object.keys(spec.graph).length}`);
+  if (Object.keys(spec.graph).length !== 27)
+    throw new Error(`skeleton spec must contain 27 nodes, got ${Object.keys(spec.graph).length}`);
 }
 
 function layerFor(moduleName) {

@@ -9,17 +9,6 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@catering-v2s/kernel-base-contracts": "workspace:*",
-    "@catering-v2s/kernel-base-display-context": "workspace:*",
-    "@catering-v2s/kernel-base-platform-ports": "workspace:*",
-    "@types/react": "~19.2.2",
-    "expo-status-bar": "~57.0.1",
-    "react": "19.2.3",
-    "react-native": "0.86.3",
     "typescript": "~6.0.3"
-  },
-  "peerDependencies": {
-    "react": "19.2.3",
-    "react-native": "0.86.3"
   }
 }

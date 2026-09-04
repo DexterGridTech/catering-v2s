@@ -1,0 +1,27 @@
+import {describe, expect, it} from 'vitest'
+import {resolveSecondarySurfaceAvailable, readDisplayInfo} from '@catering-v2s/kernel-base-display-context'
+import {createWebDevicePort, createWebPlatformPorts, type SurfaceMode} from '../src'
+
+describe('ui.base.dev-host Web platform bindings', () => {
+  it('maps host mode to display count through the DevicePort seam', async () => {
+    let mode: SurfaceMode = 'single'
+    const device = createWebDevicePort(() => mode)
+    expect(resolveSecondarySurfaceAvailable(await readDisplayInfo(device))).toBe(false)
+    mode = 'dual'
+    expect(resolveSecondarySurfaceAvailable(await readDisplayInfo(device))).toBe(true)
+  })
+
+  it('keeps secure persistence unavailable in the Web host', async () => {
+    const storage = {
+      length: 0,
+      clear: () => undefined,
+      getItem: () => null,
+      key: () => null,
+      removeItem: () => undefined,
+      setItem: () => undefined,
+    } satisfies Storage
+    await expect(createWebPlatformPorts(() => 'single', {storage}).persistSecure.read({key: 'secret', timeoutMs: 50})).resolves.toMatchObject({
+      status: 'unavailable',
+    })
+  })
+})

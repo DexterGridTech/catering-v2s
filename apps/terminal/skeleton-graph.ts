@@ -111,11 +111,17 @@ export const skeletonGraph = {
     batch: 1,
     plannedKind: 'toolkit',
     dependencies: [],
-    devDependencies: [
+    devDependencies: [],
+  },
+  'ui.base.dev-host': {
+    batch: 1,
+    plannedKind: 'toolkit',
+    dependencies: [
       'kernel.base.contracts',
       'kernel.base.display-context',
       'kernel.base.platform-ports',
     ],
+    devDependencies: [],
   },
   'kernel.feature.sample-staff-session': {
     batch: 2,
@@ -168,7 +174,7 @@ export const skeletonGraph = {
       'ui.feature.sample-staff-auth',
       'ui.feature.sample-member-desk',
     ],
-    devDependencies: ['ui.base.test-support'],
+    devDependencies: ['ui.base.dev-host'],
   },
   'adapter.android.persist-kv': {
     batch: 1,

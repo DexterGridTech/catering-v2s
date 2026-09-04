@@ -7,6 +7,7 @@ import {
   unavailableDevicePort,
   unavailableHotUpdatePort,
   unavailableLogUploadPort,
+  unavailablePersistSecurePort,
   unavailableScriptPort,
   unavailableTopologyHostPort,
   type DevicePort,
@@ -42,13 +43,12 @@ export const createWebPlatformPorts = (
   const storageNamespace = options.storageNamespace ?? 'test-expo'
   const namespace = storageNamespace.endsWith(':') ? storageNamespace : `${storageNamespace}:`
   const persistKv = createWebStateStoragePort(storage, `${namespace}plain:`, 'persistKv')
-  const persistSecure = createWebStateStoragePort(storage, `${namespace}protected:`, 'persistSecure')
   return createPlatformPorts({
     environmentMode: 'DEV',
     bindings: {
       logger: consoleLoggerBinding,
       persistKv,
-      persistSecure,
+      persistSecure: unavailablePersistSecurePort,
       device: createWebDevicePort(readSurfaceMode),
       appControl: unavailableAppControlPort,
       script: unavailableScriptPort,

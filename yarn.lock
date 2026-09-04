@@ -1344,7 +1344,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/kernel-base-test-support@workspace:*, @catering-v2s/kernel-base-test-support@workspace:apps/terminal/kernel/base/test-support":
+"@catering-v2s/kernel-base-test-support@workspace:apps/terminal/kernel/base/test-support":
   version: 0.0.0-use.local
   resolution: "@catering-v2s/kernel-base-test-support@workspace:apps/terminal/kernel/base/test-support"
   dependencies:
@@ -1503,7 +1503,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/ui-base-automation@workspace:*, @catering-v2s/ui-base-automation@workspace:apps/terminal/ui/base/automation":
+"@catering-v2s/ui-base-automation@workspace:apps/terminal/ui/base/automation":
   version: 0.0.0-use.local
   resolution: "@catering-v2s/ui-base-automation@workspace:apps/terminal/ui/base/automation"
   dependencies:
@@ -1514,6 +1514,25 @@ __metadata:
     react: "npm:19.2.3"
     react-native: "npm:0.86.3"
     typescript: "npm:~6.0.3"
+  peerDependencies:
+    react: 19.2.3
+    react-native: 0.86.3
+  languageName: unknown
+  linkType: soft
+
+"@catering-v2s/ui-base-dev-host@workspace:*, @catering-v2s/ui-base-dev-host@workspace:apps/terminal/ui/base/dev-host":
+  version: 0.0.0-use.local
+  resolution: "@catering-v2s/ui-base-dev-host@workspace:apps/terminal/ui/base/dev-host"
+  dependencies:
+    "@catering-v2s/kernel-base-contracts": "workspace:*"
+    "@catering-v2s/kernel-base-display-context": "workspace:*"
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
+    "@types/react": "npm:~19.2.2"
+    react: "npm:19.2.3"
+    react-native: "npm:0.86.3"
+    react-test-renderer: "npm:19.2.3"
+    typescript: "npm:~6.0.3"
+    vitest: "npm:4.1.10"
   peerDependencies:
     react: 19.2.3
     react-native: 0.86.3
@@ -1582,16 +1601,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@catering-v2s/ui-base-test-support@workspace:apps/terminal/ui/base/test-support"
   dependencies:
-    "@catering-v2s/kernel-base-test-support": "workspace:*"
-    "@catering-v2s/ui-base-automation": "workspace:*"
-    "@catering-v2s/ui-base-render": "workspace:*"
-    "@types/react": "npm:~19.2.2"
-    react: "npm:19.2.3"
-    react-native: "npm:0.86.3"
     typescript: "npm:~6.0.3"
-  peerDependencies:
-    react: 19.2.3
-    react-native: 0.86.3
   languageName: unknown
   linkType: soft
 
@@ -1652,6 +1662,7 @@ __metadata:
     "@catering-v2s/kernel-base-ui-state": "workspace:*"
     "@catering-v2s/kernel-feature-sample-member-registry": "workspace:*"
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*"
+    "@catering-v2s/ui-base-dev-host": "workspace:*"
     "@catering-v2s/ui-base-render": "workspace:*"
     "@catering-v2s/ui-feature-sample-member-desk": "workspace:*"
     "@catering-v2s/ui-feature-sample-staff-auth": "workspace:*"

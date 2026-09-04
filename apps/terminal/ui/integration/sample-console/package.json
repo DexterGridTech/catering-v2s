@@ -43,8 +43,8 @@
     "react-native": "0.86.3"
   },
   "devDependencies": {
+    "@catering-v2s/ui-base-dev-host": "workspace:*",
     "@types/react": "~19.2.2",
-    "@catering-v2s/ui-base-test-support": "workspace:*",
     "expo": "~57.0.18",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",

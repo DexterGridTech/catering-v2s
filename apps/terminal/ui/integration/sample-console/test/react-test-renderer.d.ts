@@ -2,6 +2,7 @@ declare module 'react-test-renderer' {
   import type {ReactElement} from 'react'
 
   type TestInstance = Readonly<{
+    readonly type: unknown
     readonly children?: readonly unknown[]
     readonly props: Readonly<Record<string, unknown>>
   }>
@@ -10,6 +11,7 @@ declare module 'react-test-renderer' {
     readonly root: {
       readonly findByProps: (props: Readonly<Record<string, unknown>>) => TestInstance
       readonly findAllByProps: (props: Readonly<Record<string, unknown>>) => readonly TestInstance[]
+      readonly findAll: (predicate: (node: TestInstance) => boolean) => readonly TestInstance[]
     }
     readonly unmount: () => void
   }>

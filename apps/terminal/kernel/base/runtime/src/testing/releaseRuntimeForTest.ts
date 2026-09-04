@@ -12,7 +12,8 @@ export const registerRuntimeResourceAccessorForTest = (
 }
 
 /**
- * Test-only cleanup; deliberately absent from the package root exports.
+ * Test-only cleanup; available only from the package's explicit testing subpath,
+ * never from the production package root exports.
  * Runtime has no production-reachable stop or dispose exit, so only tests call this release seam.
  * Production has no registry-wide drain: resources that remain registered live until process exit.
  */

@@ -1,4 +1,4 @@
-import {createTestExpoApp} from '@catering-v2s/ui-base-test-support'
+import {createTestExpoApp} from '@catering-v2s/ui-base-dev-host'
 import {createSampleAssembly, terminalSurfaces} from '../src'
 
 const App = createTestExpoApp({

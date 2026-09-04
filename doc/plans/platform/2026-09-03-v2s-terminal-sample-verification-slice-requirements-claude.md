@@ -1207,9 +1207,28 @@ request 未完成时按钮显示 loading 且**拒绝重复提交**。**零业务
 | 身份 | 形态 |
 | --- | --- |
 | 库 | `exports: {".": "./src/index.ts"}`，供 `sample-terminal` 消费 |
-| Expo Web 工程 | 根 `index.js` 内 `registerRootComponent(require('./test-expo/App').default)`；`test-expo/` 放 `App.tsx` ＋ 开发外壳 ＋ 自有 tsconfig |
+| Expo Web 工程 | 根 `index.js` **纯 ESM**：`import {registerRootComponent} from 'expo'` ＋ `import App from './test-expo/App'` ＋ `registerRootComponent(App)`；`test-expo/` 放 `App.tsx` ＋ 开发外壳 ＋ 自有 tsconfig |
 
-`expo` / `expo-status-bar` / `react-dom` / `react-native-web` 一律进 **devDependencies**。
+⚠️ **入口必须是纯 ESM**（Dexter 2026-09-05 裁定，本条修订 v13 原文）。
+v13 原写法是 `registerRootComponent(require('./test-expo/App').default)` —— 在 `"type": "module"`
+的包里混用 `import` 与 `require`，靠 Metro 的转换才不炸，**形态是错的**，范本会被照抄。
+⇒ 改为静态 `import` 后 `registerRootComponent(App)`，这也是 Expo 的规范入口形态。
+
+⚠️ **改完必须实证**：纯 ESM 入口能否在当前 Expo 版本下正常启动，**由一次真实
+`expo start --web` 验证**，不以「看起来对」收口。若实证失败，停下来交 Dexter，
+不得退回混用形态、也不得改 `"type"` 字段绕过。
+
+**`sample-console` 的** `expo` / `expo-status-bar` / `react-dom` / `react-native-web`
+一律进 **devDependencies** —— 因为它的 `src/` 不 import 这些，只有 `index.js` 与 `test-expo/`
+这两个开发产物用。
+
+⚠️ **这条只管 `sample-console`，不能套到 `ui/base/dev-host`**（Dexter 2026-09-05 裁定）。
+判据统一为**按实际 import 的位置与种类声明**：凡被某包 `src/` 以值形式 import、
+并经其公共入口传递出去的第三方包，必须记为该包的 `dependencies` 或 `peerDependencies`，
+不得记为 `devDependencies`。
+⇒ `dev-host` 的 `src/testExpoApp.tsx` 值 import 了 `expo-status-bar`，故它属 `dev-host` 的运行时依赖；
+`react` / `react-native` 由宿主提供，仍走 `peerDependencies`；
+`dev-host` 未 import 的第三方包不得出现在它的任何依赖字段里。
 
 **公开面（库侧）**
 
@@ -1314,6 +1333,17 @@ Web 段（第一段）不依赖该结论 —— 两棵树同在一个 JS 环境�
 ✅ 可行性亲验：TER 已有自定义 `package.json` 字段的先例（五个 adapter 各有 `jest` 字段）；
 ✅ 骨架静态门只校验 `dependencies`／`devDependencies`／`peerDependencies`／`optionalDependencies`
 四个字段（`tools/terminal-skeleton/check-static.mjs` 第 109 行），**不枚举字段白名单** ⇒ 加自定义字段不触门。
+
+⚠️ **读取方式的取舍已裁定：库侧直接 `import packageJson from '../package.json'`,不另建配置文件**
+（Dexter 2026-09-05）。已知代价是整份 manifest（含 `devDependencies`、`scripts`）会被打进 bundle。
+
+**为什么接受**：声明点由本节写死在 `package.json`，另建一个 `terminalSurfaces.json` 会与本节
+「由 integration 的 `package.json` 声明」的裁定直接冲突，且多一个真相源；
+而当前消费者只有 Expo Web **开发外壳**，bundle 体积与信息暴露都不构成真实风险。
+
+⚠️ **失效条件**（将来必须重新裁定，不得默认沿用）：一旦某个 `ui/integration` 包要产出
+**面向最终用户的生产 bundle**，此处必须改为只提取 `terminalSurfaces` 字段的窄读取，
+或改由构建期生成 typed const。届时这条豁免自动失效。
 
 **声明形态**（`ui/integration/sample-console/package.json`）：
 

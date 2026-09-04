@@ -57,7 +57,7 @@ TER framework 三处接缝、两个 `kernel/feature`、两个 `ui/feature`、`ui
 | --- | --- | --- |
 | **A-1** | `sample-console` 库侧：单一 assembly、两张 catalog、九项 `input.modules` | `ui/integration/sample-console/src` |
 | **A-2** | Expo 工程身份：入口、依赖、工程配置、`web` script | 同包根与 `test-expo/` |
-| **A-3** | `test-expo` 开发外壳：`surfaceMode`、双 Provider、canvas、切换按钮、Web 持久化 | `test-expo/` |
+| **A-3** | 可复用 Expo Web 开发外壳：`surfaceMode`、双 Provider、canvas、切换按钮、Web 持久化；sample 入口只做配置注入 | `ui/base/test-support` ＋ `test-expo/App.tsx` |
 | **A-4** | 测试接线：从零建 test script、vitest config、tsconfig include、invariants | 同包 |
 | **A-5** | Expo Web 启动验收：真实启动、日志可读、零启动期错误，然后停下交体验 | 运行产物 |
 
@@ -166,7 +166,8 @@ type SampleAssembly = Readonly<{
 
 ## 5. A-3 · `test-expo` 开发外壳
 
-按需求 §6.7a 与详设第 207 行：
+按需求 §6.7a 与详设第 207 行。通用实现位于 `ui/base/test-support`，
+`sample-console/test-expo/App.tsx` 不复制宿主逻辑，只注入本包 assembly、surface 配置与状态 reader：
 
 1. 外壳持 `surfaceMode: 'single' | 'dual'` 状态；
 2. 注入的 `DevicePort.getDisplayInfo()` **闭包读该状态**返回 `displayCount` 1 或 2；

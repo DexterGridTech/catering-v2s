@@ -14,6 +14,8 @@ export const salesMenuTestIds = {
   menuCreate: 'sales-menu-menu-create',
   menuSelector: 'sales-menu-selector',
   menuSelectorInput: 'sales-menu-selector-input',
+  managerSearch: 'sales-menu-manager-search',
+  candidateSearch: 'sales-menu-candidate-search',
   menuManager: 'sales-menu-manager',
   candidateList: 'sales-menu-candidate-list',
   managerList: 'sales-menu-manager-list',

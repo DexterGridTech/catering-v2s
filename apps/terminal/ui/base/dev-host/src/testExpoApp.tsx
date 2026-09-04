@@ -1,4 +1,3 @@
-import {StatusBar} from 'expo-status-bar'
 import {useEffect, useMemo, useRef, useState, type FC, type ReactElement} from 'react'
 import {
   Pressable,
@@ -49,6 +48,9 @@ export type TestExpoAppOptions<TAssembly extends TestExpoAssembly> = Readonly<{
 
 const SURFACE_MARGIN_X = 10
 const SURFACE_MARGIN_Y = 10
+const CONTENT_MAX_WIDTH = 1600
+const CONTENT_HORIZONTAL_PADDING = 28
+const HOST_CHROME_HEIGHT = 310
 
 const COLORS = {
   ink: '#EAF6FF',
@@ -73,7 +75,7 @@ const COLORS = {
 type SurfaceCanvasProps = Readonly<{
   readonly assembly: TestExpoAssembly
   readonly showSecondary: boolean
-  readonly viewportWidth: number
+  readonly contentWidth: number
   readonly viewportHeight: number
   readonly terminalSurfaces: TerminalSurfaces
   readonly testIdPrefix: string
@@ -82,7 +84,7 @@ type SurfaceCanvasProps = Readonly<{
 const SurfaceCanvas = ({
   assembly,
   showSecondary,
-  viewportWidth,
+  contentWidth,
   viewportHeight,
   terminalSurfaces,
   testIdPrefix,
@@ -106,8 +108,8 @@ const SurfaceCanvas = ({
       ? SURFACE_MARGIN_Y * 2 * surfaceCount
       : SURFACE_MARGIN_Y * 2
   )
-  const availableWidth = Math.max(1, viewportWidth - 64)
-  const availableHeight = Math.max(1, viewportHeight - 310)
+  const availableWidth = Math.max(1, contentWidth)
+  const availableHeight = Math.max(1, viewportHeight - HOST_CHROME_HEIGHT)
   const scale = terminalSurfaces.scaleToFit
     ? terminalSurfaces.layout === 'column'
       ? Math.min(1, availableWidth / logicalWidth)
@@ -253,6 +255,7 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(
     const [startupError, setStartupError] = useState(false)
     const [showSecondary, setShowSecondary] = useState<boolean | undefined>()
     const {width: viewportWidth, height: viewportHeight} = useWindowDimensions()
+    const [contentOuterWidth, setContentOuterWidth] = useState<number>()
     const platformPorts = useMemo(
       () => createWebPlatformPorts(() => surfaceModeRef.current, {
         storageNamespace: options.appName,
@@ -285,7 +288,6 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(
     useEffect(() => {
       if (assembly === undefined) return
       let active = true
-      setShowSecondary(undefined)
       void readDisplayInfo(platformPorts.device).then((displayInfo) => {
         if (!active) return
         setShowSecondary(resolveSecondarySurfaceAvailable(displayInfo))
@@ -303,12 +305,21 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(
       : assembly === undefined
         ? 'starting'
         : options.getRuntimeStatus(assembly)
+    const contentWidth = Math.max(
+      1,
+      (contentOuterWidth ?? Math.min(viewportWidth, CONTENT_MAX_WIDTH))
+        - CONTENT_HORIZONTAL_PADDING * 2,
+    )
 
     return (
       <View style={styles.root} testID={`${testIdPrefix}:root`}>
-        <StatusBar style="dark" />
         <View style={styles.scroll}>
-          <View style={styles.content}>
+          <View
+            style={styles.content}
+            onLayout={({nativeEvent: {layout}}) => {
+              setContentOuterWidth(current => current === layout.width ? current : layout.width)
+            }}
+          >
             <View style={styles.stageHeader}>
               <View>
                 <Text style={styles.sectionEyebrow}>LIVE SURFACE PREVIEW</Text>
@@ -370,7 +381,7 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(
                 <SurfaceCanvas
                   assembly={assembly}
                   showSecondary={showSecondary}
-                  viewportWidth={viewportWidth}
+                  contentWidth={contentWidth}
                   viewportHeight={viewportHeight}
                   terminalSurfaces={options.terminalSurfaces}
                   testIdPrefix={testIdPrefix}
@@ -537,9 +548,9 @@ const styles = StyleSheet.create({
   },
   content: {
     width: '100%',
-    maxWidth: 1600,
+    maxWidth: CONTENT_MAX_WIDTH,
     alignSelf: 'center',
-    paddingHorizontal: 28,
+    paddingHorizontal: CONTENT_HORIZONTAL_PADDING,
     paddingTop: 24,
     paddingBottom: 48,
     gap: 18,
@@ -601,6 +612,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   canvas: {
+    alignSelf: 'center',
     overflow: 'hidden',
     borderRadius: 12,
     backgroundColor: '#0A2236',

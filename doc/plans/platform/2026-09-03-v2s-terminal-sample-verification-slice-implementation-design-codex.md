@@ -57,7 +57,7 @@ AUTHORING_REVIEW_STATUS=V13_S1_S2_REVISED_PENDING_INDEPENDENT_REVIEW
 | adapter/android/device | 真实 getDisplayInfo | 实建该方法 | platform-ports、contracts |
 | adapter/android/persist-kv | Kotlin MMKV | 实建 | platform-ports、contracts |
 
-骨架节点由 22 增到 26：增加四个 sample feature 节点，三个既有 adapter 骨架转真实交付角色。交付角色九个，不是新增九个图节点。
+骨架节点由 22 增到 27：增加四个 sample feature 节点、一个可复用 Web 开发宿主节点，三个既有 adapter 骨架转真实交付角色。交付角色九个，不是新增九个图节点。
 
 UI feature 的依赖表必须写到真实包名，不能用 `kernel` 泛称掩盖边：两个 feature 使用 `state.StateJsonValue` 贯通组装描述/props 的类型契约，并分别消费自己的 kernel owner 命令、结果与 selector；`sample-member-desk` 直接消费 `display-context` 的屏数读取契约，`sample-staff-auth` 不直接消费该包。public requestId 与 request 观察由 render 的 `dispatchWithRequestId`、`useTrackedRequest`、`useRequestInFlight` 单点承担，feature 不再直接 import `contracts`。实现后的 `package.json`、依赖图与 import 必须逐项与此表对账，不能以“kernel 能力”作为替代证据。
 
@@ -204,14 +204,20 @@ desk actor 监听领域事件和本包呈现命令；需要屏数差异时实时
 
 一次 assembly 收集两个 UI feature 的 parts/variables，真实调用 createUiCatalog，创建 renderer catalog、ui-state module、display-context 和四个 sample module，再创建并启动 runtime。createSurface(displayMode) 从闭包取得所有依赖，resolve 时 status 已 started。
 
-test-expo 只负责开发外壳：surfaceMode 状态、由该状态返回 1/2 的 DevicePort、按状态挂一/两棵树、terminalSurfaces canvas、切换按钮和 Web 真实持久化。一个 React root 下两个兄弟 RenderProvider；每实例 reader/reporter 独立；切换不重建 runtime。
+`sample-console/test-expo/App.tsx` 只保留本包配置适配：把 `createSampleAssembly`、`terminalSurfaces`
+与运行时状态 reader 注入 `ui.base.dev-host` 的 `createTestExpoApp`。通用宿主由
+`apps/terminal/ui/base/dev-host/src/testExpoApp.tsx` 持有：`surfaceMode` 状态、由该状态返回
+1/2 的 DevicePort、按状态挂一/两棵树、`terminalSurfaces` canvas、切换按钮、Web 真实持久化、
+状态摘要与启动日志。一个 React root 下两个兄弟 RenderProvider；每实例 reader/reporter 独立；
+切换不重建 runtime。`ui.base.dev-host` 同时提供可复用的 Web PlatformPorts 与真实
+`StateStoragePort` 适配，宿主不导入任何 sample 业务包。
 
 terminalSurfaces 只在 sample-console/package.json 声明：
 
 ~~~json
 {
   "terminalSurfaces": {
-    "layout": "row",
+    "layout": "column",
     "scaleToFit": true,
     "surfaces": {
       "PRIMARY": { "width": 1920, "height": 1080 },
@@ -221,7 +227,8 @@ terminalSurfaces 只在 sample-console/package.json 声明：
 }
 ~~~
 
-库侧读取自身配置并导出 typed const，test-expo 不二次解析；Android 不读该字段。内部布局采用 flex 还是 absolute 仍须 Dexter 另裁。
+库侧读取自身配置并导出 typed const，通用宿主不二次解析；Android 不读该字段。外层 flex 只
+负责排布，surface 保持声明的固定逻辑尺寸，内部业务部件自行使用 primitives 的相对布局。
 
 ### 7.2 sample-terminal
 
@@ -331,12 +338,12 @@ persist-kv 在 Kotlin 使用 `com.tencent:mmkv` 提供的 MMKV，按 persistence
 | terminalSurfaces | sample-console package.json | typed const/test-expo | S-26/P-14 | 同步 |
 | Web persistence | test-expo StateStoragePort | S-12 | refresh fixture | 真实实现，非 Map |
 | three Android adapters | adapter contracts/Kotlin | sample-terminal | S-27/S-28/S-29 | 真机专属分别验 |
-| layering checker | tools/terminal-layering + skeleton verifier | 26 nodes/sample sources | model/red vectors | 与 sample 同批，不建空壳 |
+| layering checker | tools/terminal-layering + skeleton verifier | 27 nodes/sample sources | model/red vectors | 与 sample 同批，不建空壳 |
 | test collection | sample-console vitest/tsconfig/script/invariants | runner | ts/tsx collection | 新建接线 |
 
 ## 13. 验收设计
 
-每条 active S 与机械 P 都必须有能使对应行为或门失败的 red mutation。业务行为与生产源码约束改生产源码且不改夹具；纯静态 AST 模型门（本轮 P-5d）在一次性临时夹具上变异，证明 detector 能识别真实语法形态，当前生产树清洁另行证明，不能把两类证据合并。每条先 baseline control，再确认 focused test 收集数非零，最后 control 绿/negative 红；临时夹具由测试负责清理。P-5b/P-7/P-8/P-9 的 review 不由机器门代替。
+每条 active S 与机械 P 都必须有能使对应行为或门失败的 red mutation。业务行为与生产源码约束改生产源码且不改夹具；纯静态 AST 模型门（本轮 P-5d，覆盖 ui/feature、ui/base/dev-host 与 ui/integration/sample-console）在一次性临时夹具上变异，证明 detector 能识别真实语法形态，当前生产树清洁另行证明，不能把两类证据合并。每条先 baseline control，再确认 focused test 收集数非零，最后 control 绿/negative 红；临时夹具由测试负责清理。P-5b/P-7/P-8/P-9 的 review 不由机器门代替。
 
 ### 13.1 S 分母
 

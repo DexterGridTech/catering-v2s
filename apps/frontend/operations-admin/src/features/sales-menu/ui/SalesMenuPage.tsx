@@ -1,17 +1,14 @@
-import {DeleteOutlined, MoreOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
+import {MoreOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
 import {
   Alert,
   Button,
   Card,
   Col,
   Descriptions,
-  Divider,
   Drawer,
   Dropdown,
   Empty,
-  Image,
   Input,
-  InputNumber,
   Modal,
   Radio,
   Row,
@@ -21,1682 +18,78 @@ import {
   Spin,
   Table,
   Tag,
-  Tree,
   Typography,
 } from 'antd';
 import type {MenuProps, TableColumnsType} from 'antd';
 import {
-  AdminImageCollectionEditor,
-  type AdminImageCollectionItem,
-  type AdminImageCollectionStatus,
   CursorPagination,
   NameCodeText,
   adminDrawerSurfaceProps,
   adminListState,
-  adminWideDrawerSurfaceProps,
   testId,
   useDrawerFormLifecycle,
 } from '@catering-v2s/admin-ui-foundation';
 import {
-  cloneElement,
   forwardRef,
-  isValidElement,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
   type ComponentPropsWithoutRef,
-  type ReactElement,
   type ReactNode,
 } from 'react';
-import {operationsLogger, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
-import {
-  buildCatalogNavigationCategoryTree,
-  type CatalogNavigationCategory,
-  type CatalogNavigationCategoryTreeNode,
-} from '../../../app/api/catalogNavigationTree';
-import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
-import {publicRtkRequest} from '../../../app/api/generated/public-edge.rtk';
+import {operationsLogger} from '../../../app/api/OperationsTransport';
 import {OPERATIONS_ADMIN_OPERATION_IDS} from '../../../app/api/generated/operations-edge';
-import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {
   SalesMenuCommandReadback,
   SalesMenuDetail,
-  SalesMenuDisplayMedia,
   SalesMenuDraftItemView,
-  SalesMenuItemCandidate,
   SalesMenuOperationRecord,
-  SalesMenuOrderingConstraints,
   SalesMenuPublishedItemView,
   SalesMenuSchedule,
   SalesMenuSectionView,
-  SalesMenuSkuPrice,
   SalesMenuSummary,
   Uuid,
 } from '../../../app/api/generated/operations-edge';
-import {wireUuid} from '../../../app/api/wireUuid';
 import {ACTION_CAPABILITIES} from '../../../app/catalog/generatedAdminCatalog';
-import type {OperationsPageContext, OperationsPageProps} from '../../../app/routing/model';
+import type {OperationsPageProps} from '../../../app/routing/model';
 import {
   formatSalesMenuPrice,
   salesMenuChannelStatusLabel,
-  salesMenuDraftStateLabel,
   salesMenuInventoryAvailabilityLabel,
   salesMenuManualSaleStatusLabel,
   SALES_MENU_OPERATION_COLUMN_TITLE,
   salesMenuOperationLabel,
   salesMenuProductShapeLabel,
   salesMenuScheduleLabel,
-  salesMenuCandidateSelection,
-  mergeSalesMenuCandidateSelection,
   type SalesMenuMode,
 } from '../model/salesMenuModel';
 import {useSalesMenuCommands} from '../model/useSalesMenuCommands';
 import {useSalesMenuReadModel} from '../model/useSalesMenuReadModel';
 import {salesMenuTestIds} from '../salesMenuTestIds';
-
-const MEDIA_LIMITS = {maxImageCount: 6, maxImageBytes: 2 * 1024 * 1024} as const;
+import {SalesMenuAssetPreview} from './SalesMenuItemMediaEditor';
+import {SalesMenuTaskSurfaces} from './SalesMenuTaskSurfaces';
+import {
+  commandErrorMessage,
+  formatOccurredAt,
+  menuStateLabel,
+  problemMessage,
+  saleContentLabel,
+  salesMenuConstraintLabel,
+  salesMenuPriceLabel,
+  salesMenuSpecificationLabel,
+  type DraftOrPublishedItem,
+  type SalesMenuCommands,
+  type SalesMenuReadModel,
+} from './salesMenuUiShared';
+export {salesMenuCategoryTreeData} from './salesMenuUiShared';
 
 const SalesMenuSelectorInput = forwardRef<HTMLInputElement, ComponentPropsWithoutRef<'input'>>((props, ref) => (
   <input {...props} ref={ref} {...testId(salesMenuTestIds.menuSelectorInput)} />
 ));
 
 SalesMenuSelectorInput.displayName = 'SalesMenuSelectorInput';
-
-type SalesMenuReadModel = ReturnType<typeof useSalesMenuReadModel>;
-type SalesMenuCommands = ReturnType<typeof useSalesMenuCommands>;
-type DraftOrPublishedItem = SalesMenuDraftItemView | SalesMenuPublishedItemView;
-type SalesMenuCategoryTreeNode = {
-  title: ReactNode;
-  key: string;
-  children?: SalesMenuCategoryTreeNode[];
-};
-
-export function salesMenuCategoryTreeData(
-  categories: readonly CatalogNavigationCategory[],
-): SalesMenuCategoryTreeNode[] {
-  const render = (nodes: readonly CatalogNavigationCategoryTreeNode[]): SalesMenuCategoryTreeNode[] =>
-    nodes.map(({category, children}) => ({
-      title: category.name,
-      key: String(category.categoryRef),
-      ...(children.length > 0 ? {children: render(children)} : {}),
-    }));
-  return render(buildCatalogNavigationCategoryTree(categories));
-}
-
-function problemMessage(error: unknown, fallback: string): string | undefined {
-  if (!error) return undefined;
-  return operationsProblemOf(error).detail || fallback;
-}
-
-function commandErrorMessage(error: unknown, fallback: string): string {
-  return problemMessage(error, fallback) ?? fallback;
-}
-
-function formatOccurredAt(value: number): string {
-  return new Date(value).toLocaleString();
-}
-
-function menuStateLabel(menu: Pick<SalesMenuDetail, 'archived' | 'draftDirty'>): string {
-  if (menu.archived) return '已归档';
-  return salesMenuDraftStateLabel(menu.draftDirty);
-}
-
-function saleContentLabel(item: DraftOrPublishedItem): string {
-  const content = item.saleContent;
-  if (content.kind === 'SKU_SELECTION') return `${content.skuPrices.length} 个规格`;
-  if (content.kind === 'WEIGHTED') return `按称重数量销售 · ${content.salesUnit.name}`;
-  if (content.kind === 'COMPOSITE') return `按套餐整体销售 · ${formatSalesMenuPrice(content.listedPriceCents)}`;
-  return `直接销售 · ${formatSalesMenuPrice(content.listedPriceCents)}`;
-}
-
-function salesMenuSpecificationLabel(item: DraftOrPublishedItem): string {
-  const content = item.saleContent;
-  if (content.kind === 'SKU_SELECTION') {
-    return content.skuPrices.length > 0 ? content.skuPrices.map(price => price.skuName).join('、') : '未选择规格';
-  }
-  if (content.kind === 'WEIGHTED') return '按称重数量';
-  return '无规格';
-}
-
-function salesMenuConstraintLabel(item: DraftOrPublishedItem): string {
-  if (item.saleContent.kind === 'WEIGHTED') return '不适用';
-  return `起售量 ${item.orderingConstraints.minItemQuantity ?? '未设置'}；订购倍数 ${item.orderingConstraints.quantityStep ?? '未设置'}`;
-}
-
-function salesMenuPriceLabel(item: DraftOrPublishedItem): string {
-  if (item.saleContent.kind === 'SKU_SELECTION') {
-    return item.saleContent.skuPrices.length > 0
-      ? item.saleContent.skuPrices
-          .map(
-            price =>
-              `${price.skuName}：菜单 ${formatSalesMenuPrice(price.listedPriceCents)} / 默认 ${formatSalesMenuPrice(price.standardPriceCents)}`,
-          )
-          .join('；')
-      : '未设置';
-  }
-  return formatSalesMenuPrice(item.saleContent.listedPriceCents);
-}
-
-function itemMediaLabel(item: DraftOrPublishedItem): string {
-  return item.displayMedia.mode === 'INHERIT_CATALOG'
-    ? '沿用商品图片'
-    : `${item.displayMedia.assetRefs.length} 张菜单图片`;
-}
-
-function blockerLabel(kind: string): string {
-  const labels: Record<string, string> = {
-    STORE_DISABLED: '门店已停用，暂不能更新到前台。',
-    CHANNEL_DISABLED: '当前经营入口已停用。',
-    CHANNEL_INELIGIBLE: '当前经营入口不满足菜单条件。',
-    CATALOG_ITEM_INVALID: '存在商品基础信息未通过校验。',
-    SKU_SELECTION_EMPTY: '存在按规格管理商品尚未选择规格。',
-    SKU_INVALID: '存在规格信息已失效。',
-    LISTED_PRICE_MISSING: '存在商品尚未设置挂牌价。',
-    ORDERING_CONSTRAINT_INVALID: '存在商品的起售量或订购倍数不合法。',
-    DISPLAY_ASSET_PENDING_OR_INVALID: '存在菜单图片仍在处理中或不可用。',
-    SCHEDULE_INVALID: '菜单时段设置不完整。',
-  };
-  return labels[kind] ?? '菜单还有内容未满足更新到前台的条件。';
-}
-
-function SalesMenuAssetPreview({
-  assetRef,
-  localFile,
-  alt,
-  testId: previewTestId,
-}: {
-  assetRef?: string;
-  localFile?: File;
-  alt: string;
-  testId?: string;
-}) {
-  const [localUrl, setLocalUrl] = useState<string>();
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    if (!localFile) {
-      setLocalUrl(undefined);
-      return;
-    }
-    const nextUrl = URL.createObjectURL(localFile);
-    setLocalUrl(nextUrl);
-    return () => URL.revokeObjectURL(nextUrl);
-  }, [localFile]);
-  const request = useMemo(
-    () => (assetRef ? publicRtkRequest.getPublicAssetContent({assetRef: wireUuid(assetRef)}, {}) : undefined),
-    [assetRef],
-  );
-  const assetQuery = operationsRtk.useGetPublicAssetContentQuery(request!, {
-    skip: Boolean(localFile || !assetRef || !request),
-  });
-  useEffect(() => setFailed(false), [assetRef, localUrl, assetQuery.currentData?.publicUrl]);
-  const source = localUrl ?? assetQuery.currentData?.publicUrl;
-  if (!source || failed || assetQuery.isError)
-    return (
-      <span
-        style={{width: 96, height: 72, display: 'grid', placeItems: 'center', overflow: 'hidden'}}
-        role="status"
-        data-testid={previewTestId}
-      >
-        <Typography.Text type="secondary" style={{fontSize: 12}}>
-          图片不可用
-        </Typography.Text>
-        {assetRef && !localFile && (
-          <Button size="small" type="link" onClick={() => void assetQuery.refetch()}>
-            重试加载
-          </Button>
-        )}
-      </span>
-    );
-  return (
-    <Image
-      width={96}
-      height={72}
-      src={source}
-      alt={alt}
-      preview
-      style={{objectFit: 'cover'}}
-      onError={() => setFailed(true)}
-      data-testid={previewTestId}
-    />
-  );
-}
-
-type SalesMenuMediaItem = AdminImageCollectionItem & {
-  assetRef?: Uuid;
-  bindGrant?: string;
-  version?: number;
-  staged: boolean;
-  error?: string;
-};
-
-function mediaItemsFromReadModel(media: SalesMenuDisplayMedia): SalesMenuMediaItem[] {
-  return media.assetRefs.map(assetRef => ({
-    id: String(assetRef),
-    identity: String(assetRef),
-    assetRef,
-    fileName: '菜单图片',
-    status: 'READY',
-    hasPreview: true,
-    staged: false,
-  }));
-}
-
-function SalesMenuMediaEditor({
-  item,
-  menuRef,
-  open,
-  media,
-  queryContext,
-  commands,
-  onChange,
-  onPendingChange,
-  onRegisterRelease,
-}: {
-  item: SalesMenuDraftItemView;
-  menuRef: Uuid;
-  open: boolean;
-  media: SalesMenuDisplayMedia;
-  queryContext: OperationsPageContext;
-  commands: SalesMenuCommands;
-  onChange: (next: SalesMenuDisplayMedia, bindGrants: Record<string, string>) => void;
-  onPendingChange: (pending: boolean) => void;
-  onRegisterRelease: (release?: () => Promise<boolean>) => void;
-}) {
-  const [items, setItems] = useState<SalesMenuMediaItem[]>(() => mediaItemsFromReadModel(media));
-  const [bindGrants, setBindGrants] = useState<Record<string, string>>({});
-  const [problem, setProblem] = useState<string>();
-  const mediaMode = media.mode;
-  const lastSessionKey = useRef<string | undefined>(undefined);
-
-  useEffect(() => {
-    operationsLogger.info({
-      event: 'sales-menu.media.editor',
-      phase: 'MEDIA_MODE',
-      outcome: mediaMode,
-      operationId: 'sales-menu-item-media',
-    });
-  }, [mediaMode]);
-
-  useEffect(() => {
-    const sessionKey = `${item.salesItemRef}:${open ? 'open' : 'closed'}`;
-    if (lastSessionKey.current === sessionKey) return;
-    lastSessionKey.current = sessionKey;
-    setItems(mediaItemsFromReadModel(item.displayMedia));
-    setBindGrants({});
-    setProblem(undefined);
-  }, [item, open]);
-
-  const publishChange = useCallback(
-    (nextItems: SalesMenuMediaItem[], nextGrants: Record<string, string>, mode = mediaMode) => {
-      setItems(nextItems);
-      setBindGrants(nextGrants);
-      const assetRefs = nextItems.flatMap(next => (next.assetRef ? [next.assetRef] : []));
-      onChange({mode, assetRefs, primaryAssetRef: assetRefs[0] ?? null}, nextGrants);
-    },
-    [mediaMode, onChange],
-  );
-
-  const releaseStagedMedia = useCallback(async (): Promise<boolean> => {
-    if (items.some(asset => asset.status === 'UPLOADING')) {
-      setProblem('图片仍在上传或处理中，请完成或重试后再关闭。');
-      return false;
-    }
-    const staged = items.filter(asset => asset.staged && asset.assetRef && asset.version !== undefined);
-    if (staged.length === 0) return true;
-    const outcomes = await Promise.all(
-      staged.map(async asset => {
-        try {
-          await commands.release(
-            {
-              groupWorkspaceKey: queryContext.groupWorkspaceKey,
-              storeRef: queryContext.scopeRef as Uuid,
-              salesMenuRef: menuRef,
-              salesItemRef: item.salesItemRef,
-              assetRef: asset.assetRef as Uuid,
-            },
-            {expectedAssetVersion: asset.version as number},
-          );
-          return {asset, released: true};
-        } catch (error) {
-          setProblem(commandErrorMessage(error, '图片资产释放未完成，请重试关闭。'));
-          return {asset, released: false};
-        }
-      }),
-    );
-    const releasedIds = new Set(outcomes.filter(outcome => outcome.released).map(outcome => outcome.asset.id));
-    if (releasedIds.size > 0) {
-      const nextItems = items.filter(asset => !releasedIds.has(asset.id));
-      const nextGrants = Object.fromEntries(
-        Object.entries(bindGrants).filter(([assetRef]) =>
-          nextItems.some(asset => asset.assetRef && String(asset.assetRef) === assetRef && asset.staged),
-        ),
-      );
-      publishChange(nextItems, nextGrants);
-    }
-    return outcomes.every(outcome => outcome.released);
-  }, [bindGrants, commands, item.salesItemRef, items, menuRef, publishChange, queryContext]);
-
-  useEffect(() => {
-    onRegisterRelease(releaseStagedMedia);
-    return () => onRegisterRelease(undefined);
-  }, [onRegisterRelease, releaseStagedMedia]);
-
-  const stageMedia = useCallback(
-    async (file: File, existingId?: string) => {
-      setProblem(undefined);
-      if (file.size > MEDIA_LIMITS.maxImageBytes) {
-        operationsLogger.warn({
-          event: 'sales-menu.media.stage',
-          phase: 'VALIDATION',
-          outcome: 'REJECTED_SIZE',
-          operationId: OPERATIONS_ADMIN_OPERATION_IDS.stageOperationsSalesMenuAsset,
-        });
-        setProblem('单张图片不能超过 2MB。');
-        return;
-      }
-      if (!existingId && items.length >= MEDIA_LIMITS.maxImageCount) {
-        operationsLogger.warn({
-          event: 'sales-menu.media.stage',
-          phase: 'VALIDATION',
-          outcome: 'REJECTED_COUNT_LIMIT',
-          operationId: OPERATIONS_ADMIN_OPERATION_IDS.stageOperationsSalesMenuAsset,
-        });
-        setProblem('最多维护 6 张图片（1 张主图 + 5 张附图）。');
-        return;
-      }
-      const id = existingId ?? `pending-${file.name}-${Date.now()}`;
-      const placeholder: SalesMenuMediaItem = {
-        id,
-        identity: existingId ?? id,
-        assetRef: existingId ? items.find(current => current.id === existingId)?.assetRef : undefined,
-        version: existingId ? items.find(current => current.id === existingId)?.version : undefined,
-        bindGrant: existingId ? items.find(current => current.id === existingId)?.bindGrant : undefined,
-        fileName: file.name,
-        status: 'UPLOADING',
-        file,
-        hasPreview: true,
-        staged: true,
-      };
-      const before = items;
-      const optimistic = existingId
-        ? before.map(current => (current.id === existingId ? placeholder : current))
-        : [...before, placeholder];
-      setItems(optimistic);
-      onPendingChange(true);
-      operationsLogger.info({
-        event: 'sales-menu.media.stage',
-        phase: 'MEDIA_STAGE',
-        outcome: 'STARTED',
-        operationId: OPERATIONS_ADMIN_OPERATION_IDS.stageOperationsSalesMenuAsset,
-      });
-      try {
-        const response = await commands.stage(
-          {
-            groupWorkspaceKey: queryContext.groupWorkspaceKey,
-            storeRef: queryContext.scopeRef as Uuid,
-            salesMenuRef: menuRef,
-            salesItemRef: item.salesItemRef,
-          },
-          file,
-          item.version,
-        );
-        const nextItem: SalesMenuMediaItem = {
-          ...placeholder,
-          id: String(response.assetRef),
-          identity: String(response.assetRef),
-          assetRef: response.assetRef,
-          version: response.version,
-          status: 'READY',
-          hasPreview: true,
-          staged: true,
-          bindGrant: response.bindGrant,
-          error: undefined,
-        };
-        const previousStaged =
-          existingId && placeholder.assetRef && placeholder.version !== undefined && placeholder.staged
-            ? placeholder
-            : undefined;
-        if (previousStaged) {
-          try {
-            await commands.release(
-              {
-                groupWorkspaceKey: queryContext.groupWorkspaceKey,
-                storeRef: queryContext.scopeRef as Uuid,
-                salesMenuRef: menuRef,
-                salesItemRef: item.salesItemRef,
-                assetRef: previousStaged.assetRef as Uuid,
-              },
-              {expectedAssetVersion: previousStaged.version as number},
-            );
-          } catch (error) {
-            let replacementReleased = false;
-            try {
-              await commands.release(
-                {
-                  groupWorkspaceKey: queryContext.groupWorkspaceKey,
-                  storeRef: queryContext.scopeRef as Uuid,
-                  salesMenuRef: menuRef,
-                  salesItemRef: item.salesItemRef,
-                  assetRef: response.assetRef,
-                },
-                {expectedAssetVersion: response.version},
-              );
-              replacementReleased = true;
-            } catch {
-              // Keep the original failure visible; the next user action must
-              // still be able to retry the authoritative release.
-            }
-            setItems(current => {
-              const restored = current.map(currentItem => (currentItem.id === id ? previousStaged : currentItem));
-              return replacementReleased ? restored : [...restored, nextItem];
-            });
-            if (!replacementReleased) {
-              setBindGrants(current => ({...current, [String(response.assetRef)]: response.bindGrant}));
-            }
-            setProblem(commandErrorMessage(error, '替换前的暂存图片释放未完成，请重试。'));
-            return;
-          }
-        }
-        const nextItems = optimistic.map(current => (current.id === id ? nextItem : current));
-        const nextGrants = {...bindGrants, [String(response.assetRef)]: response.bindGrant};
-        if (existingId && placeholder.assetRef) delete nextGrants[String(placeholder.assetRef)];
-        publishChange(nextItems, nextGrants);
-        operationsLogger.info({
-          event: 'sales-menu.media.stage',
-          phase: 'MEDIA_STAGE',
-          outcome: 'SUCCEEDED',
-          operationId: OPERATIONS_ADMIN_OPERATION_IDS.stageOperationsSalesMenuAsset,
-        });
-      } catch (error) {
-        const failed = optimistic.map(current =>
-          current.id === id
-            ? {...current, status: 'FAILED' as AdminImageCollectionStatus, error: '上传失败，请重试。'}
-            : current,
-        );
-        setItems(failed);
-        setProblem(commandErrorMessage(error, '图片上传失败，请重试。'));
-        operationsLogger.warn({
-          event: 'sales-menu.media.stage',
-          phase: 'MEDIA_STAGE',
-          outcome: 'FAILED',
-          operationId: OPERATIONS_ADMIN_OPERATION_IDS.stageOperationsSalesMenuAsset,
-          errorCode: String(operationsProblemOf(error).errorCode),
-        });
-      } finally {
-        onPendingChange(false);
-        operationsLogger.info({
-          event: 'sales-menu.media.stage',
-          phase: 'MEDIA_STAGE',
-          outcome: 'FINISHED',
-          operationId: OPERATIONS_ADMIN_OPERATION_IDS.stageOperationsSalesMenuAsset,
-        });
-      }
-    },
-    [bindGrants, commands, item, items, menuRef, onPendingChange, publishChange, queryContext],
-  );
-
-  const removeMedia = useCallback(
-    async (id: string, index: number) => {
-      if (index === 0 && items.length > 1) return;
-      const removed = items.find(current => current.id === id);
-      if (removed?.staged && removed.assetRef && removed.version !== undefined) {
-        try {
-          await commands.release(
-            {
-              groupWorkspaceKey: queryContext.groupWorkspaceKey,
-              storeRef: queryContext.scopeRef as Uuid,
-              salesMenuRef: menuRef,
-              salesItemRef: item.salesItemRef,
-              assetRef: removed.assetRef,
-            },
-            {expectedAssetVersion: removed.version},
-          );
-        } catch (error) {
-          setProblem(commandErrorMessage(error, '图片资产释放未完成，请重试。'));
-          return;
-        }
-      }
-      const nextItems = items.filter(current => current.id !== id);
-      const nextGrants = {...bindGrants};
-      if (removed?.assetRef) delete nextGrants[String(removed.assetRef)];
-      publishChange(nextItems, nextGrants);
-    },
-    [bindGrants, commands, item.salesItemRef, items, menuRef, publishChange, queryContext],
-  );
-
-  const moveMedia = useCallback(
-    (id: string, offset: -1 | 1) => {
-      const index = items.findIndex(current => current.id === id);
-      const nextIndex = index + offset;
-      if (index < 0 || nextIndex < 0 || nextIndex >= items.length) return;
-      const nextItems = [...items];
-      const [moved] = nextItems.splice(index, 1);
-      nextItems.splice(nextIndex, 0, moved);
-      publishChange(nextItems, bindGrants);
-    },
-    [bindGrants, items, publishChange],
-  );
-
-  const setPrimary = useCallback(
-    (id: string) => {
-      const index = items.findIndex(current => current.id === id);
-      if (index <= 0) return;
-      const nextItems = [items[index], ...items.slice(0, index), ...items.slice(index + 1)];
-      publishChange(nextItems, bindGrants);
-    },
-    [bindGrants, items, publishChange],
-  );
-
-  return (
-    <Space direction="vertical" size={10} style={{display: 'flex'}}>
-      <Radio.Group
-        value={mediaMode}
-        onChange={event => {
-          const nextMode = event.target.value as SalesMenuDisplayMedia['mode'];
-          publishChange(nextMode === 'CUSTOM' ? items : [], bindGrants, nextMode);
-        }}
-        {...testId(salesMenuTestIds.itemMediaMode)}
-      >
-        <Radio value="INHERIT_CATALOG" {...testId(salesMenuTestIds.itemMediaChoice('INHERIT_CATALOG'))}>
-          沿用商品图片
-        </Radio>
-        <Radio value="CUSTOM" {...testId(salesMenuTestIds.itemMediaChoice('CUSTOM'))}>
-          单独设置
-        </Radio>
-      </Radio.Group>
-      {mediaMode === 'INHERIT_CATALOG' ? (
-        <Typography.Text type="secondary">预览使用商品当前主图；菜单不会复制出另一份图片。</Typography.Text>
-      ) : (
-        <>
-          {problem && <Alert type="error" showIcon title={problem} />}
-          <AdminImageCollectionEditor
-            items={items}
-            limits={MEDIA_LIMITS}
-            labels={{
-              title: '展示图片',
-              formatLimits: count => `${count}/6（1 张主图 + 5 张附图） · 单张上限 2MB`,
-              loading: '媒体规则加载中',
-              atLimit: '已达图片上限',
-              upload: '上传图片',
-              empty: '未配置图片',
-              pendingPreview: asset => (
-                <span style={{width: 96, height: 72, display: 'grid', placeItems: 'center'}}>
-                  <Typography.Text type="secondary">
-                    {asset.status === 'FAILED' ? '图片上传失败' : '待上传'}
-                  </Typography.Text>
-                </span>
-              ),
-              renderPreview: (asset, index, previewId) => (
-                <SalesMenuAssetPreview
-                  assetRef={asset.assetRef}
-                  localFile={asset.file}
-                  alt={`${index === 0 ? '主图' : `附图 ${index}`}预览`}
-                  testId={previewId}
-                />
-              ),
-              renderStatus: asset =>
-                asset.status === 'UPLOADING'
-                  ? '上传中/处理中'
-                  : asset.status === 'FAILED'
-                    ? (asset.error ?? '上传失败')
-                    : asset.staged
-                      ? '待保存'
-                      : '可用',
-              positionLabel: index => (index === 0 ? '★ 主图' : `附图 ${index}`),
-              replace: '替换',
-              retry: '重试',
-              moveUp: '上移',
-              moveDown: '下移',
-              setPrimary: '设为主图',
-              remove: '移除',
-            }}
-            testIds={{
-              root: salesMenuTestIds.itemMediaEditor,
-              upload: salesMenuTestIds.itemMediaUpload,
-              list: salesMenuTestIds.itemMediaList,
-              item: salesMenuTestIds.itemMedia,
-            }}
-            onStageMedia={stageMedia}
-            onRemoveMedia={removeMedia}
-            onMoveMedia={moveMedia}
-            onSetPrimaryMedia={setPrimary}
-          />
-        </>
-      )}
-    </Space>
-  );
-}
-
-function SalesMenuItemDetailDrawer({
-  item,
-  open,
-  queryContext,
-  menuRef,
-  channelRef,
-  onClose,
-}: {
-  item?: DraftOrPublishedItem;
-  open: boolean;
-  queryContext: OperationsPageContext;
-  menuRef?: Uuid;
-  channelRef?: Uuid;
-  onClose: () => void;
-}) {
-  const publishedRow = item && 'inventoryAvailability' in item ? item : undefined;
-  const publishedDetailRequest = useMemo(
-    () =>
-      operationsAdminRtkRequest.getOperationsSalesMenuPublishedItem(
-        {
-          groupWorkspaceKey: queryContext.groupWorkspaceKey,
-          storeRef: wireUuid(queryContext.scopeRef ?? ''),
-          salesMenuRef: menuRef ?? ('' as Uuid),
-          salesItemRef: publishedRow?.salesItemRef ?? ('' as Uuid),
-        },
-        {query: {channelRef: channelRef ?? ('' as Uuid)}},
-      ),
-    [channelRef, menuRef, publishedRow?.salesItemRef, queryContext.groupWorkspaceKey, queryContext.scopeRef],
-  );
-  const publishedDetailQuery = operationsRtk.useGetOperationsSalesMenuPublishedItemQuery(publishedDetailRequest, {
-    skip: !open || !publishedRow || !queryContext.scopeRef || !menuRef || !channelRef,
-  });
-  // The published list is a paginated read model.  Detail must come from the
-  // owner operation and must never reuse a previous row when the identity changes.
-  const publishedDetail = useMemo(() => {
-    if (publishedDetailQuery.isError) return undefined;
-    const current = publishedDetailQuery.currentData ?? publishedDetailQuery.data;
-    return current && publishedRow && current.salesItemRef === publishedRow.salesItemRef ? current : undefined;
-  }, [publishedDetailQuery.currentData, publishedDetailQuery.data, publishedDetailQuery.isError, publishedRow]);
-  const displayedItem = publishedRow ? publishedDetail : item;
-  const published = Boolean(publishedRow);
-  return (
-    <Drawer
-      open={open}
-      title="销售项详情"
-      onClose={onClose}
-      maskClosable
-      width="min(720px, calc(100vw - 48px))"
-      {...adminDrawerSurfaceProps}
-      {...testId(salesMenuTestIds.itemDetail)}
-    >
-      {publishedDetailQuery.isLoading && !displayedItem && <Typography.Text>正在读取前台销售项详情…</Typography.Text>}
-      {publishedDetailQuery.error && (
-        <Alert
-          type="error"
-          showIcon
-          title="前台销售项详情暂时无法获取"
-          description="请重试或稍后再试。"
-          action={<Button onClick={() => void publishedDetailQuery.refetch()}>重试</Button>}
-        />
-      )}
-      {displayedItem && (
-        <Space direction="vertical" size={16} style={{display: 'flex'}}>
-          <Descriptions bordered size="small" column={1}>
-            <Descriptions.Item label="菜单商品">
-              <NameCodeText name={displayedItem.displayName} code={displayedItem.itemCode} />
-            </Descriptions.Item>
-            <Descriptions.Item label="商品形态">
-              {salesMenuProductShapeLabel(displayedItem.productShape)}
-            </Descriptions.Item>
-            <Descriptions.Item label="销售内容">{saleContentLabel(displayedItem)}</Descriptions.Item>
-            <Descriptions.Item label="适用挂牌价">
-              {displayedItem.saleContent.kind === 'SKU_SELECTION'
-                ? '按规格分别设置'
-                : formatSalesMenuPrice(displayedItem.saleContent.listedPriceCents)}
-            </Descriptions.Item>
-            <Descriptions.Item label="适用约束">
-              {displayedItem.saleContent.kind === 'WEIGHTED'
-                ? '称重销售不显示按份约束'
-                : `起售量 ${displayedItem.orderingConstraints.minItemQuantity ?? '未设置'}；订购倍数 ${displayedItem.orderingConstraints.quantityStep ?? '未设置'}`}
-            </Descriptions.Item>
-            <Descriptions.Item label="展示图片">{itemMediaLabel(displayedItem)}</Descriptions.Item>
-          </Descriptions>
-          {displayedItem.saleContent.kind === 'SKU_SELECTION' && (
-            <Card size="small" title="规格与挂牌价">
-              <Table<SalesMenuSkuPrice>
-                size="small"
-                rowKey="skuRef"
-                pagination={false}
-                dataSource={displayedItem.saleContent.skuPrices}
-                columns={[
-                  {title: '规格', dataIndex: 'skuName', key: 'skuName'},
-                  {title: '规格编码', dataIndex: 'skuCode', key: 'skuCode'},
-                  {
-                    title: '商品默认价',
-                    key: 'standardPrice',
-                    render: (_, row) => formatSalesMenuPrice(row.standardPriceCents),
-                  },
-                  {
-                    title: '菜单挂牌价',
-                    key: 'listedPrice',
-                    render: (_, row) => formatSalesMenuPrice(row.listedPriceCents),
-                  },
-                ]}
-              />
-            </Card>
-          )}
-          {displayedItem.saleContent.kind === 'WEIGHTED' && (
-            <Card size="small" title="销售单位">
-              <Descriptions bordered size="small" column={1}>
-                <Descriptions.Item label="单位">
-                  <NameCodeText
-                    name={displayedItem.saleContent.salesUnit.name}
-                    code={displayedItem.saleContent.salesUnit.code}
-                  />
-                </Descriptions.Item>
-                <Descriptions.Item label="精度">{displayedItem.saleContent.salesUnit.precision}</Descriptions.Item>
-              </Descriptions>
-            </Card>
-          )}
-          {published && publishedDetail && (
-            <Row gutter={[12, 12]}>
-              <Col span={12}>
-                <Card size="small" title="库存状态">
-                  {salesMenuInventoryAvailabilityLabel(publishedDetail.inventoryAvailability)}
-                </Card>
-              </Col>
-              <Col span={12}>
-                <Card size="small" title="销售状态">
-                  {salesMenuManualSaleStatusLabel(publishedDetail.manualSaleStatus)}
-                </Card>
-              </Col>
-            </Row>
-          )}
-        </Space>
-      )}
-    </Drawer>
-  );
-}
-
-function SalesMenuItemEditorDrawer({
-  item: rowItem,
-  open,
-  queryContext,
-  menuRef,
-  menuVersion,
-  commands,
-  onSave,
-  onClose,
-  onSaved,
-  onDelete,
-  onClosedFocus,
-}: {
-  item?: SalesMenuDraftItemView;
-  open: boolean;
-  queryContext: OperationsPageContext;
-  menuRef?: Uuid;
-  menuVersion?: number;
-  commands: SalesMenuCommands;
-  onSave: (
-    item: SalesMenuDraftItemView,
-    body: Parameters<SalesMenuCommands['updateItem']>[1],
-    grants: Record<string, string>,
-  ) => Promise<boolean>;
-  onClose: () => void;
-  onSaved: () => void;
-  onDelete: (item: SalesMenuDraftItemView, beforeDelete?: () => Promise<boolean>) => void;
-  onClosedFocus: () => void;
-}) {
-  const detailRequest = useMemo(
-    () =>
-      operationsAdminRtkRequest.getOperationsSalesMenuDraftItem(
-        {
-          groupWorkspaceKey: queryContext.groupWorkspaceKey,
-          storeRef: wireUuid(queryContext.scopeRef ?? ''),
-          salesMenuRef: menuRef ?? ('' as Uuid),
-          salesItemRef: rowItem?.salesItemRef ?? ('' as Uuid),
-        },
-        {},
-      ),
-    [menuRef, queryContext.groupWorkspaceKey, queryContext.scopeRef, rowItem?.salesItemRef],
-  );
-  const detailQuery = operationsRtk.useGetOperationsSalesMenuDraftItemQuery(detailRequest, {
-    skip: !open || !rowItem || !queryContext.scopeRef || !menuRef,
-  });
-  // A drawer is opened from a paginated row, but the editor must hydrate from the
-  // owner detail operation.  Never reuse a previous item's detail while identity changes
-  // or while the current owner readback is still in flight.
-  const detail = useMemo(() => {
-    if (detailQuery.isError || detailQuery.isFetching) return undefined;
-    const current = detailQuery.currentData;
-    return current && rowItem && current.salesItemRef === rowItem.salesItemRef ? current : undefined;
-  }, [detailQuery.currentData, detailQuery.isError, detailQuery.isFetching, rowItem]);
-  const item = detail ?? rowItem;
-  const [displayName, setDisplayName] = useState('');
-  const [listedPriceCents, setListedPriceCents] = useState<number | null>(null);
-  const [skuPrices, setSkuPrices] = useState<SalesMenuSkuPrice[]>([]);
-  const [constraints, setConstraints] = useState<SalesMenuOrderingConstraints>({
-    minItemQuantity: null,
-    quantityStep: null,
-  });
-  const [displayMedia, setDisplayMedia] = useState<SalesMenuDisplayMedia>({
-    mode: 'INHERIT_CATALOG',
-    assetRefs: [],
-    primaryAssetRef: null,
-  });
-  const [assetBindGrants, setAssetBindGrants] = useState<Record<string, string>>({});
-  const [mediaPending, setMediaPending] = useState(false);
-  const [problem, setProblem] = useState<string>();
-  const [saving, setSaving] = useState(false);
-  const [closing, setClosing] = useState(false);
-  const stagedReleaseRef = useRef<() => Promise<boolean>>(() => Promise.resolve(true));
-  const closingAfterSaveRef = useRef(false);
-  const closeInFlightRef = useRef(false);
-  const openedRef = useRef(false);
-  const lifecycleRef = useRef<{
-    reset: () => void;
-    setDirty: (dirty: boolean) => void;
-  } | null>(null);
-  const lifecycle = useDrawerFormLifecycle({
-    open,
-    onOpenChange: nextOpen => {
-      if (nextOpen) return;
-      if (closingAfterSaveRef.current) {
-        closingAfterSaveRef.current = false;
-        onClose();
-        return;
-      }
-      if (closeInFlightRef.current) return;
-      closeInFlightRef.current = true;
-      setClosing(true);
-      lifecycle.setSubmitting(true);
-      void stagedReleaseRef
-        .current()
-        .then(released => {
-          if (released) {
-            onClose();
-            return;
-          }
-          lifecycleRef.current?.reset();
-          lifecycleRef.current?.setDirty(true);
-        })
-        .finally(() => {
-          lifecycle.setSubmitting(false);
-          closeInFlightRef.current = false;
-          setClosing(false);
-        });
-    },
-    dirtyMessage: '已填写的内容不会保存。',
-    dirtyGuardTestIds: {
-      confirm: testId(salesMenuTestIds.itemDiscardConfirm),
-      cancel: testId(salesMenuTestIds.itemDiscardCancel),
-    },
-    onSuccessClosed: onSaved,
-    diagnosticOperationId: OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsSalesMenuItem,
-    idempotencyKey: true,
-  });
-  lifecycleRef.current = lifecycle;
-  const resetLifecycle = lifecycle.reset;
-
-  useEffect(() => {
-    if (!detail || !open) return;
-    if (lifecycle.dirty) {
-      operationsLogger.info({
-        event: 'sales-menu.item.editor',
-        phase: 'DRAFT_HYDRATION',
-        outcome: 'SKIPPED_DIRTY_DRAFT',
-        operationId: OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsSalesMenuItem,
-        diagnostic: {
-          itemVersion: detail.version,
-          menuVersion: menuVersion ?? null,
-          draftState: 'DIRTY',
-        },
-      });
-      return;
-    }
-    operationsLogger.info({
-      event: 'sales-menu.item.editor',
-      phase: 'EDITOR',
-      outcome: 'OPENED',
-      operationId: OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsSalesMenuItem,
-      diagnostic: {
-        itemVersion: detail.version,
-        menuVersion: menuVersion ?? null,
-        expectedVersionSource: 'SALES_MENU_DETAIL',
-      },
-    });
-    openedRef.current = true;
-    setDisplayName(detail.displayName);
-    setListedPriceCents(detail.saleContent.listedPriceCents);
-    setSkuPrices(detail.saleContent.skuPrices);
-    setConstraints(detail.orderingConstraints);
-    setDisplayMedia(detail.displayMedia);
-    setAssetBindGrants({});
-    setMediaPending(false);
-    setProblem(undefined);
-    setClosing(false);
-    closeInFlightRef.current = false;
-    closingAfterSaveRef.current = false;
-    resetLifecycle();
-  }, [detail, lifecycle, menuVersion, open, resetLifecycle]);
-
-  const markDirty = useCallback(() => {
-    lifecycle.setDirty(true);
-    lifecycle.markBusinessIntentChanged();
-  }, [lifecycle]);
-
-  const handleMediaPendingChange = useCallback(
-    (pending: boolean) => {
-      setMediaPending(pending);
-      lifecycle.setSubmitting(pending);
-      if (pending) markDirty();
-    },
-    [lifecycle, markDirty],
-  );
-
-  const handleAfterOpenChange = useCallback(
-    (visible: boolean) => {
-      lifecycle.afterOpenChange(visible);
-      if (!visible && openedRef.current) {
-        openedRef.current = false;
-        window.requestAnimationFrame(onClosedFocus);
-      }
-    },
-    [lifecycle, onClosedFocus],
-  );
-
-  const registerStagedRelease = useCallback((release?: () => Promise<boolean>) => {
-    stagedReleaseRef.current = release ?? (() => Promise.resolve(true));
-  }, []);
-
-  const save = useCallback(async () => {
-    if (!item || !menuRef || menuVersion === undefined || mediaPending) return;
-    setProblem(undefined);
-    setSaving(true);
-    lifecycle.setSubmitting(true);
-    const isSku = item.saleContent.kind === 'SKU_SELECTION';
-    operationsLogger.info({
-      event: 'sales-menu.item.editor',
-      phase: 'COMMAND_INPUT',
-      outcome: 'VERSION_BOUND',
-      operationId: OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsSalesMenuItem,
-      diagnostic: {
-        itemVersion: item.version,
-        menuVersion,
-        expectedVersion: menuVersion,
-        expectedVersionSource: 'SALES_MENU_DETAIL',
-      },
-    });
-    try {
-      const saved = await onSave(
-        item,
-        {
-          displayNameOverride: displayName.trim() ? displayName.trim() : null,
-          saleContent: {
-            kind: item.saleContent.kind,
-            listedPriceCents: isSku ? null : listedPriceCents,
-            skuPrices: isSku ? skuPrices : [],
-          },
-          orderingConstraints:
-            item.saleContent.kind === 'WEIGHTED' ? {minItemQuantity: null, quantityStep: null} : constraints,
-          displayMedia,
-          expectedVersion: menuVersion,
-        },
-        assetBindGrants,
-      );
-      if (!saved) {
-        lifecycle.setSubmitting(false);
-        return;
-      }
-      closingAfterSaveRef.current = true;
-      lifecycle.closeAfterSuccess();
-    } catch (error) {
-      setProblem(commandErrorMessage(error, '销售项保存失败，请检查后重试。'));
-      lifecycle.setSubmitting(false);
-    } finally {
-      setSaving(false);
-    }
-  }, [
-    assetBindGrants,
-    constraints,
-    displayMedia,
-    displayName,
-    item,
-    lifecycle,
-    listedPriceCents,
-    mediaPending,
-    menuRef,
-    menuVersion,
-    onSave,
-    skuPrices,
-  ]);
-
-  if (!item) return null;
-  const isSku = item.saleContent.kind === 'SKU_SELECTION';
-  const isWeighted = item.saleContent.kind === 'WEIGHTED';
-  return (
-    <Drawer
-      open={open}
-      title={
-        <Space>
-          <span>编辑销售项</span>
-          <Tag>{salesMenuProductShapeLabel(item.productShape)}</Tag>
-        </Space>
-      }
-      closable={false}
-      onClose={lifecycle.requestClose}
-      afterOpenChange={handleAfterOpenChange}
-      maskClosable={!lifecycle.submitting}
-      keyboard={!lifecycle.submitting}
-      extra={
-        <Space>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => detail && onDelete(detail, stagedReleaseRef.current)}
-            disabled={!detail || saving || closing}
-            {...testId(salesMenuTestIds.itemDelete)}
-          >
-            删除销售项
-          </Button>
-          <Button onClick={lifecycle.requestClose} disabled={saving || closing} {...testId(salesMenuTestIds.itemClose)}>
-            关闭
-          </Button>
-        </Space>
-      }
-      footer={
-        <Space>
-          <Button onClick={lifecycle.requestClose} disabled={saving || closing}>
-            取消
-          </Button>
-          <Button
-            type="primary"
-            onClick={() => void save()}
-            loading={saving}
-            disabled={!detail || mediaPending || closing}
-            {...testId(salesMenuTestIds.itemSave)}
-          >
-            保存
-          </Button>
-        </Space>
-      }
-      {...testId(salesMenuTestIds.itemEditor)}
-      {...adminWideDrawerSurfaceProps}
-    >
-      {!detail ? (
-        detailQuery.error ? (
-          <Alert type="error" showIcon title="销售项详情暂时无法获取" description="请关闭后重试。" />
-        ) : (
-          <Space direction="vertical" align="center" style={{display: 'flex', padding: '32px 0'}}>
-            <Spin />
-            <Typography.Text type="secondary">正在读取销售项详情…</Typography.Text>
-          </Space>
-        )
-      ) : (
-        <Space direction="vertical" size={16} style={{display: 'flex'}}>
-          {problem && <Alert type="error" showIcon title={problem} />}
-          <Card size="small" title="菜单展示名称">
-            <Input
-              value={displayName}
-              placeholder="留空则沿用商品名称"
-              onChange={event => {
-                setDisplayName(event.target.value);
-                markDirty();
-              }}
-              {...testId(salesMenuTestIds.itemDisplayName)}
-            />
-          </Card>
-          <Card size="small" title="销售内容与挂牌价">
-            <Space direction="vertical" size={12} style={{display: 'flex'}}>
-              <Typography.Text type="secondary">
-                {item.saleContent.kind === 'SKU_SELECTION'
-                  ? '按规格销售；每个规格分别维护菜单挂牌价。'
-                  : item.saleContent.kind === 'WEIGHTED'
-                    ? '按称重数量销售；销售单位来自商品结构化事实。'
-                    : item.saleContent.kind === 'COMPOSITE'
-                      ? '当前按套餐整体销售。'
-                      : '该商品无规格，直接销售该商品。'}
-              </Typography.Text>
-              {isSku ? (
-                <Table<SalesMenuSkuPrice>
-                  size="small"
-                  rowKey="skuRef"
-                  pagination={false}
-                  dataSource={skuPrices}
-                  columns={[
-                    {title: '规格', dataIndex: 'skuName', key: 'skuName'},
-                    {title: '规格编码', dataIndex: 'skuCode', key: 'skuCode'},
-                    {
-                      title: '商品默认价',
-                      key: 'standardPrice',
-                      render: (_, row) => formatSalesMenuPrice(row.standardPriceCents),
-                    },
-                    {
-                      title: '菜单挂牌价',
-                      key: 'listedPrice',
-                      render: (_, row) => (
-                        <InputNumber
-                          min={0}
-                          precision={2}
-                          value={row.listedPriceCents / 100}
-                          addonBefore="¥"
-                          onChange={value => {
-                            const nextCents = value === null || value === undefined ? 0 : Math.round(value * 100);
-                            setSkuPrices(current =>
-                              current.map(price =>
-                                price.skuRef === row.skuRef ? {...price, listedPriceCents: nextCents} : price,
-                              ),
-                            );
-                            markDirty();
-                          }}
-                        />
-                      ),
-                    },
-                  ]}
-                />
-              ) : (
-                <Space direction="vertical" size={4} style={{display: 'flex'}}>
-                  <Descriptions bordered size="small" column={1}>
-                    <Descriptions.Item label="商品默认价">
-                      {formatSalesMenuPrice(item.defaultPriceCents)}
-                    </Descriptions.Item>
-                  </Descriptions>
-                  <Typography.Text strong>挂牌价</Typography.Text>
-                  <InputNumber
-                    min={0}
-                    precision={2}
-                    addonBefore="¥"
-                    value={listedPriceCents === null ? undefined : listedPriceCents / 100}
-                    onChange={value => {
-                      setListedPriceCents(value === null || value === undefined ? null : Math.round(value * 100));
-                      markDirty();
-                    }}
-                    {...testId(salesMenuTestIds.itemListedPrice)}
-                  />
-                  {isWeighted && (
-                    <Descriptions bordered size="small" column={1}>
-                      <Descriptions.Item label="销售单位">
-                        <NameCodeText name={item.saleContent.salesUnit.name} code={item.saleContent.salesUnit.code} />
-                      </Descriptions.Item>
-                      <Descriptions.Item label="精度">{item.saleContent.salesUnit.precision}</Descriptions.Item>
-                    </Descriptions>
-                  )}
-                </Space>
-              )}
-            </Space>
-          </Card>
-          <Card size="small" title="适用约束">
-            {isWeighted ? (
-              <Typography.Text type="secondary">称重销售商品不显示按份定义的起售量与订购倍数。</Typography.Text>
-            ) : (
-              <Space>
-                <label>
-                  起售量
-                  <InputNumber
-                    min={1}
-                    value={constraints.minItemQuantity ?? undefined}
-                    onChange={value => {
-                      setConstraints(current => ({...current, minItemQuantity: value ?? null}));
-                      markDirty();
-                    }}
-                  />
-                </label>
-                <label>
-                  订购倍数
-                  <InputNumber
-                    min={1}
-                    value={constraints.quantityStep ?? undefined}
-                    onChange={value => {
-                      setConstraints(current => ({...current, quantityStep: value ?? null}));
-                      markDirty();
-                    }}
-                  />
-                </label>
-              </Space>
-            )}
-          </Card>
-          <Divider />
-          <Card size="small" title="展示图片">
-            <SalesMenuMediaEditor
-              item={item}
-              menuRef={menuRef as Uuid}
-              open={open}
-              media={displayMedia}
-              queryContext={queryContext}
-              commands={commands}
-              onChange={(next, grants) => {
-                setDisplayMedia(next);
-                setAssetBindGrants(grants);
-                markDirty();
-              }}
-              onPendingChange={handleMediaPendingChange}
-              onRegisterRelease={registerStagedRelease}
-            />
-          </Card>
-        </Space>
-      )}
-    </Drawer>
-  );
-}
-
-function SalesMenuCandidateDrawer({
-  open,
-  read,
-  onClose,
-  onAdd,
-  onClosedFocus,
-}: {
-  open: boolean;
-  read: SalesMenuReadModel;
-  onClose: () => void;
-  onAdd: (refs: Uuid[]) => Promise<boolean>;
-  onClosedFocus: () => void;
-}) {
-  const [selected, setSelected] = useState<Uuid[]>([]);
-  const openedRef = useRef(false);
-  const lifecycle = useDrawerFormLifecycle({
-    open,
-    onOpenChange: next => {
-      if (!next) onClose();
-    },
-    dirtyMessage: '已选择的商品尚未加入菜单。',
-    diagnosticOperationId: OPERATIONS_ADMIN_OPERATION_IDS.getOperationsSalesMenuItemCandidates,
-  });
-  const resetLifecycle = lifecycle.reset;
-  const categoryNavigationRequest = useMemo(
-    () =>
-      catalogInventoryRtkRequest.getOperationsCatalogNavigation(
-        {},
-        {query: {dataNodeRef: wireUuid(read.storeRef ?? ''), viewKey: 'ALL'}},
-      ),
-    [read.storeRef],
-  );
-  const categoryNavigationQuery = operationsRtk.useGetOperationsCatalogNavigationQuery(categoryNavigationRequest, {
-    skip: !open || !read.storeRef,
-  });
-  const categoryNavigation = categoryNavigationQuery.currentData?.data;
-  const categoryTreeData = useMemo(
-    () => salesMenuCategoryTreeData(categoryNavigation?.tree ?? []),
-    [categoryNavigation?.tree],
-  );
-  useEffect(() => {
-    setSelected([]);
-    resetLifecycle();
-  }, [open, resetLifecycle]);
-  const page = read.candidates.page;
-  const rows = useMemo(() => page?.items ?? [], [page?.items]);
-  const candidatePageOutcome = read.candidates.query.isError
-    ? 'FAILED'
-    : read.candidates.query.isFetching
-      ? 'FETCHING'
-      : page
-        ? rows.length > 0
-          ? 'READY_WITH_ITEMS'
-          : 'READY_EMPTY'
-        : 'WAITING';
-  useEffect(() => {
-    operationsLogger.info({
-      event: 'sales-menu.candidates.page',
-      phase: 'CANDIDATE_READ_MODEL',
-      outcome: candidatePageOutcome,
-      operationId: OPERATIONS_ADMIN_OPERATION_IDS.getOperationsSalesMenuItemCandidates,
-    });
-  }, [candidatePageOutcome]);
-  const selection = useMemo(
-    () =>
-      salesMenuCandidateSelection(
-        selected,
-        rows.map(row => row.candidateRef),
-      ),
-    [rows, selected],
-  );
-  const hiddenSelectedCount = selection.hiddenSelectedCount;
-  const error = problemMessage(read.candidates.query.error, '商品候选暂时无法获取，请重试。');
-  const categoryError = problemMessage(categoryNavigationQuery.error, '商品分类暂时无法读取，请重试。');
-  const submit = useCallback(async () => {
-    if (!selection.canSubmit || lifecycle.submitting) return;
-    lifecycle.setSubmitting(true);
-    const added = await onAdd(selected);
-    if (added) lifecycle.closeAfterSuccess();
-    else lifecycle.setSubmitting(false);
-  }, [lifecycle, onAdd, selected, selection.canSubmit]);
-  const handleAfterOpenChange = useCallback(
-    (visible: boolean) => {
-      lifecycle.afterOpenChange(visible);
-      if (visible) {
-        openedRef.current = true;
-        return;
-      }
-      if (openedRef.current && !open) {
-        openedRef.current = false;
-        window.requestAnimationFrame(onClosedFocus);
-      }
-    },
-    [lifecycle, onClosedFocus, open],
-  );
-  return (
-    <Drawer
-      open={open}
-      title="添加商品到菜单"
-      onClose={lifecycle.requestClose}
-      afterOpenChange={handleAfterOpenChange}
-      maskClosable={!lifecycle.submitting}
-      keyboard={!lifecycle.submitting}
-      closable={!lifecycle.submitting}
-      {...adminWideDrawerSurfaceProps}
-      width="min(860px, calc(100vw - 48px))"
-      footer={
-        <Space>
-          <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>
-            取消
-          </Button>
-          <Button
-            type="primary"
-            disabled={!selection.canSubmit}
-            loading={lifecycle.submitting}
-            onClick={() => void submit()}
-            {...testId(salesMenuTestIds.candidateSubmit)}
-          >
-            添加已选商品
-          </Button>
-        </Space>
-      }
-      {...testId(salesMenuTestIds.candidateDrawer)}
-    >
-      <Row gutter={[16, 16]} align="top">
-        <Col xs={24} md={7}>
-          <Card size="small" title="商品分类" bodyStyle={{maxHeight: 560, overflowY: 'auto'}}>
-            {categoryError && <Alert type="error" showIcon title={categoryError} />}
-            {!categoryError && categoryNavigationQuery.isLoading && <Spin />}
-            {!categoryError && !categoryNavigationQuery.isLoading && (
-              <Tree
-                blockNode
-                showLine
-                aria-label="商品分类树"
-                treeData={categoryTreeData}
-                selectedKeys={read.candidateCategoryRef ? [read.candidateCategoryRef] : []}
-                onSelect={keys => {
-                  const next = String(keys[0] ?? '');
-                  setSelected([]);
-                  lifecycle.setDirty(false);
-                  read.setCandidateCategoryRef(next ? (next as Uuid) : undefined);
-                  read.candidates.cursor.reset();
-                }}
-                {...testId(salesMenuTestIds.candidateCategoryTree)}
-              />
-            )}
-          </Card>
-        </Col>
-        <Col xs={24} md={17}>
-          <Space direction="vertical" size={12} style={{display: 'flex'}}>
-            <Input.Search
-              value={read.candidateQuery}
-              allowClear
-              placeholder="搜索商品名称或编码"
-              onChange={event => {
-                setSelected([]);
-                lifecycle.setDirty(false);
-                read.setCandidateQuery(event.target.value);
-                read.candidates.cursor.reset();
-              }}
-              onSearch={() => {
-                setSelected([]);
-                lifecycle.setDirty(false);
-                read.candidates.cursor.reset();
-              }}
-            />
-            <Typography.Text type="secondary">分类只用于查找商品；候选商品按商品形态展示。</Typography.Text>
-            {hiddenSelectedCount > 0 && (
-              <Alert
-                type="warning"
-                showIcon
-                title={`当前还有 ${hiddenSelectedCount} 个已选商品不在本页；提交按钮会包含这些已选商品。`}
-                action={
-                  <Button
-                    size="small"
-                    onClick={() => {
-                      setSelected(selection.visibleSelected as Uuid[]);
-                      lifecycle.setDirty(selection.visibleSelected.length > 0);
-                    }}
-                  >
-                    清除不可见选择
-                  </Button>
-                }
-              />
-            )}
-            {error && (
-              <Alert
-                type="error"
-                showIcon
-                title={error}
-                action={<Button onClick={() => void read.candidates.query.refetch()}>重试</Button>}
-              />
-            )}
-            <Table<SalesMenuItemCandidate>
-              size="small"
-              rowKey="candidateRef"
-              {...adminListState({
-                loading: read.candidates.query.isFetching,
-                failed: Boolean(error),
-                emptyText: '该分类暂无可编入商品',
-                testIdPrefix: salesMenuTestIds.candidateList,
-              })}
-              dataSource={rows}
-              rowSelection={{
-                selectedRowKeys: selected,
-                preserveSelectedRowKeys: true,
-                renderCell: (_checked, row, _index, originNode) =>
-                  isValidElement(originNode)
-                    ? cloneElement(
-                        originNode as ReactElement<{['data-testid']?: string}>,
-                        testId(salesMenuTestIds.candidateRow(row.candidateRef)),
-                      )
-                    : originNode,
-                onChange: keys => {
-                  const visibleRefs = rows.map(row => row.candidateRef);
-                  const next = mergeSalesMenuCandidateSelection(
-                    selected,
-                    visibleRefs,
-                    (keys as Array<string | number>)
-                      .map(String)
-                      .filter((candidateRef): candidateRef is Uuid => visibleRefs.includes(candidateRef as Uuid)),
-                  ) as Uuid[];
-                  const visibleRefSet = new Set(visibleRefs);
-                  operationsLogger.debug({
-                    event: 'sales-menu.candidates.selection',
-                    phase: 'CANDIDATE_SELECTION',
-                    outcome: 'UPDATED',
-                    operationId: OPERATIONS_ADMIN_OPERATION_IDS.getOperationsSalesMenuItemCandidates,
-                    diagnostic: {
-                      selectedCount: next.length,
-                      visibleSelectedCount: next.filter(candidateRef => visibleRefSet.has(candidateRef)).length,
-                      preservedOffPageCount: next.filter(candidateRef => !visibleRefSet.has(candidateRef)).length,
-                    },
-                  });
-                  setSelected(next);
-                  lifecycle.setDirty(next.length > 0);
-                  lifecycle.markBusinessIntentChanged();
-                },
-              }}
-              pagination={false}
-              columns={[
-                {title: '商品名称', dataIndex: 'displayName', key: 'displayName'},
-                {title: '商品编码', dataIndex: 'itemCode', key: 'itemCode'},
-                {
-                  title: '中文商品形态',
-                  key: 'productShape',
-                  render: (_, row) => salesMenuProductShapeLabel(row.productShape),
-                },
-                {
-                  title: '所属分类',
-                  key: 'categoryNames',
-                  render: (_, row) => (row.categoryNames.length > 0 ? row.categoryNames.join(' / ') : '未分类'),
-                },
-                {
-                  title: '默认价格',
-                  key: 'defaultPriceCents',
-                  render: (_, row) => formatSalesMenuPrice(row.defaultPriceCents),
-                },
-                {title: '已编入次数', dataIndex: 'alreadyAddedCount', key: 'alreadyAddedCount'},
-              ]}
-            />
-            <CursorPagination
-              state={read.candidates.cursor}
-              nextCursor={page?.nextCursor ?? undefined}
-              testIdPrefix={salesMenuTestIds.candidateCursor}
-            />
-          </Space>
-        </Col>
-      </Row>
-    </Drawer>
-  );
-}
-
-function SalesMenuManagerDrawer({
-  open,
-  read,
-  onClose,
-  onSelect,
-  onToggle,
-  onRename,
-  onCopy,
-  onArchive,
-  canEdit,
-}: {
-  open: boolean;
-  read: SalesMenuReadModel;
-  onClose: () => void;
-  onSelect: (menu: SalesMenuDetail | SalesMenuSummary) => void;
-  onToggle: (menu: SalesMenuSummary) => void;
-  onRename: (menu: SalesMenuSummary) => void;
-  onCopy: (menu: SalesMenuSummary) => void;
-  onArchive: (menu: SalesMenuSummary) => void;
-  canEdit: boolean;
-}) {
-  const page = read.manager.page;
-  const rows = page?.items ?? [];
-  const error = problemMessage(read.manager.query.error, '菜单列表暂时无法获取，请重试。');
-  const managerReadModelReady = !read.manager.query.isFetching && !read.manager.query.isError;
-  return (
-    <Drawer
-      open={open}
-      title="管理菜单"
-      onClose={onClose}
-      maskClosable
-      {...adminWideDrawerSurfaceProps}
-      width="min(880px, calc(100vw - 48px))"
-      {...testId(salesMenuTestIds.menuManager)}
-    >
-      <Space direction="vertical" size={12} style={{display: 'flex'}}>
-        <Input.Search
-          value={read.managerQuery}
-          allowClear
-          placeholder="搜索菜单名称"
-          onChange={event => {
-            read.setManagerQuery(event.target.value);
-            read.manager.cursor.reset();
-          }}
-          onSearch={() => read.manager.cursor.reset()}
-        />
-        {error && (
-          <Alert
-            type="error"
-            showIcon
-            title={error}
-            action={<Button onClick={() => void read.manager.query.refetch()}>重试</Button>}
-          />
-        )}
-        <Table<SalesMenuSummary>
-          size="small"
-          rowKey="salesMenuRef"
-          {...adminListState({
-            loading: read.manager.query.isFetching,
-            failed: Boolean(error),
-            emptyText: '暂无菜单',
-            testIdPrefix: salesMenuTestIds.managerList,
-          })}
-          dataSource={rows}
-          pagination={false}
-          columns={[
-            {
-              title: '菜单名称',
-              key: 'name',
-              render: (_, row) => (
-                <Button
-                  type="link"
-                  onClick={() => onSelect(row)}
-                  style={{padding: 0}}
-                  {...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'select'))}
-                >
-                  {row.name}
-                </Button>
-              ),
-            },
-            {title: '菜单状态', key: 'state', render: (_, row) => menuStateLabel(row)},
-            {
-              title: '经营入口',
-              key: 'activation',
-              render: (_, row) => salesMenuChannelStatusLabel(row.activation?.status ?? 'DISABLED'),
-            },
-            {
-              title: '启停',
-              key: 'toggle',
-              render: (_, row) => (
-                <Button
-                  type="link"
-                  disabled={!canEdit || row.archived || !managerReadModelReady}
-                  onClick={() => onToggle(row)}
-                  {...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'toggle'))}
-                >
-                  {row.activation?.status === 'ENABLED' ? '停用' : '启用'}
-                </Button>
-              ),
-            },
-            {
-              key: 'actions',
-              render: (_, row) => (
-                <Dropdown
-                  menu={{
-                    items: [
-                      {
-                        key: 'rename',
-                        label: '重命名',
-                        disabled: !canEdit || row.archived || !managerReadModelReady,
-                        ...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'rename')),
-                      },
-                      {
-                        key: 'copy',
-                        label: '复制',
-                        disabled: !canEdit || !managerReadModelReady,
-                        ...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'copy')),
-                      },
-                      {
-                        key: 'archive',
-                        label: '归档',
-                        danger: true,
-                        disabled: !canEdit || row.archived || !managerReadModelReady,
-                        ...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'archive')),
-                      },
-                    ],
-                    onClick: event => {
-                      if (event.key === 'rename') onRename(row);
-                      if (event.key === 'copy') onCopy(row);
-                      if (event.key === 'archive') onArchive(row);
-                    },
-                  }}
-                >
-                  <Button
-                    type="text"
-                    icon={<MoreOutlined />}
-                    aria-label="更多菜单操作"
-                    disabled={!managerReadModelReady}
-                    {...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'menu'))}
-                  />
-                </Dropdown>
-              ),
-            },
-          ]}
-        />
-        <CursorPagination
-          state={read.manager.cursor}
-          nextCursor={page?.nextCursor ?? undefined}
-          testIdPrefix={salesMenuTestIds.managerCursor}
-        />
-      </Space>
-    </Drawer>
-  );
-}
 
 function SalesMenuSectionPanel({
   read,
@@ -2117,80 +510,6 @@ function SalesMenuOperationTable({read}: {read: SalesMenuReadModel}) {
         />
       </Space>
     </Card>
-  );
-}
-
-function PublishDrawer({
-  open,
-  read,
-  onClose,
-  onPublish,
-  canEdit,
-}: {
-  open: boolean;
-  read: SalesMenuReadModel;
-  onClose: () => void;
-  onPublish: () => void;
-  canEdit: boolean;
-}) {
-  const preview = read.publicationPreview.page;
-  return (
-    <Drawer
-      open={open}
-      title="更新到前台"
-      onClose={onClose}
-      maskClosable
-      width="min(620px, calc(100vw - 48px))"
-      footer={
-        <Space>
-          <Button onClick={onClose}>关闭</Button>
-          <Button
-            type="primary"
-            onClick={onPublish}
-            disabled={!canEdit || !preview || !preview.hasChanges || preview.violations.length > 0}
-            {...testId(salesMenuTestIds.publishSubmit)}
-          >
-            更新到前台
-          </Button>
-        </Space>
-      }
-      {...adminDrawerSurfaceProps}
-      {...testId(salesMenuTestIds.publishDrawer)}
-    >
-      {read.publicationPreview.query.isFetching && <Spin />}
-      {read.publicationPreview.query.error && (
-        <Alert
-          type="error"
-          showIcon
-          title="发布预检暂时无法获取，请重试。"
-          action={<Button onClick={() => void read.publicationPreview.query.refetch()}>重试</Button>}
-        />
-      )}
-      {preview && (
-        <Space direction="vertical" size={12} style={{display: 'flex'}}>
-          {!preview.hasChanges && <Alert type="info" showIcon title="当前没有未发布修改。" />}
-          {preview.violations.length > 0 && (
-            <Alert
-              type="warning"
-              showIcon
-              title="菜单还有内容未满足更新到前台的条件。"
-              description={
-                <Space direction="vertical" size={4}>
-                  {preview.violations.map((violation, index) => (
-                    <span key={`${violation.kind}-${violation.salesItemRef ?? index}`}>
-                      {blockerLabel(violation.kind)}
-                    </span>
-                  ))}
-                </Space>
-              }
-            />
-          )}
-          {preview.hasChanges && preview.violations.length === 0 && (
-            <Alert type="success" showIcon title="当前草稿可以更新到前台。" />
-          )}
-        </Space>
-      )}
-    </Drawer>
   );
 }
 
@@ -2721,7 +1040,10 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                         value={selectedMenuRef}
                         placeholder="选择菜单"
                         loading={read.selector.query.isFetching}
-                        disabled={!selectedChannelRef || selectorItems.length === 0}
+                        disabled={!selectedChannelRef}
+                        showSearch
+                        filterOption={false}
+                        searchValue={read.selectorQuery}
                         style={{minWidth: 260}}
                         virtual={false}
                         components={{input: SalesMenuSelectorInput}}
@@ -2735,7 +1057,15 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                           ),
                           'data-testid': salesMenuTestIds.menuOption(menu.salesMenuRef),
                         }))}
-                        onChange={value => read.selectMenu(value as Uuid)}
+                        onSearch={value => {
+                          read.setSelectorQuery(value);
+                          read.selector.cursor.reset();
+                        }}
+                        onChange={value => {
+                          read.setSelectorQuery('');
+                          read.selector.cursor.reset();
+                          read.selectMenu(value as Uuid);
+                        }}
                         {...testId(salesMenuTestIds.menuSelector)}
                       />
                       <Button
@@ -2879,58 +1209,74 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
         )}
       </Space>
 
-      <SalesMenuManagerDrawer
-        open={managerOpen}
-        read={read}
-        onClose={() => setManagerOpen(false)}
-        onSelect={menu => {
-          read.selectMenu(menu.salesMenuRef);
-          setManagerOpen(false);
+      <SalesMenuTaskSurfaces
+        manager={{
+          open: managerOpen,
+          read,
+          onClose: () => setManagerOpen(false),
+          onSelect: menu => {
+            read.selectMenu(menu.salesMenuRef);
+            setManagerOpen(false);
+          },
+          onToggle: toggleMenu,
+          onRename: openRenameMenu,
+          onCopy: copyMenu,
+          onArchive: archiveMenu,
+          canEdit,
         }}
-        onToggle={toggleMenu}
-        onRename={openRenameMenu}
-        onCopy={copyMenu}
-        onArchive={archiveMenu}
-        canEdit={canEdit}
-      />
-      <SalesMenuCandidateDrawer
-        open={candidateOpen && read.candidateOpen}
-        read={read}
-        onClose={() => {
-          read.closeCandidates();
-          setCandidateOpen(false);
+        candidate={{
+          open: candidateOpen && read.candidateOpen,
+          read,
+          onClose: () => {
+            read.closeCandidates();
+            setCandidateOpen(false);
+          },
+          onAdd: addCandidates,
+          onClosedFocus: () => {
+            window.requestAnimationFrame(() => {
+              candidateTriggerRef.current?.focus();
+              candidateTriggerRef.current = null;
+            });
+          },
         }}
-        onAdd={addCandidates}
-        onClosedFocus={() => {
-          window.requestAnimationFrame(() => {
-            candidateTriggerRef.current?.focus();
-            candidateTriggerRef.current = null;
-          });
+        editor={{
+          item: editorItem,
+          open: editorOpen,
+          queryContext,
+          menuRef: selectedMenuRef,
+          menuVersion: selectedMenu?.version,
+          commands,
+          onSave: saveItem,
+          onClose: () => setEditorOpen(false),
+          onSaved: () => setEditorItem(undefined),
+          onDelete: deleteItem,
+          onClosedFocus: () => {
+            editorTriggerRef.current?.focus();
+            editorTriggerRef.current = null;
+          },
         }}
-      />
-      <SalesMenuItemEditorDrawer
-        item={editorItem}
-        open={editorOpen}
-        queryContext={queryContext}
-        menuRef={selectedMenuRef}
-        menuVersion={selectedMenu?.version}
-        commands={commands}
-        onSave={saveItem}
-        onClose={() => setEditorOpen(false)}
-        onSaved={() => setEditorItem(undefined)}
-        onDelete={deleteItem}
-        onClosedFocus={() => {
-          editorTriggerRef.current?.focus();
-          editorTriggerRef.current = null;
+        detail={{
+          item: detailItem,
+          open: Boolean(detailItem),
+          queryContext,
+          menuRef: selectedMenuRef,
+          channelRef: selectedChannelRef,
+          onClose: () => setDetailItem(undefined),
         }}
-      />
-      <SalesMenuItemDetailDrawer
-        item={detailItem}
-        open={Boolean(detailItem)}
-        queryContext={queryContext}
-        menuRef={selectedMenuRef}
-        channelRef={selectedChannelRef}
-        onClose={() => setDetailItem(undefined)}
+        publish={{
+          open: publishOpen,
+          read,
+          canEdit,
+          onClose: () => setPublishOpen(false),
+          onPublish: () => {
+            if (!basePath || !selectedMenu) return;
+            void runCommand(
+              () => commands.publish(basePath, {expectedVersion: selectedMenu.version}),
+              '本系统已生成新的前台菜单。该结果不代表收银端、扫码端或自助机已经获取。',
+              () => setPublishOpen(false),
+            );
+          },
+        }}
       />
 
       <Drawer
@@ -3134,20 +1480,6 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
           <Typography.Text type="secondary">当前设置：{salesMenuScheduleLabel(schedule)}</Typography.Text>
         </Space>
       </Drawer>
-      <PublishDrawer
-        open={publishOpen}
-        read={read}
-        canEdit={canEdit}
-        onClose={() => setPublishOpen(false)}
-        onPublish={() => {
-          if (!basePath || !selectedMenu) return;
-          void runCommand(
-            () => commands.publish(basePath, {expectedVersion: selectedMenu.version}),
-            '本系统已生成新的前台菜单。该结果不代表收银端、扫码端或自助机已经获取。',
-            () => setPublishOpen(false),
-          );
-        }}
-      />
       <Modal
         open={Boolean(statusItem)}
         title="销售状态"

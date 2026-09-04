@@ -168,6 +168,15 @@ function featurePackages(root, layer, feature) {
     .sort()
 }
 
+function uiNativePackages(root) {
+  const packages = featurePackages(root, 'ui', 'feature')
+  for (const relativePath of ['ui/base/dev-host', 'ui/integration/sample-console']) {
+    const packageRoot = path.join(root, 'apps/terminal', relativePath)
+    if (fs.existsSync(path.join(packageRoot, 'package.json'))) packages.push(packageRoot)
+  }
+  return [...new Set(packages)].sort()
+}
+
 function runP5cStateEdge({root}) {
   const packages = featurePackages(root, 'ui', 'feature')
   if (packages.length === 0) throw new Error('ui feature package denominator is empty')
@@ -207,11 +216,11 @@ function runP10KernelUiLiterals({root}) {
 }
 
 function runP5dUiFeatureNativeElements({root}) {
-  const packages = featurePackages(root, 'ui', 'feature')
-  if (packages.length === 0) throw new Error('ui feature package denominator is empty')
+  const packages = uiNativePackages(root)
+  if (packages.length === 0) throw new Error('ui native package denominator is empty')
   for (const packageRoot of packages) {
     const files = sourceFiles(packageRoot)
-    if (files.length === 0) throw new Error(`ui feature package has no production source: ${relativePath(packageRoot, root)}`)
+    if (files.length === 0) throw new Error(`ui native package has no production source: ${relativePath(packageRoot, root)}`)
     for (const filePath of files) {
       const sourceFile = parseSource(filePath)
       const importedCreateElementNames = new Set()

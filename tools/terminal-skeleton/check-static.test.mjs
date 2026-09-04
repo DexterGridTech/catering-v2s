@@ -20,9 +20,9 @@ const spec = readSkeletonSpec(skeletonGraphPath);
 const batchOne = projectSkeletonGraph(spec, 1);
 const batchTwo = projectSkeletonGraph(spec, 2);
 
-assert.equal(Object.keys(spec.graph).length, 26, 'the literal skeleton specification has 26 nodes');
-assert.equal(Object.keys(batchOne).length, 14, 'batch one projects 14 nodes');
-assert.equal(Object.keys(batchTwo).length, 26, 'batch two projects 26 nodes');
+assert.equal(Object.keys(spec.graph).length, 27, 'the literal skeleton specification has 27 nodes');
+assert.equal(Object.keys(batchOne).length, 15, 'batch one projects 15 nodes');
+assert.equal(Object.keys(batchTwo).length, 27, 'batch two projects 27 nodes');
 assert.equal(moduleNameToPackageName('assembly.android.sample-terminal'), '@catering-v2s/assembly-android-sample-terminal');
 assert.equal(moduleNameToRelativePath('kernel.base.contracts'), 'apps/terminal/kernel/base/contracts');
 
@@ -54,7 +54,8 @@ try {
       const relative = path.relative(repoRoot, source);
       if (!relative) return true;
       const segments = relative.split(path.sep);
-      return !['.git', '.runtime', 'node_modules'].includes(segments[0]) && !segments.includes('.turbo');
+      const excludedSegments = new Set(['.git', '.runtime', 'node_modules', '.turbo', '.expo', 'build', 'dist']);
+      return !segments.some(segment => excludedSegments.has(segment));
     },
   });
   // The scratch copy intentionally excludes the repository's hoisted
@@ -178,18 +179,18 @@ try {
   assert.match(missingBootstrapImportGate.error, /assembly bootstrap workspace roots/);
   fs.writeFileSync(bootstrapPath, bootstrapSource);
 
-  const uiTestSupportPackagePath = path.join(
+  const uiDevHostPackagePath = path.join(
     fixtureRoot,
-    'apps/terminal/ui/base/test-support/package.json',
+    'apps/terminal/ui/base/dev-host/package.json',
   );
   withJsonMutation(
-    uiTestSupportPackagePath,
+    uiDevHostPackagePath,
     packageJson => {
-      delete packageJson.devDependencies['@catering-v2s/kernel-base-platform-ports'];
+      delete packageJson.dependencies['@catering-v2s/kernel-base-platform-ports'];
     },
     report => {
       assertGateVector(report, ['graph-comparison', 'dependency-declaration-completeness']);
-      assert.match(gate(report, 'graph-comparison').error, /ui\.base\.test-support/);
+      assert.match(gate(report, 'graph-comparison').error, /ui\.base\.dev-host/);
     },
   );
 

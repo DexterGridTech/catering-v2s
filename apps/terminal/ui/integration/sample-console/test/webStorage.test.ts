@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {createWebStateStoragePort} from '@catering-v2s/ui-base-test-support'
+import {createWebStateStoragePort} from '@catering-v2s/ui-base-dev-host'
 import {FakeWebStorage} from './support'
 
 describe('sample-console Web StateStoragePort', () => {

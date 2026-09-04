@@ -39,7 +39,7 @@ AUTHORING_REVIEW_STATUS=SUPERSEDED_BY_TWO_SEGMENT_PLAN_FIRST_SEGMENT_AUTHORIZED
 
 ### 目标
 
-固定新的 26 节点图、9 个交付角色、31 条 S、14 条 active P、Web/真机两段边界和所有取消/不阻塞事项。
+固定新的 27 节点图、9 个交付角色、31 条 S、14 条 active P、Web/真机两段边界和所有取消/不阻塞事项。
 
 ### 执行
 
@@ -67,12 +67,12 @@ AUTHORING_REVIEW_STATUS=SUPERSEDED_BY_TWO_SEGMENT_PLAN_FIRST_SEGMENT_AUTHORIZED
 
 ### checker 范围
 
-只实现 P-5a 五类反向依赖、P-5c 基于 TypeScript AST import 来源的能力边界、P-5d ui/feature 原生组件边界、P-10 kernel UI literals。P-5b、P-8、P-9、P-11 不塞进机械 checker。
+只实现 P-5a 五类反向依赖、P-5c 基于 TypeScript AST import 来源的能力边界、P-5d ui/feature、ui/base/dev-host 与 ui/integration/sample-console 的原生组件边界、P-10 kernel UI literals。P-5b、P-8、P-9、P-11 不塞进机械 checker。
 
 ### 可证伪门
 
 - 空 checker 或只扫空目录必须失败；
-- 以真实 import/use 注入一个 kernel→ui 反向 import、一个 UI feature 的 `StateRoot`（含别名与无限定符 type import）、一个 UI feature 的完整 `Runtime`、`createSlice` 或 `react-redux`，以及一个 kernel feature 的 partKey，目标规则必须红且 control 绿；UI feature 从 runtime 导入 `defineCommand`/`RuntimeModule` 的 owner 形态必须作为正控制通过；P-5d 以一次性临时夹具分别注入命名别名、namespace、模板串 `createElement` 与 JSX host tag，目标规则必须红，当前生产树清洁另行判定；
+- 以真实 import/use 注入一个 kernel→ui 反向 import、一个 UI feature 的 `StateRoot`（含别名与无限定符 type import）、一个 UI feature 的完整 `Runtime`、`createSlice` 或 `react-redux`，以及一个 kernel feature 的 partKey，目标规则必须红且 control 绿；UI feature 从 runtime 导入 `defineCommand`/`RuntimeModule` 的 owner 形态必须作为正控制通过；P-5d 以一次性临时夹具分别在 ui/feature、ui/base/dev-host 与 ui/integration/sample-console 分母内注入命名别名、namespace、模板串 `createElement` 与 JSX host tag，目标规则必须红，当前生产树清洁另行判定；
 - 合法 kernel←ui、kernel←adapter、kernel←assembly、ui←assembly、adapter←assembly 不得误红。
 
 ### 依赖与 readback
@@ -175,7 +175,7 @@ useUiStateSelector 的 memo key 必须包含 root 引用和 selector identity；
 
 ### 8.3 test-expo
 
-从同一 shell surfaceMode 推导 DevicePort displayCount 和一/两棵树；一个 React root 下挂两个独立 Provider。外壳的可见切换按钮使用 `sample-console:test-expo:surface-toggle`，但它不是 catalog part 或业务命令。读 sample-console typed terminalSurfaces 常量，固定逻辑尺寸、row/column、scaleToFit。Web persistence 使用真实可跨 refresh 的 StateStoragePort，不用 processMemoryStorage。
+从同一 shell surfaceMode 推导 DevicePort displayCount 和一/两棵树；一个 React root 下挂两个独立 Provider。外壳的可见切换按钮使用 `sample-console:test-expo:surface-toggle`，但它不是 catalog part 或业务命令。通用宿主位于 `ui.base.dev-host`，读 sample-console typed terminalSurfaces 常量，固定逻辑尺寸、row/column、scaleToFit。Web persistence 使用真实可跨 refresh 的 StateStoragePort，不用 processMemoryStorage；`ui.base.test-support` 仅保留空壳元数据。
 
 ### 8.4 测试接线
 

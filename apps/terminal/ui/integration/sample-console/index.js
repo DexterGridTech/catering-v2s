@@ -1,3 +1,4 @@
 import {registerRootComponent} from 'expo';
+import App from './test-expo/App';
 
-registerRootComponent(require('./test-expo/App').default);
+registerRootComponent(App);

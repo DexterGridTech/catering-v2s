@@ -5,7 +5,7 @@
 本包是 TER sample 的唯一组装入口，同时提供一个只用于开发验证的 Expo Web 工程入口。
 库侧负责把真实的 runtime、ui-state、两张 catalog、四个 sample feature 和只读 render 接缝
 装配到同一个 `SampleAssembly`；通用的开发宿主、Web 端口、surface canvas 与启动日志由
-`@catering-v2s/ui-base-test-support` 提供。
+`@catering-v2s/ui-base-dev-host` 提供。
 
 本包不拥有业务事实、业务命令或具体 renderer，不感知 `surfaceMode`，也不构造 platform port。
 `sample-console` 内的三个 base module descriptor 是当前 base 包尚未提供正本工厂时的单一过渡位置。
