@@ -450,9 +450,10 @@ role/label/placeholder/text/index/CSS/XPath 或外层 wrapper 不能替代 testI
 依据 `doc/review/platform/2026-09-03-v2s-sales-menu-ui-testid-preflight-cycle-c-round2-codex.md` 的 fresh independent
 Round 2 final review，前置门已关闭；该 PASS 仅解除 L2 脚本开发准入，不代表动态浏览器 L2、HTTP、business 或 cleanup 已通过。
 
-当前准入分母已按唯一 blueprint 复算为 18 个 case/action、240 个声明控件条目、68 个 unique binding
-control key；公共 STORE scope 确认是每个 case 的 setup 控件，使用 `roleHomeTestIds` 唯一源并记录
-trigger/confirm touch；逐 case/action 的常量、实际节点、binding/touch、focused/static proof 与 fresh review 表在
+当前准入分母已按唯一 blueprint 复算为 18 个 case/action、254 个声明控件条目、78 个 unique binding
+control key；共享 scope surface 的 trigger、selector、动态 option、confirm、cancel 均使用 `roleHomeTestIds`
+唯一源并逐控件建模；本固定 STORE/STORE-readonly Journey 的 setup 只实际记录 `STORE_SCOPE_TRIGGER`。逐
+case/action 的常量、实际节点、binding/touch、focused/static proof 与 fresh review 表在
 详设 §11.2a，实施以该表为唯一逐控件清单。菜单级直接按钮、manager 动态行 MenuItem、Modal/Drawer 提交与
 取消、分页、候选 Checkbox、Radio、Upload native input 和既有 Segmented option label anchor 均不得从分母
 省略。当前已为 `PASS/PASS/PASS`；后续动态运行必须继续按受管入口取得独立 business/cleanup 证据，不能把本前置 PASS 当作浏览器 PASS。

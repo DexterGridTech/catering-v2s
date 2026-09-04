@@ -67,7 +67,7 @@ export const skeletonGraph = {
   'ui.base.render': {
     batch: 1,
     plannedKind: 'toolkit',
-    dependencies: ['kernel.base.platform-ports', 'kernel.base.runtime', 'kernel.base.ui-state'],
+    dependencies: ['kernel.base.contracts', 'kernel.base.platform-ports', 'kernel.base.runtime', 'kernel.base.state', 'kernel.base.ui-state'],
     devDependencies: [],
   },
   'ui.base.automation': {
@@ -113,7 +113,43 @@ export const skeletonGraph = {
     dependencies: [],
     devDependencies: ['ui.base.render', 'ui.base.automation', 'kernel.base.test-support'],
   },
-  'ui.integration.platform-console': {
+  'kernel.feature.sample-staff-session': {
+    batch: 2,
+    dependencies: ['kernel.base.contracts', 'kernel.base.state', 'kernel.base.runtime'],
+    devDependencies: ['kernel.base.platform-ports'],
+  },
+  'kernel.feature.sample-member-registry': {
+    batch: 2,
+    dependencies: ['kernel.base.contracts', 'kernel.base.state', 'kernel.base.runtime'],
+    devDependencies: ['kernel.base.platform-ports'],
+  },
+  'ui.feature.sample-staff-auth': {
+    batch: 2,
+    dependencies: [
+      'kernel.base.state',
+      'kernel.base.ui-state',
+      'kernel.base.runtime',
+      'kernel.feature.sample-staff-session',
+      'ui.base.render',
+      'ui.base.primitives',
+    ],
+    devDependencies: [],
+  },
+  'ui.feature.sample-member-desk': {
+    batch: 2,
+    dependencies: [
+      'kernel.base.state',
+      'kernel.base.ui-state',
+      'kernel.base.runtime',
+      'kernel.base.display-context',
+      'kernel.feature.sample-staff-session',
+      'kernel.feature.sample-member-registry',
+      'ui.base.render',
+      'ui.base.primitives',
+    ],
+    devDependencies: [],
+  },
+  'ui.integration.sample-console': {
     batch: 1,
     plannedKind: 'toolkit',
     dependencies: [
@@ -161,31 +197,17 @@ export const skeletonGraph = {
     dependencies: ['kernel.base.platform-ports'],
     devDependencies: [],
   },
-  'assembly.android.pos-desktop': {
+  'assembly.android.sample-terminal': {
     batch: 1,
     plannedKind: 'toolkit',
     dependencies: [
-      'kernel.base.contracts',
       'kernel.base.platform-ports',
-      'kernel.base.state',
-      'kernel.base.runtime',
-      'kernel.base.transport',
-      'kernel.base.display-context',
-      'kernel.base.workflow',
-      'kernel.base.ui-state',
-      'kernel.base.test-support',
-      'ui.base.render',
-      'ui.base.automation',
-      'ui.base.primitives',
-      'ui.base.input',
-      'ui.base.admin-shell',
-      'ui.base.test-support',
-      'ui.integration.platform-console',
       'adapter.android.persist-kv',
       'adapter.android.device',
       'adapter.android.app-control',
       'adapter.android.logger',
       'adapter.android.dual-screen',
+      'ui.integration.sample-console',
     ],
     devDependencies: [],
   },

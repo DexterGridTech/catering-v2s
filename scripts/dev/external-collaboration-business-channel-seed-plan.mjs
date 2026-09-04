@@ -20,11 +20,11 @@ const seedDatasets = [
     ownerScopes: ["collaboration", "business-channel"],
     entities: {
       ownerNodes: [
-        { code: "COLLAB-COMMERCIAL-GROUP", nodeType: "COMMERCIAL_GROUP", name: "万象城商业集团" },
-        { code: "COLLAB-REGION", nodeType: "REGION", name: "华东大区" },
-        { code: "COLLAB-PROJECT", nodeType: "PROJECT", name: "万象城项目" },
-        { code: "COLLAB-HEAD-COMPANY", nodeType: "HEAD_COMPANY", name: "海底捞总公司" },
-        { code: "COLLAB-STORE", nodeType: "STORE", name: "万象城海底捞", projectRef: "COLLAB-PROJECT" },
+        { code: "COLLAB-COMMERCIAL-GROUP", sourceFixtureKey: "cg-aurora", nodeType: "COMMERCIAL_GROUP", name: "华润万象生活" },
+        { code: "COLLAB-REGION", sourceFixtureKey: "region-east", nodeType: "REGION", name: "华北大区" },
+        { code: "COLLAB-PROJECT", sourceFixtureKey: "project-river", nodeType: "PROJECT", name: "太原万象城" },
+        { code: "COLLAB-HEAD-COMPANY", sourceFixtureKey: "hc-a", nodeType: "HEAD_COMPANY", name: "极光餐饮总公司" },
+        { code: "COLLAB-STORE", sourceFixtureKey: "store-operating", nodeType: "STORE", name: "河畔茶里店", projectRef: "COLLAB-PROJECT" },
       ],
       enablements: [
         { code: "ENABLE-MEITUAN-ISV-A", providerCode: "MEITUAN_ISV_A", status: "ENABLED" },
@@ -63,18 +63,20 @@ const seedDatasets = [
         },
       ],
       templates: [
-        { code: "TEMPLATE-STORE-TAKEAWAY-A", ownerNodeType: "STORE", orderKind: "TAKEAWAY", accessKind: "EXTERNAL" },
-        { code: "TEMPLATE-STORE-TAKEAWAY-B", ownerNodeType: "STORE", orderKind: "TAKEAWAY", accessKind: "EXTERNAL" },
-        { code: "TEMPLATE-STORE-GROUP-BUY", ownerNodeType: "STORE", orderKind: "GROUP_BUY", accessKind: "EXTERNAL" },
-        { code: "TEMPLATE-STORE-DINE-IN-POS", ownerNodeType: "STORE", orderKind: "DINE_IN", dineInForm: "POS", accessKind: "INTERNAL" },
-        { code: "TEMPLATE-STORE-DINE-IN-QR", ownerNodeType: "STORE", orderKind: "DINE_IN", dineInForm: "QR", accessKind: "INTERNAL" },
-        { code: "TEMPLATE-STORE-DINE-IN-KIOSK", ownerNodeType: "STORE", orderKind: "DINE_IN", dineInForm: "KIOSK", accessKind: "INTERNAL" },
+        { code: "TEMPLATE-STORE-TAKEAWAY-A", templateName: "门店美团外卖模板", ownerNodeType: "STORE", orderKind: "TAKEAWAY", accessKind: "EXTERNAL", providerCode: "MEITUAN_ISV_A" },
+        { code: "TEMPLATE-STORE-TAKEAWAY-B", templateName: "门店饿了么外卖模板", ownerNodeType: "STORE", orderKind: "TAKEAWAY", accessKind: "EXTERNAL", providerCode: "ELEME_OPEN" },
+        { code: "TEMPLATE-STORE-GROUP-BUY", templateName: "门店美团团购模板", ownerNodeType: "STORE", orderKind: "GROUP_BUY", accessKind: "EXTERNAL", providerCode: "MEITUAN_ISV_B" },
+        { code: "TEMPLATE-STORE-DINE-IN-POS", templateName: "门店堂食 POS 模板", ownerNodeType: "STORE", orderKind: "DINE_IN", dineInForm: "POS", accessKind: "INTERNAL", providerCode: null },
+        { code: "TEMPLATE-STORE-DINE-IN-QR", templateName: "门店堂食 QR 模板", ownerNodeType: "STORE", orderKind: "DINE_IN", dineInForm: "QR", accessKind: "INTERNAL", providerCode: null },
+        { code: "TEMPLATE-STORE-DINE-IN-KIOSK", templateName: "门店堂食自助机模板", ownerNodeType: "STORE", orderKind: "DINE_IN", dineInForm: "KIOSK", accessKind: "INTERNAL", providerCode: null },
+        { code: "TEMPLATE-STORE-INTERNAL-TAKEAWAY", templateName: "门店内部外卖模板", ownerNodeType: "STORE", orderKind: "TAKEAWAY", accessKind: "INTERNAL", providerCode: null },
+        { code: "TEMPLATE-PROJECT-INTERNAL-TAKEAWAY", templateName: "项目内部外卖模板", ownerNodeType: "PROJECT", orderKind: "TAKEAWAY", accessKind: "INTERNAL", providerCode: null },
       ],
       channels: [
         {
           code: "CHANNEL-STORE-TAKEAWAY-MEITUAN",
           channelName: "海底捞拌饭",
-          channelCode: null,
+          channelCode: "CHANNEL-STORE-TAKEAWAY-MEITUAN",
           ownerNodeType: "STORE",
           ownerNodeRef: "COLLAB-STORE",
           operatorKind: "STORE",
@@ -82,11 +84,12 @@ const seedDatasets = [
           accessKind: "EXTERNAL",
           templateRef: "TEMPLATE-STORE-TAKEAWAY-A",
           bindingRef: "BIND-STORE-TAKEAWAY-MEITUAN",
+          status: "ENABLED",
         },
         {
           code: "CHANNEL-STORE-TAKEAWAY-ELEME",
           channelName: "海底捞冒菜",
-          channelCode: null,
+          channelCode: "CHANNEL-STORE-TAKEAWAY-ELEME",
           ownerNodeType: "STORE",
           ownerNodeRef: "COLLAB-STORE",
           operatorKind: "STORE",
@@ -94,11 +97,12 @@ const seedDatasets = [
           accessKind: "EXTERNAL",
           templateRef: "TEMPLATE-STORE-TAKEAWAY-B",
           bindingRef: "BIND-STORE-TAKEAWAY-ELEME",
+          status: "ENABLED",
         },
         {
           code: "CHANNEL-STORE-GROUP-BUY-MEITUAN",
           channelName: "海底捞万象城店",
-          channelCode: null,
+          channelCode: "CHANNEL-STORE-GROUP-BUY-MEITUAN",
           ownerNodeType: "STORE",
           ownerNodeRef: "COLLAB-STORE",
           operatorKind: "STORE",
@@ -106,6 +110,59 @@ const seedDatasets = [
           accessKind: "EXTERNAL",
           templateRef: "TEMPLATE-STORE-GROUP-BUY",
           bindingRef: "BIND-STORE-GROUP-BUY-MEITUAN",
+          status: "ENABLED",
+        },
+        {
+          code: "CHANNEL-STORE-INTERNAL-DINE-IN-POS",
+          channelName: "万象城堂食 POS",
+          channelCode: "CHANNEL-STORE-INTERNAL-DINE-IN-POS",
+          ownerNodeType: "STORE",
+          ownerNodeRef: "COLLAB-STORE",
+          operatorKind: "STORE",
+          orderKind: "DINE_IN",
+          accessKind: "INTERNAL",
+          templateRef: "TEMPLATE-STORE-DINE-IN-POS",
+          bindingRef: null,
+          status: "ENABLED",
+        },
+        {
+          code: "CHANNEL-STORE-INTERNAL-TAKEAWAY",
+          channelName: "万象城内部外卖",
+          channelCode: "CHANNEL-STORE-INTERNAL-TAKEAWAY",
+          ownerNodeType: "STORE",
+          ownerNodeRef: "COLLAB-STORE",
+          operatorKind: "STORE",
+          orderKind: "TAKEAWAY",
+          accessKind: "INTERNAL",
+          templateRef: "TEMPLATE-STORE-INTERNAL-TAKEAWAY",
+          bindingRef: null,
+          status: "ENABLED",
+        },
+        {
+          code: "CHANNEL-STORE-INTERNAL-TAKEAWAY-DISABLED",
+          channelName: "万象城内部外卖已停用",
+          channelCode: "CHANNEL-STORE-INTERNAL-TAKEAWAY-DISABLED",
+          ownerNodeType: "STORE",
+          ownerNodeRef: "COLLAB-STORE",
+          operatorKind: "STORE",
+          orderKind: "TAKEAWAY",
+          accessKind: "INTERNAL",
+          templateRef: "TEMPLATE-STORE-INTERNAL-TAKEAWAY",
+          bindingRef: null,
+          status: "DISABLED",
+        },
+        {
+          code: "CHANNEL-PROJECT-INTERNAL-TAKEAWAY",
+          channelName: "万象城项目内部外卖",
+          channelCode: "CHANNEL-PROJECT-INTERNAL-TAKEAWAY",
+          ownerNodeType: "PROJECT",
+          ownerNodeRef: "COLLAB-PROJECT",
+          operatorKind: "PROJECT",
+          orderKind: "TAKEAWAY",
+          accessKind: "INTERNAL",
+          templateRef: "TEMPLATE-PROJECT-INTERNAL-TAKEAWAY",
+          bindingRef: null,
+          status: "ENABLED",
         },
       ],
       relations: [
@@ -127,6 +184,16 @@ const seedDatasets = [
         { from: "CHANNEL-STORE-GROUP-BUY-MEITUAN", to: "COLLAB-STORE", refKind: "OWNER_NODE" },
         { from: "CHANNEL-STORE-GROUP-BUY-MEITUAN", to: "TEMPLATE-STORE-GROUP-BUY", refKind: "CHANNEL_TEMPLATE" },
         { from: "CHANNEL-STORE-GROUP-BUY-MEITUAN", to: "BIND-STORE-GROUP-BUY-MEITUAN", refKind: "CHANNEL_BINDING" },
+        { from: "TEMPLATE-STORE-INTERNAL-TAKEAWAY", to: "COLLAB-STORE", refKind: "OWNER_NODE" },
+        { from: "TEMPLATE-PROJECT-INTERNAL-TAKEAWAY", to: "COLLAB-PROJECT", refKind: "OWNER_NODE" },
+        { from: "CHANNEL-STORE-INTERNAL-DINE-IN-POS", to: "COLLAB-STORE", refKind: "OWNER_NODE" },
+        { from: "CHANNEL-STORE-INTERNAL-DINE-IN-POS", to: "TEMPLATE-STORE-DINE-IN-POS", refKind: "CHANNEL_TEMPLATE" },
+        { from: "CHANNEL-STORE-INTERNAL-TAKEAWAY", to: "COLLAB-STORE", refKind: "OWNER_NODE" },
+        { from: "CHANNEL-STORE-INTERNAL-TAKEAWAY", to: "TEMPLATE-STORE-INTERNAL-TAKEAWAY", refKind: "CHANNEL_TEMPLATE" },
+        { from: "CHANNEL-STORE-INTERNAL-TAKEAWAY-DISABLED", to: "COLLAB-STORE", refKind: "OWNER_NODE" },
+        { from: "CHANNEL-STORE-INTERNAL-TAKEAWAY-DISABLED", to: "TEMPLATE-STORE-INTERNAL-TAKEAWAY", refKind: "CHANNEL_TEMPLATE" },
+        { from: "CHANNEL-PROJECT-INTERNAL-TAKEAWAY", to: "COLLAB-PROJECT", refKind: "OWNER_NODE" },
+        { from: "CHANNEL-PROJECT-INTERNAL-TAKEAWAY", to: "TEMPLATE-PROJECT-INTERNAL-TAKEAWAY", refKind: "CHANNEL_TEMPLATE" },
       ],
     },
   },
@@ -164,28 +231,120 @@ const plan = {
   ],
 };
 
-const expectedStoreChannels = Object.freeze([
+const expectedChannels = Object.freeze([
   {
     code: "CHANNEL-STORE-TAKEAWAY-MEITUAN",
     channelName: "海底捞拌饭",
+    channelCode: "CHANNEL-STORE-TAKEAWAY-MEITUAN",
     orderKind: "TAKEAWAY",
+    accessKind: "EXTERNAL",
+    status: "ENABLED",
+    ownerNodeType: "STORE",
+    ownerNodeRef: "COLLAB-STORE",
+    operatorKind: "STORE",
     templateRef: "TEMPLATE-STORE-TAKEAWAY-A",
     bindingRef: "BIND-STORE-TAKEAWAY-MEITUAN",
   },
   {
     code: "CHANNEL-STORE-TAKEAWAY-ELEME",
     channelName: "海底捞冒菜",
+    channelCode: "CHANNEL-STORE-TAKEAWAY-ELEME",
     orderKind: "TAKEAWAY",
+    accessKind: "EXTERNAL",
+    status: "ENABLED",
+    ownerNodeType: "STORE",
+    ownerNodeRef: "COLLAB-STORE",
+    operatorKind: "STORE",
     templateRef: "TEMPLATE-STORE-TAKEAWAY-B",
     bindingRef: "BIND-STORE-TAKEAWAY-ELEME",
   },
   {
     code: "CHANNEL-STORE-GROUP-BUY-MEITUAN",
     channelName: "海底捞万象城店",
+    channelCode: "CHANNEL-STORE-GROUP-BUY-MEITUAN",
     orderKind: "GROUP_BUY",
+    accessKind: "EXTERNAL",
+    status: "ENABLED",
+    ownerNodeType: "STORE",
+    ownerNodeRef: "COLLAB-STORE",
+    operatorKind: "STORE",
     templateRef: "TEMPLATE-STORE-GROUP-BUY",
     bindingRef: "BIND-STORE-GROUP-BUY-MEITUAN",
   },
+  {
+    code: "CHANNEL-STORE-INTERNAL-DINE-IN-POS",
+    channelName: "万象城堂食 POS",
+    channelCode: "CHANNEL-STORE-INTERNAL-DINE-IN-POS",
+    orderKind: "DINE_IN",
+    accessKind: "INTERNAL",
+    status: "ENABLED",
+    ownerNodeType: "STORE",
+    ownerNodeRef: "COLLAB-STORE",
+    operatorKind: "STORE",
+    templateRef: "TEMPLATE-STORE-DINE-IN-POS",
+    bindingRef: null,
+  },
+  {
+    code: "CHANNEL-STORE-INTERNAL-TAKEAWAY",
+    channelName: "万象城内部外卖",
+    channelCode: "CHANNEL-STORE-INTERNAL-TAKEAWAY",
+    orderKind: "TAKEAWAY",
+    accessKind: "INTERNAL",
+    status: "ENABLED",
+    ownerNodeType: "STORE",
+    ownerNodeRef: "COLLAB-STORE",
+    operatorKind: "STORE",
+    templateRef: "TEMPLATE-STORE-INTERNAL-TAKEAWAY",
+    bindingRef: null,
+  },
+  {
+    code: "CHANNEL-STORE-INTERNAL-TAKEAWAY-DISABLED",
+    channelName: "万象城内部外卖已停用",
+    channelCode: "CHANNEL-STORE-INTERNAL-TAKEAWAY-DISABLED",
+    orderKind: "TAKEAWAY",
+    accessKind: "INTERNAL",
+    status: "DISABLED",
+    ownerNodeType: "STORE",
+    ownerNodeRef: "COLLAB-STORE",
+    operatorKind: "STORE",
+    templateRef: "TEMPLATE-STORE-INTERNAL-TAKEAWAY",
+    bindingRef: null,
+  },
+  {
+    code: "CHANNEL-PROJECT-INTERNAL-TAKEAWAY",
+    channelName: "万象城项目内部外卖",
+    channelCode: "CHANNEL-PROJECT-INTERNAL-TAKEAWAY",
+    orderKind: "TAKEAWAY",
+    accessKind: "INTERNAL",
+    status: "ENABLED",
+    ownerNodeType: "PROJECT",
+    ownerNodeRef: "COLLAB-PROJECT",
+    operatorKind: "PROJECT",
+    templateRef: "TEMPLATE-PROJECT-INTERNAL-TAKEAWAY",
+    bindingRef: null,
+  },
+]);
+
+// Logical seed names are never runtime identifiers.  Each one must point to
+// the already materialized r5-full owner fact that the HTTP executor resolves
+// through session/readback before it sends a write.
+const expectedOwnerNodes = Object.freeze([
+  { code: "COLLAB-COMMERCIAL-GROUP", sourceFixtureKey: "cg-aurora", nodeType: "COMMERCIAL_GROUP", name: "华润万象生活" },
+  { code: "COLLAB-REGION", sourceFixtureKey: "region-east", nodeType: "REGION", name: "华北大区" },
+  { code: "COLLAB-PROJECT", sourceFixtureKey: "project-river", nodeType: "PROJECT", name: "太原万象城" },
+  { code: "COLLAB-HEAD-COMPANY", sourceFixtureKey: "hc-a", nodeType: "HEAD_COMPANY", name: "极光餐饮总公司" },
+  { code: "COLLAB-STORE", sourceFixtureKey: "store-operating", nodeType: "STORE", name: "河畔茶里店", projectRef: "COLLAB-PROJECT" },
+]);
+
+const expectedTemplates = Object.freeze([
+  { code: "TEMPLATE-STORE-TAKEAWAY-A", templateName: "门店美团外卖模板", ownerNodeType: "STORE", orderKind: "TAKEAWAY", accessKind: "EXTERNAL", providerCode: "MEITUAN_ISV_A", dineInForm: null },
+  { code: "TEMPLATE-STORE-TAKEAWAY-B", templateName: "门店饿了么外卖模板", ownerNodeType: "STORE", orderKind: "TAKEAWAY", accessKind: "EXTERNAL", providerCode: "ELEME_OPEN", dineInForm: null },
+  { code: "TEMPLATE-STORE-GROUP-BUY", templateName: "门店美团团购模板", ownerNodeType: "STORE", orderKind: "GROUP_BUY", accessKind: "EXTERNAL", providerCode: "MEITUAN_ISV_B", dineInForm: null },
+  { code: "TEMPLATE-STORE-DINE-IN-POS", templateName: "门店堂食 POS 模板", ownerNodeType: "STORE", orderKind: "DINE_IN", accessKind: "INTERNAL", providerCode: null, dineInForm: "POS" },
+  { code: "TEMPLATE-STORE-DINE-IN-QR", templateName: "门店堂食 QR 模板", ownerNodeType: "STORE", orderKind: "DINE_IN", accessKind: "INTERNAL", providerCode: null, dineInForm: "QR" },
+  { code: "TEMPLATE-STORE-DINE-IN-KIOSK", templateName: "门店堂食自助机模板", ownerNodeType: "STORE", orderKind: "DINE_IN", accessKind: "INTERNAL", providerCode: null, dineInForm: "KIOSK" },
+  { code: "TEMPLATE-STORE-INTERNAL-TAKEAWAY", templateName: "门店内部外卖模板", ownerNodeType: "STORE", orderKind: "TAKEAWAY", accessKind: "INTERNAL", providerCode: null, dineInForm: null },
+  { code: "TEMPLATE-PROJECT-INTERNAL-TAKEAWAY", templateName: "项目内部外卖模板", ownerNodeType: "PROJECT", orderKind: "TAKEAWAY", accessKind: "INTERNAL", providerCode: null, dineInForm: null },
 ]);
 
 function validate(input) {
@@ -199,8 +358,19 @@ function validate(input) {
   for (const required of ["COMMERCIAL_GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE"]) {
     if (!nodeTypes.has(required)) fail("SEED_BINDABLE_NODE_TYPE_MISSING", required);
   }
+  if (entities.ownerNodes.length !== expectedOwnerNodes.length) fail("SEED_OWNER_NODE_DENOMINATOR_INVALID");
+  for (const expected of expectedOwnerNodes) {
+    const node = entities.ownerNodes.find((entry) => entry.code === expected.code);
+    if (!node
+      || node.sourceFixtureKey !== expected.sourceFixtureKey
+      || node.nodeType !== expected.nodeType
+      || node.name !== expected.name
+      || (expected.projectRef ?? null) !== (node.projectRef ?? null)) {
+      fail("SEED_OWNER_NODE_SOURCE_MAPPING_INVALID", expected.code);
+    }
+  }
   const stores = entities.ownerNodes.filter((node) => node.nodeType === "STORE");
-  if (stores.length !== 1 || stores[0].code !== "COLLAB-STORE" || stores[0].name !== "万象城海底捞") fail("SEED_STORE_SHAPE_INVALID");
+  if (stores.length !== 1 || stores[0].code !== "COLLAB-STORE" || stores[0].sourceFixtureKey !== "store-operating") fail("SEED_STORE_SHAPE_INVALID");
   const storeBindings = entities.bindings.filter((binding) => binding.nodeRef === "COLLAB-STORE");
   if (entities.bindings.length !== 3) fail("SEED_BINDING_ENTITY_COUNT_INVALID");
   if (storeBindings.length !== 3) fail("SEED_STORE_BINDING_COUNT_INVALID");
@@ -209,26 +379,45 @@ function validate(input) {
   if (storeBindings.some((binding) => binding.nodeType !== "STORE")) fail("SEED_STORE_BINDING_NODE_TYPE_INVALID");
   const bindingsByCode = new Map(entities.bindings.map((binding) => [binding.code, binding]));
   const templatesByCode = new Map(entities.templates.map((template) => [template.code, template]));
+  if (templatesByCode.size !== expectedTemplates.length) fail("SEED_TEMPLATE_DENOMINATOR_INVALID");
+  for (const expected of expectedTemplates) {
+    const template = templatesByCode.get(expected.code);
+    if (!template
+      || template.templateName !== expected.templateName
+      || template.ownerNodeType !== expected.ownerNodeType
+      || template.orderKind !== expected.orderKind
+      || template.accessKind !== expected.accessKind
+      || (template.providerCode ?? null) !== expected.providerCode
+      || (template.dineInForm ?? null) !== expected.dineInForm) {
+      fail("SEED_TEMPLATE_LITERAL_INVALID", expected.code);
+    }
+  }
   const channels = entities.channels;
-  if (!Array.isArray(channels) || channels.length !== expectedStoreChannels.length) fail("SEED_CHANNEL_ENTITY_COUNT_INVALID");
-  if (channels.filter((channel) => channel.orderKind === "TAKEAWAY").length !== 2) fail("SEED_CHANNEL_TAKEAWAY_LITERAL_COUNT_INVALID");
+  if (!Array.isArray(channels) || channels.length !== expectedChannels.length) fail("SEED_CHANNEL_ENTITY_COUNT_INVALID");
+  if (channels.filter((channel) => channel.orderKind === "TAKEAWAY").length !== 5) fail("SEED_CHANNEL_TAKEAWAY_LITERAL_COUNT_INVALID");
   if (channels.filter((channel) => channel.orderKind === "GROUP_BUY").length !== 1) fail("SEED_CHANNEL_GROUP_BUY_LITERAL_COUNT_INVALID");
+  if (channels.filter((channel) => channel.orderKind === "DINE_IN").length !== 1) fail("SEED_CHANNEL_DINE_IN_LITERAL_COUNT_INVALID");
   if (new Set(channels.map((channel) => channel.code)).size !== channels.length) fail("SEED_CHANNEL_ENTITY_CODE_DUPLICATE");
   const relations = entities.relations;
   const hasRelation = (from, to, refKind) => relations.some((relation) => relation.from === from && relation.to === to && relation.refKind === refKind);
-  for (const expected of expectedStoreChannels) {
+  for (const expected of expectedChannels) {
     const channel = channels.find((entry) => entry.code === expected.code);
     if (!channel) fail("SEED_CHANNEL_ENTITY_MISSING", expected.code);
-    if (channel.channelName !== expected.channelName || channel.orderKind !== expected.orderKind || channel.accessKind !== "EXTERNAL") fail("SEED_CHANNEL_LITERAL_INVALID", expected.code);
-    if (channel.ownerNodeType !== "STORE" || channel.ownerNodeRef !== "COLLAB-STORE" || channel.operatorKind !== "STORE") fail("SEED_CHANNEL_OWNER_RELATION_INVALID", expected.code);
-    if (!Object.prototype.hasOwnProperty.call(channel, "channelCode") || channel.channelCode !== null) fail("SEED_CHANNEL_CODE_MUST_REMAIN_UNDECIDED", expected.code);
+    if (channel.channelName !== expected.channelName || channel.orderKind !== expected.orderKind || channel.accessKind !== expected.accessKind || channel.status !== expected.status) fail("SEED_CHANNEL_LITERAL_INVALID", expected.code);
+    if (channel.ownerNodeType !== expected.ownerNodeType || channel.ownerNodeRef !== expected.ownerNodeRef || channel.operatorKind !== expected.operatorKind) fail("SEED_CHANNEL_OWNER_RELATION_INVALID", expected.code);
+    if (channel.channelCode !== expected.channelCode) fail("SEED_CHANNEL_CODE_MUST_BE_EXPLICIT", expected.code);
     if (channel.templateRef !== expected.templateRef || channel.bindingRef !== expected.bindingRef) fail("SEED_CHANNEL_RELATION_INVALID", expected.code);
     const template = templatesByCode.get(expected.templateRef);
-    if (!template || template.ownerNodeType !== "STORE" || template.orderKind !== expected.orderKind || template.accessKind !== "EXTERNAL") fail("SEED_CHANNEL_TEMPLATE_RELATION_INVALID", expected.code);
-    const binding = bindingsByCode.get(expected.bindingRef);
-    if (!binding || binding.nodeType !== "STORE" || binding.nodeRef !== "COLLAB-STORE" || binding.capabilityClass !== expected.orderKind) fail("SEED_CHANNEL_BINDING_RELATION_INVALID", expected.code);
-    if (binding.bindingDisplayName !== expected.channelName) fail("SEED_CHANNEL_BINDING_NAME_INVALID", expected.code);
-    if (!hasRelation(channel.code, "COLLAB-STORE", "OWNER_NODE") || !hasRelation(channel.code, expected.templateRef, "CHANNEL_TEMPLATE") || !hasRelation(channel.code, expected.bindingRef, "CHANNEL_BINDING")) fail("SEED_CHANNEL_RELATION_EDGE_MISSING", expected.code);
+    if (!template || template.ownerNodeType !== expected.ownerNodeType || template.orderKind !== expected.orderKind || template.accessKind !== expected.accessKind) fail("SEED_CHANNEL_TEMPLATE_RELATION_INVALID", expected.code);
+    if (!hasRelation(channel.code, expected.ownerNodeRef, "OWNER_NODE") || !hasRelation(channel.code, expected.templateRef, "CHANNEL_TEMPLATE")) fail("SEED_CHANNEL_RELATION_EDGE_MISSING", expected.code);
+    if (expected.bindingRef === null) {
+      if (hasRelation(channel.code, "COLLAB-STORE", "CHANNEL_BINDING") || hasRelation(channel.code, "COLLAB-PROJECT", "CHANNEL_BINDING")) fail("SEED_INTERNAL_CHANNEL_BINDING_FORBIDDEN", expected.code);
+    } else {
+      const binding = bindingsByCode.get(expected.bindingRef);
+      if (!binding || binding.nodeType !== "STORE" || binding.nodeRef !== "COLLAB-STORE" || binding.capabilityClass !== expected.orderKind) fail("SEED_CHANNEL_BINDING_RELATION_INVALID", expected.code);
+      if (binding.bindingDisplayName !== expected.channelName) fail("SEED_CHANNEL_BINDING_NAME_INVALID", expected.code);
+      if (!hasRelation(channel.code, expected.bindingRef, "CHANNEL_BINDING")) fail("SEED_CHANNEL_RELATION_EDGE_MISSING", expected.code);
+    }
   }
   const dineInTemplates = entities.templates.filter((template) => template.orderKind === "DINE_IN");
   if (dineInTemplates.length !== 3) fail("SEED_DINE_IN_TEMPLATE_COUNT_INVALID");
@@ -237,6 +426,14 @@ function validate(input) {
     if (matches.length !== 1) fail("SEED_DINE_IN_FORM_COUNT_INVALID", form);
     if (matches[0].accessKind !== "INTERNAL" || matches[0].providerCode != null) fail("SEED_DINE_IN_MUST_BE_INTERNAL", form);
   }
+  // The sales-menu projection lists both enabled and disabled store channels;
+  // channel status remains a separate publish-blocker/read-model fact.
+  const eligibleForSalesMenu = channels.filter((channel) => channel.ownerNodeType === "STORE" && channel.accessKind === "INTERNAL" && ["DINE_IN", "TAKEAWAY"].includes(channel.orderKind));
+  if (eligibleForSalesMenu.map((channel) => channel.code).sort().join(",") !== "CHANNEL-STORE-INTERNAL-DINE-IN-POS,CHANNEL-STORE-INTERNAL-TAKEAWAY,CHANNEL-STORE-INTERNAL-TAKEAWAY-DISABLED") fail("SEED_SALES_MENU_ELIGIBLE_CHANNEL_SET_INVALID");
+  if (!channels.some((channel) => channel.ownerNodeType === "PROJECT" && channel.accessKind === "INTERNAL" && channel.orderKind === "TAKEAWAY")) fail("SEED_PROJECT_NEGATIVE_CHANNEL_MISSING");
+  if (!channels.some((channel) => channel.ownerNodeType === "STORE" && channel.accessKind === "INTERNAL" && channel.orderKind === "TAKEAWAY" && channel.status === "DISABLED")) fail("SEED_DISABLED_INTERNAL_TAKEAWAY_MISSING");
+  if (channels.filter((channel) => channel.ownerNodeType === "STORE" && channel.accessKind === "EXTERNAL" && channel.orderKind === "TAKEAWAY").length !== 2) fail("SEED_EXTERNAL_TAKEAWAY_NEGATIVE_COUNT_INVALID");
+  if (channels.filter((channel) => channel.ownerNodeType === "STORE" && channel.orderKind === "GROUP_BUY").length !== 1) fail("SEED_STORE_GROUP_BUY_NEGATIVE_COUNT_INVALID");
   if (input.acceptanceScenarioIds.length !== 14 || new Set(input.acceptanceScenarioIds).size !== 14) fail("SEED_ACCEPTANCE_SCENARIO_COUNT_INVALID");
   if (JSON.stringify(dataset).includes("externalSystems") || JSON.stringify(dataset).includes("providerProfiles")) fail("SEED_CATALOG_DATA_MUST_NOT_BE_WRITTEN");
   const references = new Set([
@@ -266,19 +463,26 @@ if (import.meta.url === `file://${process.argv[1]}` && process.argv.includes("--
   expectRejected("BINDING_COUNT", (red) => { red.seedDatasets[0].entities.bindings.pop(); });
   expectRejected("BINDING_LITERAL", (red) => { red.seedDatasets[0].entities.bindings[0].capabilityClass = "GROUP_BUY"; });
   expectRejected("CHANNEL_OWNER_NODE_REF", (red) => { red.seedDatasets[0].entities.channels[0].ownerNodeRef = "COLLAB-PROJECT"; });
+  expectRejected("OWNER_NODE_SOURCE_MAPPING", (red) => { red.seedDatasets[0].entities.ownerNodes.find((node) => node.code === "COLLAB-STORE").sourceFixtureKey = "store-preparing"; });
   expectRejected("CHANNEL_TEMPLATE_REF", (red) => { red.seedDatasets[0].entities.channels[0].templateRef = "TEMPLATE-STORE-GROUP-BUY"; });
+  expectRejected("EXTERNAL_TEMPLATE_PROVIDER", (red) => { red.seedDatasets[0].entities.templates.find((template) => template.code === "TEMPLATE-STORE-TAKEAWAY-A").providerCode = null; });
+  expectRejected("TEMPLATE_NAME", (red) => { red.seedDatasets[0].entities.templates.find((template) => template.code === "TEMPLATE-STORE-INTERNAL-TAKEAWAY").templateName = "未批准模板"; });
   expectRejected("CHANNEL_BINDING_NAME", (red) => { red.seedDatasets[0].entities.bindings[0].bindingDisplayName = "未批准绑定"; });
   expectRejected("CHANNEL_BINDING_EDGE", (red) => {
     red.seedDatasets[0].entities.relations = red.seedDatasets[0].entities.relations.filter((relation) => relation.from !== "CHANNEL-STORE-TAKEAWAY-MEITUAN" || relation.refKind !== "CHANNEL_BINDING");
   });
-  expectRejected("CHANNEL_CODE_GENERATED", (red) => { red.seedDatasets[0].entities.channels[0].channelCode = "CHANNEL-001"; });
+  expectRejected("CHANNEL_CODE_REQUIRED", (red) => { red.seedDatasets[0].entities.channels[0].channelCode = null; });
   expectRejected("DINE_IN_KIOSK", (red) => {
     red.seedDatasets[0].entities.templates = red.seedDatasets[0].entities.templates.filter((template) => template.dineInForm !== "KIOSK");
   });
   expectRejected("DINE_IN_EXTERNAL", (red) => {
     red.seedDatasets[0].entities.templates.find((template) => template.dineInForm === "POS").accessKind = "EXTERNAL";
   });
-  process.stdout.write(`EXTERNAL_COLLABORATION_BUSINESS_CHANNEL_SEED_PLAN_SELF_TEST=PASS SCENARIOS=${plan.acceptanceScenarioIds.length} RED_CASES=12\n`);
+  expectRejected("INTERNAL_CHANNEL_BECOMES_EXTERNAL", (red) => { red.seedDatasets[0].entities.channels.find((channel) => channel.code === "CHANNEL-STORE-INTERNAL-TAKEAWAY").accessKind = "EXTERNAL"; });
+  expectRejected("DISABLED_BRANCH_MISSING", (red) => { red.seedDatasets[0].entities.channels.find((channel) => channel.code === "CHANNEL-STORE-INTERNAL-TAKEAWAY-DISABLED").status = "ENABLED"; });
+  expectRejected("PROJECT_NEGATIVE_BECOMES_STORE", (red) => { const channel = red.seedDatasets[0].entities.channels.find((entry) => entry.code === "CHANNEL-PROJECT-INTERNAL-TAKEAWAY"); channel.ownerNodeType = "STORE"; channel.ownerNodeRef = "COLLAB-STORE"; channel.operatorKind = "STORE"; });
+  expectRejected("ELIGIBLE_INTERNAL_TAKEAWAY_MISSING", (red) => { red.seedDatasets[0].entities.channels.find((channel) => channel.code === "CHANNEL-STORE-INTERNAL-TAKEAWAY").status = "DISABLED"; });
+  process.stdout.write(`EXTERNAL_COLLABORATION_BUSINESS_CHANNEL_SEED_PLAN_SELF_TEST=PASS SCENARIOS=${plan.acceptanceScenarioIds.length} RED_CASES=19\n`);
 }
 
 export { plan, validate };

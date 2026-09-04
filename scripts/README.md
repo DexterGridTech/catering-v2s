@@ -141,6 +141,16 @@ node scripts/test/browser-l2-runtime.mjs finalize
 node scripts/test/browser-l2-runtime.mjs run
 ```
 
+如果 readiness 在 held run 建立前失败且 cleanup 未通过，仍只能由同一受管入口按同一 run 的失败 manifest
+恢复：
+
+```bash
+node scripts/test/browser-l2-runtime.mjs cleanup <same-run-readiness-manifest.json>
+```
+
+该 recovery 只接受当前 run 目录中 `status=FAIL` 且 `cleanupStatus=FAIL` 的 readiness manifest；cleanup
+失败会保留 `CLEANUP_REQUIRED`，在 cleanup PASS 前不能启动新的同类 run。
+
 第二步与第三步之间必须继续执行该专题批准的完整生成链，不能手工编辑 active execution、fixture、
 locator bindings 或 generated output。每个 case 必须输出开始、完成、完成数和剩余数；动态证据只在
 discovered/selected/results exact、join 完整、business PASS 且本机/远端 cleanup 全 PASS 时成立。

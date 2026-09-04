@@ -1266,31 +1266,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/assembly-android-pos-desktop@workspace:apps/terminal/assembly/android/pos-desktop":
+"@catering-v2s/assembly-android-sample-terminal@workspace:apps/terminal/assembly/android/sample-terminal":
   version: 0.0.0-use.local
-  resolution: "@catering-v2s/assembly-android-pos-desktop@workspace:apps/terminal/assembly/android/pos-desktop"
+  resolution: "@catering-v2s/assembly-android-sample-terminal@workspace:apps/terminal/assembly/android/sample-terminal"
   dependencies:
     "@catering-v2s/adapter-android-app-control": "workspace:*"
     "@catering-v2s/adapter-android-device": "workspace:*"
     "@catering-v2s/adapter-android-dual-screen": "workspace:*"
     "@catering-v2s/adapter-android-logger": "workspace:*"
     "@catering-v2s/adapter-android-persist-kv": "workspace:*"
-    "@catering-v2s/kernel-base-contracts": "workspace:*"
-    "@catering-v2s/kernel-base-display-context": "workspace:*"
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
-    "@catering-v2s/kernel-base-runtime": "workspace:*"
-    "@catering-v2s/kernel-base-state": "workspace:*"
-    "@catering-v2s/kernel-base-test-support": "workspace:*"
-    "@catering-v2s/kernel-base-transport": "workspace:*"
-    "@catering-v2s/kernel-base-ui-state": "workspace:*"
-    "@catering-v2s/kernel-base-workflow": "workspace:*"
-    "@catering-v2s/ui-base-admin-shell": "workspace:*"
-    "@catering-v2s/ui-base-automation": "workspace:*"
-    "@catering-v2s/ui-base-input": "workspace:*"
-    "@catering-v2s/ui-base-primitives": "workspace:*"
-    "@catering-v2s/ui-base-render": "workspace:*"
-    "@catering-v2s/ui-base-test-support": "workspace:*"
-    "@catering-v2s/ui-integration-platform-console": "workspace:*"
+    "@catering-v2s/ui-integration-sample-console": "workspace:*"
     "@types/react": "npm:~19.2.2"
     expo: "npm:~57.0.18"
     expo-status-bar: "npm:~57.0.1"
@@ -1370,7 +1356,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/kernel-base-transport@workspace:*, @catering-v2s/kernel-base-transport@workspace:apps/terminal/kernel/base/transport":
+"@catering-v2s/kernel-base-transport@workspace:apps/terminal/kernel/base/transport":
   version: 0.0.0-use.local
   resolution: "@catering-v2s/kernel-base-transport@workspace:apps/terminal/kernel/base/transport"
   dependencies:
@@ -1397,7 +1383,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/kernel-base-workflow@workspace:*, @catering-v2s/kernel-base-workflow@workspace:apps/terminal/kernel/base/workflow":
+"@catering-v2s/kernel-base-workflow@workspace:apps/terminal/kernel/base/workflow":
   version: 0.0.0-use.local
   resolution: "@catering-v2s/kernel-base-workflow@workspace:apps/terminal/kernel/base/workflow"
   dependencies:
@@ -1406,6 +1392,34 @@ __metadata:
     "@catering-v2s/kernel-base-runtime": "workspace:*"
     "@catering-v2s/kernel-base-state": "workspace:*"
     typescript: "npm:~6.0.3"
+  languageName: unknown
+  linkType: soft
+
+"@catering-v2s/kernel-feature-sample-member-registry@workspace:*, @catering-v2s/kernel-feature-sample-member-registry@workspace:apps/terminal/kernel/feature/sample-member-registry":
+  version: 0.0.0-use.local
+  resolution: "@catering-v2s/kernel-feature-sample-member-registry@workspace:apps/terminal/kernel/feature/sample-member-registry"
+  dependencies:
+    "@catering-v2s/kernel-base-contracts": "workspace:*"
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
+    "@catering-v2s/kernel-base-runtime": "workspace:*"
+    "@catering-v2s/kernel-base-state": "workspace:*"
+    "@reduxjs/toolkit": "npm:2.12.0"
+    typescript: "npm:~6.0.3"
+    vitest: "npm:4.1.10"
+  languageName: unknown
+  linkType: soft
+
+"@catering-v2s/kernel-feature-sample-staff-session@workspace:*, @catering-v2s/kernel-feature-sample-staff-session@workspace:apps/terminal/kernel/feature/sample-staff-session":
+  version: 0.0.0-use.local
+  resolution: "@catering-v2s/kernel-feature-sample-staff-session@workspace:apps/terminal/kernel/feature/sample-staff-session"
+  dependencies:
+    "@catering-v2s/kernel-base-contracts": "workspace:*"
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
+    "@catering-v2s/kernel-base-runtime": "workspace:*"
+    "@catering-v2s/kernel-base-state": "workspace:*"
+    "@reduxjs/toolkit": "npm:2.12.0"
+    typescript: "npm:~6.0.3"
+    vitest: "npm:4.1.10"
   languageName: unknown
   linkType: soft
 
@@ -1546,6 +1560,7 @@ __metadata:
   dependencies:
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
     "@catering-v2s/kernel-base-runtime": "workspace:*"
+    "@catering-v2s/kernel-base-state": "workspace:*"
     "@catering-v2s/kernel-base-ui-state": "workspace:*"
     "@types/react": "npm:~19.2.2"
     react: "npm:19.2.3"
@@ -1576,9 +1591,56 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/ui-integration-platform-console@workspace:*, @catering-v2s/ui-integration-platform-console@workspace:apps/terminal/ui/integration/platform-console":
+"@catering-v2s/ui-feature-sample-member-desk@workspace:apps/terminal/ui/feature/sample-member-desk":
   version: 0.0.0-use.local
-  resolution: "@catering-v2s/ui-integration-platform-console@workspace:apps/terminal/ui/integration/platform-console"
+  resolution: "@catering-v2s/ui-feature-sample-member-desk@workspace:apps/terminal/ui/feature/sample-member-desk"
+  dependencies:
+    "@catering-v2s/kernel-base-contracts": "workspace:*"
+    "@catering-v2s/kernel-base-display-context": "workspace:*"
+    "@catering-v2s/kernel-base-runtime": "workspace:*"
+    "@catering-v2s/kernel-base-state": "workspace:*"
+    "@catering-v2s/kernel-base-ui-state": "workspace:*"
+    "@catering-v2s/kernel-feature-sample-member-registry": "workspace:*"
+    "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*"
+    "@catering-v2s/ui-base-render": "workspace:*"
+    "@types/react": "npm:~19.2.2"
+    react: "npm:19.2.3"
+    react-native: "npm:0.86.3"
+    react-test-renderer: "npm:19.2.3"
+    typescript: "npm:~6.0.3"
+    vitest: "npm:4.1.10"
+  peerDependencies:
+    react: 19.2.3
+    react-native: 0.86.3
+  languageName: unknown
+  linkType: soft
+
+"@catering-v2s/ui-feature-sample-staff-auth@workspace:apps/terminal/ui/feature/sample-staff-auth":
+  version: 0.0.0-use.local
+  resolution: "@catering-v2s/ui-feature-sample-staff-auth@workspace:apps/terminal/ui/feature/sample-staff-auth"
+  dependencies:
+    "@catering-v2s/kernel-base-contracts": "workspace:*"
+    "@catering-v2s/kernel-base-display-context": "workspace:*"
+    "@catering-v2s/kernel-base-runtime": "workspace:*"
+    "@catering-v2s/kernel-base-state": "workspace:*"
+    "@catering-v2s/kernel-base-ui-state": "workspace:*"
+    "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*"
+    "@catering-v2s/ui-base-render": "workspace:*"
+    "@types/react": "npm:~19.2.2"
+    react: "npm:19.2.3"
+    react-native: "npm:0.86.3"
+    react-test-renderer: "npm:19.2.3"
+    typescript: "npm:~6.0.3"
+    vitest: "npm:4.1.10"
+  peerDependencies:
+    react: 19.2.3
+    react-native: 0.86.3
+  languageName: unknown
+  linkType: soft
+
+"@catering-v2s/ui-integration-sample-console@workspace:*, @catering-v2s/ui-integration-sample-console@workspace:apps/terminal/ui/integration/sample-console":
+  version: 0.0.0-use.local
+  resolution: "@catering-v2s/ui-integration-sample-console@workspace:apps/terminal/ui/integration/sample-console"
   dependencies:
     "@catering-v2s/kernel-base-contracts": "workspace:*"
     "@catering-v2s/kernel-base-display-context": "workspace:*"
@@ -1596,6 +1658,7 @@ __metadata:
     react: "npm:19.2.3"
     react-native: "npm:0.86.3"
     typescript: "npm:~6.0.3"
+    vitest: "npm:4.1.10"
   peerDependencies:
     react: 19.2.3
     react-native: 0.86.3

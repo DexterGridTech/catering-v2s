@@ -9,22 +9,28 @@ import {
   buildIncompleteExecutionManifest,
   buildL2SelectionManifest,
   buildReadinessManifest,
+  buildReadinessFailureCleanupState,
   buildFixtureVoidedSkuTransitions,
   catalogBootstrapCaseIdsForSuite,
   catalogLibraryCaseIdentityPlan,
+  deriveL2CaseFailure,
   fixtureSkuFactsForItem,
   l2FixtureStageSuffix,
   loadL2ActivationCandidate,
   materializeL2TimingBudget,
   materializeReadbackFactTemplate,
+  parseFocusedCaseId,
   playwrightArtifactDirectoryForRun,
   requiredCatalogItemCommandResourceRef,
   requiredCatalogItemDetailVoidAvailability,
   requireActivatedCatalogLibraryExecution,
   resolveL2TerminalResults,
   salesMenuSaleContentKind,
+  sanitizeRuntimeState,
+  selectL2FirstFailure,
   materializeFixtureVoidedSkuLifecycle,
   repositoryRelativePath,
+  remoteCleanupPassed,
   writeRepositoryByteBinding,
   validateCatalogLibraryCaseIdentityPlans,
   validateCatalogLibraryReadbackFactBindings,
@@ -37,6 +43,7 @@ import {
   validateNamespaceBinding,
   validateRepositoryByteBinding,
 } from './browser-l2-runtime.mjs';
+import {validateBlueprint as validateSalesMenuBlueprint} from '../generate/sales-menu-p1.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const readJson = relative => JSON.parse(readFileSync(path.join(root, relative), 'utf8'));
@@ -53,8 +60,15 @@ const operationsL2Source = readFileSync(
   path.join(root, 'apps/frontend/operations-admin/src/tests/l2/operationsL2.ts'),
   'utf8',
 );
+const cursorPaginationSource = readFileSync(
+  path.join(root, 'libraries/frontend/admin-ui-foundation/src/list/cursorPagination.tsx'),
+  'utf8',
+);
 const fixtureSource = readFileSync(path.join(root, 'scripts/test/catalog-inventory-l2-fixture.mjs'), 'utf8');
 const p1Source = readFileSync(path.join(root, 'scripts/generate/catalog-inventory-p1.mjs'), 'utf8');
+const salesMenuFixture = readJson('contracts/policy/sales-menu-l2-fixture.json');
+const salesMenuBlueprint = readJson('contracts/policy/sales-menu-l2-case-blueprint.json');
+const salesMenuGeneratedScenarios = readJson('contracts/policy/sales-menu-l2-scenarios.json');
 
 test('sales-menu fixture shapes use the owner-aligned sale-content kind mapping', () => {
   assert.equal(salesMenuSaleContentKind('ORDINARY'), 'DIRECT');
@@ -63,6 +77,18 @@ test('sales-menu fixture shapes use the owner-aligned sale-content kind mapping'
   assert.equal(salesMenuSaleContentKind('WEIGHTED'), 'WEIGHTED');
   assert.equal(salesMenuSaleContentKind('COMPOSITE'), 'COMPOSITE');
   assert.match(runtimeSource, /const saleContentKind = salesMenuSaleContentKind\(candidate\.shape\)/);
+});
+
+test('sales-menu fixture activation identities cannot overlap its disabled-channel blocker', () => {
+  const primaryMenu = salesMenuFixture.menuFixtures.find(menu => menu.fixtureId === 'MENU-01');
+  const blockerChannelFixtureId = salesMenuFixture.caseFixtures['FIXTURE-SALES-MENU-BLOCKERS'].blockerChannelFixtureId;
+  const fixtureChannelIds = new Set(salesMenuFixture.channelFixtures.map(channel => channel.fixtureId));
+  assert.equal(primaryMenu?.channelFixtureId, 'CHANNEL-01');
+  assert.equal(primaryMenu?.secondaryActiveChannelFixtureId, 'CHANNEL-02');
+  assert.notEqual(primaryMenu?.channelFixtureId, blockerChannelFixtureId);
+  assert.notEqual(primaryMenu?.secondaryActiveChannelFixtureId, blockerChannelFixtureId);
+  assert.ok(fixtureChannelIds.has(primaryMenu?.secondaryActiveChannelFixtureId));
+  for (const menu of salesMenuFixture.menuFixtures) assert.ok(fixtureChannelIds.has(menu.channelFixtureId));
 });
 
 test('sales-menu readiness keeps Catalog library fixtures out of its exact candidate denominator', () => {
@@ -83,6 +109,195 @@ test('sales-menu L2 consumes the managed timing report field contract', () => {
 test('sales-menu L2 never treats an observed HTTP failure as a completed operation', () => {
   assert.match(salesMenuL2Source, /completion\.status < 200 \|\| completion\.status >= 300/);
   assert.match(salesMenuL2Source, /SALES_MENU_L2_OPERATION_HTTP_FAILED/);
+});
+
+test('sales-menu L2 action helpers wait for the uniquely bound current-DOM control', () => {
+  assert.match(
+    salesMenuL2Source,
+    /async function clickBoundControl\([\s\S]*?const resolved = await waitForBoundControl\(page, key, facts\);[\s\S]*?await expect\(button\)\.toBeVisible\(\);[\s\S]*?await expect\(button\)\.toBeEnabled\(\);[\s\S]*?if \(label\) await expect\(button\)\.toContainText\(uiLabelPattern\(label\)\);[\s\S]*?recordControlTouch\(key, resolved\.testId\);/,
+  );
+  assert.doesNotMatch(
+    salesMenuL2Source,
+    /async function clickBoundControl\([\s\S]*?const button = await requireControl\(page, key, facts\);/,
+  );
+});
+
+test('sales-menu role-locked store scope records only its actual trigger touch', () => {
+  const scopeOptionSource = operationsL2Source.slice(
+    operationsL2Source.indexOf('async function selectOrAssertOperationsScopeOption'),
+    operationsL2Source.indexOf('/** Select an owner-returned option through a ProTable form field'),
+  );
+  assert.match(
+    scopeOptionSource,
+    /if \(await input\.isDisabled\(\)\) \{\s+if \(label\) await expect\(control\)\.toContainText\(label\);\s+return false;\s+\}[\s\S]*?onControlTouch\?\.\(\{testId, phase: 'SELECTOR', type}\);/,
+  );
+  const salesMenuScopeSource = salesMenuL2Source.slice(
+    salesMenuL2Source.indexOf('async function selectStoreScope'),
+    salesMenuL2Source.indexOf('async function openSalesMenu'),
+  );
+  assert.match(
+    salesMenuScopeSource,
+    /touch => recordControlTouch\(storeScopeControlKey\(touch\), touch\.testId\)/,
+  );
+  const scopeControlKeys = new Set(
+    salesMenuBlueprint.scenarios
+      .flatMap(scenario => scenario.cases ?? [])
+      .flatMap(row => row.controlKeys.filter(key => key.startsWith('STORE_SCOPE_'))),
+  );
+  assert.deepEqual([...scopeControlKeys], ['STORE_SCOPE_TRIGGER']);
+});
+
+test('sales-menu declares channel pagination only for its dedicated 21-channel journey', () => {
+  const paginationCases = salesMenuBlueprint.scenarios
+    .flatMap(scenario => scenario.cases ?? [])
+    .filter(row => row.controlKeys.includes('SALES_MENU_CHANNEL_PAGINATION'))
+    .map(row => row.caseId);
+  const runtimePaginationCases = salesMenuGeneratedScenarios.scenarios
+    .flatMap(scenario => scenario.cases ?? [])
+    .filter(row => row.parameter.controlKeys.includes('SALES_MENU_CHANNEL_PAGINATION'))
+    .map(row => row.caseId);
+  const findChannelCardSource = salesMenuL2Source.slice(
+    salesMenuL2Source.indexOf('async function findChannelCard'),
+    salesMenuL2Source.indexOf('async function chooseChannel'),
+  );
+  assert.deepEqual(paginationCases, ['sales-menu-entry-and-channels']);
+  assert.deepEqual(runtimePaginationCases, paginationCases);
+  assert.match(
+    findChannelCardSource,
+    /resetCursorToFirstPage\(page, salesMenuTestIds\.pageCursor, 'SALES_MENU_CHANNEL_PAGINATION', false\)/,
+  );
+  assert.doesNotMatch(findChannelCardSource, /recordControlTouch\('SALES_MENU_CHANNEL_PAGINATION'/);
+});
+
+test('sales-menu case control denominators follow each case action trace', () => {
+  const cases = new Map(
+    salesMenuBlueprint.scenarios.flatMap(scenario => (scenario.cases ?? []).map(row => [row.caseId, row.controlKeys])),
+  );
+  assert.equal(cases.get('sales-menu-section-actions')?.includes('SALES_MENU_CONFIRMATION_SUBMIT'), false);
+  assert.equal(cases.get('sales-menu-manual-sold-out-and-restore')?.includes('SALES_MENU_ITEM'), false);
+  assert.equal(cases.get('sales-menu-publish-blockers')?.includes('SALES_MENU_MANAGER_PAGINATION'), false);
+  assert.equal(cases.get('sales-menu-auth-and-scope-isolation')?.includes('SALES_MENU_MANAGER_PAGINATION'), false);
+  assert.equal(cases.get('sales-menu-operation-records')?.includes('SALES_MENU_LOG_PAGINATION'), true);
+  const caseRows = salesMenuBlueprint.scenarios.flatMap(scenario => scenario.cases ?? []);
+  const baselineItemCaseRows = caseRows.filter(row => {
+    const caseFixture = salesMenuFixture.caseFixtures[row.fixtureRef];
+    return Array.isArray(caseFixture?.baselineCandidateFixtureIds) && caseFixture.baselineCandidateFixtureIds.length > 0;
+  });
+  assert.ok(baselineItemCaseRows.length > 0);
+  for (const row of baselineItemCaseRows) assert.equal(row.controlKeys.includes('SALES_MENU_ITEM_TABLE'), true);
+  const missingTableMutation = structuredClone(salesMenuBlueprint);
+  const mutatedCase = missingTableMutation.scenarios
+    .flatMap(scenario => scenario.cases ?? [])
+    .find(row => baselineItemCaseRows.some(baselineRow => baselineRow.caseId === row.caseId));
+  assert.ok(mutatedCase);
+  mutatedCase.controlKeys = mutatedCase.controlKeys.filter(key => key !== 'SALES_MENU_ITEM_TABLE');
+  assert.throws(
+    () => validateSalesMenuBlueprint(missingTableMutation, salesMenuFixture),
+    error => error instanceof Error && error.message.startsWith('SALES_MENU_P1_BASELINE_ITEM_TABLE_CONTROL_MISSING:'),
+  );
+  const operationRecordsSource = salesMenuL2Source.slice(
+    salesMenuL2Source.indexOf("case 'sales-menu-operation-records':"),
+    salesMenuL2Source.indexOf("case 'sales-menu-failure-recovery-and-focus':"),
+  );
+  assert.match(
+    operationRecordsSource,
+    /await requireControl\(page, 'SALES_MENU_OPERATION_LOG', facts\);\s+await expect\(visibleTestId\(page, salesMenuTestIds\.operationLog\)\)\.toContainText\('操作人'\);\s+await clickCursorNext\(page, salesMenuTestIds\.logCursor, 'SALES_MENU_LOG_PAGINATION'\);/,
+  );
+  assert.doesNotMatch(operationRecordsSource, /waitForOperation\(runtime, 'getOperationsSalesMenuOperationRecords'/);
+  const clickCursorNextSource = salesMenuL2Source.slice(
+    salesMenuL2Source.indexOf('async function clickCursorNext'),
+    salesMenuL2Source.indexOf('async function clickCursorPrevious'),
+  );
+  assert.match(cursorPaginationSource, /disabled=\{!nextCursor\}/);
+  assert.match(clickCursorNextSource, /await expect\(next\)\.toBeEnabled\(\);\s+recordControlTouch/);
+  assert.doesNotMatch(
+    operationRecordsSource,
+    /if \(await page\.getByTestId\(`\$\{salesMenuTestIds\.logCursor\}-next`\)\.isEnabled\(\)\)/,
+  );
+});
+
+test('sales-menu L2 resource-sensitive readbacks select the target menu before using payloads', () => {
+  assert.match(
+    salesMenuL2Source,
+    /function selectedMenuOperationObservations\([\s\S]*?entry\.pathname\.includes\(`\/sales-menus\/\$\{menuRef\}`\)/,
+  );
+  assert.match(
+    salesMenuL2Source,
+    /function latestSelectedMenuItems\([\s\S]*?latestSelectedMenuOperation\(runtime, facts, operationId\)/,
+  );
+  assert.doesNotMatch(salesMenuL2Source, /function latestItems\(/);
+  assert.equal(
+    (salesMenuL2Source.match(/latestSelectedMenuItems\(runtime, facts, 'getOperationsSalesMenuDraftSections'\)/g) ?? [])
+      .length,
+    8,
+  );
+  assert.equal(
+    (salesMenuL2Source.match(/latestSelectedMenuItems\(runtime, facts, 'getOperationsSalesMenuDraftItems'\)/g) ?? [])
+      .length,
+    2,
+  );
+  assert.match(
+    salesMenuL2Source,
+    /waitForLatestItemRef\([\s\S]*?runtime,\s*facts,\s*'getOperationsSalesMenuDraftSections'/,
+  );
+  assert.match(
+    salesMenuL2Source,
+    /latestSelectedMenuOperation\(runtime, facts, 'getOperationsSalesMenuPublicationPreview'\)/,
+  );
+  assert.doesNotMatch(
+    salesMenuL2Source,
+    /\.find\(entry => entry\.operationId === 'getOperationsSalesMenuPublicationPreview'\)/,
+  );
+});
+
+test('sales-menu media deletion closes after its command joins and editor DOM closure', () => {
+  const mediaDeletionSource = salesMenuL2Source.slice(
+    salesMenuL2Source.indexOf("case 'sales-menu-edit-direct-item-and-media':"),
+    salesMenuL2Source.indexOf("case 'sales-menu-edit-sku-prices':"),
+  );
+  assert.match(
+    mediaDeletionSource,
+    /await waitForOperation\(runtime, 'releaseOperationsSalesMenuStagedAsset'\);\s+await waitForOperation\(runtime, 'deleteOperationsSalesMenuItem'\);\s+await expect\(visibleTestId\(page, salesMenuTestIds\.itemEditor\)\)\.toBeHidden\(\);/,
+  );
+  assert.doesNotMatch(mediaDeletionSource, /targetMenuReadCountBeforeDelete/);
+  assert.doesNotMatch(mediaDeletionSource, /waitForSelectedMenuOperation\(runtime, facts, 'getOperationsSalesMenu'/);
+});
+
+test('sales-menu shared selection chain uses DOM read models rather than query completion counts', () => {
+  const sharedSelectionSource = salesMenuL2Source.slice(
+    salesMenuL2Source.indexOf('async function chooseChannel'),
+    salesMenuL2Source.indexOf('async function clickCursorNext'),
+  );
+  assert.match(
+    sharedSelectionSource,
+    /await expect\(channel\)\.toContainText\('当前入口'\);[\s\S]*?await expect\(menuSelector\.locator\)\.toBeEnabled\(\);/,
+  );
+  assert.match(
+    sharedSelectionSource,
+    /const menuOption = visibleTestId\(page, menuOptionTestId\);\s+await expect\(menuOption\)\.toHaveCount\(1\);\s+await expect\(menuOption\)\.toHaveAttribute\('role', 'option'\);[\s\S]*?await expect\(page\.getByTestId\(salesMenuTestIds\.menuSelector\)\)\.toContainText\(facts\.menuName\);/,
+  );
+  assert.match(
+    sharedSelectionSource,
+    /await expect\(section\.locator\)\.toHaveAttribute\('aria-current', 'true'\);[\s\S]*?assertCurrentSalesItemPageReadModel/,
+  );
+  assert.doesNotMatch(sharedSelectionSource, /runtime\.observations\.filter/);
+  assert.doesNotMatch(sharedSelectionSource, /waitForOperation\(/);
+  assert.doesNotMatch(sharedSelectionSource, /waitForSelectedMenuOperation\(/);
+  assert.doesNotMatch(sharedSelectionSource, /waitForSelectedSectionItemsOperation\(/);
+});
+
+test('sales-menu manager pagination uses current DOM state without HTTP-count diagnostics', () => {
+  const managerPaginationSource = salesMenuL2Source.slice(
+    salesMenuL2Source.indexOf('async function waitForManagerPageReadModel'),
+    salesMenuL2Source.indexOf('async function clickManagerMenuAction'),
+  );
+  assert.match(
+    managerPaginationSource,
+    /if \(\(await candidate\.count\(\)\) === 1\) return 'TARGET_VISIBLE';[\s\S]*?return \(await next\.isEnabled\(\)\) \? 'CURRENT_PAGE_WITH_NEXT' : false;/,
+  );
+  assert.match(managerPaginationSource, /readModelSourceBasis: 'CURRENT_DOM_READ_MODEL'/);
+  assert.doesNotMatch(managerPaginationSource, /runtime\.observations\.filter/);
+  assert.doesNotMatch(managerPaginationSource, /waitForOperation\(/);
 });
 
 test('shared option selection waits on the native input before opening an owner-backed portal', () => {
@@ -164,6 +379,23 @@ test('browser L2 timeout budget is materialized from the declared tunnel baselin
     Math.max(5_000, Math.ceil(Math.max(...report.cases.map(row => row.databaseBudgetMs)) / 2)),
   );
   assert.ok(report.cases.every(row => row.timeoutMs > 0 && row.databaseBudgetMs >= 0));
+});
+
+test('managed browser L2 focused diagnostics select one generated case without changing the active candidate set', () => {
+  const activeCaseIds = ['case-a', 'case-b'];
+  assert.equal(parseFocusedCaseId(['run', '--case', 'case-b'], activeCaseIds), 'case-b');
+  assert.equal(parseFocusedCaseId(['run', '--case=case-a'], activeCaseIds), 'case-a');
+  assert.equal(parseFocusedCaseId(['run'], activeCaseIds), null);
+  assert.throws(
+    () => parseFocusedCaseId(['run', '--case', 'case-c'], activeCaseIds),
+    error => error.code === 'L2_FOCUSED_CASE_NOT_ACTIVE',
+  );
+  assert.throws(
+    () => parseFocusedCaseId(['run', '--case', 'case-a', '--case', 'case-b'], activeCaseIds),
+    error => error.code === 'L2_FOCUSED_CASE_ARGUMENT_DUPLICATE',
+  );
+  assert.match(runtimeSource, /executionMode: focusedDiagnostic \? 'FOCUSED_DIAGNOSTIC' : 'FULL'/);
+  assert.match(runtimeSource, /business = focusedDiagnostic \? 'NOT_RUN'/);
 });
 
 test('browser L2 case identities distinguish fixture primaries from successful and deliberate duplicate creates', () => {
@@ -297,6 +529,109 @@ test('browser L2 terminal accounting retains join-backed case outcomes after an 
   );
   assert.match(runtimeSource, /JOIN_EVENT_FALLBACK/);
   assert.match(runtimeSource, /resultCaseIds/);
+});
+
+test('browser L2 fail-fast accounting preserves the first failure and excludes skipped cases from results', () => {
+  const activeIds = ['sales-menu-case-a', 'sales-menu-case-b', 'sales-menu-case-c'];
+  const joinEvents = [
+    {
+      kind: 'CASE_COMPLETE',
+      caseId: activeIds[0],
+      outcome: 'FAIL',
+      error: 'SALES_MENU_L2_TEST_ID_NOT_FOUND:SALES_MENU_MENU_SCHEDULE',
+    },
+  ];
+  const resolved = resolveL2TerminalResults({
+    activeIds,
+    playwrightResultRows: [
+      {caseId: activeIds[0], status: 'failed'},
+      {caseId: activeIds[1], status: 'skipped'},
+      {caseId: activeIds[2], status: 'skipped'},
+    ],
+    joinEvents,
+  });
+  const selection = buildL2SelectionManifest({
+    state: {identity: {runId: 'l2-test-fail-fast-accounting'}},
+    activeIds,
+    resultRows: resolved.rows,
+    resultSource: resolved.source,
+    joinTerminalRows: resolved.joinTerminalRows,
+  });
+  assert.equal(resolved.rows.length, 1);
+  assert.equal(selection.results, 1);
+  assert.deepEqual(selection.notRunCaseIds, activeIds.slice(1));
+  assert.equal(selection.stoppedAfterFirstFailure, true);
+  assert.equal(selection.status, 'FAIL');
+  assert.deepEqual(deriveL2CaseFailure({joinEvents, resultRows: resolved.rows}), {
+    caseId: activeIds[0],
+    failureCode: 'SALES_MENU_L2_TEST_ID_NOT_FOUND',
+    failureCategory: 'SALES_MENU_L2',
+    source: 'JOIN_EVENT',
+  });
+});
+
+test('browser L2 reports a completed case failure without hiding concurrent source drift', () => {
+  const caseFailure = {
+    caseId: 'sales-menu-publish-blockers',
+    failureCode: 'SALES_MENU_L2_OPERATION_HTTP_FAILED',
+  };
+  assert.equal(
+    selectL2FirstFailure({
+      caseFailure,
+      sourceByteBindingAfterRunFailure: 'L2_SOURCE_BYTE_BINDING_AFTER_RUN:L2_SOURCE_BYTE_BINDING_SOURCE_DRIFT',
+      accountingFailure: 'PLAYWRIGHT_EXIT_1',
+    }),
+    'L2_CASE_FAILED:sales-menu-publish-blockers:SALES_MENU_L2_OPERATION_HTTP_FAILED',
+  );
+  assert.equal(
+    selectL2FirstFailure({
+      sourceByteBindingAfterRunFailure: 'L2_SOURCE_BYTE_BINDING_AFTER_RUN:L2_SOURCE_BYTE_BINDING_SOURCE_DRIFT',
+      accountingFailure: 'PLAYWRIGHT_EXIT_1',
+    }),
+    'L2_SOURCE_BYTE_BINDING_AFTER_RUN:L2_SOURCE_BYTE_BINDING_SOURCE_DRIFT',
+  );
+  assert.match(
+    runtimeSource,
+    /firstFailure,\s+sourceByteBindingAfterRunFailure,\s+firstFailedCaseId:/,
+    'the public execution manifest must retain source drift beside the selected case failure',
+  );
+});
+
+test('browser L2 merges a join-only terminal failure without treating it as not-run', () => {
+  const activeIds = ['sales-menu-case-a', 'sales-menu-case-b'];
+  const joinEvents = [
+    {
+      kind: 'CASE_COMPLETE',
+      caseId: activeIds[1],
+      outcome: 'FAIL',
+      error: 'SALES_MENU_L2_OPERATION_HTTP_FAILED',
+    },
+  ];
+  const resolved = resolveL2TerminalResults({
+    activeIds,
+    playwrightResultRows: [{caseId: activeIds[0], status: 'passed'}],
+    joinEvents,
+  });
+  const selection = buildL2SelectionManifest({
+    state: {identity: {runId: 'l2-test-join-only-terminal'}},
+    activeIds,
+    resultRows: resolved.rows,
+    resultSource: resolved.source,
+    joinTerminalRows: resolved.joinTerminalRows,
+  });
+  assert.equal(resolved.source, 'PLAYWRIGHT_JSON_WITH_JOIN_COMPLETION');
+  assert.deepEqual(
+    resolved.rows.map(row => row.caseId),
+    activeIds,
+  );
+  assert.equal(selection.results, 2);
+  assert.deepEqual(selection.notRunCaseIds, []);
+  assert.deepEqual(deriveL2CaseFailure({joinEvents, resultRows: resolved.rows}), {
+    caseId: activeIds[1],
+    failureCode: 'SALES_MENU_L2_OPERATION_HTTP_FAILED',
+    failureCategory: 'SALES_MENU_L2',
+    source: 'JOIN_EVENT',
+  });
 });
 
 test('catalog-library L2 resolves semantic tab anchors to the actual accessible control and reads writes back through the workbench', () => {
@@ -498,7 +833,9 @@ test('browser L2 failure cleanup awaits remote cleanup and owns partial startup 
     runtimeSource,
     /async function cleanupOwnedL2Resources\(state, credentials\) \{[\s\S]*?await stopOwnedProcesses\(state\.processes\)[\s\S]*?await cleanupRemote\(state\.remote\.host, state\.identity, credentials\)/,
   );
-  assert.equal((runtimeSource.match(/const remoteErrors = await cleanupRemote\(/g) ?? []).length, 2);
+  assert.equal((runtimeSource.match(/const remoteErrors = await cleanupRemote\(/g) ?? []).length, 1);
+  assert.doesNotMatch(runtimeSource, /minio\/mc rm[^\n]*\|\| true/);
+  assert.doesNotMatch(runtimeSource, /minio\/mc ls[^\n]*\|\| true/);
   assert.match(
     runtimeSource,
     /const started = \[\];[\s\S]*?error\.cleanupErrors = \[[\s\S]*?await stopOwnedProcesses\(started\)/,
@@ -506,10 +843,19 @@ test('browser L2 failure cleanup awaits remote cleanup and owns partial startup 
   assert.match(runtimeSource, /cleanupPrivateRunFiles,/);
 });
 
+test('browser L2 remote cleanup requires both a zero exit and its readback marker', () => {
+  const marker = 'R5_L2_REMOTE_ASSET_CLEANUP=PASS';
+  assert.equal(remoteCleanupPassed({status: 0, stdout: marker}, marker), true);
+  assert.equal(remoteCleanupPassed({status: 1, stdout: marker}, marker), false);
+  assert.equal(remoteCleanupPassed({status: 0, stdout: ''}, marker), false);
+  assert.equal(remoteCleanupPassed({status: 1, stdout: ''}, marker), false);
+});
+
 test('browser L2 execution is closed to the active catalog case set and backend API paths', () => {
   assert.match(runtimeSource, /['"]--grep['"],\s*activeCaseGrep/);
   assert.match(runtimeSource, /['"]--workers=1['"]/);
-  assert.match(runtimeSource, /const activeCaseGrep = `\(\$\{activeCaseIds/);
+  assert.match(runtimeSource, /['"]--workers=1['"],[\s\S]{0,320}?['"]--max-failures=1['"]/);
+  assert.match(runtimeSource, /const activeCaseGrep = `\(\$\{executedCaseIds/);
   assert.match(
     runtimeSource,
     /R5_L2_OPERATIONS_LOGIN_ROUTE: `http:\/\/127\.0\.0\.1:\$\{state\.ports\.operations\}\/operations\/\$\{encodeURIComponent\(state\.workspaceKey\)\}\/login`/,
@@ -678,7 +1024,7 @@ test('browser L2 readiness consumes the generated candidate instead of an execut
 
 test('browser L2 interrupted runs have a managed cleanup recovery path', () => {
   assert.match(runtimeSource, /async function cleanupRuntimeState\(\n  state,\n  \{/);
-  assert.match(runtimeSource, /const cleanupErrors = await cleanupOwnedL2Resources\(state, credentials\)/);
+  assert.match(runtimeSource, /await cleanupOwnedL2Resources\(state, credentials\)/);
   assert.match(runtimeSource, /process\.once\('SIGINT', handleSignal\)/);
   assert.match(runtimeSource, /L2_RUNTIME_INTERRUPTED_\$\{interruptedSignal\}/);
   assert.match(
@@ -689,6 +1035,46 @@ test('browser L2 interrupted runs have a managed cleanup recovery path', () => {
   assert.match(runtimeSource, /brokenBoundary = 'L2_RUNTIME_FINALIZATION'/);
   assert.match(runtimeSource, /preflightComplete \? 'INCOMPLETE_FINALIZATION' : 'INCOMPLETE_PREFLIGHT'/);
   assert.match(runtimeSource, /preflightComplete \? 'L2_RUNTIME_FINALIZATION' : 'L2_RUNTIME_PREFLIGHT'/);
+});
+
+test('browser L2 failed readiness keeps an exact managed cleanup recovery state', () => {
+  const runtimeDirectory = process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/browser-l2');
+  const runId = 'l2-readiness-cleanup-recovery';
+  const runDirectory = path.join(runtimeDirectory, runId);
+  const manifestPath = path.join(runDirectory, 'readiness-manifest.json');
+  const binding = {
+    runId,
+    namespace: 'v2s_l2_readiness_cleanup_recovery',
+    database: 'catering_v2s_l2_readiness_cleanup_recovery',
+    assetPrefix: `s3://catering-v2s-r5-assets/catering-v2s/l2/${runId}/`,
+  };
+  const manifest = {
+    kind: 'sales-menu-l2-readiness-manifest',
+    status: 'FAIL',
+    cleanupStatus: 'FAIL',
+    ...binding,
+    runBinding: binding,
+    remote: {host: 'trusted-test-host', fingerprint: 'test-fingerprint', allowlistVersion: 'test-allowlist'},
+    credentialsFile: path.relative(root, path.join(runDirectory, 'credentials.env')).split(path.sep).join('/'),
+    processIdentities: [{name: 'l2-remote-tunnel', pid: 1234, pgid: 1234, startToken: 'test-start-token'}],
+    ports: {spring: 28080, db: 25433, asset: 29000, platform: 5174, operations: 5175},
+    activeCaseIds: ['sales-menu-entry-and-channels'],
+    frontendMode: 'preview',
+    createdAt: '2026-09-03T00:00:00.000Z',
+  };
+  const state = buildReadinessFailureCleanupState({suite: 'sales-menu', manifestPath, manifest});
+  assert.equal(state.kind, 'sales-menu-l2-runtime-state');
+  assert.equal(state.status, 'CLEANUP_REQUIRED');
+  assert.equal(state.runDirectory, runDirectory);
+  assert.deepEqual(state.identity, binding);
+  assert.deepEqual(state.activeCaseIds, manifest.activeCaseIds);
+  assert.match(runtimeSource, /state\.status !== 'READY' && state\.status !== 'CLEANUP_REQUIRED'/);
+  assert.match(runtimeSource, /status: finalCleanupErrors\.length \? 'CLEANUP_REQUIRED' : 'CLEANED'/);
+});
+
+test('browser L2 readiness failure reports the manifest cleanup result without string truthiness', () => {
+  assert.match(runtimeSource, /BROWSER_L2_READINESS=FAIL; FIRST_FAILURE=\$\{firstFailure\}; CLEANUP=\$\{cleanup\};/);
+  assert.doesNotMatch(runtimeSource, /CLEANUP=\$\{cleanup\.length \? 'FAIL' : 'PASS'\}/);
 });
 
 test('browser L2 preflight failures emit run-bound execution evidence before business execution', () => {
@@ -748,9 +1134,27 @@ test('sales-menu operation-record readiness reads the required channel-scoped qu
 });
 
 test('sales-menu owner facts use the actual eligible-channel page order', () => {
-  assert.match(runtimeSource, /const ownerChannelRows = \[\.\.\.channelPageRows, \.\.\.salesMenuPageItems\(channelPage2\)\]/);
+  assert.match(
+    runtimeSource,
+    /const ownerChannelRows = \[\.\.\.channelPageRows, \.\.\.salesMenuPageItems\(channelPage2\)\]/,
+  );
   assert.match(runtimeSource, /const ownerChannelRefs = ownerChannelRows\.map\(row =>[\s\S]*channelRef/);
-  assert.match(runtimeSource, /const primaryChannel = ownerOrderedChannels\[0\]/);
+  assert.match(
+    runtimeSource,
+    /const primaryMenuFixture = fixture\.menuFixtures\.find\(menu => menu\.fixtureId === 'MENU-01'\)/,
+  );
+  assert.match(
+    runtimeSource,
+    /primaryMenuFixture\.channelFixtureId,[\s\S]*?'SALES_MENU_PRIMARY_CHANNEL_FIXTURE_MISSING'/,
+  );
+  assert.match(
+    runtimeSource,
+    /primaryMenuFixture\.secondaryActiveChannelFixtureId,[\s\S]*?'SALES_MENU_SECONDARY_ACTIVE_CHANNEL_FIXTURE_MISSING'/,
+  );
+  assert.match(runtimeSource, /const menuChannel = requireFixtureChannel\([\s\S]*?menuFixture\.channelFixtureId/);
+  assert.match(runtimeSource, /kind: 'SALES_MENU_FIXTURE_CHANNEL_SELECTION'/);
+  assert.doesNotMatch(runtimeSource, /const primaryChannel = ownerOrderedChannels\[0\]/);
+  assert.doesNotMatch(runtimeSource, /const secondaryChannel = ownerOrderedChannels\[1\]/);
   assert.match(runtimeSource, /channelRefs: ownerChannelRefs/);
 });
 
@@ -1004,6 +1408,14 @@ test('browser L2 readiness evidence binds current repository bytes and exposes o
   assert.equal(validation.bindingDigest, sourceBinding.bindingDigest);
   assert.equal(validation.fileCount, sourceBinding.fileCount);
   assert.equal(validation.byteCount, sourceBinding.byteCount);
+  assert.equal(binding.scope, 'apps-backend-and-apps-frontend-input-files-excluding-managed-runtime-and-build-output');
+  assert.deepEqual(binding.includedDirectories, ['apps/backend', 'apps/frontend']);
+  assert.ok(binding.files.length > 0);
+  assert.equal(
+    binding.files.every(file => file.path.startsWith('apps/backend/') || file.path.startsWith('apps/frontend/')),
+    true,
+  );
+  assert.equal(binding.files.some(file => file.path.startsWith('tools/') || file.path.startsWith('scripts/')), false);
   assert.deepEqual(binding.excludedFilePatterns, ['.DS_Store', '*.log', '*.apk', '*.aab', '*.keystore']);
   assert.equal(
     binding.files.some(
@@ -1057,6 +1469,33 @@ test('browser L2 readiness evidence binds current repository bytes and exposes o
     () => repositoryRelativePath(path.join(root, '..', 'foreign-worktree', 'credentials.env')),
     error => error.code === 'L2_REPOSITORY_RELATIVE_PATH_REQUIRED',
   );
+});
+
+test('browser L2 persisted runtime state excludes diagnostic credentials', () => {
+  const state = sanitizeRuntimeState({
+    kind: 'sales-menu-l2-runtime-state',
+    runDirectory: '.runtime/browser-l2/l2-runtime-state-sanitization',
+    credentialsPath: '.runtime/browser-l2/l2-runtime-state-sanitization/credentials.env',
+    diagnostics: {
+      events: '.runtime/browser-l2/l2-runtime-state-sanitization/http-request-events.jsonl',
+      dbEvents: '.runtime/browser-l2/l2-runtime-state-sanitization/db-operation-events.jsonl',
+      dictionary: '.runtime/browser-l2/l2-runtime-state-sanitization/statement-dictionary.json',
+      debugEvents: '.runtime/browser-l2/l2-runtime-state-sanitization/browser-debug-events.jsonl',
+      secret: 'diagnostic-secret-must-not-persist',
+      hmac: 'diagnostic-hmac-must-not-persist',
+      runId: 'l2-runtime-state-sanitization',
+    },
+  });
+  assert.deepEqual(state.diagnostics, {
+    events: '.runtime/browser-l2/l2-runtime-state-sanitization/http-request-events.jsonl',
+    dbEvents: '.runtime/browser-l2/l2-runtime-state-sanitization/db-operation-events.jsonl',
+    dictionary: '.runtime/browser-l2/l2-runtime-state-sanitization/statement-dictionary.json',
+    debugEvents: '.runtime/browser-l2/l2-runtime-state-sanitization/browser-debug-events.jsonl',
+    runId: 'l2-runtime-state-sanitization',
+  });
+  assert.doesNotMatch(JSON.stringify(state), /diagnostic-secret-must-not-persist|diagnostic-hmac-must-not-persist/);
+  assert.doesNotMatch(JSON.stringify(state), /"secret"|"hmac"/);
+  assert.match(runtimeSource, /const persistedState = sanitizeRuntimeState\(state\)/);
 });
 
 test('browser L2 executes the real VIEW fixture terminal SKU lifecycle in owner request order', async () => {

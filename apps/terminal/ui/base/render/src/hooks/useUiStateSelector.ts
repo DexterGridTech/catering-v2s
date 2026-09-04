@@ -1,11 +1,12 @@
 import {useRef} from 'react'
-import type {Runtime} from '@catering-v2s/kernel-base-runtime'
+import type {RenderProviderProps} from '../types/props'
 import {useRenderSnapshot} from './useRenderSnapshot'
 
-type RuntimeStateRoot = ReturnType<Runtime['getState']>
+type RuntimeStateRoot = ReturnType<RenderProviderProps['stateSource']['getState']>
 
 type SelectorCache<TValue> = Readonly<{
   readonly root: RuntimeStateRoot
+  readonly selector: (root: RuntimeStateRoot) => TValue
   readonly result: TValue
 }>
 
@@ -15,8 +16,10 @@ export const useUiStateSelector = <TValue>(
   const snapshot = useRenderSnapshot()
   const cache = useRef<SelectorCache<TValue> | undefined>(undefined)
   if (snapshot.root === undefined) return undefined
-  if (cache.current?.root === snapshot.root) return cache.current.result
+  if (cache.current?.root === snapshot.root && cache.current.selector === selector) {
+    return cache.current.result
+  }
   const result = selector(snapshot.root)
-  cache.current = Object.freeze({root: snapshot.root, result})
+  cache.current = Object.freeze({root: snapshot.root, selector, result})
   return result
 }

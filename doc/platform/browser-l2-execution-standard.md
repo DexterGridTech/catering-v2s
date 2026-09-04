@@ -90,7 +90,8 @@ binding、blueprint action 的控件声明，必须先完成本节；前置复�
 实际动作节点不一致，或 UI 与批准设计/既有模块形态存在未处置偏差，则该前置门 FAIL；不得以增加等待、
 改用宽 locator、放宽 oracle 或动态运行结果替代修复。
 
-repository byte binding 只覆盖可作为当前仓库输入的文件；managed runtime、build/cache/tool state、
+repository byte binding 当前永久只覆盖 `apps/backend` 与 `apps/frontend` 两个目录内、可作为本次
+后台/前端运行输入的文件；仓库其他目录不属于该 binding 分母。两个目录内的 managed runtime、build/cache/tool state、
 测试产物以及 `.DS_Store`、日志、安装包等瞬态/忽略文件不得进入 binding。当前 runner 的排除策略
 必须与仓内工具实际产生的 `.runtime`、`.expo`、`.turbo`、`.yarn`、`.kotlin`、`.vite`、`.next`、
 `test-results`、`playwright-report` 目录及 `.DS_Store`、`*.log`、`*.apk`、`*.aab`、`*.keystore`
@@ -131,6 +132,13 @@ node scripts/test/browser-l2-runtime.mjs finalize
 # 5. 只由受管 runner 执行已经绑定的 active exact-set。
 node scripts/test/browser-l2-runtime.mjs run
 ```
+
+首败根因定位可以在同一受管链上显式执行一个生成的 case：
+`node scripts/test/browser-l2-runtime.mjs run --case <generated-case-id>`。这只是
+`FOCUSED_DIAGNOSTIC`，仍先校验 P1 active candidate 的完整 exact-set，并使用同一 run 的 fixture、凭据、
+日志、join 与 cleanup；它只执行指定 case，manifest 的 `business` 必须为 `NOT_RUN`，不能作为 SM-05 完成证据，
+也不能替代根因修复后的完整 active-set run。`<generated-case-id>` 必须来自当前 P1 生成的 case 集合，不能用文件名、
+glob 或手写平行名单。
 
 具体生成器名称可由后续获批专题替换，但五个阶段不可省略：**readiness → same-run activation →
 generated-chain exact check → same-run frontend refresh and byte-binding finalize → managed browser run**。
@@ -179,6 +187,12 @@ cleanup 固定按 session/storageState → run asset prefix/database/role → ow
 credential/session files → local absent 与 remote namespace zero-residue readback 执行。business、local cleanup、
 remote DB cleanup、remote asset cleanup 必须分别写 manifest 与 stdout；任一 cleanup 非 PASS，整次 L2
 不得完成。
+
+readiness 在 held run 建立前失败时，也必须为本 run 持久化精确的 cleanup recovery state；若 cleanup 失败，
+该 state 保持 `CLEANUP_REQUIRED`，不得写成可继续业务运行或不可恢复的终态。受管 cleanup 允许接收同一
+run 的 `readiness-manifest.json`（仅限 `status=FAIL` 且 `cleanupStatus=FAIL`），按其已验证的 run binding、
+process identity、remote host 与凭据文件路径重建 cleanup state；不得接受其他 run、手工拼接的 namespace、
+端口或进程名推断。直到 cleanup PASS 前，不得创建新的同类 managed run。
 
 ## 7. 通过条件、失败纪律与可复用检查
 

@@ -1,20 +1,43 @@
 import type {ReactNode} from 'react'
 import type {LoggerPort} from '@catering-v2s/kernel-base-platform-ports'
-import type {Runtime, RuntimeStatus} from '@catering-v2s/kernel-base-runtime'
+import type {
+  CommandDispatchOptions,
+  CommandDispatchResult,
+  CommandIntent,
+  RuntimeStatus,
+} from '@catering-v2s/kernel-base-runtime'
+import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
 import type {
   ContainerKey,
   DisplayMode,
   UiCatalog,
+  UiVariableDeclaration,
 } from '@catering-v2s/kernel-base-ui-state'
 import type {RendererCatalog} from './catalog'
 
-type RuntimeStateRoot = ReturnType<Runtime['getState']>
+// Keep this toolkit boundary structural: render consumes a read-only root
+// snapshot and must not import or retain the complete Runtime handle.
+type RenderStateRoot = Readonly<Record<string, object | undefined>>
 
 type RenderStateSource = Readonly<{
   readonly getStatus: () => RuntimeStatus
-  readonly getState: () => RuntimeStateRoot
+  readonly getState: () => RenderStateRoot
   readonly subscribe: (listener: () => void) => () => void
 }>
+
+type RenderDispatchOptions = Readonly<{
+  readonly requestId: NonNullable<CommandDispatchOptions['requestId']>
+}>
+
+type RenderDispatchCommand = <TPayload extends StateJsonValue>(
+  command: CommandIntent<TPayload>,
+  options: RenderDispatchOptions,
+) => Promise<CommandDispatchResult>
+
+type RenderUiVariableReader = <TValue extends StateJsonValue>(
+  root: RenderStateRoot,
+  declaration: UiVariableDeclaration<TValue>,
+) => TValue
 
 export type SurfaceRootProps = Readonly<{
   readonly displayMode: DisplayMode
@@ -27,5 +50,7 @@ export type RenderProviderProps = Readonly<{
   readonly uiCatalog: UiCatalog
   readonly rendererCatalog: RendererCatalog
   readonly logger: LoggerPort
+  readonly dispatchCommand: RenderDispatchCommand
+  readonly selectUiVariable: RenderUiVariableReader
   readonly children?: ReactNode
 }>

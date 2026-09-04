@@ -158,6 +158,9 @@ const REPOSITORY_BYTE_BINDING_EXCLUDED_DIRECTORIES = Object.freeze([
   'coverage',
   '.gradle',
 ]);
+const REPOSITORY_BYTE_BINDING_SCOPE_DIRECTORIES = Object.freeze(['apps/backend', 'apps/frontend']);
+const REPOSITORY_BYTE_BINDING_SCOPE =
+  'apps-backend-and-apps-frontend-input-files-excluding-managed-runtime-and-build-output';
 const REPOSITORY_BYTE_BINDING_EXCLUDED_SET = new Set(REPOSITORY_BYTE_BINDING_EXCLUDED_DIRECTORIES);
 const REPOSITORY_BYTE_BINDING_EXCLUDED_FILE_PATTERNS = Object.freeze([
   '.DS_Store',
@@ -621,7 +624,7 @@ function privateWrite(file, value) {
   chmodSync(file, 0o600);
 }
 
-function repositoryByteBindingFiles(directory = root, relativeDirectory = '') {
+function repositoryByteBindingFiles(directory, relativeDirectory) {
   let entries;
   try {
     entries = readdirSync(directory, {withFileTypes: true}).sort((left, right) => left.name.localeCompare(right.name));
@@ -640,6 +643,16 @@ function repositoryByteBindingFiles(directory = root, relativeDirectory = '') {
   return files;
 }
 
+function repositoryByteBindingScopeFiles() {
+  return REPOSITORY_BYTE_BINDING_SCOPE_DIRECTORIES.flatMap(relativeDirectory => {
+    const directory = path.join(root, relativeDirectory);
+    if (!existsSync(directory) || !statSync(directory).isDirectory()) {
+      fail('L2_SOURCE_BYTE_BINDING_DIRECTORY_UNREADABLE', relativeDirectory);
+    }
+    return repositoryByteBindingFiles(directory, relativeDirectory);
+  }).sort();
+}
+
 function sha256File(file) {
   try {
     return createHash('sha256').update(readFileSync(file)).digest('hex');
@@ -654,7 +667,7 @@ function repositoryByteBindingDigest(descriptor) {
 
 export function writeRepositoryByteBinding({runDirectory, identity} = {}) {
   if (typeof runDirectory !== 'string' || !identity?.runId) fail('L2_SOURCE_BYTE_BINDING_INPUT_INVALID');
-  const relativeFiles = repositoryByteBindingFiles();
+  const relativeFiles = repositoryByteBindingScopeFiles();
   if (relativeFiles.length === 0) fail('L2_SOURCE_BYTE_BINDING_FILE_SET_EMPTY');
   const files = relativeFiles.map(relative => {
     const absolute = path.join(root, relative);
@@ -665,8 +678,9 @@ export function writeRepositoryByteBinding({runDirectory, identity} = {}) {
     schemaVersion: 1,
     kind: 'catalog-inventory-l2-repository-byte-binding',
     runId: identity.runId,
-    scope: 'repository-input-files-excluding-managed-runtime-and-build-output',
+    scope: REPOSITORY_BYTE_BINDING_SCOPE,
     repositoryRoot: '.',
+    includedDirectories: [...REPOSITORY_BYTE_BINDING_SCOPE_DIRECTORIES],
     excludedDirectories: [...REPOSITORY_BYTE_BINDING_EXCLUDED_DIRECTORIES],
     excludedFilePatterns: [...REPOSITORY_BYTE_BINDING_EXCLUDED_FILE_PATTERNS],
     files,
@@ -690,6 +704,8 @@ export function validateRepositoryByteBinding(bindingPath, {expectedRunId} = {})
     binding?.schemaVersion !== 1 ||
     binding.kind !== 'catalog-inventory-l2-repository-byte-binding' ||
     binding.repositoryRoot !== '.' ||
+    binding.scope !== REPOSITORY_BYTE_BINDING_SCOPE ||
+    !Array.isArray(binding.includedDirectories) ||
     !Array.isArray(binding.files) ||
     !Array.isArray(binding.excludedDirectories) ||
     !Array.isArray(binding.excludedFilePatterns) ||
@@ -698,6 +714,7 @@ export function validateRepositoryByteBinding(bindingPath, {expectedRunId} = {})
     fail('L2_SOURCE_BYTE_BINDING_INVALID');
   }
   if (
+    JSON.stringify(binding.includedDirectories) !== JSON.stringify(REPOSITORY_BYTE_BINDING_SCOPE_DIRECTORIES) ||
     JSON.stringify(binding.excludedDirectories) !== JSON.stringify(REPOSITORY_BYTE_BINDING_EXCLUDED_DIRECTORIES) ||
     JSON.stringify(binding.excludedFilePatterns) !== JSON.stringify(REPOSITORY_BYTE_BINDING_EXCLUDED_FILE_PATTERNS)
   ) {
@@ -720,6 +737,9 @@ export function validateRepositoryByteBinding(bindingPath, {expectedRunId} = {})
     ) {
       fail('L2_SOURCE_BYTE_BINDING_FILE_ENTRY_INVALID');
     }
+    if (!REPOSITORY_BYTE_BINDING_SCOPE_DIRECTORIES.some(directory => file.path.startsWith(`${directory}/`))) {
+      fail('L2_SOURCE_BYTE_BINDING_FILE_OUT_OF_SCOPE', file.path);
+    }
     seen.add(file.path);
     const absolute = path.resolve(root, file.path);
     if (repositoryRelativePath(absolute) !== file.path || !existsSync(absolute)) {
@@ -731,7 +751,7 @@ export function validateRepositoryByteBinding(bindingPath, {expectedRunId} = {})
     }
     byteCount += file.bytes;
   }
-  const currentFiles = repositoryByteBindingFiles();
+  const currentFiles = repositoryByteBindingScopeFiles();
   if (currentFiles.length !== binding.files.length || currentFiles.some(file => !seen.has(file))) {
     fail('L2_SOURCE_BYTE_BINDING_FILE_SET_DRIFT');
   }
@@ -1258,6 +1278,97 @@ export function validateNamespaceBinding({runId, namespace, database, assetPrefi
   return true;
 }
 
+export function buildReadinessFailureCleanupState({suite = 'catalog-inventory', manifestPath, manifest} = {}) {
+  const config = suiteConfig(suite);
+  if (!manifest || manifest.kind !== config.readinessKind || manifest.status !== 'FAIL') {
+    fail('L2_CLEANUP_READINESS_MANIFEST_NOT_RECOVERABLE');
+  }
+  if (manifest.cleanupStatus !== 'FAIL') fail('L2_CLEANUP_READINESS_NOT_REQUIRED');
+  const resolvedManifestPath = path.resolve(String(manifestPath ?? ''));
+  const runId = String(manifest.runId ?? '');
+  const runDirectory = path.join(runtimeRoot, runId);
+  if (resolvedManifestPath !== path.join(runDirectory, 'readiness-manifest.json')) {
+    fail('L2_CLEANUP_READINESS_BINDING_MISMATCH');
+  }
+  const binding = manifest.runBinding;
+  if (
+    !binding ||
+    binding.runId !== runId ||
+    manifest.namespace !== binding.namespace ||
+    manifest.database !== binding.database ||
+    manifest.assetPrefix !== binding.assetPrefix
+  ) {
+    fail('L2_CLEANUP_READINESS_BINDING_MISMATCH');
+  }
+  validateNamespaceBinding(binding);
+  if (
+    !manifest.remote ||
+    typeof manifest.remote.host !== 'string' ||
+    typeof manifest.remote.fingerprint !== 'string' ||
+    typeof manifest.remote.allowlistVersion !== 'string'
+  ) {
+    fail('L2_CLEANUP_READINESS_REMOTE_BINDING_INVALID');
+  }
+  const credentialsPath = path.join(runDirectory, 'credentials.env');
+  const bindingPath = path.join(runDirectory, 'credential-binding.json');
+  if (
+    manifest.credentialsFile !== repositoryRelativePath(credentialsPath) ||
+    path.dirname(credentialsPath) !== path.dirname(bindingPath)
+  ) {
+    fail('L2_CLEANUP_READINESS_CREDENTIAL_BINDING_MISMATCH');
+  }
+  if (!Array.isArray(manifest.processIdentities)) fail('L2_CLEANUP_PROCESS_IDENTITIES_REQUIRED');
+  const processes = manifest.processIdentities.map(identity => {
+    if (
+      !identity ||
+      typeof identity.name !== 'string' ||
+      identity.name.length === 0 ||
+      !Number.isInteger(identity.pid) ||
+      identity.pid <= 0 ||
+      !Number.isInteger(identity.pgid) ||
+      identity.pgid <= 0 ||
+      typeof identity.startToken !== 'string' ||
+      identity.startToken.length === 0
+    ) {
+      fail('L2_CLEANUP_PROCESS_IDENTITY_INVALID');
+    }
+    return {
+      name: identity.name,
+      pid: identity.pid,
+      pgid: identity.pgid,
+      startToken: identity.startToken,
+    };
+  });
+  return {
+    schemaVersion: 1,
+    kind: config.stateKind,
+    suite,
+    status: 'CLEANUP_REQUIRED',
+    runDirectory,
+    readinessManifestPath: resolvedManifestPath,
+    ownerFixturePath: null,
+    sourceByteBindingPath: null,
+    credentialsPath,
+    bindingPath,
+    identity: {...binding},
+    workspaceKey: null,
+    ports: manifest.ports,
+    remote: {...manifest.remote},
+    frontendMode: manifest.frontendMode,
+    diagnostics: {
+      events: path.join(runDirectory, 'http-request-events.jsonl'),
+      dbEvents: path.join(runDirectory, 'db-operation-events.jsonl'),
+      dictionary: path.join(runDirectory, 'statement-dictionary.json'),
+      debugEvents: path.join(runDirectory, 'browser-debug-events.jsonl'),
+    },
+    processes,
+    activeCaseIds: [...(manifest.activeCaseIds ?? [])],
+    timingReportPath: path.join(runDirectory, 'l2-timing-budget-report.json'),
+    playwrightArtifactDirectory: playwrightArtifactDirectoryForRun(runDirectory),
+    createdAt: manifest.createdAt,
+  };
+}
+
 function makeRunIdentity() {
   const suffix = `${Date.now()}-${process.pid}-${randomUUID()}`;
   const runId = `l2-${suffix}`;
@@ -1579,6 +1690,10 @@ async function openTunnel(host, ports, logPath) {
   fail('L2_TUNNEL_LISTENER_IDENTITY_MISMATCH');
 }
 
+export function remoteCleanupPassed(result, marker) {
+  return result?.status === 0 && typeof result.stdout === 'string' && result.stdout.includes(marker);
+}
+
 async function cleanupRemote(host, identity, credentials) {
   const errors = [];
   const cleanup = remoteCommand(
@@ -1595,8 +1710,7 @@ async function cleanupRemote(host, identity, credentials) {
     ].join('\n'),
     {allowFailure: true},
   );
-  if (cleanup.status !== 0 || !cleanup.stdout.includes('R5_L2_REMOTE_DB_CLEANUP=PASS'))
-    errors.push('REMOTE_DB_CLEANUP');
+  if (!remoteCleanupPassed(cleanup, 'R5_L2_REMOTE_DB_CLEANUP=PASS')) errors.push('REMOTE_DB_CLEANUP');
   const access = credentials.values.CATERING_ASSET_S3_ACCESS_KEY;
   const secret = credentials.values.CATERING_ASSET_S3_SECRET_KEY;
   const asset = remoteCommand(
@@ -1606,15 +1720,14 @@ async function cleanupRemote(host, identity, credentials) {
       `access=${quote(access)}`,
       `secret=${quote(secret)}`,
       `prefix=${quote(`catering-v2s/l2/${identity.runId}/`)}`,
-      'docker run --rm --network host -e "MC_HOST_r5=http://$access:$secret@127.0.0.1:19000" minio/mc rm --recursive --force "r5/catering-v2s-r5-assets/$prefix" >/dev/null 2>&1 || true',
-      'left=$(docker run --rm --network host -e "MC_HOST_r5=http://$access:$secret@127.0.0.1:19000" minio/mc ls --recursive "r5/catering-v2s-r5-assets/$prefix" 2>/dev/null || true)',
+      'docker run --rm --network host -e "MC_HOST_r5=http://$access:$secret@127.0.0.1:19000" minio/mc rm --recursive --force "r5/catering-v2s-r5-assets/$prefix" >/dev/null 2>&1',
+      'left=$(docker run --rm --network host -e "MC_HOST_r5=http://$access:$secret@127.0.0.1:19000" minio/mc ls --recursive "r5/catering-v2s-r5-assets/$prefix" 2>/dev/null)',
       'test -z "$left"',
       'printf R5_L2_REMOTE_ASSET_CLEANUP=PASS',
     ].join('\n'),
     {allowFailure: true},
   );
-  if (asset.status !== 0 || !asset.stdout.includes('R5_L2_REMOTE_ASSET_CLEANUP=PASS'))
-    errors.push('REMOTE_ASSET_CLEANUP');
+  if (!remoteCleanupPassed(asset, 'R5_L2_REMOTE_ASSET_CLEANUP=PASS')) errors.push('REMOTE_ASSET_CLEANUP');
   return errors;
 }
 
@@ -4046,7 +4159,15 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
     };
     const facts = {
       fixtureRef: row.fixtureRef,
-      scope: {kind: 'STORE', regionName: 'L2验证大区', projectName: 'L2验证项目', storeName: 'L2验证门店'},
+      scope: {
+        kind: 'STORE',
+        regionName: 'L2验证大区',
+        regionRef: String(org.regionRef),
+        projectName: 'L2验证项目',
+        projectRef: String(org.projectRef),
+        storeName: 'L2验证门店',
+        storeRef: String(org.storeRef),
+      },
       itemCode,
       itemName,
       dataNodeRef,
@@ -4155,7 +4276,15 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
       workspaceKey,
       dataNodeRef,
       brandRef,
-      scope: {kind: 'STORE', regionName: 'L2验证大区', projectName: 'L2验证项目', storeName: 'L2验证门店'},
+      scope: {
+        kind: 'STORE',
+        regionName: 'L2验证大区',
+        regionRef: String(org.regionRef),
+        projectName: 'L2验证项目',
+        projectRef: String(org.projectRef),
+        storeName: 'L2验证门店',
+        storeRef: String(org.storeRef),
+      },
       category: {rootCategoryRef, childCategoryRef},
       productionTag: {productionTagRef, code: rootProductionTag.code, status: rootProductionTag.status},
       items,
@@ -4670,12 +4799,36 @@ async function bootstrapSalesMenuFacts({identity, base}) {
     fail('SALES_MENU_OWNER_CHANNEL_ORDER_READBACK_INVALID');
   }
   const ownerOrderedChannels = ownerChannelRefs.map(ref => channelRecords.find(channel => channel.ref === ref));
-  const primaryChannel = ownerOrderedChannels[0];
-  const secondaryChannel = ownerOrderedChannels[1];
-  if (!primaryChannel || !secondaryChannel) fail('SALES_MENU_OWNER_CHANNEL_PRIMARY_FACT_MISSING');
+  const channelByFixtureId = new Map(channelRecords.map(channel => [channel.fixtureId, channel]));
+  const requireFixtureChannel = (fixtureId, problemCode) => {
+    const channel = channelByFixtureId.get(fixtureId);
+    if (!channel) fail(problemCode, fixtureId);
+    return channel;
+  };
+  const primaryMenuFixture = fixture.menuFixtures.find(menu => menu.fixtureId === 'MENU-01');
+  const secondaryMenuFixture = fixture.menuFixtures.find(menu => menu.fixtureId === 'MENU-02');
+  if (!primaryMenuFixture || !secondaryMenuFixture) fail('SALES_MENU_PRIMARY_MENU_FIXTURE_MISSING');
+  const primaryChannel = requireFixtureChannel(
+    primaryMenuFixture.channelFixtureId,
+    'SALES_MENU_PRIMARY_CHANNEL_FIXTURE_MISSING',
+  );
+  const secondaryChannel = requireFixtureChannel(
+    primaryMenuFixture.secondaryActiveChannelFixtureId,
+    'SALES_MENU_SECONDARY_ACTIVE_CHANNEL_FIXTURE_MISSING',
+  );
+  appendJsonLine(path.join(path.dirname(base.client.callLog), 'browser-debug-events.jsonl'), {
+    at: now(),
+    kind: 'SALES_MENU_FIXTURE_CHANNEL_SELECTION',
+    ownerOrderFixtureIds: ownerOrderedChannels.map(channel => channel.fixtureId),
+    primaryMenuFixtureId: primaryMenuFixture.fixtureId,
+    primaryChannelFixtureId: primaryChannel.fixtureId,
+    secondaryChannelFixtureId: secondaryChannel.fixtureId,
+    blockerChannelFixtureId: blockerChannelFixtureId ?? null,
+  });
 
   const menuRecords = [];
   for (const menuFixture of fixture.menuFixtures) {
+    const menuChannel = requireFixtureChannel(menuFixture.channelFixtureId, 'SALES_MENU_MENU_CHANNEL_FIXTURE_MISSING');
     const created = await request(
       stage(`menu-create-${menuFixture.fixtureId}`),
       'createOperationsSalesMenu',
@@ -4686,7 +4839,7 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       {
         cookie: operationsCookie,
         expected: [201],
-        body: {channelRef: primaryChannel.ref, name: `${menuFixture.name}-${suffix}`},
+        body: {channelRef: menuChannel.ref, name: `${menuFixture.name}-${suffix}`},
       },
     );
     menuRecords.push({
@@ -4698,8 +4851,9 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       publication: null,
     });
   }
-  const primaryMenu = menuRecords[0];
-  const secondaryMenu = menuRecords[1];
+  const primaryMenu = menuRecords.find(menu => menu.fixtureId === primaryMenuFixture.fixtureId);
+  const secondaryMenu = menuRecords.find(menu => menu.fixtureId === secondaryMenuFixture.fixtureId);
+  if (!primaryMenu || !secondaryMenu) fail('SALES_MENU_PRIMARY_MENU_RECORD_MISSING');
   const primaryPath = {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primaryMenu.ref};
   const setActivation = async (menu, channel, status) => {
     const result = await request(
@@ -5114,7 +5268,15 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       fail('SALES_MENU_CASE_BLOCKER_CHANNEL_FIXTURE_MISSING', `${row.caseId}:${caseFixture.blockerChannelFixtureId}`);
     cases[row.caseId] = {
       fixtureRef: row.fixtureRef,
-      scope: {kind: 'STORE', regionName: 'L2验证大区', projectName: 'L2验证项目', storeName: 'L2验证门店'},
+      scope: {
+        kind: 'STORE',
+        regionName: 'L2验证大区',
+        regionRef: String(base.org.regionRef),
+        projectName: 'L2验证项目',
+        projectRef: String(base.org.projectRef),
+        storeName: 'L2验证门店',
+        storeRef: String(base.org.storeRef),
+      },
       dataNodeRef,
       brandRef,
       menuRef: menu.ref,
@@ -5142,6 +5304,7 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       ...(row.fixtureRef === 'FIXTURE-SALES-MENU-AUTH' ? scopeIsolationChannels : {}),
       channelRefs: ownerChannelRefs,
       menuRefs: menuRecords.map(menuRow => menuRow.ref),
+      salesItems: menuFacts.salesItems,
       salesItemRefs: menuFacts.salesItems.map(item => item.ref),
       expectedChannelCount: 21,
       expectedMenuCount: 21,
@@ -5172,7 +5335,15 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       workspaceKey,
       dataNodeRef,
       brandRef,
-      scope: {kind: 'STORE', regionName: 'L2验证大区', projectName: 'L2验证项目', storeName: 'L2验证门店'},
+      scope: {
+        kind: 'STORE',
+        regionName: 'L2验证大区',
+        regionRef: String(base.org.regionRef),
+        projectName: 'L2验证项目',
+        projectRef: String(base.org.projectRef),
+        storeName: 'L2验证门店',
+        storeRef: String(base.org.storeRef),
+      },
       channelPageSize: 20,
       menuPageSize: 20,
       candidatePageSize: 20,
@@ -5212,20 +5383,74 @@ function errorCode(error) {
   return compact(error?.code ?? error?.message ?? error ?? 'L2_RUNTIME_FAILED');
 }
 
+export function parseFocusedCaseId(args = [], activeCaseIds = null) {
+  const requested = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = String(args[index] ?? '');
+    if (argument === '--case') {
+      const value = args[index + 1];
+      if (typeof value !== 'string' || value.length === 0 || value.startsWith('--')) {
+        fail('L2_FOCUSED_CASE_ARGUMENT_INVALID');
+      }
+      requested.push(value);
+      index += 1;
+      continue;
+    }
+    if (argument.startsWith('--case=')) {
+      const value = argument.slice('--case='.length);
+      if (value.length === 0) fail('L2_FOCUSED_CASE_ARGUMENT_INVALID');
+      requested.push(value);
+    }
+  }
+  if (requested.length === 0) return null;
+  if (requested.length !== 1) fail('L2_FOCUSED_CASE_ARGUMENT_DUPLICATE');
+  const [caseId] = requested;
+  if (Array.isArray(activeCaseIds) && !activeCaseIds.includes(caseId)) {
+    fail('L2_FOCUSED_CASE_NOT_ACTIVE', caseId);
+  }
+  return caseId;
+}
+
 function writeRuntimeState(state) {
-  privateWrite(currentRuntimeStatePath(), state);
-  privateWrite(path.join(state.runDirectory, 'runtime-state.json'), state);
+  const persistedState = sanitizeRuntimeState(state);
+  privateWrite(currentRuntimeStatePath(), persistedState);
+  privateWrite(path.join(state.runDirectory, 'runtime-state.json'), persistedState);
 }
 
 function writeRunRuntimeState(state) {
-  privateWrite(path.join(state.runDirectory, 'runtime-state.json'), state);
+  const persistedState = sanitizeRuntimeState(state);
+  privateWrite(path.join(state.runDirectory, 'runtime-state.json'), persistedState);
   if (!existsSync(currentRuntimeStatePath())) return;
   try {
     const current = readJson(currentRuntimeStatePath());
-    if (current.runDirectory === state.runDirectory) privateWrite(currentRuntimeStatePath(), state);
+    if (current.runDirectory === state.runDirectory) privateWrite(currentRuntimeStatePath(), persistedState);
   } catch {
     // The run-scoped state remains authoritative when the shared pointer is unreadable.
   }
+}
+
+/**
+ * Keep recovery state useful without persisting the diagnostic credentials
+ * that are only needed while the owned processes are running.  The state is
+ * retained as run evidence and may be inspected independently of the private
+ * credentials file, so it must satisfy the same artifact hygiene boundary as
+ * public manifests.
+ */
+export function sanitizeRuntimeState(state) {
+  if (!state || typeof state !== 'object') fail('L2_RUNTIME_STATE_REQUIRED');
+  const diagnostics = state.diagnostics;
+  const persistedDiagnostics = diagnostics
+    ? {
+        events: diagnostics.events ?? null,
+        dbEvents: diagnostics.dbEvents ?? null,
+        dictionary: diagnostics.dictionary ?? null,
+        debugEvents: diagnostics.debugEvents ?? null,
+        runId: diagnostics.runId ?? null,
+      }
+    : diagnostics;
+  const persistedState = {...state, diagnostics: persistedDiagnostics};
+  assertNoSensitiveLeak(persistedState);
+  return persistedState;
 }
 
 function readRuntimeState(suite = 'catalog-inventory') {
@@ -5291,7 +5516,7 @@ function completeCleanupEvidence(
   privateWrite(cleanupManifestPath, cleanupManifest);
   const finishedState = {
     ...state,
-    status: 'CLEANED',
+    status: finalCleanupErrors.length ? 'CLEANUP_REQUIRED' : 'CLEANED',
     cleanupManifestPath,
     firstFailure: reason,
     lastKnownGood,
@@ -5310,7 +5535,12 @@ function completeCleanupEvidence(
     cleanupManifest.cleanupErrors = finalCleanupErrors;
     safePublicManifest(cleanupManifest, Object.values(credentials.values));
     privateWrite(cleanupManifestPath, cleanupManifest);
-    writeRunRuntimeState({...finishedState, cleanup: 'FAIL', cleanupErrors: finalCleanupErrors});
+    writeRunRuntimeState({
+      ...finishedState,
+      status: 'CLEANUP_REQUIRED',
+      cleanup: 'FAIL',
+      cleanupErrors: finalCleanupErrors,
+    });
   }
   return {cleanupManifestPath, cleanupErrors: finalCleanupErrors};
 }
@@ -5323,6 +5553,7 @@ async function cleanupRuntimeState(
     business = 'NOT_RUN',
     lastKnownGood = 'OWNER_HTTP_FIXTURE_READY',
     brokenBoundary = 'L2_RUNTIME_INTERRUPTED_BEFORE_NORMAL_CLEANUP',
+    initialCleanupErrors = [],
   } = {},
 ) {
   const config = suiteConfig(suite);
@@ -5356,7 +5587,7 @@ async function cleanupRuntimeState(
       },
     },
   };
-  const cleanupErrors = await cleanupOwnedL2Resources(state, credentials);
+  const cleanupErrors = [...initialCleanupErrors, ...(await cleanupOwnedL2Resources(state, credentials))];
   return completeCleanupEvidence(state, credentials, {
     suite,
     reason,
@@ -5371,11 +5602,19 @@ async function cleanupCommand(targetPath = currentRuntimeStatePath(), suite = 'c
   const config = suiteConfig(suite);
   const resolvedTarget = path.resolve(targetPath);
   const runtimePrefix = `${runtimeRoot}${path.sep}`;
-  if (!resolvedTarget.startsWith(runtimePrefix) || path.basename(resolvedTarget) !== 'runtime-state.json') {
+  const currentStateTarget = path.resolve(currentRuntimeStatePath());
+  const isCurrentStateTarget = resolvedTarget === currentStateTarget;
+  const isRunStateTarget =
+    resolvedTarget.startsWith(runtimePrefix) && path.basename(resolvedTarget) === 'runtime-state.json';
+  const isReadinessManifestTarget =
+    resolvedTarget.startsWith(runtimePrefix) && path.basename(resolvedTarget) === 'readiness-manifest.json';
+  if (!isCurrentStateTarget && !isRunStateTarget && !isReadinessManifestTarget) {
     fail('L2_CLEANUP_TARGET_OUTSIDE_RUNTIME_ROOT');
   }
-  const state = readJson(resolvedTarget);
-  if (state.kind !== config.stateKind || state.status !== 'READY') {
+  const state = isReadinessManifestTarget
+    ? buildReadinessFailureCleanupState({suite, manifestPath: resolvedTarget, manifest: readJson(resolvedTarget)})
+    : readJson(resolvedTarget);
+  if (state.kind !== config.stateKind || (state.status !== 'READY' && state.status !== 'CLEANUP_REQUIRED')) {
     fail('L2_CLEANUP_STATE_NOT_READY');
   }
   validateNamespaceBinding(state.identity);
@@ -5494,12 +5733,20 @@ function discoverPlaywrightCases({state, credentials, activeIds, suite = state.s
   return {path: discoveryPath, manifest};
 }
 
-function runPlaywright({state, credentials, activeIds, onProcess, suite = state.suite ?? 'catalog-inventory'}) {
+function runPlaywright({
+  state,
+  credentials,
+  activeIds,
+  focusedCaseId = null,
+  onProcess,
+  suite = state.suite ?? 'catalog-inventory',
+}) {
   const config = suiteConfig(suite);
   if (!Array.isArray(activeIds) || activeIds.length === 0) fail('L2_PLAYWRIGHT_ACTIVE_SET_REQUIRED');
   const activeCaseIds = [...activeIds];
-  const activeCaseCount = activeCaseIds.length;
-  const discovery = discoverPlaywrightCases({state, credentials, activeIds: activeCaseIds, suite});
+  const executedCaseIds = focusedCaseId ? [focusedCaseId] : activeCaseIds;
+  const activeCaseCount = executedCaseIds.length;
+  const discovery = discoverPlaywrightCases({state, credentials, activeIds: executedCaseIds, suite});
   const stdoutPath = path.join(state.runDirectory, 'playwright-results.json');
   const stderrPath = path.join(state.runDirectory, 'playwright.stderr.log');
   const joinEventsPath = path.join(state.runDirectory, 'l2-join-events.jsonl');
@@ -5515,8 +5762,8 @@ function runPlaywright({state, credentials, activeIds, onProcess, suite = state.
   const stdoutFd = openSync(stdoutPath, 'w', 0o600);
   const stderrFd = openSync(stderrPath, 'w', 0o600);
   const env = createPlaywrightEnvironment({state, credentials, suite});
-  const activeCaseGrep = `(${activeCaseIds.map(value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`;
-  const caseIndex = new Map(activeCaseIds.map((caseId, index) => [caseId, index + 1]));
+  const activeCaseGrep = `(${executedCaseIds.map(value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`;
+  const caseIndex = new Map(executedCaseIds.map((caseId, index) => [caseId, index + 1]));
   const seenProgressEvents = new Set();
   const completedCases = new Set();
   let activeCaseProgress = null;
@@ -5595,6 +5842,10 @@ function runPlaywright({state, credentials, activeIds, onProcess, suite = state.
       // sequential: one owner TEST namespace is shared across the selected
       // Journey chain, and ordered progress is part of the managed evidence.
       '--workers=1',
+      // A full suite is a regression confirmation, not a failure-discovery
+      // sweep. Stop its only worker at the first failed case so later cases
+      // cannot add business progression after an unclosed failure family.
+      '--max-failures=1',
       '--grep',
       activeCaseGrep,
     ],
@@ -5658,6 +5909,7 @@ function runPlaywright({state, credentials, activeIds, onProcess, suite = state.
       resolve({
         code,
         signal,
+        startedAt: new Date(startedAt).toISOString(),
         stdoutPath,
         stderrPath,
         progressPath,
@@ -5666,6 +5918,8 @@ function runPlaywright({state, credentials, activeIds, onProcess, suite = state.
         discoveryPath: discovery.path,
         discoveredCaseIds: discovery.manifest.discoveredCaseIds,
         watchdogFailure,
+        focusedCaseId,
+        executedCaseIds,
       });
     });
   });
@@ -5700,6 +5954,51 @@ function parsePlaywrightResults(file) {
   return {report, rows};
 }
 
+function terminalPlaywrightRows(rows = []) {
+  return rows
+    .filter(row => row && typeof row.caseId === 'string' && row.caseId && row.status !== 'skipped')
+    .map(row => ({...row, status: row.status === 'passed' ? 'passed' : 'failed'}));
+}
+
+function l2FailureCode(value) {
+  const [explicitCode] = String(value ?? '').match(/(?:[A-Z][A-Z0-9]*_)+[A-Z0-9]+/) ?? [];
+  return explicitCode ?? 'PLAYWRIGHT_ASSERTION_FAILURE';
+}
+
+function l2FailureCategory(failureCode) {
+  if (failureCode.startsWith('SALES_MENU_L2_')) return 'SALES_MENU_L2';
+  if (failureCode.startsWith('CATALOG_INVENTORY_L2_')) return 'CATALOG_INVENTORY_L2';
+  if (failureCode.startsWith('L2_')) return 'L2_RUNTIME';
+  return 'PLAYWRIGHT_ASSERTION';
+}
+
+export function deriveL2CaseFailure({joinEvents = [], resultRows = []}) {
+  const joinedFailure = joinEvents.find(
+    event => event?.kind === 'CASE_COMPLETE' && event.outcome === 'FAIL' && typeof event.caseId === 'string',
+  );
+  const reporterFailure = resultRows.find(row => row?.status !== 'passed' && typeof row?.caseId === 'string');
+  const source = joinedFailure ?? reporterFailure;
+  if (!source) return null;
+  const failureCode = l2FailureCode(source.errorCode ?? source.error);
+  return Object.freeze({
+    caseId: source.caseId,
+    failureCode,
+    failureCategory: l2FailureCategory(failureCode),
+    source: joinedFailure ? 'JOIN_EVENT' : 'PLAYWRIGHT_REPORTER',
+  });
+}
+
+export function selectL2FirstFailure({
+  watchdogFailure = null,
+  caseFailure = null,
+  sourceByteBindingAfterRunFailure = null,
+  accountingFailure = null,
+} = {}) {
+  if (watchdogFailure) return watchdogFailure;
+  if (caseFailure) return `L2_CASE_FAILED:${caseFailure.caseId}:${caseFailure.failureCode}`;
+  return sourceByteBindingAfterRunFailure ?? accountingFailure;
+}
+
 function terminalRowsFromJoinEvents(joinEvents) {
   const rows = [];
   for (const event of joinEvents ?? []) {
@@ -5717,7 +6016,7 @@ function terminalRowsFromJoinEvents(joinEvents) {
 
 export function resolveL2TerminalResults({activeIds, playwrightResultRows = [], joinEvents = []}) {
   if (!Array.isArray(activeIds) || activeIds.length === 0) fail('L2_RESULT_ACTIVE_SET_REQUIRED');
-  const reporterRows = playwrightResultRows.filter(row => row && typeof row.caseId === 'string' && row.caseId);
+  const reporterRows = terminalPlaywrightRows(playwrightResultRows);
   const joinRows = terminalRowsFromJoinEvents(joinEvents);
   const unique = rows => new Map(rows.map(row => [row.caseId, row]));
   const reporterByCase = unique(reporterRows);
@@ -5729,10 +6028,18 @@ export function resolveL2TerminalResults({activeIds, playwrightResultRows = [], 
     caseId => joinByCase.has(caseId) && reporterByCase.get(caseId)?.status !== joinByCase.get(caseId)?.status,
   );
   if (disagreement) fail('L2_RESULT_REPORT_JOIN_MISMATCH', disagreement);
-  if (reporterRows.length > 0) {
-    return Object.freeze({rows: reporterRows, source: 'PLAYWRIGHT_JSON', joinTerminalRows: joinRows});
-  }
-  return Object.freeze({rows: joinRows, source: 'JOIN_EVENT_FALLBACK', joinTerminalRows: joinRows});
+  const rows = [
+    ...activeIds.flatMap(caseId => [reporterByCase.get(caseId) ?? joinByCase.get(caseId)].filter(Boolean)),
+    ...reporterRows.filter(row => !activeIds.includes(row.caseId)),
+    ...joinRows.filter(row => !activeIds.includes(row.caseId)),
+  ];
+  const source =
+    reporterRows.length === 0
+      ? 'JOIN_EVENT_FALLBACK'
+      : rows.length === reporterRows.length
+        ? 'PLAYWRIGHT_JSON'
+        : 'PLAYWRIGHT_JSON_WITH_JOIN_COMPLETION';
+  return Object.freeze({rows, source, joinTerminalRows: joinRows});
 }
 
 export function buildL2SelectionManifest({
@@ -5768,6 +6075,10 @@ export function buildL2SelectionManifest({
     orderedExactly
       ? 'PASS'
       : 'FAIL';
+  const passedCount = resultRows.filter(row => row.status === 'passed').length;
+  const failedCount = resultRows.filter(row => row.status !== 'passed').length;
+  const notRunCaseIds = [...missingCaseIds];
+  const stoppedAfterFirstFailure = failedCount > 0 && notRunCaseIds.length > 0;
   const manifest = {
     schemaVersion: 1,
     kind: config.selectionKind,
@@ -5783,12 +6094,14 @@ export function buildL2SelectionManifest({
     missingCaseIds,
     unexpectedCaseIds,
     orderedExactly,
+    notRunCaseIds,
+    stoppedAfterFirstFailure,
     // `results` is the result denominator, not the pass count.  A failed case
     // still produced a result and must remain visible in discovered/selected/
     // results accounting; otherwise a 7/24 run is falsely serialized as 7.
     results: resultRows.length,
-    passedCount: resultRows.filter(row => row.status === 'passed').length,
-    failedCount: resultRows.filter(row => row.status !== 'passed').length,
+    passedCount,
+    failedCount,
     status,
     createdAt: now(),
   };
@@ -5907,6 +6220,7 @@ function buildL2JoinArtifact({
       ),
     ];
     const missingDeclaredControlKeys = declaredControlKeys.filter(key => !touchedControlKeys.includes(key));
+    const unexpectedTouchedControlKeys = touchedControlKeys.filter(key => !declaredControlKeys.includes(key));
     const missingDeclaredActionIds = declaredActionIds.filter(actionId => !touchedActionIds.includes(actionId));
     const unexpectedTouchedActionIds = touchedActionIds.filter(actionId => !declaredActionIds.includes(actionId));
     const actualTestIds = [
@@ -6021,6 +6335,7 @@ function buildL2JoinArtifact({
       actionTouches.length > 0 &&
       actionExactSetComplete &&
       missingDeclaredControlKeys.length === 0 &&
+      unexpectedTouchedControlKeys.length === 0 &&
       caseCompletions.every(entry => typeof entry.completionId === 'string') &&
       invalidActionMetadata.length === 0 &&
       missingHttpCompletions.length === 0 &&
@@ -6043,6 +6358,7 @@ function buildL2JoinArtifact({
       declaredActionIds,
       touchedControlKeys,
       missingDeclaredControlKeys,
+      unexpectedTouchedControlKeys,
       touchedActionIds,
       missingDeclaredActionIds,
       unexpectedTouchedActionIds,
@@ -6106,6 +6422,10 @@ function buildL2JoinArtifact({
       joinEvents.filter(entry => entry.kind === 'CONTROL_TOUCH').map(entry => entry.controlKey),
     ).size,
     missingDeclaredControlKeyCount: cases.reduce((count, entry) => count + entry.missingDeclaredControlKeys.length, 0),
+    unexpectedTouchedControlKeyCount: cases.reduce(
+      (count, entry) => count + entry.unexpectedTouchedControlKeys.length,
+      0,
+    ),
     joinStatus:
       invalidCaseScopedEvents.length === 0 && cases.every(entry => entry.joinStatus === 'COMPLETE')
         ? 'COMPLETE'
@@ -6270,14 +6590,56 @@ async function readiness(suite = 'catalog-inventory') {
     );
   } catch (error) {
     firstFailure = errorCode(error);
-    const processErrors = [
-      ...(Array.isArray(error.cleanupErrors) ? error.cleanupErrors : []),
-      ...(await stopOwnedProcesses(
-        runtime ? [runtime.tunnel, runtime.spring, runtime.platform, runtime.operations] : [],
-      )),
-    ];
-    const remoteErrors = await cleanupRemote(trust.host, identity, credentials);
-    const cleanup = [...processErrors, ...remoteErrors];
+    const initialCleanupErrors = Array.isArray(error.cleanupErrors) ? [...error.cleanupErrors] : [];
+    const processes = runtime ? [runtime.tunnel, runtime.spring, runtime.platform, runtime.operations] : [];
+    const lastKnownGood = runtime ? 'LOCAL_RUNTIME_STARTED' : 'REMOTE_NAMESPACE_PROVISIONED';
+    const failurePath = path.join(runDirectory, 'readiness-manifest.json');
+    const provisionalManifest = buildReadinessManifest({
+      suite,
+      identity,
+      ports,
+      denominators: {activeCaseIds: [...activeExecutionCaseIds], activeCases: activeExecutionCaseIds.length},
+      candidate: activationCandidate,
+      timingReport: {activeCaseCount: activeExecutionCaseIds.length, fullRunTimeoutMs: 0},
+      remote: {host: trust.host, fingerprint: trust.fingerprint, allowlistVersion: trust.allowlistVersion},
+      processes,
+      diagnostics,
+      credentialsPath: created.paths.credentialsPath,
+      ownerFixturePath,
+      sourceByteBinding,
+      frontendMode,
+      status: 'FAIL',
+      firstFailure,
+      lastKnownGood,
+      brokenBoundary: firstFailure,
+      business: 'FAIL',
+      setupCleanup: 'FAIL',
+      cleanup: 'FAIL',
+    });
+    privateWrite(failurePath, provisionalManifest);
+    const recoveryState = buildReadinessFailureCleanupState({
+      suite,
+      manifestPath: failurePath,
+      manifest: provisionalManifest,
+    });
+    writeRunRuntimeState(recoveryState);
+    let cleanupResult;
+    try {
+      cleanupResult = await cleanupRuntimeState(recoveryState, {
+        suite,
+        reason: firstFailure,
+        business: 'FAIL',
+        lastKnownGood,
+        brokenBoundary: firstFailure,
+        initialCleanupErrors,
+      });
+    } catch (cleanupError) {
+      cleanupResult = {
+        cleanupManifestPath: null,
+        cleanupErrors: [`CLEANUP:${errorCode(cleanupError)}`],
+      };
+    }
+    const cleanup = cleanupResult.cleanupErrors.length ? 'FAIL' : 'PASS';
     const manifest = buildReadinessManifest({
       suite,
       identity,
@@ -6286,7 +6648,7 @@ async function readiness(suite = 'catalog-inventory') {
       candidate: activationCandidate,
       timingReport: {activeCaseCount: activeExecutionCaseIds.length, fullRunTimeoutMs: 0},
       remote: {host: trust.host, fingerprint: trust.fingerprint, allowlistVersion: trust.allowlistVersion},
-      processes: runtime ? [runtime.tunnel, runtime.spring, runtime.platform, runtime.operations] : [],
+      processes,
       diagnostics,
       credentialsPath: created.paths.credentialsPath,
       ownerFixturePath,
@@ -6294,16 +6656,15 @@ async function readiness(suite = 'catalog-inventory') {
       frontendMode,
       status: 'FAIL',
       firstFailure,
-      lastKnownGood: runtime ? 'LOCAL_RUNTIME_STARTED' : 'REMOTE_NAMESPACE_PROVISIONED',
+      lastKnownGood,
       brokenBoundary: firstFailure,
       business: 'FAIL',
-      setupCleanup: cleanup.length ? 'FAIL' : 'PASS',
-      cleanup: cleanup.length ? 'FAIL' : 'PASS',
+      setupCleanup: cleanup,
+      cleanup,
     });
-    const failurePath = path.join(runDirectory, 'readiness-manifest.json');
     privateWrite(failurePath, manifest);
     process.stderr.write(
-      `BROWSER_L2_READINESS=FAIL; FIRST_FAILURE=${firstFailure}; CLEANUP=${cleanup.length ? 'FAIL' : 'PASS'}; MANIFEST=${failurePath}\n`,
+      `BROWSER_L2_READINESS=FAIL; FIRST_FAILURE=${firstFailure}; CLEANUP=${cleanup}; MANIFEST=${failurePath}\n`,
     );
     process.exitCode = 1;
   }
@@ -6399,7 +6760,7 @@ async function finalizeRepositoryByteBinding(suite = 'catalog-inventory') {
     privateWrite(manifestPath, manifest);
     writeRuntimeState({
       ...state,
-      status: 'FINISHED',
+      status: result.cleanupErrors.length ? 'CLEANUP_REQUIRED' : 'FINISHED',
       executionManifestPath: manifestPath,
       business: manifest.business,
       cleanup: manifest.cleanup,
@@ -6414,11 +6775,12 @@ async function finalizeRepositoryByteBinding(suite = 'catalog-inventory') {
   }
 }
 
-async function runBrowserL2(suite = 'catalog-inventory') {
+async function runBrowserL2(suite = 'catalog-inventory', args = []) {
   const config = suiteConfig(suite);
   const state = readRuntimeState(suite);
   let credentials;
   let active = Array.isArray(state.activeCaseIds) ? [...state.activeCaseIds] : [];
+  let focusedCaseId = null;
   let preflightLastKnownGood = 'RUNTIME_STATE_READ';
   let preflightComplete = false;
   let playwrightProcess;
@@ -6463,6 +6825,9 @@ async function runBrowserL2(suite = 'catalog-inventory') {
       fail('L2_RUNTIME_STATE_ACTIVE_CASE_EXACT_SET_REQUIRED');
     }
     preflightLastKnownGood = 'ACTIVE_CASE_EXACT_SET_VALIDATED';
+    focusedCaseId = parseFocusedCaseId(args, active);
+    const executedCaseIds = focusedCaseId ? [focusedCaseId] : [...active];
+    preflightLastKnownGood = focusedCaseId ? 'FOCUSED_CASE_VALIDATED' : preflightLastKnownGood;
     for (const process of state.processes) assertOwned(process);
     preflightLastKnownGood = 'OWNED_PROCESS_IDENTITIES_VALIDATED';
     preflightComplete = true;
@@ -6472,6 +6837,7 @@ async function runBrowserL2(suite = 'catalog-inventory') {
       state,
       credentials,
       activeIds: active,
+      focusedCaseId,
       suite,
       onProcess: childProcess => {
         playwrightProcess = childProcess;
@@ -6489,30 +6855,38 @@ async function runBrowserL2(suite = 'catalog-inventory') {
       return;
     }
     let playwrightResultRows = [];
-    let firstFailure =
-      child.watchdogFailure ?? (child.code === 0 ? null : `PLAYWRIGHT_EXIT_${child.code ?? child.signal ?? 'UNKNOWN'}`);
+    let sourceByteBindingAfterRunFailure = null;
+    let accountingFailure = null;
     try {
       validateRepositoryByteBinding(state.sourceByteBindingPath, {expectedRunId: state.identity.runId});
     } catch (error) {
-      // A binding validated before Playwright does not prove that the source
-      // stayed stable during the browser run. Preserve an earlier browser
-      // failure, but never let a clean browser exit hide a later source drift.
-      firstFailure ??= `L2_SOURCE_BYTE_BINDING_AFTER_RUN:${errorCode(error)}`;
+      // This remains fail closed, but it is independent from a completed
+      // browser case failure. Retain both facts rather than letting a later
+      // source check overwrite the case that actually failed.
+      sourceByteBindingAfterRunFailure = `L2_SOURCE_BYTE_BINDING_AFTER_RUN:${errorCode(error)}`;
     }
     try {
       ({rows: playwrightResultRows} = parsePlaywrightResults(child.stdoutPath));
     } catch (error) {
-      firstFailure ??= errorCode(error);
+      accountingFailure ??= errorCode(error);
     }
     const joinEvents = readJsonLines(path.join(state.runDirectory, 'l2-join-events.jsonl'));
     let terminalResults;
     try {
-      terminalResults = resolveL2TerminalResults({activeIds: active, playwrightResultRows, joinEvents});
+      terminalResults = resolveL2TerminalResults({activeIds: executedCaseIds, playwrightResultRows, joinEvents});
     } catch (error) {
-      firstFailure ??= errorCode(error);
+      accountingFailure ??= errorCode(error);
       terminalResults = {rows: playwrightResultRows, source: 'PLAYWRIGHT_JSON', joinTerminalRows: []};
     }
     const resultRows = terminalResults.rows;
+    const firstCaseFailure = deriveL2CaseFailure({joinEvents, resultRows});
+    let firstFailure = selectL2FirstFailure({
+      watchdogFailure: child.watchdogFailure,
+      caseFailure: firstCaseFailure,
+      sourceByteBindingAfterRunFailure,
+      accountingFailure,
+    });
+    firstFailure ??= child.code === 0 ? null : `PLAYWRIGHT_EXIT_${child.code ?? child.signal ?? 'UNKNOWN'}`;
     const progressEvents = readJsonLines(child.progressPath);
     const httpEvents = readJsonLines(state.diagnostics.events);
     const dbEvents = readJsonLines(state.diagnostics.dbEvents);
@@ -6521,7 +6895,7 @@ async function runBrowserL2(suite = 'catalog-inventory') {
       joinArtifact = buildL2JoinArtifact({
         suite,
         state,
-        activeIds: active,
+        activeIds: executedCaseIds,
         resultRows,
         joinEvents,
         httpEvents,
@@ -6551,7 +6925,7 @@ async function runBrowserL2(suite = 'catalog-inventory') {
     const selection = buildL2SelectionManifest({
       suite,
       state,
-      activeIds: active,
+      activeIds: executedCaseIds,
       resultRows,
       resultSource: terminalResults.source,
       joinTerminalRows: terminalResults.joinTerminalRows,
@@ -6562,21 +6936,21 @@ async function runBrowserL2(suite = 'catalog-inventory') {
     const passedCount = selection.passedCount;
     if (
       discovery?.status !== 'PASS' ||
-      JSON.stringify(discovery.discoveredCaseIds) !== JSON.stringify(active) ||
-      discovered !== active.length ||
+      JSON.stringify(discovery.discoveredCaseIds) !== JSON.stringify(executedCaseIds) ||
+      discovered !== executedCaseIds.length ||
       selection.status !== 'PASS' ||
-      JSON.stringify(selection.selectedCaseIds) !== JSON.stringify(active) ||
-      results !== active.length
+      JSON.stringify(selection.selectedCaseIds) !== JSON.stringify(executedCaseIds) ||
+      results !== executedCaseIds.length
     ) {
       firstFailure ??= `L2_RESULT_DENOMINATOR:${discovered}/${selected}/${results}`;
     }
     let progressSummary;
     try {
-      progressSummary = validateL2CaseProgress(progressEvents, active);
+      progressSummary = validateL2CaseProgress(progressEvents, executedCaseIds);
     } catch (error) {
       firstFailure ??= errorCode(error);
       progressSummary = {
-        total: active.length,
+        total: executedCaseIds.length,
         startCount: new Set(
           progressEvents
             .filter(entry => entry.kind === 'L2_CASE_PROGRESS' && entry.phase === 'START')
@@ -6598,18 +6972,25 @@ async function runBrowserL2(suite = 'catalog-inventory') {
           entry.controlTouchCount === 0 ||
           entry.actionTouchCount === 0 ||
           entry.missingDeclaredControlKeys.length > 0 ||
+          entry.unexpectedTouchedControlKeys.length > 0 ||
           !entry.caseComplete ||
           entry.responseCount === 0,
       )
     ) {
       firstFailure ??= 'L2_JOIN_ARTIFACT_INCOMPLETE';
     }
-    const business = firstFailure ? 'FAIL' : 'PASS';
-    const lastKnownGood = firstFailure
-      ? passedCount > 0
-        ? `L2_CASES_${passedCount}_PASS`
-        : 'OWNER_FIXTURE_READY'
-      : `L2_${active.length}_CASES_PASS`;
+    const focusedDiagnostic = Boolean(focusedCaseId);
+    const diagnosticStatus = focusedDiagnostic ? (firstFailure ? 'FAIL' : 'PASS') : null;
+    const business = focusedDiagnostic ? 'NOT_RUN' : firstFailure ? 'FAIL' : 'PASS';
+    const lastKnownGood = focusedDiagnostic
+      ? firstFailure
+        ? 'FOCUSED_CASE_EXECUTED'
+        : `FOCUSED_${focusedCaseId}_PASS`
+      : firstFailure
+        ? passedCount > 0
+          ? `L2_CASES_${passedCount}_PASS`
+          : 'OWNER_FIXTURE_READY'
+        : `L2_${active.length}_CASES_PASS`;
     const cleanupErrorsBeforePrivateCleanup = await cleanupOwnedL2Resources(state, credentials);
     const cleanupResult = completeCleanupEvidence(state, credentials, {
       suite,
@@ -6625,11 +7006,25 @@ async function runBrowserL2(suite = 'catalog-inventory') {
       schemaVersion: 1,
       kind: config.executionManifestKind,
       runId: state.identity.runId,
+      phase: 'BROWSER_L2_EXECUTION',
+      status: focusedDiagnostic ? diagnosticStatus : business,
+      startedAt: child.startedAt,
       topology: 'LOCAL_SPRING_LOCAL_VITE_LOCAL_PLAYWRIGHT_REMOTE_DB_ASSET_TUNNEL',
       discovered,
       selected,
       results,
       activeCaseIds: [...active],
+      executedCaseIds,
+      executionMode: focusedDiagnostic ? 'FOCUSED_DIAGNOSTIC' : 'FULL',
+      focusedCaseId,
+      diagnostic: focusedDiagnostic
+        ? {
+            status: diagnosticStatus,
+            caseId: focusedCaseId,
+            resultCaseIds: selection.resultCaseIds,
+            passedCount,
+          }
+        : null,
       playwright: {
         stdoutPath: repositoryRelativePath(child.stdoutPath),
         stderrPath: repositoryRelativePath(child.stderrPath),
@@ -6649,6 +7044,8 @@ async function runBrowserL2(suite = 'catalog-inventory') {
         resultCaseIds: selection.resultCaseIds,
         source: selection.source,
         status: selection.status,
+        notRunCaseIds: selection.notRunCaseIds,
+        stoppedAfterFirstFailure: selection.stoppedAfterFirstFailure,
       },
       progress: progressSummary,
       joinArtifactPath: repositoryRelativePath(joinPath),
@@ -6656,6 +7053,12 @@ async function runBrowserL2(suite = 'catalog-inventory') {
       databaseOperationsPath: repositoryRelativePath(state.diagnostics.dbEvents),
       debugEventsPath: state.diagnostics?.debugEvents ? repositoryRelativePath(state.diagnostics.debugEvents) : null,
       firstFailure,
+      sourceByteBindingAfterRunFailure,
+      firstFailedCaseId: firstCaseFailure?.caseId ?? null,
+      failureCategory: firstCaseFailure?.failureCategory ?? (child.watchdogFailure ? 'L2_CASE_WATCHDOG' : null),
+      failureCode: firstCaseFailure?.failureCode ?? child.watchdogFailure ?? null,
+      stoppedAfterFirstFailure: selection.stoppedAfterFirstFailure,
+      notRunCaseIds: selection.notRunCaseIds,
       lastKnownGood,
       brokenBoundary: firstFailure,
       business,
@@ -6672,14 +7075,26 @@ async function runBrowserL2(suite = 'catalog-inventory') {
     privateWrite(manifestPath, manifest);
     writeRuntimeState({
       ...state,
-      status: 'FINISHED',
+      status: cleanup === 'PASS' ? 'FINISHED' : 'CLEANUP_REQUIRED',
       executionManifestPath: manifestPath,
+      executionMode: focusedDiagnostic ? 'FOCUSED_DIAGNOSTIC' : 'FULL',
+      focusedCaseId,
       business,
       cleanup,
       cleanupManifestPath: cleanupResult.cleanupManifestPath,
       cleanupErrors,
       finishedAt: now(),
     });
+    if (focusedDiagnostic) {
+      const output = `BROWSER_L2_FOCUSED_DIAGNOSTIC=${diagnosticStatus}; CASE=${focusedCaseId}; BUSINESS=${business}; CLEANUP=${cleanup}; MANIFEST=${manifestPath}\n`;
+      if (diagnosticStatus !== 'PASS' || cleanup !== 'PASS') {
+        process.stderr.write(output);
+        process.exitCode = 1;
+        return;
+      }
+      process.stdout.write(output);
+      return;
+    }
     if (business !== 'PASS' || cleanup !== 'PASS') {
       process.stderr.write(
         `BROWSER_L2=FAIL; FIRST_FAILURE=${firstFailure ?? 'NONE'}; BUSINESS=${business}; CLEANUP=${cleanup}; MANIFEST=${manifestPath}\n`,
@@ -6732,7 +7147,7 @@ async function runBrowserL2(suite = 'catalog-inventory') {
     privateWrite(manifestPath, manifest);
     writeRuntimeState({
       ...state,
-      status: 'FINISHED',
+      status: result.cleanupErrors.length ? 'CLEANUP_REQUIRED' : 'FINISHED',
       executionManifestPath: manifestPath,
       business: manifest.business,
       cleanup: manifest.cleanup,
@@ -7109,6 +7524,14 @@ function selfTest() {
       dbEvents: selfTestDbEvents,
     },
     {
+      code: 'CONTROL_TOUCH_UNDECLARED',
+      joinEvents: selfTestJoinEvents.map((entry, index) =>
+        index === 1 ? {...entry, controlKey: 'SELF_TEST_UNDECLARED_CONTROL'} : entry,
+      ),
+      httpEvents: selfTestHttpEvents,
+      dbEvents: selfTestDbEvents,
+    },
+    {
       code: 'OPERATION',
       joinEvents: selfTestJoinEvents.map(entry =>
         entry.kind === 'HTTP_COMPLETION' && entry.caseId === activeIds[0] ? {...entry, operationId: null} : entry,
@@ -7209,13 +7632,19 @@ export async function main() {
     return;
   }
   const mode = args.find(arg => ['--self-test', 'readiness', 'finalize', 'run', 'cleanup'].includes(arg));
+  const hasFocusedCaseArgument = args.some(arg => arg === '--case' || arg.startsWith('--case='));
+  if (hasFocusedCaseArgument && mode !== 'run') {
+    process.stderr.write('Usage: browser-l2 --suite sales-menu run --case <generated-case-id>\n');
+    process.exitCode = 2;
+    return;
+  }
   if (mode === '--self-test') return suite === 'sales-menu' ? salesMenuSelfTest() : selfTest();
   if (mode === 'readiness') return readiness(suite);
   if (mode === 'finalize') return finalizeRepositoryByteBinding(suite);
-  if (mode === 'run') return runBrowserL2(suite);
+  if (mode === 'run') return runBrowserL2(suite, args);
   if (mode === 'cleanup') return cleanupCommand(args[args.indexOf('cleanup') + 1], suite);
   process.stderr.write(
-    'Usage: browser-l2-runtime.mjs --self-test|readiness|finalize|run|cleanup [runtime-state.json]\n',
+    'Usage: browser-l2-runtime.mjs --self-test|readiness|finalize|run [--case <generated-case-id>]|cleanup [runtime-state.json|readiness-manifest.json]\n',
   );
   process.exitCode = 2;
 }

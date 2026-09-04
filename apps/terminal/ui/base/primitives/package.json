@@ -5,20 +5,23 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "plannedDependencies": ["@catering-v2s/ui-base-automation"],
   "scripts": {
-    "typecheck": "tsc --project tsconfig.json --noEmit"
-  },
-  "dependencies": {
-    "@catering-v2s/ui-base-automation": "workspace:*"
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
   },
   "peerDependencies": {
     "react": "19.2.3",
     "react-native": "0.86.3"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.0",
     "@types/react": "~19.2.2",
+    "babel-preset-expo": "~57.0.0",
     "react": "19.2.3",
     "react-native": "0.86.3",
-    "typescript": "~6.0.3"
+    "react-test-renderer": "19.2.3",
+    "typescript": "~6.0.3",
+    "vitest": "4.1.10"
   }
 }

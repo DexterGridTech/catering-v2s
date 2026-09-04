@@ -677,16 +677,17 @@ function selfTest() {
   };
   const plan = resolveInvitationCreationPlan(fixture);
   if (plan.length !== 2 || plan[0].targetOrganizationType !== 'STORE') throw new Error('SELF_TEST_PLAN_RESOLUTION_FAILED');
-  const managedEnvironment = managedSeedEnvironment({
+  const validManagedManifest = {
     database: 'jdbc:postgresql://127.0.0.1:5432/catering_v2s_dev_r5_full',
     localHttpBaseUrl: 'http://127.0.0.1:28080',
     remoteHostTrust: {host: 'catering-remote-dev', fingerprint: 'a'.repeat(64), allowlistVersion: 'r5-test-v1', maintainer: 'Dexter', rotatedAt: '2026-08-05'},
-  }, {V2S_SEED_PLATFORM_ROOT_PASSWORD: 'test-only'});
+  };
+  const managedEnvironment = managedSeedEnvironment(validManagedManifest, {V2S_SEED_PLATFORM_ROOT_PASSWORD: 'test-only'});
   if (managedEnvironment.V2S_DEV_DATABASE_URL !== 'jdbc:postgresql://127.0.0.1:5432/catering_v2s_dev_r5_full'
     || managedEnvironment.V2S_DEV_HTTP_BASE_URL !== 'http://127.0.0.1:28080'
     || managedEnvironment.V2S_DEV_NAMESPACE !== 'v2s-dev-r5-full'
     || managedEnvironment.V2S_RUNTIME_DIR !== runtimeRoot) throw new Error('SELF_TEST_MANAGED_ENVIRONMENT_BINDING_FAILED');
-  expect('SEED_MANAGED_DATABASE_BINDING_INVALID', () => managedSeedEnvironment({...managedEnvironment, database: 'jdbc:postgresql://127.0.0.1:25432/not-allowlisted'}, {}));
+  expect('SEED_MANAGED_DATABASE_BINDING_INVALID', () => managedSeedEnvironment({...validManagedManifest, database: 'jdbc:postgresql://127.0.0.1:25432/not-allowlisted'}, {}));
   expect('SEED_INVITATION_PLAN_REQUIRED', () => resolveInvitationCreationPlan({...fixture, executionPlan: {}}));
   expect('SEED_INVITATION_PLAN_REFERENCE_INVALID', () => resolveInvitationCreationPlan({...fixture, executionPlan: {invitationPlans: fixture.executionPlan.invitationPlans.map((entry) => entry.invitationKey === 'pending' ? {...entry, nodeKey: 'missing'} : entry)}}));
   expect('SEED_INVITATION_PLAN_REFERENCE_INVALID', () => resolveInvitationCreationPlan({...fixture, executionPlan: {invitationPlans: fixture.executionPlan.invitationPlans.map((entry) => entry.invitationKey === 'completed' ? {...entry, accountKey: 'missing'} : entry)}}));

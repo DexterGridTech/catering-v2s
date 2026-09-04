@@ -16,8 +16,8 @@ import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.salesmenu.api.SalesMenuOwnerApi;
 import com.catering.v2s.salesmenu.api.SalesMenuReadback;
-import com.catering.v2s.salesmenu.domain.SalesMenuCursorIdentity;
 import com.catering.v2s.salesmenu.domain.SalesMenuAggregate;
+import com.catering.v2s.salesmenu.domain.SalesMenuCursorIdentity;
 import com.catering.v2s.salesmenu.domain.SalesMenuListQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuOperationQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuPageRequest;
@@ -92,8 +92,7 @@ class SalesMenuOwnerServiceQueryTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     void menuDetailReadbackUsesTheAggregateCasVersion() throws Exception {
         SalesMenuRepository repository = mock(SalesMenuRepository.class);
-        when(repository.find(any(SalesMenuTarget.class)))
-                .thenReturn(Optional.of(menuWithVersions(31L, 26L)));
+        when(repository.find(any(SalesMenuTarget.class))).thenReturn(Optional.of(menuWithVersions(31L, 26L)));
         when(repository.query(anyString(), any(RowMapper.class), any(Object[].class)))
                 .thenAnswer(invocation -> {
                     RowMapper mapper = invocation.getArgument(1, RowMapper.class);
@@ -222,7 +221,8 @@ class SalesMenuOwnerServiceQueryTest {
         when(result.getLong("version")).thenReturn(31L);
         when(result.getLong("draft_revision")).thenReturn(26L);
         when(result.getObject("published_revision", Long.class)).thenReturn(null);
-        when(result.getObject("latest_published_source_draft_revision", Long.class)).thenReturn(null);
+        when(result.getObject("latest_published_source_draft_revision", Long.class))
+                .thenReturn(null);
         when(result.getString("schedule_kind")).thenReturn("ALL_DAY");
         when(result.getObject("channel_ref", UUID.class)).thenReturn(CHANNEL);
         when(result.getString("status")).thenReturn("ENABLED");
@@ -240,16 +240,7 @@ class SalesMenuOwnerServiceQueryTest {
 
     private static SalesMenuAggregate menuWithVersions(long version, long draftRevision) {
         return new SalesMenuAggregate(
-                MENU,
-                scope(),
-                "Menu",
-                false,
-                version,
-                draftRevision,
-                null,
-                null,
-                SalesMenuSchedule.allDay(),
-                null);
+                MENU, scope(), "Menu", false, version, draftRevision, null, null, SalesMenuSchedule.allDay(), null);
     }
 
     private static SalesMenuScope scope() {

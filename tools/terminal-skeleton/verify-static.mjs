@@ -17,6 +17,10 @@ const displayContextTestPath = path.join(toolDirectory, '../terminal-display-con
 const displayContextCheckPath = path.join(toolDirectory, '../terminal-display-context/check-static.mjs');
 const uiStateTestPath = path.join(toolDirectory, '../terminal-ui-state/check-static.test.mjs');
 const uiStateCheckPath = path.join(toolDirectory, '../terminal-ui-state/check-static.mjs');
+const renderTestPath = path.join(toolDirectory, '../terminal-ui-render/check-static.test.mjs');
+const renderCheckPath = path.join(toolDirectory, '../terminal-ui-render/check-static.mjs');
+const layeringTestPath = path.join(toolDirectory, '../terminal-layering/check-static.test.mjs');
+const layeringCheckPath = path.join(toolDirectory, '../terminal-layering/check-static.mjs');
 
 const staticRunId = `ter-local-static-${process.pid}-${Date.now()}`;
 
@@ -74,5 +78,9 @@ run('display-context-model-test', process.execPath, [displayContextTestPath]);
 run('display-context-real-static', process.execPath, [displayContextCheckPath]);
 run('ui-state-model-test', process.execPath, [uiStateTestPath]);
 run('ui-state-real-static', process.execPath, [uiStateCheckPath]);
+run('render-model-test', process.execPath, [renderTestPath]);
+run('render-real-static', process.execPath, [renderCheckPath]);
+run('layering-model-test', process.execPath, [layeringTestPath]);
+run('layering-real-static', process.execPath, [layeringCheckPath]);
 debugLog('verify-static.finish', {outcome: 'PASS'});
 console.log('TERMINAL_STATIC=PASS');

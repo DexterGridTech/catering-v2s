@@ -1,4 +1,5 @@
 import type {DisplayMode} from '@catering-v2s/kernel-base-ui-state'
+import type {RequestId} from '@catering-v2s/kernel-base-contracts'
 import type {LoggerPort} from '@catering-v2s/kernel-base-platform-ports'
 
 export type RenderPartDiagnostic =
@@ -19,6 +20,29 @@ export type RenderPartDiagnosticReporter = Readonly<{
   readonly report: (diagnostic: RenderPartDiagnostic) => void
   readonly clearForPart: (partKey: string, displayMode: DisplayMode) => void
 }>
+
+export type RenderCommandDispatchDiagnostic = Readonly<{
+  readonly event: 'command-dispatch-rejected'
+  readonly commandName: string
+  readonly requestId: RequestId
+}>
+
+export const reportRenderCommandDispatchRejection = (
+  logger: LoggerPort,
+  diagnostic: RenderCommandDispatchDiagnostic,
+): void => {
+  logger.error({
+    category: 'ui.base.render',
+    event: diagnostic.event,
+    context: {
+      commandName: diagnostic.commandName,
+      requestId: diagnostic.requestId,
+    },
+    data: {
+      failure: 'promise-rejected',
+    },
+  })
+}
 
 const diagnosticIdentity = (diagnostic: RenderPartDiagnostic): string =>
   JSON.stringify([diagnostic.event, ...Object.values(diagnostic.data)])

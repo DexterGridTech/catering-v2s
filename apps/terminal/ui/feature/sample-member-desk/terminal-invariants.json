@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/ui-feature-sample-member-desk",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-feature-sample-member-desk", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "ownerKind": "owner"
+}

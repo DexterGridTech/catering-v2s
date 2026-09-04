@@ -30,6 +30,7 @@ import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMediaMode;
 import com.catering.v2s.salesmenu.domain.SalesMenuItemPageQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuItemQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuItemTarget;
+import com.catering.v2s.salesmenu.domain.SalesMenuMoveDirection;
 import com.catering.v2s.salesmenu.domain.SalesMenuPageRequest;
 import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentInput;
 import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentKind;
@@ -734,7 +735,7 @@ class SalesMenuOwnerServiceOwnerApiTest {
         var result = new SalesMenuOwnerService(
                         repository,
                         () -> 1_788_000_000_000L,
-                        new ObjectMapper(),
+                        new ObjectMapper().findAndRegisterModules(),
                         catalog,
                         inventory,
                         channels,
@@ -750,6 +751,75 @@ class SalesMenuOwnerServiceOwnerApiTest {
         verify(repository).compareAndSetVersion(commandContext().target(), 1L);
     }
 
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void moveCommandsReuseTheReceiptLockedCurrentRow() throws Exception {
+        assertMoveReusesReceiptLockedCurrentRow(false);
+        assertMoveReusesReceiptLockedCurrentRow(true);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void assertMoveReusesReceiptLockedCurrentRow(boolean itemMove) throws Exception {
+        SalesMenuRepository repository = mock(SalesMenuRepository.class);
+        CatalogOwnerApi catalog = mock(CatalogOwnerApi.class);
+        InventoryOwnerApi inventory = mock(InventoryOwnerApi.class);
+        BusinessChannelOwnerApi channels = mock(BusinessChannelOwnerApi.class);
+        OrganizationOwnerApi organization = mock(OrganizationOwnerApi.class);
+        List<String> queries = new ArrayList<>();
+        String currentTargetQuery = itemMove
+                ? "WHERE version_ref=? AND sales_item_ref=? FOR UPDATE"
+                : "WHERE collection_ref=? AND version_ref=? AND section_ref=? FOR UPDATE";
+
+        when(repository.findForUpdate(any(SalesMenuTarget.class))).thenReturn(Optional.of(menu(null)));
+        when(repository.find(any(SalesMenuTarget.class))).thenReturn(Optional.of(menu(2L, null)));
+        when(repository.compareAndSetVersion(any(SalesMenuTarget.class), anyLong()))
+                .thenReturn(true);
+        when(repository.update(anyString(), any(Object[].class))).thenReturn(1);
+        when(organization.requireSalesMenuStore(WORKSPACE, "group-1", STORE))
+                .thenReturn(new OrganizationOwnerApi.SalesMenuStoreJudgment(STORE, "ENABLED", null, "node", "brand"));
+        when(repository.query(anyString(), any(RowMapper.class), any(Object[].class)))
+                .thenAnswer(invocation -> {
+                    String sql = invocation.getArgument(0, String.class);
+                    RowMapper mapper = invocation.getArgument(1, RowMapper.class);
+                    queries.add(sql);
+                    if (sql.contains("sales_command_receipt")) return List.of();
+                    if (sql.contains("current_draft_version_ref")) {
+                        return List.of(mapper.mapRow(uuidResult(DRAFT), 0));
+                    }
+                    if (sql.contains(currentTargetQuery)) {
+                        return List.of(mapper.mapRow(moveCurrentResult(SECTION, 1L), 0));
+                    }
+                    if (sql.contains("ORDER BY display_order")) {
+                        return List.of(mapper.mapRow(moveTargetResult(UUID.randomUUID(), 0L), 0));
+                    }
+                    if (sql.contains("COALESCE(max(display_order)")) {
+                        return List.of(mapper.mapRow(longResult(2L), 0));
+                    }
+                    throw new AssertionError("unexpected query: " + sql);
+                });
+
+        SalesMenuOwnerService service = service(repository, catalog, inventory, channels, organization, null);
+        if (itemMove) {
+            service.moveItem(
+                    new SalesMenuOwnerApi.ItemMoveCommand(commandContext(), SALES_ITEM, SalesMenuMoveDirection.UP, 1L));
+        } else {
+            service.moveSection(
+                    new SalesMenuOwnerApi.SectionMoveCommand(commandContext(), SECTION, SalesMenuMoveDirection.UP, 1L));
+        }
+
+        assertEquals(
+                1,
+                queries.stream().filter(sql -> sql.contains(currentTargetQuery)).count());
+        assertTrue(queries.indexOf(queries.stream()
+                        .filter(sql -> sql.contains(currentTargetQuery))
+                        .findFirst()
+                        .orElseThrow())
+                < queries.indexOf(queries.stream()
+                        .filter(sql -> sql.contains("sales_command_receipt"))
+                        .findFirst()
+                        .orElseThrow()));
+    }
+
     private static SalesMenuOwnerService service(
             SalesMenuRepository repository,
             CatalogOwnerApi catalog,
@@ -760,7 +830,7 @@ class SalesMenuOwnerServiceOwnerApiTest {
         return new SalesMenuOwnerService(
                 repository,
                 () -> 1_788_000_000_000L,
-                new ObjectMapper(),
+                new ObjectMapper().findAndRegisterModules(),
                 catalog,
                 inventory,
                 channels,
@@ -842,6 +912,20 @@ class SalesMenuOwnerServiceOwnerApiTest {
     private static ResultSet longResult(long value) throws Exception {
         ResultSet result = mock(ResultSet.class);
         when(result.getLong(1)).thenReturn(value);
+        return result;
+    }
+
+    private static ResultSet moveCurrentResult(UUID section, long displayOrder) throws Exception {
+        ResultSet result = mock(ResultSet.class);
+        when(result.getObject("section_ref", UUID.class)).thenReturn(section);
+        when(result.getLong("display_order")).thenReturn(displayOrder);
+        return result;
+    }
+
+    private static ResultSet moveTargetResult(UUID ref, long displayOrder) throws Exception {
+        ResultSet result = mock(ResultSet.class);
+        when(result.getObject(1, UUID.class)).thenReturn(ref);
+        when(result.getLong(2)).thenReturn(displayOrder);
         return result;
     }
 

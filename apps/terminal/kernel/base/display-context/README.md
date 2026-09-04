@@ -11,6 +11,8 @@
 - `displayIndex` 来自 surface props；`instanceMode` 来自 runtime；`displayCount` 由
   `DevicePort.getDisplayInfo` 实时取得。
 - `resolveSurfaceDisplayMode` 与 `resolveWorkspace` 只做纯派生，不建立第二份缓存。
+- `readDisplayInfo` 将设备端口结果归类为 `valid`、`unavailable` 或 `malformed`；
+  `resolveSecondarySurfaceAvailable` 只把 `valid` 且 `displayCount >= 2` 判为有副屏，未知态安全降级为单屏。
 - `switchDisplayRole`、`switchInstanceMode`、电源变化和 hydrate 校验都通过 command → actor →
   `dispatchAction` 写入路径。
 - runtime 在 instance mode 提交后发出 runtime-owned changed command，本包的 actor 只在此时把
@@ -22,6 +24,7 @@
 - `src/features/commands` 与 `src/features/actors`：四条 command、五个 actor；公开 command 需要
   `requestId` 与可信的 route context。
 - `src/foundations/displayDerivation.ts`：显示模式、workspace、角色/instance 准入和电源目标的纯函数。
+- `src/foundations/displayDevice.ts`：设备屏数读取与三态归类；私有调用超时不属于公共数值契约。
 - `src/application/createPowerStatusBridge.ts`：安装后先等待 hydrate 校验，再订阅设备电源事件；首个事件只播种，
   同值去重，跃迁按接收顺序串行派发 `power-status-changed`。
 - `createDisplayContextModule()` 是装配入口；`selectDisplayRole` 是唯一公开的角色读取 selector。
@@ -47,5 +50,7 @@ hydrate 恢复出的危险 `VICE` 在无法确认单屏时改回 `CHIEF` 并留�
   可信性和角色留痕跨重启仍是未证明边界。
 - 不要把 `displayIndex`、`displayCount`、`displayMode` 或 workspace 加入 slice；不要恢复已被 TR-11
   取代的 role effect/action-array 接缝，也不要在本包定义 runtime command。
+- 屏数消费者必须通过公开的 `readDisplayInfo` 与 `resolveSecondarySurfaceAvailable`，不得各自复制三态归类或
+  `?? 1` 降级逻辑。
 - 记录 entry 是本地事实；本包不承诺“无后续变更时自动恢复”以外的审计或重试语义，新增公开字段、端口方法、
   依赖边或改变失败域前必须重新核对需求、详设、规范与 invariant。

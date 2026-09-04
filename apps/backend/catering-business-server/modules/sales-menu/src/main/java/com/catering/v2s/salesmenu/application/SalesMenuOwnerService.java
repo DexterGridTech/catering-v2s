@@ -162,7 +162,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         }
         arguments.add(query.page().pageSize() + 1);
         List<MenuListRow> rows = repository.query(
-                "SELECT c.collection_ref,c.store_ref,c.name,c.archived_at_epoch_millis,c.version,d.revision draft_revision,"
+                "SELECT c.collection_ref,c.store_ref,c.name,c.archived_at_epoch_millis,c.version,"
+                        + "d.revision draft_revision,"
                         + "p.revision published_revision,"
                         + "publication.source_draft_revision latest_published_source_draft_revision,"
                         + "d.schedule_kind,d.schedule_start_local_time,"
@@ -478,7 +479,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 "copyOperationsSalesMenu",
                 command.context(),
                 command,
-                () -> lockAndCheckMenu(command.context(), command.expectedVersion(), null),
+                () -> lockMenuTarget(command.context(), null),
                 source -> source,
                 source -> {
                     requireCas(command.context().target(), command.expectedVersion());
@@ -515,7 +516,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public SalesMenuReadback.Command rename(SalesMenuOwnerApi.RenameCommand command) {
-        return mutate("renameOperationsSalesMenu", command.context(), command.expectedVersion(), () -> {
+        return mutate("renameOperationsSalesMenu", command.context(), command, command.expectedVersion(), () -> {
             repository.update(
                     "UPDATE sales_menu.sales_collection SET name=? WHERE collection_ref=?",
                     command.name(),
@@ -527,7 +528,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public SalesMenuReadback.Command archive(SalesMenuOwnerApi.ArchiveCommand command) {
-        return mutate("archiveOperationsSalesMenu", command.context(), command.expectedVersion(), () -> {
+        return mutate("archiveOperationsSalesMenu", command.context(), command, command.expectedVersion(), () -> {
             repository.update(
                     "UPDATE sales_menu.sales_collection SET archived_at_epoch_millis=? WHERE collection_ref=?",
                     time.currentEpochMillis(),
@@ -542,6 +543,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         return mutate(
                 "setOperationsSalesMenuActivation",
                 command.context(),
+                command,
                 command.expectedVersion(),
                 command.channelRef(),
                 () -> {
@@ -560,25 +562,27 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public SalesMenuReadback.Command updateSchedule(SalesMenuOwnerApi.ScheduleCommand command) {
-        return mutate("updateOperationsSalesMenuSchedule", command.context(), command.expectedVersion(), () -> {
-            UUID version = draftVersion(command.context().salesMenuRef());
-            repository.update(
-                    "UPDATE sales_menu.sales_collection_version SET schedule_kind=?,schedule_start_local_time=?,"
-                            + "schedule_end_local_time=? WHERE version_ref=?",
-                    command.schedule().kind().name(),
-                    command.schedule().startLocalTime(),
-                    command.schedule().endLocalTime(),
-                    version);
-            advanceDraftRevision(version);
-            return SalesMenuCommandReadbackStatus.APPLIED;
-        });
+        return mutate(
+                "updateOperationsSalesMenuSchedule", command.context(), command, command.expectedVersion(), () -> {
+                    UUID version = draftVersion(command.context().salesMenuRef());
+                    repository.update(
+                            "UPDATE sales_menu.sales_collection_version SET schedule_kind=?,"
+                                    + "schedule_start_local_time=?,"
+                                    + "schedule_end_local_time=? WHERE version_ref=?",
+                            command.schedule().kind().name(),
+                            command.schedule().startLocalTime(),
+                            command.schedule().endLocalTime(),
+                            version);
+                    advanceDraftRevision(version);
+                    return SalesMenuCommandReadbackStatus.APPLIED;
+                });
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public SalesMenuReadback.Command createSection(SalesMenuOwnerApi.SectionCreateCommand command) {
         UUID section = UUID.randomUUID();
-        return mutate("createOperationsSalesMenuSection", command.context(), command.expectedVersion(), () -> {
+        return mutate("createOperationsSalesMenuSection", command.context(), command, command.expectedVersion(), () -> {
             UUID version = draftVersion(command.context().salesMenuRef());
             repository.update(
                     "INSERT INTO sales_menu.sales_section(section_ref,collection_ref) VALUES(?,?)",
@@ -602,57 +606,59 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public SalesMenuReadback.Command renameSection(SalesMenuOwnerApi.SectionRenameCommand command) {
-        return mutate("renameOperationsSalesMenuSection", command.context(), command.expectedVersion(), () -> {
-            UUID version = draftVersion(command.context().salesMenuRef());
-            requireSection(command.context().salesMenuRef(), version, command.salesSectionRef());
-            repository.update(
-                    "UPDATE sales_menu.sales_version_section SET name=? WHERE version_ref=? AND section_ref=?",
-                    command.name(),
-                    version,
-                    command.salesSectionRef());
-            advanceDraftRevision(version);
-            return SalesMenuCommandReadbackStatus.APPLIED;
-        });
+        return mutate(
+                "renameOperationsSalesMenuSection", command.context(), command, command.expectedVersion(), locked -> {
+                    UUID version = locked.draftVersion();
+                    repository.update(
+                            "UPDATE sales_menu.sales_version_section SET name=? WHERE version_ref=? AND section_ref=?",
+                            command.name(),
+                            version,
+                            command.salesSectionRef());
+                    advanceDraftRevision(version);
+                    return SalesMenuCommandReadbackStatus.APPLIED;
+                });
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public SalesMenuReadback.Command deleteSection(SalesMenuOwnerApi.SectionDeleteCommand command) {
-        return mutate("deleteOperationsSalesMenuSection", command.context(), command.expectedVersion(), () -> {
-            UUID version = draftVersion(command.context().salesMenuRef());
-            requireSection(command.context().salesMenuRef(), version, command.salesSectionRef());
-            if (!repository
-                    .query(
-                            "SELECT 1 FROM sales_menu.sales_version_item WHERE version_ref=? AND section_ref=? LIMIT 1",
-                            SalesMenuOwnerService::existsRow,
+        return mutate(
+                "deleteOperationsSalesMenuSection", command.context(), command, command.expectedVersion(), locked -> {
+                    UUID version = locked.draftVersion();
+                    if (!repository
+                            .query(
+                                    "SELECT 1 FROM sales_menu.sales_version_item "
+                                            + "WHERE version_ref=? AND section_ref=? LIMIT 1",
+                                    SalesMenuOwnerService::existsRow,
+                                    version,
+                                    command.salesSectionRef())
+                            .isEmpty()) throw problem("SECTION_NOT_EMPTY", 409, "非空分组不可删除");
+                    repository.update(
+                            "DELETE FROM sales_menu.sales_version_section WHERE version_ref=? AND section_ref=?",
                             version,
-                            command.salesSectionRef())
-                    .isEmpty()) throw problem("SECTION_NOT_EMPTY", 409, "非空分组不可删除");
-            repository.update(
-                    "DELETE FROM sales_menu.sales_version_section WHERE version_ref=? AND section_ref=?",
-                    version,
-                    command.salesSectionRef());
-            advanceDraftRevision(version);
-            return SalesMenuCommandReadbackStatus.APPLIED;
-        });
+                            command.salesSectionRef());
+                    advanceDraftRevision(version);
+                    return SalesMenuCommandReadbackStatus.APPLIED;
+                });
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public SalesMenuReadback.Command moveSection(SalesMenuOwnerApi.SectionMoveCommand command) {
-        return mutate("moveOperationsSalesMenuSection", command.context(), command.expectedVersion(), () -> {
-            UUID version = draftVersion(command.context().salesMenuRef());
-            requireSection(command.context().salesMenuRef(), version, command.salesSectionRef());
-            move(
-                    "sales_menu.sales_version_section",
-                    "section_ref",
-                    version,
-                    command.salesSectionRef(),
-                    command.direction(),
-                    null);
-            advanceDraftRevision(version);
-            return SalesMenuCommandReadbackStatus.APPLIED;
-        });
+        return mutate(
+                "moveOperationsSalesMenuSection", command.context(), command, command.expectedVersion(), locked -> {
+                    UUID version = locked.draftVersion();
+                    move(
+                            "sales_menu.sales_version_section",
+                            "section_ref",
+                            version,
+                            command.salesSectionRef(),
+                            command.direction(),
+                            null,
+                            locked.moveCurrent());
+                    advanceDraftRevision(version);
+                    return SalesMenuCommandReadbackStatus.APPLIED;
+                });
     }
 
     @Override
@@ -663,8 +669,13 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 "addOperationsSalesMenuItems",
                 command.context(),
                 command,
-                () -> lockAndCheckMenuWithStore(command.context(), command.expectedVersion(), null),
-                locked -> preflightAddItems(command, locked.menu(), locked.store()),
+                () -> {
+                    MenuCommandLock menuLock = lockMenuTargetWithStore(command.context(), null);
+                    UUID version = draftVersion(menuLock.menu().salesMenuRef());
+                    requireSection(menuLock.menu().salesMenuRef(), version, command.salesSectionRef());
+                    return new AddItemsLock(menuLock, version);
+                },
+                locked -> preflightAddItems(command, locked),
                 preflight -> {
                     var menu = preflight.menu();
                     UUID version = preflight.draftVersion();
@@ -707,8 +718,13 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 "updateOperationsSalesMenuItem",
                 command.context(),
                 command,
-                () -> lockAndCheckMenuWithStore(command.context(), command.expectedVersion(), null),
-                locked -> preflightUpdateItem(command, locked.menu(), locked.store()),
+                () -> {
+                    MenuCommandLock menuLock = lockMenuTargetWithStore(command.context(), null);
+                    UUID version = draftVersion(menuLock.menu().salesMenuRef());
+                    ItemRow current = requireDraftItem(menuLock.menu(), version, command.salesItemRef());
+                    return new UpdateItemLock(menuLock, version, current);
+                },
+                locked -> preflightUpdateItem(command, locked),
                 preflight -> {
                     var menu = preflight.menu();
                     UUID version = preflight.draftVersion();
@@ -788,12 +804,12 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         return mutate(
                 "deleteOperationsSalesMenuItem",
                 command.context(),
+                command,
                 command.expectedVersion(),
                 null,
                 command.salesItemRef(),
-                () -> {
-                    UUID version = draftVersion(command.context().salesMenuRef());
-                    requireItem(version, command.salesItemRef());
+                locked -> {
+                    UUID version = locked.draftVersion();
                     repository.update(
                             "DELETE FROM sales_menu.sales_version_item_sku WHERE version_ref=? AND sales_item_ref=?",
                             version,
@@ -817,28 +833,20 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         return mutate(
                 "moveOperationsSalesMenuItem",
                 command.context(),
+                command,
                 command.expectedVersion(),
                 null,
                 command.salesItemRef(),
-                () -> {
-                    UUID version = draftVersion(command.context().salesMenuRef());
-                    var row = repository
-                            .query(
-                                    "SELECT section_ref FROM sales_menu.sales_version_item "
-                                            + "WHERE version_ref=? AND sales_item_ref=?",
-                                    SalesMenuOwnerService::uuidValueRow,
-                                    version,
-                                    command.salesItemRef())
-                            .stream()
-                            .findFirst()
-                            .orElseThrow(() -> problem("SALES_ITEM_NOT_FOUND", 404, "销售菜单商品不存在"));
+                locked -> {
+                    UUID version = locked.draftVersion();
                     move(
                             "sales_menu.sales_version_item",
                             "sales_item_ref",
                             version,
                             command.salesItemRef(),
                             command.direction(),
-                            row.value());
+                            locked.moveCurrent().sectionRef(),
+                            locked.moveCurrent());
                     advanceDraftRevision(version);
                     return SalesMenuCommandReadbackStatus.APPLIED;
                 });
@@ -894,7 +902,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 "publishOperationsSalesMenu",
                 command.context(),
                 command,
-                () -> lockAndCheckMenuWithStore(command.context(), command.expectedVersion(), null),
+                () -> lockMenuTargetWithStore(command.context(), null),
                 locked -> preflightPublish(command, locked.menu(), locked.store()),
                 preflight -> {
                     var menu = preflight.menu();
@@ -979,46 +987,38 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         requireOwnerCommand(context, channelRef);
     }
 
-    private SalesMenuAggregate lockAndCheckMenu(
-            SalesMenuOwnerApi.CommandContext context, long expectedVersion, UUID channelRef) {
-        return lockAndCheckMenuWithStore(context, expectedVersion, channelRef).menu();
+    private SalesMenuAggregate lockMenuTarget(SalesMenuOwnerApi.CommandContext context, UUID channelRef) {
+        return lockMenuTargetWithStore(context, channelRef).menu();
     }
 
-    private MenuCommandLock lockAndCheckMenuWithStore(
-            SalesMenuOwnerApi.CommandContext context, long expectedVersion, UUID channelRef) {
-        SalesMenuAggregate menu = lockAndCheck(context, expectedVersion);
+    private MenuCommandLock lockMenuTargetWithStore(SalesMenuOwnerApi.CommandContext context, UUID channelRef) {
+        SalesMenuAggregate menu = requireMenu(context.target(), true);
         OrganizationOwnerApi.SalesMenuStoreJudgment store = requireOwnerCommand(context, channelRef);
         requireNotArchived(menu);
         return new MenuCommandLock(menu, store);
     }
 
-    private AddItemsPreflight preflightAddItems(
-            SalesMenuOwnerApi.ItemsAddCommand command,
-            SalesMenuAggregate menu,
-            OrganizationOwnerApi.SalesMenuStoreJudgment store) {
-        UUID version = draftVersion(menu.salesMenuRef());
-        requireSection(menu.salesMenuRef(), version, command.salesSectionRef());
-        Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts =
-                catalogFacts(command.context().scope(), new LinkedHashSet<>(command.catalogItemRefs()), store);
+    private AddItemsPreflight preflightAddItems(SalesMenuOwnerApi.ItemsAddCommand command, AddItemsLock locked) {
+        MenuCommandLock menuLock = locked.menuLock();
+        SalesMenuAggregate menu = menuLock.menu();
+        Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts = catalogFacts(
+                command.context().scope(), new LinkedHashSet<>(command.catalogItemRefs()), menuLock.store());
         if (catalog != null && organization != null) {
             command.catalogItemRefs().forEach(itemRef -> requireDraftCatalogItem(facts.get(itemRef)));
         }
-        return new AddItemsPreflight(menu, version, facts);
+        return new AddItemsPreflight(menu, locked.draftVersion(), facts);
     }
 
     private UpdateItemPreflight preflightUpdateItem(
-            SalesMenuOwnerApi.ItemUpdateCommand command,
-            SalesMenuAggregate menu,
-            OrganizationOwnerApi.SalesMenuStoreJudgment store) {
-        UUID version = draftVersion(menu.salesMenuRef());
-        ItemRow current = itemRows(menu, SalesMenuVersionKind.DRAFT, version, null, command.salesItemRef()).stream()
-                .findFirst()
-                .orElseThrow(() -> problem("SALES_ITEM_NOT_FOUND", 404, "销售菜单商品不存在"));
+            SalesMenuOwnerApi.ItemUpdateCommand command, UpdateItemLock locked) {
+        MenuCommandLock menuLock = locked.menuLock();
+        SalesMenuAggregate menu = menuLock.menu();
+        ItemRow current = locked.current();
         Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts =
-                catalogFacts(command.context().scope(), Set.of(current.catalogItemRef()), store);
+                catalogFacts(command.context().scope(), Set.of(current.catalogItemRef()), menuLock.store());
         CatalogOwnerApi.SalesMenuItemFacts fact = facts.get(current.catalogItemRef());
         if (catalog != null && organization != null) requireDraftItemUpdate(fact, command);
-        return new UpdateItemPreflight(menu, version, current, facts);
+        return new UpdateItemPreflight(menu, locked.draftVersion(), current, facts);
     }
 
     private PublishPreflight preflightPublish(
@@ -1179,43 +1179,80 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
     private SalesMenuReadback.Command mutate(
             String operation,
             SalesMenuOwnerApi.CommandContext context,
+            Object request,
             long expectedVersion,
             Supplier<SalesMenuCommandReadbackStatus> mutation) {
-        return mutate(operation, context, expectedVersion, null, null, mutation);
+        return mutate(operation, context, request, expectedVersion, null, null, ignored -> mutation.get());
     }
 
     private SalesMenuReadback.Command mutate(
             String operation,
             SalesMenuOwnerApi.CommandContext context,
+            Object request,
+            long expectedVersion,
+            Function<MutationLock, SalesMenuCommandReadbackStatus> mutation) {
+        return mutate(operation, context, request, expectedVersion, null, null, mutation);
+    }
+
+    private SalesMenuReadback.Command mutate(
+            String operation,
+            SalesMenuOwnerApi.CommandContext context,
+            Object request,
             long expectedVersion,
             UUID recordChannel,
             Supplier<SalesMenuCommandReadbackStatus> mutation) {
-        return mutate(operation, context, expectedVersion, recordChannel, null, mutation);
+        return mutate(operation, context, request, expectedVersion, recordChannel, null, ignored -> mutation.get());
     }
 
     private SalesMenuReadback.Command mutate(
             String operation,
             SalesMenuOwnerApi.CommandContext context,
+            Object request,
             long expectedVersion,
             UUID recordChannel,
             UUID explicitTarget,
-            Supplier<SalesMenuCommandReadbackStatus> mutation) {
+            Function<MutationLock, SalesMenuCommandReadbackStatus> mutation) {
         requireGrant(context, true);
         return receipt(
                 operation,
                 context,
-                expectedVersion,
-                () -> lockAndCheckMenu(context, expectedVersion, recordChannel),
-                menu -> menu,
-                menu -> {
+                request,
+                () -> lockMutationTarget(context, recordChannel, request),
+                locked -> locked,
+                locked -> {
                     requireCas(context.target(), expectedVersion);
-                    SalesMenuCommandReadbackStatus status = mutation.get();
-                    UUID target = explicitTarget == null ? menu.salesMenuRef() : explicitTarget;
+                    SalesMenuCommandReadbackStatus status = mutation.apply(locked);
+                    UUID target = explicitTarget == null ? locked.menu().salesMenuRef() : explicitTarget;
                     SalesMenuReadback.Command readback =
-                            command(operation, context, menu.salesMenuRef(), target, status);
-                    recordSuccess(operation, context, recordChannel, menu.salesMenuRef(), target);
+                            command(operation, context, locked.menu().salesMenuRef(), target, status);
+                    recordSuccess(
+                            operation, context, recordChannel, locked.menu().salesMenuRef(), target);
                     return readback;
                 });
+    }
+
+    private MutationLock lockMutationTarget(
+            SalesMenuOwnerApi.CommandContext context, UUID recordChannel, Object request) {
+        SalesMenuAggregate menu = lockMenuTarget(context, recordChannel);
+        UUID draftVersion = null;
+        MoveCurrentRow moveCurrent = null;
+        if (request instanceof SalesMenuOwnerApi.SectionRenameCommand command) {
+            draftVersion = draftVersion(menu.salesMenuRef());
+            requireSection(menu.salesMenuRef(), draftVersion, command.salesSectionRef());
+        } else if (request instanceof SalesMenuOwnerApi.SectionDeleteCommand command) {
+            draftVersion = draftVersion(menu.salesMenuRef());
+            requireSection(menu.salesMenuRef(), draftVersion, command.salesSectionRef());
+        } else if (request instanceof SalesMenuOwnerApi.SectionMoveCommand command) {
+            draftVersion = draftVersion(menu.salesMenuRef());
+            moveCurrent = requireSectionMoveCurrent(menu.salesMenuRef(), draftVersion, command.salesSectionRef());
+        } else if (request instanceof SalesMenuOwnerApi.ItemDeleteCommand command) {
+            draftVersion = draftVersion(menu.salesMenuRef());
+            requireItem(draftVersion, command.salesItemRef());
+        } else if (request instanceof SalesMenuOwnerApi.ItemMoveCommand command) {
+            draftVersion = draftVersion(menu.salesMenuRef());
+            moveCurrent = requireItemMoveCurrent(draftVersion, command.salesItemRef());
+        }
+        return new MutationLock(menu, draftVersion, moveCurrent);
     }
 
     private SalesMenuReadback.Command manual(
@@ -1231,12 +1268,21 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         return receipt(
                 operation,
                 context,
-                expectedVersion,
-                () -> lockAndCheckMenu(context, expectedVersion, channel),
-                menu -> {
+                new ManualReceiptRequest(
+                        context.scope().groupWorkspaceKey(),
+                        context.scope().storeRef(),
+                        context.salesMenuRef(),
+                        channel,
+                        item,
+                        state,
+                        reason,
+                        expectedVersion),
+                () -> {
+                    SalesMenuAggregate menu = lockMenuTarget(context, channel);
                     requireItem(publishedVersion(menu.salesMenuRef()), item);
-                    return new ManualPreflight(menu);
+                    return menu;
                 },
+                ManualPreflight::new,
                 preflight -> {
                     var menu = preflight.menu();
                     requireCas(context.target(), expectedVersion);
@@ -1325,6 +1371,19 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
 
     /** Asset bind grants are request-transient proof, not part of the business intent for replay. */
     private Object receiptRequest(Object request) {
+        if (request instanceof SalesMenuOwnerApi.ScheduleCommand command) {
+            SalesMenuSchedule schedule = command.schedule();
+            return new ScheduleReceiptRequest(
+                    command.context().salesMenuRef(),
+                    schedule.kind().name(),
+                    schedule.startLocalTime() == null
+                            ? null
+                            : schedule.startLocalTime().toString(),
+                    schedule.endLocalTime() == null
+                            ? null
+                            : schedule.endLocalTime().toString(),
+                    command.expectedVersion());
+        }
         if (request instanceof SalesMenuOwnerApi.ItemUpdateCommand command) {
             return new SalesMenuOwnerApi.ItemUpdateCommand(
                     command.context(),
@@ -1338,6 +1397,19 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         }
         return request;
     }
+
+    private record ManualReceiptRequest(
+            String groupWorkspaceKey,
+            UUID storeRef,
+            UUID salesMenuRef,
+            UUID channelRef,
+            UUID salesItemRef,
+            SalesMenuManualSaleState state,
+            String reason,
+            long expectedVersion) {}
+
+    private record ScheduleReceiptRequest(
+            UUID salesMenuRef, String scheduleKind, String startLocalTime, String endLocalTime, long expectedVersion) {}
 
     private <T> T replay(String operation, SalesMenuOwnerApi.CommandContext context, String hash) {
         var row = repository
@@ -1891,17 +1963,13 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
     }
 
     private void move(
-            String table, String refColumn, UUID version, UUID ref, SalesMenuMoveDirection direction, UUID section) {
-        var current = repository
-                .query(
-                        "SELECT section_ref,display_order FROM " + table + " WHERE version_ref=? AND " + refColumn
-                                + "=? FOR UPDATE",
-                        SalesMenuOwnerService::moveCurrentRow,
-                        version,
-                        ref)
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> problem("TARGET_NOT_FOUND", 404, "排序目标不存在"));
+            String table,
+            String refColumn,
+            UUID version,
+            UUID ref,
+            SalesMenuMoveDirection direction,
+            UUID section,
+            MoveCurrentRow current) {
         long currentOrder = current.displayOrder();
         boolean movingUp = direction == SalesMenuMoveDirection.UP;
         String adjacencyPredicate = movingUp
@@ -2817,13 +2885,6 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 .orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
     }
 
-    private com.catering.v2s.salesmenu.domain.SalesMenuAggregate lockAndCheck(
-            SalesMenuOwnerApi.CommandContext context, long expected) {
-        var menu = requireMenu(context.target(), true);
-        if (menu.version() != expected) throw problem("VERSION_CONFLICT", 409, "销售菜单版本已变化");
-        return menu;
-    }
-
     private void requireSection(UUID menu, UUID version, UUID section) {
         if (repository
                 .query(
@@ -2836,6 +2897,12 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 .isEmpty()) throw problem("SECTION_NOT_FOUND", 404, "分组不存在");
     }
 
+    private ItemRow requireDraftItem(SalesMenuAggregate menu, UUID version, UUID item) {
+        return itemRows(menu, SalesMenuVersionKind.DRAFT, version, null, item).stream()
+                .findFirst()
+                .orElseThrow(() -> problem("SALES_ITEM_NOT_FOUND", 404, "销售菜单商品不存在"));
+    }
+
     private void requireItem(UUID version, UUID item) {
         if (repository
                 .query(
@@ -2844,6 +2911,33 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                         version,
                         item)
                 .isEmpty()) throw problem("SALES_ITEM_NOT_FOUND", 404, "销售菜单商品不存在");
+    }
+
+    private MoveCurrentRow requireSectionMoveCurrent(UUID menu, UUID version, UUID section) {
+        return repository
+                .query(
+                        "SELECT section_ref,display_order FROM sales_menu.sales_version_section "
+                                + "WHERE collection_ref=? AND version_ref=? AND section_ref=? FOR UPDATE",
+                        SalesMenuOwnerService::moveCurrentRow,
+                        menu,
+                        version,
+                        section)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> problem("SECTION_NOT_FOUND", 404, "分组不存在"));
+    }
+
+    private MoveCurrentRow requireItemMoveCurrent(UUID version, UUID item) {
+        return repository
+                .query(
+                        "SELECT section_ref,display_order FROM sales_menu.sales_version_item "
+                                + "WHERE version_ref=? AND sales_item_ref=? FOR UPDATE",
+                        SalesMenuOwnerService::moveCurrentRow,
+                        version,
+                        item)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> problem("SALES_ITEM_NOT_FOUND", 404, "销售菜单商品不存在"));
     }
 
     private void requireGrant(SalesMenuOwnerApi.CommandContext context, boolean menuTarget) {
@@ -3130,6 +3224,12 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             List<SalesMenuReadback.PublicationBlocker> blockers) {}
 
     private record MenuCommandLock(SalesMenuAggregate menu, OrganizationOwnerApi.SalesMenuStoreJudgment store) {}
+
+    private record MutationLock(SalesMenuAggregate menu, UUID draftVersion, MoveCurrentRow moveCurrent) {}
+
+    private record AddItemsLock(MenuCommandLock menuLock, UUID draftVersion) {}
+
+    private record UpdateItemLock(MenuCommandLock menuLock, UUID draftVersion, ItemRow current) {}
 
     private record AddItemsPreflight(
             SalesMenuAggregate menu, UUID draftVersion, Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts) {}

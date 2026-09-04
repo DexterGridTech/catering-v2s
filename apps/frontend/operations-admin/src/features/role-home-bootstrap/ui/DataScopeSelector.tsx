@@ -15,7 +15,7 @@ import type {OperationsRootState} from '../../../app/state/OperationsStore';
 import {roleHomeTestIds} from '../roleHomeTestIds';
 
 type RequiredDataNodeType = 'NONE' | 'REGION' | 'PROJECT' | 'HEAD_COMPANY' | 'STORE';
-type Option = {value: string; label: ReactNode};
+type Option = {value: string; label: ReactNode; 'data-testid': string};
 type DataScopePage = {
   requiredDataNodeType: RequiredDataNodeType;
   noDataNodePrompt: string | null;
@@ -184,7 +184,11 @@ export function DataScopeSelector({entry, page, collapsed = false, disabled = fa
     .map(([name, node]) => `${name}：${node ? plainLabel(node as WorkspaceScopeNode) : '未选择'}`)
     .join('；');
   const option = (nodes: WorkspaceScopeNode[]): Option[] =>
-    nodes.map(node => ({value: node.dataNodeRef, label: label(node)}));
+    nodes.map(node => ({
+      value: node.dataNodeRef,
+      label: label(node),
+      ...testId(roleHomeTestIds.dataScope.option(node.dataNodeType, node.dataNodeRef)),
+    }));
   const candidate =
     type === 'REGION'
       ? regions.find(node => node.dataNodeRef === regionRef)

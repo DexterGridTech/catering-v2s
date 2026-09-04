@@ -12,13 +12,19 @@ slice 或 Runtime module。
 - `getState()`：仅在状态为 `started` 时读取稳定的 state root；
 - `subscribe(listener)`：接收 state 或生命周期变化通知并返回退订函数。
 
-集成层从 Runtime 闭包构造这三个函数。render 不接收完整 Runtime，不使用 `getStore()`，不暴露或调用
-dispatch，也不提供 command、automation 或可编辑变量接缝。业务包的命令归业务 owner；变量与 automation
-分别归对应 toolkit。
+集成层从 Runtime 闭包构造这三个函数，并额外注入两个窄函数：`dispatchCommand(command, {requestId})`
+与绑定某个 `UiStateModule` 实例的 `selectUiVariable(root, declaration)`。render 不接收完整 Runtime，
+不使用 `getStore()`，不暴露 `dispatchAction`／`useDispatch` 或 Redux store；业务包仍拥有 command 定义，
+这里只通过 `dispatchWithRequestId` 统一构造并传递显式带 `requestId` 的 public command intent，
+并由 `useRequestInFlight`／`useTrackedRequest` 提供 request 观察与瞬时句柄。变量的注册 identity 校验仍由
+ui-state module 完成。窄派发 Promise 被拒绝时，`useDispatchCommand` 通过注入的 logger 记录带
+`commandName`／`requestId` 的 `command-dispatch-rejected` typed diagnostic 后原样 rethrow；不把基础设施
+失败伪装成业务成功，也不新增业务错误层。
 
-`useUiStateSelector(selector)` 按 state root 引用记忆化结果：同一 root 不会再次执行 selector。selector
-必须是 root 的纯函数；不要在 selector 闭包中捕获会变化的 props 或其他外部值，否则 root 不变时可能
-返回旧参数对应的陈旧结果。
+`useUiStateSelector(selector)` 按 state root 引用与 selector 函数身份共同记忆化结果：同一 root 且同一
+selector 身份不会再次执行 selector；root 不变但 selector 身份变化时必须重新计算。selector 应是 root
+的纯函数；若闭包捕获外部值，selector 身份必须随被捕获值的变化而变化，不能用缺少依赖的
+`useCallback` 把旧值伪装成同一 selector。
 
 ## Catalog
 
@@ -33,7 +39,9 @@ catalog 缺失、renderer 缺失和非法 props 使用不同的 fallback 语义�
 
 ## 公共面
 
-当前公共面固定为 16 项：3 项基础包元数据导出、5 项类型、4 个渲染组件、2 个 catalog 工厂和 2 个 hook。
+当前公共面固定为 21 项：3 项基础包元数据导出、5 项类型、4 个渲染组件、2 个 catalog 工厂、6 个 hook
+与 1 个 request helper，其中包括 `useDispatchCommand`、`useUiVariable`、`dispatchWithRequestId`、
+`useRequestInFlight` 与 `useTrackedRequest`。
 测试接缝与内部 fallback/诊断实现不进入 `src/index.ts` 或 package publicExports。
 
 ## 目录与测试

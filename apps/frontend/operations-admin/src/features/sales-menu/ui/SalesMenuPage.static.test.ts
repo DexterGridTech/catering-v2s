@@ -2,6 +2,7 @@ import {readFileSync} from 'node:fs';
 import {describe, expect, it} from 'vitest';
 
 const source = readFileSync(new URL('./SalesMenuPage.tsx', import.meta.url), 'utf8');
+const testIdsSource = readFileSync(new URL('../salesMenuTestIds.ts', import.meta.url), 'utf8');
 const draftTableSource = source.slice(
   source.indexOf('function DraftSalesItemTable'),
   source.indexOf('function PublishedSalesItemTable'),
@@ -191,8 +192,32 @@ describe('sales menu IA static trace', () => {
     expect(candidateDrawerSource).toContain('setSelected([])');
   });
 
-  it('gives each sales-menu selector option a stable business-identity test id', () => {
-    expect(source).toContain('salesMenuTestIds.menuOption(menu.salesMenuRef)');
+  it('binds selector actions to the native input and actual business-identity option root', () => {
+    const selectorSource = pageSource.slice(
+      pageSource.indexOf('<Select'),
+      pageSource.indexOf('<Button', pageSource.indexOf('<Select')),
+    );
+    expect(testIdsSource).toContain("menuSelectorInput: 'sales-menu-selector-input'");
+    expect(source).toContain(
+      "const SalesMenuSelectorInput = forwardRef<HTMLInputElement, ComponentPropsWithoutRef<'input'>>",
+    );
+    expect(selectorSource).toContain('virtual={false}');
+    expect(selectorSource).toContain('components={{input: SalesMenuSelectorInput}}');
+    expect(selectorSource).toContain("'data-testid': salesMenuTestIds.menuOption(menu.salesMenuRef)");
+    expect(selectorSource).not.toContain('<Space {...testId(salesMenuTestIds.menuOption(menu.salesMenuRef))}>');
+  });
+
+  it('keeps the Segmented option anchors explicit for the documented composite-control exception', () => {
+    const modeSource = pageSource.slice(pageSource.indexOf('<Segmented'), pageSource.indexOf('</Segmented>'));
+    for (const mode of ['PUBLISHED', 'DRAFT', 'OPERATIONS'])
+      expect(modeSource).toContain(`testId(salesMenuTestIds.mode('${mode}'))`);
+  });
+
+  it('exposes the selected section state on the exact section action node', () => {
+    expect(sectionSource).toContain(
+      "aria-current={read.selectedSectionRef === section.salesSectionRef ? 'true' : undefined}",
+    );
+    expect(sectionSource).toContain('testId(salesMenuTestIds.section(section.salesSectionRef))');
   });
 
   it('uses generated exact invalidation for command readback and keeps broad refresh user initiated', () => {
@@ -333,5 +358,24 @@ describe('sales menu IA static trace', () => {
     expect(source).not.toContain('门店选择器');
     expect(source).not.toContain('切换生效菜单');
     expect(source).toContain('salesMenuOperationLabel(row.operationKind)');
+  });
+
+  it('uses the shared mutually-exclusive list state for every query-backed sales-menu collection', () => {
+    expect(source).toContain('adminListState,');
+    for (const prefix of ['candidateList', 'managerList', 'draftList', 'publishedList', 'operationList']) {
+      expect(testIdsSource).toContain(`${prefix}: 'sales-menu-${prefix.replace('List', '-list')}'`);
+      expect(source).toContain(`testIdPrefix: salesMenuTestIds.${prefix}`);
+    }
+    expect(candidateDrawerSource).toContain('failed: Boolean(error)');
+    expect(managerSource).toContain('const error = problemMessage(read.manager.query.error');
+    expect(managerSource).toContain('read.manager.query.refetch()');
+    expect(draftTableSource).toContain('failed: Boolean(error)');
+    expect(publishedSource).toContain('failed: Boolean(error)');
+    expect(operationSource).toContain('failed: Boolean(error)');
+    expect(candidateDrawerSource).not.toContain("locale={{emptyText: '该分类暂无可编入商品'}}");
+    expect(managerSource).not.toContain("locale={{emptyText: '暂无菜单'}}");
+    expect(draftTableSource).not.toContain("locale={{emptyText: '该分区暂无菜单商品'}}");
+    expect(publishedSource).not.toContain("locale={{emptyText: '该分区暂无菜单商品'}}");
+    expect(operationSource).not.toContain("locale={{emptyText: '暂无操作记录'}}");
   });
 });

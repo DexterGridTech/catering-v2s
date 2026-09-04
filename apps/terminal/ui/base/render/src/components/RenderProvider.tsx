@@ -15,6 +15,8 @@ export const RenderProvider = ({
   uiCatalog,
   rendererCatalog,
   logger,
+  dispatchCommand,
+  selectUiVariable,
   children,
 }: RenderProviderProps) => {
   const snapshotReader = useMemo(() => createRenderSnapshotReader(stateSource), [stateSource])
@@ -36,10 +38,21 @@ export const RenderProvider = ({
     uiCatalog,
     rendererCatalog,
     logger,
+    dispatchCommand,
+    selectUiVariable,
     snapshotReader,
     reportPartDiagnostic: diagnosticReporter.report,
     clearPartDiagnostic: diagnosticReporter.clearForPart,
-  }), [diagnosticReporter.report, logger, rendererCatalog, snapshotReader, stateSource, uiCatalog])
+  }), [
+    diagnosticReporter.report,
+    dispatchCommand,
+    logger,
+    rendererCatalog,
+    selectUiVariable,
+    snapshotReader,
+    stateSource,
+    uiCatalog,
+  ])
 
   return createElement(RenderContext.Provider, {value: contextValue}, children)
 }

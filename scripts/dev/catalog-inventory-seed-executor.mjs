@@ -869,7 +869,7 @@ async function execute() {
   const reportPath = path.join(directory, "seed-report.json");
   const eventsPath = path.join(directory, "events.jsonl");
   const phases = []; const calls = []; let firstFailure = null; let business = "NOT_RUN"; let cleanup = "NOT_RUN";
-  let manifest = null; let credentials = null; let measurement = null;
+  let manifest = null; let credentials = null; let measurement = null; let salesMenuAvailabilityReceipt = null;
   const startedAt = new Date().toISOString();
   const persist = () => fs.writeFileSync(runManifestPath, `${JSON.stringify({schemaVersion: 2, kind: "catalog-inventory-seed-run-manifest", runId, managedDevRunId: manifest?.runId ?? null, measurement, profile: profile.profile, planDigest: plan?.planDigest ?? null, startedAt, firstFailure, business, cleanup, phases}, null, 2)}\n`, {mode: 0o600});
   const phase = (stage, status, detail = {}) => { const event = {at: new Date().toISOString(), stage, status, ...detail}; phases.push(event); fs.appendFileSync(eventsPath, `${JSON.stringify(event)}\n`, {mode: 0o600}); persist(); };
@@ -877,6 +877,13 @@ async function execute() {
   try {
     if (process.env.CATALOG_INVENTORY_SEED_CONFIRMATION !== profile.runtime.confirmationValue) fail("EXPLICIT_CATALOG_INVENTORY_SEED_CONFIRMATION_REQUIRED");
     if (!plan || plan.status !== "PASS" || plan.sourceItems?.length !== profile.parity.catalogItems || !Array.isArray(plan.eligibleSourceItems) || !Array.isArray(plan.excludedSourceItems) || !Array.isArray(plan.sourceCompositeRelationTargetFixtureKeys) || !plan.eligibility?.eligibleByScope || plan.mediaPlan?.length !== profile.parity.mediaAssets || !Number.isInteger(plan.seedDatasetCount) || plan.seedDatasetCount < 5 || !Array.isArray(plan.seedDatasets) || plan.seedDatasets.length !== plan.seedDatasetCount || new Set(plan.seedDatasets.map((dataset) => dataset.fixtureId)).size !== plan.seedDatasetCount || !Array.isArray(plan.canonicalDependencyOrder)) fail("SEED_STATIC_PLAN_REQUIRED");
+    if (plan.salesMenuAvailability?.scope !== "STORE"
+        || plan.salesMenuAvailability?.shapeKey !== "STANDARD_SALE_COUNTED"
+        || plan.salesMenuAvailability?.unitCode !== "EACH"
+        || !Array.isArray(plan.salesMenuAvailability?.items)
+        || plan.salesMenuAvailability.items.length !== 6
+        || plan.salesMenuAvailability.items.some((item) => !item.code || !item.name || !Object.hasOwn(item, "expectedTarget") || !Array.isArray(item.inventoryCommands)))
+      fail("SEED_SALES_MENU_AVAILABILITY_STATIC_PLAN_REQUIRED");
     if (!plan.catalogLifecycle
         || plan.catalogLifecycle.operationId !== "saveOperationsCatalogItem"
         || plan.catalogLifecycle.statusSource !== "seedDatasets[*].entities.skus[].status"
@@ -1058,9 +1065,12 @@ async function execute() {
     }
     const canonicalEntries = canonicalSeedEntries(plan.seedDatasets, plan.canonicalDependencyOrder);
     const canonicalByCode = new Map(canonicalEntries.map((entry) => [entry.item.code, entry]));
+    const salesMenuAvailability = plan.salesMenuAvailability;
+    const availabilityItems = salesMenuAvailability.items;
     const referenceCodes = collectSeedReferences(plan);
     const refsByClient = new Map();
     const detailReadbacks = new Map();
+    const availabilityByClient = new Map();
     const refsFor = (client) => {
       const key = `${client.scopeType}:${client.dataNodeRef}`;
       if (!refsByClient.has(key)) refsByClient.set(key, {
@@ -1311,6 +1321,25 @@ async function execute() {
       expectedBomVersion: null,
       directConfiguration: {allowNegative, lowStockThreshold, countingUnitRef, conversionFactor},
       bom: null,
+    });
+    const salesMenuAvailabilityDraft = (definition, refs) => ({
+      name: definition.name,
+      shortName: definition.name,
+      shapeKey: salesMenuAvailability.shapeKey,
+      images: [],
+      tagRefs: [],
+      identifiers: [],
+      preparationProfile: null,
+      categoryRef: null,
+      salesUnitRef: unitRef(refs, salesMenuAvailability.unitCode),
+      baseMeasureUnitRef: unitRef(refs, salesMenuAvailability.unitCode),
+      priceGranularity: "ITEM",
+      standardSalePrice: 1000,
+      skus: [],
+      skuVariantDimensions: [],
+      attributeAssignments: [],
+      orderOptionConfigs: [],
+      compositeGroups: [],
     });
     const bomInventoryRule = ({owner, expectedBomVersion = null, lines}) => ({
       owner,
@@ -2056,6 +2085,102 @@ async function execute() {
           fail(`SEED_CATEGORY_ASSIGNMENT_READBACK_INVALID:${client.scopeType}:${source.catalogItemCode}`);
         }
       }
+      // SalesMenu availability is a Catalog/Inventory fact, not a menu-stage
+      // fixture.  These six plain sellable items are deliberately outside the
+      // historical V4 parity set: they express the owner states consumed by the
+      // SalesMenu read model, while preserving the legacy denominator intact.
+      if (client.scopeType === salesMenuAvailability.scope) {
+        const availabilityFacts = new Map();
+        for (const definition of availabilityItems) {
+          const create = await request(`${client.scopeType}-sales-menu-availability-create-${definition.code}`, "createOperationsCatalogItem", {}, {
+            cookie: client.cookie,
+            brandRef: client.brandRef,
+            body: {
+              dataNodeRef: client.dataNodeRef,
+              name: definition.name,
+              code: definition.code,
+              shapeKey: salesMenuAvailability.shapeKey,
+              categoryRef: null,
+            },
+          });
+          const createdVersion = itemVersion(create.json);
+          if (!Number.isInteger(createdVersion) || createdVersion < 1)
+            fail(`SEED_SALES_MENU_AVAILABILITY_CREATE_VERSION_INVALID:${definition.code}`);
+          const draft = salesMenuAvailabilityDraft(definition, refs);
+          const saved = await request(`${client.scopeType}-sales-menu-availability-save-${definition.code}`, "saveOperationsCatalogItem", {itemCode: definition.code}, {
+            cookie: client.cookie,
+            brandRef: client.brandRef,
+            body: {
+              dataNodeRef: client.dataNodeRef,
+              itemCode: definition.code,
+              sections: {
+                catalogDraft: draft,
+                inventoryRules: {nodes: []},
+                expectedCatalogVersion: createdVersion,
+              },
+            },
+          });
+          const savedVersion = itemVersion(saved.json);
+          if (!Number.isInteger(savedVersion) || savedVersion <= createdVersion)
+            fail(`SEED_SALES_MENU_AVAILABILITY_SAVE_VERSION_INVALID:${definition.code}`);
+          let current = await recordItemReadback(client, refs, definition.code, `${client.scopeType}-sales-menu-availability-initial-${definition.code}`);
+          const enabled = await request(`${client.scopeType}-sales-menu-availability-enable-${definition.code}`, "transitionOperationsCatalogItemStatus", {itemCode: definition.code}, {
+            cookie: client.cookie,
+            brandRef: client.brandRef,
+            body: {
+              dataNodeRef: client.dataNodeRef,
+              itemCode: definition.code,
+              targetStatus: "ENABLED",
+              expectedVersion: Number(current.version),
+            },
+          });
+          if (itemResult(enabled.json)?.status !== "ENABLED")
+            fail(`SEED_SALES_MENU_AVAILABILITY_ENABLE_READBACK_INVALID:${definition.code}`);
+          current = await recordItemReadback(client, refs, definition.code, `${client.scopeType}-sales-menu-availability-enabled-${definition.code}`);
+          if (current.lifecycle?.status !== "ENABLED")
+            fail(`SEED_SALES_MENU_AVAILABILITY_ENABLE_DETAIL_INVALID:${definition.code}`);
+          if (definition.expectedTarget !== null) {
+            const rule = directInventoryRule({
+              owner: inventoryOwner({
+                ownerType: "ITEM",
+                itemRef: requiredUuid(current.itemRef, `SEED_SALES_MENU_AVAILABILITY_ITEM_REF:${definition.code}`),
+                itemCode: definition.code,
+              }),
+              allowNegative: false,
+              lowStockThreshold: "0",
+              countingUnitRef: unitRef(refs, salesMenuAvailability.unitCode),
+              conversionFactor: "1",
+            });
+            const configured = await request(`${client.scopeType}-sales-menu-availability-target-create-${definition.code}`, "saveOperationsCatalogItem", {itemCode: definition.code}, {
+              cookie: client.cookie,
+              brandRef: client.brandRef,
+              body: {
+                dataNodeRef: client.dataNodeRef,
+                itemCode: definition.code,
+                sections: {
+                  catalogDraft: draft,
+                  inventoryRules: {nodes: [rule]},
+                  expectedCatalogVersion: Number(current.version),
+                },
+              },
+            });
+            if (!itemResult(configured.json)?.version)
+              fail(`SEED_SALES_MENU_AVAILABILITY_TARGET_CREATE_INVALID:${definition.code}`);
+            current = await recordItemReadback(client, refs, definition.code, `${client.scopeType}-sales-menu-availability-target-${definition.code}`);
+          }
+          const directRows = (current.inventoryRules?.nodes ?? []).filter((row) => row?.owner?.ownerType === "ITEM" && row.mode === "DIRECT");
+          const targetRef = directRows.length === 0 ? null : targetRefFromCatalogRule(directRows[0]);
+          if ((definition.expectedTarget === null && (directRows.length !== 0 || targetRef !== null))
+              || (definition.expectedTarget !== null && (directRows.length !== 1 || !targetRef)))
+            fail(`SEED_SALES_MENU_AVAILABILITY_TARGET_BOUNDARY_INVALID:${definition.code}`);
+          availabilityFacts.set(definition.code, {
+            definition,
+            itemRef: requiredUuid(current.itemRef, `SEED_SALES_MENU_AVAILABILITY_ITEM_REF:${definition.code}`),
+            targetRef,
+          });
+        }
+        availabilityByClient.set(client.scopeType, availabilityFacts);
+      }
       // Lifecycle is not an executor-local status rewrite. The finite fixture
       // declares which sellable source shapes should be enabled. A source
       // item used as a composite target is also activated, even when its shape
@@ -2165,7 +2290,10 @@ async function execute() {
       const actualCodes = itemRows.map((row) => row?.code).filter(Boolean).map(String);
       const expectedCodes = sourceCatalogCodesForClientScope(seedItems, client.scopeType);
       const canonicalCodes = canonicalEntries.map(({item}) => String(item.code));
-      const allExpectedCodes = [...expectedCodes, ...canonicalCodes];
+      const availabilityCodes = client.scopeType === salesMenuAvailability.scope
+        ? availabilityItems.map((item) => item.code)
+        : [];
+      const allExpectedCodes = [...expectedCodes, ...canonicalCodes, ...availabilityCodes];
       const actualCodeSet = new Set(actualCodes);
       const expectedCodeSet = new Set(allExpectedCodes);
       const missingCodes = allExpectedCodes.filter((code) => !actualCodeSet.has(code));
@@ -2173,10 +2301,11 @@ async function execute() {
       if (itemTotal !== allExpectedCodes.length || actualCodes.length !== allExpectedCodes.length || missingCodes.length || unexpectedCodes.length) {
         phase(`${client.scopeType}-items-readback-diagnostic`, "FAIL", {
           operationId: "getOperationsCatalogItems",
-          parity: "V4_PLUS_CANONICAL_SEED",
+          parity: "V4_PLUS_CANONICAL_PLUS_SALES_MENU_AVAILABILITY_SEED",
           expectedCount: allExpectedCodes.length,
           expectedV4Count: expectedCount,
           expectedCanonicalCount: canonicalCodes.length,
+          expectedSalesMenuAvailabilityCount: availabilityCodes.length,
           actualTotal: itemTotal,
           expectedCodeCount: allExpectedCodes.length,
           actualCodeCount: actualCodes.length,
@@ -2298,6 +2427,124 @@ async function execute() {
         inventoryIndexByClient.set(client.scopeType, index);
       }
     }
+    // Apply and read back the Inventory-owner commands only after every target
+    // identity has been returned by that owner.  SalesMenu never sends these
+    // commands and never receives a fabricated target reference.
+    const availabilityFacts = availabilityByClient.get(salesMenuAvailability.scope);
+    if (!availabilityFacts || availabilityFacts.size !== availabilityItems.length)
+      fail("SEED_SALES_MENU_AVAILABILITY_FACTS_MISSING");
+    // Catalog item creation/readback uses the catalog-only STORE client above,
+    // but these state transitions are inventory-owner commands.  Keep the
+    // capability-bearing client selected during preflight so the command
+    // context carries EDIT_STORE_INVENTORY instead of silently reusing the
+    // catalog session and receiving SCOPE_FORBIDDEN.
+    const availabilityClient = inventoryStore;
+    if (!availabilityClient) fail("SEED_SALES_MENU_AVAILABILITY_CLIENT_MISSING");
+    const readAvailabilityTarget = async (definition, targetRef, stage) => {
+      const response = await request(stage, "getOperationsInventoryTarget", {targetRef}, {
+        cookie: availabilityClient.cookie,
+        brandRef: availabilityClient.brandRef,
+        queryParameters: {dataNodeRef: availabilityClient.dataNodeRef},
+      });
+      const target = response.json?.data ?? response.json;
+      if (target?.target?.targetRef !== targetRef
+          || !Number.isInteger(Number(target?.version))
+          || Number(target.version) < 1)
+        fail(`SEED_SALES_MENU_AVAILABILITY_TARGET_READBACK_INVALID:${definition.code}`);
+      return target;
+    };
+    for (const definition of availabilityItems) {
+      const fact = availabilityFacts.get(definition.code);
+      if (!fact) fail(`SEED_SALES_MENU_AVAILABILITY_FACT_MISSING:${definition.code}`);
+      if (definition.expectedTarget === null) {
+        if (fact.targetRef !== null) fail(`SEED_SALES_MENU_AVAILABILITY_NO_TARGET_INVALID:${definition.code}`);
+        phase(`sales-menu-availability-${definition.code}`, "PASS", {
+          itemCode: definition.code,
+          target: null,
+          expectedAvailability: definition.expectedAvailability,
+        });
+        continue;
+      }
+      const targetRef = requiredUuid(fact.targetRef, `SEED_SALES_MENU_AVAILABILITY_TARGET_REF:${definition.code}`);
+      for (let commandIndex = 0; commandIndex < definition.inventoryCommands.length; commandIndex += 1) {
+        const command = definition.inventoryCommands[commandIndex];
+        const commandStage = `sales-menu-availability-${definition.code}-${command.kind.toLowerCase()}-${commandIndex + 1}`;
+        const current = await readAvailabilityTarget(definition, targetRef, `${commandStage}-before`);
+        const configuration = current.configuration;
+        const countingUnitRef = configuration?.countingUnitSnapshot?.unitRef;
+        if (typeof countingUnitRef !== "string" || countingUnitRef.length === 0)
+          fail(`SEED_SALES_MENU_AVAILABILITY_COUNTING_UNIT_INVALID:${definition.code}`);
+        if (command.kind === "CONFIGURE") {
+          await request(commandStage, "updateOperationsInventoryTargetConfiguration", {targetRef}, {
+            cookie: availabilityClient.cookie,
+            brandRef: availabilityClient.brandRef,
+            body: {
+              dataNodeRef: availabilityClient.dataNodeRef,
+              targetRef,
+              expectedVersion: Number(current.version),
+              configuration: {
+                allowNegative: command.allowNegative,
+                lowStockThreshold: command.lowStockThreshold,
+                countingUnitRef,
+                conversionFactor: String(configuration.conversionFactor ?? "1"),
+              },
+            },
+          });
+        } else if (command.kind === "COUNT") {
+          await request(commandStage, "countOperationsInventoryTarget", {targetRef}, {
+            cookie: availabilityClient.cookie,
+            brandRef: availabilityClient.brandRef,
+            body: {
+              dataNodeRef: availabilityClient.dataNodeRef,
+              targetRef,
+              expectedVersion: Number(current.version),
+              countedQuantity: command.quantity,
+              countingUnitRef,
+              note: `销售菜单可用性 ${definition.code}`,
+              zeroConfirmation: command.zeroConfirmation,
+            },
+          });
+        } else if (command.kind === "ADJUST") {
+          await request(commandStage, "adjustOperationsInventoryTarget", {targetRef}, {
+            cookie: availabilityClient.cookie,
+            brandRef: availabilityClient.brandRef,
+            body: {
+              dataNodeRef: availabilityClient.dataNodeRef,
+              targetRef,
+              expectedVersion: Number(current.version),
+              direction: command.direction,
+              quantity: command.quantity,
+              countingUnitRef: null,
+              reasonCode: command.reasonCode,
+              note: `销售菜单可用性 ${definition.code}`,
+            },
+          });
+        } else fail(`SEED_SALES_MENU_AVAILABILITY_COMMAND_INVALID:${definition.code}:${command.kind}`);
+      }
+      const actual = await readAvailabilityTarget(definition, targetRef, `sales-menu-availability-${definition.code}-final`);
+      const expected = definition.expectedTarget;
+      if (String(actual.balance) !== expected.balance
+          || actual.configuration?.allowNegative !== expected.allowNegative
+          || String(actual.configuration?.lowStockThreshold) !== expected.lowStockThreshold)
+        fail(`SEED_SALES_MENU_AVAILABILITY_OWNER_FACT_INVALID:${definition.code}`);
+      phase(`sales-menu-availability-${definition.code}`, "PASS", {
+        itemCode: definition.code,
+        targetRef,
+        expectedAvailability: definition.expectedAvailability,
+        balance: actual.balance,
+        allowNegative: actual.configuration.allowNegative,
+        lowStockThreshold: actual.configuration.lowStockThreshold,
+      });
+    }
+    salesMenuAvailabilityReceipt = availabilityItems.map((definition) => {
+      const fact = availabilityFacts.get(definition.code);
+      return {
+        itemCode: definition.code,
+        catalogItemRef: fact.itemRef,
+        targetPresent: fact.targetRef !== null,
+        expectedAvailability: definition.expectedAvailability,
+      };
+    });
     // The editor's new-BOM-row picker consumes this owner collection directly.
     // Inventory target existence alone is not enough: a target must also carry
     // the catalog-derived component capability, remain enabled, and expose a
@@ -3012,7 +3259,7 @@ async function execute() {
     phase("SEED_BUSINESS", "FAIL", {reason: firstFailure});
     phase("SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", persistentSeedProcess: false, destructiveCleanupOwner: "r5-reset", resetRequiredBeforeRerun: true});
   }
-  const report = {...buildSeedReport({runId, managedDevRunId: manifest.runId, measurement, seedProfile: profile.profile, startedAt, finishedAt: new Date().toISOString(), status: business, businessStatus: business, cleanupStatus: cleanup, calls, events: readManagedDiagnosticEvents(manifest), firstFailure}), schemaVersion: 2, kind: "catalog-inventory-seed-report", profile: profile.profile, planDigest: plan.planDigest, business, cleanup, phases, noDirectDatabaseWrites: true, mediaAssets: plan.mediaPlan.length, sourceItems: plan.sourceItems.length, createdItems: plan.eligibleSourceItems?.length ?? 0, excludedItems: plan.excludedSourceItems ?? []};
+  const report = {...buildSeedReport({runId, managedDevRunId: manifest.runId, measurement, seedProfile: profile.profile, startedAt, finishedAt: new Date().toISOString(), status: business, businessStatus: business, cleanupStatus: cleanup, calls, events: readManagedDiagnosticEvents(manifest), firstFailure}), schemaVersion: 2, kind: "catalog-inventory-seed-report", profile: profile.profile, planDigest: plan.planDigest, business, cleanup, phases, noDirectDatabaseWrites: true, mediaAssets: plan.mediaPlan.length, sourceItems: plan.sourceItems.length, createdItems: plan.eligibleSourceItems?.length ?? 0, excludedItems: plan.excludedSourceItems ?? [], salesMenuAvailabilityReceipt};
   writeSeedReportPair(reportPath, report);
   launcherLog("EXECUTE_FINISHED", {business, firstFailure});
   persist();

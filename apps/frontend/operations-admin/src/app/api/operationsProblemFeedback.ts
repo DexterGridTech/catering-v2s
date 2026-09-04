@@ -21,6 +21,7 @@ export const OPERATIONS_PROBLEM_FEEDBACK: Record<OperationsProblemCode, ProblemF
   BINDING_EDIT_NOT_ALLOWED: {title: '绑定不可编辑', detail: '当前绑定状态不支持手工修改。'},
   BINDING_NOT_EFFECTIVE: {title: '绑定尚未生效', detail: '请完成外部授权后再启用该渠道。'},
   BUSINESS_SCOPE_EXCEEDED: {title: '业务范围不匹配', detail: '当前接入档案不支持该经营渠道业务。'},
+  CONFIRMATION_REQUIRED: {title: '需要确认操作', detail: '请确认当前操作后重试。'},
   CONTRACT_ALREADY_INVALID: {title: '合同已失效', detail: '当前合同已经失效，无需重复操作。'},
   CONTRACT_DATE_RANGE_INVALID: {title: '合同日期有误', detail: '请检查合同生效与失效日期后重试。'},
   CONTRACT_ITEM_CODE_DUPLICATE: {title: '合同项目重复', detail: '请移除重复项目后重试。'},

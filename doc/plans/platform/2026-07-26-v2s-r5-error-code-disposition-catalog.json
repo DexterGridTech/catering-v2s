@@ -187,6 +187,7 @@
     {"code": "SALES_MENU_SECTION_NOT_EMPTY", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "SALES_MENU_MOVE_BOUNDARY", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "SALES_MENU_MANUAL_REASON_REQUIRED", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "CONFIRMATION_REQUIRED", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "SALES_MENU_PUBLICATION_REQUIRED", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "SALES_MENU_RESULT_UNKNOWN", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"}
   ],
@@ -196,11 +197,11 @@
     "heritageSourceCodesOwnedByR3Compatibility": 1,
     "r3SourceCodeCount": 6,
     "r3DispositionCount": 6,
-    "v2sNativeCodeCount": 65,
+    "v2sNativeCodeCount": 66,
     "crossRegistryDuplicateCodeCount": 0,
     "heritageR3ActiveTargetCount": 78,
-    "v2sNativeActiveTargetCount": 65,
-    "totalActiveTargetCount": 143,
+    "v2sNativeActiveTargetCount": 66,
+    "totalActiveTargetCount": 144,
     "allowedDispositions": [
       "RETAIN",
       "RETAIN_R3_WIRE_COMPATIBILITY",

@@ -7,7 +7,13 @@
   "seedRuntimeInput": false,
   "runId": "RUNTIME_ASSIGNED",
   "ownerFacts": {
-    "scope": {"kind": "STORE", "workspaceKey": "l2-sales-menu", "regionName": "L2验证大区", "projectName": "L2验证项目", "storeName": "L2验证门店"},
+    "scope": {
+      "kind": "STORE",
+      "workspaceKey": "l2-sales-menu",
+      "regionName": "L2验证大区",
+      "projectName": "L2验证项目",
+      "storeName": "L2验证门店"
+    },
     "channelPageSize": 20,
     "menuPageSize": 20,
     "candidatePageSize": 20,
@@ -18,97 +24,664 @@
     "expectedCandidateCount": 21,
     "expectedDraftItemCount": 21,
     "expectedOperationRecordCount": 21,
-    "supportedChannelBoundary": {"accessKind": "INTERNAL", "operatorKind": "STORE", "orderKinds": ["DINE_IN", "TAKEAWAY"]},
-    "publicationExcludedFacts": ["publication", "operationRecords", "manualSaleStatus", "inventoryAvailability", "sourceActivation"]
+    "supportedChannelBoundary": {
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKinds": ["DINE_IN", "TAKEAWAY"]
+    },
+    "publicationExcludedFacts": [
+      "publication",
+      "operationRecords",
+      "manualSaleStatus",
+      "inventoryAvailability",
+      "sourceActivation"
+    ]
   },
   "channelFixtures": [
-    {"fixtureId": "CHANNEL-01", "code": "SM-TAKEAWAY-01", "name": "销售外带01", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-02", "code": "SM-TAKEAWAY-02", "name": "销售外带02", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-03", "code": "SM-TAKEAWAY-03", "name": "销售外带03", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-04", "code": "SM-TAKEAWAY-04", "name": "销售外带04", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-05", "code": "SM-TAKEAWAY-05", "name": "销售外带05", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-06", "code": "SM-TAKEAWAY-06", "name": "销售外带06", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-07", "code": "SM-TAKEAWAY-07", "name": "销售外带07", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-08", "code": "SM-TAKEAWAY-08", "name": "销售外带08", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-09", "code": "SM-TAKEAWAY-09", "name": "销售外带09", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-10", "code": "SM-TAKEAWAY-10", "name": "销售外带10", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-11", "code": "SM-TAKEAWAY-11", "name": "销售外带11", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-12", "code": "SM-TAKEAWAY-12", "name": "销售外带12", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-13", "code": "SM-TAKEAWAY-13", "name": "销售外带13", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-14", "code": "SM-TAKEAWAY-14", "name": "销售外带14", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-15", "code": "SM-TAKEAWAY-15", "name": "销售外带15", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-16", "code": "SM-TAKEAWAY-16", "name": "销售外带16", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-17", "code": "SM-TAKEAWAY-17", "name": "销售外带17", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-18", "code": "SM-TAKEAWAY-18", "name": "销售外带18", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-19", "code": "SM-TAKEAWAY-19", "name": "销售外带19", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-20", "code": "SM-TAKEAWAY-20", "name": "销售外带20", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "TAKEAWAY", "status": "ENABLED"},
-    {"fixtureId": "CHANNEL-21", "code": "SM-DINE-IN-21", "name": "销售堂食21", "accessKind": "INTERNAL", "operatorKind": "STORE", "orderKind": "DINE_IN", "dineInForm": "POS", "status": "ENABLED"}
+    {
+      "fixtureId": "CHANNEL-01",
+      "code": "SM-TAKEAWAY-01",
+      "name": "销售外带01",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-02",
+      "code": "SM-TAKEAWAY-02",
+      "name": "销售外带02",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-03",
+      "code": "SM-TAKEAWAY-03",
+      "name": "销售外带03",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-04",
+      "code": "SM-TAKEAWAY-04",
+      "name": "销售外带04",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-05",
+      "code": "SM-TAKEAWAY-05",
+      "name": "销售外带05",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-06",
+      "code": "SM-TAKEAWAY-06",
+      "name": "销售外带06",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-07",
+      "code": "SM-TAKEAWAY-07",
+      "name": "销售外带07",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-08",
+      "code": "SM-TAKEAWAY-08",
+      "name": "销售外带08",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-09",
+      "code": "SM-TAKEAWAY-09",
+      "name": "销售外带09",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-10",
+      "code": "SM-TAKEAWAY-10",
+      "name": "销售外带10",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-11",
+      "code": "SM-TAKEAWAY-11",
+      "name": "销售外带11",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-12",
+      "code": "SM-TAKEAWAY-12",
+      "name": "销售外带12",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-13",
+      "code": "SM-TAKEAWAY-13",
+      "name": "销售外带13",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-14",
+      "code": "SM-TAKEAWAY-14",
+      "name": "销售外带14",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-15",
+      "code": "SM-TAKEAWAY-15",
+      "name": "销售外带15",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-16",
+      "code": "SM-TAKEAWAY-16",
+      "name": "销售外带16",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-17",
+      "code": "SM-TAKEAWAY-17",
+      "name": "销售外带17",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-18",
+      "code": "SM-TAKEAWAY-18",
+      "name": "销售外带18",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-19",
+      "code": "SM-TAKEAWAY-19",
+      "name": "销售外带19",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-20",
+      "code": "SM-TAKEAWAY-20",
+      "name": "销售外带20",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "TAKEAWAY",
+      "status": "ENABLED"
+    },
+    {
+      "fixtureId": "CHANNEL-21",
+      "code": "SM-DINE-IN-21",
+      "name": "销售堂食21",
+      "accessKind": "INTERNAL",
+      "operatorKind": "STORE",
+      "orderKind": "DINE_IN",
+      "dineInForm": "POS",
+      "status": "ENABLED"
+    }
   ],
   "menuFixtures": [
-    {"fixtureId": "MENU-01", "code": "SM-MENU-01", "name": "销售菜单01", "channelFixtureId": "CHANNEL-01", "status": "ENABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-02", "code": "SM-MENU-02", "name": "销售菜单02", "channelFixtureId": "CHANNEL-01", "status": "ENABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-03", "code": "SM-MENU-03", "name": "销售菜单03", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-04", "code": "SM-MENU-04", "name": "销售菜单04", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-05", "code": "SM-MENU-05", "name": "销售菜单05", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-06", "code": "SM-MENU-06", "name": "销售菜单06", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-07", "code": "SM-MENU-07", "name": "销售菜单07", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-08", "code": "SM-MENU-08", "name": "销售菜单08", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-09", "code": "SM-MENU-09", "name": "销售菜单09", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-10", "code": "SM-MENU-10", "name": "销售菜单10", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-11", "code": "SM-MENU-11", "name": "销售菜单11", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-12", "code": "SM-MENU-12", "name": "销售菜单12", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-13", "code": "SM-MENU-13", "name": "销售菜单13", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-14", "code": "SM-MENU-14", "name": "销售菜单14", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-15", "code": "SM-MENU-15", "name": "销售菜单15", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-16", "code": "SM-MENU-16", "name": "销售菜单16", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-17", "code": "SM-MENU-17", "name": "销售菜单17", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-18", "code": "SM-MENU-18", "name": "销售菜单18", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-19", "code": "SM-MENU-19", "name": "销售菜单19", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-20", "code": "SM-MENU-20", "name": "销售菜单20", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}},
-    {"fixtureId": "MENU-21", "code": "SM-MENU-21", "name": "销售菜单21", "channelFixtureId": "CHANNEL-01", "status": "DISABLED", "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}}
+    {
+      "fixtureId": "MENU-01",
+      "code": "SM-MENU-01",
+      "name": "销售菜单01",
+      "channelFixtureId": "CHANNEL-01",
+      "secondaryActiveChannelFixtureId": "CHANNEL-02",
+      "status": "ENABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-02",
+      "code": "SM-MENU-02",
+      "name": "销售菜单02",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "ENABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-03",
+      "code": "SM-MENU-03",
+      "name": "销售菜单03",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-04",
+      "code": "SM-MENU-04",
+      "name": "销售菜单04",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-05",
+      "code": "SM-MENU-05",
+      "name": "销售菜单05",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-06",
+      "code": "SM-MENU-06",
+      "name": "销售菜单06",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-07",
+      "code": "SM-MENU-07",
+      "name": "销售菜单07",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-08",
+      "code": "SM-MENU-08",
+      "name": "销售菜单08",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-09",
+      "code": "SM-MENU-09",
+      "name": "销售菜单09",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-10",
+      "code": "SM-MENU-10",
+      "name": "销售菜单10",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-11",
+      "code": "SM-MENU-11",
+      "name": "销售菜单11",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-12",
+      "code": "SM-MENU-12",
+      "name": "销售菜单12",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-13",
+      "code": "SM-MENU-13",
+      "name": "销售菜单13",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-14",
+      "code": "SM-MENU-14",
+      "name": "销售菜单14",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-15",
+      "code": "SM-MENU-15",
+      "name": "销售菜单15",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-16",
+      "code": "SM-MENU-16",
+      "name": "销售菜单16",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-17",
+      "code": "SM-MENU-17",
+      "name": "销售菜单17",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-18",
+      "code": "SM-MENU-18",
+      "name": "销售菜单18",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-19",
+      "code": "SM-MENU-19",
+      "name": "销售菜单19",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-20",
+      "code": "SM-MENU-20",
+      "name": "销售菜单20",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    },
+    {
+      "fixtureId": "MENU-21",
+      "code": "SM-MENU-21",
+      "name": "销售菜单21",
+      "channelFixtureId": "CHANNEL-01",
+      "status": "DISABLED",
+      "schedule": {"kind": "ALL_DAY", "startLocalTime": null, "endLocalTime": null}
+    }
   ],
   "candidateFixtures": [
-    {"fixtureId": "CANDIDATE-01", "code": "SM-CANDIDATE-01", "name": "菜单候选01", "shape": "ORDINARY", "categoryPath": ["饮品", "咖啡"], "defaultPriceCents": 1200},
-    {"fixtureId": "CANDIDATE-02", "code": "SM-CANDIDATE-02", "name": "菜单候选02", "shape": "ORDINARY", "categoryPath": ["饮品", "茶饮"], "defaultPriceCents": 1300},
-    {"fixtureId": "CANDIDATE-03", "code": "SM-CANDIDATE-03", "name": "菜单候选03", "shape": "SKU", "categoryPath": ["主食", "面食"], "defaultPriceCents": null},
-    {"fixtureId": "CANDIDATE-04", "code": "SM-CANDIDATE-04", "name": "菜单候选04", "shape": "WEIGHTED", "categoryPath": ["熟食", "称重"], "defaultPriceCents": 2500},
-    {"fixtureId": "CANDIDATE-05", "code": "SM-CANDIDATE-05", "name": "菜单候选05", "shape": "COMPOSITE", "categoryPath": ["套餐", "午餐"], "defaultPriceCents": 3600},
-    {"fixtureId": "CANDIDATE-06", "code": "SM-CANDIDATE-06", "name": "菜单候选06", "shape": "SERVICE", "categoryPath": ["服务", "配送"], "defaultPriceCents": 800},
-    {"fixtureId": "CANDIDATE-07", "code": "SM-CANDIDATE-07", "name": "菜单候选07", "shape": "ORDINARY", "categoryPath": ["小食", "甜点"], "defaultPriceCents": 900},
-    {"fixtureId": "CANDIDATE-08", "code": "SM-CANDIDATE-08", "name": "菜单候选08", "shape": "ORDINARY", "categoryPath": ["小食", "炸物"], "defaultPriceCents": 1500},
-    {"fixtureId": "CANDIDATE-09", "code": "SM-CANDIDATE-09", "name": "菜单候选09", "shape": "SKU", "categoryPath": ["主食", "饭类"], "defaultPriceCents": null},
-    {"fixtureId": "CANDIDATE-10", "code": "SM-CANDIDATE-10", "name": "菜单候选10", "shape": "WEIGHTED", "categoryPath": ["熟食", "海鲜"], "defaultPriceCents": 4200},
-    {"fixtureId": "CANDIDATE-11", "code": "SM-CANDIDATE-11", "name": "菜单候选11", "shape": "COMPOSITE", "categoryPath": ["套餐", "家庭"], "defaultPriceCents": 6800},
-    {"fixtureId": "CANDIDATE-12", "code": "SM-CANDIDATE-12", "name": "菜单候选12", "shape": "SERVICE", "categoryPath": ["服务", "包装"], "defaultPriceCents": 500},
-    {"fixtureId": "CANDIDATE-13", "code": "SM-CANDIDATE-13", "name": "菜单候选13", "shape": "ORDINARY", "categoryPath": ["饮品", "果汁"], "defaultPriceCents": 1800},
-    {"fixtureId": "CANDIDATE-14", "code": "SM-CANDIDATE-14", "name": "菜单候选14", "shape": "ORDINARY", "categoryPath": ["饮品", "气泡水"], "defaultPriceCents": 1100},
-    {"fixtureId": "CANDIDATE-15", "code": "SM-CANDIDATE-15", "name": "菜单候选15", "shape": "SKU", "categoryPath": ["主食", "汉堡"], "defaultPriceCents": null},
-    {"fixtureId": "CANDIDATE-16", "code": "SM-CANDIDATE-16", "name": "菜单候选16", "shape": "WEIGHTED", "categoryPath": ["熟食", "肉类"], "defaultPriceCents": 5200},
-    {"fixtureId": "CANDIDATE-17", "code": "SM-CANDIDATE-17", "name": "菜单候选17", "shape": "COMPOSITE", "categoryPath": ["套餐", "双人"], "defaultPriceCents": 8800},
-    {"fixtureId": "CANDIDATE-18", "code": "SM-CANDIDATE-18", "name": "菜单候选18", "shape": "SERVICE", "categoryPath": ["服务", "餐具"], "defaultPriceCents": 300},
-    {"fixtureId": "CANDIDATE-19", "code": "SM-CANDIDATE-19", "name": "菜单候选19", "shape": "ORDINARY", "categoryPath": ["小食", "沙拉"], "defaultPriceCents": 2200},
-    {"fixtureId": "CANDIDATE-20", "code": "SM-CANDIDATE-20", "name": "菜单候选20", "shape": "ORDINARY", "categoryPath": ["小食", "汤品"], "defaultPriceCents": 1700},
-    {"fixtureId": "CANDIDATE-21", "code": "SM-CANDIDATE-21", "name": "菜单候选21", "shape": "ORDINARY", "categoryPath": [], "defaultPriceCents": 1900}
+    {
+      "fixtureId": "CANDIDATE-01",
+      "code": "SM-CANDIDATE-01",
+      "name": "菜单候选01",
+      "shape": "ORDINARY",
+      "categoryPath": ["饮品", "咖啡"],
+      "defaultPriceCents": 1200
+    },
+    {
+      "fixtureId": "CANDIDATE-02",
+      "code": "SM-CANDIDATE-02",
+      "name": "菜单候选02",
+      "shape": "ORDINARY",
+      "categoryPath": ["饮品", "茶饮"],
+      "defaultPriceCents": 1300
+    },
+    {
+      "fixtureId": "CANDIDATE-03",
+      "code": "SM-CANDIDATE-03",
+      "name": "菜单候选03",
+      "shape": "SKU",
+      "categoryPath": ["主食", "面食"],
+      "defaultPriceCents": null
+    },
+    {
+      "fixtureId": "CANDIDATE-04",
+      "code": "SM-CANDIDATE-04",
+      "name": "菜单候选04",
+      "shape": "WEIGHTED",
+      "categoryPath": ["熟食", "称重"],
+      "defaultPriceCents": 2500
+    },
+    {
+      "fixtureId": "CANDIDATE-05",
+      "code": "SM-CANDIDATE-05",
+      "name": "菜单候选05",
+      "shape": "COMPOSITE",
+      "categoryPath": ["套餐", "午餐"],
+      "defaultPriceCents": 3600
+    },
+    {
+      "fixtureId": "CANDIDATE-06",
+      "code": "SM-CANDIDATE-06",
+      "name": "菜单候选06",
+      "shape": "SERVICE",
+      "categoryPath": ["服务", "配送"],
+      "defaultPriceCents": 800
+    },
+    {
+      "fixtureId": "CANDIDATE-07",
+      "code": "SM-CANDIDATE-07",
+      "name": "菜单候选07",
+      "shape": "ORDINARY",
+      "categoryPath": ["小食", "甜点"],
+      "defaultPriceCents": 900
+    },
+    {
+      "fixtureId": "CANDIDATE-08",
+      "code": "SM-CANDIDATE-08",
+      "name": "菜单候选08",
+      "shape": "ORDINARY",
+      "categoryPath": ["小食", "炸物"],
+      "defaultPriceCents": 1500
+    },
+    {
+      "fixtureId": "CANDIDATE-09",
+      "code": "SM-CANDIDATE-09",
+      "name": "菜单候选09",
+      "shape": "SKU",
+      "categoryPath": ["主食", "饭类"],
+      "defaultPriceCents": null
+    },
+    {
+      "fixtureId": "CANDIDATE-10",
+      "code": "SM-CANDIDATE-10",
+      "name": "菜单候选10",
+      "shape": "WEIGHTED",
+      "categoryPath": ["熟食", "海鲜"],
+      "defaultPriceCents": 4200
+    },
+    {
+      "fixtureId": "CANDIDATE-11",
+      "code": "SM-CANDIDATE-11",
+      "name": "菜单候选11",
+      "shape": "COMPOSITE",
+      "categoryPath": ["套餐", "家庭"],
+      "defaultPriceCents": 6800
+    },
+    {
+      "fixtureId": "CANDIDATE-12",
+      "code": "SM-CANDIDATE-12",
+      "name": "菜单候选12",
+      "shape": "SERVICE",
+      "categoryPath": ["服务", "包装"],
+      "defaultPriceCents": 500
+    },
+    {
+      "fixtureId": "CANDIDATE-13",
+      "code": "SM-CANDIDATE-13",
+      "name": "菜单候选13",
+      "shape": "ORDINARY",
+      "categoryPath": ["饮品", "果汁"],
+      "defaultPriceCents": 1800
+    },
+    {
+      "fixtureId": "CANDIDATE-14",
+      "code": "SM-CANDIDATE-14",
+      "name": "菜单候选14",
+      "shape": "ORDINARY",
+      "categoryPath": ["饮品", "气泡水"],
+      "defaultPriceCents": 1100
+    },
+    {
+      "fixtureId": "CANDIDATE-15",
+      "code": "SM-CANDIDATE-15",
+      "name": "菜单候选15",
+      "shape": "SKU",
+      "categoryPath": ["主食", "汉堡"],
+      "defaultPriceCents": null
+    },
+    {
+      "fixtureId": "CANDIDATE-16",
+      "code": "SM-CANDIDATE-16",
+      "name": "菜单候选16",
+      "shape": "WEIGHTED",
+      "categoryPath": ["熟食", "肉类"],
+      "defaultPriceCents": 5200
+    },
+    {
+      "fixtureId": "CANDIDATE-17",
+      "code": "SM-CANDIDATE-17",
+      "name": "菜单候选17",
+      "shape": "COMPOSITE",
+      "categoryPath": ["套餐", "双人"],
+      "defaultPriceCents": 8800
+    },
+    {
+      "fixtureId": "CANDIDATE-18",
+      "code": "SM-CANDIDATE-18",
+      "name": "菜单候选18",
+      "shape": "SERVICE",
+      "categoryPath": ["服务", "餐具"],
+      "defaultPriceCents": 300
+    },
+    {
+      "fixtureId": "CANDIDATE-19",
+      "code": "SM-CANDIDATE-19",
+      "name": "菜单候选19",
+      "shape": "ORDINARY",
+      "categoryPath": ["小食", "沙拉"],
+      "defaultPriceCents": 2200
+    },
+    {
+      "fixtureId": "CANDIDATE-20",
+      "code": "SM-CANDIDATE-20",
+      "name": "菜单候选20",
+      "shape": "ORDINARY",
+      "categoryPath": ["小食", "汤品"],
+      "defaultPriceCents": 1700
+    },
+    {
+      "fixtureId": "CANDIDATE-21",
+      "code": "SM-CANDIDATE-21",
+      "name": "菜单候选21",
+      "shape": "ORDINARY",
+      "categoryPath": [],
+      "defaultPriceCents": 1900
+    }
   ],
   "caseFixtures": {
-    "FIXTURE-SALES-MENU-ENTRY": {"channelFixtureIds": ["CHANNEL-01", "CHANNEL-21"], "menuFixtureIds": ["MENU-01", "MENU-02", "MENU-21"]},
+    "FIXTURE-SALES-MENU-ENTRY": {
+      "channelFixtureIds": ["CHANNEL-01", "CHANNEL-21"],
+      "menuFixtureIds": ["MENU-01", "MENU-02", "MENU-21"]
+    },
     "FIXTURE-SALES-MENU-SECTIONS": {"menuFixtureId": "MENU-02", "sectionCount": 3, "baselineCandidateFixtureIds": []},
-    "FIXTURE-SALES-MENU-SECTION-MOVE-DELETE": {"menuFixtureId": "MENU-09", "sectionCount": 3, "baselineCandidateFixtureIds": []},
-    "FIXTURE-SALES-MENU-SECTION-DELETE-NONEMPTY": {"menuFixtureId": "MENU-10", "sectionCount": 1, "baselineCandidateFixtureIds": ["CANDIDATE-01"]},
-    "FIXTURE-SALES-MENU-CANDIDATES": {"menuFixtureId": "MENU-03", "sectionCount": 1, "baselineCandidateFixtureIds": ["CANDIDATE-01"], "candidateFixtureIds": ["CANDIDATE-01", "CANDIDATE-21"], "duplicateCandidateFixtureId": "CANDIDATE-01"},
-    "FIXTURE-SALES-MENU-DIRECT": {"menuFixtureId": "MENU-04", "sectionCount": 1, "baselineCandidateFixtureIds": ["CANDIDATE-01"], "candidateFixtureId": "CANDIDATE-01", "shape": "ORDINARY"},
-    "FIXTURE-SALES-MENU-SKU": {"menuFixtureId": "MENU-05", "sectionCount": 1, "baselineCandidateFixtureIds": ["CANDIDATE-03"], "candidateFixtureId": "CANDIDATE-03", "shape": "SKU"},
-    "FIXTURE-SALES-MENU-WEIGHTED": {"menuFixtureId": "MENU-06", "sectionCount": 1, "baselineCandidateFixtureIds": ["CANDIDATE-04"], "candidateFixtureId": "CANDIDATE-04", "shape": "WEIGHTED", "unitCode": "L2-KG"},
-    "FIXTURE-SALES-MENU-DRAFT-ORDER": {"menuFixtureId": "MENU-07", "sectionCount": 1, "baselineCandidateFixtureIds": ["CANDIDATE-01", "CANDIDATE-02", "CANDIDATE-03", "CANDIDATE-04", "CANDIDATE-05", "CANDIDATE-06", "CANDIDATE-07", "CANDIDATE-08", "CANDIDATE-09", "CANDIDATE-10", "CANDIDATE-11", "CANDIDATE-12", "CANDIDATE-13", "CANDIDATE-14", "CANDIDATE-15", "CANDIDATE-16", "CANDIDATE-17", "CANDIDATE-18", "CANDIDATE-19", "CANDIDATE-20", "CANDIDATE-21"], "candidateFixtureIds": ["CANDIDATE-01", "CANDIDATE-21"]},
+    "FIXTURE-SALES-MENU-SECTION-MOVE-DELETE": {
+      "menuFixtureId": "MENU-09",
+      "sectionCount": 3,
+      "baselineCandidateFixtureIds": []
+    },
+    "FIXTURE-SALES-MENU-SECTION-DELETE-NONEMPTY": {
+      "menuFixtureId": "MENU-10",
+      "sectionCount": 1,
+      "baselineCandidateFixtureIds": ["CANDIDATE-01"]
+    },
+    "FIXTURE-SALES-MENU-CANDIDATES": {
+      "menuFixtureId": "MENU-03",
+      "sectionCount": 1,
+      "baselineCandidateFixtureIds": ["CANDIDATE-01"],
+      "candidateFixtureIds": ["CANDIDATE-01", "CANDIDATE-21"],
+      "duplicateCandidateFixtureId": "CANDIDATE-01"
+    },
+    "FIXTURE-SALES-MENU-DIRECT": {
+      "menuFixtureId": "MENU-04",
+      "sectionCount": 1,
+      "baselineCandidateFixtureIds": ["CANDIDATE-01"],
+      "candidateFixtureId": "CANDIDATE-01",
+      "shape": "ORDINARY"
+    },
+    "FIXTURE-SALES-MENU-SKU": {
+      "menuFixtureId": "MENU-05",
+      "sectionCount": 1,
+      "baselineCandidateFixtureIds": ["CANDIDATE-03"],
+      "candidateFixtureId": "CANDIDATE-03",
+      "shape": "SKU"
+    },
+    "FIXTURE-SALES-MENU-WEIGHTED": {
+      "menuFixtureId": "MENU-06",
+      "sectionCount": 1,
+      "baselineCandidateFixtureIds": ["CANDIDATE-04"],
+      "candidateFixtureId": "CANDIDATE-04",
+      "shape": "WEIGHTED",
+      "unitCode": "L2-KG"
+    },
+    "FIXTURE-SALES-MENU-DRAFT-ORDER": {
+      "menuFixtureId": "MENU-07",
+      "sectionCount": 1,
+      "baselineCandidateFixtureIds": [
+        "CANDIDATE-01",
+        "CANDIDATE-02",
+        "CANDIDATE-03",
+        "CANDIDATE-04",
+        "CANDIDATE-05",
+        "CANDIDATE-06",
+        "CANDIDATE-07",
+        "CANDIDATE-08",
+        "CANDIDATE-09",
+        "CANDIDATE-10",
+        "CANDIDATE-11",
+        "CANDIDATE-12",
+        "CANDIDATE-13",
+        "CANDIDATE-14",
+        "CANDIDATE-15",
+        "CANDIDATE-16",
+        "CANDIDATE-17",
+        "CANDIDATE-18",
+        "CANDIDATE-19",
+        "CANDIDATE-20",
+        "CANDIDATE-21"
+      ],
+      "candidateFixtureIds": ["CANDIDATE-01", "CANDIDATE-21"]
+    },
     "FIXTURE-SALES-MENU-PUBLISH": {"menuFixtureId": "MENU-01", "publicationRequired": true},
     "FIXTURE-SALES-MENU-FRONT": {"menuFixtureId": "MENU-01", "publicationRequired": true},
-    "FIXTURE-SALES-MENU-MANUAL-STATUS": {"menuFixtureId": "MENU-01", "targetChannelFixtureId": "CHANNEL-01", "unchangedChannelFixtureId": "CHANNEL-21"},
+    "FIXTURE-SALES-MENU-MANUAL-STATUS": {
+      "menuFixtureId": "MENU-01",
+      "targetChannelFixtureId": "CHANNEL-01",
+      "unchangedChannelFixtureId": "CHANNEL-21"
+    },
     "FIXTURE-SALES-MENU-MANAGER": {"menuFixtureIds": ["MENU-01", "MENU-02", "MENU-21"]},
-    "FIXTURE-SALES-MENU-COPY": {"menuFixtureId": "MENU-01", "excludedFacts": ["publication", "operationRecords", "manualSaleStatus", "inventoryAvailability", "sourceActivation"]},
-    "FIXTURE-SALES-MENU-BLOCKERS": {"menuFixtureId": "MENU-08", "channelFixtureId": "CHANNEL-01", "blockerChannelFixtureId": "CHANNEL-21", "sectionCount": 1, "baselineCandidateFixtureIds": [], "expectedBlockerKinds": ["CHANNEL_DISABLED"], "storeDisabledCoverage": "BACKEND_ACCEPTANCE_ONLY"},
+    "FIXTURE-SALES-MENU-COPY": {
+      "menuFixtureId": "MENU-01",
+      "excludedFacts": [
+        "publication",
+        "operationRecords",
+        "manualSaleStatus",
+        "inventoryAvailability",
+        "sourceActivation"
+      ]
+    },
+    "FIXTURE-SALES-MENU-BLOCKERS": {
+      "menuFixtureId": "MENU-08",
+      "channelFixtureId": "CHANNEL-01",
+      "blockerChannelFixtureId": "CHANNEL-21",
+      "sectionCount": 1,
+      "baselineCandidateFixtureIds": [],
+      "expectedBlockerKinds": ["CHANNEL_DISABLED"],
+      "storeDisabledCoverage": "BACKEND_ACCEPTANCE_ONLY"
+    },
     "FIXTURE-SALES-MENU-RECORDS": {"menuFixtureId": "MENU-01", "minimumRecordCount": 21},
-    "FIXTURE-SALES-MENU-FAILURE-RECOVERY": {"menuFixtureId": "MENU-01", "failureSeam": "PLAYWRIGHT_ROUTE_INTERCEPT", "expectedUnchanged": true},
-    "FIXTURE-SALES-MENU-AUTH": {"menuFixtureId": "MENU-01", "foreignProjectChannelFixtureId": "AUTH-FOREIGN-PROJECT-CHANNEL", "foreignStoreChannelFixtureId": "AUTH-FOREIGN-STORE-CHANNEL", "requiresCapability": "EDIT_STORE_SALES_MENU"}
+    "FIXTURE-SALES-MENU-FAILURE-RECOVERY": {
+      "menuFixtureId": "MENU-01",
+      "failureSeam": "PLAYWRIGHT_ROUTE_INTERCEPT",
+      "expectedUnchanged": true
+    },
+    "FIXTURE-SALES-MENU-AUTH": {
+      "menuFixtureId": "MENU-01",
+      "foreignProjectChannelFixtureId": "AUTH-FOREIGN-PROJECT-CHANNEL",
+      "foreignStoreChannelFixtureId": "AUTH-FOREIGN-STORE-CHANNEL",
+      "requiresCapability": "EDIT_STORE_SALES_MENU"
+    }
   },
   "business": {"status": "PENDING_RUNTIME"},
   "cleanup": {"status": "PENDING_RUNTIME"}

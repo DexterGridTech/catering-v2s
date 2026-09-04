@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/ui-integration-sample-console",
+  "owned": {
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/ui-integration-sample-console",
+      "runner": "vitest"
+    },
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  }
+}

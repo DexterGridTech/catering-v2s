@@ -1,21 +1,46 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {COMPLETE_SEED_STAGE_IDS, completeSeedMarkdownPath, renderCompleteSeedMarkdown, validateCompleteSeedEvidence} from "./r5-complete-seed-executor.mjs";
+import {availabilityContractDigest, availabilityContractFactsFromPlan} from "./catalog-availability-receipt.mjs";
 
 const devRunId = "dev-run-1";
+const availabilityItems = () => [
+  ["R5-SALES-AVAIL-NO-TARGET-001", null, "NOT_APPLICABLE", null, null],
+  ["R5-SALES-AVAIL-NORMAL-001", {balance: "1", allowNegative: false, lowStockThreshold: "0"}, "APPLICABLE", "AVAILABLE", null],
+  ["R5-SALES-AVAIL-LOW-001", {balance: "1", allowNegative: false, lowStockThreshold: "2"}, "APPLICABLE", "AVAILABLE", null],
+  ["R5-SALES-AVAIL-OUT-001", {balance: "0", allowNegative: false, lowStockThreshold: "0"}, "APPLICABLE", "AUTO_UNAVAILABLE", "OUT_OF_STOCK"],
+  ["R5-SALES-AVAIL-NEGATIVE-ALLOWED-001", {balance: "-1", allowNegative: true, lowStockThreshold: "0"}, "APPLICABLE", "AVAILABLE", null],
+  ["R5-SALES-AVAIL-NEGATIVE-DISALLOWED-001", {balance: "-1", allowNegative: false, lowStockThreshold: "0"}, "APPLICABLE", "AUTO_UNAVAILABLE", "NEGATIVE_NOT_ALLOWED"],
+].map(([code, expectedTarget, applicability, state, reason]) => ({code, expectedTarget, expectedAvailability: {applicability, state, reason}, inventoryCommands: []}));
+const availabilityReceipt = () => availabilityItems().map((item, index) => ({
+  itemCode: item.code,
+  catalogItemRef: `catalog-item-ref-${index + 1}`,
+  targetPresent: item.expectedTarget !== null,
+  expectedAvailability: item.expectedAvailability,
+}));
 const valid = () => [{
   id: "owner-command", exitStatus: 0,
   manifest: {managedDevRunId: devRunId, business: "PASS", cleanup: "PASS_NO_PERSISTENT_SEED_PROCESS"},
   report: {managedDevRunId: devRunId, status: "PASS", business: "PASS"},
 }, {
+  id: "external-collaboration-business-channel", exitStatus: 0,
+  manifest: {managedDevRunId: devRunId, business: "PASS", cleanup: "PASS_PRESERVED_DEV_STATE"},
+  report: {managedDevRunId: devRunId, status: "PASS", business: "PASS"},
+}, {
   id: "catalog-inventory", exitStatus: 0,
   manifest: {managedDevRunId: devRunId, business: "PASS", cleanup: "PASS_PRESERVED_DEV_STATE"},
-  report: {managedDevRunId: devRunId, status: "PASS", business: "PASS", sourceItems: 73, createdItems: 72, excludedItems: [{}]},
-  plan: {status: "PASS", sourceItems: Array(73).fill({}), eligibleSourceItems: Array(72).fill({}), excludedSourceItems: [{}]},
+  reportPath: "/runtime/r5/catalog-inventory/seed-report.json",
+  availabilityReceiptSha256: "0".repeat(64),
+  report: {managedDevRunId: devRunId, status: "PASS", business: "PASS", sourceItems: 73, createdItems: 72, excludedItems: [{}], salesMenuAvailabilityReceipt: availabilityReceipt()},
+  plan: {status: "PASS", sourceItems: Array(73).fill({}), eligibleSourceItems: Array(72).fill({}), excludedSourceItems: [{}], salesMenuAvailability: {items: availabilityItems()}},
+}, {
+  id: "sales-menu", exitStatus: 0,
+  manifest: {managedDevRunId: devRunId, business: "PASS", cleanup: "PASS_PRESERVED_DEV_STATE"},
+  report: {managedDevRunId: devRunId, status: "PASS", business: "PASS", catalogAvailabilityReceiptPath: "/runtime/r5/catalog-inventory/seed-report.json", catalogAvailabilityItemCount: 6, catalogAvailabilityReceiptDigest: "0".repeat(64), catalogAvailabilityContractDigest: availabilityContractDigest(availabilityContractFactsFromPlan({salesMenuAvailability: {items: availabilityItems()}}))},
 }];
 
 test("complete r5 seed accepts exactly the ordered owner then catalog receipts", () => {
-  assert.deepEqual(validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: valid()}), {managedDevRunId: devRunId, sourceItems: 73, eligibleItems: 72, excludedItems: 1, stageIds: [...COMPLETE_SEED_STAGE_IDS]});
+  assert.deepEqual(validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: valid()}), {managedDevRunId: devRunId, sourceItems: 73, eligibleItems: 72, excludedItems: 1, availabilityItemCount: 6, stageIds: [...COMPLETE_SEED_STAGE_IDS]});
 });
 
 test("complete r5 seed exposes the paired human report beside the machine report", () => {
@@ -26,17 +51,29 @@ test("complete r5 seed rejects absent, reordered, cross-run, or non-pass compone
   assert.throws(() => validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: valid().slice(1)}), /COMPLETE_SEED_STAGE_DENOMINATOR_INVALID/);
   const reordered = valid().reverse();
   assert.throws(() => validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: reordered}), /COMPLETE_SEED_STAGE_ORDER_INVALID/);
-  const crossRun = valid(); crossRun[1].report.managedDevRunId = "different";
+  const crossRun = valid(); crossRun[2].report.managedDevRunId = "different";
   assert.throws(() => validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: crossRun}), /COMPLETE_SEED_MANAGED_RUN_MISMATCH:catalog-inventory/);
-  const catalogFailed = valid(); catalogFailed[1].manifest.business = "FAIL";
+  const catalogFailed = valid(); catalogFailed[2].manifest.business = "FAIL";
   assert.throws(() => validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: catalogFailed}), /COMPLETE_SEED_MANIFEST_NOT_PASS:catalog-inventory/);
 });
 
-test("complete r5 seed rejects catalog denominator or readback drift", () => {
-  const zeroCreated = valid(); zeroCreated[1].plan.eligibleSourceItems = [];
+test("complete r5 seed rejects catalog denominator, exact availability contract, or readback drift", () => {
+  const zeroCreated = valid(); zeroCreated[2].plan.eligibleSourceItems = [];
   assert.throws(() => validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: zeroCreated}), /COMPLETE_SEED_CATALOG_DENOMINATOR_INVALID/);
-  const mismatch = valid(); mismatch[1].report.createdItems = 71;
+  const mismatch = valid(); mismatch[2].report.createdItems = 71;
   assert.throws(() => validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: mismatch}), /COMPLETE_SEED_CATALOG_READBACK_INVALID/);
+  const receiptMismatch = valid(); receiptMismatch[2].report.salesMenuAvailabilityReceipt.pop();
+  assert.throws(() => validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: receiptMismatch}), /COMPLETE_SEED_CATALOG_AVAILABILITY_RECEIPT_INVALID/);
+  for (const mutate of [
+    (rows) => { rows[0].itemCode = "R5-SALES-AVAIL-WRONG-001"; },
+    (rows) => { rows.reverse(); },
+    (rows) => { rows[0].targetPresent = true; },
+    (rows) => { rows[3].expectedAvailability.reason = null; },
+    (rows) => { rows[5].expectedAvailability = {applicability: "APPLICABLE", state: "AVAILABLE", reason: null}; },
+  ]) {
+    const drift = valid(); mutate(drift[2].report.salesMenuAvailabilityReceipt);
+    assert.throws(() => validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: drift}), /COMPLETE_SEED_CATALOG_AVAILABILITY_RECEIPT_INVALID/);
+  }
 });
 
 test("complete r5 seed markdown includes child endpoint metrics and catalog fixture totals", () => {

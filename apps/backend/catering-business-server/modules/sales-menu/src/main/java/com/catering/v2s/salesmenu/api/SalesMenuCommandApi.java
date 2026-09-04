@@ -288,12 +288,20 @@ public interface SalesMenuCommandApi {
             Objects.requireNonNull(context, "context");
             Objects.requireNonNull(channelRef, "channelRef");
             Objects.requireNonNull(salesItemRef, "salesItemRef");
-            reason = required(reason);
+            reason = requiredManualReason(reason);
         }
 
         public SalesMenuOwnerApi.ManualSoldOutCommand ownerCommand() {
             return new SalesMenuOwnerApi.ManualSoldOutCommand(
                     context.ownerContext(), channelRef, salesItemRef, reason, expectedVersion);
+        }
+
+        private static String requiredManualReason(String value) {
+            String normalized = Objects.requireNonNullElse(value, "").trim();
+            if (normalized.isEmpty() || normalized.length() > 240) {
+                throw new IllegalArgumentException("manual sale reason is invalid");
+            }
+            return normalized;
         }
     }
 

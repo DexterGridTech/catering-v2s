@@ -184,6 +184,15 @@ final class SalesMenuEdgeSupport {
         return value;
     }
 
+    String requiredManualReason(String value) {
+        String normalized = value == null ? "" : value.trim();
+        if (normalized.isEmpty() || normalized.length() > 240) {
+            String message = "人工沽清原因不能为空且不能超过 240 个字符";
+            throw problem("SALES_MENU_MANUAL_REASON_REQUIRED", message);
+        }
+        return normalized;
+    }
+
     String boundedText(String value, String field, int maxLength) {
         String normalized = requiredText(value, field).trim();
         if (normalized.length() > maxLength) throw new InvalidEdgeRequestException(field + " is invalid");

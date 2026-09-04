@@ -108,7 +108,7 @@
 
 长任务不能把所有代码写完才第一次做代码—详设对账。主 agent 保持唯一实施责任：设计、写代码、跑该步骤 focused proof、按 RECALL 自己回读；但当前步骤结束后、下一步骤开始前，必须由 fresh 独立子 agent 完成步骤级证伪对账。其动作与输出唯一正本是 `doc/platform/review-standard.md` 的“实施步骤级独立对账”。
 
-这不是把实施拆给子 agent，也不是提前做整批 verdict：子 agent 不改实现，只判当前步骤的 `MATCHED / OPEN`；主 agent 修复 `OPEN` 后再由另一 fresh 子 agent 复查。最终整批 `REVIEW_TARGET=IMPLEMENTATION` 仍按既有正式流程单独进行。这样既保留主 agent 对完整上下文和实现闭包的责任，也防止作者把局部偏移带入后续步骤、直到动态测试才集中暴露。
+这不是把实施拆给子 agent，也不是提前做整批 verdict：主 agent 是唯一编码与文件写入者；子 agent 不修改任何文件，只判当前步骤的 `MATCHED / OPEN`；主 agent 修复 `OPEN` 后再由另一 fresh 子 agent 复查。最终整批 `REVIEW_TARGET=IMPLEMENTATION` 仍按既有正式流程单独进行。这样既保留主 agent 对完整上下文和实现闭包的责任，也防止作者把局部偏移带入后续步骤、直到动态测试才集中暴露。
 
 ---
 

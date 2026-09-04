@@ -20,9 +20,13 @@ function inventoryUnitText(snapshot: InventoryUnitSnapshot) {
 type ScopeFacts = {
   kind: 'STORE' | 'HEAD_COMPANY';
   regionName?: string;
+  regionRef?: string;
   projectName?: string;
+  projectRef?: string;
   storeName?: string;
+  storeRef?: string;
   headCompanyName?: string;
+  headCompanyRef?: string;
 };
 type OwnerReadbackProtocol = {
   mode: string;
@@ -1110,13 +1114,19 @@ async function signIn(page: Page, principal: OperationsPrincipal = storePrincipa
 async function selectOwnerScope(page: Page, facts: OwnerCase): Promise<void> {
   if (!facts.scope) throw new Error('CATALOG_INVENTORY_L2_SCOPE_FACT_REQUIRED');
   if (facts.scope.kind === 'HEAD_COMPANY') {
-    await selectOperationsDataScope(page, 'HEAD_COMPANY', {headCompanyName: facts.scope.headCompanyName});
+    await selectOperationsDataScope(page, 'HEAD_COMPANY', {
+      headCompanyName: facts.scope.headCompanyName,
+      headCompanyRef: facts.scope.headCompanyRef,
+    });
     return;
   }
   await selectOperationsDataScope(page, 'STORE', {
     regionName: facts.scope.regionName,
+    regionRef: facts.scope.regionRef,
     projectName: facts.scope.projectName,
+    projectRef: facts.scope.projectRef,
     storeName: facts.scope.storeName,
+    storeRef: facts.scope.storeRef,
   });
 }
 

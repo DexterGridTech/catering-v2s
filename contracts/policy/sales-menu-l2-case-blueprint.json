@@ -20,10 +20,89 @@
   },
   "bindings": {
     "controls": {
-      "STORE_SCOPE": {
+      "STORE_SCOPE_TRIGGER": {
         "testId": "operations-data-scope-trigger",
-        "interaction": "scope",
-        "confirmTestId": "operations-data-scope-confirm",
+        "interaction": "scope-trigger",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+        ]
+      },
+      "STORE_SCOPE_HEAD_COMPANY_SELECTOR": {
+        "testId": "operations-data-scope-head-company",
+        "interaction": "scope-selector",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+        ]
+      },
+      "STORE_SCOPE_HEAD_COMPANY_OPTION": {
+        "testIdTemplate": "operations-data-scope-option-head_company-${headCompanyRef}",
+        "interaction": "scope-option",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+        ]
+      },
+      "STORE_SCOPE_REGION_SELECTOR": {
+        "testId": "operations-data-scope-region",
+        "interaction": "scope-selector",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+        ]
+      },
+      "STORE_SCOPE_REGION_OPTION": {
+        "testIdTemplate": "operations-data-scope-option-region-${regionRef}",
+        "interaction": "scope-option",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+        ]
+      },
+      "STORE_SCOPE_PROJECT_SELECTOR": {
+        "testId": "operations-data-scope-project",
+        "interaction": "scope-selector",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+        ]
+      },
+      "STORE_SCOPE_PROJECT_OPTION": {
+        "testIdTemplate": "operations-data-scope-option-project-${projectRef}",
+        "interaction": "scope-option",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+        ]
+      },
+      "STORE_SCOPE_STORE_SELECTOR": {
+        "testId": "operations-data-scope-store",
+        "interaction": "scope-selector",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+        ]
+      },
+      "STORE_SCOPE_STORE_OPTION": {
+        "testIdTemplate": "operations-data-scope-option-store-${storeRef}",
+        "interaction": "scope-option",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+        ]
+      },
+      "STORE_SCOPE_CANCEL": {
+        "testId": "operations-data-scope-cancel",
+        "interaction": "scope-cancel",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+          "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+        ]
+      },
+      "STORE_SCOPE_CONFIRM": {
+        "testId": "operations-data-scope-confirm",
+        "interaction": "scope-confirm",
         "sourceFiles": [
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
@@ -47,7 +126,13 @@
       },
       "SALES_MENU_MODE": {
         "testIdTemplate": "sales-menu-mode-${mode}",
-        "sourceFiles": ["apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"]
+        "interaction": "COMPOSITE_OPTION_ANCHOR",
+        "actualActionNode": "VISIBLE_SEGMENTED_OPTION_LABEL",
+        "focusedStaticProof": "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.static.test.ts",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+          "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
+        ]
       },
       "SALES_MENU_MENU_SCHEDULE": {
         "testId": "sales-menu-menu-schedule",
@@ -106,8 +191,15 @@
         ]
       },
       "SALES_MENU_SELECTOR": {
-        "testId": "sales-menu-selector",
-        "sourceFiles": ["apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"]
+        "testId": "sales-menu-selector-input",
+        "optionTestIdTemplate": "sales-menu-option-${menuRef}",
+        "interaction": "NATIVE_INPUT_AND_OPTION_ROOT",
+        "actualActionNode": "NATIVE_SELECT_INPUT_AND_OPTION_ROOT",
+        "focusedStaticProof": "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.static.test.ts",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+          "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
+        ]
       },
       "SALES_MENU_SELECTOR_PAGINATION": {
         "testIdPrefix": "sales-menu-selector-pagination",
@@ -433,7 +525,12 @@
         "sales-menu.collection-lifecycle-and-multi-activation",
         "sales-menu.copy-current-draft-boundary"
       ],
-      "l2Cases": ["sales-menu-menu-management-and-multi-active", "sales-menu-copy-boundary"]
+      "l2Cases": [
+        "sales-menu-entry-and-channels",
+        "sales-menu-menu-management-and-multi-active",
+        "sales-menu-copy-boundary",
+        "sales-menu-auth-and-scope-isolation"
+      ]
     },
     {
       "operationId": "getOperationsSalesMenuDraftSections",
@@ -442,7 +539,8 @@
         "sales-menu-section-actions",
         "sales-menu-section-move-and-delete",
         "sales-menu-section-delete-non-empty",
-        "sales-menu-draft-order-and-pagination"
+        "sales-menu-draft-order-and-pagination",
+        "sales-menu-auth-and-scope-isolation"
       ]
     },
     {
@@ -475,12 +573,12 @@
         "sales-menu.inventory-availability-matrix",
         "sales-menu.manual-sale-status-and-restore"
       ],
-      "l2Cases": ["sales-menu-front-status-and-pagination"]
+      "l2Cases": ["sales-menu-publish-and-front-structure", "sales-menu-front-status-and-pagination"]
     },
     {
       "operationId": "getOperationsSalesMenuPublishedItem",
       "acceptanceScenarios": ["sales-menu.inventory-availability-matrix", "sales-menu.manual-sale-status-and-restore"],
-      "l2Cases": ["sales-menu-front-status-and-pagination", "sales-menu-manual-sold-out-and-restore"]
+      "l2Cases": ["sales-menu-publish-and-front-structure", "sales-menu-front-status-and-pagination"]
     },
     {
       "operationId": "getOperationsSalesMenuItemCandidates",
@@ -495,7 +593,7 @@
     {
       "operationId": "getOperationsSalesMenuOperationRecords",
       "acceptanceScenarios": ["sales-menu.operation-record-cursor"],
-      "l2Cases": ["sales-menu-operation-records"]
+      "l2Cases": ["sales-menu-manual-sold-out-and-restore", "sales-menu-operation-records"]
     },
     {
       "operationId": "createOperationsSalesMenu",
@@ -504,7 +602,7 @@
         "sales-menu.collection-lifecycle-and-multi-activation",
         "sales-menu.command-idempotency-and-cas"
       ],
-      "l2Cases": ["sales-menu-menu-management-and-multi-active", "sales-menu-auth-and-scope-isolation"]
+      "l2Cases": ["sales-menu-menu-management-and-multi-active"]
     },
     {
       "operationId": "copyOperationsSalesMenu",
@@ -535,7 +633,7 @@
         "sales-menu.collection-lifecycle-and-multi-activation",
         "sales-menu.copy-current-draft-boundary"
       ],
-      "l2Cases": ["sales-menu-menu-management-and-multi-active", "sales-menu-copy-boundary"]
+      "l2Cases": ["sales-menu-menu-management-and-multi-active"]
     },
     {
       "operationId": "createOperationsSalesMenuSection",
@@ -550,12 +648,12 @@
     {
       "operationId": "deleteOperationsSalesMenuSection",
       "acceptanceScenarios": ["sales-menu.ordered-sections-and-items"],
-      "l2Cases": ["sales-menu-section-delete-non-empty", "sales-menu-failure-recovery-and-focus"]
+      "l2Cases": ["sales-menu-section-move-and-delete", "sales-menu-section-delete-non-empty"]
     },
     {
       "operationId": "moveOperationsSalesMenuSection",
       "acceptanceScenarios": ["sales-menu.ordered-sections-and-items"],
-      "l2Cases": ["sales-menu-section-move-and-delete", "sales-menu-failure-recovery-and-focus"]
+      "l2Cases": ["sales-menu-section-move-and-delete"]
     },
     {
       "operationId": "addOperationsSalesMenuItems",
@@ -583,7 +681,7 @@
     {
       "operationId": "deleteOperationsSalesMenuItem",
       "acceptanceScenarios": ["sales-menu.ordered-sections-and-items"],
-      "l2Cases": ["sales-menu-edit-direct-item-and-media", "sales-menu-draft-order-and-pagination"]
+      "l2Cases": ["sales-menu-edit-direct-item-and-media"]
     },
     {
       "operationId": "moveOperationsSalesMenuItem",
@@ -630,7 +728,7 @@
           "fixtureRef": "FIXTURE-SALES-MENU-ENTRY",
           "journey": "门店销售菜单入口",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARDS",
             "SALES_MENU_CHANNEL_CARD",
@@ -682,11 +780,10 @@
           "fixtureRef": "FIXTURE-SALES-MENU-SECTIONS",
           "journey": "销售分区维护",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_SECTION",
@@ -694,8 +791,7 @@
             "SALES_MENU_SECTION_MENU_ACTION",
             "SALES_MENU_SECTION_CREATE",
             "SALES_MENU_SECTION_NAME",
-            "SALES_MENU_SECTION_SAVE",
-            "SALES_MENU_CONFIRMATION_SUBMIT"
+            "SALES_MENU_SECTION_SAVE"
           ],
           "steps": ["打开草稿菜单", "确认分区名称与数量", "通过分区菜单新建并重命名", "读取新分区的权威名称"],
           "businessOracle": [
@@ -745,11 +841,10 @@
           "fixtureRef": "FIXTURE-SALES-MENU-SECTION-MOVE-DELETE",
           "journey": "销售分区移动与空分区删除",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_SECTION",
@@ -806,14 +901,14 @@
           "fixtureRef": "FIXTURE-SALES-MENU-SECTION-DELETE-NONEMPTY",
           "journey": "销售分区非空删除拒绝",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_SECTION",
+            "SALES_MENU_ITEM_TABLE",
             "SALES_MENU_SECTION_ACTION",
             "SALES_MENU_SECTION_MENU_ACTION",
             "SALES_MENU_CONFIRMATION_SUBMIT"
@@ -840,7 +935,7 @@
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenu", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 2},
-                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 2},
+                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 3},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
               ]
@@ -859,11 +954,10 @@
           "fixtureRef": "FIXTURE-SALES-MENU-CANDIDATES",
           "journey": "销售项候选选择",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_SECTION",
@@ -933,11 +1027,10 @@
           "fixtureRef": "FIXTURE-SALES-MENU-DIRECT",
           "journey": "普通销售项与图片",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_SECTION",
@@ -1004,7 +1097,7 @@
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenu", "maxRequestCount": 5},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 5},
-                {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 5},
                 {"operationId": "getPublicAssetContent", "maxRequestCount": 5},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
@@ -1025,11 +1118,10 @@
           "fixtureRef": "FIXTURE-SALES-MENU-SKU",
           "journey": "SKU销售定义",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_SECTION",
@@ -1061,8 +1153,8 @@
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenu", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 3},
-                {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 2},
-                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 2},
+                {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 3},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
               ]
@@ -1081,11 +1173,10 @@
           "fixtureRef": "FIXTURE-SALES-MENU-WEIGHTED",
           "journey": "加权销售定义",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_SECTION",
@@ -1117,8 +1208,8 @@
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenu", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 3},
-                {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 2},
-                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 2},
+                {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 3},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
               ]
@@ -1137,16 +1228,14 @@
           "fixtureRef": "FIXTURE-SALES-MENU-DRAFT-ORDER",
           "journey": "草稿顺序与分页",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_ITEM_TABLE",
-            "SALES_MENU_ITEM",
             "SALES_MENU_ITEM_ACTION",
             "SALES_MENU_ITEM_MENU_ACTION",
             "SALES_MENU_DRAFT_PAGINATION"
@@ -1179,7 +1268,7 @@
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenu", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 3},
-                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 2},
+                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
               ]
@@ -1198,11 +1287,10 @@
           "fixtureRef": "FIXTURE-SALES-MENU-PUBLISH",
           "journey": "菜单发布与前台结构",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_SECTION",
@@ -1210,7 +1298,6 @@
             "SALES_MENU_PUBLISH_DRAWER",
             "SALES_MENU_PUBLISH_SUBMIT",
             "SALES_MENU_ITEM_TABLE",
-            "SALES_MENU_PUBLISHED_PAGINATION",
             "SALES_MENU_ITEM",
             "SALES_MENU_ITEM_DETAIL"
           ],
@@ -1270,11 +1357,10 @@
           "fixtureRef": "FIXTURE-SALES-MENU-FRONT",
           "journey": "前台状态与分页",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_SECTION",
@@ -1328,16 +1414,14 @@
           "fixtureRef": "FIXTURE-SALES-MENU-MANUAL-STATUS",
           "journey": "人工销售状态",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_SECTION",
             "SALES_MENU_ITEM_TABLE",
-            "SALES_MENU_ITEM",
             "SALES_MENU_ITEM_STATUS_ACTION",
             "SALES_MENU_ITEM_STATUS_CHOICE",
             "SALES_MENU_ITEM_STATUS_REASON",
@@ -1401,10 +1485,9 @@
           "fixtureRef": "FIXTURE-SALES-MENU-MANAGER",
           "journey": "菜单管理与多菜单启停",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_MENU_SCHEDULE",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SELECTOR_PAGINATION",
@@ -1492,11 +1575,10 @@
           "fixtureRef": "FIXTURE-SALES-MENU-COPY",
           "journey": "菜单复制边界",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_SECTION",
@@ -1550,11 +1632,10 @@
           "fixtureRef": "FIXTURE-SALES-MENU-BLOCKERS",
           "journey": "发布阻断",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_SECTION",
@@ -1563,7 +1644,6 @@
             "SALES_MENU_PUBLISH_SUBMIT",
             "SALES_MENU_MANAGER_OPEN",
             "SALES_MENU_MANAGER",
-            "SALES_MENU_MANAGER_PAGINATION",
             "SALES_MENU_MANAGER_ACTION",
             "SALES_MENU_ITEM_TABLE"
           ],
@@ -1613,7 +1693,7 @@
           "fixtureRef": "FIXTURE-SALES-MENU-RECORDS",
           "journey": "销售菜单操作记录",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
@@ -1663,11 +1743,10 @@
           "fixtureRef": "FIXTURE-SALES-MENU-FAILURE-RECOVERY",
           "journey": "失败恢复与焦点",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_MODE",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_SECTION",
@@ -1757,16 +1836,14 @@
           "fixtureRef": "FIXTURE-SALES-MENU-AUTH",
           "journey": "销售菜单权限与范围隔离",
           "controlKeys": [
-            "STORE_SCOPE",
+            "STORE_SCOPE_TRIGGER",
             "SALES_MENU_PAGE",
             "SALES_MENU_CHANNEL_CARDS",
             "SALES_MENU_CHANNEL_CARD",
-            "SALES_MENU_CHANNEL_PAGINATION",
             "SALES_MENU_SELECTOR",
             "SALES_MENU_SECTION_LIST",
             "SALES_MENU_MANAGER",
             "SALES_MENU_MANAGER_OPEN",
-            "SALES_MENU_MANAGER_PAGINATION",
             "SALES_MENU_MANAGER_ACTION",
             "SALES_MENU_MENU_SCHEDULE",
             "SALES_MENU_MENU_PUBLISH",

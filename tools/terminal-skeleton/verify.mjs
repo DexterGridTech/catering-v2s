@@ -287,7 +287,7 @@ function main() {
   } catch (error) {
     fail('test-markers', error instanceof Error ? error.message : String(error));
   }
-  const assemblyDirectory = path.join(repoRoot, 'apps/terminal/assembly/android/pos-desktop');
+  const assemblyDirectory = path.join(repoRoot, 'apps/terminal/assembly/android/sample-terminal');
   const exportArtifacts = exportArtifactPaths(assemblyDirectory);
   const preexistingArtifacts = exportArtifacts.filter(artifactPath => fs.existsSync(artifactPath));
   if (preexistingArtifacts.length) {

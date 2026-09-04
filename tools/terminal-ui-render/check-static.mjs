@@ -3,6 +3,7 @@ import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 
 import ts from 'typescript'
+import {findImportCapabilityViolation} from '../terminal-shared/import-capabilities.mjs'
 import {assertExactList, readPackageInvariant} from '../terminal-shared/package-invariants.mjs'
 
 const toolDirectory = path.dirname(fileURLToPath(import.meta.url))
@@ -109,7 +110,7 @@ function runPublicSurface({root, invariant, checker, indexSourceFile}) {
   const domain = actual.filter(name => !INFRASTRUCTURE_EXPORTS.includes(name))
   const expectedDomain = invariant.publicExports.filter(name => !INFRASTRUCTURE_EXPORTS.includes(name))
   assertExactList('render domain exports', domain, expectedDomain)
-  if (actual.length !== 16) throw new Error(`render public export count must be 16; actual=${actual.length}`)
+  if (actual.length !== 21) throw new Error(`render public export count must be 21; actual=${actual.length}`)
   void root
 }
 
@@ -141,28 +142,59 @@ function runPackageBoundary({root}) {
     Object.keys(dependencies),
     [
       '@catering-v2s/kernel-base-platform-ports',
+      '@catering-v2s/kernel-base-contracts',
       '@catering-v2s/kernel-base-runtime',
+      '@catering-v2s/kernel-base-state',
       '@catering-v2s/kernel-base-ui-state',
     ],
   )
 }
 
 function runSourceForbiddenApis({root}) {
-  const forbidden = [
-    [/\bgetStore\b/, 'getStore'],
-    [/\bdispatch(?:Command|Action)?\s*\(/, 'dispatch'],
-    [/\bdefineCommand\b/, 'defineCommand'],
-    [/\bRuntimeModule\b/, 'RuntimeModule'],
-    [/\bcreateSlice\b/, 'createSlice'],
-    [/\bslices\s*:/, 'slices'],
-    [/\binstall\b/, 'install'],
-    [/\breact-redux\b/, 'react-redux'],
-    [/\bStateRoot\b/, 'StateRoot'],
-  ]
+  const renderImportBoundary = Object.freeze({
+    forbiddenModules: ['react-redux'],
+    forbiddenNamespaceModules: [
+      '@catering-v2s/kernel-base-runtime',
+      '@catering-v2s/kernel-base-state',
+      '@reduxjs/toolkit',
+    ],
+    forbiddenImportedNames: [
+      'getStore',
+      'dispatch',
+      'dispatchAction',
+      'useDispatch',
+      'useSelector',
+      'Runtime',
+      'createRuntime',
+      'defineCommand',
+      'RuntimeModule',
+      'StateRoot',
+      'createSlice',
+      'createReducer',
+      'configureStore',
+      'createStore',
+      'combineReducers',
+      'install',
+    ],
+    forbiddenImportedNamesByModule: {
+      '@catering-v2s/kernel-base-state': [
+        'StateRuntime',
+        'CreateStateRuntimeInput',
+        'createStateRuntime',
+        'defineStateRuntimeSlice',
+        'createPartitionedActionDispatcher',
+        'createPartitionedStateKeys',
+        'readPartitionedState',
+        'toPartitionedStateDescriptors',
+      ],
+      '@catering-v2s/kernel-base-runtime': ['Runtime', 'createRuntime', 'defineCommand', 'RuntimeModule'],
+    },
+  })
   for (const filePath of sourceFiles(root)) {
-    const source = fs.readFileSync(filePath, 'utf8')
-    for (const [pattern, label] of forbidden) {
-      if (pattern.test(source)) throw new Error(`${label} is forbidden in ${path.relative(root, filePath)}`)
+    const sourceFile = parseSource(filePath)
+    const violation = findImportCapabilityViolation(sourceFile, renderImportBoundary)
+    if (violation !== undefined) {
+      throw new Error(`${violation.importedName} imported from ${violation.moduleName} is forbidden in ${path.relative(root, filePath)}`)
     }
   }
 }

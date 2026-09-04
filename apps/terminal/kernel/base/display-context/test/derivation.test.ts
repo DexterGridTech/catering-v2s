@@ -2,12 +2,27 @@ import {describe, expect, it} from 'vitest'
 import {
   getDisplayRoleChangeEligibility,
   getSwitchInstanceModeEligibility,
+  resolveSecondarySurfaceAvailable,
   resolvePowerRoleTarget,
   resolveSurfaceDisplayMode,
   resolveWorkspace,
 } from '../src/index'
 
 describe('display derivation', () => {
+  it('S-18 resolves the four display availability branches with unknown-to-single fallback', () => {
+    expect(resolveSecondarySurfaceAvailable({status: 'valid', displayCount: 2})).toBe(true)
+    expect(resolveSecondarySurfaceAvailable({status: 'valid', displayCount: 1})).toBe(false)
+    expect(resolveSecondarySurfaceAvailable({
+      status: 'unavailable',
+      portStatus: 'unavailable',
+    })).toBe(false)
+    expect(resolveSecondarySurfaceAvailable({
+      status: 'malformed',
+      portStatus: 'succeeded',
+      valueType: 'undefined',
+    })).toBe(false)
+  })
+
   it('D-1 idx0 MASTER CHIEF is PRIMARY', () => {
     expect(resolveSurfaceDisplayMode({displayIndex: 0, displayRole: 'CHIEF', instanceMode: 'MASTER'})).toBe('PRIMARY')
     expect(resolveSurfaceDisplayMode({displayIndex: 0, displayRole: 'CHIEF', instanceMode: 'MASTER'})).not.toBe('SECONDARY')

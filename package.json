@@ -10,7 +10,9 @@
     "libraries/frontend/*",
     "apps/terminal",
     "apps/terminal/kernel/base/*",
+    "apps/terminal/kernel/feature/*",
     "apps/terminal/ui/base/*",
+    "apps/terminal/ui/feature/*",
     "apps/terminal/ui/integration/*",
     "apps/terminal/adapter/android/*",
     "apps/terminal/assembly/android/*"

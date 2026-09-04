@@ -1,6 +1,24 @@
 import {expect, type Page} from '@playwright/test';
 import {roleHomeTestIds} from '../../features/role-home-bootstrap/roleHomeTestIds';
 
+type OperationsDataScopeType = 'REGION' | 'PROJECT' | 'STORE' | 'HEAD_COMPANY';
+type OperationsDataScopeSelection = {
+  regionName?: string;
+  regionRef?: string;
+  projectName?: string;
+  projectRef?: string;
+  storeName?: string;
+  storeRef?: string;
+  headCompanyName?: string;
+  headCompanyRef?: string;
+};
+export type OperationsDataScopeTouch = {
+  testId: string;
+  phase: 'TRIGGER' | 'SELECTOR' | 'OPTION' | 'CONFIRM' | 'CANCEL';
+  type?: OperationsDataScopeType;
+};
+type OperationsDataScopeTouchHandler = (touch: OperationsDataScopeTouch) => void;
+
 function currentVisibleOption(page: Page, label?: string, optionTestId?: string) {
   // rc-select keeps a closing portal and a hidden accessibility mirror in the
   // DOM. Bind to the newest *visible* portal before resolving its visual item.
@@ -58,7 +76,14 @@ export async function selectOperationsOption(
  * A role-locked selector already contains an owner-confirmed fixed value. L2
  * must prove that value rather than attempting a choice the real UI forbids.
  */
-async function selectOrAssertOperationsScopeOption(page: Page, testId: string, label?: string): Promise<boolean> {
+async function selectOrAssertOperationsScopeOption(
+  page: Page,
+  testId: string,
+  type: OperationsDataScopeType,
+  label?: string,
+  optionRef?: string,
+  onControlTouch?: OperationsDataScopeTouchHandler,
+): Promise<boolean> {
   const control = page.getByTestId(testId);
   await expect(control).toBeVisible();
   const input = control.locator('input');
@@ -67,7 +92,11 @@ async function selectOrAssertOperationsScopeOption(page: Page, testId: string, l
     if (label) await expect(control).toContainText(label);
     return false;
   }
-  await selectOperationsOption(page, testId, label);
+  if (!optionRef) throw new Error(`OPERATIONS_DATA_SCOPE_OPTION_REF_REQUIRED:${type}`);
+  const optionTestId = roleHomeTestIds.dataScope.option(type, optionRef);
+  onControlTouch?.({testId, phase: 'SELECTOR', type});
+  await selectOperationsOption(page, testId, label, optionTestId);
+  onControlTouch?.({testId: optionTestId, phase: 'OPTION', type});
   return true;
 }
 
@@ -88,24 +117,27 @@ export async function selectOperationsFieldOption(page: Page, fieldId: string, l
 /** Selects and explicitly confirms the owner-returned management range required by the current page. */
 export async function selectOperationsDataScope(
   page: Page,
-  type: 'REGION' | 'PROJECT' | 'STORE' | 'HEAD_COMPANY',
-  preferred: {regionName?: string; projectName?: string; storeName?: string; headCompanyName?: string} = {},
-  onControlTouch?: (testId: string) => void,
+  type: OperationsDataScopeType,
+  preferred: OperationsDataScopeSelection = {},
+  onControlTouch?: OperationsDataScopeTouchHandler,
 ): Promise<void> {
   const trigger = page.getByTestId(roleHomeTestIds.dataScope.trigger);
   await expect(trigger).toBeVisible();
   await trigger.click();
-  onControlTouch?.(roleHomeTestIds.dataScope.trigger);
+  onControlTouch?.({testId: roleHomeTestIds.dataScope.trigger, phase: 'TRIGGER'});
   let submitted = false;
   if (type === 'HEAD_COMPANY') {
     submitted = await selectOrAssertOperationsScopeOption(
       page,
       roleHomeTestIds.dataScope.headCompany,
+      'HEAD_COMPANY',
       preferred.headCompanyName,
+      preferred.headCompanyRef,
+      onControlTouch,
     );
     if (submitted) {
       await page.getByTestId(roleHomeTestIds.dataScope.confirm).click();
-      onControlTouch?.(roleHomeTestIds.dataScope.confirm);
+      onControlTouch?.({testId: roleHomeTestIds.dataScope.confirm, phase: 'CONFIRM', type});
     } else await page.keyboard.press('Escape');
     await expect(page.locator('.ant-popover:visible')).toHaveCount(0);
     await expect(trigger).toBeEnabled();
@@ -118,11 +150,14 @@ export async function selectOperationsDataScope(
     const changed = await selectOrAssertOperationsScopeOption(
       page,
       roleHomeTestIds.dataScope.region,
+      'REGION',
       preferred.regionName,
+      preferred.regionRef,
+      onControlTouch,
     );
     if (changed) {
       await page.getByTestId(roleHomeTestIds.dataScope.confirm).click();
-      onControlTouch?.(roleHomeTestIds.dataScope.confirm);
+      onControlTouch?.({testId: roleHomeTestIds.dataScope.confirm, phase: 'CONFIRM', type});
       submitted = true;
     } else {
       await page.keyboard.press('Escape');
@@ -132,13 +167,34 @@ export async function selectOperationsDataScope(
     await expect(trigger).toContainText('大区：');
     return;
   }
-  await selectOrAssertOperationsScopeOption(page, roleHomeTestIds.dataScope.region, preferred.regionName);
-  submitted = await selectOrAssertOperationsScopeOption(page, roleHomeTestIds.dataScope.project, preferred.projectName);
+  await selectOrAssertOperationsScopeOption(
+    page,
+    roleHomeTestIds.dataScope.region,
+    'REGION',
+    preferred.regionName,
+    preferred.regionRef,
+    onControlTouch,
+  );
+  submitted = await selectOrAssertOperationsScopeOption(
+    page,
+    roleHomeTestIds.dataScope.project,
+    'PROJECT',
+    preferred.projectName,
+    preferred.projectRef,
+    onControlTouch,
+  );
   if (type === 'STORE')
-    submitted = await selectOrAssertOperationsScopeOption(page, roleHomeTestIds.dataScope.store, preferred.storeName);
+    submitted = await selectOrAssertOperationsScopeOption(
+      page,
+      roleHomeTestIds.dataScope.store,
+      'STORE',
+      preferred.storeName,
+      preferred.storeRef,
+      onControlTouch,
+    );
   if (submitted) {
     await page.getByTestId(roleHomeTestIds.dataScope.confirm).click();
-    onControlTouch?.(roleHomeTestIds.dataScope.confirm);
+    onControlTouch?.({testId: roleHomeTestIds.dataScope.confirm, phase: 'CONFIRM', type});
   } else await page.keyboard.press('Escape');
   await expect(page.locator('.ant-popover:visible')).toHaveCount(0);
   await expect(trigger).toBeEnabled();

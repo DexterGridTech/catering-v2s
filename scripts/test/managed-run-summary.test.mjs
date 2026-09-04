@@ -34,6 +34,24 @@ test('summarizes run duration, wall-clock gaps, statuses, failures, and operatio
   assert.equal(summary.phaseStats.second.statuses.FAIL, 1);
 });
 
+test('summarizes browser L2 string cleanup and execution fields', () => {
+  const summary = summarizeManagedRuns([
+    {
+      startedAt: '2026-09-01T00:00:00.000Z',
+      finishedAt: '2026-09-01T00:00:03.000Z',
+      phase: 'BROWSER_L2_EXECUTION',
+      status: 'FAIL',
+      business: 'FAIL',
+      cleanup: 'PASS',
+      failureCategory: 'SALES_MENU_L2',
+    },
+  ]);
+  assert.equal(summary.phaseStats.BROWSER_L2_EXECUTION.statuses.FAIL, 1);
+  assert.equal(summary.phaseStats.BROWSER_L2_EXECUTION.business.FAIL, 1);
+  assert.equal(summary.phaseStats.BROWSER_L2_EXECUTION.cleanup.PASS, 1);
+  assert.deepEqual(summary.failureCategories, {SALES_MENU_L2: 1});
+});
+
 test('reads direct run manifests and reports malformed entries without hiding them', () => {
   const root = mkdtempSync(path.join(tmpdir(), 'managed-run-summary-'));
   mkdirSync(path.join(root, 'run-a'));

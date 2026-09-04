@@ -11,6 +11,8 @@ export type RenderContextValue = Readonly<{
   readonly uiCatalog: UiCatalog
   readonly rendererCatalog: RendererCatalog
   readonly logger: LoggerPort
+  readonly dispatchCommand: RenderProviderProps['dispatchCommand']
+  readonly selectUiVariable: RenderProviderProps['selectUiVariable']
   readonly snapshotReader: RenderSnapshotReader
   readonly reportPartDiagnostic: RenderPartDiagnosticReporter['report']
   readonly clearPartDiagnostic: RenderPartDiagnosticReporter['clearForPart']

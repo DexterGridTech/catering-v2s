@@ -56,6 +56,16 @@ export function salesMenuQueryIdentity(input: SalesMenuQueryIdentityInput): stri
   });
 }
 
+/**
+ * Owner receipts are scoped by operation and workspace, while their request
+ * hash includes the command target. Keep the client content key aligned with
+ * that identity so identical bodies for different menu resources cannot
+ * collide.
+ */
+export function salesMenuCommandIdempotencyPayload(path: object, body: unknown) {
+  return {path, body};
+}
+
 const PRODUCT_SHAPE_LABELS: Record<SalesMenuProductShape, string> = {
   ORDINARY: '普通销售商品',
   SKU: '按规格管理商品',

@@ -37,6 +37,7 @@ import {
   loadPerformanceOperationRegistry,
   reconcilePerformanceOperationEvents,
 } from './backend-performance-operation-reconciliation.mjs';
+import {validateBudgetRegistry} from '../generate/backend-performance-budget.mjs';
 import {BACKEND_PERFORMANCE_OPERATION_COUNTS} from '../policy/backend-performance-operation-counts.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
@@ -658,6 +659,7 @@ export const parseAndValidateRunManifest = manifest => {
     'task',
     'verificationMode',
     'startedAt',
+    'finishedAt',
     'remote',
     'sourceSync',
     'gradleDistribution',
@@ -667,11 +669,17 @@ export const parseAndValidateRunManifest = manifest => {
     'testExecution',
     'cleanup',
     'status',
+    'firstFailure',
+    'lastKnownGood',
+    'brokenBoundary',
   ]) {
     if (!(key in manifest)) throw new Error(`RUN_MANIFEST_FIELD_MISSING:${key}`);
   }
   if (!BACKEND_ACCEPTANCE_VERIFICATION_MODES.includes(manifest.verificationMode)) {
     throw new Error('RUN_MANIFEST_VERIFICATION_MODE_INVALID');
+  }
+  if (typeof manifest.finishedAt !== 'string' || manifest.finishedAt.trim() === '') {
+    throw new Error('RUN_MANIFEST_FINISHED_AT_INVALID');
   }
   if (!/^r5-tc-[0-9]+-[0-9]+$/.test(manifest.runId) || !/^:[a-z0-9:-]+:test$/.test(manifest.task))
     throw new Error('RUN_MANIFEST_IDENTITY_INVALID');
@@ -701,6 +709,19 @@ export const parseAndValidateRunManifest = manifest => {
   }
   if (manifest.business !== undefined && !['PASS', 'FAIL', 'NOT_RUN', 'NOT_APPLICABLE'].includes(manifest.business)) {
     throw new Error('RUN_MANIFEST_BUSINESS_STATUS_INVALID');
+  }
+  if (
+    (manifest.firstFailure !== null && typeof manifest.firstFailure !== 'string') ||
+    (manifest.lastKnownGood !== null && typeof manifest.lastKnownGood !== 'string') ||
+    (manifest.brokenBoundary !== null && typeof manifest.brokenBoundary !== 'string')
+  ) {
+    throw new Error('RUN_MANIFEST_BOUNDARY_FIELDS_INVALID');
+  }
+  if (manifest.lastKnownGood !== null && manifest.lastKnownGood.trim() === '') {
+    throw new Error('RUN_MANIFEST_LAST_KNOWN_GOOD_INVALID');
+  }
+  if (manifest.brokenBoundary !== null && manifest.brokenBoundary.trim() === '') {
+    throw new Error('RUN_MANIFEST_BROKEN_BOUNDARY_INVALID');
   }
   if (manifest.productionMutation !== undefined && manifest.productionMutation !== null) {
     validateProductionMutationReceipt(manifest.productionMutation);
@@ -987,9 +1008,19 @@ const syncGradle = async ({directory, remoteRoot, distribution}) => {
       'if test -x "$distribution/bin/gradle" && test -f "$marker" && test "$(cat \"$marker\")" = "$expected"; then printf REUSED; else printf SYNC_REQUIRED; fi',
     ),
   );
-  if (reusable.status !== 0) throw new Error('GRADLE_DISTRIBUTION_CHECK_FAILED');
+  const reusableDiagnostic = {
+    event: 'GRADLE_DISTRIBUTION_CHECK',
+    status: reusable.status ?? null,
+    signal: reusable.signal ?? null,
+    stdout: String(reusable.stdout ?? '').trim().slice(0, 1024),
+    stderr: String(reusable.stderr ?? '').trim().slice(0, 1024),
+  };
+  appendFileSync(syncLog, `${JSON.stringify(reusableDiagnostic)}\n`);
+  if (reusable.status !== 0)
+    throw new Error(`GRADLE_DISTRIBUTION_CHECK_FAILED:${compact(JSON.stringify(reusableDiagnostic))}`);
   if (reusable.stdout.trim() === 'REUSED') return {...distribution, status: 'REUSED'};
-  if (reusable.stdout.trim() !== 'SYNC_REQUIRED') throw new Error('GRADLE_DISTRIBUTION_CHECK_INVALID');
+  if (reusable.stdout.trim() !== 'SYNC_REQUIRED')
+    throw new Error(`GRADLE_DISTRIBUTION_CHECK_INVALID:${compact(JSON.stringify(reusableDiagnostic))}`);
   const staging = `${remoteRoot}/gradle-distribution-staging`;
   const transfer = spawn(
     'rsync',
@@ -1331,6 +1362,10 @@ const execute = async () => {
     verificationMode,
   );
   const performanceOperationRegistry = exactSetRequired ? loadPerformanceOperationRegistry({root}) : null;
+  // An ACCEPTANCE all run consumes the checked-in generated budget projection.
+  // Reject an identity-only or malformed projection before acquiring resources or
+  // starting the remote workload; CALIBRATION/focused modes intentionally skip it.
+  if (activeBudgetRequired) validateBudgetRegistry({operations: performanceOperationRegistry});
   const workload = exactSetRequired
     ? fullPerformanceWorkload({
         task: invocation.task,
@@ -1348,6 +1383,7 @@ const execute = async () => {
     task: invocation.task,
     verificationMode,
     startedAt: now(),
+    finishedAt: null,
     remote: {
       hostAlias: remoteHost,
       hostTrust: remoteHostTrust,
@@ -1388,6 +1424,8 @@ const execute = async () => {
     },
     status: 'FAIL',
     firstFailure: null,
+    lastKnownGood: 'RUN_INITIALIZATION',
+    brokenBoundary: null,
     devLifecycle: {
       wasRunning: false,
       managedDevRunId: null,
@@ -1397,6 +1435,17 @@ const execute = async () => {
     },
   };
   const persist = () => atomicWrite(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  let currentBoundary = 'RUN_INITIALIZATION';
+  const beginBoundary = boundary => {
+    currentBoundary = boundary;
+  };
+  const markLastKnownGood = boundary => {
+    currentBoundary = boundary;
+    manifest.lastKnownGood = boundary;
+  };
+  const markBrokenBoundary = boundary => {
+    manifest.brokenBoundary ??= boundary;
+  };
   let remotePrepared = false;
   let remoteRun;
   let failure;
@@ -1411,6 +1460,7 @@ const execute = async () => {
   });
   runnerEvent('STARTED', {RUN_ID: runId, TASK: invocation.task, MODE: 'FOCUSED'});
   try {
+    beginBoundary('LOCAL_RESOURCE_PREFLIGHT');
     releaseLocalRunLock = acquireLocalRunLock();
     devState = inspectManagedDevState();
     manifest.devLifecycle.wasRunning = devState.wasRunning;
@@ -1429,11 +1479,13 @@ const execute = async () => {
       manifest.productionMutation.sourceAfterSha256 = mutationPreflight.sourceAfterSha256;
     }
     persist();
+    beginBoundary('LOCAL_RESOURCE_PREFLIGHT');
     const localBudget = commandResult(path.join(root, 'scripts/env/check-runtime-resource-budget'), [
       path.join(root, '.runtime'),
     ]);
     if (localBudget.status !== 0) throw new Error('LOCAL_MANAGED_RESOURCE_BUDGET_EXCEEDED');
     manifest.resourcePreflight = remotePreflight();
+    beginBoundary('REMOTE_WORKSPACE_PREPARE');
     remote(
       script(
         'set -euo pipefail',
@@ -1447,12 +1499,15 @@ const execute = async () => {
       ),
     );
     remotePrepared = true;
+    beginBoundary('SOURCE_SYNC');
     await uploadSource(remoteWorkspace);
     if (interruptionSignal) throw new Error(`HARNESS_INTERRUPTED:${interruptionSignal}`);
     manifest.sourceSync = {status: 'PASS', workspace: remoteWorkspace, stagingRoot: remoteWorkspace};
     manifest.gradleDistribution = await syncGradle({directory, remoteRoot, distribution});
     if (interruptionSignal) throw new Error(`HARNESS_INTERRUPTED:${interruptionSignal}`);
+    markLastKnownGood('SOURCE_SYNC');
     persist();
+    beginBoundary('REMOTE_TEST_EXECUTION');
     remoteRun = await streamRemoteRun(
       runScript({
         remoteRoot,
@@ -1470,6 +1525,7 @@ const execute = async () => {
     if (interruptionSignal) throw new Error(`HARNESS_INTERRUPTED:${interruptionSignal}`);
     if (remoteRun.status !== 0)
       throw new Error(`REMOTE_RUNNER_UNAVAILABLE:${compact(remoteRun.stderrTail || remoteRun.stdoutTail)}`);
+    beginBoundary('EXECUTION_EVIDENCE');
     collectArtifacts(remoteResults, directory);
     const gradleLog = readFileSync(path.join(directory, 'gradle.log'), 'utf8');
     const actualExecution = classifyGradleTestExecution(gradleLog, invocation.task);
@@ -1494,7 +1550,12 @@ const execute = async () => {
     // well.  A pre-test gate (for example the CP-05 budget gate) can fail before
     // the acceptance process creates any archived artifacts; later artifact
     // handling must not replace that boundary with an artifact-missing error.
-    if (!executionPass) manifest.firstFailure ??= executionFailure;
+    if (!executionPass) {
+      manifest.firstFailure ??= executionFailure;
+      markBrokenBoundary('REMOTE_TEST_EXECUTION');
+    } else {
+      markLastKnownGood('REMOTE_TEST_EXECUTION');
+    }
     manifest.cleanup = {
       status: remoteGradleStatus !== undefined && containers === 'PASS' && volumes === 'PASS' ? 'PASS' : 'FAIL',
       remoteProcess: remoteGradleStatus !== undefined ? 'PASS' : 'FAIL',
@@ -1530,6 +1591,7 @@ const execute = async () => {
     if (requestedMutation !== null && !executionPass && !acceptanceArtifactsAvailable) {
       throw new Error(executionFailure);
     }
+    beginBoundary('BUSINESS_EVIDENCE');
     const requiresAcceptanceArtifacts =
       requiresBackendAcceptanceEvidence(backendAcceptanceRunId, actualExecution.status === 'PASS') ||
       (requestedMutation !== null && acceptanceArtifactsAvailable);
@@ -1556,6 +1618,7 @@ const execute = async () => {
         readEvidenceArtifact(directory, 'backend-acceptance-result.jsonl', {requireArchive: true}),
       );
       manifest.business = backendAcceptanceResult.summary.directFailures === 0 ? 'PASS' : 'FAIL';
+      if (manifest.business === 'PASS') markLastKnownGood('BUSINESS_EVIDENCE');
     }
     if (!executionPass && requestedMutation === null) throw new Error(executionFailure);
     if (remoteGradleStatus !== '0' && requestedMutation === null) throw new Error('REMOTE_GRADLE_EXIT_NONZERO');
@@ -1566,6 +1629,7 @@ const execute = async () => {
       throw new Error('BACKEND_ACCEPTANCE_SCENARIO_FAILURE');
     }
     if (backendAcceptanceRunId !== null) {
+      beginBoundary('MEASUREMENT_EVIDENCE');
       measurementEvidence = parseHttpRequestEvents(
         readEvidenceArtifact(directory, 'http-request-events.jsonl', {requireArchive: true}),
         backendAcceptanceRunId,
@@ -1611,14 +1675,17 @@ const execute = async () => {
             }
           : {}),
       };
+      markLastKnownGood('MEASUREMENT_EVIDENCE');
     }
   } catch (error) {
     failure = error instanceof Error ? error : new Error(String(error));
     manifest.firstFailure ??= failure.message;
+    markBrokenBoundary(currentBoundary);
   } finally {
     if (interruptionSignal && !failure) {
       failure = new Error(`HARNESS_INTERRUPTED:${interruptionSignal}`);
       manifest.firstFailure ??= failure.message;
+      markBrokenBoundary(currentBoundary);
     }
     if (remotePrepared) {
       if (!existsSync(path.join(directory, 'gradle.log'))) {
@@ -1628,17 +1695,23 @@ const execute = async () => {
           manifest.artifactCollection = {status: 'FAIL', reason: compact(collectionError.message)};
         }
       }
+      beginBoundary('REMOTE_WORKSPACE_CLEANUP');
       manifest.cleanup.remoteWorkspace = cleanupRemoteWorkspace(remoteRoot);
+      if (manifest.cleanup.remoteWorkspace === 'PASS' && manifest.brokenBoundary === null) {
+        markLastKnownGood('REMOTE_WORKSPACE_CLEANUP');
+      }
     }
     if (manifest.cleanup.remoteWorkspace !== 'PASS') {
       manifest.cleanup.status = 'FAIL';
       if (!failure) {
         failure = new Error('REMOTE_WORKSPACE_CLEANUP_FAILED');
         manifest.firstFailure ??= failure.message;
+        markBrokenBoundary('REMOTE_WORKSPACE_CLEANUP');
       }
     }
     if (devState?.wasRunning) {
       if (!failure && manifest.testExecution.status === 'PASS' && manifest.cleanup.status === 'PASS') {
+        beginBoundary('DEV_RESTORE');
         const startResult = commandResult(path.join(root, 'scripts/dev/start'), [], {
           env: {...process.env, V2S_RUNTIME_DIR: runtime},
         });
@@ -1648,18 +1721,20 @@ const execute = async () => {
           manifest.devLifecycle.cleanup = 'FAIL';
           failure = new Error('DEV_RESTART_FAILED');
           manifest.firstFailure ??= failure.message;
+          markBrokenBoundary('DEV_RESTORE');
         }
       } else {
         manifest.devLifecycle.restore = {status: 'NOT_RUN', reason: 'TEST_NOT_PASS'};
         manifest.devLifecycle.cleanup = 'NOT_RUN';
       }
     }
-    manifest.completedAt = now();
+    manifest.finishedAt = now();
     try {
       if (releaseLocalRunLock) releaseLocalRunLock();
     } catch (releaseError) {
       failure = releaseError instanceof Error ? releaseError : new Error(String(releaseError));
       manifest.firstFailure ??= failure.message;
+      markBrokenBoundary('LOCAL_RUN_LOCK_RELEASE');
     } finally {
       uninstallInterruptionHandlers();
     }
@@ -1672,12 +1747,14 @@ const execute = async () => {
         : manifest.testExecution.status === 'FAIL' && manifest.productionMutation?.verdict === 'PASS';
     const candidateStatus = !failure && executionAccepted && manifest.cleanup.status === 'PASS' ? 'PASS' : 'FAIL';
     manifest.status = candidateStatus;
+    if (candidateStatus === 'PASS') markLastKnownGood('CLEANUP');
     if (candidateStatus === 'PASS') {
       try {
         parseAndValidateRunManifest(manifest);
       } catch (validationError) {
         failure = validationError instanceof Error ? validationError : new Error(String(validationError));
         manifest.firstFailure ??= failure.message;
+        markBrokenBoundary('MANIFEST_VALIDATION');
         manifest.status = 'FAIL';
       }
     }

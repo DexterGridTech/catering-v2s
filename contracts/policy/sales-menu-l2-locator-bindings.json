@@ -7,10 +7,89 @@
   "caseBlueprint": "contracts/policy/sales-menu-l2-case-blueprint.json",
   "caseCount": 18,
   "controls": {
-    "STORE_SCOPE": {
+    "STORE_SCOPE_TRIGGER": {
       "testId": "operations-data-scope-trigger",
-      "interaction": "scope",
-      "confirmTestId": "operations-data-scope-confirm",
+      "interaction": "scope-trigger",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+      ]
+    },
+    "STORE_SCOPE_HEAD_COMPANY_SELECTOR": {
+      "testId": "operations-data-scope-head-company",
+      "interaction": "scope-selector",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+      ]
+    },
+    "STORE_SCOPE_HEAD_COMPANY_OPTION": {
+      "testIdTemplate": "operations-data-scope-option-head_company-${headCompanyRef}",
+      "interaction": "scope-option",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+      ]
+    },
+    "STORE_SCOPE_REGION_SELECTOR": {
+      "testId": "operations-data-scope-region",
+      "interaction": "scope-selector",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+      ]
+    },
+    "STORE_SCOPE_REGION_OPTION": {
+      "testIdTemplate": "operations-data-scope-option-region-${regionRef}",
+      "interaction": "scope-option",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+      ]
+    },
+    "STORE_SCOPE_PROJECT_SELECTOR": {
+      "testId": "operations-data-scope-project",
+      "interaction": "scope-selector",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+      ]
+    },
+    "STORE_SCOPE_PROJECT_OPTION": {
+      "testIdTemplate": "operations-data-scope-option-project-${projectRef}",
+      "interaction": "scope-option",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+      ]
+    },
+    "STORE_SCOPE_STORE_SELECTOR": {
+      "testId": "operations-data-scope-store",
+      "interaction": "scope-selector",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+      ]
+    },
+    "STORE_SCOPE_STORE_OPTION": {
+      "testIdTemplate": "operations-data-scope-option-store-${storeRef}",
+      "interaction": "scope-option",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+      ]
+    },
+    "STORE_SCOPE_CANCEL": {
+      "testId": "operations-data-scope-cancel",
+      "interaction": "scope-cancel",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
+      ]
+    },
+    "STORE_SCOPE_CONFIRM": {
+      "testId": "operations-data-scope-confirm",
+      "interaction": "scope-confirm",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
         "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
@@ -42,8 +121,12 @@
     },
     "SALES_MENU_MODE": {
       "testIdTemplate": "sales-menu-mode-${mode}",
+      "interaction": "COMPOSITE_OPTION_ANCHOR",
+      "actualActionNode": "VISIBLE_SEGMENTED_OPTION_LABEL",
+      "focusedStaticProof": "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.static.test.ts",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
       ]
     },
     "SALES_MENU_MENU_SCHEDULE": {
@@ -103,9 +186,14 @@
       ]
     },
     "SALES_MENU_SELECTOR": {
-      "testId": "sales-menu-selector",
+      "testId": "sales-menu-selector-input",
+      "optionTestIdTemplate": "sales-menu-option-${menuRef}",
+      "interaction": "NATIVE_INPUT_AND_OPTION_ROOT",
+      "actualActionNode": "NATIVE_SELECT_INPUT_AND_OPTION_ROOT",
+      "focusedStaticProof": "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.static.test.ts",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
       ]
     },
     "SALES_MENU_SELECTOR_PAGINATION": {

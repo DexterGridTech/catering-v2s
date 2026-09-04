@@ -266,7 +266,16 @@ public interface SalesMenuOwnerApi {
             Objects.requireNonNull(context, "context");
             Objects.requireNonNull(channelRef, "channelRef");
             Objects.requireNonNull(salesItemRef, "salesItemRef");
-            reason = CreateCommand.required(reason);
+            reason = requiredManualReason(reason);
+        }
+
+        private static String requiredManualReason(String value) {
+            String normalized = Objects.requireNonNullElse(value, "").trim();
+            if (normalized.isEmpty() || normalized.length() > 240) {
+                String message = "人工沽清原因不能为空且不能超过 240 个字符";
+                throw new Problem("SALES_MENU_MANUAL_REASON_REQUIRED", 422, message);
+            }
+            return normalized;
         }
     }
 

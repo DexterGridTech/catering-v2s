@@ -471,10 +471,10 @@
           "maxRequestCount": 4
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 243,
+      "caseExpectedDbMs": 10376.1,
       "caseLocalActionMs": 750,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 23000
     },
     {
       "caseId": "catalog-find-failure",
@@ -528,10 +528,10 @@
           "maxRequestCount": 4
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 243,
+      "caseExpectedDbMs": 10376.1,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 23000
     },
     {
       "caseId": "catalog-find-recovery",
@@ -590,10 +590,10 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 289,
+      "caseExpectedDbMs": 12340.300000000001,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 27000
     },
     {
       "caseId": "catalog-view-success",
@@ -652,10 +652,10 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 289,
+      "caseExpectedDbMs": 12340.300000000001,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 27000
     },
     {
       "caseId": "catalog-view-failure",
@@ -714,10 +714,10 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 296,
+      "caseExpectedDbMs": 12639.2,
       "caseLocalActionMs": 750,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 27000
     },
     {
       "caseId": "catalog-view-recovery",
@@ -776,10 +776,10 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 289,
+      "caseExpectedDbMs": 12340.300000000001,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 27000
     },
     {
       "caseId": "catalog-create-success",
@@ -843,10 +843,10 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 315,
+      "caseExpectedDbMs": 13450.5,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 3000
+      "caseTimeoutMs": 30000
     },
     {
       "caseId": "catalog-create-failure",
@@ -910,10 +910,10 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 315,
+      "caseExpectedDbMs": 13450.5,
       "caseLocalActionMs": 750,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 29000
     },
     {
       "caseId": "catalog-create-recovery",
@@ -977,10 +977,10 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 315,
+      "caseExpectedDbMs": 13450.5,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 29000
     },
     {
       "caseId": "catalog-edit-success",
@@ -1054,10 +1054,10 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 350,
+      "caseExpectedDbMs": 14945.000000000002,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 3000
+      "caseTimeoutMs": 33000
     },
     {
       "caseId": "catalog-edit-failure",
@@ -1126,10 +1126,10 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 386,
+      "caseExpectedDbMs": 16482.2,
       "caseLocalActionMs": 750,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 35000
     },
     {
       "caseId": "catalog-edit-recovery",
@@ -1193,10 +1193,10 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 298,
+      "caseExpectedDbMs": 12724.6,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 3000
+      "caseTimeoutMs": 28000
     },
     {
       "caseId": "catalog-config-success",
@@ -1270,10 +1270,10 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 378,
+      "caseExpectedDbMs": 16140.6,
       "caseLocalActionMs": 1500,
-      "caseTimeoutMs": 3000
+      "caseTimeoutMs": 36000
     },
     {
       "caseId": "catalog-config-failure",
@@ -1347,10 +1347,10 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 353,
+      "caseExpectedDbMs": 15073.1,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 33000
     },
     {
       "caseId": "catalog-config-recovery",
@@ -1424,10 +1424,10 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 384,
+      "caseExpectedDbMs": 16396.800000000003,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 3000
+      "caseTimeoutMs": 36000
     },
     {
       "caseId": "catalog-batch-success",
@@ -1487,10 +1487,10 @@
           "cardinality": 3
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 273,
+      "caseExpectedDbMs": 11657.1,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 26000
     },
     {
       "caseId": "catalog-batch-failure",
@@ -1555,10 +1555,10 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 317,
+      "caseExpectedDbMs": 13535.900000000001,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 3000
+      "caseTimeoutMs": 30000
     },
     {
       "caseId": "catalog-batch-recovery",
@@ -1618,10 +1618,10 @@
           "cardinality": 3
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 273,
+      "caseExpectedDbMs": 11657.1,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 26000
     },
     {
       "caseId": "catalog-copy-success",
@@ -1690,10 +1690,10 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 393,
+      "caseExpectedDbMs": 16781.100000000002,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 3000
+      "caseTimeoutMs": 37000
     },
     {
       "caseId": "catalog-copy-failure",
@@ -1767,10 +1767,10 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 437,
+      "caseExpectedDbMs": 18659.9,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 3000
+      "caseTimeoutMs": 40000
     },
     {
       "caseId": "catalog-copy-recovery",
@@ -1844,10 +1844,10 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 519,
+      "caseExpectedDbMs": 22161.300000000003,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 3000
+      "caseTimeoutMs": 47000
     },
     {
       "caseId": "catalog-governance-success",
@@ -1911,10 +1911,10 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 301,
+      "caseExpectedDbMs": 12852.7,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 28000
     },
     {
       "caseId": "catalog-governance-failure",
@@ -1973,10 +1973,10 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 289,
+      "caseExpectedDbMs": 12340.300000000001,
       "caseLocalActionMs": 750,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 27000
     },
     {
       "caseId": "catalog-governance-recovery",
@@ -2040,12 +2040,12 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 0,
-      "caseExpectedDbMs": 0,
+      "caseDbOperationUpperBound": 301,
+      "caseExpectedDbMs": 12852.7,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 2000
+      "caseTimeoutMs": 28000
     }
   ],
-  "fullRunExpectedMs": 306250,
-  "fullRunTimeoutMs": 613000
+  "fullRunExpectedMs": 641274.2,
+  "fullRunTimeoutMs": 1283000
 }

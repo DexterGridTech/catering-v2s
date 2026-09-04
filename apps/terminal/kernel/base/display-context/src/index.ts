@@ -6,13 +6,16 @@ export type {
   DisplayRole,
   DisplayRoleChangeReasonCode,
 } from './types/display';
+export type {DisplayInfoRead} from './foundations/displayDevice';
 export {
   getDisplayRoleChangeEligibility,
   getSwitchInstanceModeEligibility,
   resolvePowerRoleTarget,
+  resolveSecondarySurfaceAvailable,
   resolveSurfaceDisplayMode,
   resolveWorkspace,
 } from './foundations/displayDerivation';
+export {readDisplayInfo} from './foundations/displayDevice';
 export {selectDisplayRole} from './selectors/selectDisplayRole';
 export {
   powerStatusChangedCommand,

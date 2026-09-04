@@ -8815,6 +8815,35 @@ final class CatalogAcceptanceScenarios {
         return enableAcceptanceItem(context, fixture, session, code, item);
     }
 
+    /** Business-scenario bridge for a real Catalog owner rename followed by authoritative readback. */
+    JsonNode acceptanceRenamePlainItem(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String itemCode,
+            String newName)
+            throws Exception {
+        JsonNode current = readItem(context, fixture, session, itemCode);
+        long expectedVersion = current.path("version").asLong();
+        Response saved = saveInventoryNodes(
+                context,
+                fixture,
+                session,
+                itemCode,
+                expectedVersion,
+                List.of(),
+                draft -> draft.put("name", newName),
+                Set.of(200));
+        long savedVersion = saved.json().path("version").asLong();
+        assertTrue(savedVersion > expectedVersion, "BUSINESS: Catalog owner rename advances the versioned item fact");
+        JsonNode readback = readItem(context, fixture, session, itemCode);
+        assertEquals(
+                newName,
+                readback.path("name").asText(),
+                "BUSINESS: Catalog owner rename is visible in authoritative readback");
+        return readback;
+    }
+
     /** Business-scenario fixture bridge for the existing catalog-to-inventory ITEM target chain. */
     JsonNode acceptanceCreateInventoryBackedPlainItem(
             BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String code, String name)

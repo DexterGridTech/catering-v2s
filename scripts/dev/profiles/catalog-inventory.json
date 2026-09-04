@@ -7,6 +7,71 @@
   "mediaDirectory": "contracts/policy/catalog-inventory-p1-media",
   "v4CatalogSourceDirectory": "../catering-server-v4/contracts/fixtures/formal-uat/complex-scenario/catalog/items",
   "parity": {"catalogItems": 73, "mediaAssets": 34, "source": "v4-formal-uat-complex-scenario"},
+  "salesMenuAvailability": {
+    "scope": "STORE",
+    "shapeKey": "STANDARD_SALE_COUNTED",
+    "unitCode": "EACH",
+    "items": [
+      {
+        "code": "R5-SALES-AVAIL-NO-TARGET-001",
+        "name": "菜单库存无目标",
+        "expectedAvailability": {"applicability": "NOT_APPLICABLE", "state": null, "reason": null},
+        "expectedTarget": null,
+        "inventoryCommands": []
+      },
+      {
+        "code": "R5-SALES-AVAIL-NORMAL-001",
+        "name": "菜单库存正常",
+        "expectedAvailability": {"applicability": "APPLICABLE", "state": "AVAILABLE", "reason": null},
+        "expectedTarget": {"balance": "1", "allowNegative": false, "lowStockThreshold": "0"},
+        "inventoryCommands": [
+          {"kind": "CONFIGURE", "allowNegative": false, "lowStockThreshold": "0"},
+          {"kind": "COUNT", "quantity": "1", "zeroConfirmation": false}
+        ]
+      },
+      {
+        "code": "R5-SALES-AVAIL-LOW-001",
+        "name": "菜单库存低库存",
+        "expectedAvailability": {"applicability": "APPLICABLE", "state": "AVAILABLE", "reason": null},
+        "expectedTarget": {"balance": "1", "allowNegative": false, "lowStockThreshold": "2"},
+        "inventoryCommands": [
+          {"kind": "CONFIGURE", "allowNegative": false, "lowStockThreshold": "2"},
+          {"kind": "COUNT", "quantity": "1", "zeroConfirmation": false}
+        ]
+      },
+      {
+        "code": "R5-SALES-AVAIL-OUT-001",
+        "name": "菜单库存缺货",
+        "expectedAvailability": {"applicability": "APPLICABLE", "state": "AUTO_UNAVAILABLE", "reason": "OUT_OF_STOCK"},
+        "expectedTarget": {"balance": "0", "allowNegative": false, "lowStockThreshold": "0"},
+        "inventoryCommands": [
+          {"kind": "CONFIGURE", "allowNegative": false, "lowStockThreshold": "0"},
+          {"kind": "COUNT", "quantity": "0", "zeroConfirmation": true}
+        ]
+      },
+      {
+        "code": "R5-SALES-AVAIL-NEGATIVE-ALLOWED-001",
+        "name": "菜单库存允许负数",
+        "expectedAvailability": {"applicability": "APPLICABLE", "state": "AVAILABLE", "reason": null},
+        "expectedTarget": {"balance": "-1", "allowNegative": true, "lowStockThreshold": "0"},
+        "inventoryCommands": [
+          {"kind": "CONFIGURE", "allowNegative": true, "lowStockThreshold": "0"},
+          {"kind": "ADJUST", "direction": "DECREASE", "quantity": "1", "reasonCode": "CORRECTION"}
+        ]
+      },
+      {
+        "code": "R5-SALES-AVAIL-NEGATIVE-DISALLOWED-001",
+        "name": "菜单库存禁止负数",
+        "expectedAvailability": {"applicability": "APPLICABLE", "state": "AUTO_UNAVAILABLE", "reason": "NEGATIVE_NOT_ALLOWED"},
+        "expectedTarget": {"balance": "-1", "allowNegative": false, "lowStockThreshold": "0"},
+        "inventoryCommands": [
+          {"kind": "CONFIGURE", "allowNegative": true, "lowStockThreshold": "0"},
+          {"kind": "ADJUST", "direction": "DECREASE", "quantity": "1", "reasonCode": "CORRECTION"},
+          {"kind": "CONFIGURE", "allowNegative": false, "lowStockThreshold": "0"}
+        ]
+      }
+    ]
+  },
   "ownerScopes": {
     "headCompany": {"dataNodeRefEnv": "CATALOG_INVENTORY_HEAD_COMPANY_REF", "brandRefEnv": "CATALOG_INVENTORY_BRAND_REF"},
     "store": {"dataNodeRefEnv": "CATALOG_INVENTORY_STORE_REF", "brandRefEnv": "CATALOG_INVENTORY_BRAND_REF"}
@@ -27,7 +92,12 @@
     "getOperationsCatalogNavigation",
     "getOperationsCatalogItems",
     "getOperationsInventoryTargets",
-    "getOperationsInventoryConsumptionTargetCandidates"
+    "getOperationsInventoryConsumptionTargetCandidates",
+    "transitionOperationsCatalogItemStatus",
+    "getOperationsInventoryTarget",
+    "countOperationsInventoryTarget",
+    "adjustOperationsInventoryTarget",
+    "updateOperationsInventoryTargetConfiguration"
   ],
   "readback": ["getOperationsCatalogItem", "getOperationsCatalogNavigation", "getOperationsInventoryTargets", "getOperationsInventoryConsumptionTargetCandidates"],
   "cleanup": {"kind": "catalog-inventory-seed", "mediaNamespaceReadbackRequired": true, "businessAndCleanupSeparate": true},

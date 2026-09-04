@@ -6,7 +6,7 @@ import {CATALOG_INVENTORY_OPERATIONS} from '../../app/api/generated/catalog-inve
 import {OPERATIONS_ADMIN_OPERATIONS} from '../../app/api/generated/operations-edge';
 import {PUBLIC_OPERATIONS} from '../../app/api/generated/public-edge';
 import {salesMenuTestIds} from '../../features/sales-menu/salesMenuTestIds';
-import {selectOperationsDataScope, selectOperationsOption} from './operationsL2';
+import {selectOperationsDataScope, selectOperationsOption, type OperationsDataScopeTouch} from './operationsL2';
 
 type JsonObject = Record<string, unknown>;
 type SalesMenuCase = {
@@ -73,13 +73,25 @@ type SalesMenuTiming = {
 };
 type OwnerCase = JsonObject & {
   fixtureRef?: string;
-  scope?: {kind?: string; regionName?: string; projectName?: string; storeName?: string; headCompanyName?: string};
+  scope?: {
+    kind?: string;
+    regionName?: string;
+    regionRef?: string;
+    projectName?: string;
+    projectRef?: string;
+    storeName?: string;
+    storeRef?: string;
+    headCompanyName?: string;
+    headCompanyRef?: string;
+  };
   channelRef?: string;
   channelName?: string;
   menuRef?: string;
   menuName?: string;
   sectionRef?: string;
   salesSectionRef?: string;
+  salesItems?: JsonObject[];
+  salesItemRefs?: string[];
   itemRef?: string;
   salesItemRef?: string;
   itemName?: string;
@@ -222,8 +234,21 @@ if (ownerFixture) {
     ownerFixture.cleanup.status !== 'PENDING_HELD'
   )
     throw new Error('SALES_MENU_L2_OWNER_FIXTURE_BOUNDARY_INVALID');
-  for (const row of activeCases)
-    if (!ownerFacts(row)) throw new Error(`SALES_MENU_L2_OWNER_FIXTURE_CASE_MISSING:${row.caseId}`);
+  for (const row of activeCases) {
+    const facts = ownerFacts(row);
+    if (!facts) throw new Error(`SALES_MENU_L2_OWNER_FIXTURE_CASE_MISSING:${row.caseId}`);
+    const salesItems = facts.salesItems;
+    const salesItemRefs = facts.salesItemRefs;
+    if (!Array.isArray(salesItems) || !Array.isArray(salesItemRefs))
+      throw new Error(`SALES_MENU_L2_OWNER_CASE_SALES_ITEM_FACTS_MISSING:${row.caseId}`);
+    const materializedRefs = salesItems.map(entry => (typeof entry?.ref === 'string' ? entry.ref : ''));
+    if (
+      materializedRefs.some(ref => ref.length === 0) ||
+      materializedRefs.length !== salesItemRefs.length ||
+      materializedRefs.some((ref, index) => ref !== salesItemRefs[index])
+    )
+      throw new Error(`SALES_MENU_L2_OWNER_CASE_SALES_ITEM_FACTS_MISMATCH:${row.caseId}`);
+  }
 }
 
 // Consume the generated face registries used by the app and its supporting
@@ -410,7 +435,7 @@ function observeGeneratedResponses(page: Page): {drain: () => Promise<void>} {
 
 function recordControlTouch(controlKey: string, testId: string, interaction: 'LOCATOR' | 'ACTION' = 'LOCATOR'): void {
   if (!activeCaseContext) throw new Error('SALES_MENU_L2_CASE_CONTEXT_MISSING');
-  if (activeRuntime && activeActionContext && !activeRuntime.row.parameter.controlKeys.includes(controlKey))
+  if (activeRuntime && !activeRuntime.row.parameter.controlKeys.includes(controlKey))
     throw new Error(`SALES_MENU_L2_CONTROL_TOUCH_UNDECLARED:${activeRuntime.row.caseId}:${controlKey}`);
   appendJoinEvent({
     kind: interaction === 'ACTION' ? 'ACTION_TOUCH' : 'CONTROL_TOUCH',
@@ -603,7 +628,7 @@ async function waitForBoundControl(
 }
 
 async function requireControl(page: Page, key: string, facts: OwnerCase): Promise<Locator> {
-  const resolved = await boundControlWithMetadata(page, key, facts);
+  const resolved = await waitForBoundControl(page, key, facts);
   await expect(resolved.locator).toBeVisible();
   recordControlTouch(key, resolved.testId);
   return resolved.locator;
@@ -642,6 +667,25 @@ async function waitForOperation(runtime: CaseRuntime, operationId: string, count
   return completion;
 }
 
+function selectedMenuOperationObservations(
+  runtime: CaseRuntime,
+  facts: OwnerCase,
+  operationId: string,
+): OperationObservation[] {
+  const menuRef = factText(facts, ['menuRef']);
+  return runtime.observations.filter(
+    entry => entry.operationId === operationId && entry.pathname.includes(`/sales-menus/${menuRef}`),
+  );
+}
+
+function latestSelectedMenuOperation(
+  runtime: CaseRuntime,
+  facts: OwnerCase,
+  operationId: string,
+): OperationObservation | undefined {
+  return selectedMenuOperationObservations(runtime, facts, operationId).at(-1);
+}
+
 async function waitForSelectedMenuOperation(
   runtime: CaseRuntime,
   facts: OwnerCase,
@@ -649,12 +693,10 @@ async function waitForSelectedMenuOperation(
   minimumCount = 1,
 ): Promise<OperationObservation> {
   const menuRef = factText(facts, ['menuRef']);
-  const matchesSelectedMenu = (entry: OperationObservation) =>
-    entry.operationId === operationId && entry.pathname.includes(`/sales-menus/${menuRef}`);
   await expect
-    .poll(() => runtime.observations.filter(matchesSelectedMenu).length, {timeout: 20_000})
+    .poll(() => selectedMenuOperationObservations(runtime, facts, operationId).length, {timeout: 20_000})
     .toBeGreaterThanOrEqual(minimumCount);
-  const completion = [...runtime.observations].reverse().find(matchesSelectedMenu);
+  const completion = latestSelectedMenuOperation(runtime, facts, operationId);
   if (!completion || completion.status < 200 || completion.status >= 300)
     throw new Error(
       `SALES_MENU_L2_SELECTED_MENU_OPERATION_FAILED:${runtime.row.caseId}:${operationId}:${completion?.status ?? 'MISSING'}`,
@@ -667,7 +709,7 @@ async function waitForSelectedMenuOperation(
     operationId,
     menuRef,
     observedPath: completion.pathname,
-    completionCount: runtime.observations.filter(matchesSelectedMenu).length,
+    completionCount: selectedMenuOperationObservations(runtime, facts, operationId).length,
     minimumCount,
     status: completion.status,
   });
@@ -747,8 +789,18 @@ async function assertExpectedOperations(runtime: CaseRuntime): Promise<void> {
   const forbidden = new Set(network?.forbidden ?? []);
   const declared = new Set([...runtime.row.parameter.operationIds, ...backgroundAllowed]);
   for (const operationId of required) {
-    const count = runtime.observations.filter(entry => entry.operationId === operationId).length;
-    if (count === 0) throw new Error(`SALES_MENU_L2_REQUIRED_OPERATION_MISSING:${runtime.row.caseId}:${operationId}`);
+    await expect
+      .poll(() => runtime.observations.filter(entry => entry.operationId === operationId).length, {timeout: 20_000})
+      .toBeGreaterThan(0);
+    const completion = runtime.observations.find(entry => entry.operationId === operationId);
+    appendDebugEvent({
+      kind: 'TEST_CHECKPOINT',
+      caseId: runtime.row.caseId,
+      scenarioId: runtime.row.scenarioId,
+      checkpoint: 'REQUIRED_OPERATION_READ_MODEL_READY',
+      operationId,
+      status: completion?.status ?? null,
+    });
   }
   for (const observation of runtime.observations) {
     if (forbidden.has(observation.operationId))
@@ -793,11 +845,8 @@ function responseItems(payload: unknown): JsonObject[] {
     : [];
 }
 
-function latestItems(runtime: CaseRuntime, operationId: string): JsonObject[] {
-  const payload = [...runtime.observations]
-    .reverse()
-    .find(entry => entry.operationId === operationId && entry.payload)?.payload;
-  return responseItems(payload);
+function latestSelectedMenuItems(runtime: CaseRuntime, facts: OwnerCase, operationId: string): JsonObject[] {
+  return responseItems(latestSelectedMenuOperation(runtime, facts, operationId)?.payload);
 }
 
 function ownerCandidateByCatalogRef(catalogItemRef: string): JsonObject {
@@ -818,8 +867,8 @@ function ownerCandidateItemRef(catalogItemRef: string): string {
   return itemRef;
 }
 
-function ownerSalesItemByRef(salesItemRef: string): JsonObject {
-  const salesItems = ownerFixture?.ownerFacts?.salesItems;
+function ownerSalesItemByRef(facts: OwnerCase, salesItemRef: string): JsonObject {
+  const salesItems = facts.salesItems;
   if (!Array.isArray(salesItems)) throw new Error('SALES_MENU_L2_OWNER_SALES_ITEM_FACTS_MISSING');
   const item = salesItems.find(
     (entry): entry is JsonObject => Boolean(entry) && typeof entry === 'object' && entry.ref === salesItemRef,
@@ -845,7 +894,7 @@ async function assertCurrentSalesItemPageReadModel(
   mode: 'DRAFT' | 'PUBLISHED',
 ): Promise<void> {
   const salesItemRef = factText(facts, ['itemRef', 'salesItemRef']);
-  const item = ownerSalesItemByRef(salesItemRef);
+  const item = ownerSalesItemByRef(facts, salesItemRef);
   const itemCode = item.itemCode;
   if (typeof itemCode !== 'string' || itemCode.length === 0)
     throw new Error(`SALES_MENU_L2_OWNER_SALES_ITEM_CODE_MISSING:${salesItemRef}`);
@@ -865,7 +914,7 @@ async function assertCurrentSalesItemPageReadModel(
 
 async function assertPublishedItemDetailReadModel(page: Page, facts: OwnerCase, runtime: CaseRuntime): Promise<void> {
   const salesItemRef = factText(facts, ['itemRef', 'salesItemRef']);
-  const item = ownerSalesItemByRef(salesItemRef);
+  const item = ownerSalesItemByRef(facts, salesItemRef);
   const itemCode = item.itemCode;
   if (typeof itemCode !== 'string' || itemCode.length === 0)
     throw new Error(`SALES_MENU_L2_OWNER_SALES_ITEM_CODE_MISSING:${salesItemRef}`);
@@ -885,6 +934,7 @@ async function assertPublishedItemDetailReadModel(page: Page, facts: OwnerCase, 
 
 async function waitForLatestItemRef(
   runtime: CaseRuntime,
+  facts: OwnerCase,
   operationId: string,
   field: string,
   predicate: (item: JsonObject) => boolean,
@@ -892,14 +942,14 @@ async function waitForLatestItemRef(
   await expect
     .poll(
       () => {
-        const item = latestItems(runtime, operationId).find(predicate);
+        const item = latestSelectedMenuItems(runtime, facts, operationId).find(predicate);
         const ref = item?.[field];
         return typeof ref === 'string' && ref.length > 0 ? ref : null;
       },
       {timeout: 20_000},
     )
     .not.toBeNull();
-  const item = latestItems(runtime, operationId).find(predicate);
+  const item = latestSelectedMenuItems(runtime, facts, operationId).find(predicate);
   const ref = item?.[field];
   if (typeof ref !== 'string' || ref.length === 0)
     throw new Error(`SALES_MENU_L2_READBACK_REF_MISSING:${runtime.row.caseId}:${operationId}:${field}`);
@@ -919,18 +969,32 @@ async function selectStoreScope(page: Page, facts: OwnerCase): Promise<void> {
     'STORE',
     {
       regionName: scope.regionName,
+      regionRef: scope.regionRef,
       projectName: scope.projectName,
+      projectRef: scope.projectRef,
       storeName: scope.storeName,
+      storeRef: scope.storeRef,
     },
-    testId => recordControlTouch('STORE_SCOPE', testId),
+    touch => recordControlTouch(storeScopeControlKey(touch), touch.testId),
   );
 }
 
-async function openSalesMenu(page: Page, facts: OwnerCase): Promise<void> {
+function storeScopeControlKey(touch: OperationsDataScopeTouch): string {
+  if (touch.phase === 'TRIGGER') return 'STORE_SCOPE_TRIGGER';
+  if (touch.phase === 'SELECTOR' || touch.phase === 'OPTION') {
+    if (!touch.type) throw new Error(`SALES_MENU_L2_SCOPE_TOUCH_TYPE_MISSING:${touch.phase}`);
+    return `STORE_SCOPE_${touch.type}_${touch.phase}`;
+  }
+  if (touch.phase === 'CONFIRM') return 'STORE_SCOPE_CONFIRM';
+  return 'STORE_SCOPE_CANCEL';
+}
+
+async function openSalesMenu(page: Page, facts: OwnerCase, verifyChannelCards: boolean): Promise<void> {
   await page.goto(routeFromStoreProfile());
   await expect(page.getByTestId('operations-shell-menu')).toBeVisible();
   await selectStoreScope(page, facts);
   await requireControl(page, 'SALES_MENU_PAGE', facts);
+  if (!verifyChannelCards) return;
   await requireControl(page, 'SALES_MENU_CHANNEL_CARDS', facts);
   const channelRefs = factStringArray(facts, 'channelRefs');
   const channelPageSize = factNumber((ownerFixture?.ownerFacts ?? {}) as OwnerCase, ['channelPageSize'], 20);
@@ -943,11 +1007,43 @@ async function findChannelCard(
   facts: OwnerCase,
   channelRef = factText(facts, ['channelRef']),
 ): Promise<Locator> {
-  await resetCursorToFirstPage(page, salesMenuTestIds.pageCursor, 'SALES_MENU_CHANNEL_PAGINATION');
+  // Locating the selected fixture may require cursor routing, but only the
+  // dedicated 21-channel journey asserts channel pagination as business UI.
+  await resetCursorToFirstPage(page, salesMenuTestIds.pageCursor, 'SALES_MENU_CHANNEL_PAGINATION', false);
   const testId = salesMenuTestIds.channelCard(channelRef);
   for (let pageIndex = 1; pageIndex <= 20; pageIndex += 1) {
     const candidate = page.getByTestId(testId);
+    const next = page.getByTestId(`${salesMenuTestIds.pageCursor}-next`);
+    // The channel query is backed by RTK Query currentData.  During the short
+    // response-to-render interval the list is still empty and the next cursor
+    // is disabled, so checking both once can mistake an unsettled read model
+    // for a missing channel.  Wait for a DOM-visible target or a usable next
+    // cursor; the action locator remains the exact channel-card test ID.
+    await expect
+      .poll(
+        async () => {
+          const count = await candidate.count();
+          if (count > 1) return `DUPLICATE:${count}`;
+          if (count === 1) return 'TARGET';
+          return (await next.isEnabled()) ? 'NEXT' : 'PENDING';
+        },
+        {timeout: 5_000},
+      )
+      .not.toBe('PENDING');
     const count = await candidate.count();
+    const nextEnabled = await next.isEnabled();
+    appendDebugEvent({
+      kind: 'TEST_CHECKPOINT',
+      caseId: activeCaseContext?.caseId ?? null,
+      scenarioId: activeCaseContext?.scenarioId ?? null,
+      checkpoint: 'SALES_MENU_CHANNEL_PAGE_READ_MODEL_SETTLED',
+      channelRef,
+      pageIndex,
+      targetTestId: testId,
+      targetCount: count,
+      nextEnabled,
+      settledVia: count === 1 ? 'TARGET' : nextEnabled ? 'NEXT' : 'NONE',
+    });
     if (count > 1) throw new Error(`SALES_MENU_L2_TEST_ID_NOT_UNIQUE:SALES_MENU_CHANNEL_CARD:${testId}:${count}`);
     if (count === 1) {
       locatorMetadata.set(candidate, {controlKey: 'SALES_MENU_CHANNEL_CARD', testId});
@@ -964,9 +1060,8 @@ async function findChannelCard(
       });
       return candidate;
     }
-    const next = page.getByTestId(`${salesMenuTestIds.pageCursor}-next`);
     await expect(next).toBeVisible();
-    if (!(await next.isEnabled())) break;
+    if (!nextEnabled) break;
     appendDebugEvent({
       kind: 'TEST_CHECKPOINT',
       caseId: activeCaseContext?.caseId ?? null,
@@ -978,7 +1073,6 @@ async function findChannelCard(
       controlKey: 'SALES_MENU_CHANNEL_PAGINATION',
     });
     await next.click();
-    recordControlTouch('SALES_MENU_CHANNEL_PAGINATION', `${salesMenuTestIds.pageCursor}-next`, 'ACTION');
     await expect(page.getByTestId(salesMenuTestIds.pageCursor)).toContainText(`第 ${pageIndex + 1} 页`);
   }
   throw new Error(`SALES_MENU_L2_CHANNEL_REF_NOT_VISIBLE:${channelRef}`);
@@ -986,51 +1080,50 @@ async function findChannelCard(
 
 async function chooseChannel(page: Page, facts: OwnerCase, runtime: CaseRuntime): Promise<void> {
   const channel = await findChannelCard(page, facts);
-  const wasSelected = (await channel.getByText('当前入口', {exact: true}).count()) > 0;
-  const menuRequestsBefore = runtime.observations.filter(
-    entry => entry.operationId === 'getOperationsSalesMenus',
-  ).length;
   await channel.click();
   recordActionForLocator(channel, 'click');
-  if (!wasSelected) {
-    await expect
-      .poll(() => runtime.observations.filter(entry => entry.operationId === 'getOperationsSalesMenus').length, {
-        timeout: 20_000,
-      })
-      .toBeGreaterThan(menuRequestsBefore);
-    appendDebugEvent({
-      kind: 'TEST_CHECKPOINT',
-      caseId: runtime.row.caseId,
-      scenarioId: runtime.row.scenarioId,
-      checkpoint: 'SALES_MENU_CHANNEL_READ_MODEL_READY',
-      channelRef: factText(facts, ['channelRef']),
-      menuRequestsBefore,
-      menuRequestsAfter: runtime.observations.filter(entry => entry.operationId === 'getOperationsSalesMenus').length,
-      selectedBeforeClick: wasSelected,
-    });
-  } else {
-    appendDebugEvent({
-      kind: 'TEST_CHECKPOINT',
-      caseId: runtime.row.caseId,
-      scenarioId: runtime.row.scenarioId,
-      checkpoint: 'SALES_MENU_CHANNEL_READ_MODEL_ALREADY_SELECTED',
-      channelRef: factText(facts, ['channelRef']),
-      menuRequestsBefore,
-      selectedBeforeClick: wasSelected,
-    });
-  }
+  await expect(channel).toContainText('当前入口');
+  const menuSelector = await waitForBoundControl(page, 'SALES_MENU_SELECTOR', facts);
+  await expect(menuSelector.locator).toBeVisible();
+  await expect(menuSelector.locator).toBeEnabled();
+  recordControlTouch('SALES_MENU_SELECTOR', menuSelector.testId);
+  appendDebugEvent({
+    kind: 'TEST_CHECKPOINT',
+    caseId: runtime.row.caseId,
+    scenarioId: runtime.row.scenarioId,
+    checkpoint: 'SALES_MENU_CHANNEL_READ_MODEL_READY',
+    channelRef: factText(facts, ['channelRef']),
+    selectorTestId: menuSelector.testId,
+    readModelSourceBasis: 'CURRENT_DOM_READ_MODEL',
+  });
 }
 
 async function ensureMenuSelected(page: Page, facts: OwnerCase, runtime: CaseRuntime): Promise<void> {
   const menuSelector = await waitForBoundControl(page, 'SALES_MENU_SELECTOR', facts);
   await expect(menuSelector.locator).toBeVisible();
+  await expect(menuSelector.locator).toBeEnabled();
   recordControlTouch('SALES_MENU_SELECTOR', menuSelector.testId);
   if (facts.menuName) {
     const menuOptionTestId = salesMenuTestIds.menuOption(factText(facts, ['menuRef']));
-    await selectOperationsOption(page, salesMenuTestIds.menuSelector, facts.menuName, menuOptionTestId);
+    await menuSelector.locator.click();
+    recordActionForLocator(menuSelector.locator, 'click');
+    const menuOption = visibleTestId(page, menuOptionTestId);
+    await expect(menuOption).toHaveCount(1);
+    await expect(menuOption).toHaveAttribute('role', 'option');
+    await expect(menuOption).toBeVisible();
+    await menuOption.click();
     recordControlTouch('SALES_MENU_SELECTOR', menuOptionTestId, 'ACTION');
+    await expect(page.getByTestId(salesMenuTestIds.menuSelector)).toContainText(facts.menuName);
   }
-  await waitForSelectedMenuOperation(runtime, facts, 'getOperationsSalesMenu');
+  appendDebugEvent({
+    kind: 'TEST_CHECKPOINT',
+    caseId: runtime.row.caseId,
+    scenarioId: runtime.row.scenarioId,
+    checkpoint: 'SALES_MENU_SELECTED_MENU_READ_MODEL_READY',
+    salesMenuRef: factText(facts, ['menuRef']),
+    selectorTestId: menuSelector.testId,
+    readModelSourceBasis: 'CURRENT_DOM_READ_MODEL',
+  });
 }
 
 async function switchMode(page: Page, mode: 'DRAFT' | 'PUBLISHED' | 'OPERATIONS', facts: OwnerCase): Promise<void> {
@@ -1049,8 +1142,6 @@ async function chooseSection(
   const section = await waitForBoundControl(page, 'SALES_MENU_SECTION', facts);
   await expect(section.locator).toBeVisible();
   recordControlTouch('SALES_MENU_SECTION', section.testId);
-  const sectionOperationId =
-    mode === 'PUBLISHED' ? 'getOperationsSalesMenuPublishedSections' : 'getOperationsSalesMenuDraftSections';
   appendDebugEvent({
     kind: 'TEST_CHECKPOINT',
     caseId: runtime.row.caseId,
@@ -1061,11 +1152,26 @@ async function chooseSection(
     sectionListTestId: sectionList.testId,
     sectionTestId: section.testId,
     readModelSourceBasis: 'CURRENT_DOM_READ_MODEL',
-    observedOperationCount: runtime.observations.filter(entry => entry.operationId === sectionOperationId).length,
   });
   await section.locator.click();
   recordActionForLocator(section.locator, 'click');
-  await waitForSelectedSectionItemsOperation(runtime, facts, mode);
+  await expect(section.locator).toHaveAttribute('aria-current', 'true');
+  const salesItemRefs = Array.isArray(facts.salesItemRefs)
+    ? facts.salesItemRefs.filter((itemRef): itemRef is string => typeof itemRef === 'string' && itemRef.length > 0)
+    : [];
+  if (salesItemRefs.length > 0) {
+    await assertCurrentSalesItemPageReadModel(page, {...facts, itemRef: salesItemRefs[0]}, runtime, mode);
+  }
+  appendDebugEvent({
+    kind: 'TEST_CHECKPOINT',
+    caseId: runtime.row.caseId,
+    scenarioId: runtime.row.scenarioId,
+    checkpoint: 'SALES_MENU_SELECTED_SECTION_READ_MODEL_READY',
+    mode,
+    sectionRef: factText(facts, ['sectionRef', 'salesSectionRef']),
+    selectedItemCount: salesItemRefs.length,
+    readModelSourceBasis: 'CURRENT_DOM_READ_MODEL',
+  });
 }
 
 async function prepareDraft(page: Page, facts: OwnerCase, runtime: CaseRuntime): Promise<void> {
@@ -1090,12 +1196,13 @@ async function clickCursorNext(page: Page, prefix: string, controlKey: string): 
   const next = page.getByTestId(nextTestId);
   await expect(next).toBeVisible();
   await expect(next).toBeEnabled();
+  recordControlTouch(controlKey, nextTestId);
   await next.click();
   recordControlTouch(controlKey, nextTestId, 'ACTION');
   await expect(page.getByTestId(prefix)).toContainText('第 2 页');
 }
 
-async function clickCursorPrevious(page: Page, prefix: string, controlKey: string): Promise<void> {
+async function clickCursorPrevious(page: Page, prefix: string, controlKey: string, recordTouch = true): Promise<void> {
   const binding = bindings.controls[controlKey];
   if (!binding || binding.testIdPrefix !== prefix)
     throw new Error(`SALES_MENU_L2_PAGINATION_BINDING_DRIFT:${controlKey}:${prefix}`);
@@ -1103,18 +1210,24 @@ async function clickCursorPrevious(page: Page, prefix: string, controlKey: strin
   const previous = page.getByTestId(previousTestId);
   await expect(previous).toBeVisible();
   await expect(previous).toBeEnabled();
+  if (recordTouch) recordControlTouch(controlKey, previousTestId);
   await previous.click();
-  recordControlTouch(controlKey, previousTestId, 'ACTION');
+  if (recordTouch) recordControlTouch(controlKey, previousTestId, 'ACTION');
   await expect(page.getByTestId(prefix)).toContainText('第 1 页');
 }
 
-async function resetCursorToFirstPage(page: Page, prefix: string, controlKey: string): Promise<number> {
+async function resetCursorToFirstPage(
+  page: Page,
+  prefix: string,
+  controlKey: string,
+  recordTouch = true,
+): Promise<number> {
   let transitions = 0;
   const previous = page.getByTestId(`${prefix}-previous`);
   for (let attempt = 0; attempt < 20; attempt += 1) {
     await expect(previous).toBeVisible();
     if (!(await previous.isEnabled())) return transitions;
-    await clickCursorPrevious(page, prefix, controlKey);
+    await clickCursorPrevious(page, prefix, controlKey, recordTouch);
     transitions += 1;
   }
   throw new Error(`SALES_MENU_L2_PAGINATION_RESET_LIMIT:${controlKey}`);
@@ -1126,7 +1239,6 @@ async function waitForManagerPageReadModel(
   menuRef: string,
   action: string,
   pageIndex: number,
-  managerRequestsBefore: number,
 ): Promise<{targetVisible: boolean; hasNext: boolean}> {
   const candidate = page.getByTestId(salesMenuTestIds.managerAction(menuRef, action));
   const next = page.getByTestId(`${salesMenuTestIds.managerCursor}-next`);
@@ -1145,12 +1257,8 @@ async function waitForManagerPageReadModel(
     )
     .toBeTruthy();
 
-  const managerRequestsAfter = runtime.observations.filter(
-    entry => entry.operationId === 'getOperationsSalesMenus',
-  ).length;
   const targetVisible = (await candidate.count()) === 1;
   const hasNext = await next.isEnabled();
-  const readModelSource: 'HTTP' | 'CACHE' = managerRequestsAfter > managerRequestsBefore ? 'HTTP' : 'CACHE';
   appendDebugEvent({
     kind: 'TEST_CHECKPOINT',
     caseId: runtime.row.caseId,
@@ -1159,9 +1267,6 @@ async function waitForManagerPageReadModel(
     page: pageIndex,
     menuRef,
     action,
-    operationId: 'getOperationsSalesMenus',
-    completionCount: managerRequestsAfter,
-    readModelSource,
     targetVisible,
     hasNext,
     readModelSourceBasis: 'CURRENT_DOM_READ_MODEL',
@@ -1170,20 +1275,10 @@ async function waitForManagerPageReadModel(
 }
 
 async function findManagerAction(page: Page, runtime: CaseRuntime, menuRef: string, action: string): Promise<Locator> {
-  const managerRequestsBeforeReset = runtime.observations.filter(
-    entry => entry.operationId === 'getOperationsSalesMenus',
-  ).length;
   await resetCursorToFirstPage(page, salesMenuTestIds.managerCursor, 'SALES_MENU_MANAGER_PAGINATION');
   const testId = salesMenuTestIds.managerAction(menuRef, action);
   let pageIndex = 1;
-  let pageReadModel = await waitForManagerPageReadModel(
-    page,
-    runtime,
-    menuRef,
-    action,
-    pageIndex,
-    managerRequestsBeforeReset,
-  );
+  let pageReadModel = await waitForManagerPageReadModel(page, runtime, menuRef, action, pageIndex);
   if (pageReadModel.targetVisible) {
     const candidate = page.getByTestId(testId);
     locatorMetadata.set(candidate, {controlKey: 'SALES_MENU_MANAGER_ACTION', testId});
@@ -1204,19 +1299,9 @@ async function findManagerAction(page: Page, runtime: CaseRuntime, menuRef: stri
     const next = page.getByTestId(`${salesMenuTestIds.managerCursor}-next`);
     await expect(next).toBeVisible();
     if (!pageReadModel.hasNext || !(await next.isEnabled())) break;
-    const managerRequestsBefore = runtime.observations.filter(
-      entry => entry.operationId === 'getOperationsSalesMenus',
-    ).length;
     await next.click();
     recordControlTouch('SALES_MENU_MANAGER_PAGINATION', `${salesMenuTestIds.managerCursor}-next`, 'ACTION');
-    pageReadModel = await waitForManagerPageReadModel(
-      page,
-      runtime,
-      menuRef,
-      action,
-      pageIndex + 1,
-      managerRequestsBefore,
-    );
+    pageReadModel = await waitForManagerPageReadModel(page, runtime, menuRef, action, pageIndex + 1);
     if (pageReadModel.targetVisible) {
       locatorMetadata.set(candidate, {controlKey: 'SALES_MENU_MANAGER_ACTION', testId});
       await expect(candidate).toBeVisible();
@@ -1280,11 +1365,13 @@ async function fillBoundControl(page: Page, key: string, facts: OwnerCase, value
 }
 
 async function clickBoundControl(page: Page, key: string, facts: OwnerCase, label?: string | RegExp): Promise<void> {
-  const button = await requireControl(page, key, facts);
+  const resolved = await waitForBoundControl(page, key, facts);
+  const button = resolved.locator;
   await expect(button).toBeVisible();
   await expect(button).toBeEnabled();
   if (label) await expect(button).toContainText(uiLabelPattern(label));
   await button.click();
+  recordControlTouch(key, resolved.testId);
   recordActionForLocator(button, 'click');
 }
 
@@ -1306,28 +1393,19 @@ async function checkBoundControl(page: Page, key: string, facts: OwnerCase): Pro
 
 async function openDraftEditor(page: Page, facts: OwnerCase, runtime: CaseRuntime): Promise<void> {
   await requireControl(page, 'SALES_MENU_ITEM_TABLE', facts);
-  const detailReadsBefore = runtime.observations.filter(
-    entry => entry.operationId === 'getOperationsSalesMenuDraftItem',
-  ).length;
   await clickRequiredControl(page, 'SALES_MENU_ITEM', facts);
   await requireControl(page, 'SALES_MENU_ITEM_EDITOR', facts);
   const save = await waitForBoundControl(page, 'SALES_MENU_ITEM_SAVE', facts);
   await expect(save.locator).toBeEnabled();
   recordControlTouch('SALES_MENU_ITEM_SAVE', save.testId);
-  const detailReadsAfter = runtime.observations.filter(
-    entry => entry.operationId === 'getOperationsSalesMenuDraftItem',
-  ).length;
-  if (detailReadsAfter > detailReadsBefore)
-    await waitForOperation(runtime, 'getOperationsSalesMenuDraftItem', detailReadsAfter);
   appendDebugEvent({
     kind: 'TEST_CHECKPOINT',
     caseId: runtime.row.caseId,
     scenarioId: runtime.row.scenarioId,
     checkpoint: 'SALES_MENU_ITEM_DETAIL_READ_MODEL_READY',
-    operationId: 'getOperationsSalesMenuDraftItem',
-    detailReadsBefore,
-    detailReadsAfter,
-    readModelSource: detailReadsAfter > detailReadsBefore ? 'HTTP' : 'CACHE',
+    editorTestId: salesMenuTestIds.itemEditor,
+    saveTestId: save.testId,
+    readModelSourceBasis: 'CURRENT_DOM_READ_MODEL',
   });
 }
 
@@ -1380,22 +1458,19 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
         const secondPageRefs = channelRefs.slice(channelPageSize);
         if (secondPageRefs.length === 0) throw new Error('SALES_MENU_L2_CHANNEL_SECOND_PAGE_FACT_MISSING');
         await clickCursorNext(page, salesMenuTestIds.pageCursor, 'SALES_MENU_CHANNEL_PAGINATION');
-        await waitForOperation(runtime, 'getOperationsStoreBusinessChannels');
         for (const channelRef of secondPageRefs)
           await expect(page.getByTestId(salesMenuTestIds.channelCard(channelRef))).toBeVisible();
         await resetCursorToFirstPage(page, salesMenuTestIds.pageCursor, 'SALES_MENU_CHANNEL_PAGINATION');
       }
       await chooseChannel(page, facts, runtime);
-      await waitForOperation(runtime, 'getOperationsStoreBusinessChannels');
       await ensureMenuSelected(page, facts, runtime);
       if (await page.getByTestId(`${salesMenuTestIds.selectorCursor}-next`).isEnabled())
         await clickCursorNext(page, salesMenuTestIds.selectorCursor, 'SALES_MENU_SELECTOR_PAGINATION');
-      await waitForOperation(runtime, 'getOperationsSalesMenus');
       break;
     case 'sales-menu-section-actions': {
       await prepareDraft(page, facts, runtime);
       const sectionRefs = factStringArray(facts, 'sectionRefs');
-      const initialSections = latestItems(runtime, 'getOperationsSalesMenuDraftSections');
+      const initialSections = latestSelectedMenuItems(runtime, facts, 'getOperationsSalesMenuDraftSections');
       if (initialSections.length !== sectionRefs.length)
         throw new Error(`SALES_MENU_L2_SECTION_DENOMINATOR_INVALID:${initialSections.length}`);
       const firstInitialSection = initialSections[0];
@@ -1410,6 +1485,7 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await waitForOperation(runtime, 'createOperationsSalesMenuSection');
       const createdSectionRef = await waitForLatestItemRef(
         runtime,
+        facts,
         'getOperationsSalesMenuDraftSections',
         'salesSectionRef',
         item => item.name === createSectionName,
@@ -1422,7 +1498,7 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await waitForOperation(runtime, 'renameOperationsSalesMenuSection');
       await expect
         .poll(() =>
-          latestItems(runtime, 'getOperationsSalesMenuDraftSections').some(
+          latestSelectedMenuItems(runtime, facts, 'getOperationsSalesMenuDraftSections').some(
             item => item.salesSectionRef === createdSectionRef && item.name === renameSectionName,
           ),
         )
@@ -1432,7 +1508,7 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
     case 'sales-menu-section-move-and-delete': {
       await prepareDraft(page, facts, runtime);
       const sectionRefs = factStringArray(facts, 'sectionRefs');
-      const initialSections = latestItems(runtime, 'getOperationsSalesMenuDraftSections');
+      const initialSections = latestSelectedMenuItems(runtime, facts, 'getOperationsSalesMenuDraftSections');
       if (initialSections.length !== sectionRefs.length)
         throw new Error(`SALES_MENU_L2_SECTION_DENOMINATOR_INVALID:${initialSections.length}`);
       const firstInitialSection = initialSections[0];
@@ -1453,27 +1529,32 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       ];
       await expect
         .poll(() =>
-          latestItems(runtime, 'getOperationsSalesMenuDraftSections').map(item => String(item.salesSectionRef)),
+          latestSelectedMenuItems(runtime, facts, 'getOperationsSalesMenuDraftSections').map(item =>
+            String(item.salesSectionRef),
+          ),
         )
         .toEqual(expectedOrderAfterMove);
       const movedAction = await requireControl(page, 'SALES_MENU_SECTION_ACTION', movedFacts);
       await chooseDropdownAction(page, movedAction, 'SALES_MENU_SECTION_MENU_ACTION', movedFacts, 'delete', '删除分区');
       await clickBoundControl(page, 'SALES_MENU_CONFIRMATION_SUBMIT', movedFacts, '确认');
       await waitForOperation(runtime, 'deleteOperationsSalesMenuSection');
-      await expect.poll(() => latestItems(runtime, 'getOperationsSalesMenuDraftSections').length).toBe(2);
+      await expect
+        .poll(() => latestSelectedMenuItems(runtime, facts, 'getOperationsSalesMenuDraftSections').length)
+        .toBe(2);
       await expect
         .poll(() =>
-          latestItems(runtime, 'getOperationsSalesMenuDraftSections').some(
+          latestSelectedMenuItems(runtime, facts, 'getOperationsSalesMenuDraftSections').some(
             item => item.salesSectionRef === movedSectionRef,
           ),
         )
         .toBe(false);
+      await waitForOperation(runtime, 'getOperationsSalesMenuPublicationPreview', 4);
       break;
     }
     case 'sales-menu-section-delete-non-empty': {
       await prepareDraft(page, facts, runtime);
       const sectionRefs = factStringArray(facts, 'sectionRefs');
-      const initialSections = latestItems(runtime, 'getOperationsSalesMenuDraftSections');
+      const initialSections = latestSelectedMenuItems(runtime, facts, 'getOperationsSalesMenuDraftSections');
       if (initialSections.length !== sectionRefs.length)
         throw new Error(`SALES_MENU_L2_SECTION_DENOMINATOR_INVALID:${initialSections.length}`);
       const nonEmptySection = initialSections.find(item => Number(item.itemCount ?? 0) > 0);
@@ -1482,6 +1563,16 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       const beforeDelete = initialSections.map(item =>
         [item.salesSectionRef, item.name, item.itemCount, item.displayOrder].join(':'),
       );
+      const sectionReadCountBeforeDelete = selectedMenuOperationObservations(
+        runtime,
+        facts,
+        'getOperationsSalesMenuDraftSections',
+      ).length;
+      const previewReadCountBeforeDelete = selectedMenuOperationObservations(
+        runtime,
+        facts,
+        'getOperationsSalesMenuPublicationPreview',
+      ).length;
       const nonEmptyFacts = {...facts, sectionRef: nonEmptySectionRef, salesSectionRef: nonEmptySectionRef};
       const action = await requireControl(page, 'SALES_MENU_SECTION_ACTION', nonEmptyFacts);
       await chooseDropdownAction(page, action, 'SALES_MENU_SECTION_MENU_ACTION', nonEmptyFacts, 'delete', '删除分区');
@@ -1491,9 +1582,21 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
         throw new Error(
           `SALES_MENU_L2_SECTION_DELETE_ERROR_CODE_INVALID:${responseErrorCode(failedDelete.payload) ?? 'MISSING'}`,
         );
+      await waitForSelectedMenuOperation(
+        runtime,
+        facts,
+        'getOperationsSalesMenuDraftSections',
+        sectionReadCountBeforeDelete + 1,
+      );
+      await waitForSelectedMenuOperation(
+        runtime,
+        facts,
+        'getOperationsSalesMenuPublicationPreview',
+        previewReadCountBeforeDelete + 1,
+      );
       await expect
         .poll(() =>
-          latestItems(runtime, 'getOperationsSalesMenuDraftSections').map(item =>
+          latestSelectedMenuItems(runtime, facts, 'getOperationsSalesMenuDraftSections').map(item =>
             [item.salesSectionRef, item.name, item.itemCount, item.displayOrder].join(':'),
           ),
         )
@@ -1504,33 +1607,19 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await prepareDraft(page, facts, runtime);
       await requireControl(page, 'SALES_MENU_ITEM_TABLE', facts);
       await clickBoundControl(page, 'SALES_MENU_CANDIDATE_ADD', facts, '添加商品到菜单');
-      const candidateDrawer = await requireControl(page, 'SALES_MENU_CANDIDATE_DRAWER', facts);
-      await waitForOperation(runtime, 'getOperationsCatalogNavigation');
+      await requireControl(page, 'SALES_MENU_CANDIDATE_DRAWER', facts);
       await requireControl(page, 'SALES_MENU_CANDIDATE_CATEGORY_TREE', facts);
       const candidateRefs = factStringArray(facts, 'candidateRefs');
       const firstCandidateRef = ownerCandidateItemRef(candidateRefs[0]);
       const secondCandidateRef = ownerCandidateItemRef(candidateRefs[1]);
-      const candidatePageSize = factNumber(facts, ['candidatePageSize'], 20);
       appendDebugEvent({
         kind: 'TEST_CHECKPOINT',
         caseId: runtime.row.caseId,
         scenarioId: runtime.row.scenarioId,
-        checkpoint: 'CANDIDATE_PAGE_BEFORE_HTTP_COMPLETION',
-        observedCandidateRequests: runtime.observations.filter(
-          entry => entry.operationId === 'getOperationsSalesMenuItemCandidates',
-        ).length,
-        expectedVisibleCandidateCount: candidatePageSize,
-      });
-      await waitForOperation(runtime, 'getOperationsSalesMenuItemCandidates');
-      appendDebugEvent({
-        kind: 'TEST_CHECKPOINT',
-        caseId: runtime.row.caseId,
-        scenarioId: runtime.row.scenarioId,
-        checkpoint: 'CANDIDATE_PAGE_AFTER_HTTP_COMPLETION',
-        observedCandidateRequests: runtime.observations.filter(
-          entry => entry.operationId === 'getOperationsSalesMenuItemCandidates',
-        ).length,
-        expectedVisibleCandidateCount: candidatePageSize,
+        checkpoint: 'CANDIDATE_PAGE_READ_MODEL_READY',
+        firstCandidateRef,
+        secondCandidateRef,
+        readModelSourceBasis: 'CURRENT_DOM_READ_MODEL',
       });
       await expect(visibleTestId(page, salesMenuTestIds.candidateRow(firstCandidateRef))).toBeVisible();
       await checkBoundControl(page, 'SALES_MENU_CANDIDATE_ROW', {...facts, candidateRef: firstCandidateRef});
@@ -1543,9 +1632,11 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await clickBoundControl(page, 'SALES_MENU_CANDIDATE_SUBMIT', facts, '添加已选商品');
       await waitForOperation(runtime, 'addOperationsSalesMenuItems');
       await expect
-        .poll(() => latestItems(runtime, 'getOperationsSalesMenuDraftItems').length, {timeout: 20_000})
+        .poll(() => latestSelectedMenuItems(runtime, facts, 'getOperationsSalesMenuDraftItems').length, {
+          timeout: 20_000,
+        })
         .toBe(3);
-      const addedItems = latestItems(runtime, 'getOperationsSalesMenuDraftItems');
+      const addedItems = latestSelectedMenuItems(runtime, facts, 'getOperationsSalesMenuDraftItems');
       const duplicateRef = factText(facts, ['duplicateCandidateRef']);
       const duplicateItems = addedItems.filter(item => String(item.catalogItemRef) === duplicateRef);
       if (duplicateItems.length !== 2 || new Set(duplicateItems.map(item => String(item.salesItemRef))).size !== 2)
@@ -1741,7 +1832,7 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await waitForOperation(runtime, 'restoreOperationsSalesMenuItemSale');
       await switchMode(page, 'OPERATIONS', facts);
       await requireControl(page, 'SALES_MENU_OPERATION_LOG', facts);
-      await waitForOperation(runtime, 'getOperationsSalesMenuOperationRecords');
+      await expect(visibleTestId(page, salesMenuTestIds.operationLog)).toContainText('操作人');
       break;
     case 'sales-menu-menu-management-and-multi-active': {
       await chooseChannel(page, facts, runtime);
@@ -1762,8 +1853,8 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       const targetMenuName = targetMenu.name;
       if (typeof targetMenuName !== 'string' || targetMenuName.length === 0)
         throw new Error(`SALES_MENU_L2_OWNER_MENU_NAME_MISSING:${targetMenuRef}`);
-      const menuSelector = await requireControl(page, 'SALES_MENU_SELECTOR', targetFacts);
-      await expect(menuSelector).toContainText(targetMenuName);
+      await requireControl(page, 'SALES_MENU_SELECTOR', targetFacts);
+      await expect(page.getByTestId(salesMenuTestIds.menuSelector)).toContainText(targetMenuName);
       appendDebugEvent({
         kind: 'TEST_CHECKPOINT',
         caseId: runtime.row.caseId,
@@ -1906,9 +1997,7 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await expect
         .poll(
           () => {
-            const latest = [...runtime.observations]
-              .reverse()
-              .find(entry => entry.operationId === 'getOperationsSalesMenuPublicationPreview');
+            const latest = latestSelectedMenuOperation(runtime, facts, 'getOperationsSalesMenuPublicationPreview');
             const violations = responseObject(latest?.payload)?.violations;
             return latest?.status === 200 && Array.isArray(violations)
               ? violations.some(item => (item as JsonObject).kind === 'CHANNEL_DISABLED')
@@ -1917,9 +2006,7 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
           {timeout: 20_000},
         )
         .toBe(true);
-      const preview = [...runtime.observations]
-        .reverse()
-        .find(entry => entry.operationId === 'getOperationsSalesMenuPublicationPreview');
+      const preview = latestSelectedMenuOperation(runtime, facts, 'getOperationsSalesMenuPublicationPreview');
       if (!preview) throw new Error('SALES_MENU_L2_PUBLICATION_PREVIEW_READBACK_MISSING');
       const violations = responseObject(preview.payload)?.violations;
       if (!Array.isArray(violations) || !violations.some(item => (item as JsonObject).kind === 'CHANNEL_DISABLED'))
@@ -1934,9 +2021,7 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await switchMode(page, 'OPERATIONS', facts);
       await requireControl(page, 'SALES_MENU_OPERATION_LOG', facts);
       await expect(visibleTestId(page, salesMenuTestIds.operationLog)).toContainText('操作人');
-      if (await page.getByTestId(`${salesMenuTestIds.logCursor}-next`).isEnabled())
-        await clickCursorNext(page, salesMenuTestIds.logCursor, 'SALES_MENU_LOG_PAGINATION');
-      await waitForOperation(runtime, 'getOperationsSalesMenuOperationRecords');
+      await clickCursorNext(page, salesMenuTestIds.logCursor, 'SALES_MENU_LOG_PAGINATION');
       break;
     case 'sales-menu-failure-recovery-and-focus': {
       await prepareDraft(page, facts, runtime);
@@ -2017,7 +2102,6 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
     case 'sales-menu-auth-and-scope-isolation': {
       await chooseChannel(page, facts, runtime);
       await ensureMenuSelected(page, facts, runtime);
-      await waitForSelectedMenuOperation(runtime, facts, 'getOperationsSalesMenuDraftSections');
       await requireControl(page, 'SALES_MENU_SECTION_LIST', facts);
       await expect(await requireControl(page, 'SALES_MENU_MENU_SCHEDULE', facts)).toBeDisabled();
       await expect(await requireControl(page, 'SALES_MENU_MENU_PUBLISH', facts)).toBeDisabled();
@@ -2035,9 +2119,6 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
     }
     default:
       throw new Error(`SALES_MENU_L2_CASE_UNKNOWN:${runtime.row.caseId}`);
-  }
-  for (const operationId of runtime.row.parameter.operationIds) {
-    if (operationId.startsWith('get') && latestItems(runtime, operationId).length > 0) break;
   }
 }
 
@@ -2110,7 +2191,7 @@ test.describe('销售菜单 · generated browser-L2 contract', () => {
               }
             : undefined,
         );
-        await openSalesMenu(page, facts);
+        await openSalesMenu(page, facts, row.parameter.controlKeys.includes('SALES_MENU_CHANNEL_CARDS'));
         await runDeclaredAction(runtime, async () => {
           await runCaseJourney(page, runtime);
           await responseObserver.drain();

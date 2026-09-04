@@ -57,10 +57,17 @@ final class SalesMenuAcceptanceScenarios {
 
     private record ItemState(UUID ref, UUID catalogRef, long itemVersion) {}
 
+    private record MenuReadResult(JsonNode json) {}
+
     private record AvailabilityExpectation(String applicability, String state, String reason) {}
 
     private record PreparedMenu(
-            MenuFixture fixture, MenuState menu, SectionState section, ItemState item, long menuVersion) {}
+            MenuFixture fixture,
+            MenuState menu,
+            SectionState section,
+            ItemState item,
+            String catalogItemCode,
+            long menuVersion) {}
 
     @AcceptanceScenario(
             id = "sales-menu.store-scope-and-channel-eligibility",
@@ -84,7 +91,7 @@ final class SalesMenuAcceptanceScenarios {
                 listItems.get(0).path("salesMenuRef").asText(),
                 "BUSINESS: the menu list returns the created menu identity");
 
-        BackendAcceptanceTest.Response detail = readMenu(context, menus, menu.ref(), channelRef);
+        MenuReadResult detail = readMenu(context, menus, menu.ref(), channelRef);
         assertEquals(
                 menus.fixture().storeId().toString(),
                 detail.json().path("storeRef").asText(),
@@ -249,6 +256,21 @@ final class SalesMenuAcceptanceScenarios {
         MenuState active = created.getFirst();
         long version = setActivation(context, menus, active.ref(), firstChannel, "ENABLED", active.version());
         version = setActivation(context, menus, active.ref(), secondChannel, "ENABLED", version);
+        MenuState secondActive = created.get(1);
+        long secondActiveVersion =
+                setActivation(context, menus, secondActive.ref(), firstChannel, "ENABLED", secondActive.version());
+        MenuReadResult firstChannelActive = readMenu(context, menus, active.ref(), firstChannel);
+        MenuReadResult secondChannelActive = readMenu(context, menus, secondActive.ref(), firstChannel);
+        assertEquals(
+                "ENABLED",
+                firstChannelActive.json().path("activation").path("status").asText(),
+                "BUSINESS: the first menu is enabled for the first channel");
+        assertEquals(
+                "ENABLED",
+                secondChannelActive.json().path("activation").path("status").asText(),
+                "BUSINESS: a second menu can be enabled for the same channel");
+        assertTrue(secondActiveVersion > 0, "BUSINESS: the second active menu returns a versioned readback");
+        version = setActivation(context, menus, active.ref(), firstChannel, "DISABLED", version);
         version = updateSchedule(context, menus, active.ref(), version, dailySchedule());
         version = renameMenu(context, menus, active.ref(), version, "SM05 lifecycle renamed");
 
@@ -271,15 +293,52 @@ final class SalesMenuAcceptanceScenarios {
                 itemUpdateBody(null, directSale(2800), ordering(1, 1), inheritedMedia(), version));
         draftItem = readDraftItemState(context, menus, active.ref(), draftItem.ref());
         version = publish(context, menus, active.ref(), version);
-        BackendAcceptanceTest.Response activeDetail = readMenu(context, menus, active.ref(), firstChannel);
+        MenuReadResult activeDetail = readMenu(context, menus, active.ref(), firstChannel);
         assertEquals(
                 "SM05 lifecycle renamed",
                 activeDetail.json().path("name").asText(),
                 "BUSINESS: an active collection can still be renamed and published");
         assertEquals(
-                "ENABLED",
+                "DISABLED",
                 activeDetail.json().path("activation").path("status").asText(),
-                "BUSINESS: the first channel activation is read back");
+                "BUSINESS: a disabled activation does not block edit or publish");
+        assertEquals(
+                "DAILY_TIME_RANGE",
+                activeDetail.json().path("draftSchedule").path("kind").asText(),
+                "BUSINESS: the updated draft schedule is read back");
+        assertEquals(
+                "09:00",
+                activeDetail.json().path("draftSchedule").path("startLocalTime").asText(),
+                "BUSINESS: the draft schedule start is authoritative");
+        assertEquals(
+                "22:00",
+                activeDetail.json().path("draftSchedule").path("endLocalTime").asText(),
+                "BUSINESS: the draft schedule end is authoritative");
+        assertEquals(
+                "DAILY_TIME_RANGE",
+                activeDetail.json().path("latestPublishedSchedule").path("kind").asText(),
+                "BUSINESS: the published schedule is read back");
+        assertEquals(
+                "09:00",
+                activeDetail
+                        .json()
+                        .path("latestPublishedSchedule")
+                        .path("startLocalTime")
+                        .asText(),
+                "BUSINESS: the published schedule start is frozen");
+        assertEquals(
+                "22:00",
+                activeDetail
+                        .json()
+                        .path("latestPublishedSchedule")
+                        .path("endLocalTime")
+                        .asText(),
+                "BUSINESS: the published schedule end is frozen");
+        MenuReadResult activeSecondChannel = readMenu(context, menus, active.ref(), secondChannel);
+        assertEquals(
+                "ENABLED",
+                activeSecondChannel.json().path("activation").path("status").asText(),
+                "BUSINESS: a menu activation on another channel remains independent");
         assertEquals(
                 1,
                 activeDetail.json().path("latestPublishedRevision").asInt(),
@@ -290,7 +349,7 @@ final class SalesMenuAcceptanceScenarios {
 
         MenuState archived = created.getLast();
         long archivedVersion = archiveMenu(context, menus, archived.ref(), archived.version());
-        BackendAcceptanceTest.Response archivedDetail = readMenu(context, menus, archived.ref(), firstChannel);
+        MenuReadResult archivedDetail = readMenu(context, menus, archived.ref(), firstChannel);
         assertTrue(
                 archivedDetail.json().path("archived").asBoolean(false),
                 "BUSINESS: archive is persisted on the collection");
@@ -319,6 +378,24 @@ final class SalesMenuAcceptanceScenarios {
         MenuState source = prepared.menu();
         long version = prepared.menuVersion();
         ItemState item = prepared.item();
+        JsonNode skuCatalog = catalog.acceptanceCreateSkuItem(
+                context, menus.fixture(), menus.session(), "SM05-COPY-SKU-" + suffix(), "SM05 copy SKU");
+        JsonNode skuFact = skuCatalog.path("skus").get(0);
+        assertNotNull(skuFact, "BUSINESS: copy fixture contains an owner SKU fact");
+        UUID skuCatalogRef = UUID.fromString(skuCatalog.path("itemRef").asText());
+        UUID skuRef = UUID.fromString(skuFact.path("productSkuRef").asText());
+        String skuName = skuFact.path("skuName").asText();
+        String skuCode = skuFact.path("skuCode").asText();
+        version = addItems(context, menus, source.ref(), prepared.section().ref(), version, List.of(skuCatalogRef));
+        ItemState skuItem =
+                findDraftItem(context, menus, source.ref(), prepared.section().ref(), skuCatalogRef);
+        JsonNode secondCatalog = catalog.acceptanceCreatePlainItem(
+                context, menus.fixture(), menus.session(), "SM05-COPY-SECOND-" + suffix(), "SM05 copy second item");
+        UUID secondCatalogRef = UUID.fromString(secondCatalog.path("itemRef").asText());
+        SectionState secondSection = createSection(context, menus, source.ref(), "SM05 copy second section", version);
+        version = secondSection.menuVersion();
+        version = addItems(context, menus, source.ref(), secondSection.ref(), version, List.of(secondCatalogRef));
+        ItemState secondItem = findDraftItem(context, menus, source.ref(), secondSection.ref(), secondCatalogRef);
         version = updateItem(
                 context,
                 menus,
@@ -327,6 +404,27 @@ final class SalesMenuAcceptanceScenarios {
                 version,
                 itemUpdateBody("源菜单展示名", directSale(2800), ordering(1, 1), inheritedMedia(), version));
         item = readDraftItemState(context, menus, source.ref(), item.ref());
+        version = updateItem(
+                context,
+                menus,
+                source.ref(),
+                skuItem,
+                version,
+                itemUpdateBody(
+                        "源 SKU 已发布",
+                        saleContent("SKU_SELECTION", null, List.of(skuPrice(skuRef, skuName, skuCode, 1299, 1200))),
+                        ordering(1, 2),
+                        inheritedMedia(),
+                        version));
+        skuItem = readDraftItemState(context, menus, source.ref(), skuItem.ref());
+        version = updateItem(
+                context,
+                menus,
+                source.ref(),
+                secondItem,
+                version,
+                itemUpdateBody("源第二项已发布", directSale(3400), ordering(1, 1), inheritedMedia(), version));
+        secondItem = readDraftItemState(context, menus, source.ref(), secondItem.ref());
         version = updateSchedule(context, menus, source.ref(), version, dailySchedule());
         version = setActivation(context, menus, source.ref(), menus.channels().getFirst(), "ENABLED", version);
         version = publish(context, menus, source.ref(), version);
@@ -344,8 +442,26 @@ final class SalesMenuAcceptanceScenarios {
                 source.ref(),
                 item,
                 version,
-                itemUpdateBody("源菜单当前草稿", directSale(3100), ordering(1, 1), inheritedMedia(), version));
+                itemUpdateBody("源菜单当前草稿", directSale(3100), ordering(2, 3), inheritedMedia(), version));
         item = readDraftItemState(context, menus, source.ref(), item.ref());
+        version = updateItem(
+                context,
+                menus,
+                source.ref(),
+                skuItem,
+                version,
+                itemUpdateBody(
+                        "源 SKU 当前草稿",
+                        saleContent("SKU_SELECTION", null, List.of(skuPrice(skuRef, skuName, skuCode, 1299, 1750))),
+                        ordering(2, 4),
+                        inheritedMedia(),
+                        version));
+        skuItem = readDraftItemState(context, menus, source.ref(), skuItem.ref());
+        String secondItemDraftName = "源第二项当前草稿";
+        Map<String, Object> secondItemDraft =
+                itemUpdateBody(secondItemDraftName, directSale(3600), ordering(3, 5), inheritedMedia(), version);
+        version = updateItem(context, menus, source.ref(), secondItem, version, secondItemDraft);
+        secondItem = readDraftItemState(context, menus, source.ref(), secondItem.ref());
 
         BackendAcceptanceTest.Response primaryStage = context.multipartSalesMenuAsset(
                 OPERATIONS_SALES_MENU_ASSET_STAGE,
@@ -404,7 +520,7 @@ final class SalesMenuAcceptanceScenarios {
                 itemUpdateBody(
                         "源菜单当前草稿",
                         directSale(3100),
-                        ordering(1, 1),
+                        ordering(2, 3),
                         media(
                                 "CUSTOM",
                                 List.of(UUID.fromString(primaryAssetRef), UUID.fromString(secondaryAssetRef)),
@@ -439,13 +555,16 @@ final class SalesMenuAcceptanceScenarios {
                         .get(1)
                         .asText(),
                 "BUSINESS: source custom media keeps the secondary assetRef order");
+        long sourceAssetCountBeforeCopy = salesMenuImageCount(menus.fixture());
+        String sourcePrimaryAssetFacts = assetPhysicalFacts(UUID.fromString(primaryAssetRef));
+        String sourceSecondaryAssetFacts = assetPhysicalFacts(UUID.fromString(secondaryAssetRef));
 
         String sourceName = readMenu(
                         context, menus, source.ref(), menus.channels().getFirst())
                 .json()
                 .path("name")
                 .asText();
-        BackendAcceptanceTest.Response copied = context.post(
+        BackendAcceptanceTest.Response copied = context.postCoverageOnly(
                 OPERATIONS_SALES_MENU_COPY,
                 menuRoot(menus.fixture()) + "/" + source.ref() + "/copies",
                 menus.session().cookie(),
@@ -461,7 +580,7 @@ final class SalesMenuAcceptanceScenarios {
                 assertCommand(copied, "copyOperationsSalesMenu", null, null));
         assertTrue(!copy.ref().equals(source.ref()), "BUSINESS: copied collection has an independent identity");
 
-        BackendAcceptanceTest.Response copyDetail =
+        MenuReadResult copyDetail =
                 readMenu(context, menus, copy.ref(), menus.channels().getFirst());
         assertEquals(
                 sourceName + " 副本",
@@ -471,12 +590,32 @@ final class SalesMenuAcceptanceScenarios {
                 "DAILY_TIME_RANGE",
                 copyDetail.json().path("draftSchedule").path("kind").asText(),
                 "BUSINESS: copy carries the current draft schedule");
+        assertEquals(
+                "09:00",
+                copyDetail.json().path("draftSchedule").path("startLocalTime").asText(),
+                "BUSINESS: copy carries the current draft schedule start");
+        assertEquals(
+                "22:00",
+                copyDetail.json().path("draftSchedule").path("endLocalTime").asText(),
+                "BUSINESS: copy carries the current draft schedule end");
         assertTrue(
                 copyDetail.json().path("activation").isNull(),
                 "BUSINESS: copy has no activation relation and is therefore default disabled");
         assertTrue(
                 copyDetail.json().path("latestPublishedRevision").isNull(),
                 "BUSINESS: copy has no copied publication revision");
+        assertEquals(
+                sourceAssetCountBeforeCopy,
+                salesMenuImageCount(menus.fixture()),
+                "BUSINESS: copy adds only sales-menu media relations, not Asset rows");
+        assertEquals(
+                sourcePrimaryAssetFacts,
+                assetPhysicalFacts(UUID.fromString(primaryAssetRef)),
+                "BUSINESS: copy leaves the primary Asset physical metadata and lifecycle unchanged");
+        assertEquals(
+                sourceSecondaryAssetFacts,
+                assetPhysicalFacts(UUID.fromString(secondaryAssetRef)),
+                "BUSINESS: copy leaves the secondary Asset physical metadata and lifecycle unchanged");
 
         BackendAcceptanceTest.Response copyPublished = context.get(
                 OPERATIONS_SALES_MENU_PUBLISHED_SECTIONS,
@@ -490,14 +629,60 @@ final class SalesMenuAcceptanceScenarios {
                 menuRoot(menus.fixture()) + "/" + copy.ref() + "/draft/sections",
                 menus.session().cookie(),
                 Set.of(200));
-        JsonNode copiedSection = copyDraftSections.json().path("items").get(0);
-        assertNotNull(copiedSection, "BUSINESS: copy contains the current draft section");
+        List<JsonNode> copiedSections = iterable(copyDraftSections.json().path("items"));
+        assertEquals(2, copiedSections.size(), "BUSINESS: copy preserves every current draft section");
+        JsonNode copiedFirstSection = copiedSections.getFirst();
+        JsonNode copiedSecondSection = copiedSections.get(1);
         UUID copiedSectionRef =
-                UUID.fromString(copiedSection.path("salesSectionRef").asText());
+                UUID.fromString(copiedFirstSection.path("salesSectionRef").asText());
+        UUID copiedSecondSectionRef =
+                UUID.fromString(copiedSecondSection.path("salesSectionRef").asText());
+        assertFalse(
+                copiedSectionRef.equals(prepared.section().ref()) || copiedSecondSectionRef.equals(secondSection.ref()),
+                "BUSINESS: copy creates independent section identities");
+        assertEquals(
+                "SM05 copy section",
+                copiedFirstSection.path("name").asText(),
+                "BUSINESS: copy preserves the first section name");
+        assertEquals(
+                0, copiedFirstSection.path("displayOrder").asLong(), "BUSINESS: copy preserves first section order");
+        assertEquals(
+                2, copiedFirstSection.path("itemCount").asLong(), "BUSINESS: copy preserves first section item count");
+        assertEquals(
+                "SM05 copy second section",
+                copiedSecondSection.path("name").asText(),
+                "BUSINESS: copy preserves the second section name");
+        assertEquals(
+                1, copiedSecondSection.path("displayOrder").asLong(), "BUSINESS: copy preserves second section order");
+        assertEquals(
+                1,
+                copiedSecondSection.path("itemCount").asLong(),
+                "BUSINESS: copy preserves second section item count");
         ItemState copiedItem = findDraftItem(context, menus, copy.ref(), copiedSectionRef, item.catalogRef());
+        ItemState copiedSkuItem = findDraftItem(context, menus, copy.ref(), copiedSectionRef, skuCatalogRef);
+        ItemState copiedSecondItem =
+                findDraftItem(context, menus, copy.ref(), copiedSecondSectionRef, secondCatalogRef);
         assertFalse(
                 copiedItem.ref().equals(item.ref()),
                 "BUSINESS: copied draft item has an independent sales-item identity");
+        assertFalse(
+                copiedSkuItem.ref().equals(skuItem.ref()),
+                "BUSINESS: copied SKU draft item has an independent sales-item identity");
+        assertFalse(
+                copiedSecondItem.ref().equals(secondItem.ref()),
+                "BUSINESS: copied second draft item has an independent sales-item identity");
+        assertEquals(
+                List.of(copiedItem.ref().toString(), copiedSkuItem.ref().toString()),
+                readAllDraftItemRows(context, menus, copy.ref(), copiedSectionRef).stream()
+                        .map(row -> row.path("salesItemRef").asText())
+                        .toList(),
+                "BUSINESS: copy preserves current draft item order in the first section");
+        assertEquals(
+                List.of(copiedSecondItem.ref().toString()),
+                readAllDraftItemRows(context, menus, copy.ref(), copiedSecondSectionRef).stream()
+                        .map(row -> row.path("salesItemRef").asText())
+                        .toList(),
+                "BUSINESS: copy preserves current draft item order in the second section");
         BackendAcceptanceTest.Response copiedItemRead = context.get(
                 OPERATIONS_SALES_MENU_DRAFT_ITEM,
                 draftItemPath(menus, copy.ref(), copiedItem.ref()),
@@ -511,6 +696,26 @@ final class SalesMenuAcceptanceScenarios {
                         .path("listedPriceCents")
                         .asInt(),
                 "BUSINESS: copy reads the current source draft value, not the old publication");
+        assertEquals(
+                "源菜单当前草稿",
+                copiedItemRead.json().path("displayName").asText(),
+                "BUSINESS: copy carries the current draft display-name override");
+        assertEquals(
+                2,
+                copiedItemRead
+                        .json()
+                        .path("orderingConstraints")
+                        .path("minItemQuantity")
+                        .asInt(),
+                "BUSINESS: copy carries the current draft minimum quantity");
+        assertEquals(
+                3,
+                copiedItemRead
+                        .json()
+                        .path("orderingConstraints")
+                        .path("quantityStep")
+                        .asInt(),
+                "BUSINESS: copy carries the current draft quantity step");
         assertEquals(
                 "CUSTOM",
                 copiedItemRead.json().path("displayMedia").path("mode").asText(),
@@ -542,6 +747,96 @@ final class SalesMenuAcceptanceScenarios {
                         .asText(),
                 "BUSINESS: copy preserves the source custom primary assetRef");
 
+        BackendAcceptanceTest.Response copiedSkuItemRead = context.get(
+                OPERATIONS_SALES_MENU_DRAFT_ITEM,
+                draftItemPath(menus, copy.ref(), copiedSkuItem.ref()),
+                menus.session().cookie(),
+                Set.of(200));
+        assertEquals(
+                "源 SKU 当前草稿",
+                copiedSkuItemRead.json().path("displayName").asText(),
+                "BUSINESS: copy carries the SKU current draft display-name override");
+        assertEquals(
+                "SKU_SELECTION",
+                copiedSkuItemRead.json().path("saleContent").path("kind").asText(),
+                "BUSINESS: copy carries the current SKU sale definition kind");
+        assertTrue(
+                copiedSkuItemRead
+                        .json()
+                        .path("saleContent")
+                        .path("listedPriceCents")
+                        .isNull(),
+                "BUSINESS: copied SKU sale keeps the public parent price absent");
+        assertEquals(
+                skuRef.toString(),
+                copiedSkuItemRead
+                        .json()
+                        .path("saleContent")
+                        .path("skuPrices")
+                        .get(0)
+                        .path("skuRef")
+                        .asText(),
+                "BUSINESS: copy carries the selected SKU identity");
+        assertEquals(
+                1750,
+                copiedSkuItemRead
+                        .json()
+                        .path("saleContent")
+                        .path("skuPrices")
+                        .get(0)
+                        .path("listedPriceCents")
+                        .asInt(),
+                "BUSINESS: copy carries the current SKU listed price");
+        assertEquals(
+                2,
+                copiedSkuItemRead
+                        .json()
+                        .path("orderingConstraints")
+                        .path("minItemQuantity")
+                        .asInt(),
+                "BUSINESS: copy carries the SKU current minimum quantity");
+        assertEquals(
+                4,
+                copiedSkuItemRead
+                        .json()
+                        .path("orderingConstraints")
+                        .path("quantityStep")
+                        .asInt(),
+                "BUSINESS: copy carries the SKU current quantity step");
+        BackendAcceptanceTest.Response copiedSecondItemRead = context.get(
+                OPERATIONS_SALES_MENU_DRAFT_ITEM,
+                draftItemPath(menus, copy.ref(), copiedSecondItem.ref()),
+                menus.session().cookie(),
+                Set.of(200));
+        assertEquals(
+                "源第二项当前草稿",
+                copiedSecondItemRead.json().path("displayName").asText(),
+                "BUSINESS: copy carries the second item current draft display-name override");
+        assertEquals(
+                3600,
+                copiedSecondItemRead
+                        .json()
+                        .path("saleContent")
+                        .path("listedPriceCents")
+                        .asInt(),
+                "BUSINESS: copy carries the second item current draft price");
+        assertEquals(
+                3,
+                copiedSecondItemRead
+                        .json()
+                        .path("orderingConstraints")
+                        .path("minItemQuantity")
+                        .asInt(),
+                "BUSINESS: copy carries the second item minimum quantity");
+        assertEquals(
+                5,
+                copiedSecondItemRead
+                        .json()
+                        .path("orderingConstraints")
+                        .path("quantityStep")
+                        .asInt(),
+                "BUSINESS: copy carries the second item quantity step");
+
         BackendAcceptanceTest.Response copyRecords = context.get(
                 OPERATIONS_SALES_MENU_RECORDS,
                 recordsPath(menus, copy.ref(), menus.channels().getFirst()) + "&pageSize=20",
@@ -565,6 +860,25 @@ final class SalesMenuAcceptanceScenarios {
                 "MANUAL_SOLD_OUT",
                 sourcePublished.json().path("manualSaleStatus").path("state").asText(),
                 "BUSINESS: source manual-sale state remains on the source publication only");
+    }
+
+    void calibrationCopyBoundedDraft(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        PreparedMenu prepared = preparePlainMenu(context, "CP05 bounded copy");
+        MenuFixture menus = prepared.fixture();
+        BackendAcceptanceTest.Response copied = context.post(
+                OPERATIONS_SALES_MENU_COPY,
+                menuRoot(menus.fixture()) + "/" + prepared.menu().ref() + "/copies",
+                menus.session().cookie(),
+                Map.of("expectedVersion", prepared.menuVersion()),
+                Set.of(201));
+        UUID copyRef = UUID.fromString(requiredJsonNode(
+                        copied.json(),
+                        "/salesMenuRef",
+                        JsonNodeType.STRING,
+                        "BUSINESS: bounded copy returns a new menu reference")
+                .asText());
+        assertCommand(copied, "copyOperationsSalesMenu", null, null);
+        assertFalse(copyRef.equals(prepared.menu().ref()), "BUSINESS: bounded copy creates an independent collection");
     }
 
     @AcceptanceScenario(
@@ -1023,6 +1337,26 @@ final class SalesMenuAcceptanceScenarios {
                 "SALES_MENU_ITEM_IMAGE",
                 staged.json().path("target").path("usage").asText(),
                 "BUSINESS: staged media is bound to the menu-image usage");
+        assertEquals(
+                menus.fixture().groupWorkspaceKey(),
+                staged.json().path("target").path("groupWorkspaceKey").asText(),
+                "BUSINESS: stage readback returns the owning workspace target");
+        assertEquals(
+                menus.fixture().storeId().toString(),
+                staged.json().path("target").path("storeRef").asText(),
+                "BUSINESS: stage readback returns the owning store target");
+        assertEquals(
+                menuRef.toString(),
+                staged.json().path("target").path("salesMenuRef").asText(),
+                "BUSINESS: stage readback returns the owning menu target");
+        assertEquals(
+                itemRef.toString(),
+                staged.json().path("target").path("salesItemRef").asText(),
+                "BUSINESS: stage readback returns the owning item target");
+        assertEquals(
+                prepared.item().itemVersion(),
+                staged.json().path("target").path("expectedDraftVersion").asLong(),
+                "BUSINESS: stage readback returns the addressed draft item version");
 
         long version = prepared.menuVersion();
         Map<String, String> grants =
@@ -1047,10 +1381,28 @@ final class SalesMenuAcceptanceScenarios {
                 claimedRead.json().path("displayMedia").path("primaryAssetRef").asText(),
                 "BUSINESS: owner transaction reads back the primary image identity");
 
+        UUID channelRef = menus.channels().getFirst();
+        version = setActivation(context, menus, menuRef, channelRef, "ENABLED", version);
+        version = publish(context, menus, menuRef, version);
+        BackendAcceptanceTest.Response publishedOriginal = context.get(
+                OPERATIONS_SALES_MENU_PUBLISHED_ITEM,
+                publishedItemPath(menus, menuRef, itemRef, channelRef),
+                menus.session().cookie(),
+                Set.of(200));
+        assertTrue(
+                publishedOriginal
+                        .json()
+                        .path("displayMedia")
+                        .path("assetRefs")
+                        .toString()
+                        .contains(assetRef),
+                "BUSINESS: the claimed image enters the immutable published view");
+
         BackendAcceptanceTest.Fixture sibling =
                 host.siblingStoreFixtureSameBrand(menus.fixture(), Set.of(SALES_MENU_CAPABILITY));
         host.completeInvitation(context, sibling);
         BackendAcceptanceTest.Session siblingSession = selectStore(context, sibling, host.login(context, sibling));
+        long crossStoreAssetCountBefore = salesMenuImageCount(menus.fixture());
         BackendAcceptanceTest.Response crossStore = context.multipartSalesMenuAsset(
                 OPERATIONS_SALES_MENU_ASSET_STAGE,
                 menuRoot(sibling) + "/" + menuRef + "/draft/items/" + itemRef + "/assets/stage",
@@ -1065,6 +1417,15 @@ final class SalesMenuAcceptanceScenarios {
                 "SALES_MENU_NOT_FOUND",
                 crossStore.problemCode(),
                 "BUSINESS: a menu image target cannot cross the selected store");
+        assertNoSalesMenuMediaMutation(
+                context,
+                menus,
+                menuRef,
+                itemRef,
+                version,
+                claimedItem.itemVersion(),
+                crossStoreAssetCountBefore,
+                "cross-store stage rejection");
 
         BackendAcceptanceTest.Response secondMenu = context.post(
                 OPERATIONS_SALES_MENU_CREATE,
@@ -1075,6 +1436,7 @@ final class SalesMenuAcceptanceScenarios {
         UUID secondMenuRef = UUID.fromString(
                 requiredJsonNode(secondMenu.json(), "/salesMenuRef", JsonNodeType.STRING, "BUSINESS: second menu ref")
                         .asText());
+        long crossMenuAssetCountBefore = salesMenuImageCount(menus.fixture());
         BackendAcceptanceTest.Response crossMenu = context.multipartSalesMenuAsset(
                 OPERATIONS_SALES_MENU_ASSET_STAGE,
                 menuRoot(menus.fixture()) + "/" + secondMenuRef + "/draft/items/" + itemRef + "/assets/stage",
@@ -1089,6 +1451,16 @@ final class SalesMenuAcceptanceScenarios {
                 "SALES_MENU_ITEM_NOT_FOUND",
                 crossMenu.problemCode(),
                 "BUSINESS: a menu image target must contain the addressed item in that menu");
+        assertNoSalesMenuMediaMutation(
+                context,
+                menus,
+                menuRef,
+                itemRef,
+                version,
+                claimedItem.itemVersion(),
+                crossMenuAssetCountBefore,
+                "cross-menu stage rejection");
+        long crossItemAssetCountBefore = salesMenuImageCount(menus.fixture());
         BackendAcceptanceTest.Response crossItem = context.multipartSalesMenuAsset(
                 OPERATIONS_SALES_MENU_ASSET_STAGE,
                 itemPath.replace(itemRef.toString(), UUID.randomUUID().toString()) + "/assets/stage",
@@ -1103,6 +1475,15 @@ final class SalesMenuAcceptanceScenarios {
                 "SALES_MENU_ITEM_NOT_FOUND",
                 crossItem.problemCode(),
                 "BUSINESS: a menu image target must contain the addressed item identity");
+        assertNoSalesMenuMediaMutation(
+                context,
+                menus,
+                menuRef,
+                itemRef,
+                version,
+                claimedItem.itemVersion(),
+                crossItemAssetCountBefore,
+                "cross-item stage rejection");
 
         BackendAcceptanceTest.Response catalogStaged = context.multipartAsset(
                 OPERATIONS_ASSET_STAGE,
@@ -1118,6 +1499,7 @@ final class SalesMenuAcceptanceScenarios {
                         JsonNodeType.STRING,
                         "BUSINESS: wrong-usage catalog assetRef")
                 .asText();
+        String wrongUsageAssetStateBefore = assetLifecycleState(UUID.fromString(wrongUsageAssetRef));
         BackendAcceptanceTest.Response wrongUsage = context.post(
                 OPERATIONS_SALES_MENU_ASSET_RELEASE,
                 itemPath + "/assets/stage/" + wrongUsageAssetRef + "/release",
@@ -1130,6 +1512,31 @@ final class SalesMenuAcceptanceScenarios {
                 "SALES_MENU_ASSET_TARGET_MISMATCH",
                 wrongUsage.problemCode(),
                 "BUSINESS: a catalog asset cannot be used as a sales-menu image");
+        assertEquals(
+                wrongUsageAssetStateBefore,
+                assetLifecycleState(UUID.fromString(wrongUsageAssetRef)),
+                "BUSINESS: wrong-usage release leaves the catalog asset lifecycle unchanged");
+        BackendAcceptanceTest.Response afterWrongUsage = context.get(
+                OPERATIONS_SALES_MENU_DRAFT_ITEM, itemPath, menus.session().cookie(), Set.of(200));
+        assertEquals(
+                assetRef,
+                afterWrongUsage
+                        .json()
+                        .path("displayMedia")
+                        .path("primaryAssetRef")
+                        .asText(),
+                "BUSINESS: wrong-usage release leaves the menu binding unchanged");
+        assertEquals(
+                claimedItem.itemVersion(),
+                afterWrongUsage.json().path("version").asLong(),
+                "BUSINESS: wrong-usage release leaves the item version unchanged");
+        assertEquals(
+                version,
+                readMenu(context, menus, menuRef, channelRef)
+                        .json()
+                        .path("version")
+                        .asLong(),
+                "BUSINESS: wrong-usage release leaves the menu version unchanged");
         context.post(
                 OPERATIONS_ASSET_RELEASE,
                 "/api/operations/catalog-inventory/assets/" + wrongUsageAssetRef + "/release",
@@ -1170,6 +1577,17 @@ final class SalesMenuAcceptanceScenarios {
                         .path("primaryAssetRef")
                         .asText(),
                 "BUSINESS: a rejected claimed-image release leaves the menu binding unchanged");
+        assertEquals(
+                claimedItem.itemVersion(),
+                afterClaimedRelease.json().path("version").asLong(),
+                "BUSINESS: a rejected claimed-image release leaves the item version unchanged");
+        assertEquals(
+                version,
+                readMenu(context, menus, menuRef, channelRef)
+                        .json()
+                        .path("version")
+                        .asLong(),
+                "BUSINESS: a rejected claimed-image release leaves the menu version unchanged");
 
         BackendAcceptanceTest.Response secondStage = context.multipartSalesMenuAsset(
                 OPERATIONS_SALES_MENU_ASSET_STAGE,
@@ -1184,9 +1602,13 @@ final class SalesMenuAcceptanceScenarios {
         String replacementRef = requiredJsonNode(
                         secondStage.json(), "/assetRef", JsonNodeType.STRING, "BUSINESS: replacement assetRef")
                 .asText();
-        long replacementVersion = requiredJsonNode(
-                        secondStage.json(), "/version", JsonNodeType.NUMBER, "BUSINESS: replacement asset version")
-                .asLong();
+        String replacementBindGrant = requiredJsonNode(
+                        secondStage.json(), "/bindGrant", JsonNodeType.STRING, "BUSINESS: replacement bindGrant")
+                .asText();
+        assertSalesMenuAssetTarget(
+                secondStage.json(), menus, menuRef, itemRef, claimedItem.itemVersion(), "replacement stage");
+        String replacementStateBeforeInvalid = assetLifecycleState(UUID.fromString(replacementRef));
+        long menuVersionBeforeInvalid = version;
         BackendAcceptanceTest.Response invalidGrant = context.put(
                 OPERATIONS_SALES_MENU_ITEM_UPDATE,
                 itemPath,
@@ -1205,21 +1627,98 @@ final class SalesMenuAcceptanceScenarios {
                 assetRef,
                 unchanged.json().path("displayMedia").path("primaryAssetRef").asText(),
                 "BUSINESS: invalid media claim leaves the prior custom binding unchanged");
+        assertEquals(
+                replacementStateBeforeInvalid,
+                assetLifecycleState(UUID.fromString(replacementRef)),
+                "BUSINESS: invalid media claim leaves the staged replacement lifecycle unchanged");
+        assertEquals(
+                claimedItem.itemVersion(),
+                unchanged.json().path("version").asLong(),
+                "BUSINESS: invalid media claim leaves the item version unchanged");
+        assertEquals(
+                menuVersionBeforeInvalid,
+                readMenu(context, menus, menuRef, channelRef)
+                        .json()
+                        .path("version")
+                        .asLong(),
+                "BUSINESS: invalid media claim leaves the menu version unchanged");
 
+        version = updateItem(
+                context,
+                menus,
+                menuRef,
+                claimedItem,
+                version,
+                itemUpdateBody(
+                        null, directSale(2600), ordering(1, 1), customMedia(UUID.fromString(replacementRef)), version),
+                Map.of(
+                        "X-Sales-Menu-Asset-Bind-Grants",
+                        "{\"" + replacementRef + "\":\"" + replacementBindGrant + "\"}"));
+        ItemState replacedItem = readDraftItemState(context, menus, menuRef, itemRef);
+        BackendAcceptanceTest.Response replacementRead = context.get(
+                OPERATIONS_SALES_MENU_DRAFT_ITEM, itemPath, menus.session().cookie(), Set.of(200));
+        assertEquals(
+                replacementRef,
+                replacementRead
+                        .json()
+                        .path("displayMedia")
+                        .path("primaryAssetRef")
+                        .asText(),
+                "BUSINESS: a valid replacement claim reads back the new draft image");
+        assertTrue(
+                replacedItem.itemVersion() > claimedItem.itemVersion(),
+                "BUSINESS: a valid replacement claim advances the item draft version");
+        BackendAcceptanceTest.Response publishedAfterReplacement = context.get(
+                OPERATIONS_SALES_MENU_PUBLISHED_ITEM,
+                publishedItemPath(menus, menuRef, itemRef, channelRef),
+                menus.session().cookie(),
+                Set.of(200));
+        boolean originalStillPublished = false;
+        boolean replacementPublished = false;
+        for (JsonNode ref :
+                publishedAfterReplacement.json().path("displayMedia").path("assetRefs")) {
+            originalStillPublished |= assetRef.equals(ref.asText());
+            replacementPublished |= replacementRef.equals(ref.asText());
+        }
+        assertTrue(
+                originalStillPublished,
+                "BUSINESS: a draft image replacement does not remove the frozen published image");
+        assertFalse(replacementPublished, "BUSINESS: a draft image replacement does not enter the prior publication");
+
+        BackendAcceptanceTest.Response releaseStage = context.multipartSalesMenuAsset(
+                OPERATIONS_SALES_MENU_ASSET_STAGE,
+                itemPath + "/assets/stage",
+                menus.session().cookie(),
+                replacedItem.itemVersion(),
+                "sm05-release.png",
+                "image/png",
+                sha256(PNG),
+                PNG,
+                Set.of(201));
+        String releasedAssetRef = requiredJsonNode(
+                        releaseStage.json(), "/assetRef", JsonNodeType.STRING, "BUSINESS: release assetRef")
+                .asText();
+        assertSalesMenuAssetTarget(
+                releaseStage.json(), menus, menuRef, itemRef, replacedItem.itemVersion(), "release stage");
+        long releasedAssetVersion = requiredJsonNode(
+                        releaseStage.json(), "/version", JsonNodeType.NUMBER, "BUSINESS: release asset version")
+                .asLong();
         BackendAcceptanceTest.Response released = context.post(
                 OPERATIONS_SALES_MENU_ASSET_RELEASE,
-                itemPath + "/assets/stage/" + replacementRef + "/release",
+                itemPath + "/assets/stage/" + releasedAssetRef + "/release",
                 menus.session().cookie(),
-                Map.of("expectedAssetVersion", replacementVersion),
+                Map.of("expectedAssetVersion", releasedAssetVersion),
                 Set.of(200));
         assertEquals(
                 "RELEASED",
                 released.json().path("status").asText(),
                 "BUSINESS: a separate unclaimed stage can be released through the owner route");
-        String releasedAssetState = assetLifecycleState(UUID.fromString(replacementRef));
+        assertSalesMenuAssetTarget(
+                released.json(), menus, menuRef, itemRef, replacedItem.itemVersion(), "release readback");
+        String releasedAssetState = assetLifecycleState(UUID.fromString(releasedAssetRef));
         BackendAcceptanceTest.Response releaseReleased = context.post(
                 OPERATIONS_SALES_MENU_ASSET_RELEASE,
-                itemPath + "/assets/stage/" + replacementRef + "/release",
+                itemPath + "/assets/stage/" + releasedAssetRef + "/release",
                 menus.session().cookie(),
                 Map.of("expectedAssetVersion", released.json().path("version").asLong()),
                 Set.of(409));
@@ -1229,12 +1728,12 @@ final class SalesMenuAcceptanceScenarios {
                 "BUSINESS: an already released image cannot be released again");
         assertEquals(
                 releasedAssetState,
-                assetLifecycleState(UUID.fromString(replacementRef)),
+                assetLifecycleState(UUID.fromString(releasedAssetRef)),
                 "BUSINESS: a rejected released-image operation does not mutate the asset lifecycle");
         BackendAcceptanceTest.Response afterReleasedAgain = context.get(
                 OPERATIONS_SALES_MENU_DRAFT_ITEM, itemPath, menus.session().cookie(), Set.of(200));
         assertEquals(
-                assetRef,
+                replacementRef,
                 afterReleasedAgain
                         .json()
                         .path("displayMedia")
@@ -1246,7 +1745,7 @@ final class SalesMenuAcceptanceScenarios {
                 OPERATIONS_SALES_MENU_ASSET_STAGE,
                 itemPath + "/assets/stage",
                 menus.session().cookie(),
-                claimedItem.itemVersion(),
+                replacedItem.itemVersion(),
                 "sm05-stale-version.png",
                 "image/png",
                 sha256(OTHER_PNG),
@@ -1278,6 +1777,13 @@ final class SalesMenuAcceptanceScenarios {
                 "RELEASED",
                 staleReleased.json().path("status").asText(),
                 "BUSINESS: the unchanged staged asset can be released after a stale-version rejection");
+        assertSalesMenuAssetTarget(
+                staleReleased.json(),
+                menus,
+                menuRef,
+                itemRef,
+                replacedItem.itemVersion(),
+                "stale-version release readback");
 
         BackendAcceptanceTest.Fixture noCapability = host.storeUserFixture(menus.fixture(), Set.of());
         host.completeInvitation(context, noCapability);
@@ -1291,7 +1797,7 @@ final class SalesMenuAcceptanceScenarios {
                 OPERATIONS_SALES_MENU_ASSET_STAGE,
                 itemPath + "/assets/stage",
                 deniedSession.cookie(),
-                claimedItem.itemVersion(),
+                replacedItem.itemVersion(),
                 "sm05-denied.png",
                 "image/png",
                 sha256(OTHER_PNG),
@@ -1311,13 +1817,72 @@ final class SalesMenuAcceptanceScenarios {
         BackendAcceptanceTest.Response afterDeniedStage = context.get(
                 OPERATIONS_SALES_MENU_DRAFT_ITEM, itemPath, menus.session().cookie(), Set.of(200));
         assertEquals(
-                assetRef,
+                replacementRef,
                 afterDeniedStage
                         .json()
                         .path("displayMedia")
                         .path("primaryAssetRef")
                         .asText(),
                 "BUSINESS: a capability-denied stage leaves the menu binding unchanged");
+        assertEquals(
+                replacedItem.itemVersion(),
+                afterDeniedStage.json().path("version").asLong(),
+                "BUSINESS: a capability-denied stage leaves the item version unchanged");
+        assertEquals(
+                version,
+                readMenu(context, menus, menuRef, channelRef)
+                        .json()
+                        .path("version")
+                        .asLong(),
+                "BUSINESS: a capability-denied stage leaves the menu version unchanged");
+
+        String publishedAssetStateBeforeArchive = assetLifecycleState(UUID.fromString(assetRef));
+        version = archiveMenu(context, menus, menuRef, version);
+        MenuReadResult archivedDetail = readMenu(context, menus, menuRef, channelRef);
+        assertTrue(
+                archivedDetail.json().path("archived").asBoolean(false),
+                "BUSINESS: archiving a published menu preserves its historical owner state");
+        BackendAcceptanceTest.Response publishedAfterArchive = context.get(
+                OPERATIONS_SALES_MENU_PUBLISHED_ITEM,
+                publishedItemPath(menus, menuRef, itemRef, channelRef),
+                menus.session().cookie(),
+                Set.of(200));
+        boolean originalStillPublishedAfterArchive = false;
+        boolean replacementPublishedAfterArchive = false;
+        for (JsonNode ref : publishedAfterArchive.json().path("displayMedia").path("assetRefs")) {
+            originalStillPublishedAfterArchive |= assetRef.equals(ref.asText());
+            replacementPublishedAfterArchive |= replacementRef.equals(ref.asText());
+        }
+        assertTrue(
+                originalStillPublishedAfterArchive,
+                "BUSINESS: archiving preserves the immutable published image identity");
+        assertFalse(
+                replacementPublishedAfterArchive,
+                "BUSINESS: archiving does not promote the draft replacement into the publication");
+        BackendAcceptanceTest.Response publishedBoundRelease = context.post(
+                OPERATIONS_SALES_MENU_ASSET_RELEASE,
+                itemPath + "/assets/stage/" + assetRef + "/release",
+                menus.session().cookie(),
+                Map.of("expectedAssetVersion", staged.json().path("version").asLong() + 1),
+                Set.of(409));
+        assertTrue(
+                publishedBoundRelease.problemCode().contains("ASSET")
+                        || publishedBoundRelease.problemCode().contains("CLAIM"),
+                "BUSINESS: a published-bound active image remains unreleasable after archive");
+        assertEquals(
+                publishedAssetStateBeforeArchive,
+                assetLifecycleState(UUID.fromString(assetRef)),
+                "BUSINESS: a published-bound release rejection leaves the asset lifecycle unchanged");
+        BackendAcceptanceTest.Response archivedDraftItem = context.get(
+                OPERATIONS_SALES_MENU_DRAFT_ITEM, itemPath, menus.session().cookie(), Set.of(200));
+        assertEquals(
+                replacementRef,
+                archivedDraftItem
+                        .json()
+                        .path("displayMedia")
+                        .path("primaryAssetRef")
+                        .asText(),
+                "BUSINESS: archive does not change the draft image binding");
     }
 
     @AcceptanceScenario(
@@ -1330,6 +1895,7 @@ final class SalesMenuAcceptanceScenarios {
         UUID menuRef = prepared.menu().ref();
         UUID itemRef = prepared.item().ref();
         long version = prepared.menuVersion();
+        version = updateSchedule(context, menus, menuRef, version, dailySchedule());
         version = updateItem(
                 context,
                 menus,
@@ -1359,6 +1925,8 @@ final class SalesMenuAcceptanceScenarios {
                 .get(0)
                 .path("salesSectionRef")
                 .asText());
+        JsonNode frozenSection = publishedSections.json().path("items").get(0).deepCopy();
+        assertPublishedSectionReadModel(frozenSection, "BUSINESS: first publication section readback");
         BackendAcceptanceTest.Response publishedItems = context.get(
                 OPERATIONS_SALES_MENU_PUBLISHED_ITEMS,
                 publishedItemsPath(
@@ -1369,7 +1937,8 @@ final class SalesMenuAcceptanceScenarios {
                 menus.session().cookie(),
                 Set.of(200));
         assertEquals(1, publishedItems.json().path("items").size(), "BUSINESS: publish creates one effective item row");
-        JsonNode frozen = publishedItems.json().path("items").get(0);
+        JsonNode frozen = publishedItems.json().path("items").get(0).deepCopy();
+        assertPublishedItemReadModel(frozen, "BUSINESS: first publication item readback");
         assertEquals(
                 2700,
                 frozen.path("saleContent").path("listedPriceCents").asInt(),
@@ -1379,12 +1948,17 @@ final class SalesMenuAcceptanceScenarios {
                 publishedItemPath(menus, menuRef, itemRef, menus.channels().getFirst()),
                 menus.session().cookie(),
                 Set.of(200));
+        JsonNode frozenDetailFacts = frozenDetail.json().deepCopy();
+        assertPublishedItemReadModel(frozenDetailFacts, "BUSINESS: first publication detail readback");
         assertEquals(
-                2700,
-                frozenDetail.json().path("saleContent").path("listedPriceCents").asInt(),
-                "BUSINESS: published item detail reads the same frozen effective value");
-        BackendAcceptanceTest.Response firstPublicationMenu =
+                frozen,
+                frozenDetailFacts,
+                "BUSINESS: published item page and detail expose the same frozen effective tuple");
+        MenuReadResult firstPublicationMenu =
                 readMenu(context, menus, menuRef, menus.channels().getFirst());
+        JsonNode firstPublishedSchedule =
+                firstPublicationMenu.json().path("latestPublishedSchedule").deepCopy();
+        assertScheduleReadModel(firstPublishedSchedule, dailySchedule(), "BUSINESS: first publication schedule");
         long firstDraftRevision =
                 firstPublicationMenu.json().path("draftRevision").asLong();
         assertEquals(
@@ -1395,6 +1969,14 @@ final class SalesMenuAcceptanceScenarios {
                 firstPublicationMenu.json().path("draftDirty").asBoolean(true),
                 "BUSINESS: current draft equals the first publication source revision");
 
+        String renamedCatalogName = "SM05 frozen catalog renamed";
+        JsonNode renamedCatalog = catalog.acceptanceRenamePlainItem(
+                context, menus.fixture(), menus.session(), prepared.catalogItemCode(), renamedCatalogName);
+        assertEquals(
+                renamedCatalogName,
+                renamedCatalog.path("name").asText(),
+                "BUSINESS: publish-frozen fixture mutates the real Catalog owner fact");
+
         version = updateItem(
                 context,
                 menus,
@@ -1403,7 +1985,7 @@ final class SalesMenuAcceptanceScenarios {
                 version,
                 itemUpdateBody(null, directSale(3900), ordering(1, 1), inheritedMedia(), version));
         currentItem = readDraftItemState(context, menus, menuRef, itemRef);
-        BackendAcceptanceTest.Response dirtyMenu =
+        MenuReadResult dirtyMenu =
                 readMenu(context, menus, menuRef, menus.channels().getFirst());
         assertTrue(
                 dirtyMenu.json().path("draftRevision").asLong() > firstDraftRevision,
@@ -1419,24 +2001,50 @@ final class SalesMenuAcceptanceScenarios {
         assertTrue(
                 dirtyPreview.json().path("hasChanges").asBoolean(false),
                 "BUSINESS: draft mutation is visible as an unpublished change");
-        assertEquals(
-                2700,
+        assertPublishedSectionUnchanged(
+                frozenSection,
                 context.get(
-                                OPERATIONS_SALES_MENU_PUBLISHED_ITEM,
-                                publishedItemPath(
-                                        menus,
-                                        menuRef,
-                                        itemRef,
-                                        menus.channels().getFirst()),
+                                OPERATIONS_SALES_MENU_PUBLISHED_SECTIONS,
+                                menuRoot(menus.fixture()) + "/" + menuRef + "/published/sections",
                                 menus.session().cookie(),
                                 Set.of(200))
                         .json()
-                        .path("saleContent")
-                        .path("listedPriceCents")
-                        .asInt(),
-                "BUSINESS: draft mutation does not rewrite the old publication");
+                        .path("items")
+                        .get(0),
+                "BUSINESS: draft and Catalog mutations do not rewrite the old publication section");
+        BackendAcceptanceTest.Response frozenItemsAfterMutation = context.get(
+                OPERATIONS_SALES_MENU_PUBLISHED_ITEMS,
+                publishedItemsPath(
+                                menus,
+                                menuRef,
+                                publishedSection,
+                                menus.channels().getFirst()) + "&pageSize=20",
+                menus.session().cookie(),
+                Set.of(200));
+        assertEquals(
+                1,
+                frozenItemsAfterMutation.json().path("items").size(),
+                "BUSINESS: draft and Catalog mutations preserve the published item row count");
+        assertPublishedItemUnchanged(
+                frozen,
+                frozenItemsAfterMutation.json().path("items").get(0),
+                "BUSINESS: draft and Catalog mutations do not rewrite the old publication item");
+        assertPublishedItemUnchanged(
+                frozen,
+                publishedItem(context, menus, menuRef, itemRef, menus.channels().getFirst()),
+                "BUSINESS: published item detail remains frozen before republish");
 
         version = updateSchedule(context, menus, menuRef, version, allDaySchedule());
+        MenuReadResult scheduleChangedMenu =
+                readMenu(context, menus, menuRef, menus.channels().getFirst());
+        assertScheduleReadModel(
+                scheduleChangedMenu.json().path("draftSchedule"),
+                allDaySchedule(),
+                "BUSINESS: current draft schedule changes before the second publication");
+        assertEquals(
+                firstPublishedSchedule,
+                scheduleChangedMenu.json().path("latestPublishedSchedule"),
+                "BUSINESS: draft schedule mutation does not rewrite the first publication schedule");
         BackendAcceptanceTest.Response republished = context.post(
                 OPERATIONS_SALES_MENU_PUBLISH,
                 menuRoot(menus.fixture()) + "/" + menuRef + "/publications",
@@ -1452,16 +2060,45 @@ final class SalesMenuAcceptanceScenarios {
                 publishedItemPath(menus, menuRef, itemRef, menus.channels().getFirst()),
                 menus.session().cookie(),
                 Set.of(200));
+        assertPublishedItemReadModel(latest.json(), "BUSINESS: second publication item readback");
+        assertEquals(
+                renamedCatalogName,
+                latest.json().path("displayName").asText(),
+                "BUSINESS: a new publication resolves the latest Catalog name");
+        assertEquals(
+                frozen.path("itemCode"),
+                latest.json().path("itemCode"),
+                "BUSINESS: a new publication keeps the Catalog item identity");
+        assertEquals(
+                frozen.path("productShape"),
+                latest.json().path("productShape"),
+                "BUSINESS: a new publication keeps the Catalog product shape");
+        assertEquals(
+                frozen.path("orderingConstraints"),
+                latest.json().path("orderingConstraints"),
+                "BUSINESS: a new publication carries the latest draft ordering constraints");
+        assertEquals(
+                frozen.path("displayMedia"),
+                latest.json().path("displayMedia"),
+                "BUSINESS: a new publication carries the latest draft display media");
         assertEquals(
                 3900,
                 latest.json().path("saleContent").path("listedPriceCents").asInt(),
                 "BUSINESS: a new publication exposes the latest draft value");
-        BackendAcceptanceTest.Response latestDetail =
+        assertEquals(
+                latest.json(),
+                publishedItem(context, menus, menuRef, itemRef, menus.channels().getFirst()),
+                "BUSINESS: published item page and detail expose the same latest effective tuple");
+        MenuReadResult latestDetail =
                 readMenu(context, menus, menuRef, menus.channels().getFirst());
         assertEquals(
                 2,
                 latestDetail.json().path("latestPublishedRevision").asInt(),
                 "BUSINESS: publication revision advances without mutating revision one");
+        assertScheduleReadModel(
+                latestDetail.json().path("latestPublishedSchedule"),
+                allDaySchedule(),
+                "BUSINESS: the second publication exposes the latest schedule");
         assertFalse(
                 latestDetail.json().path("draftDirty").asBoolean(true),
                 "BUSINESS: the second publication source revision matches the current draft revision");
@@ -1473,7 +2110,7 @@ final class SalesMenuAcceptanceScenarios {
     @AcceptanceScenario(
             id = "sales-menu.publish-blockers",
             module = "SALES_MENU",
-            operation = "getOperationsSalesMenuPublicationPreview")
+            operation = "publishOperationsSalesMenu")
     void publishBlockers(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         MenuFixture malformed = menuFixture(context, 1, "SM05 blockers malformed");
         MenuState malformedMenu = createMenu(
@@ -1489,14 +2126,30 @@ final class SalesMenuAcceptanceScenarios {
                 malformedSection.ref(),
                 malformedSection.menuVersion(),
                 List.of(UUID.fromString(malformedCatalog.path("itemRef").asText())));
+        ItemState malformedItem = findDraftItem(
+                context,
+                malformed,
+                malformedMenu.ref(),
+                malformedSection.ref(),
+                UUID.fromString(malformedCatalog.path("itemRef").asText()));
         BackendAcceptanceTest.Response pricePreview = context.get(
                 OPERATIONS_SALES_MENU_PREVIEW,
                 previewPath(malformed, malformedMenu.ref(), malformed.channels().getFirst()),
                 malformed.session().cookie(),
                 Set.of(200));
-        assertTrue(
-                containsKind(pricePreview.json().path("violations"), "LISTED_PRICE_MISSING"),
-                "BUSINESS: unconfigured direct pricing is reported as a typed preview violation");
+        assertSinglePublicationBlocker(
+                pricePreview.json(),
+                "LISTED_PRICE_MISSING",
+                malformedItem.ref(),
+                "salesMenu.listedPrice.required",
+                "BUSINESS: unconfigured direct pricing is the exact typed preview violation");
+        JsonNode malformedMenuBeforeFailedPublish = readMenu(
+                        context,
+                        malformed,
+                        malformedMenu.ref(),
+                        malformed.channels().getFirst())
+                .json()
+                .deepCopy();
         BackendAcceptanceTest.Response pricePublish = context.post(
                 OPERATIONS_SALES_MENU_PUBLISH,
                 menuRoot(malformed.fixture()) + "/" + malformedMenu.ref() + "/publications",
@@ -1516,6 +2169,15 @@ final class SalesMenuAcceptanceScenarios {
                                 Set.of(404))
                         .problemCode(),
                 "BUSINESS: failed publish creates no effective publication");
+        assertEquals(
+                malformedMenuBeforeFailedPublish,
+                readMenu(
+                                context,
+                                malformed,
+                                malformedMenu.ref(),
+                                malformed.channels().getFirst())
+                        .json(),
+                "BUSINESS: malformed price publish rejection leaves menu version and publication state unchanged");
 
         PreparedMenu disabledActivation = preparePlainMenu(context, "SM05 blockers disabled activation");
         long disabledVersion = updateItem(
@@ -1578,9 +2240,19 @@ final class SalesMenuAcceptanceScenarios {
                         disabledChannel.channels().getFirst()),
                 disabledChannel.session().cookie(),
                 Set.of(200));
-        assertTrue(
-                containsKind(channelPreview.json().path("violations"), "CHANNEL_DISABLED"),
-                "BUSINESS: a disabled channel is visible in publication preview");
+        assertSinglePublicationBlocker(
+                channelPreview.json(),
+                "CHANNEL_DISABLED",
+                null,
+                "salesMenu.channel.disabled",
+                "BUSINESS: a disabled channel is the exact typed preview violation");
+        JsonNode channelMenuBeforeFailedPublish = readMenu(
+                        context,
+                        disabledChannel,
+                        channelPrepared.menu().ref(),
+                        disabledChannel.channels().getFirst())
+                .json()
+                .deepCopy();
         BackendAcceptanceTest.Response channelPublish = context.post(
                 OPERATIONS_SALES_MENU_PUBLISH,
                 menuRoot(disabledChannel.fixture()) + "/"
@@ -1592,6 +2264,15 @@ final class SalesMenuAcceptanceScenarios {
                 "SALES_MENU_CHANNEL_DISABLED",
                 channelPublish.problemCode(),
                 "BUSINESS: disabled channel publish has a typed blocker");
+        assertEquals(
+                channelMenuBeforeFailedPublish,
+                readMenu(
+                                context,
+                                disabledChannel,
+                                channelPrepared.menu().ref(),
+                                disabledChannel.channels().getFirst())
+                        .json(),
+                "BUSINESS: disabled channel publish rejection leaves menu version and publication state unchanged");
 
         MenuFixture disabledStore = menuFixture(context, 1, "SM05 blockers store");
         PreparedMenu storePrepared = preparePlainMenu(context, disabledStore, "SM05 store blocked");
@@ -1618,9 +2299,19 @@ final class SalesMenuAcceptanceScenarios {
                         disabledStore.channels().getFirst()),
                 disabledStore.session().cookie(),
                 Set.of(200));
-        assertTrue(
-                containsKind(storePreview.json().path("violations"), "STORE_DISABLED"),
-                "BUSINESS: a disabled store is visible in publication preview");
+        assertSinglePublicationBlocker(
+                storePreview.json(),
+                "STORE_DISABLED",
+                null,
+                "salesMenu.store.disabled",
+                "BUSINESS: a disabled store is the exact typed preview violation");
+        JsonNode storeMenuBeforeFailedPublish = readMenu(
+                        context,
+                        disabledStore,
+                        storePrepared.menu().ref(),
+                        disabledStore.channels().getFirst())
+                .json()
+                .deepCopy();
         BackendAcceptanceTest.Response storePublish = context.post(
                 OPERATIONS_SALES_MENU_PUBLISH,
                 menuRoot(disabledStore.fixture()) + "/" + storePrepared.menu().ref() + "/publications",
@@ -1631,6 +2322,15 @@ final class SalesMenuAcceptanceScenarios {
                 "SALES_MENU_STORE_DISABLED",
                 storePublish.problemCode(),
                 "BUSINESS: disabled store publish has a typed blocker");
+        assertEquals(
+                storeMenuBeforeFailedPublish,
+                readMenu(
+                                context,
+                                disabledStore,
+                                storePrepared.menu().ref(),
+                                disabledStore.channels().getFirst())
+                        .json(),
+                "BUSINESS: disabled store publish rejection leaves menu version and publication state unchanged");
     }
 
     @AcceptanceScenario(
@@ -1892,7 +2592,7 @@ final class SalesMenuAcceptanceScenarios {
         long preparedVersion =
                 addItems(context, menus, menu.ref(), section.ref(), section.menuVersion(), List.of(catalogRef));
         ItemState preparedItem = findDraftItem(context, menus, menu.ref(), section.ref(), catalogRef);
-        PreparedMenu prepared = new PreparedMenu(menus, menu, section, preparedItem, preparedVersion);
+        PreparedMenu prepared = new PreparedMenu(menus, menu, section, preparedItem, null, preparedVersion);
         long version = updateItem(
                 context,
                 menus,
@@ -1931,13 +2631,55 @@ final class SalesMenuAcceptanceScenarios {
                 availableBeforeManualStop.path("manualSaleStatus").path("state").asText(),
                 "BUSINESS: inventory availability and manual sale status start independently");
 
+        String soldOutPath = publishedItemCommandPath(menus, menuRef, itemRef, firstChannel, "manual-sold-out");
+        String soldOutKey = "sm05-manual-sold-out-" + suffix();
+        Map<String, Object> soldOutBody = Map.of("reason", "午餐档位暂停售卖", "expectedVersion", version);
         BackendAcceptanceTest.Response soldOut = context.post(
                 OPERATIONS_SALES_MENU_SOLD_OUT,
-                publishedItemCommandPath(menus, menuRef, itemRef, firstChannel, "manual-sold-out"),
+                soldOutPath,
                 menus.session().cookie(),
-                Map.of("reason", "午餐档位暂停售卖", "expectedVersion", version),
+                soldOutBody,
+                Map.of("Idempotency-Key", soldOutKey),
                 Set.of(200));
         version = assertCommand(soldOut, "setOperationsSalesMenuItemSoldOut", menuRef, itemRef);
+        BackendAcceptanceTest.Response soldOutReplay = context.post(
+                OPERATIONS_SALES_MENU_SOLD_OUT,
+                soldOutPath,
+                menus.session().cookie(),
+                soldOutBody,
+                Map.of("Idempotency-Key", soldOutKey),
+                Set.of(200));
+        assertEquals(
+                soldOut.json(),
+                soldOutReplay.json(),
+                "BUSINESS: repeated manual sold-out command replays the exact owner readback");
+        JsonNode beforeWrongTargetReplay = publishedItem(context, menus, menuRef, itemRef, firstChannel);
+        BackendAcceptanceTest.Response wrongTargetReplay = context.post(
+                OPERATIONS_SALES_MENU_SOLD_OUT,
+                publishedItemCommandPath(menus, UUID.randomUUID(), itemRef, firstChannel, "manual-sold-out"),
+                menus.session().cookie(),
+                soldOutBody,
+                Map.of("Idempotency-Key", soldOutKey),
+                Set.of(404));
+        assertEquals(
+                "SALES_MENU_NOT_FOUND",
+                wrongTargetReplay.problemCode(),
+                "BUSINESS: replay cannot bypass the actual sales-menu target check");
+        assertEquals(
+                beforeWrongTargetReplay,
+                publishedItem(context, menus, menuRef, itemRef, firstChannel),
+                "BUSINESS: a wrong-target replay leaves the original published read model unchanged");
+        BackendAcceptanceTest.Response soldOutConflict = context.post(
+                OPERATIONS_SALES_MENU_SOLD_OUT,
+                soldOutPath,
+                menus.session().cookie(),
+                Map.of("reason", "另一项停售意图", "expectedVersion", version),
+                Map.of("Idempotency-Key", soldOutKey),
+                Set.of(409));
+        assertEquals(
+                "IDEMPOTENCY_CONFLICT",
+                soldOutConflict.problemCode(),
+                "BUSINESS: reusing a manual sold-out key for another intent is rejected");
         JsonNode firstAfterSoldOut = publishedItem(context, menus, menuRef, itemRef, firstChannel);
         JsonNode secondAfterSoldOut = publishedItem(context, menus, menuRef, itemRef, secondChannel);
         assertEquals(
@@ -1986,6 +2728,7 @@ final class SalesMenuAcceptanceScenarios {
                 manualAfterStockReturn.path("manualSaleStatus").path("state").asText(),
                 "BUSINESS: stock returning does not auto-restore manual sale status");
 
+        JsonNode beforeMissingReason = publishedItem(context, menus, menuRef, itemRef, firstChannel);
         Map<String, Object> missingReason = new LinkedHashMap<>();
         missingReason.put("reason", null);
         missingReason.put("expectedVersion", version);
@@ -1998,6 +2741,14 @@ final class SalesMenuAcceptanceScenarios {
         assertFalse(
                 reasonRejected.problemCode().isBlank(),
                 "BUSINESS: missing manual-stop reason is a typed validation rejection");
+        assertEquals(
+                "SALES_MENU_MANUAL_REASON_REQUIRED",
+                reasonRejected.problemCode(),
+                "BUSINESS: missing manual-stop reason uses the sales-menu problem code");
+        assertEquals(
+                beforeMissingReason,
+                publishedItem(context, menus, menuRef, itemRef, firstChannel),
+                "BUSINESS: missing reason does not change the complete published read model");
         assertEquals(
                 "MANUAL_SOLD_OUT",
                 publishedItem(context, menus, menuRef, itemRef, firstChannel)
@@ -2022,6 +2773,7 @@ final class SalesMenuAcceptanceScenarios {
                         .asText(),
                 "BUSINESS: republishing does not automatically restore manual sale status");
 
+        JsonNode beforeUnconfirmedRestore = publishedItem(context, menus, menuRef, itemRef, firstChannel);
         BackendAcceptanceTest.Response notConfirmed = context.post(
                 OPERATIONS_SALES_MENU_RESTORE,
                 publishedItemCommandPath(menus, menuRef, itemRef, firstChannel, "manual-restore"),
@@ -2032,11 +2784,19 @@ final class SalesMenuAcceptanceScenarios {
                 "CONFIRMATION_REQUIRED",
                 notConfirmed.problemCode(),
                 "BUSINESS: restore requires explicit confirmation");
+        assertEquals(
+                beforeUnconfirmedRestore,
+                publishedItem(context, menus, menuRef, itemRef, firstChannel),
+                "BUSINESS: an unconfirmed restore leaves the complete published read model unchanged");
+        String restorePath = publishedItemCommandPath(menus, menuRef, itemRef, firstChannel, "manual-restore");
+        String restoreKey = "sm05-manual-restore-" + suffix();
+        Map<String, Object> restoreBody = Map.of("confirm", true, "expectedVersion", version);
         BackendAcceptanceTest.Response restored = context.post(
                 OPERATIONS_SALES_MENU_RESTORE,
-                publishedItemCommandPath(menus, menuRef, itemRef, firstChannel, "manual-restore"),
+                restorePath,
                 menus.session().cookie(),
-                Map.of("confirm", true, "expectedVersion", version),
+                restoreBody,
+                Map.of("Idempotency-Key", restoreKey),
                 Set.of(200));
         version = assertCommand(restored, "restoreOperationsSalesMenuItemSale", menuRef, itemRef);
         JsonNode restoredItem = publishedItem(context, menus, menuRef, itemRef, firstChannel);
@@ -2047,6 +2807,58 @@ final class SalesMenuAcceptanceScenarios {
         assertTrue(
                 restoredItem.path("manualSaleStatus").path("reason").isNull(),
                 "BUSINESS: restore clears the manual stop reason");
+        assertEquals(
+                beforeUnconfirmedRestore.path("inventoryAvailability"),
+                restoredItem.path("inventoryAvailability"),
+                "BUSINESS: restoring manual sale does not rewrite inventory availability");
+        BackendAcceptanceTest.Response restoreReplay = context.post(
+                OPERATIONS_SALES_MENU_RESTORE,
+                restorePath,
+                menus.session().cookie(),
+                restoreBody,
+                Map.of("Idempotency-Key", restoreKey),
+                Set.of(200));
+        assertEquals(
+                restored.json(),
+                restoreReplay.json(),
+                "BUSINESS: repeated manual restore command replays the exact owner readback");
+        assertTrue(version > 0, "BUSINESS: published menu has a nonzero version for CAS validation");
+        BackendAcceptanceTest.Response staleManualCommand = context.post(
+                OPERATIONS_SALES_MENU_SOLD_OUT,
+                soldOutPath,
+                menus.session().cookie(),
+                Map.of("reason", "过期版本停售", "expectedVersion", version - 1),
+                Map.of("Idempotency-Key", "sm05-manual-stale-" + suffix()),
+                Set.of(409));
+        assertTrue(
+                Set.of("VERSION_CONFLICT", "SALES_MENU_VERSION_CONFLICT").contains(staleManualCommand.problemCode()),
+                "BUSINESS: stale manual-sale version is a typed CAS conflict");
+        assertEquals(
+                restoredItem,
+                publishedItem(context, menus, menuRef, itemRef, firstChannel),
+                "BUSINESS: stale manual-sale command leaves the complete read model unchanged");
+
+        BackendAcceptanceTest.Response manualRecords = context.get(
+                OPERATIONS_SALES_MENU_RECORDS,
+                recordsPath(menus, menuRef, firstChannel) + "&pageSize=20",
+                menus.session().cookie(),
+                Set.of(200));
+        int soldOutSuccesses = 0;
+        int restoreSuccesses = 0;
+        for (JsonNode record : manualRecords.json().path("items")) {
+            if (!menuRef.toString().equals(record.path("salesMenuRef").asText())
+                    || !itemRef.toString().equals(record.path("targetRef").asText())
+                    || !"SUCCESS".equals(record.path("result").asText())) continue;
+            assertFalse(
+                    record.path("actorDisplayName").asText().isBlank(),
+                    "BUSINESS: successful manual-sale history retains the actor display snapshot");
+            if ("setOperationsSalesMenuItemSoldOut"
+                    .equals(record.path("operationKind").asText())) soldOutSuccesses++;
+            if ("restoreOperationsSalesMenuItemSale"
+                    .equals(record.path("operationKind").asText())) restoreSuccesses++;
+        }
+        assertEquals(1, soldOutSuccesses, "BUSINESS: operation records retain the successful manual sold-out event");
+        assertEquals(1, restoreSuccesses, "BUSINESS: operation records retain the successful manual restore event");
     }
 
     @AcceptanceScenario(
@@ -2312,9 +3124,12 @@ final class SalesMenuAcceptanceScenarios {
                 previewPath(menus, menu.ref(), channel),
                 menus.session().cookie(),
                 Set.of(200));
-        assertTrue(
-                containsKind(blockedPreview.json().path("violations"), "LISTED_PRICE_MISSING"),
-                "BUSINESS: generated preview route returns a business violation, not only 2xx");
+        assertSinglePublicationBlocker(
+                blockedPreview.json(),
+                "LISTED_PRICE_MISSING",
+                draftItem.ref(),
+                "salesMenu.listedPrice.required",
+                "BUSINESS: generated preview route returns the exact business violation");
         version = updateItem(
                 context,
                 menus,
@@ -2405,13 +3220,14 @@ final class SalesMenuAcceptanceScenarios {
             BackendAcceptanceTest.ScenarioContext context, MenuFixture menus, String label) throws Exception {
         MenuState menu =
                 createMenu(context, menus, label + " menu", menus.channels().getFirst());
+        String catalogItemCode = "SM05-PREP-" + suffix();
         JsonNode item = catalog.acceptanceCreatePlainItem(
-                context, menus.fixture(), menus.session(), "SM05-PREP-" + suffix(), label + " item");
+                context, menus.fixture(), menus.session(), catalogItemCode, label + " item");
         UUID catalogRef = UUID.fromString(item.path("itemRef").asText());
         SectionState section = createSection(context, menus, menu.ref(), label + " section", menu.version());
         long version = addItems(context, menus, menu.ref(), section.ref(), section.menuVersion(), List.of(catalogRef));
         ItemState draftItem = findDraftItem(context, menus, menu.ref(), section.ref(), catalogRef);
-        return new PreparedMenu(menus, menu, section, draftItem, version);
+        return new PreparedMenu(menus, menu, section, draftItem, catalogItemCode, version);
     }
 
     private MenuState createMenu(
@@ -2727,14 +3543,15 @@ final class SalesMenuAcceptanceScenarios {
         return assertCommand(moved, "moveOperationsSalesMenuItem", menuRef, itemRef);
     }
 
-    private BackendAcceptanceTest.Response readMenu(
+    private MenuReadResult readMenu(
             BackendAcceptanceTest.ScenarioContext context, MenuFixture menus, UUID menuRef, UUID channelRef)
             throws Exception {
-        return context.get(
-                OPERATIONS_SALES_MENU,
-                menuRoot(menus.fixture()) + "/" + menuRef + "?channelRef=" + channelRef,
-                menus.session().cookie(),
-                Set.of(200));
+        return new MenuReadResult(context.get(
+                        OPERATIONS_SALES_MENU,
+                        menuRoot(menus.fixture()) + "/" + menuRef + "?channelRef=" + channelRef,
+                        menus.session().cookie(),
+                        Set.of(200))
+                .json());
     }
 
     private JsonNode publishedItem(
@@ -2860,6 +3677,68 @@ final class SalesMenuAcceptanceScenarios {
         schedule.put("startLocalTime", null);
         schedule.put("endLocalTime", null);
         return schedule;
+    }
+
+    private static void assertPublishedSectionReadModel(JsonNode actual, String message) {
+        assertTrue(actual.isObject(), message + ": section is an object");
+        for (String field : List.of("salesSectionRef", "name", "displayOrder", "itemCount", "canMoveUp", "canMoveDown"))
+            assertTrue(actual.has(field), message + ": section field is present: " + field);
+    }
+
+    private static void assertPublishedItemReadModel(JsonNode actual, String message) {
+        assertTrue(actual.isObject(), message + ": item is an object");
+        for (String field : List.of(
+                "salesItemRef",
+                "catalogItemRef",
+                "itemCode",
+                "displayName",
+                "productShape",
+                "saleContent",
+                "orderingConstraints",
+                "displayMedia",
+                "displayOrder",
+                "inventoryAvailability",
+                "manualSaleStatus",
+                "version")) assertTrue(actual.has(field), message + ": item field is present: " + field);
+        for (String field : List.of("kind", "listedPriceCents", "skuPrices", "salesUnit"))
+            assertTrue(actual.path("saleContent").has(field), message + ": sale content field is present: " + field);
+        for (String field : List.of("minItemQuantity", "quantityStep"))
+            assertTrue(
+                    actual.path("orderingConstraints").has(field), message + ": ordering field is present: " + field);
+        for (String field : List.of("mode", "assetRefs", "primaryAssetRef"))
+            assertTrue(actual.path("displayMedia").has(field), message + ": display media field is present: " + field);
+        for (String field : List.of("applicability", "state", "reason"))
+            assertTrue(
+                    actual.path("inventoryAvailability").has(field),
+                    message + ": inventory field is present: " + field);
+        for (String field : List.of("state", "reason", "changedAt", "changedByDisplayName"))
+            assertTrue(
+                    actual.path("manualSaleStatus").has(field), message + ": manual status field is present: " + field);
+    }
+
+    private static void assertPublishedSectionUnchanged(JsonNode expected, JsonNode actual, String message) {
+        assertPublishedSectionReadModel(actual, message);
+        assertEquals(expected, actual, message + ": full section tuple is unchanged");
+    }
+
+    private static void assertPublishedItemUnchanged(JsonNode expected, JsonNode actual, String message) {
+        assertPublishedItemReadModel(actual, message);
+        assertEquals(expected, actual, message + ": full item tuple is unchanged");
+    }
+
+    private static void assertScheduleReadModel(JsonNode actual, Map<String, Object> expected, String message) {
+        assertTrue(actual.isObject(), message + ": schedule is an object");
+        assertTrue(actual.has("kind"), message + ": schedule kind is present");
+        assertTrue(actual.has("startLocalTime"), message + ": schedule start is present");
+        assertTrue(actual.has("endLocalTime"), message + ": schedule end is present");
+        assertEquals(expected.get("kind"), actual.path("kind").asText(), message + ": schedule kind");
+        assertNullableScheduleValue(actual.path("startLocalTime"), expected.get("startLocalTime"), message + ": start");
+        assertNullableScheduleValue(actual.path("endLocalTime"), expected.get("endLocalTime"), message + ": end");
+    }
+
+    private static void assertNullableScheduleValue(JsonNode actual, Object expected, String message) {
+        if (expected == null) assertTrue(actual.isNull(), message + " is null");
+        else assertEquals(expected, actual.asText(), message);
     }
 
     private UUID createProjectOwnedChannel(
@@ -3057,6 +3936,86 @@ final class SalesMenuAcceptanceScenarios {
                 "SELECT status || ':' || version::text FROM platform_asset.staged_asset WHERE asset_ref=?", assetRef);
     }
 
+    private String assetPhysicalFacts(UUID assetRef) {
+        return host.text(
+                "SELECT bucket_name || ':' || object_key || ':' || sha256 || ':' || status || ':' || version::text "
+                        + "FROM platform_asset.staged_asset WHERE asset_ref=?",
+                assetRef);
+    }
+
+    private static void assertSalesMenuAssetTarget(
+            JsonNode response,
+            MenuFixture menus,
+            UUID menuRef,
+            UUID itemRef,
+            long expectedDraftVersion,
+            String message) {
+        JsonNode target = response.path("target");
+        assertEquals(
+                menus.fixture().groupWorkspaceKey(),
+                target.path("groupWorkspaceKey").asText(),
+                "BUSINESS: " + message + " returns the owning workspace target");
+        assertEquals(
+                menus.fixture().storeId().toString(),
+                target.path("storeRef").asText(),
+                "BUSINESS: " + message + " returns the owning store target");
+        assertEquals(
+                menuRef.toString(),
+                target.path("salesMenuRef").asText(),
+                "BUSINESS: " + message + " returns the owning menu target");
+        assertEquals(
+                itemRef.toString(),
+                target.path("salesItemRef").asText(),
+                "BUSINESS: " + message + " returns the owning item target");
+        assertEquals(
+                "SALES_MENU_ITEM_IMAGE",
+                target.path("usage").asText(),
+                "BUSINESS: " + message + " returns the fixed image usage");
+        assertEquals(
+                expectedDraftVersion,
+                target.path("expectedDraftVersion").asLong(),
+                "BUSINESS: " + message + " returns the addressed draft item version");
+    }
+
+    private void assertNoSalesMenuMediaMutation(
+            BackendAcceptanceTest.ScenarioContext context,
+            MenuFixture menus,
+            UUID menuRef,
+            UUID itemRef,
+            long expectedMenuVersion,
+            long expectedItemVersion,
+            long expectedAssetCount,
+            String message)
+            throws Exception {
+        assertEquals(
+                expectedAssetCount,
+                salesMenuImageCount(menus.fixture()),
+                "BUSINESS: " + message + " creates no sales-menu asset row");
+        BackendAcceptanceTest.Response item = context.get(
+                OPERATIONS_SALES_MENU_DRAFT_ITEM,
+                draftItemPath(menus, menuRef, itemRef),
+                menus.session().cookie(),
+                Set.of(200));
+        assertEquals(
+                expectedItemVersion,
+                item.json().path("version").asLong(),
+                "BUSINESS: " + message + " leaves the item version unchanged");
+        assertEquals(
+                expectedMenuVersion,
+                readMenu(context, menus, menuRef, menus.channels().getFirst())
+                        .json()
+                        .path("version")
+                        .asLong(),
+                "BUSINESS: " + message + " leaves the menu version unchanged");
+    }
+
+    private long salesMenuImageCount(BackendAcceptanceTest.Fixture fixture) {
+        return host.count(
+                "SELECT count(*) FROM platform_asset.staged_asset WHERE workspace_uuid=? "
+                        + "AND usage='SALES_MENU_ITEM_IMAGE'",
+                fixture.workspaceUuid());
+    }
+
     private static String suffix() {
         return UUID.randomUUID().toString().substring(0, 8);
     }
@@ -3112,9 +4071,25 @@ final class SalesMenuAcceptanceScenarios {
         return true;
     }
 
-    private static boolean containsKind(JsonNode nodes, String kind) {
-        for (JsonNode node : nodes) if (kind.equals(node.path("kind").asText())) return true;
-        return false;
+    private static void assertSinglePublicationBlocker(
+            JsonNode preview,
+            String expectedKind,
+            UUID expectedSalesItemRef,
+            String expectedMessageKey,
+            String message) {
+        JsonNode violations =
+                requiredJsonNode(preview, "/violations", JsonNodeType.ARRAY, message + ": violations are typed");
+        assertEquals(1, violations.size(), message + ": exactly one blocker is returned");
+        JsonNode blocker = violations.get(0);
+        assertEquals(expectedKind, blocker.path("kind").asText(), message + ": blocker kind");
+        if (expectedSalesItemRef == null)
+            assertTrue(blocker.path("salesItemRef").isNull(), message + ": blocker has no item target");
+        else
+            assertEquals(
+                    expectedSalesItemRef.toString(),
+                    blocker.path("salesItemRef").asText(),
+                    message + ": blocker item target");
+        assertEquals(expectedMessageKey, blocker.path("messageKey").asText(), message + ": blocker message key");
     }
 
     private static boolean containsRef(JsonNode nodes, String field, UUID value) {

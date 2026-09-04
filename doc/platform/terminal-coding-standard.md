@@ -460,6 +460,68 @@ owner 自己在 reducer 里接"，只是把同一个外部写入拆成二十份�
 
 ---
 
+### `TR-12` · 一个 `kernel/feature` 必须能配多套 `ui/feature`
+
+**规则**：`kernel/feature` 与 `ui/feature` 的分工是 **1 : N**——
+
+| 层 | 内容 | 份数 |
+|---|---|---|
+| `kernel/feature/<domain>` | 与后台的交互与判断、业务状态管理、信息存储 | **一份** |
+| `ui/feature/<domain>-*` | 用户交互层：呈现、导航、提示 | **多份**（POS／KDS／自助机…各一套） |
+| `ui/integration/*` | 按交互场景挑选组合 | 多份 |
+
+由此三条硬约束：
+
+1. **`kernel/feature` 对 UI 形态零假设** —— 源码中不得出现 `partKey`／`containerKey`／
+   `displayMode` 字面量，`package.json` 不得依赖任何 `ui/*` 包。
+   一旦出现，该 kernel 即绑死一种 UI，1 : N 失效；
+2. **领域事件命令是 kernel 对外的公开契约面** —— 按结果拆成独立命令
+   （`xxxSucceededCommand` / `xxxFailedCommand`），payload **只含业务事实，不含呈现意图**。
+   不得用单条命令带 `boolean` 由各 actor 自行分支；
+3. **`ui/feature` 必须有自己的 module 与 actor** —— 「失败了该怎么呈现」「成功后跳哪里」
+   每种交互场景答案不同，只能由 UI 侧承接。`partKey` 自始至终不离开拥有它的 `ui/feature` 包。
+
+⚠️ **Dexter 2026-09-03 定为「整个 TER 的灵魂」。** 这是这两层分开的**唯一存在理由**，
+不是分层洁癖；违反它，两层就该合并。
+
+**与 `TR-11` 的关系**：`TR-11` 规定事件必须变 command；`TR-12` 规定**这些 command 的定义方
+与监听方分别是谁**。kernel 派出领域事件时**不知道谁关心**，正是 `TR-11` 收益 ③ 的兑现形式。
+
+**反例**（sample 需求 v1 实测，作者自查发现）：
+
+- 🔴 把导航与提示的 actor 全部写在 `kernel/feature`，于是
+  `kernel/feature/sample-staff-session` 内出现 `openLayer(PRIMARY,'sample.auth.notice')`
+  与 `showScreen(PRIMARY,'main','sample.auth.login')` ——
+  **kernel 包硬编码了 ui 包的 `partKey`**。ui 侧改名则 kernel 静默失效，无门可抓，
+  且该 kernel 再也换不了第二套登录界面；
+- 🔴 用单条 `sessionEstablishedCommand{authenticated: boolean}` 代替
+  `loginSucceeded` / `loginFailed` / `logoutSucceeded` 三条 ——
+  每个监听方都要写 `if (authenticated)`，且 payload 混入了「该走哪条呈现分支」的意图。
+
+**为什么**：三条真实收益 ——
+① 同一业务能力换 UI **不改 kernel 一行**；
+② 领域事件成为**稳定契约面**，新增 UI 只是新增监听方，事件源零改动（同 `TR-11` ③）；
+③ kernel 可脱离任何 UI 单测。
+
+**门**：禁止句两条 ——
+① `kernel/feature/**` 生产源码中 `partKey` / `containerKey` / `displayMode` 字面量零命中；
+② `kernel/feature/*/package.json` 的 dependencies 中 `ui/*` 包零命中。
+
+**红夹具**：在任一 `kernel/feature` 的 actor 里加一行
+`dispatchCommand(showScreenCommand, {partKey: 'x.y'})` ⇒ 门必须红。
+
+**负控制**：`ui/feature` 的 actor 里出现 `partKey` ⇒ 绿（那是它自己的部件）；
+`kernel/feature` 派出不含 partKey 的领域事件命令 ⇒ 绿。
+
+**反例栏**：门**只抓字面量与依赖**。
+「把 partKey 存进 kernel 的 slice 再读出来」「用字符串拼接构造 partKey」
+「kernel 依赖一个中间常量包、由它转手 partKey」——**都抓不到**，只能靠 review。
+⚠️ 「这个 kernel 是否真的能换一套 UI」属 `UNENFORCEABLE_BY_MACHINE`，由 review 判断。
+**不要求以「再配一套 UI」来证明** —— 1 : N 是这两层的设计前提，不是待证命题；
+门与 review 的职责是**防止耦合发生**，不是事后举证。
+
+---
+
 ## 2 · 三重命名与依赖方向
 
 ### 2-A · 三重标识由目录路径唯一派生

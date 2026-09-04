@@ -71,6 +71,45 @@ try {
     },
   )
 
+  const requiredPublicExportMutations = [
+    [
+      'USE_DISPATCH_COMMAND',
+      source => source.replace("export {useDispatchCommand} from './hooks/useDispatchCommand';\n", ''),
+      /useDispatchCommand/,
+    ],
+    [
+      'USE_UI_VARIABLE',
+      source => source.replace("export {useUiVariable} from './hooks/useUiVariable';\n", ''),
+      /useUiVariable/,
+    ],
+    [
+      'DISPATCH_WITH_REQUEST_ID',
+      source => source.replace("export {dispatchWithRequestId} from './foundations/dispatchWithRequestId';\n", ''),
+      /dispatchWithRequestId/,
+    ],
+    [
+      'USE_REQUEST_IN_FLIGHT',
+      source => source.replace('useRequestInFlight, ', ''),
+      /useRequestInFlight/,
+    ],
+    [
+      'USE_TRACKED_REQUEST',
+      source => source.replace(', useTrackedRequest', ''),
+      /useTrackedRequest/,
+    ],
+  ]
+  for (const [label, mutate, expectedMissingExport] of requiredPublicExportMutations) {
+    withMutation(
+      'src/index.ts',
+      mutate,
+      report => {
+        console.log(`RENDER_STATIC_RED_PUBLIC_MISSING_${label}=${rule(report, 'render-public-surface').status}`)
+        assertVector(report, ['render-public-surface'])
+        assert.match(rule(report, 'render-public-surface').error, expectedMissingExport)
+      },
+    )
+  }
+
   withMutation(
     'package.json',
     source => {
@@ -87,13 +126,123 @@ try {
 
   withMutation(
     'src/components/RenderProvider.tsx',
-    source => `${source}\nexport const forbiddenStoreProbe = (source: {getStore: () => unknown}) => source.getStore()\n`,
+    source => `${source}\nimport {getStore} from '@catering-v2s/kernel-base-runtime'\nconst forbiddenStoreProbe = getStore\nvoid forbiddenStoreProbe\n`,
     report => {
       console.log(`RENDER_STATIC_RED_API=${rule(report, 'render-source-forbidden-apis').status}`)
       assertVector(report, ['render-source-forbidden-apis'])
       assert.match(rule(report, 'render-source-forbidden-apis').error, /getStore/)
     },
   )
+
+  const forbiddenImportMutations = [
+    [
+      'define-command',
+      source => `${source}\nimport {defineCommand} from '@catering-v2s/kernel-base-runtime'\nvoid defineCommand\n`,
+      /defineCommand/,
+    ],
+    [
+      'runtime-module',
+      source => `${source}\nimport type {RuntimeModule} from '@catering-v2s/kernel-base-runtime'\nvoid (null as unknown as RuntimeModule)\n`,
+      /RuntimeModule/,
+    ],
+    [
+      'runtime-handle',
+      source => `${source}\nimport type {Runtime} from '@catering-v2s/kernel-base-runtime'\nconst forbiddenRuntime = null as unknown as Runtime\nvoid forbiddenRuntime\n`,
+      /Runtime/,
+    ],
+    [
+      'create-runtime',
+      source => `${source}\nimport {createRuntime} from '@catering-v2s/kernel-base-runtime'\nvoid createRuntime\n`,
+      /createRuntime/,
+    ],
+    [
+      'create-slice',
+      source => `${source}\nimport {createSlice} from '@reduxjs/toolkit'\nconst forbiddenSlice = createSlice({name: 'illegal', initialState: {}, reducers: {}})\nvoid forbiddenSlice\n`,
+      /createSlice/,
+    ],
+    [
+      'react-redux',
+      source => `${source}\nimport {useDispatch} from 'react-redux'\nvoid useDispatch\n`,
+      /react-redux/,
+    ],
+  ]
+  for (const [label, mutate, expectedError] of forbiddenImportMutations) {
+    withMutation(
+      'src/components/RenderProvider.tsx',
+      mutate,
+      report => {
+        console.log(`RENDER_STATIC_RED_IMPORT_${label.toUpperCase().replaceAll('-', '_')}=${rule(report, 'render-source-forbidden-apis').status}`)
+        assertVector(report, ['render-source-forbidden-apis'])
+        assert.match(rule(report, 'render-source-forbidden-apis').error, expectedError)
+      },
+    )
+  }
+
+  const stateRootImport = source => `${source}\nimport type {StateRoot as RuntimeStateRoot} from '@catering-v2s/kernel-base-state'\ntype ForbiddenRoot = RuntimeStateRoot\nvoid (null as unknown as ForbiddenRoot)\n`
+  withMutation(
+    'src/types/props.ts',
+    stateRootImport,
+    report => {
+      console.log(`RENDER_STATIC_RED_STATE_ROOT_IMPORT=${rule(report, 'render-source-forbidden-apis').status}`)
+      assertVector(report, ['render-source-forbidden-apis'])
+      assert.match(rule(report, 'render-source-forbidden-apis').error, /StateRoot/)
+    },
+  )
+  withMutation(
+    'src/types/props.ts',
+    source => stateRootImport(source).replace('StateRoot as RuntimeStateRoot', 'StateRoot as RenamedRoot'),
+    report => {
+      console.log(`RENDER_STATIC_RED_RENAMED_STATE_ROOT=${rule(report, 'render-source-forbidden-apis').status}`)
+      assertVector(report, ['render-source-forbidden-apis'])
+      assert.match(rule(report, 'render-source-forbidden-apis').error, /StateRoot/)
+    },
+  )
+  withMutation(
+    'src/types/props.ts',
+    source => `${source}\ntype ImportedRoot = import('@catering-v2s/kernel-base-state').StateRoot\nvoid (null as unknown as ImportedRoot)\n`,
+    report => {
+      console.log(`RENDER_STATIC_RED_STATE_ROOT_IMPORT_TYPE=${rule(report, 'render-source-forbidden-apis').status}`)
+      assertVector(report, ['render-source-forbidden-apis'])
+      assert.match(rule(report, 'render-source-forbidden-apis').error, /StateRoot/)
+    },
+  )
+  withMutation(
+    'src/types/props.ts',
+    source => `${source}\ntype ImportedStateModule = typeof import('@catering-v2s/kernel-base-state')\ntype ImportedRoot = ImportedStateModule['StateRoot']\nvoid (null as unknown as ImportedRoot)\n`,
+    report => {
+      console.log(`RENDER_STATIC_RED_STATE_NAMESPACE_TYPE=${rule(report, 'render-source-forbidden-apis').status}`)
+      assertVector(report, ['render-source-forbidden-apis'])
+      assert.match(rule(report, 'render-source-forbidden-apis').error, /kernel-base-state/)
+    },
+  )
+  const capabilitySyntaxMutations = [
+    [
+      're-export',
+      source => `${source}\nexport type {StateRoot as ReExportedRoot} from '@catering-v2s/kernel-base-state'\n`,
+      /StateRoot/,
+    ],
+    [
+      'dynamic-import',
+      source => `${source}\nconst dynamicallyImportedState = import('@catering-v2s/kernel-base-state')\nvoid dynamicallyImportedState\n`,
+      /kernel-base-state/,
+    ],
+    [
+      'require',
+      source => `${source}\nconst requiredState = require('@catering-v2s/kernel-base-state')\nvoid requiredState\n`,
+      /kernel-base-state/,
+    ],
+  ]
+  for (const [label, mutate, expectedError] of capabilitySyntaxMutations) {
+    withMutation(
+      'src/types/props.ts',
+      mutate,
+      report => {
+        console.log(`RENDER_STATIC_RED_CAPABILITY_${label.toUpperCase().replaceAll('-', '_')}=${rule(report, 'render-source-forbidden-apis').status}`)
+        assertVector(report, ['render-source-forbidden-apis'])
+        assert.match(rule(report, 'render-source-forbidden-apis').error, expectedError)
+      },
+    )
+  }
 
   withMutation(
     'src/foundations/definePart.ts',

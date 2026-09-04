@@ -1,5 +1,6 @@
 import type {DisplayMode, DisplayRole, DisplayRoleChangeEligibilityInput, DisplayContextEligibility, PowerRoleTargetInput, SurfaceDisplayModeInput, SwitchInstanceModeEligibilityInput, WorkspaceInput} from '../types/display'
 import type {WorkspaceKey} from '@catering-v2s/kernel-base-state'
+import type {DisplayInfoRead} from './displayDevice'
 
 export const resolveSurfaceDisplayMode = (input: SurfaceDisplayModeInput): DisplayMode =>
   input.displayIndex === 1
@@ -59,3 +60,7 @@ export const resolvePowerRoleTarget = (input: PowerRoleTargetInput): DisplayRole
   if (input.powerSource === 'battery' && input.displayRole === 'VICE') return 'CHIEF'
   return null
 }
+
+/** Unknown or unsafe device information always falls back to a single surface. */
+export const resolveSecondarySurfaceAvailable = (input: DisplayInfoRead): boolean =>
+  input.status === 'valid' && input.displayCount >= 2

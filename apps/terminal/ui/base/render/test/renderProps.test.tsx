@@ -12,6 +12,7 @@ import {
   useSurfaceDisplayMode,
   useUiStateSelector,
 } from '../src/index'
+import {unusedRenderProviderBindings} from './renderProviderBindings'
 
 ;(globalThis as {IS_REACT_ACT_ENVIRONMENT?: boolean}).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -129,7 +130,7 @@ describe('render component input contract', () => {
     const {logger, events} = createLogger()
     const renderer = mount(createElement(
       RenderProvider,
-      {stateSource: source.stateSource, uiCatalog: fixture.uiCatalog, rendererCatalog: fixture.rendererCatalog, logger},
+      {stateSource: source.stateSource, uiCatalog: fixture.uiCatalog, rendererCatalog: fixture.rendererCatalog, logger, ...unusedRenderProviderBindings},
       createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
     ))
 
@@ -158,7 +159,7 @@ describe('render component input contract', () => {
     const {logger} = createLogger()
     const renderer = mount(createElement(
       RenderProvider,
-      {stateSource: source.stateSource, uiCatalog: fixture.uiCatalog, rendererCatalog: fixture.rendererCatalog, logger},
+      {stateSource: source.stateSource, uiCatalog: fixture.uiCatalog, rendererCatalog: fixture.rendererCatalog, logger, ...unusedRenderProviderBindings},
       createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
     ))
 

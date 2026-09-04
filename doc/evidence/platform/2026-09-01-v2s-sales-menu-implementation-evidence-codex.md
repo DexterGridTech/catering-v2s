@@ -2022,3 +2022,1107 @@ The independent reconciliation marked all 11 dimensions `PASS` or the backend-on
 `NOT_APPLICABLE_FOR_THIS_BACKEND_ONLY_STAGE`; it found no OPEN mismatch. It explicitly does not close the 15-row
 SM-05 ledger, 31-operation completion-event mapping, CP-05 normal projection, frontend/browser L2, DEV, reset/seed,
 UAT or deployment.
+
+## 2026-09-03 · SM-L2-008 focused recovery after control exact-set repair
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The step-level independent recheck found that the previous focused join accepted a setup-only
+`SALES_MENU_CHANNEL_CARDS` touch which was absent from the SM-L2-008 denominator. The source of truth and the
+approved design keep that common channel-card container only in the entry and authorization cases; the other cases
+declare and use their target `SALES_MENU_CHANNEL_CARD`. The repair therefore made `openSalesMenu` record the full
+channel-card container only when the generated case declares it, made every sales-menu control touch reject an
+undeclared key while the case runtime is active, and made the runner join/terminal gate fail closed on
+`unexpectedTouchedControlKeys`. The runner self-test includes a `CONTROL_TOUCH_UNDECLARED` red mutation.
+
+The same recheck also corrected the detailed-design table so SM-L2-008 no longer claims `SALES_MENU_PUBLISHED_PAGINATION`;
+that control belongs to SM-L2-009. Blueprint, generated scenario, spec and detailed-design denominators now agree.
+
+```text
+STATIC_GENERATOR=SALES_MENU_P1:PASS; CASES=18; OPERATIONS=31
+STATIC_RUNTIME_SELF_TEST=PASS; TESTS=50; PASS=50; FAIL=0
+STATIC_VERIFY=R5_VERIFY_VALIDATE_ONLY:PASS; EXECUTED=21/21; CLEANUP=NOT_APPLICABLE_STATIC_ONLY
+RUN_ID=l2-1788415652635-43879-f36836ba-75db-4b0c-a0d3-1ffba52898cd
+READINESS=PASS; ACTIVE_CASES=18; OWNER_ITEMS=21
+SOURCE_BYTE_BINDING_FINALIZE=PASS
+FOCUSED_CASE=sales-menu-publish-and-front-structure
+FOCUSED_DIAGNOSTIC=PASS; BUSINESS=NOT_RUN; CLEANUP=PASS
+JOIN=COMPLETE; CASE=PASS; MISSING_CONTROLS=0; UNEXPECTED_CONTROLS=0; MISSING_ACTIONS=0; UNEXPECTED_ACTIONS=0
+HTTP_COMPLETIONS=12; BACKEND_EXPECTED=12; DB_SECTIONS_CASE=238; BROWSER_RUNTIME_ERRORS=0
+```
+
+This focused diagnostic closes the L2-008 control/join failure boundary only. Its `BUSINESS=NOT_RUN` status does not
+count as SM-05 completion and does not prove the 15 backend scenarios, the 31-operation actual execution mapping,
+production owner behavior, DEV/UAT, reset/seed or deployment.
+
+## 2026-09-03 · SM-05 BusinessChannel focused scenario
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The first SM-05 focused backend scenario was executed through the managed real-HTTP/remote-Testcontainers entry after
+the static denominator review. Its fixture/source boundary contains 20 STORE-owned INTERNAL TAKEAWAY channels and one
+STORE-owned INTERNAL DINE_IN channel, plus PROJECT-owned TAKEAWAY, STORE-owned GROUP_BUY and EXTERNAL TAKEAWAY negative
+channels. The scenario asserts cursor identity, 20+1 pagination, unique membership, negative exclusion, query identity
+validation and foreign-store scope denial.
+
+```text
+RUN_ID=r5-tc-1788416555595-65158
+SCENARIO=business-channel.sales-menu-eligible-cursor
+CONTRACT=PASS; BUSINESS=PASS; businessMode=REAL; DB_OPERATIONS=9
+HTTP_STATUS_SHAPE=200,200,422,403; EXPECTED_NEGATIVE_REQUESTS=SEPARATE_FROM_BUSINESS_FAILURE
+UNCLASSIFIED_SQL=0; EVIDENCE_ARCHIVE=PASS
+REMOTE_PROCESS_CLEANUP=PASS; WORKSPACE_CLEANUP=PASS; TESTCONTAINERS_CONTAINERS=PASS; TESTCONTAINERS_VOLUMES=PASS
+FIRST_FAILURE=null
+INDEPENDENT_POST_PROOF=STEP-CLOSED; OPEN=0
+```
+
+This row closes only the BusinessChannel focused scenario. The compressed HTTP/DB artifacts do not carry a complete
+scenarioId/caseId/actionId mapping for all events, so this evidence does not claim the 31-operation actual mapping or
+SM-05 full closure. The expected 422/403 requests remain separately classified from BUSINESS and cleanup outcomes.
+
+## 2026-09-03 · SM-05 store scope focused run and post-proof finding disposition
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The second SM-05 focused backend row was executed through the managed real-HTTP/remote-Testcontainers entry. Its
+scenario-owned denominator is one store menu, two eligible store-owned INTERNAL channels (`TAKEAWAY` and `DINE_IN`),
+project/external ineligible channels, a no-capability actor, and a sibling-store boundary. The separate
+`business-channel.sales-menu-eligible-cursor` row already owns the 20+1 channel denominator and its cursor/query
+negative cases; duplicating that 21-channel fixture into this row would change the scenario denominator rather than
+close a missing fact.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_SALES_MENU_SCOPE_POST_PROOF
+REVIEW_ROUND=1
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+RUN_ID=r5-tc-1788416927552-66191
+SCENARIO=sales-menu.store-scope-and-channel-eligibility
+CONTRACT=PASS; BUSINESS=PASS; businessMode=REAL; DB_OPERATIONS=13
+HTTP_EXPECTED_NEGATIVES=422,422,403,404; DIRECT_FAILURES=0
+UNCLASSIFIED_SQL=0; EVIDENCE_ARCHIVE=PASS
+REMOTE_PROCESS_WORKSPACE_CONTAINERS_VOLUMES_CLEANUP=PASS
+FIRST_FAILURE=null
+```
+
+The run's `statement-dictionary` is the explicitly permitted local diagnostic sidecar from the accepted HTTP/DB
+observability specification: it maps stable statement identifiers to parameterized templates and does not contain
+bind values. The action-request join and compressed HTTP/DB/business artifacts contain only correlation/operation,
+status/category, count and hashed diagnostic fields. The detailed design's logging row is clarified accordingly: the
+sidecar is not a business log, HTTP/DB event stream or action-request join artifact and remains local-only.
+
+Round-one independent review reported two OPEN findings. They are classified against the current scenario contract and
+the accepted cross-cutting standards as follows; the classifications require the same-cycle round-two independent
+recheck before the next focused scenario starts:
+
+| Finding | Disposition | Evidence and boundary |
+| --- | --- | --- |
+| Current sales-menu scope run did not itself execute the 20+1 BusinessChannel prerequisite | `REJECTED_WITH_EVIDENCE` | The 20+1 cursor, terminal page, wrong-query rejection, GROUP_BUY/external exclusion and cross-store cursor denial are the separate `business-channel.sales-menu-eligible-cursor` scenario, already run as `r5-tc-1788416555595-65158` with CONTRACT/BUSINESS/real assertion/cleanup PASS and independent post-proof OPEN=0. The current sales-menu scenario declares and proves its narrower two-eligible-channel and store-scope boundary; it does not claim the BusinessChannel scenario's denominator. |
+| `statement-dictionary` appears in the local evidence archive | `REJECTED_WITH_EVIDENCE` | The accepted observability specification §4.3 explicitly permits the local-only `statementId → parameterized template` sidecar under the §1-P1-1 security boundary. No raw bind/query body is in the action-request join or business/HTTP/DB event streams; the detailed design now names this narrow sidecar exception without relaxing any user-data or credential prohibition. |
+
+```text
+ROUND_ONE_OPEN=2
+PROPOSED_DISPOSITION_OPEN=0
+EVIDENCE_BOUNDARY=focused backend acceptance only; not browser L2, not DEV, not seed/reset, not UAT, not full SM-05 15/15 or 31/31 closure
+ROUND_TWO_REQUIRED=YES
+```
+
+The same-cycle round-two independent verifier reopened the current requirements, scenario denominator, accepted
+observability standard, implementation design clarification, and both run artifacts. It did not edit files or run
+dynamic infrastructure.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_SALES_MENU_SCOPE_POST_PROOF
+REVIEW_ROUND=2
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+ROUND_FINAL_DECISION=SELF_DECIDED
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED
+EVIDENCE_BOUNDARY=Read-only review only; closes the two Round-1 findings for r5-tc-1788416927552-66191; not full SM-05, browser L2, seed, UAT or whole implementation review
+```
+
+The verifier confirmed that the 20+1 BusinessChannel owner denominator is correctly owned by the separate focused
+scenario `business-channel.sales-menu-eligible-cursor` (`r5-tc-1788416555595-65158`), while the current SalesMenu row
+has a narrower declared denominator and does not need a duplicate run or code change. It also confirmed that the
+statement dictionary is the accepted local-only parameterized-template diagnostic sidecar, distinct from the
+business/HTTP/DB/action-request join artifacts, and that cleanup, direct failures, real business mode and
+`firstFailure=null` are closed. The absence of a cryptographic current-checkout hash in this older runner manifest
+is retained as an existing evidence limitation, not a blocker for this focused step.
+
+The scope focused stage is now closed with `OPEN=0`; only the next focused SM-05 scenario may start. The 15-row
+SM-05 ledger, 31-operation actual completion mapping, CP-05 normal measurement/verify, whole-batch reconciliation,
+SM-06+, browser L2 closure, DEV, reset, seed, UAT and deployment remain open.
+
+## 2026-09-03 · SM-05 collection lifecycle and multi-activation focused run
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The collection lifecycle scenario was first statically reconciled against the accepted requirement, IA, detailed
+design, scenario plan and owning controller/service. The prior run was intentionally not accepted because it enabled
+menus on different channels, did not read back the schedule, and did not prove that a disabled activation can still be
+edited and published. The scenario source was corrected at its owning acceptance boundary: one first-channel menu is
+enabled together with a second distinct menu on that same channel; the first menu is then disabled on that channel,
+while its edit, schedule, publish and exact schedule readback are asserted; the second menu remains enabled on that
+channel and the first menu remains independently enabled on the second channel.
+
+```text
+RUN_ID=r5-tc-1788418710711-77016
+SCENARIO=sales-menu.collection-lifecycle-and-multi-activation
+CONTRACT=PASS; BUSINESS=PASS; businessMode=REAL; DB_OPERATIONS=13
+HTTP_STATUS_SHAPE=200,201,422; HTTP_EVENTS=66
+DB_EVENTS=1505; UNCLASSIFIED_SQL=0
+REMOTE_PROCESS_CLEANUP=PASS; WORKSPACE_CLEANUP=PASS; TESTCONTAINERS_CONTAINERS=PASS; TESTCONTAINERS_VOLUMES=PASS
+EVIDENCE_ARCHIVE=PASS; FIRST_FAILURE=null
+```
+
+The run is valid focused backend evidence for this scenario only. Its business result is real hand-written acceptance
+assertion output, not a stub and not an exit-code proxy. It proves the corrected same-channel multi-activation,
+disabled-channel edit/publish and schedule readback assertions in the scenario source, while the broader 21-menu,
+20+1 cursor and archive denominator remains owned by the appropriate scenario assertions and is not inferred from the
+HTTP count. Independent post-proof for this row is required before the next focused scenario starts.
+
+The fresh independent verifier reopened the current requirements, IA, detailed design, scenario plan, owning
+controller/service and the run artifacts. It verified the same-channel multi-activation, independent second-channel
+activation, disabled-channel edit/schedule/publish path, exact schedule readbacks, cursor boundary, archive/history,
+real hand-written business assertion, source sync and cleanup. The verifier found no OPEN finding for this focused
+step and explicitly retained the backend-only and non-production proof boundaries.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_COLLECTION_LIFECYCLE_POST_PROOF_V2
+REVIEW_ROUND=1
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+ROUND_FINAL_DECISION=NOT_REQUIRED_OPEN_ZERO
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED
+EVIDENCE_BOUNDARY=focused backend acceptance only; not full SM-05, 31-operation mapping, browser L2, DEV, seed/reset, UAT or production proof
+```
+
+The independent review also noted that measurement-level discovered/succeeded counts use a different denominator from
+the focused acceptance result. This is retained as a reporting boundary; the closure decision relies on the selected
+scenario's real business result, source oracle, HTTP completion shape and cleanup evidence, not on a broad measurement
+count. The next focused scenario may now start.
+
+## 2026-09-03 · SM-05 copy current draft boundary focused run
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+Before this run, the copy oracle was statically reconciled against the current requirements, IA, UI interaction
+design, implementation design/plan, owner copy implementation and the existing Catalog relation-copy precedent. The
+static pass found that the oracle asserted only the copied schedule kind, while the approved boundary requires the
+current draft schedule values to be copied exactly. The oracle was narrowed by adding exact `09:00` and `22:00`
+readbacks; no production owner or contract semantics were changed.
+
+```text
+RUN_ID=r5-tc-1788419305914-78277
+SCENARIO=sales-menu.copy-current-draft-boundary
+CONTRACT=PASS; BUSINESS=PASS; businessMode=REAL; DB_OPERATIONS=20
+HTTP_STATUS_SHAPE=200,201,404; HTTP_EVENTS=48
+DB_EVENTS=997; UNCLASSIFIED_SQL=0
+REMOTE_PROCESS_CLEANUP=PASS; WORKSPACE_CLEANUP=PASS; TESTCONTAINERS_CONTAINERS=PASS; TESTCONTAINERS_VOLUMES=PASS
+EVIDENCE_ARCHIVE=PASS; FIRST_FAILURE=null
+```
+
+The real hand-written acceptance oracle exercised source current-draft mutation after publication, manual-sale state,
+two staged/claimed CUSTOM assets, copy command, copy detail/draft/records/publication reads and source preservation.
+The run's HTTP completion summary includes `copyOperationsSalesMenu=1`, `getOperationsSalesMenuPublishedSections=1`
+with the expected typed 404, and all required post-copy reads. The focused result is valid for this copy-boundary row
+only; it is not evidence for full SM-05, browser L2, DEV/UAT or production owner closure.
+
+Independent post-proof is pending for this row. The previous first-failure run remains preserved in the earlier
+copy-boundary evidence section; this PASS is the post-repair run after the nullable activation oracle and exact schedule
+readback were present. This row cannot be treated as step-closed until a fresh independent verifier records its
+verdict.
+
+## 2026-09-03 · SM-05 copy expanded fixture first-failure diagnosis
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The copy fixture was then expanded, as required by the independent review, to include a SKU-selection item, a second
+section/item, explicit display-name overrides, prices and ordering constraints. The first focused rerun failed before
+the copy command, while adding the second item. The preceding add of the SKU and creation of the second section both
+succeeded. The failure was therefore not a copy-owner assertion, catalog fixture rejection or cleanup problem.
+
+```text
+RUN_ID=r5-tc-1788420554065-81344
+SCENARIO=sales-menu.copy-current-draft-boundary
+FIRST_FAILURE=REMOTE_GRADLE_EXIT_NONZERO
+FAILURE_CATEGORY=HTTP_CONTRACT
+FAILURE=addOperationsSalesMenuItems returned typed VERSION_CONFLICT (expected 201, received 409)
+BUSINESS=FAIL; DB_OPERATIONS=25; HTTP_EVENTS=48; UNCLASSIFIED_SQL=0
+TESTCONTAINERS_CONTAINERS=PASS; TESTCONTAINERS_VOLUMES=PASS; EVIDENCE_ARCHIVE=PASS
+REMOTE_PROCESS_CLEANUP=PASS
+```
+
+The request sequence and owning source identify a fixture version-cursor omission: after
+`createSection(..., "SM05 copy second section", version)` returned the new section and advanced the aggregate
+version, the next `addItems` call reused the previous `version` instead of `secondSection.menuVersion()`. The 409 is the
+owner's correct CAS rejection of that stale test expectation. The minimal test-only correction writes
+`version = secondSection.menuVersion()` before the second-item add; no production code, contract, timeout, retry or
+assertion was changed. A new focused run and the same-cycle round-two independent post-proof remain required.
+
+## 2026-09-03 · SM-05 copy expanded fixture repaired focused run
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+After the first failure was diagnosed, the fixture's version cursor was corrected at the owning acceptance source by
+assigning the command readback from the newly created second section before adding its item. No production owner,
+contract, timeout, retry or assertion semantics changed.
+
+```text
+RUN_ID=r5-tc-1788420981606-82076
+SCENARIO=sales-menu.copy-current-draft-boundary
+CONTRACT=PASS; BUSINESS=PASS; businessMode=REAL; DB_OPERATIONS=20
+HTTP_STATUS_SHAPE=200,201,404; HTTP_EVENTS=48
+DB_EVENTS=1322; UNCLASSIFIED_SQL=0
+REMOTE_PROCESS_CLEANUP=PASS; WORKSPACE_CLEANUP=PASS; TESTCONTAINERS_CONTAINERS=PASS; TESTCONTAINERS_VOLUMES=PASS
+EVIDENCE_ARCHIVE=PASS; FIRST_FAILURE=null
+```
+
+The expanded fixture now exercised the SKU-selection relation, a second section/item, current-draft display-name
+overrides, prices, ordering constraints, CUSTOM media order/primary asset, publication and source preservation. The
+real hand-written BUSINESS oracle passed, and the managed cleanup/evidence chain passed. This run closes the dynamic
+failure introduced by the expanded fixture; the same-cycle Round-2 independent verifier must still confirm the
+expanded denominator and copy boundary before this focused step is marked closed.
+
+## 2026-09-03 · SM-05 copy Round-2 finding intake and author disposition
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The Round-2 verifier returned one `UNVERIFIED_REQUIRES_EVIDENCE` finding because its explicitly requested input set
+did not include the preserved first-failure run or this evidence ledger. The missing evidence is present and was
+reopened by the author before disposition: the failed managed manifest reports `status=FAIL`, `sourceSync=PASS`,
+`cleanup.status=PASS`, and the real acceptance result reports `HTTP_CONTRACT` on the third add request with typed
+`VERSION_CONFLICT`; its route sequence shows the first item add and second-section create succeeded before that add
+failed. The current source at lines 388-390 contains the one-line cursor correction between the section create and
+second-item add, and the subsequent compile plus repaired real run passed.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_COPY_CURRENT_DRAFT_POST_PROOF
+REVIEW_ROUND=2
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+ROUND_FINAL_DECISION=SELF_DECIDED
+F-R2-001=REJECTED_WITH_EVIDENCE
+EVIDENCE=.runtime/r5/evidence/remote-testcontainers/r5-tc-1788420554065-81344/run-manifest.json
+EVIDENCE=.runtime/r5/evidence/remote-testcontainers/r5-tc-1788420554065-81344/backend-acceptance-result.jsonl.gz
+EVIDENCE=apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/SalesMenuAcceptanceScenarios.java:388-390
+EVIDENCE=apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/SalesMenuAcceptanceScenarios.java:389
+EVIDENCE=.runtime/r5/evidence/remote-testcontainers/r5-tc-1788420981606-82076/run-manifest.json
+AUTHOR_DISPOSITION=the finding's premise is false because the failed run and exact one-line source correction are now directly recorded and verified
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED
+EVIDENCE_BOUNDARY=focused backend acceptance only; not full SM-05, browser L2, DEV, seed/reset, UAT or production proof
+```
+
+This author disposition does not create a third review round. It closes only the copy focused step and permits the
+next serial SM-05 scenario; full SM-05 and all later stages remain open.
+
+## 2026-09-03 · SM-05 ordered sections/items static step admission
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+Fresh independent static reconciliation reopened the requirements, IA, UI interaction constraints, project-memory
+ordering/acceptance rules, detailed design/plan, current owner source, current acceptance source, contract/generated
+boundary, fixture truth table and prior managed artifacts. It verified the complete ordered-stage denominator and
+found no OPEN mismatch: 21 candidates as `20+1`, 21 draft rows as `20+1`, complete section tuples, duplicate catalog
+membership with independent sales-item identities, typed delete/move rejection with no mutation, empty-section
+deletion, authoritative UP/DOWN order and unchanged item versions, and keyset/opaque cursor boundaries. The
+backend-only scope does not claim UI DOM/focus proof.
+
+```text
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+SCOPE=SM-05 sales-menu.ordered-sections-and-items
+FINAL_STAGE_VERDICT=PASS
+OPEN_COUNT=0
+STAGE_ALLOWED=YES
+SM-05_ALLOWED=NO
+EVIDENCE_BOUNDARY=static step admission only; not full SM-05, browser L2, DEV, seed/reset, UAT or production proof
+```
+
+The static gate permits exactly one serial focused run for `sales-menu.ordered-sections-and-items`.
+
+## 2026-09-03 · SM-05 ordered sections/items focused run
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The ordered scenario was executed only after the fresh static step admission above. It used the real HTTP owner
+fixture and hand-written BUSINESS oracle; expected negative requests remain typed failures separated from the
+successful business result.
+
+```text
+RUN_ID=r5-tc-1788421762713-89496
+SCENARIO=sales-menu.ordered-sections-and-items
+CONTRACT=PASS; BUSINESS=PASS; businessMode=REAL; DB_OPERATIONS=21
+HTTP_EVENTS=177; HTTP_STATUS_SHAPE=200,201,409; UNCLASSIFIED_SQL=0
+REMOTE_PROCESS_CLEANUP=PASS; WORKSPACE_CLEANUP=PASS; TESTCONTAINERS_CONTAINERS=PASS; TESTCONTAINERS_VOLUMES=PASS
+EVIDENCE_ARCHIVE=PASS; FIRST_FAILURE=null
+```
+
+The real scenario passed the 21-candidate and 21-draft-item `20+1` cursor paths, section tuple/order/delete
+boundaries, duplicate catalog membership with independent sales-item identities, typed no-mutation rejects, and
+authoritative item move readbacks. The managed manifest and acceptance artifact confirm BUSINESS/CONTRACT/cleanup
+separation; measurement reports two expected negative HTTP outcomes and zero unclassified SQL, which are not treated
+as business failures. Fresh independent post-proof is required before the next SM-05 scenario.
+
+The fresh independent post-proof reopened the current source, design/contract boundary and this run's artifacts. It
+found no OPEN finding and confirmed that the two 409 responses are the expected non-empty-section-delete and first-item
+UP boundary negatives, not failures of the real BUSINESS oracle.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_ORDERED_SECTIONS_ITEMS_POST_PROOF
+REVIEW_ROUND=1
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+ROUND_FINAL_DECISION=NOT_REQUIRED_OPEN_ZERO
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED
+EVIDENCE_BOUNDARY=focused backend acceptance only; not full SM-05, browser L2, DEV, seed/reset, UAT or production proof
+```
+
+Only the next serial SM-05 focused scenario is permitted; SM-05-wide closure remains open.
+
+## 2026-09-03 · SM-05 shape-specific sale definition static step admission
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+Fresh independent static reconciliation reopened the current requirements, IA/UI interaction constraints, project
+memory, detailed design/plan, current Catalog and SalesMenu owner sources, contract/generated schemas, fixture truth
+table and prior focused evidence. It found no OPEN mismatch for the five real Catalog-backed sale definitions:
+ordinary/direct, weighted, composite, service and SKU selection. The check confirmed Catalog is the source for shape,
+weighted five-field sales-unit readback and SKU identity/name/code/status facts; weighted ordering bounds remain
+nullable; SKU has no public parent price and uses per-SKU listed price; the update request carries no sales-unit
+definition; and each update uses the current aggregate version.
+
+```text
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+SCOPE=SM-05 sales-menu.shape-specific-sale-definition
+FINAL_STAGE_VERDICT=PASS
+OPEN_COUNT=0
+STAGE_ALLOWED=YES
+SM-05_ALLOWED=NO
+EVIDENCE_BOUNDARY=static step admission only; not full SM-05, browser L2, DEV, seed/reset, UAT or production proof
+```
+
+The static gate permits exactly one serial focused run for `sales-menu.shape-specific-sale-definition`.
+
+## 2026-09-03 · SM-05 shape-specific sale definition focused run
+
+The shape-specific scenario was executed only after the static admission above. It used five fresh Catalog-owned
+fixtures and a real HTTP hand-written acceptance oracle; weighted unit facts and SKU facts were read from Catalog
+owner responses and then checked against SalesMenu readback.
+
+```text
+RUN_ID=r5-tc-1788422668057-91873
+SCENARIO=sales-menu.shape-specific-sale-definition
+CONTRACT=PASS; BUSINESS=PASS; businessMode=REAL; DB_OPERATIONS=21
+HTTP_EVENTS=72; HTTP_STATUS_SHAPE=200,201; UNCLASSIFIED_SQL=0
+REMOTE_PROCESS_CLEANUP=PASS; WORKSPACE_CLEANUP=PASS; TESTCONTAINERS_CONTAINERS=PASS; TESTCONTAINERS_VOLUMES=PASS
+EVIDENCE_ARCHIVE=PASS; FIRST_FAILURE=null
+```
+
+The real BUSINESS oracle passed the ordinary/direct, weighted, composite, service and SKU-selection definitions,
+including nullable weighted ordering bounds, five-field Catalog sales-unit readback, SKU parent-price nullability,
+per-SKU listed price and aggregate-version advancement. This focused run closes only the shape-specific SM-05 row;
+fresh independent post-proof is required before the next serial scenario.
+
+The fresh independent post-proof reopened the current real-path source, Catalog owner boundary, generated schemas and
+this run's managed artifacts. It confirmed the five-shape fixture/readback chain, current-version sequencing,
+CONTRACT/BUSINESS/real assertion separation, archive integrity, cleanup PASS and the metadata-only boundary of the
+HTTP/DB event streams; it found no OPEN finding.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_SHAPE_SPECIFIC_SALE_DEFINITION_POST_PROOF
+REVIEW_ROUND=1
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+ROUND_FINAL_DECISION=NOT_REQUIRED_OPEN_ZERO
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED
+EVIDENCE_BOUNDARY=focused backend acceptance only; not full SM-05, browser L2, DEV, seed/reset, UAT or production proof
+```
+
+Only the next serial SM-05 focused scenario is permitted.
+
+## 2026-09-03 · SM-05 display-media owner transaction static step admission
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The first independent static verifier identified three OPEN denominator/oracle gaps: incomplete asset target
+readback, missing no-partial-write proof on rejected target/grant paths, and missing published-bound draft-replacement
+coverage in the scoped SalesMenu scenario. The author then re-opened the current owner source, contract, detailed
+design and the Asset owner companion before changing only the acceptance oracle. The scenario now asserts every
+contract target field for stage and release; checks menu/item versions and sales-menu asset-row counts after each
+cross-store/menu/item rejection; checks asset lifecycle plus menu/item readback after wrong-usage, invalid-grant,
+claimed/released/version and capability rejections; and proves original publication immutability across a valid draft
+media replacement and archive. No production owner, contract, generated output or product semantic was changed.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_DISPLAY_MEDIA_OWNER_TRANSACTION
+REVIEW_ROUND=2
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+ROUND_FINAL_DECISION=SELF_DECIDED
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED
+STATIC_SPOTLESS=PASS
+STATIC_COMPILE_TEST_JAVA=PASS
+STAGE_ALLOWED=YES
+SM-05_ALLOWED=NO
+EVIDENCE_BOUNDARY=static step admission only; not focused backend run, full SM-05, browser L2, DEV, seed/reset, UAT or production proof
+```
+
+The static gate permits exactly one serial managed focused run for `sales-menu.display-media-owner-transaction`.
+
+## 2026-09-03 · SM-05 display-media owner transaction focused run
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The scoped scenario ran only after the Round-2 static admission. It used the real HTTP owner, fresh STORE fixtures,
+real staged asset bytes and a hand-written BUSINESS oracle. The run manifest has no first failure; the expected
+negative target, lifecycle, capability and bind-grant responses remain part of the scenario and are not treated as
+runner failures.
+
+```text
+RUN_ID=r5-tc-1788424209192-97432
+SCENARIO=sales-menu.display-media-owner-transaction
+SOURCE_SYNC=PASS; REMOTE_GRADLE=0; CONTRACT=PASS; BUSINESS=PASS; businessMode=REAL; DB_OPERATIONS=22
+HTTP_EVENTS=88; HTTP_STATUS_SHAPE=200,201,403,404,409,422; UNCLASSIFIED_SQL=0; SQL_EVENTS=1756
+FIRST_FAILURE=null
+REMOTE_PROCESS_CLEANUP=PASS; REMOTE_WORKSPACE_CLEANUP=PASS; TESTCONTAINERS_CONTAINERS=PASS; TESTCONTAINERS_VOLUMES=PASS
+EVIDENCE_ARCHIVE=PASS; MUTATION_VERDICT=NOT_APPLICABLE
+```
+
+The real oracle passed complete stage/release target identity, cross-store/menu/item no-write boundaries, wrong-usage
+and invalid-grant atomicity, claimed/released/stale lifecycle rejection, capability denial, valid draft replacement,
+published image immutability and archive preservation. The managed artifact reports `SELECTED=1`,
+`REAL_BUSINESS_ASSERTIONS=1`, `STUB_ONLY=0` and `DIRECT_FAILURES=0`; this closes only the focused backend scenario,
+pending independent post-proof. It is not full SM-05, browser L2, DEV, seed/reset, UAT or production proof.
+
+## 2026-09-03 · SM-05 display-media focused post-proof and finding disposition
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+Fresh independent post-proof re-read the current display-media source, detailed design, contract, managed manifest,
+compressed HTTP/SQL/result artifacts, archive index and Gradle log. It confirmed source synchronization, real HTTP
+execution, hand-written business assertions, expected negative response families, owner readbacks, transaction
+rollback/no-partial-write evidence, request-to-SQL correlation, zero unclassified SQL and complete resource cleanup.
+The archive SHA/byte receipts matched the manifest and archive index.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_DISPLAY_MEDIA_OWNER_TRANSACTION_POST_PROOF
+REVIEW_ROUND=1
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+F-R1-001=REJECTED_WITH_EVIDENCE
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED
+```
+
+The verifier proposed a direct/stub consistency artifact. That premise is outside the active backend-acceptance
+standard: the finite business proof is one real HTTP/Testcontainers scenario with a hand-written oracle; the runner
+accepts `REAL`/`STUB` as a result shape but fail-closes any `STUB` business result. The current result's
+`businessMode=REAL`, `REAL_BUSINESS_ASSERTIONS=1`, `STUB_ONLY=0` and `DIRECT_FAILURES=0` therefore satisfy the
+applicable model; no second stub execution or new artifact is authorized or required. This disposition does not
+weaken the boundary: the run proves only `sales-menu.display-media-owner-transaction`, not full SM-05, browser L2,
+DEV, seed/reset, UAT or production completion.
+
+The focused display-media step is closed and the next serial SM-05 static admission may begin.
+
+## 2026-09-03 · SM-05 publish-frozen effective view static admission
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The first independent static review found four publish-frozen/readback gaps. The author re-opened the detailed
+design, active backend-acceptance standard, SalesMenu and Catalog owner sources, generated schema and existing
+whole-save helper before making the minimum test-only changes. The scenario now uses the real Catalog owner rename
+and authoritative readback after the first publication; captures and compares the complete published section,
+published item and detail tuples; proves a distinguishable DAILY_TIME_RANGE to ALL_DAY draft schedule change while
+the first publication remains unchanged; and compares the full menu readback before and after malformed-price,
+disabled-channel and disabled-store failed publication attempts. No production owner, contract, generated output or
+product semantic was changed.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_PUBLISH_FROZEN_EFFECTIVE_VIEW
+REVIEW_ROUND=2
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+ROUND_FINAL_DECISION=SELF_DECIDED
+ROUND2_FINDINGS=OPEN=1; malformed-price failed publish no-write readback
+AUTHOR_DISPOSITION=F-R2-001 CONFIRMED_AND_REPAIRED; exact pre/post readMenu equality added; no third review because cycle limit is 2
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED
+STATIC_SPOTLESS=PASS
+STATIC_COMPILE_TEST_JAVA=PASS
+STAGE_ALLOWED=YES
+SM-05_ALLOWED=NO
+EVIDENCE_BOUNDARY=static step admission only; not focused backend run, full SM-05, browser L2, DEV, seed/reset, UAT or production proof
+```
+
+The Round-2 verifier rejected the other four findings with current-source/schema evidence. The remaining finding was
+limited to the malformed-price branch; the author then added the same owner readback invariant already used for the
+disabled channel/store branches and re-ran Spotless plus test compilation successfully. This closes static admission
+for one serial managed focused run of `sales-menu.publish-frozen-effective-view`; it does not claim the dynamic
+scenario, full SM-05, browser L2, DEV, seed/reset, UAT or production behavior.
+
+## 2026-09-03 · SM-05 display-media post-proof finding intake
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The post-proof verifier's direct/stub comparison finding was re-opened against the active owner standard and managed
+runner. It is `REJECTED_WITH_EVIDENCE`: the active model deliberately has one real HTTP/Testcontainers business
+scenario, `businessMode=REAL`, and a hand-written business oracle; the runner rejects any `STUB` business result
+(`scripts/test/r5-remote-testcontainers.mjs`), while the active standard explicitly retires the old provider/stub
+model. No second stub execution or consistency artifact is an applicable completion condition. This does not expand
+the focused proof to SM-05-wide, browser L2, DEV, seed/reset, UAT or production completion.
+
+## 2026-09-03 · SM-05 publish-frozen effective view focused run
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The publish-frozen scenario ran only after its static admission. It used a fresh Catalog-owned item, a real Catalog
+whole-save rename and readback, real SalesMenu HTTP commands, and a hand-written real BUSINESS oracle. The run
+manifest and compressed artifacts were read after completion; the first failure is null and expected negative
+branches are not part of this focused run.
+
+```text
+RUN_ID=r5-tc-1788425944893-17122
+SCENARIO=sales-menu.publish-frozen-effective-view
+SOURCE_SYNC=PASS; REMOTE_GRADLE=0; CONTRACT=PASS; BUSINESS=PASS; businessMode=REAL; DB_OPERATIONS=14
+HTTP_EVENTS=52; HTTP_STATUS_SHAPE=200,201; SQL_MEASUREMENT=760; UNCLASSIFIED_SQL=0
+FIRST_FAILURE=null
+REMOTE_PROCESS_CLEANUP=PASS; REMOTE_WORKSPACE_CLEANUP=PASS; TESTCONTAINERS_CONTAINERS=PASS; TESTCONTAINERS_VOLUMES=PASS
+EVIDENCE_ARCHIVE=PASS; STUB_ONLY=0; DIRECT_FAILURES=0
+```
+
+The HTTP artifact contains first preview/publish and published section/page/detail reads, Catalog read/write/readback,
+draft price mutation and preview, old publication reads, DAILY_TIME_RANGE to ALL_DAY schedule mutation/readback,
+second publish and latest reads. The business result reports `SELECTED=1`, `REAL_BUSINESS_ASSERTIONS=1`,
+`CONTRACT=PASS`, `BUSINESS=PASS`; the archived HTTP/result/DB/statement artifacts have manifest/index byte and SHA
+receipts, and the SQL measurement has zero unclassified operations. This closes only this focused scenario, not
+full SM-05, browser L2, DEV, seed/reset, UAT or production verification; the publish-blockers negative scenario was
+not selected by this run.
+
+## 2026-09-03 · SM-05 publish-frozen effective view focused post-proof
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+Fresh independent post-proof re-opened the current SalesMenu/Catalog acceptance source, owner/readback source,
+OpenAPI/generated schema, detailed design, managed manifest, compressed backend result, HTTP/SQL artifacts and
+archive index. It confirmed the real Catalog owner mutation/readback, first/old/latest publication sequence,
+complete published section/item/detail tuple checks, distinguishable schedule mutation, no first failure, HTTP/SQL
+correlation, zero unclassified SQL and complete resource cleanup/archive.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_PUBLISH_FROZEN_EFFECTIVE_VIEW_POST_PROOF
+REVIEW_ROUND=1
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED
+EVIDENCE_BOUNDARY=focused backend acceptance only; not full SM-05, browser L2, DEV, seed/reset, UAT or production proof
+```
+
+The verifier noted that `publish-blockers` was not selected by this run; its malformed/disabled no-write assertions
+remain covered by the separate static admission above and are not silently counted as dynamic evidence here.
+
+## 2026-09-03 · SM-05 publish blockers static admission and Round-2 disposition
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+Round 1 independently identified two static gaps: preview assertions accepted any matching blocker, and the
+scenario's primary operation identity did not make a focused publish-command selection executable. The author
+re-opened the current scenario, runner selection, publication validator, owner status paths and schema, then changed
+only the acceptance oracle: all four preview checks now require exactly one blocker with exact kind, nullable/item
+identity and message key; the blocker scenario primary operation is `publishOperationsSalesMenu`, while the real
+preview request remains exercised inside the scenario. No runner, production owner, contract or product semantic was
+changed.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_PUBLISH_BLOCKERS
+REVIEW_ROUND=2
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+ROUND2_FINDINGS=OPEN=0
+ROUND2_VERDICT=PARTIAL_STATIC_SOURCE_PASS_COMPILE_EVIDENCE_MISSING_DYNAMIC_RUN_NOT_YET_ALLOWED
+AUTHOR_DISPOSITION=compile evidence re-opened and confirmed PASS; no third review because cycle limit is 2
+STATIC_SPOTLESS=PASS
+STATIC_UTF8_LINE_LIMIT=PASS
+STATIC_COMPILE_TEST_JAVA=PASS
+STAGE_ALLOWED=YES
+SM-05_ALLOWED=NO
+EVIDENCE_BOUNDARY=static step admission only; not focused backend run, full SM-05, browser L2, DEV, seed/reset, UAT or production proof
+```
+
+The Round-2 verifier found no OPEN implementation finding and its only condition was that it had not read the current
+compile evidence before being asked to stop expanding the read. The author then re-ran the current Spotless, UTF-8
+line-limit and `compileTestJava` command successfully. This permits one serial managed focused run selected by the
+scenario ID `sales-menu.publish-blockers`; selecting by `publishOperationsSalesMenu` would intentionally include the
+other publish scenario as well and is not used for this focused run.
+
+## 2026-09-03 · SM-05 publish blockers focused first-failure diagnosis and oracle repair
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The first managed focused run was not retried blindly. Its archived scenario result was read together with the
+manifest, HTTP events, DB events and owner source. HTTP contract requests all completed successfully; the scenario
+failed only in the hand-written business oracle. The owner publication validator emits an item-level
+`LISTED_PRICE_MISSING` blocker with the `sales_version_item.sales_item_ref`, while the fixture asserted the Catalog
+`itemRef`. The observed expected/actual identity mismatch is therefore a test oracle identity error, not a product
+owner failure, transport failure or data-store cleanup failure.
+
+```text
+RUN_ID=r5-tc-1788426966229-33774
+SCENARIO=sales-menu.publish-blockers
+RUN_STATUS=FAIL; REMOTE_GRADLE=1; RUNNER_FIRST_FAILURE=REMOTE_GRADLE_EXIT_NONZERO
+SCENARIO_CONTRACT=PASS; SCENARIO_BUSINESS=FAIL; failureCategory=BUSINESS_ORACLE; businessMode=REAL
+SCENARIO_FAILURE=unconfigured_direct_pricing expected Catalog itemRef but actual sales-menu salesItemRef
+HTTP_EVENTS=26; DB_EVENTS=427; UNCLASSIFIED_SQL=0
+REMOTE_PROCESS_CLEANUP=PASS; REMOTE_WORKSPACE_CLEANUP=PASS; TESTCONTAINERS_CONTAINERS=PASS; TESTCONTAINERS_VOLUMES=PASS
+EVIDENCE_ARCHIVE=PASS
+```
+
+The minimum test-only repair is in `SalesMenuAcceptanceScenarios`: after `addItems`, the malformed fixture now uses
+the existing `findDraftItem` owner read model and passes `malformedItem.ref()` to the exact blocker assertion. The
+owner service, contract, generated output and product semantics were not changed. The exact oracle remains strict on
+one violation, blocker kind, nullable/item target and message key, and the failed publish still requires no-write
+readback.
+
+## 2026-09-03 · SM-05 publish blockers oracle repair static step admission
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+Fresh independent read-only verifier Poincare re-opened the active design/contract, SalesMenu and Catalog sources,
+the current scenario and the failed run artifacts. It confirmed that the repaired identity follows the same
+`addItems -> findDraftItem -> salesItemRef` pattern already used by the generated-route scenario, found no remaining
+old Catalog-ref blocker assertion, and confirmed that the failed run's cleanup was independently PASS. The author
+then ran the current backend Spotless, UTF-8 line-limit and `compileTestJava` checks successfully.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_PUBLISH_BLOCKERS_ORACLE_FIX
+REVIEW_ROUND=1
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED
+STATIC_SPOTLESS=PASS
+STATIC_UTF8_LINE_LIMIT=PASS
+STATIC_COMPILE_TEST_JAVA=PASS
+ALLOW_DYNAMIC_RUN=YES
+SM-05_ALLOWED=NO
+EVIDENCE_BOUNDARY=static repair admission only; not focused dynamic PASS, full SM-05, browser L2, DEV, seed/reset, UAT or production proof
+```
+
+This closes the static repair step and authorizes exactly one next managed focused run of
+`sales-menu.publish-blockers`; it does not convert the failed run into PASS evidence.
+
+## 2026-09-03 · SM-05 publish blockers repaired focused run
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+After the static repair admission, the scenario was executed alone through the managed remote Testcontainers
+runner. The repaired fixture first reads the SalesMenu draft item and uses its stable `salesItemRef`; the owner,
+contract and generated sources were unchanged. The run passed the real preview and publication negative branches,
+including exact blocker identity and no-write/readback assertions. Its disabled-activation branch also proved that a
+valid draft remains publishable when the menu activation is disabled; this scenario's malformed-price branch is
+specifically the missing listed-price case, not a claim about every malformed-price variant.
+
+```text
+RUN_ID=r5-tc-1788427854993-46602
+SCENARIO=sales-menu.publish-blockers
+SOURCE_SYNC=PASS; REMOTE_GRADLE=0; CONTRACT=PASS; BUSINESS=PASS; businessMode=REAL; DB_OPERATIONS=14
+HTTP_EVENTS=133; HTTP_STATUS_SHAPE=200,201,404,422; SQL_EVENTS=2323; UNCLASSIFIED_SQL=0
+FIRST_FAILURE=null
+REMOTE_PROCESS_CLEANUP=PASS; REMOTE_WORKSPACE_CLEANUP=PASS; TESTCONTAINERS_CONTAINERS=PASS; TESTCONTAINERS_VOLUMES=PASS
+EVIDENCE_ARCHIVE=PASS; STUB_ONLY=0; DIRECT_FAILURES=0
+```
+
+The result artifact reports `DISCOVERED=99`, `SELECTED=1`, `HTTP_SUCCESS=1`, `REAL_BUSINESS_ASSERTIONS=1`,
+`CONTRACT=PASS` and `BUSINESS=PASS`. The HTTP/DB archives and statement dictionary have manifest/index byte and SHA
+receipts; the SQL measurement is fully classified. This is one focused scenario only and does not prove full SM-05,
+browser L2, DEV, seed/reset, UAT or production behavior.
+
+## 2026-09-03 · SM-05 publish blockers focused post-proof
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+Fresh independent post-proof re-opened the active scenario/owner/schema sources, the failed baseline and the repaired
+run's manifest, result, HTTP/DB events and archive index. It confirmed that only the intended scenario was selected,
+the real business result is separate from operation measurement, the exact-one blocker oracle and typed target rules
+are exercised, the failed branches preserve readback state, and cleanup/archive are independently PASS.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_PUBLISH_BLOCKERS_POST_PROOF
+REVIEW_ROUND=1
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED
+EVIDENCE_BOUNDARY=focused backend acceptance only; not full SM-05, browser L2, DEV, seed/reset, UAT or production proof
+```
+
+The `publish-blockers` step is closed. The next serial step remains `inventory-availability-matrix`; no result from this
+scenario is counted as completion evidence for the remaining SM-05 scenarios or later modules.
+
+## 2026-09-03 · SM-05 inventory availability current-byte static admission
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+Fresh independent verifier Lagrange re-opened the current requirements, IA, implementation design/plan, inventory and
+SalesMenu owner APIs, the Catalog inventory HTTP bridges, the test-only one-read failure decorator and the current
+acceptance scenario. It re-derived the six fixture rows instead of relying on the older run: absent target,
+normal stock, low stock, out of stock, negative stock allowed and negative stock denied, plus one controlled owner-read
+failure. It found no current static OPEN finding and confirmed that the recent shared acceptance changes do not alter
+this scenario's source or semantics.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_INVENTORY_AVAILABILITY_STATIC_CURRENT
+REVIEW_ROUND=1
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED
+STATIC_TRUTH_TABLE=PASS
+ALLOW_DYNAMIC_RUN=YES
+SM-05_ALLOWED=NO
+EVIDENCE_BOUNDARY=static current-byte admission only; historical dynamic PASS not counted as this run's dynamic proof
+```
+
+The scenario is admitted for one serial managed focused run. The later result must independently prove the real HTTP
+business oracle, the controlled `UNKNOWN/READ_UNAVAILABLE` branch and cleanup/archive; it must not be expanded to
+full SM-05, browser L2, DEV, seed/reset, UAT or production behavior.
+
+## 2026-09-03 · SM-05 inventory availability current focused run
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The current-byte-admitted inventory scenario ran alone through the managed remote Testcontainers runner. It used the
+real Catalog and Inventory HTTP bridges for six independently configured fixture rows, published the menu, read the
+published list/detail, armed the test-only one-read decorator and consumed it through a real published-item HTTP read.
+The business oracle passed without altering the SalesMenu or Inventory production owner.
+
+```text
+RUN_ID=r5-tc-1788428536148-57981
+SCENARIO=sales-menu.inventory-availability-matrix
+SOURCE_SYNC=PASS; REMOTE_GRADLE=0; CONTRACT=PASS; BUSINESS=PASS; businessMode=REAL; DB_OPERATIONS=20
+HTTP_EVENTS=120; HTTP_STATUS_SHAPE=200,201; SQL_EVENTS=2186; UNCLASSIFIED_SQL=0; PUBLISHED_READ_DML=0
+FIRST_FAILURE=null
+REMOTE_PROCESS_CLEANUP=PASS; REMOTE_WORKSPACE_CLEANUP=PASS; TESTCONTAINERS_CONTAINERS=PASS; TESTCONTAINERS_VOLUMES=PASS
+EVIDENCE_ARCHIVE=PASS; STUB_ONLY=0; DIRECT_FAILURES=0
+```
+
+The result artifact reports `DISCOVERED=99`, `SELECTED=1`, `HTTP_SUCCESS=1`, `REAL_BUSINESS_ASSERTIONS=1`,
+`CONTRACT=PASS` and `BUSINESS=PASS`. HTTP events include the six Catalog predecessor chains, six inventory
+configuration updates, three count commands, two adjustments, one publish, published list/detail reads and the
+repeat-read path. DB events are fully classified; published read subsets contain no DML. This closes only the
+inventory focused scenario, not full SM-05, browser L2, DEV, seed/reset, UAT or production verification.
+
+## 2026-09-03 · SM-05 inventory availability focused post-proof
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+Fresh independent post-proof re-opened the current inventory scenario, Catalog/Inventory/SalesMenu owner sources,
+the failure decorator, the applicable design and the complete run artifacts. It confirmed the six state matrix,
+separate manual status, real HTTP consumption of `UNKNOWN/READ_UNAVAILABLE`, repeat readback, zero unclassified SQL,
+no DML on published reads, and independent resource/archive cleanup.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_INVENTORY_AVAILABILITY_POST_PROOF
+REVIEW_ROUND=1
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+BLIND_REVIEW=YES
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED
+EVIDENCE_BOUNDARY=focused backend acceptance only; not full SM-05, browser L2, DEV, seed/reset, UAT or production proof
+```
+
+The inventory failure family is closed for this current run. The next serial step is manual-sale status and restore.
+
+## 2026-09-03 · SM-05 manual-sale confirmation error contract drift repair
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+Fresh independent verifier Bacon completed Round 2 of the same static review cycle and found one OPEN finding:
+`SalesMenuOwnerService` already rejects an unconfirmed manual restore with the existing `CONFIRMATION_REQUIRED`
+problem, but that existing wire behavior was absent from the error disposition catalog, the operation error
+augmentation, the manual-restore OpenAPI error closed set and the generated `EdgeProblemCode`. The cycle had reached
+its hard two-round limit, so no third reviewer was called. The author re-opened the owner branch, operation catalog,
+OpenAPI path and generator inputs, and confirmed this is contract synchronization for an existing behavior rather than
+a new business branch or product semantic.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_MANUAL_SALE_STATIC_CURRENT
+REVIEW_ROUND=2
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+ROUND_FINAL_DECISION=SELF_DECIDED
+F-R2-001=CONFIRMED_AND_REPAIRED
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED
+```
+
+The repair adds `CONFIRMATION_REQUIRED` to the accepted V2S error disposition catalog and its closure counts, adds it
+to `restoreOperationsSalesMenuItemSale` in the edge operation error augmentation and the manual-restore OpenAPI
+closed set, then regenerates the outputs. No generated file was hand-edited. The current static chain is:
+
+```text
+node scripts/generate/edge-codegen.mjs --write => R5_EDGE_CODEGEN_WRITE=PASS; FILES=361
+node scripts/generate/edge-codegen.mjs --check => R5_EDGE_CODEGEN_CHECK=PASS; FILES=361
+scripts/check/sales-menu-contract => SALES_MENU_CONTRACT=PASS; AFFECTED_OPERATIONS=31; SALES_MENU_OPERATIONS=30; SALES_MENU_COMMANDS=19
+scripts/check/operation-handler-bindings => BP_U02_BINDING_CHECK=PASS; FILES=30
+scripts/check/openapi-contracts => R5_OPENAPI_CONTRACTS=PASS
+./gradlew :apps:backend:catering-business-server:spotlessApply :apps:backend:catering-business-server:spotlessCheck :apps:backend:catering-business-server:compileTestJava --no-daemon => BUILD SUCCESSFUL
+```
+
+```text
+ALLOW_DYNAMIC_RUN=YES
+SM-05_ALLOWED=NO
+EVIDENCE_BOUNDARY=static contract repair only; manual focused business/cleanup, full SM-05, browser L2, DEV, seed/reset, UAT and production proof remain open
+```
+
+This closes the static contract finding and admits exactly one serial managed focused run of
+`sales-menu.manual-sale-status-and-restore`. The next result must prove the real HTTP business oracle, exact
+confirmation and reason failures, no-write readback, channel isolation, inventory independence, operation history and
+cleanup separately.
+
+## 2026-09-03 · SM-05 manual-sale replay target recheck repair and focused proof
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The second round of the independent `STEP_SM05_MANUAL_SALE_POST_PROOF` review was `NO-GO` before this repair because
+`SalesMenuOwnerService.receipt` read an existing receipt before rechecking the actual menu/store/channel/item target.
+The finding was confirmed against the detailed design §10.3f and the owner capability lookup practice. The author did
+not call a third reviewer: the review cycle had reached its hard two-round limit.
+
+The minimum source repair keeps the workspace/operation/idempotency advisory lock, then locks and rechecks the actual
+menu/store/channel target before receipt lookup. It deliberately does not compare `expectedVersion` on that pre-replay
+path; the existing CAS remains after a non-replay receipt decision. Section and item mutation targets are also checked
+before receipt lookup. The manual receipt request now includes group workspace, store, menu, channel and item identity,
+in addition to state, reason and expected version, so a path change cannot share a manual intent hash.
+
+The acceptance scenario adds one falsifiable negative: it reuses the successful sold-out idempotency key against a
+random non-existent sales-menu path and asserts typed `SALES_MENU_NOT_FOUND`, then compares the original published
+item readback byte-for-byte. The owner unit test also verifies the new lock → target → receipt → CAS/write order.
+
+```text
+REVIEW_CYCLE_ID=STEP_SM05_MANUAL_SALE_POST_PROOF
+REVIEW_ROUND=2
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+INDEPENDENT_ROUND2_VERDICT=NO-GO_BEFORE_REPAIR
+F-R2-001=CONFIRMED_AND_REPAIRED
+POST_ROUND2_AUTHOR_DISPOSITION=SELF_DECIDED_AFTER_REPAIR
+FINDINGS=OPEN=0
+VERDICT=STEP-CLOSED_AFTER_REPAIR
+```
+
+Static and unit proof:
+
+```text
+./gradlew :apps:backend:catering-business-server:modules:sales-menu:spotlessCheck :apps:backend:catering-business-server:compileTestJava --no-daemon => BUILD SUCCESSFUL
+./gradlew :apps:backend:catering-business-server:modules:sales-menu:test --tests com.catering.v2s.salesmenu.application.SalesMenuOwnerServiceOwnerApiTest --no-daemon => BUILD SUCCESSFUL; 14/14
+```
+
+The single serial managed dynamic proof was:
+
+```text
+RUN_ID=r5-tc-1788437993677-16491
+SCENARIO=sales-menu.manual-sale-status-and-restore
+CONTRACT=PASS; BUSINESS=PASS; businessMode=REAL; REAL_BUSINESS_ASSERTIONS=1; DB_OPERATIONS=13
+HTTP_EVENTS include setOperationsSalesMenuItemSoldOut statuses 200,200,404,409,422,409
+HTTP_EVENTS include restoreOperationsSalesMenuItemSale statuses 422,200,200
+WRONG_TARGET_REPLAY=HTTP_404; BUSINESS_ORACLE=SALES_MENU_NOT_FOUND; ORIGINAL_READBACK_UNCHANGED=PASS
+BACKEND_PERFORMANCE_MEASUREMENT DISCOVERED=68 SQL_OPERATIONS=990 UNCLASSIFIED_SQL=0
+FIRST_FAILURE=null; LAST_KNOWN_GOOD=CLEANUP; BROKEN_BOUNDARY=null
+REMOTE_PROCESS_CLEANUP=PASS; REMOTE_WORKSPACE_CLEANUP=PASS; TESTCONTAINERS_CONTAINERS=PASS; TESTCONTAINERS_VOLUMES=PASS
+EVIDENCE_ARCHIVE=PASS; MANIFEST_FINISHED_AT=2026-09-03T12:20:53.552Z
+```
+
+Authoritative artifacts are under
+`.runtime/r5/evidence/remote-testcontainers/r5-tc-1788437993677-16491/`, including `run-manifest.json`, archived
+HTTP/DB/acceptance results, statement dictionary and `evidence-artifacts.tsv`. This closes only the manual-sale
+focused backend step and its confirmed replay finding; full SM-05, browser L2, all 31-operation execution coverage,
+SM-06–SM-12, DEV/seed/reset, UAT and production-owner verification remain open.
+
+## 2026-09-03 · L2 scope control denominator repair and static recheck
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+Fresh static review found one confirmed pre-admission issue: the sales-menu L2 binding/touch path represented the
+shared scope trigger, selectors, dynamic options and confirmation metadata as one `STORE_SCOPE` control. The source
+review confirmed that the UI already owns stable test IDs, but the execution denominator could not distinguish the
+real action nodes. The repair did not change product semantics or the fixed STORE/STORE-readonly Journey. It:
+
+- keeps the existing shared `DataScopeSelector` and foundation interaction;
+- makes the existing `roleHomeTestIds` option vocabulary type-specific while preserving owner `dataNodeRef` identity;
+- makes the shared scope helper report `TRIGGER`, `SELECTOR`, `OPTION`, `CONFIRM` and `CANCEL` as distinct touch phases;
+- adds separate scope binding keys to the hand-authored sales-menu blueprint and regenerates all P1 outputs;
+- changes all 18 active sales-menu cases from aggregate `STORE_SCOPE` to the actual fixed-role `STORE_SCOPE_TRIGGER` touch.
+
+The fixed STORE role disables scope mutation selectors, options and confirmation/cancel in this Journey, so those nodes
+are binding vocabulary but are not falsely declared as touched by these 18 cases. A future scope-changing Journey must
+declare the exact selector/option/confirm/cancel keys in its own case denominator.
+
+```text
+node scripts/generate/sales-menu-p1.mjs --write --self-test => SALES_MENU_P1_SELF_TEST=PASS; CASES=18; OPERATIONS=31
+yarn workspace @catering-v2s/operations-admin typecheck => PASS
+yarn workspace @catering-v2s/operations-admin test:unit => PASS; 217/217
+yarn workspace @catering-v2s/operations-admin test:architecture => PASS; 40 pass; 4 TODO; 0 fail
+yarn format:check => PASS
+./scripts/verify --validate-only => static gates PASS; Gradle BUILD SUCCESSFUL
+```
+
+```text
+SCOPE_BINDING_KEYS=11
+ACTIVE_SCOPE_TRIGGER_CASES=18
+OLD_AGGREGATE_STORE_SCOPE_CASES=0
+CASE_COUNT=18
+OPERATION_COVERAGE=31
+L2_PRE_ADMISSION=GO
+DYNAMIC_BROWSER_L2=UNPROVEN
+BUSINESS_AND_CLEANUP=UNPROVEN
+```
+
+Independent static recheck verdict: `L2_PRE_ADMISSION=GO`, `UI_DESIGN_REVIEW=PASS_STATIC`,
+`TESTID_REVIEW=PASS_STATIC`, `L2_SCRIPT_ADMISSION=PASS`, `M/S/N=0/0/1`. The single N is documentation-only:
+the implementation design summary now records the corrected 254 declared control entries (the previous 240 figure had
+no stated exclusion basis). The verifier confirmed no semantic, UI, binding, touch or denominator finding; browser
+L2, HTTP, business and cleanup remain unproven and are not included in this GO.
+
+```text
+INDEPENDENT_REVIEWER=INDEPENDENT_SUBAGENT
+INDEPENDENT_VERDICT=L2_PRE_ADMISSION=GO
+N-1=CONFIRMED_AND_REPAIRED_DOCUMENTATION_COUNT
+FINDINGS=OPEN=0
+
+## 2026-09-03 · L2 full-run HMR attribution and isolated owner-fact repair
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The interrupted full browser-L2 run `l2-1788442213920-99841-c845af9d-aacc-4226-b7a4-990837690d4c` was not accepted as
+stable UI evidence. Its readiness manifest recorded `frontendMode=dev`; the operations-admin Vite refresh log recorded
+289 HMR/update/invalidate events between 22:36:06 and 22:39:08 KST, including repeated invalidation of
+`SalesMenuPage.tsx` because its exported helper was incompatible with Fast Refresh. The run was stopped after the
+second `SALES_MENU_L2_CHANNEL_REF_NOT_VISIBLE` failure; business was `NOT_RUN` and cleanup was `PASS`.
+
+The HMR occurrence is confirmed, but the writer is not. Reading files does not produce a Vite HMR update. The Vite
+watch boundary only allows the operations-admin `src`/`public` trees and the shared foundation `src`; `apps/terminal`
+and other unrelated project directories are ignored. The other active terminal task's latest turn began at 22:39:55
+KST, after this run's last case event at 22:39:02 KST, so the available task timeline does not support attributing this
+run's HMR to that task. No historical filesystem event log identifies a particular writer. The next dynamic attempt
+must therefore use `R5_L2_FRONTEND_MODE=preview` and must not use this dev/HMR run to decide a UI or owner-code repair.
+
+The same run independently confirmed a separate L2 fixture/helper defect: isolated `MENU-07` items were materialized
+in `menuFactsByFixture` and emitted as `salesItemRefs` in the case, while the spec searched only the primary
+`ownerFacts.salesItems`. The repair emits the case-scoped `salesItems`, validates exact ordered ref agreement without
+rejecting legal empty sets, and resolves item codes only by the exact case-scoped `salesItemRef`. This follows the
+existing Catalog per-case owner-fact boundary and does not add a fixture DSL, fallback, item-code lookup or product
+semantic.
+
+```text
+STATIC_TYPECHECK=PASS
+STATIC_FORMAT=PASS
+RUNTIME_NODE_SYNTAX=PASS
+INDEPENDENT_REVIEWER=Boyle; reviewerKind=INDEPENDENT_SUBAGENT
+STEP_REVIEW=GO; M/S/N=0/0/0; FINDINGS=OPEN=0
+HMR_WRITER=UNVERIFIED
+DYNAMIC_PREVIEW_FOCUSED=NOT_YET_RUN
+SM05_FULL_BROWSER_L2=OPEN
+```
+
+This closes only the confirmed isolated owner-fact repair and its static step review. It does not close the HMR
+environment question, channel visibility, menu-schedule interaction, full SM-05, browser business/cleanup proof,
+SM-06–SM-12 or final implementation review.
+
+## 2026-09-03 · L2 channel read-model settle race repair
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The preview focused run `l2-1788444877422-25037-78ce4203-89ed-40b1-be40-7195ee2b44f4` had no operations-admin HMR
+events. Its first failure was `SALES_MENU_L2_CHANNEL_REF_NOT_VISIBLE:d82aebd8-0bed-4e7d-8b42-8fe8a440e2c9` in
+`findChannelCard`. The trace shows the channel HTTP response completed with status 200, while the next Playwright
+snapshot still had an empty channel-card body and a disabled next cursor; the later failure snapshot contained the
+20 rendered channel cards, including the target's visible name. The one-shot test read therefore raced the RTK Query
+`currentData` response-to-render boundary. This is a test read-model readiness defect, not evidence of another agent
+refreshing the frontend and not a production owner-logic finding.
+
+The repair keeps the exact dynamic `salesMenuTestIds.channelCard(channelRef)` as the action locator. Before deciding
+that the target is absent, it waits for either that exact target to appear or the existing next-cursor control to
+become enabled, then records `SALES_MENU_CHANNEL_PAGE_READ_MODEL_SETTLED` with target count, page index and cursor
+state. It does not wait on HTTP event counts, add a fallback locator, alter product semantics, or widen a business
+assertion.
+
+```text
+STATIC_TYPECHECK=PASS
+STATIC_FORMAT=PASS
+RUNTIME_NODE_SYNTAX=PASS
+HMR_IN_PREVIEW=ABSENT
+HMR_WRITER=UNVERIFIED
+INDEPENDENT_STEP_REVIEW=Ptolemy; reviewerKind=INDEPENDENT_SUBAGENT; STEP_REVIEW=GO; M/S/N=0/0/2
+DYNAMIC_PREVIEW_FOCUSED=OPEN_AFTER_REPAIR
+SM05_FULL_BROWSER_L2=OPEN
+```
+
+The independent step review confirmed that the exact `salesMenuTestIds.channelCard(channelRef)` remains the action
+locator, that the DOM-only settle condition addresses the recorded response-to-render race, and that no HTTP
+observation count, fallback locator, wide locator, or control-denominator drift was introduced. The two N findings
+are limited to the 5-second settle-window sufficiency and the still-unproven post-repair dynamic result; they do not
+authorize treating this step or SM-05 as complete.
+```
+
+## 2026-09-04 · L2 operation-coverage declaration closure
+
+SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
+
+The post-focused independent review found that `operationCoverage[].l2Cases` could claim an operation for a case that
+did not declare it as either direct `parameter.operationIds` or explicit `backgroundAllowed`. The concrete entry was
+`deleteOperationsSalesMenuItem -> sales-menu-draft-order-and-pagination`: the focused case only moves an item and its
+fresh run had no delete completion. A whole-denominator scan found the same root across the 31 operation × 18 case
+matrix: six false case claims and seven missing direct-operation claims. This was a declaration/generator defect, not a
+production-owner, UI-control, fixture, HMR or timeout defect.
+
+The unique hand-authored source remains `contracts/policy/sales-menu-l2-case-blueprint.json`. It now removes the false
+claims (published-item/manual restore, create/auth, schedule/copy, section delete/failure recovery, section
+move/failure recovery, item delete/draft pagination), adds every missing direct L2 link, and preserves the three
+legitimate shared/background differences. In particular, copy still asserts that the copied detail has the source
+`draftSchedule`; it does not falsely claim to invoke `updateOperationsSalesMenuSchedule`. No product semantic, UI
+action, fixture identity, timeout or generated file was manually changed.
+
+`scripts/generate/sales-menu-p1.mjs` now rejects both directions: every coverage claim must be declared by the mapped
+case as direct or background network, and every direct operation inside the 31-operation sales-menu denominator must
+be mapped back to that case. `runSelfTest()` carries two in-memory red mutations for those two violations. This is the
+smallest durable control at the existing P1 source boundary, not a new runner, fixture DSL or test platform.
+
+```text
+node scripts/generate/sales-menu-p1.mjs --write --self-test => PASS; CASES=18; OPERATIONS=31
+yarn exec prettier --check scripts/generate/sales-menu-p1.mjs contracts/policy/sales-menu-l2-case-blueprint.json doc/plans/platform/2026-09-01-v2s-sales-menu-implementation-design-codex.md => PASS
+yarn workspace @catering-v2s/operations-admin typecheck => PASS
+node --check scripts/generate/sales-menu-p1.mjs => PASS
+COVERAGE_OUTSIDE_DECLARED_NETWORK=0
+DENOMINATOR_DIRECT_OPERATION_WITHOUT_COVERAGE=0
+INDEPENDENT_STEP_REVIEW=Ohm; reviewerKind=INDEPENDENT_SUBAGENT; STEP_REVIEW=GO; M/S/N=0/1/0
+S-1=getOperationsCatalogNavigation is direct for the candidate case but outside the sales-menu 31-operation denominator; its own case network declaration remains required and budgeted
+FULL_SM05_BROWSER_L2=OPEN_FRESH_RUN_REQUIRED
+```
+
+The independent verdict authorizes only a fresh 18-case browser-L2 run. It does not upgrade the previous single-case
+focused diagnostic (`BUSINESS=NOT_RUN`) to business proof and does not close SM-05, SM-06–SM-12, DEV, seed/reset,
+UAT, deployment or the final implementation review.

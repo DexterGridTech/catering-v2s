@@ -669,6 +669,7 @@ final class BackendPerformanceOperationCoverage {
 
         new BusinessChannelAcceptanceScenarios(host).calibrationUpdateInternalTemplateAndChannel(context);
         runCatalogLifecycleNormalRecipes(context, fixture, session);
+        new SalesMenuAcceptanceScenarios(host).calibrationCopyBoundedDraft(context);
         assertTrue(
                 NORMAL_RECIPE_OPERATIONS.contains(SESSION_CONTEXT.operationId()),
                 "BUSINESS: normal recipe declaration retains session-context coverage");

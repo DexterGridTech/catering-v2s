@@ -253,12 +253,54 @@ const mutations = Object.freeze([
   {
     id: 'SELECTOR_CACHE',
     testFile: 'test/renderState.test.tsx',
-    testName: 're-renders from unavailable through started to failed and caches selector results by root',
+    testName: 'recomputes when selector identity changes while root stays the same',
     apply: sandbox => replaceOnce(
       path.join(sandbox.renderRoot, 'src/hooks/useUiStateSelector.ts'),
-      'if (cache.current?.root === snapshot.root) return cache.current.result',
-      'if (false) return cache.current.result',
+      'if (cache.current?.root === snapshot.root && cache.current.selector === selector) {',
+      'if (cache.current?.root === snapshot.root) {',
     ),
+  },
+  {
+    id: 'PROVIDER_SHARED_SNAPSHOT_READER',
+    testFile: 'test/renderState.test.tsx',
+    testName: 'keeps two Providers independent across roots, notifications, and teardown',
+    apply: sandbox => {
+      const providerFile = path.join(sandbox.renderRoot, 'src/components/RenderProvider.tsx')
+      replaceOnce(
+        providerFile,
+        "import type {RenderProviderProps} from '../types/props'\n",
+        "import type {RenderProviderProps} from '../types/props'\n\nlet sharedSnapshotReader: ReturnType<typeof createRenderSnapshotReader> | undefined\n",
+      )
+      replaceOnce(
+        providerFile,
+        'const snapshotReader = useMemo(() => createRenderSnapshotReader(stateSource), [stateSource])',
+        `const snapshotReader = useMemo(() => {
+    if (sharedSnapshotReader === undefined) sharedSnapshotReader = createRenderSnapshotReader(stateSource)
+    return sharedSnapshotReader
+  }, [stateSource])`,
+      )
+    },
+  },
+  {
+    id: 'PROVIDER_SHARED_DIAGNOSTIC_REPORTER',
+    testFile: 'test/renderSurface.test.tsx',
+    testName: 'keeps diagnostic suppression local to each Provider',
+    apply: sandbox => {
+      const providerFile = path.join(sandbox.renderRoot, 'src/components/RenderProvider.tsx')
+      replaceOnce(
+        providerFile,
+        "import type {RenderProviderProps} from '../types/props'\n",
+        "import type {RenderProviderProps} from '../types/props'\n\nlet sharedDiagnosticReporter: ReturnType<typeof createRenderPartDiagnosticReporter> | undefined\n",
+      )
+      replaceOnce(
+        providerFile,
+        'const diagnosticReporter = useMemo(() => createRenderPartDiagnosticReporter(logger), [logger])',
+        `const diagnosticReporter = useMemo(() => {
+    if (sharedDiagnosticReporter === undefined) sharedDiagnosticReporter = createRenderPartDiagnosticReporter(logger)
+    return sharedDiagnosticReporter
+  }, [logger])`,
+      )
+    },
   },
   {
     id: 'DIAGNOSTIC_RECOVERY',
@@ -318,6 +360,26 @@ const mutations = Object.freeze([
       path.join(sandbox.renderRoot, 'src/foundations/definePart.ts'),
       'containerKeys: Object.freeze([...input.containerKeys]),',
       "containerKeys: Object.freeze([...input.containerKeys, 'real-container']),",
+    ),
+  },
+  {
+    id: 'DISPATCH_REJECTION_DIAGNOSTIC',
+    testFile: 'test/dispatchObservation.test.tsx',
+    testName: 'reports rejected dispatch with a typed diagnostic while preserving rejection',
+    apply: sandbox => replaceOnce(
+      path.join(sandbox.renderRoot, 'src/hooks/useDispatchCommand.ts'),
+      "reportRenderCommandDispatchRejection(logger, {\n      event: 'command-dispatch-rejected',\n      commandName: command.definition.commandName,\n      requestId: options.requestId,\n    })",
+      'void command',
+    ),
+  },
+  {
+    id: 'DISPATCH_REJECTION_RETHROW',
+    testFile: 'test/dispatchObservation.test.tsx',
+    testName: 'reports rejected dispatch with a typed diagnostic while preserving rejection',
+    apply: sandbox => replaceOnce(
+      path.join(sandbox.renderRoot, 'src/hooks/useDispatchCommand.ts'),
+      'throw error',
+      "throw new Error('masked dispatch failure')",
     ),
   },
 ])

@@ -68,6 +68,7 @@ function sourceContainsBinding(source, binding) {
     binding.testIdTemplate,
     binding.testIdPrefix,
     binding.parentTestId,
+    binding.optionTestIdTemplate,
     ...(binding.alternatives ?? []),
     binding.name,
   ].filter(Boolean);
@@ -76,6 +77,26 @@ function sourceContainsBinding(source, binding) {
     const text = String(candidate);
     return source.includes(text.includes('${') ? text.slice(0, text.indexOf('${')) : text);
   });
+}
+
+function validateTestControlInteractionBindings(controls) {
+  const mode = controls.SALES_MENU_MODE;
+  if (
+    mode?.interaction !== 'COMPOSITE_OPTION_ANCHOR' ||
+    mode.actualActionNode !== 'VISIBLE_SEGMENTED_OPTION_LABEL' ||
+    mode.focusedStaticProof !== 'apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.static.test.ts'
+  )
+    fail('SALES_MENU_P1_MODE_COMPOSITE_ANCHOR_BINDING_INVALID');
+
+  const selector = controls.SALES_MENU_SELECTOR;
+  if (
+    selector?.testId !== 'sales-menu-selector-input' ||
+    selector.optionTestIdTemplate !== 'sales-menu-option-${menuRef}' ||
+    selector.interaction !== 'NATIVE_INPUT_AND_OPTION_ROOT' ||
+    selector.actualActionNode !== 'NATIVE_SELECT_INPUT_AND_OPTION_ROOT' ||
+    selector.focusedStaticProof !== 'apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.static.test.ts'
+  )
+    fail('SALES_MENU_P1_SELECTOR_ACTUAL_NODE_BINDING_INVALID');
 }
 
 function flattenCases(blueprint) {
@@ -159,6 +180,25 @@ function validateFixture(fixture, caseRows) {
   };
 }
 
+function validateBaselineItemTableControlDenominator(fixture, caseRows) {
+  for (const row of caseRows) {
+    const caseFixture = fixture.caseFixtures?.[row.fixtureRef];
+    const baselineCandidateFixtureIds = caseFixture?.baselineCandidateFixtureIds;
+    if (baselineCandidateFixtureIds === undefined) continue;
+    if (
+      !Array.isArray(baselineCandidateFixtureIds) ||
+      baselineCandidateFixtureIds.some(fixtureId => typeof fixtureId !== 'string' || fixtureId.length === 0)
+    )
+      fail('SALES_MENU_P1_BASELINE_ITEM_FIXTURE_INVALID', row.caseId);
+    // The shared section-selection chain proves selection against the current
+    // item-table read model whenever this fixture materializes sale items.
+    // Keep this finite fixture fact and the touched control in one P1 gate so
+    // a case cannot reach the browser with an undeclared real control.
+    if (baselineCandidateFixtureIds.length > 0 && !row.controlKeys?.includes('SALES_MENU_ITEM_TABLE'))
+      fail('SALES_MENU_P1_BASELINE_ITEM_TABLE_CONTROL_MISSING', row.caseId);
+  }
+}
+
 function validateBlueprint(blueprint, fixture, {readiness = null} = {}) {
   if (
     blueprint?.kind !== 'sales-menu-l2-case-blueprint' ||
@@ -184,6 +224,12 @@ function validateBlueprint(blueprint, fixture, {readiness = null} = {}) {
     fail('SALES_MENU_P1_OPERATION_COVERAGE_DENOMINATOR_INVALID');
   if (new Set(operationIds).size !== operationIds.length) fail('SALES_MENU_P1_OPERATION_COVERAGE_DUPLICATE');
   const caseIdSet = new Set(caseIds);
+  const declaredOperationsByCase = new Map(
+    caseRows.map(row => [
+      row.caseId,
+      new Set([...(row.parameter?.operationIds ?? []), ...(row.parameter?.network?.backgroundAllowed ?? [])]),
+    ]),
+  );
   const coverageById = new Map();
   for (const row of coverage) {
     if (!operationMap.has(row.operationId)) fail('SALES_MENU_P1_OPERATION_ROUTE_MISSING', row.operationId);
@@ -197,11 +243,24 @@ function validateBlueprint(blueprint, fixture, {readiness = null} = {}) {
     if (coverageById.has(row.operationId)) fail('SALES_MENU_P1_OPERATION_COVERAGE_DUPLICATE', row.operationId);
     if (row.l2Cases.some(caseId => !caseIdSet.has(caseId)))
       fail('SALES_MENU_P1_OPERATION_CASE_UNKNOWN', row.operationId);
+    for (const caseId of row.l2Cases) {
+      if (!declaredOperationsByCase.get(caseId)?.has(row.operationId))
+        fail('SALES_MENU_P1_OPERATION_CASE_DECLARATION_MISSING', `${row.operationId}:${caseId}`);
+    }
     coverageById.set(row.operationId, row);
+  }
+
+  for (const row of caseRows) {
+    for (const operationId of row.parameter?.operationIds ?? []) {
+      const coverageRow = coverageById.get(operationId);
+      if (coverageRow && !coverageRow.l2Cases.includes(row.caseId))
+        fail('SALES_MENU_P1_CASE_OPERATION_COVERAGE_MISSING', `${operationId}:${row.caseId}`);
+    }
   }
 
   const bindingKeys = new Set(Object.keys(blueprint.bindings?.controls ?? {}));
   if (bindingKeys.size === 0) fail('SALES_MENU_P1_LOCATOR_BINDINGS_EMPTY');
+  validateTestControlInteractionBindings(blueprint.bindings.controls);
   for (const [key, binding] of Object.entries(blueprint.bindings.controls)) {
     if (!binding || !Array.isArray(binding.sourceFiles) || binding.sourceFiles.length === 0)
       fail('SALES_MENU_P1_LOCATOR_SOURCE_MISSING', key);
@@ -277,6 +336,7 @@ function validateBlueprint(blueprint, fixture, {readiness = null} = {}) {
     )
       fail('SALES_MENU_P1_TIMING_MISSING', row.caseId);
   }
+  validateBaselineItemTableControlDenominator(fixture, caseRows);
   for (const [operationId, count] of operationConsumers)
     if (count === 0) fail('SALES_MENU_P1_OPERATION_NOT_CONSUMED', operationId);
   const fixtureCounts = validateFixture(fixture, caseRows);
@@ -475,6 +535,68 @@ function runSelfTest() {
     scenarios.operationCoverage.length === 0
   )
     fail('SALES_MENU_P1_SELF_TEST_DENOMINATOR');
+  const coverageMutation = readJson(blueprintPath);
+  const deleteItemCoverage = coverageMutation.operationCoverage.find(
+    row => row?.operationId === 'deleteOperationsSalesMenuItem',
+  );
+  if (!deleteItemCoverage) fail('SALES_MENU_P1_SELF_TEST_DELETE_ITEM_COVERAGE_MISSING');
+  deleteItemCoverage.l2Cases = [...deleteItemCoverage.l2Cases, 'sales-menu-draft-order-and-pagination'];
+  try {
+    validateBlueprint(coverageMutation, readJson(fixturePath));
+    fail('SALES_MENU_P1_SELF_TEST_OPERATION_CASE_DECLARATION_DID_NOT_FAIL');
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.startsWith('SALES_MENU_P1_OPERATION_CASE_DECLARATION_MISSING:'))
+      throw error;
+  }
+  const directCoverageMutation = readJson(blueprintPath);
+  const menuCoverage = directCoverageMutation.operationCoverage.find(
+    row => row?.operationId === 'getOperationsSalesMenu',
+  );
+  if (!menuCoverage) fail('SALES_MENU_P1_SELF_TEST_MENU_COVERAGE_MISSING');
+  menuCoverage.l2Cases = menuCoverage.l2Cases.filter(caseId => caseId !== 'sales-menu-entry-and-channels');
+  try {
+    validateBlueprint(directCoverageMutation, readJson(fixturePath));
+    fail('SALES_MENU_P1_SELF_TEST_CASE_OPERATION_COVERAGE_DID_NOT_FAIL');
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.startsWith('SALES_MENU_P1_CASE_OPERATION_COVERAGE_MISSING:'))
+      throw error;
+  }
+  const modeBindingMutation = readJson(blueprintPath);
+  delete modeBindingMutation.bindings.controls.SALES_MENU_MODE.interaction;
+  try {
+    validateBlueprint(modeBindingMutation, readJson(fixturePath));
+    fail('SALES_MENU_P1_SELF_TEST_MODE_COMPOSITE_ANCHOR_DID_NOT_FAIL');
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.startsWith('SALES_MENU_P1_MODE_COMPOSITE_ANCHOR_BINDING_INVALID'))
+      throw error;
+  }
+  const selectorBindingMutation = readJson(blueprintPath);
+  selectorBindingMutation.bindings.controls.SALES_MENU_SELECTOR.testId = 'sales-menu-selector';
+  try {
+    validateBlueprint(selectorBindingMutation, readJson(fixturePath));
+    fail('SALES_MENU_P1_SELF_TEST_SELECTOR_ACTUAL_NODE_DID_NOT_FAIL');
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.startsWith('SALES_MENU_P1_SELECTOR_ACTUAL_NODE_BINDING_INVALID'))
+      throw error;
+  }
+  const baselineItemControlMutation = readJson(blueprintPath);
+  const baselineItemFixture = readJson(fixturePath);
+  const baselineItemCaseId = flattenCases(baselineItemControlMutation).find(row => {
+    const caseFixture = baselineItemFixture.caseFixtures?.[row.fixtureRef];
+    return Array.isArray(caseFixture?.baselineCandidateFixtureIds) && caseFixture.baselineCandidateFixtureIds.length > 0;
+  })?.caseId;
+  const baselineItemCase = baselineItemControlMutation.scenarios
+    .flatMap(scenario => scenario.cases ?? [])
+    .find(row => row.caseId === baselineItemCaseId);
+  if (!baselineItemCase) fail('SALES_MENU_P1_SELF_TEST_BASELINE_ITEM_CASE_MISSING');
+  baselineItemCase.controlKeys = baselineItemCase.controlKeys.filter(key => key !== 'SALES_MENU_ITEM_TABLE');
+  try {
+    validateBlueprint(baselineItemControlMutation, baselineItemFixture);
+    fail('SALES_MENU_P1_SELF_TEST_BASELINE_ITEM_TABLE_CONTROL_DID_NOT_FAIL');
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.startsWith('SALES_MENU_P1_BASELINE_ITEM_TABLE_CONTROL_MISSING:'))
+      throw error;
+  }
   compareGenerated(expected);
   process.stdout.write(
     `SALES_MENU_P1_SELF_TEST=PASS; CASES=${scenarios.caseCount}; OPERATIONS=${scenarios.operationCoverage.length}; FIXTURES=${JSON.stringify(expectedFiles().get(generatedPaths.scenarios).executionBoundary)}\n`,

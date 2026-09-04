@@ -4757,7 +4757,8 @@
         "TER_PAIR_TOPOLOGY_WITH_DETACHABLE_SECONDARY",
         "TER_STACK_RULINGS_T1_T13",
         "TER_SCRIPT_EXECUTE_UNRESTRICTED",
-        "TER_EVENT_TO_COMMAND_ACTOR_PATTERN"
+        "TER_EVENT_TO_COMMAND_ACTOR_PATTERN",
+        "TER_KERNEL_UI_FEATURE_ONE_TO_MANY"
       ],
       "assertionSources": [
         {
@@ -4794,6 +4795,11 @@
           "assertionKey": "TER_EVENT_TO_COMMAND_ACTOR_PATTERN",
           "path": "doc/platform/terminal-coding-standard.md",
           "anchor": "### `TR-11` · 事件必须变成 command，不得以回调或 effect 列表交给业务方"
+        },
+        {
+          "assertionKey": "TER_KERNEL_UI_FEATURE_ONE_TO_MANY",
+          "path": "doc/platform/terminal-coding-standard.md",
+          "anchor": "### `TR-12` · 一个 `kernel/feature` 必须能配多套 `ui/feature`"
         }
       ],
       "sourceRefs": [

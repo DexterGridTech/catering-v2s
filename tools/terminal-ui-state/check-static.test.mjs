@@ -98,7 +98,11 @@ try {
 
   withMutation(
     'package.json',
-    source => source.replace('"@reduxjs/toolkit": "2.12.0",\n', ''),
+    source => {
+      const manifest = JSON.parse(source)
+      delete manifest.dependencies['@reduxjs/toolkit']
+      return `${JSON.stringify(manifest, null, 2)}\n`
+    },
     report => {
       printVector('UI_STATE_RED_DIRECT_RTK', report)
       assertVector(report, ['ui-state-package-boundary'])

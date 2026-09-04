@@ -22,10 +22,15 @@
     "SurfaceRoot",
     "createRendererCatalog",
     "definePart",
+    "dispatchWithRequestId",
     "dependencyModuleNames",
     "devDependencyModuleNames",
     "moduleName",
+    "useDispatchCommand",
     "useSurfaceDisplayMode",
-    "useUiStateSelector"
+    "useUiStateSelector",
+    "useUiVariable",
+    "useRequestInFlight",
+    "useTrackedRequest"
   ]
 }

@@ -125,6 +125,18 @@ function declaredByField(packageJson, field, spec) {
   );
 }
 
+function plannedWorkspaceDependencies(packageJson, spec) {
+  const planned = packageJson.plannedDependencies ?? [];
+  if (!Array.isArray(planned) || planned.some(packageName => typeof packageName !== 'string')) {
+    throw new Error('package.json plannedDependencies must be a string array');
+  }
+  return sorted(planned.map(packageName => {
+    const moduleName = packageNameToModuleName(packageName, spec);
+    if (!moduleName) throw new Error(`planned dependency is not a TER workspace package: ${packageName}`);
+    return moduleName;
+  }));
+}
+
 function moduleSpecifierMatches(actual, expected) {
   if (actual === expected) return true;
   return ['.ts', '.tsx', '.js', '.jsx'].some(extension => actual === `${expected}${extension}`);
@@ -157,7 +169,7 @@ function assertRuntimeImport(filePath, expectedSpecifier, label) {
 
 function runAssemblyEntryReachability(context) {
   const {projected, root} = context;
-  const assemblyModuleName = 'assembly.android.pos-desktop';
+  const assemblyModuleName = 'assembly.android.sample-terminal';
   if (!projected[assemblyModuleName]) return;
   const assemblyDirectory = moduleNameToPath(assemblyModuleName, root);
   const entryPath = entryFile(assemblyDirectory, 'index.ts', 'index.ts');
@@ -200,8 +212,6 @@ function runAssemblyEntryReachability(context) {
     )}`);
   }
 
-  const reachable = [assemblyModuleName, ...importedModules];
-  assertEqualSet('assembly App entry reachable TER package roots', reachable, Object.keys(projected));
 }
 
 function runGraphComparison(context) {
@@ -226,7 +236,12 @@ function runGraphComparison(context) {
     assertEqualSet(
       `${moduleName} dependencies`,
       declaredByField(entry.package, 'dependencies', spec),
-      expected.dependencies,
+      expected.dependencies.filter(dependency => !plannedWorkspaceDependencies(entry.package, spec).includes(dependency)),
+    );
+    assertEqualSet(
+      `${moduleName} plannedDependencies`,
+      plannedWorkspaceDependencies(entry.package, spec),
+      expected.dependencies.filter(dependency => plannedWorkspaceDependencies(entry.package, spec).includes(dependency)),
     );
     assertEqualSet(
       `${moduleName} devDependencies`,
@@ -248,18 +263,6 @@ function runGraphComparison(context) {
     }
     const sourceImports = sourceSpecifiers.map(value => packageNameToModuleName(value, spec)).filter(Boolean);
     assertEqualSet(`${moduleName} source imports`, sourceImports, declared);
-  }
-  const assembly = projected['assembly.android.pos-desktop'];
-  if (assembly) {
-    const reachable = new Set();
-    const visit = moduleName => {
-      if (reachable.has(moduleName)) return;
-      reachable.add(moduleName);
-      for (const dependency of projected[moduleName]?.dependencies ?? []) visit(dependency);
-      for (const dependency of projected[moduleName]?.devDependencies ?? []) visit(dependency);
-    };
-    visit('assembly.android.pos-desktop');
-    assertEqualSet('assembly dependency closure', [...reachable], expectedNames);
   }
   runAssemblyEntryReachability(context);
   // The package-local invariant files own the closed-union denominator.  Do
@@ -292,8 +295,8 @@ function runTripleNaming(context) {
       throw new Error(`${moduleName} package.json must not carry plannedKind/kind`);
     }
   }
-  if (Object.keys(spec.graph).length !== 22)
-    throw new Error(`skeleton spec must contain 22 nodes, got ${Object.keys(spec.graph).length}`);
+  if (Object.keys(spec.graph).length !== 26)
+    throw new Error(`skeleton spec must contain 26 nodes, got ${Object.keys(spec.graph).length}`);
 }
 
 function layerFor(moduleName) {

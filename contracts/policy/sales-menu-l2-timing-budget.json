@@ -180,7 +180,7 @@
         },
         {
           "operationId": "getOperationsSalesMenuPublicationPreview",
-          "maxRequestCount": 2
+          "maxRequestCount": 3
         },
         {
           "operationId": "getOperationsStoreBusinessChannels",
@@ -294,7 +294,7 @@
         },
         {
           "operationId": "getOperationsSalesMenuDraftItems",
-          "maxRequestCount": 3
+          "maxRequestCount": 4
         },
         {
           "operationId": "getOperationsSalesMenuPublicationPreview",
@@ -347,11 +347,11 @@
         },
         {
           "operationId": "getOperationsSalesMenuDraftItems",
-          "maxRequestCount": 2
+          "maxRequestCount": 3
         },
         {
           "operationId": "getOperationsSalesMenuPublicationPreview",
-          "maxRequestCount": 2
+          "maxRequestCount": 3
         },
         {
           "operationId": "getOperationsStoreBusinessChannels",
@@ -396,11 +396,11 @@
         },
         {
           "operationId": "getOperationsSalesMenuDraftItems",
-          "maxRequestCount": 2
+          "maxRequestCount": 3
         },
         {
           "operationId": "getOperationsSalesMenuPublicationPreview",
-          "maxRequestCount": 2
+          "maxRequestCount": 3
         },
         {
           "operationId": "getOperationsStoreBusinessChannels",
@@ -445,7 +445,7 @@
         },
         {
           "operationId": "getOperationsSalesMenuPublicationPreview",
-          "maxRequestCount": 2
+          "maxRequestCount": 4
         },
         {
           "operationId": "getOperationsStoreBusinessChannels",

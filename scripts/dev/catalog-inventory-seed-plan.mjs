@@ -19,6 +19,14 @@ const registry = readJson("apps/backend/catering-business-server/src/main/resour
 const v4Dir = path.resolve(root, profile.v4CatalogSourceDirectory);
 
 const sourceScopeKey = (item) => item?.headquarterTemplate === true ? "HEAD_COMPANY" : "STORE";
+const salesMenuAvailabilityCodes = [
+  "R5-SALES-AVAIL-NO-TARGET-001",
+  "R5-SALES-AVAIL-NORMAL-001",
+  "R5-SALES-AVAIL-LOW-001",
+  "R5-SALES-AVAIL-OUT-001",
+  "R5-SALES-AVAIL-NEGATIVE-ALLOWED-001",
+  "R5-SALES-AVAIL-NEGATIVE-DISALLOWED-001",
+];
 const sourceDependencyEdgesFor = (sourceItems, isCreateAllowed) => {
   const byFixtureKey = new Map(sourceItems.map((item) => [item.fixtureKey, item]));
   const edges = [];
@@ -139,6 +147,47 @@ const assertPlan = (input) => {
   if (new Set(sourceItems.map((item) => item.catalogItemCode)).size !== sourceItems.length) fail("SEED_V4_CODE_DUPLICATE");
   for (const item of sourceItems) if (!mediaCatalog.assets[item.mediaAssetKey]) fail("SEED_V4_MEDIA_KEY_UNKNOWN", `${item.catalogItemCode}:${item.mediaAssetKey}`);
 
+  const salesMenuAvailability = profile.salesMenuAvailability;
+  const availabilityItems = salesMenuAvailability?.items;
+  if (salesMenuAvailability?.scope !== "STORE"
+      || salesMenuAvailability?.shapeKey !== "STANDARD_SALE_COUNTED"
+      || salesMenuAvailability?.unitCode !== "EACH"
+      || !Array.isArray(availabilityItems)
+      || availabilityItems.length !== salesMenuAvailabilityCodes.length
+      || availabilityItems.map((item) => item.code).join(",") !== salesMenuAvailabilityCodes.join(",")
+      || new Set(availabilityItems.map((item) => item.code)).size !== availabilityItems.length
+      || availabilityItems.some((item) => !item.name || !item.expectedAvailability || !Object.hasOwn(item, "expectedTarget") || !Array.isArray(item.inventoryCommands)))
+    fail("SEED_SALES_MENU_AVAILABILITY_MATRIX_INVALID");
+  const expectedAvailability = [
+    ["NOT_APPLICABLE", null, null],
+    ["APPLICABLE", "AVAILABLE", null],
+    ["APPLICABLE", "AVAILABLE", null],
+    ["APPLICABLE", "AUTO_UNAVAILABLE", "OUT_OF_STOCK"],
+    ["APPLICABLE", "AVAILABLE", null],
+    ["APPLICABLE", "AUTO_UNAVAILABLE", "NEGATIVE_NOT_ALLOWED"],
+  ];
+  for (let index = 0; index < availabilityItems.length; index += 1) {
+    const item = availabilityItems[index];
+    const actual = item.expectedAvailability;
+    if (actual.applicability !== expectedAvailability[index][0]
+        || actual.state !== expectedAvailability[index][1]
+        || actual.reason !== expectedAvailability[index][2])
+      fail("SEED_SALES_MENU_AVAILABILITY_EXPECTATION_INVALID", item.code);
+    const target = item.expectedTarget;
+    if (index === 0 ? target !== null : !target
+      || (target !== null && (!["-1", "0", "1"].includes(target.balance)
+        || typeof target.allowNegative !== "boolean"
+        || !["0", "2"].includes(target.lowStockThreshold))))
+      fail("SEED_SALES_MENU_AVAILABILITY_TARGET_EXPECTATION_INVALID", item.code);
+  }
+  if (availabilityItems[0].inventoryCommands.length !== 0
+      || availabilityItems.slice(1).some((item) => item.inventoryCommands[0]?.kind !== "CONFIGURE")
+      || availabilityItems[3].inventoryCommands[1]?.kind !== "COUNT"
+      || availabilityItems[3].inventoryCommands[1]?.zeroConfirmation !== true
+      || availabilityItems[4].inventoryCommands.map((command) => command.kind).join(",") !== "CONFIGURE,ADJUST"
+      || availabilityItems[5].inventoryCommands.map((command) => command.kind).join(",") !== "CONFIGURE,ADJUST,CONFIGURE")
+    fail("SEED_SALES_MENU_AVAILABILITY_COMMAND_MATRIX_INVALID");
+
   const shapeRules = new Map((editorManifest.shapeRules ?? []).map((rule) => [rule.shapeKey, rule]));
   const excludedSourceItems = sourceItems
     .filter((item) => !shapeRules.get(item.shapeKey)?.createAllowed)
@@ -208,6 +257,7 @@ const assertPlan = (input) => {
     excludedSourceItems,
     sourceDependencyEdges,
     sourceCompositeRelationTargetFixtureKeys,
+    salesMenuAvailability,
     eligibility: {sourceItemCount: sourceItems.length, eligibleItemCount: eligibleSourceItems.length, excludedItemCount: excludedSourceItems.length, eligibleByScope},
     seedDatasetCount: expectedSeedDatasetCount,
     seedDatasets,
@@ -220,7 +270,7 @@ const assertPlan = (input) => {
     ownerScopes: profile.ownerScopes,
     noDirectDatabaseWrites: true,
     catalogLifecycle,
-    planDigest: sha256(JSON.stringify({mediaPlan, sourceItems, eligibleSourceItems, excludedSourceItems, sourceDependencyEdges, sourceCompositeRelationTargetFixtureKeys, seedDatasets, dependencyEdges, relations, order, catalogLifecycle})),
+    planDigest: sha256(JSON.stringify({mediaPlan, sourceItems, eligibleSourceItems, excludedSourceItems, sourceDependencyEdges, sourceCompositeRelationTargetFixtureKeys, salesMenuAvailability, seedDatasets, dependencyEdges, relations, order, catalogLifecycle})),
   };
 };
 
@@ -241,10 +291,11 @@ const runSelfTest = () => {
     ["VOIDED_SKU_BOM", () => assertPlan({...fixture, seedDatasets: fixture.seedDatasets.map((d) => d.fixtureId === "SEED-LATTE" ? {...d, entities: {...d.entities, bomLines: [...(d.entities.bomLines ?? []), {skuCode: "LATTE-SKU-L", componentCode: "BEAN-001", quantity: 24}]}} : d)})],
     ["V4_COUNT", () => assertPlan({...fixture, revision: fixture.revision, seedDatasets: fixture.seedDatasets}) && (() => { const old = profile.parity.catalogItems; profile.parity.catalogItems = 72; try { assertPlan(fixture); } finally { profile.parity.catalogItems = old; } })()],
     ["SOURCE_RELATION_DANGLING", () => sourceDependencyEdgesFor([{...sourceGraphFixture[0], compositeStructure: {componentGroups: [{components: [{componentFixtureKey: "missing"}]}]}}], () => true)],
-    ["SOURCE_RELATION_CROSS_SCOPE", () => sourceDependencyEdgesFor([{...sourceGraphFixture[0], headquarterTemplate: true}, sourceGraphFixture[1]], () => true)]
+    ["SOURCE_RELATION_CROSS_SCOPE", () => sourceDependencyEdgesFor([{...sourceGraphFixture[0], headquarterTemplate: true}, sourceGraphFixture[1]], () => true)],
+    ["SALES_MENU_AVAILABILITY", () => { const old = profile.salesMenuAvailability.items[3].expectedAvailability.reason; profile.salesMenuAvailability.items[3].expectedAvailability.reason = null; try { assertPlan(fixture); } finally { profile.salesMenuAvailability.items[3].expectedAvailability.reason = old; } }]
   ];
   for (const [name, test] of cases) { let rejected = false; try { test(); } catch { rejected = true; } if (!rejected) fail("SEED_PLAN_RED_MUTATION_NOT_REJECTED", name); process.stdout.write(`SEED_PLAN_RED_MUTATION=${name}\n`); }
-  process.stdout.write(`CATALOG_INVENTORY_SEED_PLAN_SELF_TEST=PASS\nSOURCE_ITEMS=${base.sourceItems.length}\nELIGIBLE_SOURCE_ITEMS=${base.eligibleSourceItems.length}\nEXCLUDED_SOURCE_ITEMS=${base.excludedSourceItems.length}\nSOURCE_DEPENDENCY_EDGES=${base.sourceDependencyEdges.length}\nMEDIA_FILES=${base.mediaPlan.length}\nRELATIONS=${base.relations.length}\n`);
+  process.stdout.write(`CATALOG_INVENTORY_SEED_PLAN_SELF_TEST=PASS\nSOURCE_ITEMS=${base.sourceItems.length}\nSALES_MENU_AVAILABILITY_ITEMS=${base.salesMenuAvailability.items.length}\nELIGIBLE_SOURCE_ITEMS=${base.eligibleSourceItems.length}\nEXCLUDED_SOURCE_ITEMS=${base.excludedSourceItems.length}\nSOURCE_DEPENDENCY_EDGES=${base.sourceDependencyEdges.length}\nMEDIA_FILES=${base.mediaPlan.length}\nRELATIONS=${base.relations.length}\n`);
 };
 
 if (process.argv.includes("--self-test")) runSelfTest();
@@ -253,5 +304,5 @@ else {
   const output = process.env.CATALOG_INVENTORY_SEED_PLAN_OUTPUT || path.join(root, "doc/evidence/platform/2026-08-07-v2s-catalog-inventory-seed-plan-codex.json");
   fs.mkdirSync(path.dirname(output), {recursive: true});
   fs.writeFileSync(output, `${JSON.stringify({schemaVersion: 1, kind: "catalog-inventory-seed-plan", status: "PASS", authority: "STATIC_PLAN_ONLY", ...plan}, null, 2)}\n`, {mode: 0o600});
-  process.stdout.write(`CATALOG_INVENTORY_SEED_PLAN=PASS\nSOURCE_ITEMS=${plan.sourceItems.length}\nELIGIBLE_SOURCE_ITEMS=${plan.eligibleSourceItems.length}\nEXCLUDED_SOURCE_ITEMS=${plan.excludedSourceItems.length}\nSOURCE_DEPENDENCY_EDGES=${plan.sourceDependencyEdges.length}\nMEDIA_FILES=${plan.mediaPlan.length}\nRELATIONS=${plan.relations.length}\nPLAN_DIGEST=${plan.planDigest}\n`);
+  process.stdout.write(`CATALOG_INVENTORY_SEED_PLAN=PASS\nSOURCE_ITEMS=${plan.sourceItems.length}\nSALES_MENU_AVAILABILITY_ITEMS=${plan.salesMenuAvailability.items.length}\nELIGIBLE_SOURCE_ITEMS=${plan.eligibleSourceItems.length}\nEXCLUDED_SOURCE_ITEMS=${plan.excludedSourceItems.length}\nSOURCE_DEPENDENCY_EDGES=${plan.sourceDependencyEdges.length}\nMEDIA_FILES=${plan.mediaPlan.length}\nRELATIONS=${plan.relations.length}\nPLAN_DIGEST=${plan.planDigest}\n`);
 }

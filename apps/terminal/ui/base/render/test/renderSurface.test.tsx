@@ -16,6 +16,7 @@ import {
 } from '../src/index'
 import {createUiCatalog} from '@catering-v2s/kernel-base-ui-state'
 import {createRenderPartDiagnosticReporter} from '../src/foundations/diagnostics'
+import {unusedRenderProviderBindings} from './renderProviderBindings'
 
 ;(globalThis as {IS_REACT_ACT_ENVIRONMENT?: boolean}).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -77,6 +78,12 @@ const mount = (element: ReactElement): ReactTestRenderer => {
   return renderer!
 }
 
+const findFallbacks = (renderer: ReactTestRenderer) => renderer.root.findAll(node =>
+  typeof node.type === 'string'
+  && typeof node.props.testID === 'string'
+  && node.props.testID.startsWith('ui-base-render:fallback:'),
+)
+
 const emptyContent = () => ({
   contentSets: {
     PRIMARY: {containers: {}, layers: []},
@@ -134,12 +141,51 @@ describe('render surface hosts', () => {
 
     const renderer = mount(createElement(
       RenderProvider,
-      {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger},
+      {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, ...unusedRenderProviderBindings},
       createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
       createElement(SurfaceRoot, {displayMode: 'SECONDARY', containerKey: 'root'}),
     ))
     const screens = renderer.root.findAllByType('render-screen')
     expect(screens.map(screen => screen.props.marker)).toEqual(['primary', 'secondary'])
+    renderer.unmount()
+  })
+
+  it('keeps diagnostic suppression local to each Provider', () => {
+    const first = createSource()
+    const second = createSource()
+    const firstLogger = createLogger()
+    const secondLogger = createLogger()
+    const missing = part({
+      partKey: 'provider-local-missing-renderer',
+      rendererKey: 'provider-local-missing-renderer-binding',
+      component: Screen,
+    })
+    const uiCatalog = createUiCatalog([missing.catalogEntry])
+    const rendererCatalog = createRendererCatalog([])
+    const content = {
+      contentSets: {
+        PRIMARY: {containers: {root: {partKey: 'provider-local-missing-renderer'}}, layers: []},
+        SECONDARY: {containers: {}, layers: []},
+      },
+    }
+    first.setRoot(rootWithContent(content))
+    second.setRoot(rootWithContent(content))
+    first.setStatus('started')
+    second.setStatus('started')
+    const provider = (source: FakeSource, logger: ReturnType<typeof createLogger>) => createElement(
+      RenderProvider,
+      {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger: logger.logger, ...unusedRenderProviderBindings},
+      createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
+    )
+
+    const renderer = mount(createElement(
+      'provider-diagnostic-root',
+      null,
+      provider(first, firstLogger),
+      provider(second, secondLogger),
+    ))
+    expect(firstLogger.events.filter(event => event.event === 'missing-renderer')).toHaveLength(1)
+    expect(secondLogger.events.filter(event => event.event === 'missing-renderer')).toHaveLength(1)
     renderer.unmount()
   })
 
@@ -149,10 +195,10 @@ describe('render surface hosts', () => {
     const uiCatalog = createUiCatalog([])
     const rendererCatalog = createRendererCatalog([])
     const renderer = mount(
-      createElement(RenderProvider, {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger},
+      createElement(RenderProvider, {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, ...unusedRenderProviderBindings},
         createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'})),
     )
-    const unavailable = renderer.root.findAllByType('render-fallback')
+    const unavailable = findFallbacks(renderer)
     expect(unavailable.map(item => item.props.testID)).toEqual([
       'ui-base-render:fallback:runtime-unavailable',
       'ui-base-render:fallback:runtime-unavailable',
@@ -163,7 +209,7 @@ describe('render surface hosts', () => {
       source.setStatus('started')
       source.notify()
     })
-    const empty = renderer.root.findAllByType('render-fallback')
+    const empty = findFallbacks(renderer)
     expect(empty.map(item => item.props.testID)).toContain('ui-base-render:fallback:container-empty')
     expect(empty.map(item => item.props.testID)).not.toContain('ui-base-render:fallback:runtime-unavailable')
     renderer.unmount()
@@ -194,7 +240,7 @@ describe('render surface hosts', () => {
     source.setStatus('started')
     const renderer = mount(createElement(
       RenderProvider,
-      {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger},
+      {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, ...unusedRenderProviderBindings},
       createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
     ))
     expect(renderer.root.findByType('render-screen').props.marker).toBe('screen')
@@ -242,11 +288,11 @@ describe('render surface hosts', () => {
     source.setStatus('started')
     const renderer = mount(createElement(
       RenderProvider,
-      {stateSource: source.stateSource, uiCatalog: fullUiCatalog, rendererCatalog: fullRendererCatalog, logger},
+      {stateSource: source.stateSource, uiCatalog: fullUiCatalog, rendererCatalog: fullRendererCatalog, logger, ...unusedRenderProviderBindings},
       createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
     ))
-    expect(renderer.root.findAllByType('render-fallback').map(item => item.props.testID)).toContain('ui-base-render:fallback:missing-catalog-entry')
-    expect(renderer.root.findAllByType('render-fallback').map(item => item.props.testID)).toContain('ui-base-render:fallback:missing-renderer')
+    expect(findFallbacks(renderer).map(item => item.props.testID)).toContain('ui-base-render:fallback:missing-catalog-entry')
+    expect(findFallbacks(renderer).map(item => item.props.testID)).toContain('ui-base-render:fallback:missing-renderer')
     expect(events).toEqual(expect.arrayContaining([
       expect.objectContaining({
         category: 'ui.base.render',
@@ -279,7 +325,7 @@ describe('render surface hosts', () => {
       source.notify()
     })
     expect(renderer.root.findAllByType('render-counted-screen')).toHaveLength(0)
-    expect(renderer.root.findAllByType('render-fallback').map(item => item.props.testID)).toContain('ui-base-render:fallback:invalid-props')
+    expect(findFallbacks(renderer).map(item => item.props.testID)).toContain('ui-base-render:fallback:invalid-props')
     expect(events).toEqual(expect.arrayContaining([
       expect.objectContaining({
         category: 'ui.base.render',
@@ -306,7 +352,7 @@ describe('render surface hosts', () => {
       source.setRoot(screenMissingRendererRoot)
       source.notify()
     })
-    expect(renderer.root.findAllByType('render-fallback').map(item => item.props.testID)).toContain('ui-base-render:fallback:missing-renderer')
+    expect(findFallbacks(renderer).map(item => item.props.testID)).toContain('ui-base-render:fallback:missing-renderer')
     expect(events).toEqual(expect.arrayContaining([
       expect.objectContaining({
         category: 'ui.base.render',
@@ -353,7 +399,7 @@ describe('render surface hosts', () => {
 
     const render = (rendererCatalog: ReturnType<typeof createRendererCatalog>) => createElement(
       RenderProvider,
-      {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger},
+      {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, ...unusedRenderProviderBindings},
       createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
     )
     const renderer = mount(render(missingRendererCatalog))

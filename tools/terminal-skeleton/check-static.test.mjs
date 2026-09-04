@@ -20,10 +20,10 @@ const spec = readSkeletonSpec(skeletonGraphPath);
 const batchOne = projectSkeletonGraph(spec, 1);
 const batchTwo = projectSkeletonGraph(spec, 2);
 
-assert.equal(Object.keys(spec.graph).length, 22, 'the literal skeleton specification has 22 nodes');
+assert.equal(Object.keys(spec.graph).length, 26, 'the literal skeleton specification has 26 nodes');
 assert.equal(Object.keys(batchOne).length, 14, 'batch one projects 14 nodes');
-assert.equal(Object.keys(batchTwo).length, 22, 'batch two projects 22 nodes');
-assert.equal(moduleNameToPackageName('assembly.android.pos-desktop'), '@catering-v2s/assembly-android-pos-desktop');
+assert.equal(Object.keys(batchTwo).length, 26, 'batch two projects 26 nodes');
+assert.equal(moduleNameToPackageName('assembly.android.sample-terminal'), '@catering-v2s/assembly-android-sample-terminal');
 assert.equal(moduleNameToRelativePath('kernel.base.contracts'), 'apps/terminal/kernel/base/contracts');
 
 const help = spawnSync(process.execPath, [checkStaticPath, '--help'], {cwd: repoRoot, encoding: 'utf8'});
@@ -161,14 +161,14 @@ try {
   fs.writeFileSync(gitignorePath, fs.readFileSync(path.join(repoRoot, '.gitignore'), 'utf8'));
   const bootstrapPath = path.join(
     fixtureRoot,
-    'apps/terminal/assembly/android/pos-desktop/src/skeletonBootstrap.ts',
+    'apps/terminal/assembly/android/sample-terminal/src/skeletonBootstrap.ts',
   );
   const bootstrapSource = fs.readFileSync(bootstrapPath, 'utf8');
   fs.writeFileSync(
     bootstrapPath,
     bootstrapSource
-      .replace("import {moduleName as uiBaseRender} from '@catering-v2s/ui-base-render';\n", '')
-      .replace('  uiBaseRender,\n', ''),
+      .replace("import {moduleName as adapterAndroidAppControl} from '@catering-v2s/adapter-android-app-control';\n", '')
+      .replace('  adapterAndroidAppControl,\n', ''),
   );
   const missingBootstrapImportReport = runStaticChecks({root: fixtureRoot, batch: 2});
   const missingBootstrapImportGate = missingBootstrapImportReport.results.find(
@@ -200,7 +200,7 @@ try {
   assert.match(missingDependencyImportsGate.error, /ui\.base\.test-support source imports/);
   fs.writeFileSync(uiTestSupportDependenciesPath, uiTestSupportDependenciesSource);
 
-  const appPath = path.join(fixtureRoot, 'apps/terminal/assembly/android/pos-desktop/App.tsx');
+  const appPath = path.join(fixtureRoot, 'apps/terminal/assembly/android/sample-terminal/App.tsx');
   const appSource = fs.readFileSync(appPath, 'utf8');
   fs.writeFileSync(
     appPath,
@@ -341,7 +341,7 @@ try {
   withJsonMutation(
     uiRenderPackagePath,
     packageJson => {
-      packageJson.dependencies['@catering-v2s/kernel-base-contracts'] = 'workspace:*';
+      packageJson.dependencies['@catering-v2s/kernel-base-display-context'] = 'workspace:*';
     },
     report => {
       assertGateVector(report, ['graph-comparison']);
@@ -508,10 +508,7 @@ try {
 
   withTextMutation(
     primitivesDependenciesPath,
-    source => source.replace(
-      "@catering-v2s/ui-base-automation'",
-      "@catering-v2s/ui-base-automation/src/index'",
-    ),
+    source => `import '@catering-v2s/ui-base-automation/src/index';\n${source}`,
     report => {
       assertGateVector(report, ['graph-comparison']);
       assert.match(gate(report, 'graph-comparison').error, /non-root workspace import/);

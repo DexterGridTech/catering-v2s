@@ -27,6 +27,7 @@ import {
   type Uuid,
 } from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
+import {salesMenuCommandIdempotencyPayload} from './salesMenuModel';
 
 export type SalesMenuPath = {
   groupWorkspaceKey: string;
@@ -42,12 +43,16 @@ type MutationTrigger = (request: never) => {unwrap: () => Promise<unknown>};
 
 async function runMutation<Response>(
   operationId: string,
+  pathForKey: object,
   bodyForKey: unknown,
   trigger: MutationTrigger,
   requestFactory: (idempotencyKey: string) => unknown,
   correlationId: string,
 ): Promise<Response> {
-  const idempotencyKey = await createContentIdempotencyKey(operationId, bodyForKey);
+  const idempotencyKey = await createContentIdempotencyKey(
+    operationId,
+    salesMenuCommandIdempotencyPayload(pathForKey, bodyForKey),
+  );
   operationsLogger.info({
     event: 'sales-menu.command',
     phase: 'COMMAND',
@@ -102,6 +107,7 @@ export function useSalesMenuCommands() {
     (path: Pick<SalesMenuPath, 'groupWorkspaceKey' | 'storeRef'>, body: SalesMenuCreateRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.createOperationsSalesMenu,
+        path,
         body,
         createMenu as unknown as MutationTrigger,
         key =>
@@ -117,6 +123,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuPath, body: SalesMenuCopyRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.copyOperationsSalesMenu,
+        path,
         body,
         copyMenu as unknown as MutationTrigger,
         key => operationsAdminRtkRequest.copyOperationsSalesMenu(path, {body, headers: {'Idempotency-Key': key}}),
@@ -128,6 +135,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuPath, body: SalesMenuRenameRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.renameOperationsSalesMenu,
+        path,
         body,
         renameMenu as unknown as MutationTrigger,
         key => operationsAdminRtkRequest.renameOperationsSalesMenu(path, {body, headers: {'Idempotency-Key': key}}),
@@ -139,6 +147,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuPath, body: SalesMenuArchiveRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.archiveOperationsSalesMenu,
+        path,
         body,
         archiveMenu as unknown as MutationTrigger,
         key => operationsAdminRtkRequest.archiveOperationsSalesMenu(path, {body, headers: {'Idempotency-Key': key}}),
@@ -150,6 +159,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuChannelPath, body: SalesMenuActivationRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.setOperationsSalesMenuActivation,
+        path,
         body,
         setActivation as unknown as MutationTrigger,
         key =>
@@ -165,6 +175,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuPath, body: SalesMenuScheduleUpdateRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsSalesMenuSchedule,
+        path,
         body,
         updateSchedule as unknown as MutationTrigger,
         key =>
@@ -180,6 +191,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuPath, body: SalesMenuSectionCreateRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.createOperationsSalesMenuSection,
+        path,
         body,
         createSection as unknown as MutationTrigger,
         key =>
@@ -195,6 +207,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuSectionPath, body: SalesMenuSectionRenameRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.renameOperationsSalesMenuSection,
+        path,
         body,
         renameSection as unknown as MutationTrigger,
         key =>
@@ -210,6 +223,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuSectionPath, body: SalesMenuDeleteRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.deleteOperationsSalesMenuSection,
+        path,
         body,
         deleteSection as unknown as MutationTrigger,
         key =>
@@ -225,6 +239,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuSectionPath, body: SalesMenuSectionMoveRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.moveOperationsSalesMenuSection,
+        path,
         body,
         moveSection as unknown as MutationTrigger,
         key =>
@@ -240,6 +255,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuSectionPath, body: SalesMenuItemsAddRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.addOperationsSalesMenuItems,
+        path,
         body,
         addItems as unknown as MutationTrigger,
         key => operationsAdminRtkRequest.addOperationsSalesMenuItems(path, {body, headers: {'Idempotency-Key': key}}),
@@ -251,6 +267,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuItemPath, body: SalesMenuItemUpdateRequest, assetBindGrants?: Record<string, string>) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsSalesMenuItem,
+        path,
         body,
         updateItem as unknown as MutationTrigger,
         key =>
@@ -271,6 +288,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuItemPath, body: SalesMenuDeleteRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.deleteOperationsSalesMenuItem,
+        path,
         body,
         deleteItem as unknown as MutationTrigger,
         key => operationsAdminRtkRequest.deleteOperationsSalesMenuItem(path, {body, headers: {'Idempotency-Key': key}}),
@@ -282,6 +300,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuItemPath, body: SalesMenuItemMoveRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.moveOperationsSalesMenuItem,
+        path,
         body,
         moveItem as unknown as MutationTrigger,
         key => operationsAdminRtkRequest.moveOperationsSalesMenuItem(path, {body, headers: {'Idempotency-Key': key}}),
@@ -293,6 +312,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuPath, body: SalesMenuPublishRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.publishOperationsSalesMenu,
+        path,
         body,
         publishMenu as unknown as MutationTrigger,
         key => operationsAdminRtkRequest.publishOperationsSalesMenu(path, {body, headers: {'Idempotency-Key': key}}),
@@ -304,6 +324,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuChannelPath & {salesItemRef: Uuid}, body: SalesMenuManualSoldOutRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.setOperationsSalesMenuItemSoldOut,
+        path,
         body,
         setSoldOut as unknown as MutationTrigger,
         key =>
@@ -319,6 +340,7 @@ export function useSalesMenuCommands() {
     (path: SalesMenuChannelPath & {salesItemRef: Uuid}, body: SalesMenuManualRestoreRequest) =>
       runMutation<SalesMenuCommandReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.restoreOperationsSalesMenuItemSale,
+        path,
         body,
         restoreSale as unknown as MutationTrigger,
         key =>
@@ -342,15 +364,12 @@ export function useSalesMenuCommands() {
       };
       return runMutation<SalesMenuAssetStageReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.stageOperationsSalesMenuAsset,
+        path,
         {
           expectedDraftVersion,
           fileName: file.name,
           mediaType: body.mediaType,
           contentDigest,
-          groupWorkspaceKey: path.groupWorkspaceKey,
-          storeRef: String(path.storeRef),
-          salesMenuRef: String(path.salesMenuRef),
-          salesItemRef: String(path.salesItemRef),
         },
         stageAsset as unknown as MutationTrigger,
         key => operationsAdminRtkRequest.stageOperationsSalesMenuAsset(path, {body, headers: {'Idempotency-Key': key}}),
@@ -363,14 +382,8 @@ export function useSalesMenuCommands() {
     (path: SalesMenuItemPath & {assetRef: Uuid}, body: SalesMenuAssetReleaseRequest) =>
       runMutation<SalesMenuAssetReleaseReadback>(
         OPERATIONS_ADMIN_OPERATION_IDS.releaseOperationsSalesMenuStagedAsset,
-        {
-          ...body,
-          groupWorkspaceKey: path.groupWorkspaceKey,
-          storeRef: String(path.storeRef),
-          salesMenuRef: String(path.salesMenuRef),
-          salesItemRef: String(path.salesItemRef),
-          assetRef: String(path.assetRef),
-        },
+        path,
+        body,
         releaseAsset as unknown as MutationTrigger,
         key =>
           operationsAdminRtkRequest.releaseOperationsSalesMenuStagedAsset(path, {

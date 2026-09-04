@@ -34,7 +34,7 @@ import {
   verifyFullBackendAcceptancePerformance,
 } from './r5-remote-testcontainers.mjs';
 import {loadPerformanceOperationRegistry} from './backend-performance-operation-reconciliation.mjs';
-import {BATCH_OPERATION_ID, LINEAR_REQUEST_CARDINALITY_BUDGET} from '../generate/backend-performance-budget.mjs';
+import {validateBudgetRegistry} from '../generate/backend-performance-budget.mjs';
 import path from 'node:path';
 import {gzipSync} from 'node:zlib';
 
@@ -68,6 +68,7 @@ const validManifest = () => ({
   task,
   verificationMode: 'ACCEPTANCE',
   startedAt: '2026-08-14T00:00:00.000Z',
+  finishedAt: '2026-08-14T00:00:03.000Z',
   remote: {hostAlias: 'development-host'},
   sourceSync: {status: 'PASS', workspace: '/tmp/r5-tc-1786638000000-123/workspace'},
   gradleDistribution: distribution,
@@ -83,6 +84,9 @@ const validManifest = () => ({
     testcontainersVolumes: 'PASS',
   },
   status: 'PASS',
+  firstFailure: null,
+  lastKnownGood: 'CLEANUP',
+  brokenBoundary: null,
 });
 
 test('focused runner accepts one task with explicit selectors only', () => {
@@ -327,27 +331,19 @@ test('a complete backend acceptance run always enforces generated budgets withou
   assert.equal(requiresActiveBudgetVerification('run-1', 'all', 'CALIBRATION'), false);
 
   const repositoryRoot = path.resolve(import.meta.dirname, '..', '..');
-  const identityRegistry = loadPerformanceOperationRegistry({root: repositoryRoot});
-  // The checked-in route registries intentionally remain identity-only until
-  // CP-05 calibration is ready.  This unit test exercises the verifier's
-  // active-budget contract with an explicit in-memory ready fixture instead
-  // of pretending that the not-yet-activated generated files carry ceilings.
-  const registry = identityRegistry.map(operation => ({
-    ...operation,
-    databaseOperationBudget:
-      operation.operationId === BATCH_OPERATION_ID
-        ? {
-            ...LINEAR_REQUEST_CARDINALITY_BUDGET,
-            measurementScenarioIds: ['performance.normal-path'],
-            history: [{from: null, to: 20, reason: 'test-ready-fixture'}],
-          }
-        : {
-            kind: 'FIXED',
-            max: 4,
-            measurementScenarioIds: ['performance.normal-path'],
-            history: [{from: null, to: 4, reason: 'test-ready-fixture'}],
-          },
-  }));
+  const registry = loadPerformanceOperationRegistry({root: repositoryRoot});
+  assert.doesNotThrow(() => validateBudgetRegistry({operations: registry}));
+  assert.throws(
+    () =>
+      validateBudgetRegistry({
+        operations: registry.map(operation =>
+          operation.operationId === 'adjustOperationsInventoryTarget'
+            ? {...operation, databaseOperationBudget: null}
+            : operation,
+        ),
+      }),
+    /BUDGET_NULL_REJECTED:adjustOperationsInventoryTarget/,
+  );
   const events = registry.map(operation => ({
     operationId: operation.operationId,
     method: operation.method,

@@ -1,9 +1,11 @@
 import {describe, expect, it} from 'vitest';
+import {createContentIdempotencyKey} from '@catering-v2s/admin-ui-foundation';
 import {
   SALES_MENU_PAGE_SIZE,
   SALES_MENU_OPERATION_COLUMN_TITLE,
   mergeSalesMenuCandidateSelection,
   salesMenuCandidateSelection,
+  salesMenuCommandIdempotencyPayload,
   salesMenuManualSaleStatusLabel,
   salesMenuOperationLabel,
   salesMenuProductShapeLabel,
@@ -43,6 +45,36 @@ describe('sales menu frontend model', () => {
     expect(base).toContain('category-1');
     expect(base).toContain('published-1');
     expect(salesMenuQueryIdentity({scopeRef: 'store-1', channelRef: 'channel-1', mode: 'PUBLISHED'})).not.toBe(base);
+  });
+
+  it('binds content idempotency to the full sales-menu command target', async () => {
+    const body = {status: 'DISABLED', expectedVersion: 2};
+    const primary = {
+      groupWorkspaceKey: 'workspace-1',
+      storeRef: 'store-1',
+      salesMenuRef: 'menu-1',
+      channelRef: 'channel-1',
+    };
+    const sameTarget = await createContentIdempotencyKey(
+      'setOperationsSalesMenuActivation',
+      salesMenuCommandIdempotencyPayload(primary, body),
+    );
+    const replay = await createContentIdempotencyKey(
+      'setOperationsSalesMenuActivation',
+      salesMenuCommandIdempotencyPayload({...primary}, {...body}),
+    );
+    const anotherMenu = await createContentIdempotencyKey(
+      'setOperationsSalesMenuActivation',
+      salesMenuCommandIdempotencyPayload({...primary, salesMenuRef: 'menu-2'}, body),
+    );
+    const anotherChannel = await createContentIdempotencyKey(
+      'setOperationsSalesMenuActivation',
+      salesMenuCommandIdempotencyPayload({...primary, channelRef: 'channel-2'}, body),
+    );
+
+    expect(sameTarget).toBe(replay);
+    expect(sameTarget).not.toBe(anotherMenu);
+    expect(sameTarget).not.toBe(anotherChannel);
   });
 
   it('keeps page controls and visible copy under one stable test-id source', () => {

@@ -3,7 +3,7 @@
   "kind": "catalog-inventory-edge-route-registry",
   "revision": "CATALOG_INVENTORY_P1_20260806",
   "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
-  "contractDigest": "c21e6f5eeb41f94b88bcbd49189341d23ac793f0ceedbdfae5e9f9ff7f30655b",
+  "contractDigest": "571eb98fc52f525c6dc22bb97d1a4350b53c600301382078d7ca435becc83136",
   "operations": [
     {
       "operationId": "getOperationsCatalogWorkbenchContext",
@@ -12,7 +12,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 8,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 8,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsCatalogNavigation",
@@ -21,7 +35,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 12,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 12,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsCatalogItems",
@@ -30,7 +58,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 20,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 20,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsCatalogItem",
@@ -39,7 +81,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 23,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 23,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "createOperationsCatalogItem",
@@ -48,7 +104,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "saveOperationsCatalogItem",
@@ -57,7 +127,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 44,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 44,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "transitionOperationsCatalogItemStatus",
@@ -66,7 +150,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 12,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 12,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "createOperationsCatalogCategory",
@@ -75,7 +173,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 15,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 15,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "updateOperationsCatalogCategory",
@@ -84,7 +196,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 6,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 6,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "moveOperationsCatalogCategory",
@@ -93,7 +219,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 6,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 6,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsCatalogDictionary",
@@ -102,7 +242,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 9,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 9,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "createOperationsCatalogDictionaryEntry",
@@ -111,7 +265,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 12,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 12,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "updateOperationsCatalogDictionaryEntry",
@@ -120,7 +288,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "reorderOperationsCatalogDictionaryEntry",
@@ -129,7 +311,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 14,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 14,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "transitionOperationsCatalogDictionaryEntryStatus",
@@ -138,7 +334,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 15,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 15,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsProductionTags",
@@ -147,7 +357,21 @@
       "owner": "fulfillment-production",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 8,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 8,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "createOperationsProductionTag",
@@ -156,7 +380,21 @@
       "owner": "fulfillment-production",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 6,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 6,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "updateOperationsProductionTag",
@@ -165,7 +403,21 @@
       "owner": "fulfillment-production",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 6,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 6,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "transitionOperationsProductionTagStatus",
@@ -174,7 +426,21 @@
       "owner": "fulfillment-production",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 6,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 6,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsLocalCatalogCopyCandidates",
@@ -183,7 +449,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 9,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 9,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "preflightOperationsLocalCatalogCopy",
@@ -192,7 +472,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 14,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 14,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "executeOperationsLocalCatalogCopy",
@@ -201,7 +495,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 31,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 31,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "preflightOperationsTemporaryCatalogItemPromotion",
@@ -210,7 +518,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 23,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 23,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "executeOperationsTemporaryCatalogItemPromotion",
@@ -219,7 +541,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 16,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 16,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsBrandCatalogCopyCandidates",
@@ -228,7 +564,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "preflightOperationsBrandCatalogCopy",
@@ -237,7 +587,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 21,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 21,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "executeOperationsBrandCatalogCopy",
@@ -246,7 +610,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 48,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 48,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsInventoryTargets",
@@ -255,7 +633,21 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsInventoryTarget",
@@ -264,7 +656,21 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 11,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 11,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsInventoryTargetChangeSummary",
@@ -273,7 +679,21 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 9,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 9,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsInventoryTargetBusinessHistory",
@@ -282,7 +702,21 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 9,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 9,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsInventoryTargetConsumptionReferences",
@@ -291,7 +725,21 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 17,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 17,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsInventoryTargetLedger",
@@ -300,7 +748,21 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 9,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 9,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsInventoryTargetDiagnostics",
@@ -309,7 +771,21 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 7,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 7,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "countOperationsInventoryTarget",
@@ -318,7 +794,21 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 12,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 12,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "increaseOperationsInventoryTarget",
@@ -327,7 +817,21 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 12,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 12,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "adjustOperationsInventoryTarget",
@@ -336,7 +840,21 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 12,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 12,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "updateOperationsInventoryTargetConfiguration",
@@ -345,7 +863,21 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 18,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 18,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "stageOperationsCatalogAsset",
@@ -354,7 +886,21 @@
       "owner": "asset",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 18,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 18,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "releaseOperationsCatalogStagedAsset",
@@ -363,7 +909,21 @@
       "owner": "asset",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 12,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 12,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsCatalogShapeManifest",
@@ -372,7 +932,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 7,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 7,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "batchTransitionOperationsCatalogItemStatus",
@@ -381,7 +955,23 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "LINEAR_REQUEST_CARDINALITY",
+        "base": 15,
+        "perItem": 5,
+        "cardinalityPath": "$.items",
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 20,
+            "reason": "CP-05 calibrated linear shape"
+          }
+        ]
+      }
     },
     {
       "operationId": "listOperationsCatalogAttributeDefinitions",
@@ -390,7 +980,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 8,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 8,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "createOperationsCatalogAttributeDefinition",
@@ -399,7 +1003,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 11,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 11,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "updateOperationsCatalogAttributeDefinition",
@@ -408,7 +1026,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 11,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 11,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "listOperationsCatalogOrderOptionDefinitions",
@@ -417,7 +1049,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 10,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 10,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "createOperationsCatalogOrderOptionDefinition",
@@ -426,7 +1072,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 17,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 17,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "updateOperationsCatalogOrderOptionDefinition",
@@ -435,7 +1095,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 21,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 21,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "listOperationsCatalogUnits",
@@ -444,7 +1118,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 9,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 9,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "createOperationsCatalogUnit",
@@ -453,7 +1141,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 9,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 9,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "updateOperationsCatalogUnit",
@@ -462,7 +1164,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 15,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 15,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "transitionOperationsCatalogAttributeDefinitionStatus",
@@ -471,7 +1187,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 11,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 11,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "transitionOperationsCatalogOrderOptionDefinitionStatus",
@@ -480,7 +1210,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 12,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 12,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "transitionOperationsCatalogUnitStatus",
@@ -489,7 +1233,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 14,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 14,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "transitionOperationsCatalogCategoryStatus",
@@ -498,7 +1256,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 14,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 14,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsInventoryConsumptionTargetCandidates",
@@ -507,7 +1279,21 @@
       "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 8,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 8,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsCatalogCategoryCandidates",
@@ -516,7 +1302,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 8,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 8,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     },
     {
       "operationId": "getOperationsCatalogItemSkus",
@@ -525,7 +1325,21 @@
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
-      ]
+      ],
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 11,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 11,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
     }
   ]
 }

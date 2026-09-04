@@ -1,4 +1,5 @@
 import {createElement, type ReactNode} from 'react'
+import {Text} from 'react-native'
 import type {
   DisplayMode,
   UiCatalog,
@@ -23,8 +24,7 @@ const fallbackTestIds: Readonly<Record<RenderFallbackReason, string>> = Object.f
 
 export const RenderFallback = ({
   reason,
-}: Readonly<{readonly reason: RenderFallbackReason}>) => createElement('render-fallback', {
-  reason,
+}: Readonly<{readonly reason: RenderFallbackReason}>) => createElement(Text, {
   testID: fallbackTestIds[reason],
 })
 

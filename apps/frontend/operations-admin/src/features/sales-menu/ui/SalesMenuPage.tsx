@@ -32,18 +32,21 @@ import {
   CursorPagination,
   NameCodeText,
   adminDrawerSurfaceProps,
+  adminListState,
   adminWideDrawerSurfaceProps,
   testId,
   useDrawerFormLifecycle,
 } from '@catering-v2s/admin-ui-foundation';
 import {
   cloneElement,
+  forwardRef,
   isValidElement,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
+  type ComponentPropsWithoutRef,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -94,6 +97,12 @@ import {useSalesMenuReadModel} from '../model/useSalesMenuReadModel';
 import {salesMenuTestIds} from '../salesMenuTestIds';
 
 const MEDIA_LIMITS = {maxImageCount: 6, maxImageBytes: 2 * 1024 * 1024} as const;
+
+const SalesMenuSelectorInput = forwardRef<HTMLInputElement, ComponentPropsWithoutRef<'input'>>((props, ref) => (
+  <input {...props} ref={ref} {...testId(salesMenuTestIds.menuSelectorInput)} />
+));
+
+SalesMenuSelectorInput.displayName = 'SalesMenuSelectorInput';
 
 type SalesMenuReadModel = ReturnType<typeof useSalesMenuReadModel>;
 type SalesMenuCommands = ReturnType<typeof useSalesMenuCommands>;
@@ -1457,7 +1466,12 @@ function SalesMenuCandidateDrawer({
             <Table<SalesMenuItemCandidate>
               size="small"
               rowKey="candidateRef"
-              loading={read.candidates.query.isFetching}
+              {...adminListState({
+                loading: read.candidates.query.isFetching,
+                failed: Boolean(error),
+                emptyText: '该分类暂无可编入商品',
+                testIdPrefix: salesMenuTestIds.candidateList,
+              })}
               dataSource={rows}
               rowSelection={{
                 selectedRowKeys: selected,
@@ -1496,7 +1510,6 @@ function SalesMenuCandidateDrawer({
                 },
               }}
               pagination={false}
-              locale={{emptyText: '该分类暂无可编入商品'}}
               columns={[
                 {title: '商品名称', dataIndex: 'displayName', key: 'displayName'},
                 {title: '商品编码', dataIndex: 'itemCode', key: 'itemCode'},
@@ -1553,6 +1566,7 @@ function SalesMenuManagerDrawer({
 }) {
   const page = read.manager.page;
   const rows = page?.items ?? [];
+  const error = problemMessage(read.manager.query.error, '菜单列表暂时无法获取，请重试。');
   const managerReadModelReady = !read.manager.query.isFetching && !read.manager.query.isError;
   return (
     <Drawer
@@ -1575,13 +1589,25 @@ function SalesMenuManagerDrawer({
           }}
           onSearch={() => read.manager.cursor.reset()}
         />
+        {error && (
+          <Alert
+            type="error"
+            showIcon
+            title={error}
+            action={<Button onClick={() => void read.manager.query.refetch()}>重试</Button>}
+          />
+        )}
         <Table<SalesMenuSummary>
           size="small"
           rowKey="salesMenuRef"
-          loading={read.manager.query.isFetching}
+          {...adminListState({
+            loading: read.manager.query.isFetching,
+            failed: Boolean(error),
+            emptyText: '暂无菜单',
+            testIdPrefix: salesMenuTestIds.managerList,
+          })}
           dataSource={rows}
           pagination={false}
-          locale={{emptyText: '暂无菜单'}}
           columns={[
             {
               title: '菜单名称',
@@ -1768,6 +1794,7 @@ function SalesMenuSectionPanel({
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                 }}
+                aria-current={read.selectedSectionRef === section.salesSectionRef ? 'true' : undefined}
                 {...testId(salesMenuTestIds.section(section.salesSectionRef))}
               >
                 {section.name} <Typography.Text type="secondary">({section.itemCount})</Typography.Text>
@@ -1921,12 +1948,16 @@ function DraftSalesItemTable({
         <Table<SalesMenuDraftItemView>
           size="small"
           rowKey="salesItemRef"
-          loading={read.draftItems.query.isFetching}
+          {...adminListState({
+            loading: read.draftItems.query.isFetching,
+            failed: Boolean(error),
+            emptyText: '该分区暂无菜单商品',
+            testIdPrefix: salesMenuTestIds.draftList,
+          })}
           dataSource={rows}
           columns={columns}
           pagination={false}
           scroll={{x: 1400}}
-          locale={{emptyText: '该分区暂无菜单商品'}}
         />
         <CursorPagination
           state={read.draftItems.cursor}
@@ -2020,12 +2051,16 @@ function PublishedSalesItemTable({
         <Table<SalesMenuPublishedItemView>
           size="small"
           rowKey="salesItemRef"
-          loading={read.publishedItems.query.isFetching}
+          {...adminListState({
+            loading: read.publishedItems.query.isFetching,
+            failed: Boolean(error),
+            emptyText: '该分区暂无菜单商品',
+            testIdPrefix: salesMenuTestIds.publishedList,
+          })}
           dataSource={rows}
           columns={columns}
           pagination={false}
           scroll={{x: 1050}}
-          locale={{emptyText: '该分区暂无菜单商品'}}
         />
         <CursorPagination
           state={read.publishedItems.cursor}
@@ -2065,11 +2100,15 @@ function SalesMenuOperationTable({read}: {read: SalesMenuReadModel}) {
         <Table<SalesMenuOperationRecord>
           size="small"
           rowKey="operationRecordRef"
-          loading={read.operationRecords.query.isFetching}
+          {...adminListState({
+            loading: read.operationRecords.query.isFetching,
+            failed: Boolean(error),
+            emptyText: '暂无操作记录',
+            testIdPrefix: salesMenuTestIds.operationList,
+          })}
           dataSource={rows}
           columns={columns}
           pagination={false}
-          locale={{emptyText: '暂无操作记录'}}
         />
         <CursorPagination
           state={read.operationRecords.cursor}
@@ -2684,14 +2723,17 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                         loading={read.selector.query.isFetching}
                         disabled={!selectedChannelRef || selectorItems.length === 0}
                         style={{minWidth: 260}}
+                        virtual={false}
+                        components={{input: SalesMenuSelectorInput}}
                         options={selectorItems.map(menu => ({
                           value: menu.salesMenuRef,
                           label: (
-                            <Space {...testId(salesMenuTestIds.menuOption(menu.salesMenuRef))}>
+                            <Space>
                               <span>{menu.name}</span>
                               <Typography.Text type="secondary">{menuStateLabel(menu)}</Typography.Text>
                             </Space>
                           ),
+                          'data-testid': salesMenuTestIds.menuOption(menu.salesMenuRef),
                         }))}
                         onChange={value => read.selectMenu(value as Uuid)}
                         {...testId(salesMenuTestIds.menuSelector)}

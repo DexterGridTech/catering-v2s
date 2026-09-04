@@ -1,0 +1,34 @@
+{
+  "name": "@catering-v2s/assembly-android-sample-terminal",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@catering-v2s/adapter-android-app-control": "workspace:*",
+    "@catering-v2s/adapter-android-device": "workspace:*",
+    "@catering-v2s/adapter-android-dual-screen": "workspace:*",
+    "@catering-v2s/adapter-android-logger": "workspace:*",
+    "@catering-v2s/adapter-android-persist-kv": "workspace:*",
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*",
+    "@catering-v2s/ui-integration-sample-console": "workspace:*",
+    "expo": "~57.0.18",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  }
+}

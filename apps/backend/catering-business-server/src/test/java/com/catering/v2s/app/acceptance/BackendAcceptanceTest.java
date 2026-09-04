@@ -1472,6 +1472,9 @@ class BackendAcceptanceTest {
         private boolean contractPass = true;
 
         ScenarioContext(AcceptanceScenario scenario) {
+            // Business scenarios provide the normal-path samples that complete the generated operation
+            // denominator. A deliberately high-cardinality business request must opt into coverage-only
+            // at that one HTTP call and be paired with a bounded normal recipe.
             this(scenario, "performance.normal-path");
         }
 
@@ -1496,6 +1499,21 @@ class BackendAcceptanceTest {
         Response post(RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected)
                 throws Exception {
             return send(route, "POST", path, cookie, mapper.writeValueAsString(body), null, expected);
+        }
+
+        Response postCoverageOnly(
+                RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected)
+                throws Exception {
+            return send(
+                    route,
+                    "POST",
+                    path,
+                    cookie,
+                    mapper.writeValueAsBytes(body),
+                    null,
+                    Map.of(),
+                    expected,
+                    "performance.coverage-only");
         }
 
         Response post(
@@ -1674,6 +1692,20 @@ class BackendAcceptanceTest {
                 Map<String, String> headers,
                 Set<Integer> expected)
                 throws Exception {
+            return send(route, method, path, cookie, body, boundary, headers, expected, measurementScenarioId);
+        }
+
+        private Response send(
+                RouteIdentity route,
+                String method,
+                String path,
+                String cookie,
+                byte[] body,
+                String boundary,
+                Map<String, String> headers,
+                Set<Integer> expected,
+                String requestMeasurementScenarioId)
+                throws Exception {
             HttpRequest.BodyPublisher publisher = body.length == 0
                     ? HttpRequest.BodyPublishers.noBody()
                     : HttpRequest.BodyPublishers.ofByteArray(body);
@@ -1688,7 +1720,7 @@ class BackendAcceptanceTest {
                             requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_SECRET))
                     .header("X-Backend-Acceptance-Operation-Id", route.operationId())
                     .header("X-Backend-Acceptance-Route-Template", route.routeTemplate())
-                    .header("X-Backend-Acceptance-Measurement-Scenario-Id", measurementScenarioId)
+                    .header("X-Backend-Acceptance-Measurement-Scenario-Id", requestMeasurementScenarioId)
                     .header("X-Request-Id", UUID.randomUUID().toString())
                     .method(method, publisher);
             if (cookie != null) builder.header("Cookie", cookie);

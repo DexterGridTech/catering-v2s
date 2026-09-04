@@ -1,0 +1,9 @@
+{
+  "profile": "sales-menu",
+  "kind": "r5-full-child-seed-profile",
+  "parentProfile": "r5-full",
+  "stageId": "sales-menu",
+  "requiresCompletedStages": ["owner-command", "external-collaboration-business-channel", "catalog-inventory"],
+  "sourceOfTruth": "scripts/dev/sales-menu-seed-plan.mjs",
+  "forbidden": ["create-business-channel", "create-catalog-item", "direct-database-write", "l2-fixture-reuse", "implicit-runtime-execution"]
+}

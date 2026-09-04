@@ -586,7 +586,7 @@ public final class OperationsSalesMenuController {
                                     context,
                                     channelRef,
                                     salesItemRef,
-                                    support.requiredText(body == null ? null : body.reason(), "reason"),
+                                    support.requiredManualReason(body == null ? null : body.reason()),
                                     support.expected(body == null ? null : body.expectedVersion(), "expectedVersion")));
                 }));
     }

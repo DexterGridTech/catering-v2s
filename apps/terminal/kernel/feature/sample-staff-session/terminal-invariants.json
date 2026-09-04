@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/kernel-feature-sample-staff-session",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-feature-sample-staff-session", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "ownerKind": "owner",
+  "publicExports": [
+    "LoginFailedPayload", "LoginPayload", "SessionState", "SessionStatus",
+    "bootstrapSessionCommand", "createSampleStaffSessionModule", "dependencyModuleNames",
+    "devDependencyModuleNames", "loginCommand", "loginFailedCommand", "loginSucceededCommand",
+    "logoutCommand", "logoutSucceededCommand", "moduleKind", "moduleName",
+    "selectSessionState", "sessionRestoredAnonymousCommand", "sessionRestoredAuthenticatedCommand"
+  ]
+}

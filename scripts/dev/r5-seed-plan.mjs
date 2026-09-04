@@ -20,6 +20,17 @@ const requireThreeStateCoverage = (entries, label) => {
   }
   for (const status of THREE_STATE_VALUES) if (!statuses.has(status)) throw new Error(`R5_SEED_STATUS_COVERAGE_MISSING:${label}:${status}`);
 };
+const requireRolePermission = (source, roleKey, pageAccessKey, capabilityKey) => {
+  const role = source.stableFixtures.workspaceIam.roles.find((entry) => entry.key === roleKey);
+  if (!role) throw new Error(`R5_SEED_ROLE_PERMISSION_ROLE_MISSING:${roleKey}`);
+  if (!role.pageAccessKeys?.includes(pageAccessKey)) throw new Error(`R5_SEED_ROLE_PERMISSION_PAGE_MISSING:${roleKey}:${pageAccessKey}`);
+  if (!role.actionCapabilityKeys?.includes(capabilityKey)) throw new Error(`R5_SEED_ROLE_PERMISSION_CAPABILITY_MISSING:${roleKey}:${capabilityKey}`);
+};
+const validateSalesMenuSeedRolePrerequisites = (source) => {
+  requireRolePermission(source, "role-project", "PG-BUSINESS-CHANNEL-PROJECT", "BC-BUSINESS-CHANNEL-PROJECT-EDIT");
+  requireRolePermission(source, "role-store", "PG-BUSINESS-CHANNEL-STORE", "BC-BUSINESS-CHANNEL-STORE-EDIT");
+  requireRolePermission(source, "role-store", "PG-SALES-MENU-STORE", "EDIT_STORE_SALES_MENU");
+};
 const displayTextDenominator = (source) => {
   const fixtures = source.stableFixtures;
   const organization = fixtures.organization;
@@ -45,13 +56,19 @@ const validateBusinessDisplayLabels = (source) => {
   for (const [label, value] of displayTextDenominator(source)) requireChineseBusinessText(value, label);
 };
 validateBusinessDisplayLabels(fixture);
+validateSalesMenuSeedRolePrerequisites(fixture);
 if (process.argv.includes("--self-test")) {
   const redMutation = structuredClone(fixture);
   redMutation.stableFixtures.organization.commercialGroups[0].name = "fixture-group";
   let rejected = false;
   try { validateBusinessDisplayLabels(redMutation); } catch (error) { rejected = String(error.message).startsWith("R5_SEED_BUSINESS_LABEL_INVALID:commercialGroup:"); }
   if (!rejected) throw new Error("R5_SEED_BUSINESS_LABEL_RED_MUTATION_MISSED");
-  process.stdout.write("R5_SEED_PLAN_SELF_TEST=PASS; RED=TECHNICAL_ENGLISH_DISPLAY_TEXT\n");
+  const permissionRedMutation = structuredClone(fixture);
+  permissionRedMutation.stableFixtures.workspaceIam.roles.find((role) => role.key === "role-store").actionCapabilityKeys = permissionRedMutation.stableFixtures.workspaceIam.roles.find((role) => role.key === "role-store").actionCapabilityKeys.filter((key) => key !== "EDIT_STORE_SALES_MENU");
+  rejected = false;
+  try { validateSalesMenuSeedRolePrerequisites(permissionRedMutation); } catch (error) { rejected = String(error.message) === "R5_SEED_ROLE_PERMISSION_CAPABILITY_MISSING:role-store:EDIT_STORE_SALES_MENU"; }
+  if (!rejected) throw new Error("R5_SEED_ROLE_PERMISSION_RED_MUTATION_MISSED");
+  process.stdout.write("R5_SEED_PLAN_SELF_TEST=PASS; RED=TECHNICAL_ENGLISH_DISPLAY_TEXT,SALES_MENU_ROLE_CAPABILITY\n");
 }
 if (fixture.stableFixtures.workspaceIam.roles.length !== 8) throw new Error("R5_SEED_ROLE_EXPERIENCE_DENOMINATOR_DRIFT");
 for (const roleKey of ["role-store-inventory", "role-store-manager"]) if (!fixture.stableFixtures.workspaceIam.roles.some((role) => role.key === roleKey)) throw new Error(`R5_SEED_ROLE_EXPERIENCE_MISSING:${roleKey}`);

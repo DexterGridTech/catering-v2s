@@ -76,6 +76,8 @@ final class CollaborationAcceptanceScenarios {
 
     private final BackendAcceptanceTest host;
 
+    private record BindingResult(int status, String problemCode, JsonNode json) {}
+
     CollaborationAcceptanceScenarios(BackendAcceptanceTest host) {
         this.host = host;
     }
@@ -358,7 +360,7 @@ final class CollaborationAcceptanceScenarios {
     void bindingPageSearchesNodeName(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         PlatformFixture fixture = platformFixture(context, "STORE");
         enableProvider(context, fixture.fixture(), "MEMBERSHIP_COUPON_STORE");
-        BackendAcceptanceTest.Response binding = createBinding(
+        BindingResult binding = createBinding(
                 context,
                 fixture,
                 "MEMBERSHIP_COUPON_STORE",
@@ -556,7 +558,7 @@ final class CollaborationAcceptanceScenarios {
                 + fixture.fixture().groupWorkspaceKey() + "/provider-profiles/MEITUAN_ISV_A/owner-bindings?pageSize=20";
         BackendAcceptanceTest.Response before =
                 context.get(PROVIDER_BINDINGS, providerPath, fixture.session().cookie(), Set.of(200));
-        BackendAcceptanceTest.Response rejected = createBinding(
+        BindingResult rejected = createBinding(
                 context,
                 fixture,
                 "MEITUAN_ISV_A",
@@ -585,7 +587,7 @@ final class CollaborationAcceptanceScenarios {
         PlatformFixture fixture = platformFixture(context, "STORE");
         enableProvider(context, fixture.fixture(), "SHOPPING_MALL_ERP_DEFAULT");
         enableProvider(context, fixture.fixture(), "MEMBERSHIP_COUPON_STORE");
-        BackendAcceptanceTest.Response internal = createBinding(
+        BindingResult internal = createBinding(
                 context,
                 fixture,
                 "SHOPPING_MALL_ERP_DEFAULT",
@@ -604,7 +606,7 @@ final class CollaborationAcceptanceScenarios {
         assertTrue(
                 internal.json().path("businessScope").toString().contains("ORDER_SYNC"),
                 "BUSINESS: INTERNAL_MAPPING exposes provider business scope codes");
-        BackendAcceptanceTest.Response noMapping = createBinding(
+        BindingResult noMapping = createBinding(
                 context,
                 fixture,
                 "MEMBERSHIP_COUPON_STORE",
@@ -628,7 +630,7 @@ final class CollaborationAcceptanceScenarios {
                 noMapping.json().path("businessScope").toString().contains("MEMBER_BENEFIT"),
                 "BUSINESS: NO_MAPPING exposes provider business scope codes");
 
-        BackendAcceptanceTest.Response internalMissingOwner = createBinding(
+        BindingResult internalMissingOwner = createBinding(
                 context,
                 fixture,
                 "SHOPPING_MALL_ERP_DEFAULT",
@@ -641,7 +643,7 @@ final class CollaborationAcceptanceScenarios {
                 "EXTERNAL_OWNER_ID_MISMATCH",
                 internalMissingOwner.problemCode(),
                 "BUSINESS: INTERNAL_MAPPING requires an external owner id");
-        BackendAcceptanceTest.Response noMappingWithOwner = createBinding(
+        BindingResult noMappingWithOwner = createBinding(
                 context,
                 fixture,
                 "MEMBERSHIP_COUPON_STORE",
@@ -663,7 +665,7 @@ final class CollaborationAcceptanceScenarios {
     void providerBindingEditPolicy(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         PlatformFixture fixture = platformFixture(context, "STORE");
         enableProvider(context, fixture.fixture(), "SHOPPING_MALL_ERP_DEFAULT");
-        BackendAcceptanceTest.Response binding = createBinding(
+        BindingResult binding = createBinding(
                 context,
                 fixture,
                 "SHOPPING_MALL_ERP_DEFAULT",
@@ -740,7 +742,7 @@ final class CollaborationAcceptanceScenarios {
     void logicalDeleteRetainsRow(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         PlatformFixture fixture = platformFixture(context, "STORE");
         enableProvider(context, fixture.fixture(), "MEMBERSHIP_COUPON_STORE");
-        BackendAcceptanceTest.Response binding = createBinding(
+        BindingResult binding = createBinding(
                 context,
                 fixture,
                 "MEMBERSHIP_COUPON_STORE",
@@ -803,15 +805,15 @@ final class CollaborationAcceptanceScenarios {
             operation = "adapterUnbindRequired")
     void adapterUnbindRequired(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         OperationsFixture fixture = operationsStoreFixture(context);
-        BackendAcceptanceTest.Response binding = createOperationsExternalBinding(context, fixture);
-        UUID bindingRef = UUID.fromString(binding.json().path("bindingRef").asText());
+        JsonNode binding = createOperationsExternalBinding(context, fixture);
+        UUID bindingRef = UUID.fromString(binding.path("bindingRef").asText());
         host.ensurePlatformAdministrator();
         BackendAcceptanceTest.Session platform = host.platformLogin(context);
         BackendAcceptanceTest.Response rejected = context.delete(
                 BINDING_DELETE,
                 bindingPath(fixture.fixture(), bindingRef),
                 platform.cookie(),
-                Map.of("expectedVersion", binding.json().path("version").asLong()),
+                Map.of("expectedVersion", binding.path("version").asLong()),
                 Set.of(409));
         assertEquals(
                 "ADAPTER_UNBIND_REQUIRED",
@@ -832,7 +834,7 @@ final class CollaborationAcceptanceScenarios {
         return new PlatformFixture(fixture, host.platformLogin(context));
     }
 
-    private BackendAcceptanceTest.Response createBinding(
+    private BindingResult createBinding(
             BackendAcceptanceTest.ScenarioContext context,
             PlatformFixture fixture,
             String providerCode,
@@ -845,7 +847,7 @@ final class CollaborationAcceptanceScenarios {
                 context, fixture, providerCode, capabilityClass, nodeType, nodeRef, externalOwnerId, Set.of(200));
     }
 
-    private BackendAcceptanceTest.Response createBinding(
+    private BindingResult createBinding(
             BackendAcceptanceTest.ScenarioContext context,
             PlatformFixture fixture,
             String providerCode,
@@ -862,13 +864,14 @@ final class CollaborationAcceptanceScenarios {
         body.put("nodeRef", nodeRef.toString());
         body.put("bindingDisplayName", providerCode + " " + nodeType);
         body.put("externalOwnerId", externalOwnerId);
-        return context.post(
+        BackendAcceptanceTest.Response response = context.post(
                 BINDING_CREATE,
                 "/api/platform/group-workspaces/" + fixture.fixture().groupWorkspaceKey() + "/owner-bindings",
                 fixture.session().cookie(),
                 body,
                 headers(),
                 expectedStatuses);
+        return new BindingResult(response.status(), response.problemCode(), response.json());
     }
 
     private OperationsFixture operationsStoreFixture(BackendAcceptanceTest.ScenarioContext context) throws Exception {
@@ -902,7 +905,7 @@ final class CollaborationAcceptanceScenarios {
                         selected.json().path("contextVersion").asLong()));
     }
 
-    private BackendAcceptanceTest.Response createOperationsExternalBinding(
+    private JsonNode createOperationsExternalBinding(
             BackendAcceptanceTest.ScenarioContext context, OperationsFixture fixture) throws Exception {
         enableProvider(context, fixture.fixture(), "MEITUAN_ISV_A");
         BackendAcceptanceTest.Fixture projectFixture =
@@ -948,12 +951,14 @@ final class CollaborationAcceptanceScenarios {
         bindingBody.put("bindingDisplayName", "Adapter unbind binding");
         bindingBody.put("externalOwnerId", null);
         return context.post(
-                OPERATIONS_OWNER_BINDING_CREATE,
-                root + "/business-channels/" + channel.json().path("channelRef").asText() + "/owner-binding",
-                fixture.session().cookie(),
-                bindingBody,
-                headers(),
-                Set.of(200));
+                        OPERATIONS_OWNER_BINDING_CREATE,
+                        root + "/business-channels/"
+                                + channel.json().path("channelRef").asText() + "/owner-binding",
+                        fixture.session().cookie(),
+                        bindingBody,
+                        headers(),
+                        Set.of(200))
+                .json();
     }
 
     private void enableProvider(

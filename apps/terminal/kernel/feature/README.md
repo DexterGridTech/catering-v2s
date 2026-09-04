@@ -1,3 +1,6 @@
 # Kernel feature boundary
 
-Reserved for future kernel feature packages. This directory is intentionally not a workspace and contains no runtime implementation in the skeleton phase.
+Kernel feature packages own business state, commands, actors, selectors, and
+module descriptors. The sample verification slice currently contains
+`sample-staff-session` and `sample-member-registry`; both remain UI-independent
+and depend only on the shared kernel foundations required by their contracts.

@@ -1,20 +1,21 @@
 #!/usr/bin/env node
 /**
- * Public r5-full seed composition.  The two child executors retain their
+ * Public r5-full seed composition. The owner-specific child executors retain their
  * owner-specific reports; this runner only proves that a complete DEV seed
  * has run both components in their required order for one managed DEV run.
  */
-import {randomUUID} from "node:crypto";
+import {createHash, randomBytes, randomUUID} from "node:crypto";
 import {spawn, spawnSync} from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {renderSeedReportMarkdown} from "../test/seed-report.mjs";
+import {availabilityReceiptFacts, validateAvailabilityReceiptAgainstPlan} from "./catalog-availability-receipt.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const runtimeRoot = path.resolve(process.env.V2S_RUNTIME_DIR || path.join(root, ".runtime/r5"));
-export const COMPLETE_SEED_STAGE_IDS = Object.freeze(["owner-command", "catalog-inventory"]);
+export const COMPLETE_SEED_STAGE_IDS = Object.freeze(["owner-command", "external-collaboration-business-channel", "catalog-inventory", "sales-menu"]);
 
 export function completeSeedMarkdownPath(reportPath) {
   return String(reportPath).replace(/\.json$/i, ".md");
@@ -69,14 +70,47 @@ export function validateCompleteSeedEvidence({managedDevRunId, stages}) {
     // carry the redundant field, in which case it must agree.
     if (Object.hasOwn(stage.report, "business")) requirePass(stage.report.business, `COMPLETE_SEED_REPORT_BUSINESS_NOT_PASS:${stage.id}`);
   }
-  const catalog = stages[1];
+  const stageById = new Map(stages.map((stage) => [stage.id, stage]));
+  const catalog = stageById.get("catalog-inventory");
+  const salesMenu = stageById.get("sales-menu");
   if (!catalog.plan || catalog.plan.status !== "PASS") throw failure("COMPLETE_SEED_CATALOG_PLAN_NOT_PASS");
   const sourceItems = catalog.plan.sourceItems?.length;
   const eligibleItems = catalog.plan.eligibleSourceItems?.length;
   const excludedItems = catalog.plan.excludedSourceItems?.length;
   if (!Number.isInteger(sourceItems) || sourceItems !== eligibleItems + excludedItems || eligibleItems <= 0) throw failure("COMPLETE_SEED_CATALOG_DENOMINATOR_INVALID");
   if (catalog.report.sourceItems !== sourceItems || catalog.report.createdItems !== eligibleItems || !Array.isArray(catalog.report.excludedItems) || catalog.report.excludedItems.length !== excludedItems) throw failure("COMPLETE_SEED_CATALOG_READBACK_INVALID");
-  return Object.freeze({managedDevRunId, sourceItems, eligibleItems, excludedItems, stageIds: [...COMPLETE_SEED_STAGE_IDS]});
+  let availability;
+  let availabilityContract;
+  try {
+    availability = availabilityReceiptFacts(catalog.report.salesMenuAvailabilityReceipt);
+    availabilityContract = validateAvailabilityReceiptAgainstPlan({plan: catalog.plan, receipt: catalog.report.salesMenuAvailabilityReceipt});
+  } catch {
+    throw failure("COMPLETE_SEED_CATALOG_AVAILABILITY_RECEIPT_INVALID");
+  }
+  if (!/^[0-9a-f]{64}$/.test(catalog.availabilityReceiptSha256 ?? ""))
+    throw failure("COMPLETE_SEED_CATALOG_AVAILABILITY_DIGEST_INVALID");
+  if (salesMenu.report.catalogAvailabilityReceiptPath !== catalog.reportPath
+      || salesMenu.report.catalogAvailabilityItemCount !== availability.length
+      || salesMenu.report.catalogAvailabilityReceiptDigest !== catalog.availabilityReceiptSha256
+      || salesMenu.report.catalogAvailabilityContractDigest !== availabilityContract.contractDigest)
+    throw failure("COMPLETE_SEED_SALES_MENU_AVAILABILITY_READBACK_INVALID");
+  return Object.freeze({managedDevRunId, sourceItems, eligibleItems, excludedItems, availabilityItemCount: availability.length, stageIds: [...COMPLETE_SEED_STAGE_IDS]});
+}
+
+function issueChildContext({directory, runId, managedDevRunId, stageId, catalogAvailabilityReceipt = null}) {
+  const token = randomBytes(32).toString("hex");
+  const contextPath = path.join(directory, `${stageId}-context.json`);
+  atomicWrite(contextPath, `${JSON.stringify({
+    schemaVersion: 1,
+    kind: "r5-complete-seed-child-context",
+    profile: "r5-full",
+    stageId,
+    runId,
+    managedDevRunId,
+    tokenSha256: createHash("sha256").update(token).digest("hex"),
+    ...(catalogAvailabilityReceipt ? {catalogAvailabilityReceipt} : {}),
+  }, null, 2)}\n`);
+  return Object.freeze({contextPath, token});
 }
 
 function managedRun() {
@@ -191,7 +225,7 @@ export function renderCompleteSeedMarkdown(report, componentDetails = loadCompon
   const lines = [
     "# 完整 DEV Seed 报告",
     "",
-    "> 这是完整 `r5-full` seed 的可读投影；机器校验真相是同目录 `seed-report.json`，接口/数据库计量真相保留在两个子报告中。",
+    "> 这是完整 `r5-full` seed 的可读投影；机器校验真相是同目录 `seed-report.json`，接口/数据库计量真相保留在各 owner 子报告中。",
     "",
     `## 结论：${report.business}`,
     "",
@@ -219,7 +253,7 @@ export function renderCompleteSeedMarkdown(report, componentDetails = loadCompon
     "",
     "## 子阶段详细计量",
     "",
-    "以下两节逐字复用子报告的 endpoint 表和非 API 阶段，不把两个阶段压成无法追溯的总数。重点耗时接口可直接在各表的 HTTP/DB average/min/max 列定位。",
+    "以下各节逐字复用子报告的 endpoint 表和非 API 阶段，不把多个阶段压成无法追溯的总数。重点耗时接口可直接在各表的 HTTP/DB average/min/max 列定位。",
     "",
   ];
   for (const {component, report: childReport, error} of componentDetails) {
@@ -255,6 +289,10 @@ function dryRun() {
     const planPath = path.join(temporary, "catalog-plan.json");
     const catalog = spawnSync(process.execPath, ["scripts/dev/catalog-inventory-seed-plan.mjs"], {cwd: root, encoding: "utf8", env: {...process.env, CATALOG_INVENTORY_SEED_PLAN_OUTPUT: planPath}});
     if (catalog.status !== 0) throw failure("COMPLETE_SEED_CATALOG_PLAN_FAILED");
+    const businessChannel = spawnSync(process.execPath, ["scripts/dev/external-collaboration-business-channel-seed-executor.mjs", "--plan-only"], {cwd: root, encoding: "utf8"});
+    if (businessChannel.status !== 0) throw failure("COMPLETE_SEED_BUSINESS_CHANNEL_PLAN_FAILED");
+    const salesMenu = spawnSync(process.execPath, ["scripts/dev/sales-menu-seed-executor.mjs", "--plan-only"], {cwd: root, encoding: "utf8"});
+    if (salesMenu.status !== 0) throw failure("COMPLETE_SEED_SALES_MENU_PLAN_FAILED");
     const plan = readJson(planPath, "COMPLETE_SEED_CATALOG_PLAN");
     const sourceItems = plan.sourceItems?.length;
     if (!Number.isInteger(sourceItems) || sourceItems !== plan.eligibleSourceItems?.length + plan.excludedSourceItems?.length) throw failure("COMPLETE_SEED_CATALOG_DENOMINATOR_INVALID");
@@ -302,6 +340,18 @@ async function execute() {
     if (owner.exitStatus !== 0 || owner.manifest.business !== "PASS" || owner.report.status !== "PASS") throw failure(`COMPLETE_SEED_OWNER_FAILED:${owner.manifest.firstFailure ?? owner.exitStatus}`);
     phase("owner-command", "PASS", {durationMs: owner.durationMs});
 
+    phase("external-collaboration-business-channel", "RUNNING");
+    const businessChannelContext = issueChildContext({directory, runId, managedDevRunId: manifest.runId, stageId: "external-collaboration-business-channel"});
+    const businessChannelResult = await runChild({name: "external-collaboration-business-channel", script: "scripts/dev/external-collaboration-business-channel-seed-executor.mjs", environment: {...process.env, R5_COMPLETE_SEED_CHILD_CONTEXT: businessChannelContext.contextPath, R5_COMPLETE_SEED_CHILD_TOKEN: businessChannelContext.token}, phase});
+    const businessChannelOutput = `${businessChannelResult.stdout}\n${businessChannelResult.stderr}`;
+    const businessChannel = {id: "external-collaboration-business-channel", ...businessChannelResult, manifestPath: resultPath(businessChannelOutput, "RUN_MANIFEST"), reportPath: resultPath(businessChannelOutput, "REPORT")};
+    if (!businessChannel.manifestPath || !businessChannel.reportPath) throw failure("COMPLETE_SEED_BUSINESS_CHANNEL_RECEIPT_POINTER_MISSING");
+    businessChannel.manifest = readJson(businessChannel.manifestPath, "COMPLETE_SEED_BUSINESS_CHANNEL_MANIFEST");
+    businessChannel.report = readJson(businessChannel.reportPath, "COMPLETE_SEED_BUSINESS_CHANNEL_REPORT");
+    components.push({id: businessChannel.id, business: businessChannel.manifest.business, cleanup: businessChannel.manifest.cleanup, durationMs: businessChannel.durationMs, manifestPath: businessChannel.manifestPath, reportPath: businessChannel.reportPath});
+    if (businessChannel.exitStatus !== 0 || businessChannel.manifest.business !== "PASS" || businessChannel.report.status !== "PASS") throw failure(`COMPLETE_SEED_BUSINESS_CHANNEL_FAILED:${businessChannel.manifest.firstFailure ?? businessChannel.exitStatus}`);
+    phase("external-collaboration-business-channel", "PASS", {durationMs: businessChannel.durationMs});
+
     phase("catalog-inventory", "RUNNING");
     const catalogResult = await runChild({name: "catalog-inventory", script: "scripts/dev/catalog-inventory-seed-executor.mjs", environment: {...process.env, CATALOG_INVENTORY_SEED_CONFIRMATION: "EXPLICIT_CATALOG_INVENTORY_SEED", CATALOG_INVENTORY_SEED_PLAN_OUTPUT: planPath}, phase});
     const catalogOutput = `${catalogResult.stdout}\n${catalogResult.stderr}`;
@@ -309,9 +359,30 @@ async function execute() {
     if (!catalog.manifestPath || !catalog.reportPath) throw failure("COMPLETE_SEED_CATALOG_RECEIPT_POINTER_MISSING");
     catalog.manifest = readJson(catalog.manifestPath, "COMPLETE_SEED_CATALOG_MANIFEST");
     catalog.report = readJson(catalog.reportPath, "COMPLETE_SEED_CATALOG_REPORT");
+    catalog.availabilityReceiptSha256 = createHash("sha256").update(fs.readFileSync(catalog.reportPath)).digest("hex");
     components.push({id: catalog.id, business: catalog.manifest.business, cleanup: catalog.manifest.cleanup, durationMs: catalog.durationMs, planPath, manifestPath: catalog.manifestPath, reportPath: catalog.reportPath});
-    validateCompleteSeedEvidence({managedDevRunId: manifest.runId, stages: [owner, catalog]});
+    let catalogAvailabilityContract;
+    try { catalogAvailabilityContract = validateAvailabilityReceiptAgainstPlan({plan, receipt: catalog.report.salesMenuAvailabilityReceipt}); }
+    catch { throw failure("COMPLETE_SEED_CATALOG_AVAILABILITY_RECEIPT_INVALID"); }
+    const catalogAvailabilityReceipt = Object.freeze({
+      reportPath: path.resolve(catalog.reportPath),
+      sha256: catalog.availabilityReceiptSha256,
+      contractDigest: catalogAvailabilityContract.contractDigest,
+      itemCount: catalogAvailabilityContract.itemCount,
+    });
     phase("catalog-inventory", "PASS", {durationMs: catalog.durationMs, sourceItems: plan.sourceItems.length});
+
+    phase("sales-menu", "RUNNING");
+    const salesMenuContext = issueChildContext({directory, runId, managedDevRunId: manifest.runId, stageId: "sales-menu", catalogAvailabilityReceipt});
+    const salesMenuResult = await runChild({name: "sales-menu", script: "scripts/dev/sales-menu-seed-executor.mjs", environment: {...process.env, R5_COMPLETE_SEED_CHILD_CONTEXT: salesMenuContext.contextPath, R5_COMPLETE_SEED_CHILD_TOKEN: salesMenuContext.token, R5_CATALOG_AVAILABILITY_RECEIPT: catalog.reportPath}, phase});
+    const salesMenuOutput = `${salesMenuResult.stdout}\n${salesMenuResult.stderr}`;
+    const salesMenu = {id: "sales-menu", ...salesMenuResult, manifestPath: resultPath(salesMenuOutput, "RUN_MANIFEST"), reportPath: resultPath(salesMenuOutput, "REPORT")};
+    if (!salesMenu.manifestPath || !salesMenu.reportPath) throw failure("COMPLETE_SEED_SALES_MENU_RECEIPT_POINTER_MISSING");
+    salesMenu.manifest = readJson(salesMenu.manifestPath, "COMPLETE_SEED_SALES_MENU_MANIFEST");
+    salesMenu.report = readJson(salesMenu.reportPath, "COMPLETE_SEED_SALES_MENU_REPORT");
+    components.push({id: salesMenu.id, business: salesMenu.manifest.business, cleanup: salesMenu.manifest.cleanup, durationMs: salesMenu.durationMs, manifestPath: salesMenu.manifestPath, reportPath: salesMenu.reportPath});
+    validateCompleteSeedEvidence({managedDevRunId: manifest.runId, stages: [owner, businessChannel, catalog, salesMenu]});
+    phase("sales-menu", "PASS", {durationMs: salesMenu.durationMs});
     business = "PASS";
     cleanup = "PASS_PRESERVED_DEV_STATE";
     phase("COMPLETE_SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", destructiveCleanupOwner: "r5-reset", persistentSeedProcess: false});

@@ -44,6 +44,16 @@ allprojects {
 }
 
 subprojects {
+    // The settings include the aggregate :apps and :apps:backend projects implicitly.
+    // They have no source of their own; keep Spotless' bookkeeping out of the source tree
+    // while leaving real application/module build directories unchanged.
+    if (path == ":apps" || path == ":apps:backend") {
+        val aggregateBuildName = path.removePrefix(":").replace(":", "-")
+        layout.buildDirectory.set(
+            rootProject.layout.projectDirectory.dir(".runtime/gradle-build/$aggregateBuildName"),
+        )
+    }
+
     apply(plugin = "java")
     apply(plugin = "pmd")
     apply(plugin = "com.diffplug.spotless")
