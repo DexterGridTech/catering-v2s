@@ -3126,3 +3126,81 @@ FULL_SM05_BROWSER_L2=OPEN_FRESH_RUN_REQUIRED
 The independent verdict authorizes only a fresh 18-case browser-L2 run. It does not upgrade the previous single-case
 focused diagnostic (`BUSINESS=NOT_RUN`) to business proof and does not close SM-05, SM-06–SM-12, DEV, seed/reset,
 UAT, deployment or the final implementation review.
+
+## 2026-09-04 · post-review repair and fresh full browser-L2 closure
+
+This section records the evidence after the independent implementation review's S-2/N-1 findings. It does not rewrite
+the earlier history: the prior `l2-1788510438441-23307-c67f43ca-26c8-4ba7-a29a-d593a000b583` run remains historical
+evidence from before the persisted-runtime-state repair.
+
+The confirmed N-1 consistency gap was repaired at the existing foundation boundary. The five query-backed sales-menu
+list surfaces now use the existing `adminListState` capability with explicit list prefixes and mutually exclusive
+loading/failed/empty handling: candidate list, menu-manager list, draft-item list, published-item list and operation-log
+list. The manager, draft, published and operation-log read failures retain their existing Alert/retry paths; the
+candidate failure path also remains explicit. The two SKU tables inside already-hydrated item editors are local editor
+tables, not query-backed cursor list surfaces, and were deliberately left unchanged. No new foundation abstraction,
+business semantic, operation, data-model field or locator was introduced.
+
+```text
+yarn workspace @catering-v2s/operations-admin vitest run src/features/sales-menu/ui/SalesMenuPage.static.test.ts src/features/sales-menu/ui/SalesMenuPage.test.tsx => PASS; 2 files; 23 tests
+yarn workspace @catering-v2s/operations-admin typecheck => PASS
+yarn workspace @catering-v2s/operations-admin lint:architecture => PASS
+node scripts/generate/sales-menu-p1.mjs --write --check => PASS; CASES=18; OPERATIONS=31
+scripts/verify --validate-only => R5_VERIFY_VALIDATE_ONLY=PASS; EXECUTED=21/21; CLEANUP=NOT_APPLICABLE_STATIC_ONLY
+```
+
+Fresh independent step review after this repair: `INDEPENDENT_REVIEWER=Planck`, `reviewerKind=INDEPENDENT_SUBAGENT`,
+`VERDICT=GO_WITH_UNVERIFIED_UI`, `M/S/N=0/0/0`. The reviewer confirmed the five query-backed table surfaces are the
+applicable N-1 scope, the existing foundation helper is used, error retry remains available, and the two SKU editor
+tables are out of scope for this finding. The browser result below is the separate dynamic proof; it is not replaced by
+this static review.
+
+The authorized fresh full browser-L2 run is:
+
+```text
+RUN_ID=l2-1788516930685-55751-c1d57da4-83fd-475a-af70-e5fc13f85c0b
+TOPOLOGY=LOCAL_SPRING_LOCAL_VITE_LOCAL_PLAYWRIGHT_REMOTE_DB_ASSET_TUNNEL
+EXECUTION=PASS; DISCOVERED=18; SELECTED=18; RESULTS=18; EXECUTED=18; NOT_RUN=0
+BUSINESS=PASS; CLEANUP=PASS; FIRST_FAILURE=null; LAST_KNOWN_GOOD=L2_18_CASES_PASS; BROKEN_BOUNDARY=null
+ACTION_START=18; ACTION_COMPLETE=18; CONTROL_TOUCHES=342; JOIN_STATUS=COMPLETE
+MISSING_DECLARED_CONTROL_KEYS=0; UNEXPECTED_TOUCHED_CONTROL_KEYS=0; INVALID_CASE_SCOPED_EVENTS=0
+EXPECTED_OPERATION_HTTP_EVENTS=466; EXPECTED_OPERATION_IDS=31/31
+EXPECTED_OPERATION_STATUS=410x200; 54x201; 1x404 and 1x409 are expected negative-path responses covered by passing oracles
+SOURCE_BINDING_FINALIZE=PASS; FILES=1451; BYTES=12555992; OUTSIDE_SCOPE=0
+BINDING_SCOPE=apps/backend + apps/frontend input files, excluding managed runtime/build output
+```
+
+The fresh execution evidence is held at
+`.runtime/browser-l2/l2-1788516930685-55751-c1d57da4-83fd-475a-af70-e5fc13f85c0b/l2-execution-manifest.json`,
+`.runtime/browser-l2/l2-1788516930685-55751-c1d57da4-83fd-475a-af70-e5fc13f85c0b/l2-join-artifact.json`,
+`.runtime/browser-l2/l2-1788516930685-55751-c1d57da4-83fd-475a-af70-e5fc13f85c0b/l2-cleanup-manifest.json`,
+`.runtime/browser-l2/l2-1788516930685-55751-c1d57da4-83fd-475a-af70-e5fc13f85c0b/http-request-events.jsonl` and
+`.runtime/browser-l2/l2-1788516930685-55751-c1d57da4-83fd-475a-af70-e5fc13f85c0b/repository-byte-binding.json`.
+The 31-operation denominator is the unique `operationCoverage[].operationId` set in
+`contracts/policy/sales-menu-l2-case-blueprint.json`; comparing that set with the fresh HTTP event stream yields no
+missing ID and no unexpected ID within the denominator. Bootstrap/reference operations are outside this comparison.
+
+The persisted runtime-state repair is also covered by the existing `browser-l2-runtime.test.mjs` regression (`65/65`
+static cases PASS). A read-only key scan of the fresh execution, join, cleanup, binding and runtime-state JSON found no
+`secret` or `hmac` field. The runtime state retains only credential-path metadata and process identity fields; credential
+values are not part of the persisted state. The debug event stream contains expected aborted-navigation/negative-path
+diagnostic records, but every case has `browserRuntimeErrorCount=0` and the authoritative execution manifest has
+`firstFailure=null`; those diagnostic records do not change the business verdict.
+
+Existing supporting evidence remains separately bounded: the remote Testcontainers acceptance regression is 99/99
+business/contract PASS with cleanup PASS and exact 268/268 operation-set closure; the fresh reset/seed parent and
+sales-menu child are business PASS with cleanup preserving the managed DEV state. These are not substituted for the
+fresh browser-L2 result. Seed-after-DEV page visibility remains outside this authorized review boundary.
+
+```text
+SM05_BROWSER_L2=PASS
+SM05_BROWSER_L2_CLEANUP=PASS
+SM05_L2_OPERATION_COVERAGE=31/31
+SM05_L2_SOURCE_BINDING=PASS; SCOPE=apps/backend,apps/frontend
+SM05_L2_DYNAMIC_ARTIFACT_HYGIENE=PASS_FOR_FRESH_ARTIFACTS; STATIC_REGRESSION=65/65
+S1_LARGE_PAGE_SPLIT=DEFERRED_TO_SM06; NOT_A_CURRENT_FUNCTIONAL_BLOCKER
+N2_BACKEND_SCENARIO_ENUMERATION=UNVERIFIED_REQUIRES_EVIDENCE; NO_FINDING_OPENED
+DEV_PAGE_VISIBILITY=OUT_OF_SCOPE_BY_DEXTER_DECISION
+SM06_TO_SM12=NOT_CLAIMED
+UAT_DEPLOYMENT_CUTOVER=NOT_CLAIMED
+```

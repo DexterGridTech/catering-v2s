@@ -2,35 +2,56 @@
   "name": "@catering-v2s/ui-integration-sample-console",
   "private": true,
   "type": "module",
+  "main": "index.js",
+  "react-native": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts"
   },
+  "terminalSurfaces": {
+    "layout": "column",
+    "scaleToFit": true,
+    "surfaces": {
+      "PRIMARY": {
+        "width": 1920,
+        "height": 1080
+      },
+      "SECONDARY": {
+        "width": 1024,
+        "height": 600
+      }
+    }
+  },
   "scripts": {
     "typecheck": "tsc --project tsconfig.json --noEmit",
-    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs",
+    "web": "expo start --web"
   },
   "dependencies": {
     "@catering-v2s/kernel-base-contracts": "workspace:*",
     "@catering-v2s/kernel-base-display-context": "workspace:*",
     "@catering-v2s/kernel-base-platform-ports": "workspace:*",
     "@catering-v2s/kernel-base-runtime": "workspace:*",
-    "@catering-v2s/kernel-base-state": "workspace:*",
     "@catering-v2s/kernel-base-ui-state": "workspace:*",
-    "@catering-v2s/ui-base-admin-shell": "workspace:*",
-    "@catering-v2s/ui-base-automation": "workspace:*",
-    "@catering-v2s/ui-base-input": "workspace:*",
-    "@catering-v2s/ui-base-primitives": "workspace:*",
-    "@catering-v2s/ui-base-render": "workspace:*"
+    "@catering-v2s/kernel-feature-sample-member-registry": "workspace:*",
+    "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*",
+    "@catering-v2s/ui-base-render": "workspace:*",
+    "@catering-v2s/ui-feature-sample-member-desk": "workspace:*",
+    "@catering-v2s/ui-feature-sample-staff-auth": "workspace:*"
   },
   "peerDependencies": {
     "react": "19.2.3",
     "react-native": "0.86.3"
   },
   "devDependencies": {
-    "@catering-v2s/ui-base-test-support": "workspace:*",
     "@types/react": "~19.2.2",
+    "@catering-v2s/ui-base-test-support": "workspace:*",
+    "expo": "~57.0.18",
+    "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.86.3",
+    "react-native-web": "~0.21.0",
+    "react-test-renderer": "19.2.3",
     "typescript": "~6.0.3",
     "vitest": "4.1.10"
   }

@@ -16,8 +16,8 @@
     "@catering-v2s/kernel-base-ui-state": "workspace:*",
     "@catering-v2s/kernel-feature-sample-member-registry": "workspace:*",
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*",
-    "@catering-v2s/ui-base-render": "workspace:*",
-    "@catering-v2s/ui-base-primitives": "workspace:*"
+    "@catering-v2s/ui-base-primitives": "workspace:*",
+    "@catering-v2s/ui-base-render": "workspace:*"
   },
   "peerDependencies": {
     "react": "19.2.3",

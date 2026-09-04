@@ -1,0 +1,41 @@
+# `@catering-v2s/ui-integration-sample-console`
+
+## 定位
+
+本包是 TER sample 的唯一组装入口，同时提供一个只用于开发验证的 Expo Web 工程入口。
+库侧负责把真实的 runtime、ui-state、两张 catalog、四个 sample feature 和只读 render 接缝
+装配到同一个 `SampleAssembly`；通用的开发宿主、Web 端口、surface canvas 与启动日志由
+`@catering-v2s/ui-base-test-support` 提供。
+
+本包不拥有业务事实、业务命令或具体 renderer，不感知 `surfaceMode`，也不构造 platform port。
+`sample-console` 内的三个 base module descriptor 是当前 base 包尚未提供正本工厂时的单一过渡位置。
+
+## 结构
+
+- `src/assembly.tsx`：唯一的 `createSampleAssembly` 公共入口；一次性闭包持有 runtime 与 catalog。
+- `src/baseModuleDescriptors.ts`：contracts、platform-ports、state 的一次性 descriptor 集合。
+- `src/terminalSurfaces.ts`：读取本包 `package.json` 的固定逻辑 surface 配置并导出 typed 常量。
+- `test-expo/App.tsx`：把本包的 assembly、surface 配置与运行时状态 reader 注入通用宿主的薄入口。
+- `test/`：Vitest focused test，包含 `.ts` 与 `.tsx`，跨包组装走真实调用链。
+
+## 公共面
+
+- `moduleName`、`dependencyModuleNames`、`devDependencyModuleNames`：包图元数据。
+- `createSampleAssembly`、`SampleAssembly`：唯一的真实组装入口及其返回契约。
+- `terminalSurfaces`：由本包 `package.json` 读取并校验后的固定 surface 配置。
+
+## 用法
+
+库消费者只通过 `createSampleAssembly({platformPorts, persistenceKey?})` 取得已启动的
+`SampleAssembly`，再用同一个 assembly 的 `createSurface(displayMode)` 挂载 surface。
+`persistenceKey` 仅用于测试隔离；生产端口由 assembly 的消费者注入。
+
+Expo Web 的入口是根 `index.js`，它注册 `test-expo/App`；通用宿主读取传入的 `terminalSurfaces`，
+不在第二处解析 `package.json`。外层 flex 仅负责排布，surface 保持声明的固定逻辑尺寸，
+内部业务部件自行使用 primitives 的相对布局。
+
+## 迭代指引
+
+先在真实 feature 旅途中看见重复，再判断是否下沉到已有 base toolkit；不要预先为假设的
+业务形态扩展本包。任何需要 adapter、Android 双屏承载、浏览器自动化或 automation backend
+的变化，必须进入对应的后续 CP 与授权边界，不在此处用开发外壳绕过。

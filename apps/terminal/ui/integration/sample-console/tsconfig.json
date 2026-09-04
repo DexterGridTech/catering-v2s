@@ -1,10 +1,15 @@
 {
   "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "resolveJsonModule": true
+  },
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
     "test/**/*.ts",
     "test/**/*.tsx",
+    "test-expo/**/*.ts",
+    "test-expo/**/*.tsx",
     "vitest.config.ts"
   ]
 }

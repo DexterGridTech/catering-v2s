@@ -9,5 +9,13 @@
     },
     "lint": {"kind": "ABSENT"},
     "clean": {"kind": "ABSENT"}
-  }
+  },
+  "publicExports": [
+    "SampleAssembly",
+    "createSampleAssembly",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName",
+    "terminalSurfaces"
+  ]
 }

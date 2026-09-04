@@ -9,15 +9,17 @@ BUSINESS_SOURCE=doc/plans/platform/2026-09-03-v2s-terminal-sample-verification-s
 IA_REF=doc/plans/platform/2026-09-03-v2s-terminal-sample-verification-slice-ia-design-codex.md
 INTERACTION_REF=doc/plans/platform/2026-09-03-v2s-terminal-sample-verification-slice-interaction-design-codex.md
 IMPLEMENTATION_DESIGN_REF=doc/plans/platform/2026-09-03-v2s-terminal-sample-verification-slice-implementation-design-codex.md
-AUTHORIZED_NOW=仅编写 IA、交互工件、implementation-facing 详设与本实施计划
-IMPLEMENTATION_AUTHORITY=false
-NOT_AUTHORIZED=源码/测试/依赖改动；DEV、seed、L2、UAT、部署、Git
+AUTHORIZED_NOW=已被 2026-09-04 修订计划替代；第一段 CP-6＋CP-9 已获实施授权
+IMPLEMENTATION_AUTHORITY=true（仅以修订版两段执行计划的第一段范围为准）
+NOT_AUTHORIZED=adapter/assembly；CP-7、CP-8、CP-10、CP-11；D-6 真机 spike；浏览器自动化/L2；DEV、seed、UAT、部署、Git
 REVIEW_CYCLE_ID=2026-09-04-TER-SAMPLE-VERIFICATION-SLICE-DESIGN-03
 REVIEW_TARGET=DESIGN
-AUTHORING_REVIEW_STATUS=V13_S1_S2_REVISED_PENDING_INDEPENDENT_REVIEW
+AUTHORING_REVIEW_STATUS=SUPERSEDED_BY_TWO_SEGMENT_PLAN_FIRST_SEGMENT_AUTHORIZED
 ~~~
 
-本计划描述未来另行授权后的执行顺序。现在不执行任何 CP，不创建包、不改 package.json、不改依赖、不运行 DEV/真机。
+本计划已被 `doc/plans/platform/2026-09-04-v2s-terminal-sample-two-segment-execution-plan-claude.md`
+替代。当前有效执行顺序、第一段范围与停止条件以修订版计划为准；本文件保留作为 v13 的原子 CP 设计记录，
+不得再用其中的旧阶段状态或旧 CP 顺序推断当前授权。
 
 ## 1. 执行总原则
 
@@ -279,7 +281,7 @@ S-27、S-28、S-29 只能在 CP-10 且 S-27 另需 D-6 收口；S-16 的真实 d
 ## 14. 计划状态
 
 ~~~text
-PLAN_STATUS=READY_FOR_STATIC_REVIEW
-IMPLEMENTATION_AUTHORITY=false
+PLAN_STATUS=SUPERSEDED_BY_TWO_SEGMENT_PLAN_FIRST_SEGMENT_IN_PROGRESS
+IMPLEMENTATION_AUTHORITY=true（范围由 2026-09-04 两段执行计划限定）
 L2_SCRIPT_ADMISSION=BLOCKED
 ~~~

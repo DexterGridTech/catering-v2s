@@ -1,1 +1,26 @@
-{"schemaVersion":1,"package":"@catering-v2s/ui-base-test-support","owned":{"test":{"kind":"ABSENT"},"lint":{"kind":"ABSENT"},"clean":{"kind":"ABSENT"}}}
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/ui-base-test-support",
+  "owned": {
+    "test": {"kind": "ABSENT"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": [
+    "SurfaceMode",
+    "SurfaceSize",
+    "TerminalSurfaces",
+    "TestExpoAppOptions",
+    "TestExpoAssembly",
+    "TestExpoRuntimeStatus",
+    "WebPlatformOptions",
+    "WebStoragePortName",
+    "createTestExpoApp",
+    "createWebDevicePort",
+    "createWebPlatformPorts",
+    "createWebStateStoragePort",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName"
+  ]
+}

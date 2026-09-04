@@ -178,27 +178,20 @@ try {
   assert.match(missingBootstrapImportGate.error, /assembly bootstrap workspace roots/);
   fs.writeFileSync(bootstrapPath, bootstrapSource);
 
-  const uiTestSupportDependenciesPath = path.join(
+  const uiTestSupportPackagePath = path.join(
     fixtureRoot,
-    'apps/terminal/ui/base/test-support/src/dependencies.ts',
+    'apps/terminal/ui/base/test-support/package.json',
   );
-  const uiTestSupportDependenciesSource = fs.readFileSync(uiTestSupportDependenciesPath, 'utf8');
-  fs.writeFileSync(
-    uiTestSupportDependenciesPath,
-    uiTestSupportDependenciesSource.replace(
-      "import {moduleName as render} from '@catering-v2s/ui-base-render';\n" +
-        "import {moduleName as automation} from '@catering-v2s/ui-base-automation';\n" +
-        "import {moduleName as kernelTestSupport} from '@catering-v2s/kernel-base-test-support';\n\n",
-      '',
-    ),
+  withJsonMutation(
+    uiTestSupportPackagePath,
+    packageJson => {
+      delete packageJson.devDependencies['@catering-v2s/kernel-base-platform-ports'];
+    },
+    report => {
+      assertGateVector(report, ['graph-comparison', 'dependency-declaration-completeness']);
+      assert.match(gate(report, 'graph-comparison').error, /ui\.base\.test-support/);
+    },
   );
-  const missingDependencyImportsReport = runStaticChecks({root: fixtureRoot, batch: 2});
-  const missingDependencyImportsGate = missingDependencyImportsReport.results.find(
-    result => result.name === 'graph-comparison',
-  );
-  assert.equal(missingDependencyImportsGate.status, 'FAIL');
-  assert.match(missingDependencyImportsGate.error, /ui\.base\.test-support source imports/);
-  fs.writeFileSync(uiTestSupportDependenciesPath, uiTestSupportDependenciesSource);
 
   const appPath = path.join(fixtureRoot, 'apps/terminal/assembly/android/sample-terminal/App.tsx');
   const appSource = fs.readFileSync(appPath, 'utf8');

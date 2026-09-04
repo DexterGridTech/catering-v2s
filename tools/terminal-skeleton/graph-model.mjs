@@ -221,8 +221,7 @@ export function readPackageCensus(root = repoRoot) {
   return entries.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
 }
 
-export function readAllSourceFiles(packageDirectory) {
-  const sourceRoot = path.join(packageDirectory, 'src');
+export function readAllSourceFiles(packageDirectory, relativeRoots = ['src']) {
   const files = [];
   function visit(directory) {
     if (!fs.existsSync(directory)) return;
@@ -232,7 +231,7 @@ export function readAllSourceFiles(packageDirectory) {
       else if (entry.isFile() && /\.(ts|tsx)$/.test(entry.name)) files.push(entryPath);
     }
   }
-  visit(sourceRoot);
+  for (const relativeRoot of relativeRoots) visit(path.join(packageDirectory, relativeRoot));
   return files.sort();
 }
 
@@ -270,7 +269,10 @@ export function collectStaticImportDeclarations(filePath) {
 
 export function collectStaticImportSpecifiers(packageDirectory) {
   const imports = new Set();
-  for (const filePath of readAllSourceFiles(packageDirectory)) {
+  const relativeRoots = fs.existsSync(path.join(packageDirectory, 'test-expo'))
+    ? ['src', 'test-expo']
+    : ['src'];
+  for (const filePath of readAllSourceFiles(packageDirectory, relativeRoots)) {
     for (const moduleSpecifier of collectPackageRootImports(filePath)) imports.add(moduleSpecifier);
   }
   return [...imports].sort();

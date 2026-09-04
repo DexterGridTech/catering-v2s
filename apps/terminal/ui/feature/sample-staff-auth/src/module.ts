@@ -10,6 +10,10 @@ import {moduleKind, moduleName} from './moduleName'
 
 const commands = [authNoticeDismissedCommand] as const
 
+const runtimeModuleDependencies = dependencyModuleNames.filter(
+  name => name !== 'ui.base.render' && name !== 'ui.base.primitives',
+)
+
 export const createSampleStaffAuthModule = (): RuntimeModule => {
   const actors = [
     createAuthResultActor(),
@@ -19,7 +23,9 @@ export const createSampleStaffAuthModule = (): RuntimeModule => {
   return Object.freeze({
     moduleName,
     kind: moduleKind,
-    dependencies: dependencyModuleNames.map(name => ({moduleName: name})),
+    // UI toolkit package edges are not runtime modules and must not enter the
+    // runtime module graph. The package dependency list remains complete.
+    dependencies: runtimeModuleDependencies.map(name => ({moduleName: name})),
     commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
     actors: actors.map(actor => ({name: actor.actorName})),

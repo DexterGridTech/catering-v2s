@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {dependencyModuleNames, devDependencyModuleNames, moduleName} from '../src/index';
+import {createSampleAssembly, dependencyModuleNames, devDependencyModuleNames, moduleName, terminalSurfaces} from '../src/index';
 
 describe('sample-console package surface', () => {
   it('keeps the renamed module and current dependency declarations aligned', () => {
@@ -9,14 +9,22 @@ describe('sample-console package surface', () => {
       'kernel.base.display-context',
       'kernel.base.platform-ports',
       'kernel.base.runtime',
-      'kernel.base.state',
       'kernel.base.ui-state',
-      'ui.base.admin-shell',
-      'ui.base.automation',
-      'ui.base.input',
-      'ui.base.primitives',
+      'kernel.feature.sample-member-registry',
+      'kernel.feature.sample-staff-session',
       'ui.base.render',
+      'ui.feature.sample-member-desk',
+      'ui.feature.sample-staff-auth',
     ]);
     expect([...devDependencyModuleNames]).toEqual(['ui.base.test-support']);
+    expect(terminalSurfaces).toEqual({
+      layout: 'column',
+      scaleToFit: true,
+      surfaces: {
+        PRIMARY: {width: 1920, height: 1080},
+        SECONDARY: {width: 1024, height: 600},
+      },
+    });
+    expect(typeof createSampleAssembly).toBe('function');
   });
 });

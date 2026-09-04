@@ -1,7 +1,7 @@
-import {moduleName as render} from '@catering-v2s/ui-base-render';
-import {moduleName as automation} from '@catering-v2s/ui-base-automation';
-import {moduleName as kernelTestSupport} from '@catering-v2s/kernel-base-test-support';
+import {moduleName as contracts} from '@catering-v2s/kernel-base-contracts';
+import {moduleName as displayContext} from '@catering-v2s/kernel-base-display-context';
+import {moduleName as platformPorts} from '@catering-v2s/kernel-base-platform-ports';
 
 export const dependencyModuleNames = [] as const;
 
-export const devDependencyModuleNames = [render, automation, kernelTestSupport] as const;
+export const devDependencyModuleNames = [contracts, displayContext, platformPorts] as const;
