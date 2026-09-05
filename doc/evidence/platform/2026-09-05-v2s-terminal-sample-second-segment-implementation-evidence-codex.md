@@ -9,7 +9,7 @@ DESIGN_SOURCE=doc/plans/platform/2026-09-03-v2s-terminal-sample-verification-sli
 EXECUTION_PLAN=doc/plans/platform/2026-09-04-v2s-terminal-sample-two-segment-execution-plan-claude.md
 ANDROID_ENV=双屏 Android 模拟器 emulator-5554；Pixel Tablet；API 35；arm64-v8a
 APP_ID=com.anonymous.sampleterminal
-CURRENT_STATUS=IMPLEMENTED_PENDING_CLAUDE_REVIEW_AFTER_ROUND_2_INTAKE
+CURRENT_STATUS=IMPLEMENTED_S1_CLOSED_PENDING_CLAUDE_REVIEW
 ~~~
 
 ## 1. 范围与证据分层
@@ -40,7 +40,7 @@ fixture，造成高 CPU/内存与不必要的长等待。根因是 fixture 复�
 
 ### 2.2 last known good
 
-最新全量命令（S-1 修复后）：
+上一批全量基线（persist-kv S-1 修复后；本次 assembly displayMode S-1 另有本节 fresh 静态、focused 与 Android 证据）：
 
 ~~~text
 yarn workspace @catering-v2s/terminal verify
@@ -177,7 +177,31 @@ typed failure 包含静态 code、operation 和适用的失败 key；`writeMany`
 `sample-terminal` 只提供十项 `PlatformPortBindings`：五个 Android adapter、`platform-ports` 与
 `sample-console` 七条声明边，以及其余能力的 typed unavailable。它不 import `display-context`，
 不判断屏数、不决定挂几棵树、不写 bootstrap、不持有 store，也不感知 `surfaceMode`。`App.tsx` 只
-读取 Android launch props 的 `displayIndex`，并从同一个 assembly 创建 PRIMARY/SECONDARY surface。
+读取 Android launch props 的原始 `displayIndex`，并把它传给 `sample-console.createSurfaceForDisplayIndex`；
+displayMode 推导由 `display-context.resolveSurfaceDisplayMode` owner 完成，assembly 层不再手抄
+`PRIMARY`/`SECONDARY` 映射。
+
+### 3.5 当前 S-1：assembly displayMode 推导闭合
+
+本节的 S-1 不同于第 2.3 节记录的历史 `persist-kv writeMany` finding；它对应本批独立静态复核指出的
+`sample-terminal/App.tsx` 以 `displayIndex === 1` 直接推导 `SECONDARY` 的边界回退。
+
+处置已闭合：
+
+- `sample-console/src/assembly.tsx` 新增 `createSurfaceForDisplayIndex(assembly, displayIndex)`，从
+  同一 assembly runtime 读取 `selectDisplayRole` 与 `selectRuntimeInstanceMode`，调用 owner 的
+  `resolveSurfaceDisplayMode`，再委托现有 `assembly.createSurface(displayMode)`；没有拆分 assembly
+  闭包，也没有新增状态或第二份映射逻辑。
+- `sample-console/src/index.ts`、`terminal-invariants.json`、README 和 package-surface focused test
+  已同步新增公共面；公共面、invariants、README 三方一致。
+- `sample-terminal/App.tsx` 只把 `displayIndex: 0 | 1` 原样传入该入口；`App.tsx` 零命中
+  `PRIMARY`、`SECONDARY` 与 `displayMode`，sample-terminal 仍只有五个 adapter、`platform-ports`、
+  `sample-console` 七条 workspace dependencyModuleNames，不增加 `display-context` 边。
+- focused 结果为 `ui-integration-sample-console` 5 files / 8 tests PASS；静态真实树 PASS，模型红
+  向量的 FAIL 仍表示门抓住变异，不与真实树结果混写。
+
+准确结论是：assembly 层不再持有 displayMode 推导，映射归还 display-context owner；不是笼统宣称
+“displayMode 边界已修复”。Android 双屏重跑后须继续确认主屏/副屏落点不变。
 
 ## 4. 静态、类型、focused 与构建证据
 
@@ -190,6 +214,11 @@ typed failure 包含静态 code、operation 和适用的失败 key；`writeMany`
 - P-5c 的真实 `createSlice`、`react-redux`、runtime handle 与变更拼写的能力变异均为 `FAIL`；
   owner 的 `defineCommand`/`RuntimeModule` 正控制为 `PASS`。
 - 空分母断言包含 P-5d；fixture 不再复制大目录构建物。
+- 本次 assembly displayMode S-1 后 fresh `verify:static` runId 为
+  `ter-local-static-18018-1788576220685`，模型门与真实静态树均完成，终态为 `TERMINAL_STATIC=PASS`。
+- 该 run 的模型红向量 `FAIL` 仍表示注入的违规形态被门抓住；真实树的
+  `TERMINAL_LAYERING=PASS`、`TERMINAL_RENDER_STATIC=PASS` 与 `TERMINAL_DISPLAY_CONTEXT_STATIC=PASS`
+  才是当前源码结果。
 - `sample-terminal` 的十项 binding、模块声明和 assembly export 仍与当前实现一致。
 
 ### 4.2 focused test
@@ -201,7 +230,7 @@ typed failure 包含静态 code、operation 和适用的失败 key；`writeMany`
 @catering-v2s/ui-base-dev-host          test: 3 files, 5 tests passed
 @catering-v2s/ui-base-primitives        test: 1 file, 4 tests passed
 @catering-v2s/ui-base-render             test: 8 files, 31 tests passed
-@catering-v2s/ui-integration-sample-console test: 5 files, 7 tests passed
+@catering-v2s/ui-integration-sample-console test: 5 files, 8 tests passed
 ~~~
 
 全量测试 marker 为 16 个真实测试 owner、3 个 `NO_TEST_FILES` owner；总 Turbo task 为 19/19 successful。
@@ -246,6 +275,23 @@ TerminalDualScreen: event=secondary-start-completed
 TerminalDevice: event=display-info-read status=succeeded displayCount=2
 MMKV: version v2.4.2, page size 4096, arch arm64-v8a
 ~~~
+
+本次 assembly displayMode S-1 修复后的 fresh 重跑（pid=8706）补充日志：
+
+~~~text
+TerminalDualScreen: event=display-snapshot-read displayCount=2 secondaryDisplayId=2
+TerminalDualScreen: event=secondary-start-requested displayId=2 displayCount=2
+TerminalDualScreen: event=secondary-start-completed
+ReactNativeJS: Running "main" with {"rootTag":1,"initialProps":{"displayIndex":1,"displayCount":2},"fabric":true}
+ReactNativeJS: Running "main" with {"rootTag":11,"initialProps":{"displayIndex":0,"displayCount":2},"fabric":true}
+TerminalDevice: event=display-info-read status=succeeded displayCount=2
+MMKV: version v2.4.2, page size 4096, arch arm64-v8a
+~~~
+
+`dumpsys window` 同时确认主 Activity 位于 `displayId=0`，sample-terminal 的 Presentation window
+位于 `displayId=2`，尺寸为 `1280x720`。因此本次只把 mapping owner 从 assembly consumer 移回
+display-context，并未改变主副屏落点。fresh app cleanup 后 `pidof com.anonymous.sampleterminal` 为空；
+display 2 仍有系统/启动器窗口，但不再有 sample-terminal window。
 
 S-1 修复后的 APK 在 Metro 已启动的条件下重新启动成功，进程保持存活且双屏 carrier 完成。新鲜日志还出现
 一次 React Native 的 `ReactNoCrashSoftException: Tried to access onWindowFocusChange while context is not ready`；
@@ -337,6 +383,7 @@ CP-7、CP-8、CP-10 与 CP-11 的实施对象、静态门、focused test、Kotli
 CP-7=PASS（含三项第一刀局部验证）
 CP-8=PASS（sample-terminal port table + native wiring）
 CP-10=PASS（双屏 Android emulator；不等同 real POS）
+S-1_ASSEMBLY_DISPLAY_MODE=CLOSED（映射归还 display-context owner）
 CP-11=EVIDENCE_COMPLETE_PENDING_CLAUDE_REVIEW
 S-12_WEB_REFRESH=NOT_AUTOMATED_AS_PREVIOUSLY_REGISTERED
 S-26_BROWSER_RESIZE=NOT_AUTOMATED_AS_PREVIOUSLY_REGISTERED
