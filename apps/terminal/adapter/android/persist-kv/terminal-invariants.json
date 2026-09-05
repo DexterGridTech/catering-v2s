@@ -1,1 +1,1 @@
-{"schemaVersion":1,"package":"@catering-v2s/adapter-android-persist-kv","owned":{"test":{"kind":"NO_TEST_FILES","owner":"@catering-v2s/adapter-android-persist-kv","runner":"expo-module-jest"},"lint":{"kind":"ABSENT"},"clean":{"kind":"ABSENT"}}}
+{"schemaVersion":1,"package":"@catering-v2s/adapter-android-persist-kv","owned":{"test":{"kind":"REAL_TESTS","owner":"@catering-v2s/adapter-android-persist-kv","runner":"vitest"},"lint":{"kind":"ABSENT"},"clean":{"kind":"ABSENT"}}}

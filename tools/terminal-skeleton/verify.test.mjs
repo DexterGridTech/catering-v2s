@@ -11,98 +11,106 @@ const repoRoot = path.resolve(toolsDirectory, '../..');
 const verifyPath = path.join(toolsDirectory, 'verify.mjs');
 const fixtureDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'terminal-verify-marker-'));
 
-assert.deepEqual(expectedTaskOwners('test', 2).sort(), [
+const expectedTestPackages = [
   '@catering-v2s/kernel-base-contracts',
   '@catering-v2s/kernel-base-platform-ports',
   '@catering-v2s/kernel-base-state',
   '@catering-v2s/kernel-base-runtime',
   '@catering-v2s/kernel-base-display-context',
+  '@catering-v2s/kernel-base-ui-state',
+  '@catering-v2s/kernel-feature-sample-member-registry',
+  '@catering-v2s/kernel-feature-sample-staff-session',
+  '@catering-v2s/ui-base-dev-host',
+  '@catering-v2s/ui-base-primitives',
+  '@catering-v2s/ui-base-render',
+  '@catering-v2s/ui-feature-sample-member-desk',
+  '@catering-v2s/ui-feature-sample-staff-auth',
+  '@catering-v2s/ui-integration-sample-console',
   '@catering-v2s/adapter-android-app-control',
   '@catering-v2s/adapter-android-device',
   '@catering-v2s/adapter-android-dual-screen',
   '@catering-v2s/adapter-android-logger',
   '@catering-v2s/adapter-android-persist-kv',
-].sort());
+].sort();
+const realTestPackages = [
+  '@catering-v2s/kernel-base-contracts',
+  '@catering-v2s/kernel-base-platform-ports',
+  '@catering-v2s/kernel-base-state',
+  '@catering-v2s/kernel-base-runtime',
+  '@catering-v2s/kernel-base-display-context',
+  '@catering-v2s/kernel-base-ui-state',
+  '@catering-v2s/kernel-feature-sample-member-registry',
+  '@catering-v2s/kernel-feature-sample-staff-session',
+  '@catering-v2s/ui-base-dev-host',
+  '@catering-v2s/ui-base-primitives',
+  '@catering-v2s/ui-base-render',
+  '@catering-v2s/ui-feature-sample-member-desk',
+  '@catering-v2s/ui-feature-sample-staff-auth',
+  '@catering-v2s/ui-integration-sample-console',
+  '@catering-v2s/adapter-android-device',
+  '@catering-v2s/adapter-android-persist-kv',
+].sort();
+const noTestPackages = [
+  '@catering-v2s/adapter-android-app-control',
+  '@catering-v2s/adapter-android-dual-screen',
+  '@catering-v2s/adapter-android-logger',
+].sort();
+const marker = (kind, packageName) => `TERMINAL_PACKAGE_TEST=PASS kind=${kind} package=${packageName}`;
+const validMarkerLines = [
+  ...realTestPackages.map(packageName => marker('REAL_TESTS', packageName)),
+  ...noTestPackages.map(packageName => marker('NO_TEST_FILES', packageName)),
+];
+const terminalSourceDirectory = path.join(repoRoot, 'apps/terminal');
+const fixtureCopyFilter = sourcePath => {
+  const relativePath = path.relative(terminalSourceDirectory, sourcePath);
+  return !relativePath.split(path.sep).some(segment =>
+    ['node_modules', '.expo', 'dist', '.vite', '.vite-temp'].includes(segment),
+  );
+};
+
+assert.deepEqual(expectedTaskOwners('test', 2).sort(), expectedTestPackages);
 assert.deepEqual(
-  assertPackageTestMarkers([
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-contracts',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-platform-ports',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-state',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-runtime',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-display-context',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-app-control',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-device',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-dual-screen',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-logger',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-persist-kv',
-  ].join('\n'), expectedTaskOwners('test', 2)),
+  assertPackageTestMarkers(validMarkerLines.join('\n'), expectedTestPackages),
   {
-      real: [
-        '@catering-v2s/kernel-base-contracts',
-        '@catering-v2s/kernel-base-display-context',
-        '@catering-v2s/kernel-base-platform-ports',
-        '@catering-v2s/kernel-base-runtime',
-        '@catering-v2s/kernel-base-state',
-      ],
-    noTests: [
-      '@catering-v2s/adapter-android-app-control',
-      '@catering-v2s/adapter-android-device',
-      '@catering-v2s/adapter-android-dual-screen',
-      '@catering-v2s/adapter-android-logger',
-      '@catering-v2s/adapter-android-persist-kv',
-    ],
+    real: realTestPackages,
+    noTests: noTestPackages,
   },
 );
 assert.throws(
   () => assertPackageTestMarkers(
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-contracts',
-    expectedTaskOwners('test', 2),
+    validMarkerLines.slice(0, -1).join('\n'),
+    expectedTestPackages,
   ),
   /marker count mismatch/,
 );
 assert.throws(
-  () => assertPackageTestMarkers([
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-contracts',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/kernel-base-platform-ports',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-state',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-runtime',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-display-context',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-app-control',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-device',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-dual-screen',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-logger',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-persist-kv',
-  ].join('\n'), expectedTaskOwners('test', 2)),
+  () => assertPackageTestMarkers(
+    validMarkerLines.map(line => line.replace(
+      'kind=REAL_TESTS package=@catering-v2s/kernel-base-platform-ports',
+      'kind=NO_TEST_FILES package=@catering-v2s/kernel-base-platform-ports',
+    )).join('\n'),
+    expectedTestPackages,
+  ),
   /marker kind mismatch.*platform-ports/,
 );
 assert.throws(
-  () => assertPackageTestMarkers([
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-contracts',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-platform-ports',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/kernel-base-state',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-runtime',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-display-context',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-app-control',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-device',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-dual-screen',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-logger',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-persist-kv',
-  ].join('\n'), expectedTaskOwners('test', 2)),
+  () => assertPackageTestMarkers(
+    validMarkerLines.map(line => line.replace(
+      'kind=REAL_TESTS package=@catering-v2s/kernel-base-state',
+      'kind=NO_TEST_FILES package=@catering-v2s/kernel-base-state',
+    )).join('\n'),
+    expectedTestPackages,
+  ),
   /marker kind mismatch.*kernel-base-state/,
 );
 assert.throws(
-  () => assertPackageTestMarkers([
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-contracts',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-platform-ports',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-state',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-display-context',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-app-control',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-device',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-dual-screen',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-logger',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-persist-kv',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/ui-support-test-harness',
-  ].join('\n'), expectedTaskOwners('test', 2)),
+  () => assertPackageTestMarkers(
+    validMarkerLines.map(line => line.replace(
+      '@catering-v2s/ui-base-dev-host',
+      '@catering-v2s/ui-support-test-harness',
+    )).join('\n'),
+    expectedTestPackages,
+  ),
   /test marker package mismatch/,
 );
 
@@ -133,7 +141,10 @@ try {
 const ownershipFixture = fs.mkdtempSync(path.join(os.tmpdir(), 'terminal-verify-owned-'));
 try {
   fs.mkdirSync(path.join(ownershipFixture, 'apps'), {recursive: true});
-  fs.cpSync(path.join(repoRoot, 'apps/terminal'), path.join(ownershipFixture, 'apps/terminal'), {recursive: true});
+  fs.cpSync(terminalSourceDirectory, path.join(ownershipFixture, 'apps/terminal'), {
+    recursive: true,
+    filter: fixtureCopyFilter,
+  });
   const runtimePackageJsonPath = path.join(
     ownershipFixture,
     'apps/terminal/kernel/base/runtime/package.json',
@@ -158,18 +169,7 @@ try {
   assert.equal(noTestsRun.status, 0, noTestsRun.stderr);
   assert.match(noTestsRun.stdout, /kind=NO_TEST_FILES package=@catering-v2s\/kernel-base-runtime/);
   const expected = expectedTaskOwners('test', 2, {root: ownershipFixture});
-  const cleanMarkers = [
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-contracts',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-platform-ports',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-state',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-runtime',
-    'TERMINAL_PACKAGE_TEST=PASS kind=REAL_TESTS package=@catering-v2s/kernel-base-display-context',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-app-control',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-device',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-dual-screen',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-logger',
-    'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/adapter-android-persist-kv',
-  ].join('\n').replace(
+  const cleanMarkers = validMarkerLines.join('\n').replace(
     'kind=REAL_TESTS package=@catering-v2s/kernel-base-runtime',
     noTestsRun.stdout.trim().replace('TERMINAL_PACKAGE_TEST=PASS ', ''),
   );

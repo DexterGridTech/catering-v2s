@@ -174,42 +174,22 @@ function runAssemblyEntryReachability(context) {
   const assemblyDirectory = moduleNameToPath(assemblyModuleName, root);
   const entryPath = entryFile(assemblyDirectory, 'index.ts', 'index.ts');
   const appPath = entryFile(assemblyDirectory, 'App.tsx', 'App.tsx');
-  const bootstrapPath = entryFile(assemblyDirectory, 'src/skeletonBootstrap.ts', 'skeletonBootstrap.ts');
+  const platformPortsPath = entryFile(assemblyDirectory, 'src/platformPorts.ts', 'platformPorts.ts');
 
   assertRuntimeImport(entryPath, './App', 'assembly index.ts');
-  assertRuntimeImport(appPath, './src/skeletonBootstrap', 'assembly App.tsx');
+  assertRuntimeImport(appPath, './src/platformPorts', 'assembly App.tsx');
 
-  const bootstrapImports = collectStaticImportDeclarations(bootstrapPath);
-  if (/\b(?:require|import)\s*\(/.test(fs.readFileSync(bootstrapPath, 'utf8'))) {
-    throw new Error('assembly skeletonBootstrap.ts must not use dynamic import or require');
+  const appSource = fs.readFileSync(appPath, 'utf8');
+  if (/skeletonBootstrap|bootstrapSession|bootstrapRuntime/.test(appSource)) {
+    throw new Error('assembly App.tsx must not contain bootstrap wiring');
   }
-  const relativeImports = bootstrapImports
-    .map(importDeclaration => importDeclaration.moduleSpecifier)
-    .filter(moduleSpecifier => moduleSpecifier.startsWith('.'));
-  assertEqualSet('assembly bootstrap local imports', relativeImports, ['./index']);
-  const localRootImport = bootstrapImports.find(importDeclaration =>
-    importDeclaration.isRuntime && moduleSpecifierMatches(importDeclaration.moduleSpecifier, './index'));
-  if (!localRootImport) throw new Error('assembly skeletonBootstrap.ts must runtime-import local ./index');
+  if (/\b(?:require|import)\s*\(/.test(appSource)) {
+    throw new Error('assembly App.tsx must not use dynamic import or require');
+  }
 
-  const workspaceImports = bootstrapImports.filter(importDeclaration =>
-    importDeclaration.moduleSpecifier.startsWith('@catering-v2s/'));
-  const workspacePackageNames = workspaceImports.map(importDeclaration => importDeclaration.moduleSpecifier);
-  const importedModules = workspacePackageNames.map(packageName => packageNameToModuleName(packageName, context.spec));
-  if (importedModules.some(moduleName => !moduleName)) {
-    throw new Error(`assembly bootstrap contains a non-root workspace import: ${JSON.stringify(workspacePackageNames)}`);
-  }
-  if (workspaceImports.some(importDeclaration => !importDeclaration.isRuntime)) {
-    throw new Error('assembly bootstrap workspace imports must be runtime imports');
-  }
-  const expectedDependencies = projected[assemblyModuleName].dependencies;
-  assertEqualSet('assembly bootstrap workspace roots', importedModules, expectedDependencies);
-  const unexpectedImports = bootstrapImports.filter(importDeclaration =>
-    !importDeclaration.moduleSpecifier.startsWith('@catering-v2s/') &&
-    !importDeclaration.moduleSpecifier.startsWith('.'));
-  if (unexpectedImports.length) {
-    throw new Error(`assembly bootstrap has unexpected external imports: ${JSON.stringify(
-      unexpectedImports.map(importDeclaration => importDeclaration.moduleSpecifier),
-    )}`);
+  const platformPortsSource = fs.readFileSync(platformPortsPath, 'utf8');
+  if (/\b(?:require|import)\s*\(/.test(platformPortsSource)) {
+    throw new Error('assembly platformPorts.ts must not use dynamic import or require');
   }
 
 }

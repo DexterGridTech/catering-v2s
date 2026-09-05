@@ -32,10 +32,27 @@ if (testFiles.length === 0) {
 }
 
 const vitestPath = path.join(repositoryRoot, 'node_modules/.bin/vitest');
-const result = spawnSync(vitestPath, ['run', '--config', 'vitest.config.ts'], {
-  cwd: packageRoot,
-  stdio: 'inherit',
-});
+const packageNodeModules = path.join(packageRoot, 'node_modules');
+const vitestCacheDirectories = [
+  path.join(packageNodeModules, '.vite'),
+  path.join(packageNodeModules, '.vite-temp'),
+];
+let result;
+try {
+  result = spawnSync(vitestPath, ['run', '--config', 'vitest.config.ts'], {
+    cwd: packageRoot,
+    stdio: 'inherit',
+  });
+} finally {
+  for (const cacheDirectory of vitestCacheDirectories) {
+    fs.rmSync(cacheDirectory, {recursive: true, force: true});
+  }
+  try {
+    fs.rmdirSync(packageNodeModules);
+  } catch (error) {
+    if (error?.code !== 'ENOENT' && error?.code !== 'ENOTEMPTY') throw error;
+  }
+}
 if (result.error) {
   console.error(`TERMINAL_PACKAGE_TEST_FAILURE package=${packageName} error=${result.error.message}`);
   process.exit(1);

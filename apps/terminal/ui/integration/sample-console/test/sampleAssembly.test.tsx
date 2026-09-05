@@ -1,7 +1,9 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {describe, expect, it} from 'vitest'
+import {createRequestId} from '@catering-v2s/kernel-base-contracts'
 import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
-import {createSampleAssembly} from '../src'
+import {showScreenCommand} from '@catering-v2s/kernel-base-ui-state'
+import {createSampleAssembly, createSurfaceForDisplayIndex} from '../src'
 import {createTestPlatformPorts} from './support'
 
 const mount = (element: Parameters<typeof create>[0]): ReactTestRenderer => {
@@ -43,9 +45,33 @@ describe('sample-console real assembly', () => {
     })
     let renderer: ReactTestRenderer | undefined
     try {
-      renderer = mount(assembly.createSurface('PRIMARY'))
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0))
       expect(renderer.root.findByProps({testID: 'sample.auth.login'})).toBeDefined()
       expect(renderer.root.findByProps({testID: 'sample.auth.login:submit'})).toBeDefined()
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('maps the secondary display index through display-context ownership', async () => {
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts(),
+      persistenceKey: `sample-console-secondary-render-test-${Date.now()}`,
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      const result = await assembly.runtime.dispatchCommand(showScreenCommand, {
+        displayMode: 'SECONDARY',
+        containerKey: 'main',
+        partKey: 'sample.desk.customer-welcome',
+      }, {
+        requestId: createRequestId(),
+        routeContext: {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'},
+      })
+      expect(result.status).toBe('completed')
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 1))
+      expect(renderer.root.findByProps({testID: 'sample.desk.customer-welcome'})).toBeDefined()
     } finally {
       if (renderer !== undefined) act(() => { renderer!.unmount() })
       releaseRuntimeForTest(assembly.runtime)

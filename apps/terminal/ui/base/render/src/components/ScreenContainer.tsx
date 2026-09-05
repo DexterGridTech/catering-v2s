@@ -1,4 +1,5 @@
 import {createElement} from 'react'
+import {View} from 'react-native'
 import {selectScreen} from '@catering-v2s/kernel-base-ui-state'
 import {useRenderContext} from '../contexts/RenderContext'
 import {useSurfaceContext} from '../contexts/SurfaceContext'
@@ -14,7 +15,7 @@ export const ScreenContainer = () => {
 
   if (snapshot.root === undefined) {
     return createElement(
-      'render-screen-container',
+      View,
       {testID: SCREEN_CONTAINER_TEST_ID},
       createElement(RenderFallback, {reason: 'runtime-unavailable'}),
     )
@@ -23,14 +24,14 @@ export const ScreenContainer = () => {
   const placement = selectScreen(snapshot.root, displayMode, containerKey)
   if (placement === undefined) {
     return createElement(
-      'render-screen-container',
+      View,
       {testID: SCREEN_CONTAINER_TEST_ID},
       createElement(RenderFallback, {reason: 'container-empty'}),
     )
   }
 
   return createElement(
-    'render-screen-container',
+    View,
     {testID: SCREEN_CONTAINER_TEST_ID},
     resolvePart({
       placement,

@@ -6,6 +6,10 @@ plugins {
 group = 'com.catering.v2s.terminal.adapter.android.dualscreen'
 version = '0.1.0'
 
+dependencies {
+  implementation 'com.facebook.react:react-android'
+}
+
 android {
   namespace "com.catering.v2s.terminal.adapter.android.dualscreen"
   defaultConfig {

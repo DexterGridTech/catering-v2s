@@ -11,7 +11,7 @@ INTERACTION_REF=doc/plans/platform/2026-09-03-v2s-terminal-sample-verification-s
 IMPLEMENTATION_DESIGN_REF=doc/plans/platform/2026-09-03-v2s-terminal-sample-verification-slice-implementation-design-codex.md
 AUTHORIZED_NOW=已被 2026-09-04 修订计划替代；第一段 CP-6＋CP-9 已获实施授权
 IMPLEMENTATION_AUTHORITY=true（仅以修订版两段执行计划的第一段范围为准）
-NOT_AUTHORIZED=adapter/assembly；CP-7、CP-8、CP-10、CP-11；D-6 真机 spike；浏览器自动化/L2；DEV、seed、UAT、部署、Git
+NOT_AUTHORIZED=adapter/assembly；CP-7、CP-8、CP-10、CP-11；浏览器自动化/L2；DEV、seed、UAT、部署、Git（D-6 不再作为单独 spike）
 REVIEW_CYCLE_ID=2026-09-04-TER-SAMPLE-VERIFICATION-SLICE-DESIGN-03
 REVIEW_TARGET=DESIGN
 AUTHORING_REVIEW_STATUS=SUPERSEDED_BY_TWO_SEGMENT_PLAN_FIRST_SEGMENT_AUTHORIZED
@@ -33,7 +33,7 @@ AUTHORING_REVIEW_STATUS=SUPERSEDED_BY_TWO_SEGMENT_PLAN_FIRST_SEGMENT_AUTHORIZED
 
 ### 1.3 每 CP 的共同动作
 
-每个 CP 开始前，重开 v13 对应章节、IA/交互条目、详设条款、六维路由记忆和 owning source。完成 focused proof 后，用同一组原文逐点回读需求、详设/IA、记忆规范、源码与证据；再由 fresh 独立子 agent 做步骤级三维对账，主 agent 修复所有 OPEN 后才进入下一 CP。**主 agent 是本计划唯一编码与文件写入者；fresh 子 agent 只做只读静态 review/三维对账，不得修改任何代码、测试、依赖、脚本、文档或其他文件。**全部 CP 后再做一次全批三维对账；D-6 spike 不在本计划授权内。
+每个 CP 开始前，重开 v13 对应章节、IA/交互条目、详设条款、六维路由记忆和 owning source。完成 focused proof 后，用同一组原文逐点回读需求、详设/IA、记忆规范、源码与证据；再由 fresh 独立子 agent 做步骤级三维对账，主 agent 修复所有 OPEN 后才进入下一 CP。**主 agent 是本计划唯一编码与文件写入者；fresh 子 agent 只做只读静态 review/三维对账，不得修改任何代码、测试、依赖、脚本、文档或其他文件。**全部 CP 后再做一次全批三维对账；D-6 已由设计收口，后续只按 CP-7 第一刀验证既定 carrier。
 
 ## 2. CP-0：v13 基线与影响面
 
@@ -43,10 +43,10 @@ AUTHORING_REVIEW_STATUS=SUPERSEDED_BY_TWO_SEGMENT_PLAN_FIRST_SEGMENT_AUTHORIZED
 
 ### 执行
 
-1. 重读 requirements §2.1-§2.5、§3-§8、§9-§11，特别记录 D-6、七条 `sample-terminal` 依赖和 S-27 第六项。
+1. 重读 requirements §2.1-§2.5、§3-§8、§9-§11，特别记录已解的 D-6 carrier、七条 `sample-terminal` 依赖和 S-27 第六项。
 2. 读取 IA、交互工件、implementation design，确认无 v11 六包、旧白名单、旧 pre-mount 协议和单 Provider 残留。
 3. 用 rg 枚举两 rename 的活动 source/tool/test/config/package/app/graph/skeletonBootstrap/invariants 引用；历史 docs/evidence 只读。
-4. 固定待改 facts 表：workspace globs、公共面 render 16→21 与 display-context 17→20、sample-console 测试从零、三 adapter、terminalSurfaces、descriptor 清单、D-6 对 CP-7/CP-8 的阻断。
+4. 固定待改 facts 表：workspace globs、公共面 render 16→21 与 display-context 17→20、sample-console 测试从零、三 adapter、terminalSurfaces、descriptor 清单、已解 carrier 与 CP-7 第一刀的三项局部验证。
 
 ### 失败条件与不变量
 
@@ -167,7 +167,7 @@ useUiStateSelector 的 memo key 必须包含 root 引用和 selector identity；
 
 ### 8.1 assembly
 
-实现唯一 createSampleAssembly。按详设顺序真实创建两 UI 描述、catalog、renderer catalog、ui-state module、display-context、九项 input.modules、Runtime；await start 后 resolve。闭包持有同一 runtime/catalog/reader。
+实现唯一 createSampleAssembly。按详设顺序真实创建两 UI 描述、catalog、renderer catalog、ui-state module、display-context、九项 input.modules、Runtime；await start 后 resolve。闭包持有同一 runtime/catalog/reader。另由 sample-console 暴露 `createSurfaceForDisplayIndex(assembly, displayIndex)`：它从同一 assembly runtime 读取 display-context owner facts，调用 `resolveSurfaceDisplayMode` 后委托给 `assembly.createSurface`；消费者不自行复制 PRIMARY/SECONDARY 映射。
 
 ### 8.2 base descriptors
 
@@ -190,35 +190,35 @@ sample-console 从零增加 test script、vitest config（含 ts/tsx）、tsconf
 
 ## 9. CP-7：Android adapters
 
-### 9.1 dual-screen：D-6 阻塞
+### 9.1 dual-screen：D-6 已解，CP-7 第一刀验证
 
-本计划不选择双屏 carrier。`OPEN-DUALSCREEN-SINGLE-VM-CARRIER` 必须由 Dexter 另行授权一次真机 spike；在其收口前，CP-7 只能登记接口与周边不变量，不能实现 dual-screen carrier，CP-8 native 接线不得开始。
+需求 §2.1c 已将 `OPEN-DUALSCREEN-SINGLE-VM-CARRIER` 收口为**同进程 `Presentation`＋复用应用 `ReactHost` 创建第二个 `ReactSurface`**。本计划不再选择 carrier，也不再安排另一次 D-6 spike；CP-7 第一刀只验证该既定公开链路在当前 Expo 57／RN 0.86.3 上的三项局部事实：Presentation context/theme 能否用于 `createSurface`、拔屏时 `surface.stop()`→`detach()`→`clear()` 是否正确且不影响主屏、以及 Expo `ExpoReactHostFactory` 返回的标准 host 是否表现出 RN 0.86.3 的多-surface 行为。
 
-carrier 无论最终形态如何，都必须满足六项周边规格：主 Activity 创建时调用启动器且少于两块屏直接 return；选取非 default display；已有实例幂等、失败回滚已请求标记；Kotlin 同步传 `displayIndex` 与实际 `displayCount`；主/副屏使用同一已注册组件且注册同步、一行不改；不引入 `localWebServer` 或其他 port。POC 的独立 secondary process 与自建 React 实例均不可照抄；同进程 Presentation 只有在复用同一 ReactHost／ReactSurface 且实证单 VM／单 store 时才可作为候选。若 spike 只能形成第二 VM、独立进程、独立 store 或独立 React 实例，停止交 Dexter，不得自行降级继续。
+实施必须复用应用现有 `ReactHost`，不得创建第二个 `ReactHost`、`ReactInstanceManager`、React 实例、JS VM、store 或 Android 进程。carrier 的六项周边规格仍全部有效：主 Activity 创建时调用启动器且少于两块屏直接 return；选取非 default display；已有实例幂等、失败回滚已请求标记并允许重试；Kotlin 从同一 displays 快照同步传 `displayIndex` 与实际 `displayCount`；主/副屏使用同一已注册组件且注册同步、一行不改；不引入 `localWebServer` 或其他 port。若第一刀证明公开链路在当前版本组合下根本不成立，停止交 Dexter，不得自行降级继续；主题或生命周期局部调整只能在同一 carrier 内处理。
 
 ### 9.2 device
 
-真实实现 getDisplayInfo，成功分类 valid，坏响应/超时分类由 display-context 处理。业务 actor 只通过 readDisplayInfo。
+真实实现 getDisplayInfo：Android binding 导出完整 `DevicePort`，复用 `platform-ports` 的 `unavailableDevicePort` 补齐 `getDeviceInfo`、`getSystemStatus`、`getPowerStatus`、`subscribePowerStatus`、`unsubscribePowerStatus` 五个方法，只覆盖真实 `getDisplayInfo`，不得导出 partial、类型断言或另一份 unavailable fallback。Kotlin 从 `DisplayManager` 同步读取 displays 快照，经 typed Kotlin↔JS 判别联合返回；DisplayManager 不存在/未绑定返回 unavailable，系统或桥接异常返回 failed，业务 actor 只通过 `readDisplayInfo`。真实 Kotlin `displays.size` 不主动产生 malformed，malformed 必须由 `DevicePort` 替身返回成功但坏形状来覆盖 `readDisplayInfo` 的分类；CP-7 focused proof 必须验证其余五个方法仍为 typed unavailable；adapter 不自设 timeout、不重试。
 
 ### 9.3 persist-kv
 
-Kotlin 使用 `com.tencent:mmkv` 的 MMKV、按 persistenceKey 隔离、字符串 StateStoragePort 边界、版本化类型 envelope。v13 未冻结具体版本；CP-7 实施前从当前 Android Gradle/version catalog 与官方兼容性资料解析并记录实际版本，无法证明兼容时停止交 Dexter，不得预先硬编码或另钉未经批准的版本。五类值、null 与字符串 null、kill/reopen 都要验证；不得引入 JS MMKV，不使用 String(value)。
+Kotlin 使用 `com.tencent:mmkv:2.4.2` 的 MMKV 静态 artifact，按 persistenceKey 建专属 `mmkvWithID` 实例，先 `MMKV.initialize(applicationContext)`；StateStoragePort 八个方法只使用字符串 `encode`/`decodeString`、`containsKey`、`allKeys`、`removeValueForKey`/`removeValuesForKeys`、`clearAll`，不建 envelope、不使用 typed API、`String(value)` 或 JS MMKV。上游两段执行计划 §9.2 的历史“版本化信封”措辞已被其 §11.2 与需求 §2.1b 取代，本计划按“不建信封”的最新裁定执行。该版本由本机 Expo 57/RN 0.86.3 Gradle 解析值 `minSdk=24`、`ndk=27.1.12297006` 与官方资料共同收口；五类值、null 与字符串 null、kill/reopen 仍须在 CP-10 验证。
 
 ### 可证伪门
 
-S-27 只能在 D-6 收口且获真机授权后，分别证明单屏 no launch、双屏 displayId、props、幂等、同步 registration，以及主/副屏同一 JS VM／同一 store（主屏 dispatch 后副屏读到同一 store 新值）；S-28 分别证明 device business path；S-29 生产 mutation 去掉 envelope 必红。三条不合并。
+S-27 只能在 CP-7 第一刀通过、native 接线完成且获 Android 验收授权后，分别证明单屏 no launch、双屏 displayId、props、幂等、同步 registration，以及主/副屏同一 JS VM／同一 store（主屏 dispatch 后副屏读到同一 store 新值）；S-28 分别证明 device business path；S-29 生产 mutation 使用 typed API 或转换值时必红。三条不合并。
 
 ## 10. CP-8：sample-terminal
 
-### 前置收口：v13 已解决的依赖形态与 D-6 未决 carrier
+### 前置收口：v13 已解决的依赖形态与已定 carrier
 
 v13 已将 D-B 与 §2.5.4／§6.8 对齐：`sample-terminal` 只接五个 adapter、`platform-ports`、`sample-console`，共七条依赖，不加 `display-context`。屏身份由 dual-screen adapter 经 Kotlin launch options／JS 启动 props 送达，assembly 不判断屏数；这不是暂定选择，也不需要通过添加无消费者边来消除历史数字矛盾。
 
-CP-8 的 native 双屏接线子项受 D-6 `OPEN-DUALSCREEN-SINGLE-VM-CARRIER` 阻塞：必须先由 Dexter 另行授权真机 spike，证明单 VM／单 store／多 Root Surface 的具体 carrier；不得由本计划自行选择独立进程、独立 React 实例或第二 VM 替代。若候选是 Presentation，必须证明它复用同一 ReactHost／ReactSurface，而不是自建独立 React 实例。非 native 的 `sample-terminal` rename、端口表与入口准备不替代该阻塞项，也不提前写入任何 carrier 选择。
+CP-8 的 native 双屏接线使用需求已定的同进程 `Presentation`＋同一应用 `ReactHost` 的第二 `ReactSurface`；不需要另一次 D-6 spike，也不得自行选择独立进程、独立 React 实例、第二 VM 或第二 host。CP-7 第一刀只验证 Presentation context/theme、拔屏收尾与 Expo host 行为三项局部事实；若公开链路根本不成立，停下来交 Dexter。非 native 的 `sample-terminal` rename、端口表与入口准备不能冒充 native 接线完成。
 
 ### 执行
 
-先完成 pos-desktop→sample-terminal 的活动面 rename；assembly 只接五个 adapter、platform-ports、sample-console，并填满十个必填 PlatformPortBindings。persistKv/device 使用 CP-7 已实现部分，其余按 v13 unavailable。native 双屏 adapter 的 carrier 绑定、启动接线与相关入口接入必须等 D-6 收口后再做；不能以端口表已完成为 native 接线完成。
+先完成 pos-desktop→sample-terminal 的活动面 rename；assembly 只接五个 adapter、platform-ports、sample-console，并填满十个必填 PlatformPortBindings。persistKv/device 使用 CP-7 已实现部分，其余按 v13 unavailable。App 将 native launch props 的原始 `displayIndex` 传给 sample-console 的 `createSurfaceForDisplayIndex`，不在 assembly 层复制 display-context 映射。native 双屏 adapter 的 carrier 绑定、启动接线与相关入口接入必须按已定 carrier，并在 CP-7 第一刀局部验证通过及取得当前步骤授权后做；不能以端口表已完成为 native 接线完成。
 
 ### 不允许
 
@@ -245,11 +245,11 @@ S-7b 必须在 Web 第一段分别走双屏与单屏路径，不以“取消后�
 
 ### Web 不代证
 
-S-27、S-28、S-29 只能在 CP-10 且 S-27 另需 D-6 收口；S-16 的真实 device 路径、S-12 的 native MMKV、场景 4–8 的 native 双屏路径不能用 Web 替代。S-25 仅 Web。
+S-27、S-28、S-29 只能在 CP-10 且 CP-7 carrier 第一刀通过；S-16 的真实 device 路径、S-12 的 native MMKV、场景 4–8 的 native 双屏路径不能用 Web 替代。S-25 仅 Web。
 
 ## 12. CP-10：真机第二段验收
 
-仅在 CP-9 Web 适用项全绿、D-6 已由单独授权的真机 spike 收口、CP-8 的 native 双屏接线已完成、且具备本段受管真机授权后执行：
+仅在 CP-9 Web 适用项全绿、CP-7 carrier 第一刀通过、CP-8 的 native 双屏接线已完成、且具备本段受管 Android 验收授权后执行：
 
 1. 记录并检查受管运行资源与日志；
 2. 启动 Android 真机双屏；
@@ -263,7 +263,7 @@ S-27、S-28、S-29 只能在 CP-10 且 S-27 另需 D-6 收口；S-16 的真实 d
 
 ### 全量对账
 
-用 v13 requirements、IA、interaction、implementation design、project-memory 命中规范、当前 owning source 和所有 evidence，逐项重读行为、形态、动作、关系、位置、文案、限制、状态/控制、失败/恢复、可访问性/焦点、数据来源/失效边界。重新核对九项 module、六 sample package、三个 adapter、两个公共面、31 S、14 active P，并确认 D-6、S-27 第六项与七条依赖没有被旧形态覆盖。
+用 v13 requirements、IA、interaction、implementation design、project-memory 命中规范、当前 owning source 和所有 evidence，逐项重读行为、形态、动作、关系、位置、文案、限制、状态/控制、失败/恢复、可访问性/焦点、数据来源/失效边界。重新核对九项 module、六 sample package、三个 adapter、两个公共面、31 S、14 active P，并确认已定 carrier、S-27 第六项与七条依赖没有被旧形态覆盖。
 
 ### 设计/实现后回答
 

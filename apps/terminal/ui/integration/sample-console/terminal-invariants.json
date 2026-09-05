@@ -13,6 +13,7 @@
   "publicExports": [
     "SampleAssembly",
     "createSampleAssembly",
+    "createSurfaceForDisplayIndex",
     "dependencyModuleNames",
     "devDependencyModuleNames",
     "moduleName",

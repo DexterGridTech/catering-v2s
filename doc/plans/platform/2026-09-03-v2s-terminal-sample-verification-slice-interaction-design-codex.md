@@ -18,13 +18,13 @@ IMPLEMENTATION_DESIGN_REF=doc/plans/platform/2026-09-03-v2s-terminal-sample-veri
 MOCKUP_DIR=NOT_APPLICABLE_WITH_REASON:本切片只需低保真交互工件，固定尺寸来自 sample-console 的 terminalSurfaces 声明
 DEXTER_WIREFRAME_REVIEW=UNSET
 DEXTER_HIFI_REVIEW=NOT_REQUIRED
-IMPLEMENTATION_AUTHORITY=false
+IMPLEMENTATION_AUTHORITY=true（Dexter 2026-09-05；状态见文末）
 CONSUMER_FACE=public
 L2_SCRIPT_ADMISSION=BLOCKED
 ~~~
 
 本工件只回答用户看得见什么、在什么 surface 上、通过哪个控件完成什么动作，以及状态/失败/恢复的可见结果。
-不授权实施，不授权 L2、DEV、seed、真机、UAT、部署；testID 是后续 focused test 与批准动作的稳定命名源，不是本轮创建脚本的授权。
+原设计阶段不授权实施、不授权 L2、DEV、seed、真机、UAT、部署；当前实施授权与结果以需求正本、详设、执行计划及文末实施状态为准。testID 是 focused test 与批准动作的稳定命名源，浏览器 L2 仍未授权。
 
 用户旅途：店员登录 → 查看会员 → 录入姓名与电话 → 顾客在副屏核对并确认或拒绝 → 店员看到结果并继续。顾客确认是业务生效边界，未确认内容不能出现在已登记列表。
 
@@ -113,7 +113,7 @@ sample-console test-expo
 
 单屏时只挂 PRIMARY；双屏时挂两棵。切换按钮只在 test-expo 外壳，干净态切换后重跑旅途；不模拟业务中的热插拔，不重建 runtime。
 
-Android 的目标是两个 Root Surface、一个 JS VM、一个 store；主屏与副屏使用同一个已注册组件，Kotlin 同步传 displayIndex 与 displayCount。具体 carrier 由 D-6 `OPEN-DUALSCREEN-SINGLE-VM-CARRIER` 的单独真机 spike 决定。POC 的独立 secondary process 与自建 React 实例都不是可照抄形态；同进程 Presentation 只有在复用同一 ReactHost／ReactSurface 且实证单 VM／单 store 时才可作为候选。若当前 Expo/RN 无法保持单 VM/单 store/多 surface，必须停下来交 Dexter，不得自行退回第二 VM、独立进程、独立 store 或独立 React 实例。
+Android 的目标是两个 Root Surface、一个 JS VM、一个 store；当前实现 carrier 已按需求正本收口为同进程 `Presentation`、复用应用 `ReactHost` 的第二个 `ReactSurface`。主屏与副屏使用同一个已注册组件，Kotlin 同步传 displayIndex 与 displayCount。POC 的独立 secondary process 与自建 React 实例都不是实现形态；当前证据为双屏 Android 模拟器证据，不表述为真实 POS 验证。
 
 ### 2.2 固定逻辑尺寸
 
@@ -122,7 +122,7 @@ sample-console 的 package.json 是尺寸唯一来源：
 ~~~json
 {
   "terminalSurfaces": {
-    "layout": "row",
+    "layout": "column",
     "scaleToFit": true,
     "surfaces": {
       "PRIMARY": { "width": 1920, "height": 1080 },
@@ -132,7 +132,7 @@ sample-console 的 package.json 是尺寸唯一来源：
 }
 ~~~
 
-外壳使用两个独立逻辑画布，resize 只等比缩放整体，不改变画布宽高比；layout 改为 column 时仅改变两个画布的排布。内部部件到底采用 flex 还是绝对定位仍是 Dexter 的产品/UI 决策，本工件不替他决定。
+外壳使用两个独立逻辑画布，resize 只等比缩放整体，不改变画布宽高比；本 sample 当前采用 `column`，即两个画布上下排列并在外壳内水平居中，`layout` 改为 `row` 时仅改变两个画布的排布。内部部件到底采用 flex 还是绝对定位仍是 Dexter 的产品/UI 决策，本工件不替他决定。
 
 ### 2.3 文案与诊断
 
@@ -425,17 +425,28 @@ testID 必须落在真实输入、按钮或可观察元素上；后续若进入 
 ## 8. Web/Android 交互验收边界
 
 Web 段验证相同的业务树形状、双 Provider 独立、单/双屏外壳切换、固定 logical surface；test-expo 的 DevicePort 闭包与挂载树数量必须读同一 shell state。`sample-console.test-expo` 的 toggle 是宿主控制，不是业务 part。
-Android 段才验证 D-6 收口后的双屏 carrier、目标 displayId、同步 initialProps、真实 getDisplayInfo 和 MMKV。Web 看到双 Surface 不代表 Android 双屏机制完成，也不替代单 VM／单 store 的真机证明。
+Android 段才验证 D-6 收口后的双屏 carrier、目标 displayId、同步 initialProps、真实 getDisplayInfo 和 MMKV。Web 看到双 Surface 不代表 Android 双屏机制完成，也不替代单 VM／单 store 的双屏 Android 模拟器证明。
 
-这份工件不主张自动化或人眼视觉验收已完成。UI_DESIGN_REVIEW 与 TESTID_REVIEW 仍为 UNSET；实现前需按每个实际动作重新做 owning source 对账。
+这份工件不主张浏览器自动化或人眼视觉验收已完成。Android 实施后的行为证据见当前 evidence；浏览器 L2 仍未授权。
 
-输入一致性已按 v13 收口：`sample-terminal` 保留五个 adapter、`platform-ports`、`sample-console` 共七条依赖，不增加 `display-context` 边；屏数/屏身份由 dual-screen adapter 的启动参数周边送达，assembly 不判断屏数。D-6 只阻塞单 VM/单 store carrier 与其真机接线，不重新打开依赖选择。
+输入一致性已按 v13 收口：`sample-terminal` 保留五个 adapter、`platform-ports`、`sample-console` 共七条依赖，不增加 `display-context` 边；屏数/屏身份由 dual-screen adapter 的启动参数周边送达，assembly 不判断屏数。D-6 只阻塞单 VM/单 store carrier 与其 Android 接线，不重新打开依赖选择。
 
 ## 9. 交付状态
 
 ~~~text
-INTERACTION_DESIGN_STATUS=READY_FOR_STATIC_REVIEW
-OPEN_PRODUCT_DECISION=部件内部布局采用 flex 还是绝对定位
-OPEN_IMPLEMENTATION_FEASIBILITY=D-6：单 VM/单 store/多 Root Surface 的 Android carrier 需 Dexter 另行授权真机 spike；不可由本工件推断或以双 VM替代
+INTERACTION_DESIGN_STATUS=APPROVED_V13
+OPEN_PRODUCT_DECISION=NONE；部件与外壳布局已按 Dexter 裁定采用 flex，surface 保持固定逻辑尺寸
+OPEN_IMPLEMENTATION_FEASIBILITY=NONE；D-6 已按需求正本收口，当前 Android 证据仅覆盖双屏 Android 模拟器，不覆盖真实 POS
 NOT_IN_SCOPE=屏幕缓存、screenReady/loading 机制、automation provider、navigation bridge、热插拔、双机/localWebServer、L2/DEV/UAT
+~~~
+
+## 10. 实施后当前状态（2026-09-05）
+
+~~~text
+IMPLEMENTATION_STATUS=CP-7_CP-8_CP-10_CP-11_COMPLETED_PENDING_CLAUDE_REVIEW
+D6_CARRIER=RESOLVED_SAME_PROCESS_PRESENTATION_REUSED_REACT_HOST_SECOND_REACT_SURFACE
+ANDROID_VALIDATION=DUAL_SCREEN_ANDROID_EMULATOR_ONLY_NOT_REAL_POS
+CURRENT_EVIDENCE=doc/evidence/platform/2026-09-05-v2s-terminal-sample-second-segment-implementation-evidence-codex.md
+UNVERIFIED_BOUNDARY=厂商定制 ROM 的 Presentation/多显示差异；真实 POS 分辨率、DPI、性能；S-12 Web 刷新与 S-26 浏览器 resize 未做浏览器自动化
+HISTORICAL_AUTHORING_STATUS_ABOVE=仅描述设计阶段，不覆盖本节当前实施状态
 ~~~

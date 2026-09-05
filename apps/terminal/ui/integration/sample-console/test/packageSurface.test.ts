@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {createSampleAssembly, dependencyModuleNames, devDependencyModuleNames, moduleName, terminalSurfaces} from '../src/index';
+import {createSampleAssembly, createSurfaceForDisplayIndex, dependencyModuleNames, devDependencyModuleNames, moduleName, terminalSurfaces} from '../src/index';
 
 describe('sample-console package surface', () => {
   it('keeps the renamed module and current dependency declarations aligned', () => {
@@ -26,5 +26,6 @@ describe('sample-console package surface', () => {
       },
     });
     expect(typeof createSampleAssembly).toBe('function');
+    expect(typeof createSurfaceForDisplayIndex).toBe('function');
   });
 });

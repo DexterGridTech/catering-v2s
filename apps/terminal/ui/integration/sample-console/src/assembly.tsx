@@ -1,8 +1,17 @@
 import {createNodeId} from '@catering-v2s/kernel-base-contracts'
 import type {PlatformPorts} from '@catering-v2s/kernel-base-platform-ports'
-import {createDisplayContextModule} from '@catering-v2s/kernel-base-display-context'
-import type {DisplayMode} from '@catering-v2s/kernel-base-display-context'
-import {createRuntime, type Runtime, type RuntimeModule} from '@catering-v2s/kernel-base-runtime'
+import {
+  createDisplayContextModule,
+  resolveSurfaceDisplayMode,
+  selectDisplayRole,
+  type DisplayMode,
+} from '@catering-v2s/kernel-base-display-context'
+import {
+  createRuntime,
+  selectRuntimeInstanceMode,
+  type Runtime,
+  type RuntimeModule,
+} from '@catering-v2s/kernel-base-runtime'
 import {createUiCatalog, createUiStateModule} from '@catering-v2s/kernel-base-ui-state'
 import {createRendererCatalog, RenderProvider, SurfaceRoot, type RenderProviderProps} from '@catering-v2s/ui-base-render'
 import {createElement, type ReactElement} from 'react'
@@ -19,6 +28,19 @@ export type SampleAssembly = Readonly<{
   readonly runtime: Runtime
   readonly createSurface: (displayMode: DisplayMode) => ReactElement
 }>
+
+export const createSurfaceForDisplayIndex = (
+  assembly: SampleAssembly,
+  displayIndex: 0 | 1,
+): ReactElement => {
+  const state = assembly.runtime.getState()
+  const displayMode = resolveSurfaceDisplayMode({
+    displayIndex,
+    displayRole: selectDisplayRole(state),
+    instanceMode: selectRuntimeInstanceMode(state),
+  })
+  return assembly.createSurface(displayMode)
+}
 
 const createStateSource = (runtime: Runtime): RenderProviderProps['stateSource'] => Object.freeze({
   getStatus: () => runtime.status,

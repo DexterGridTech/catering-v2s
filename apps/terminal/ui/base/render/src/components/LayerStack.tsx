@@ -1,4 +1,5 @@
 import {createElement} from 'react'
+import {View} from 'react-native'
 import {selectLayers} from '@catering-v2s/kernel-base-ui-state'
 import {useRenderContext} from '../contexts/RenderContext'
 import {useSurfaceContext} from '../contexts/SurfaceContext'
@@ -46,7 +47,7 @@ export const LayerStack = () => {
 
   if (snapshot.root === undefined) {
     return createElement(
-      'render-layer-stack',
+      View,
       {testID: LAYER_STACK_TEST_ID},
       createElement(RenderFallback, {reason: 'runtime-unavailable'}),
     )
@@ -55,7 +56,7 @@ export const LayerStack = () => {
   const layers = selectLayers(snapshot.root, displayMode) as readonly Layer[]
   const orderedLayers = [...layers].sort((left, right) => compareLayers(left, right, uiCatalog, rendererCatalog))
   return createElement(
-    'render-layer-stack',
+    View,
     {testID: LAYER_STACK_TEST_ID},
     orderedLayers.map(layer => resolvePart({
       placement: layer,

@@ -12,7 +12,8 @@
 
 ## 结构
 
-- `src/assembly.tsx`：唯一的 `createSampleAssembly` 公共入口；一次性闭包持有 runtime 与 catalog。
+- `src/assembly.tsx`：唯一的 `createSampleAssembly` 组装入口，以及按物理屏序创建 surface 的
+  `createSurfaceForDisplayIndex` 入口；一次性闭包持有 runtime 与 catalog。
 - `src/baseModuleDescriptors.ts`：contracts、platform-ports、state 的一次性 descriptor 集合。
 - `src/terminalSurfaces.ts`：读取本包 `package.json` 的固定逻辑 surface 配置并导出 typed 常量。
 - `test-expo/App.tsx`：把本包的 assembly、surface 配置与运行时状态 reader 注入通用宿主的薄入口。
@@ -22,12 +23,18 @@
 
 - `moduleName`、`dependencyModuleNames`、`devDependencyModuleNames`：包图元数据。
 - `createSampleAssembly`、`SampleAssembly`：唯一的真实组装入口及其返回契约。
+- `createSurfaceForDisplayIndex`：接收一个既有 `SampleAssembly` 与 `0 | 1` 的物理屏序，
+  从该 assembly 的 runtime 读取 display role 与 instance mode，统一调用
+  `display-context.resolveSurfaceDisplayMode` 后再委托给该 assembly 的 `createSurface`。
 - `terminalSurfaces`：由本包 `package.json` 读取并校验后的固定 surface 配置。
 
 ## 用法
 
 库消费者只通过 `createSampleAssembly({platformPorts, persistenceKey?})` 取得已启动的
-`SampleAssembly`，再用同一个 assembly 的 `createSurface(displayMode)` 挂载 surface。
+`SampleAssembly`。按物理屏挂载时使用
+`createSurfaceForDisplayIndex(assembly, displayIndex)`；该入口保证 displayMode 的推导回到
+`display-context` owner，不在 assembly consumer 内复制 `PRIMARY`/`SECONDARY` 映射。底层
+`assembly.createSurface(displayMode)` 仍是通用宿主按已确定模式挂载 surface 的闭包入口。
 `persistenceKey` 仅用于测试隔离；生产端口由 assembly 的消费者注入。
 
 Expo Web 的入口是根 `index.js`，它注册 `test-expo/App`；通用宿主读取传入的 `terminalSurfaces`，

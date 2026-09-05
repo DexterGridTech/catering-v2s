@@ -14,10 +14,10 @@ JOURNEY_REFS=上述需求 §4.1 门店会员登记旅途；§6.3-§6.8 owner 与
 UI_INTERACTION_REF=doc/plans/platform/2026-09-03-v2s-terminal-sample-verification-slice-interaction-design-codex.md
 IMPLEMENTATION_DESIGN_REF=doc/plans/platform/2026-09-03-v2s-terminal-sample-verification-slice-implementation-design-codex.md
 DEXTER_WIREFRAME_REVIEW=UNSET
-IMPLEMENTATION_AUTHORITY=false
+IMPLEMENTATION_AUTHORITY=true（Dexter 2026-09-05；状态见文末）
 ~~~
 
-本文件只定义 IA，不授权源码、测试、依赖、真机、DEV、seed、L2、UAT 或部署。
+本文件只定义 IA；原设计阶段不授权源码、测试、依赖、真机、DEV、seed、L2、UAT 或部署。当前实施授权与结果以需求正本、详设、执行计划及文末实施状态为准。
 本次以 v13 需求为新基线重建，旧版六包图、旧的预挂载异步协议、旧的精确依赖白名单和单 Provider 双 Surface 形态均不作为设计输入。
 
 ## 2. 统一 IA 规则
@@ -33,7 +33,7 @@ IMPLEMENTATION_AUTHORITY=false
 | 放置 | showScreenCommand 的 containerKey | 这是单个目标容器；IA 不把它与 catalog 的 containerKeys 混用 |
 | 准入 | ui-state 的 UiCatalogEntry.containerKeys | 只过滤 part 是否可在容器出现；允许空数组表示 layer-only |
 | 屏数 | 注入的 DevicePort 经 readDisplayInfo 与 resolveSecondarySurfaceAvailable | 只由 actor/宿主适配器消费；部件不读原始 displayCount |
-| 共享事实 | runtime 单一 store | 两个 surface 读取同一 runtime；Web 是一个 React root 下两个兄弟 Provider；Android 的目标形态是两个 Root Surface 共享一个 JS VM／一个 store，但具体承载方式由 D-6 真机 spike 决定；单屏 confirm 可临时在 PRIMARY 呈现 customer-member |
+| 共享事实 | runtime 单一 store | 两个 surface 读取同一 runtime；Web 是一个 React root 下两个兄弟 Provider；Android 由同进程 `Presentation` 与复用应用 `ReactHost` 创建两个 Root Surface，共享一个 JS VM／一个 store；单屏 confirm 可临时在 PRIMARY 呈现 customer-member |
 
 ### 2.2 共同可见限制
 
@@ -124,7 +124,7 @@ Shell state(surfaceMode)
 ~~~
 
 每棵树有独立 reader、snapshot 与 diagnostic reporter；卸载 SECONDARY 不得影响 PRIMARY。
-Android 的目标是两个 Root Surface、一个 JS VM、一个 store；具体由何种 Activity／surface carrier 承载仍由 D-6 `OPEN-DUALSCREEN-SINGLE-VM-CARRIER` 的真机 spike 解决。主屏与副屏必须使用同一个已注册组件，Kotlin 同步传 displayIndex 与 displayCount；POC 的独立 secondary process 与自建 React 实例都不是可照抄形态。同进程 Presentation 只有在复用同一 ReactHost／ReactSurface 且实证单 VM／单 store 时才可作为候选。D-6 spike 需 Dexter 另行授权；若当前 Expo/RN 无法保持 TER 的单 VM/单 store/多 surface 事实，必须停下交 Dexter，不得退回第二 VM、独立进程、独立 store 或独立 React 实例。
+Android 的目标是两个 Root Surface、一个 JS VM、一个 store，当前实现形态已按需求正本收口为同进程 `Presentation` 与复用应用 `ReactHost` 的第二个 `ReactSurface`。主屏与副屏使用同一个已注册组件，Kotlin 同步传 displayIndex 与 displayCount；POC 的独立 secondary process 与自建 React 实例都不是实现形态。当前证据为双屏 Android 模拟器证据，不表述为真实 POS 验证。
 
 ### 6.3 五种不可画结果
 
@@ -147,7 +147,7 @@ members 是 owner slice 中的 readonly 集合；本 sample 不做分页、HTTP 
 ~~~json
 {
   "terminalSurfaces": {
-    "layout": "row",
+    "layout": "column",
     "scaleToFit": true,
     "surfaces": {
       "PRIMARY": { "width": 1920, "height": 1080 },
@@ -159,17 +159,19 @@ members 是 owner slice 中的 readonly 集合；本 sample 不做分页、HTTP 
 
 library 侧读取自身 package.json 并导出带类型的只读常量；test-expo 消费该常量。浏览器 resize 只等比缩放整体，不改逻辑宽高比。内部 content 用 flex 还是绝对定位未由本文件裁定，必须在实现前由 Dexter 单独决定，不能在详设里偷选。
 
+本 sample 的当前 UI 排布采用 `column`：主屏与客显上下排列并在外壳内水平居中；`terminalSurfaces` 仍保留 `row`／`column` 两种通用配置能力。
+
 持久化的 visible consequence 只有重启后成员与 operator-name 保留、passcode 和登记 uiVariable 消失。值的具体编码由 persist-kv adapter 的实现设计负责，不进入 IA。
 
 ## 8. IA 交叉对账、完整性与验证分层
 
 | 目标 | 最低证据 | 本批状态 |
 | --- | --- | --- |
-| 每个 screen/layer 具有业务结果、身份、入口、控件、错误、可访问性、空/加载/失败、超载行为 | 静态逐项对账 | READY_FOR_DESIGN_REVIEW |
-| 五种不可画结果互不混淆 | render focused test 设计 + testID/诊断表 | READY_FOR_DESIGN_REVIEW |
-| 两个 Provider 独立 | sample-console integration focused test | READY_FOR_DESIGN_REVIEW |
-| Web 与 Android 的宿主形状都被声明 | 详设静态 + 后续 Web/真机分段 acceptance | READY_FOR_DESIGN_REVIEW |
-| 真机 dual-screen、真实 display info、MMKV | 真机段 acceptance；Web 不可代证 | NOT_EXECUTED_BY_AUTHORIZATION |
+| 每个 screen/layer 具有业务结果、身份、入口、控件、错误、可访问性、空/加载/失败、超载行为 | 静态逐项对账 + 当前实现 evidence | IMPLEMENTATION_EVIDENCE_RECORDED |
+| 五种不可画结果互不混淆 | render focused test + testID/诊断表 + 当前实现 evidence | IMPLEMENTATION_EVIDENCE_RECORDED |
+| 两个 Provider 独立 | sample-console integration focused test + 当前实现 evidence | IMPLEMENTATION_EVIDENCE_RECORDED |
+| Web 与 Android 的宿主形状都被声明 | 详设静态 + Web focused proof + Android emulator evidence | IMPLEMENTATION_EVIDENCE_RECORDED |
+| Android dual-screen、真实 display info、MMKV | 双屏 Android 模拟器 acceptance；不等同真实 POS | EMULATOR_EVIDENCE_RECORDED_REAL_POS_UNVERIFIED |
 | L2/人眼视觉 | 不在本批授权范围 | NOT_APPLICABLE_WITH_REASON:本批只写 IA/交互/详设/计划，无 L2 |
 
 本文件没有把“浏览器启动成功”或“人眼看过”当作 IA 证据。
@@ -190,9 +192,9 @@ IA_DIMENSIONS=IA-AUTH-LOGIN,IA-AUTH-NOTICE,IA-MEMBER-LIST,IA-MEMBER-FORM,IA-WAIT
 INVISIBLE_DIMENSIONS_AS_OBSERVATIONS=YES
 FORBIDDEN_UI=explicit
 TYPED_PROBLEMS=10 mapped
-CROSS_CHECK_WITH_DESIGN=READY_FOR_INDEPENDENT_STATIC_REVIEW
+CROSS_CHECK_WITH_DESIGN=IMPLEMENTATION_RECONCILIATION_PENDING_INDEPENDENT_REVIEW
 DEXTER_WIREFRAME_REVIEW=UNSET
-IA_STATUS=READY_FOR_DESIGN_REVIEW;不构成 implementation authorization
+IA_STATUS=APPROVED_V13;实施状态见文末，不替代需求与详设
 ~~~
 
 ## 9. v13 输入一致性标记
@@ -201,4 +203,15 @@ v13 已将 D-B 与 §2.5.4／§6.8 对齐：`assembly/android/sample-terminal` �
 
 本 IA 按 v13 已收口的「initialProps 送达、assembly 不判断屏数、7 条依赖」形态记录；`sample-terminal` 不消费 `display-context`，也不为凑依赖添加空边。
 
-另一个实现可行性闸门是 D-6：Android 当前 POC 的 secondary process 与自建 React 实例都不满足 `TER_SINGLE_VM_SINGLE_STORE_MULTI_SURFACE`。六项与承载机制正交的周边规格仍写入 IA，但承载 carrier 必须由一次单独授权的真机 spike 证明；本 IA 不执行 spike，也不把 POC 形态当成最终架构结论。
+另一个实现可行性闸门 D-6 已由需求正本收口为同进程 `Presentation`、复用应用 `ReactHost` 的第二个 `ReactSurface`；当前实施证据按双屏 Android 模拟器记录，不把 POC 的 secondary process 或自建 React 实例当成实现形态，也不把模拟器证据表述为真实 POS 验证。
+
+## 10. 实施后当前状态（2026-09-05）
+
+~~~text
+IMPLEMENTATION_STATUS=CP-7_CP-8_CP-10_CP-11_COMPLETED_PENDING_CLAUDE_REVIEW
+D6_CARRIER=RESOLVED_SAME_PROCESS_PRESENTATION_REUSED_REACT_HOST_SECOND_REACT_SURFACE
+ANDROID_VALIDATION=DUAL_SCREEN_ANDROID_EMULATOR_ONLY_NOT_REAL_POS
+CURRENT_EVIDENCE=doc/evidence/platform/2026-09-05-v2s-terminal-sample-second-segment-implementation-evidence-codex.md
+UNVERIFIED_BOUNDARY=厂商定制 ROM 的 Presentation/多显示差异；真实 POS 分辨率、DPI、性能；浏览器 L2 未授权
+HISTORICAL_AUTHORING_STATUS_ABOVE=仅描述设计阶段，不覆盖本节当前实施状态
+~~~

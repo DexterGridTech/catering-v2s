@@ -160,24 +160,19 @@ try {
   assert.match(missingIgnoreReport.hygiene.error, /missing \.gitignore entry \.turbo\//);
 
   fs.writeFileSync(gitignorePath, fs.readFileSync(path.join(repoRoot, '.gitignore'), 'utf8'));
-  const bootstrapPath = path.join(
-    fixtureRoot,
-    'apps/terminal/assembly/android/sample-terminal/src/skeletonBootstrap.ts',
-  );
-  const bootstrapSource = fs.readFileSync(bootstrapPath, 'utf8');
+  const appPath = path.join(fixtureRoot, 'apps/terminal/assembly/android/sample-terminal/App.tsx');
+  const appSource = fs.readFileSync(appPath, 'utf8');
   fs.writeFileSync(
-    bootstrapPath,
-    bootstrapSource
-      .replace("import {moduleName as adapterAndroidAppControl} from '@catering-v2s/adapter-android-app-control';\n", '')
-      .replace('  adapterAndroidAppControl,\n', ''),
+    appPath,
+    appSource.replace("import {createSampleTerminalAssembly} from './src/platformPorts'\n", ''),
   );
-  const missingBootstrapImportReport = runStaticChecks({root: fixtureRoot, batch: 2});
-  const missingBootstrapImportGate = missingBootstrapImportReport.results.find(
+  const missingAppPlatformPortsReport = runStaticChecks({root: fixtureRoot, batch: 2});
+  const missingAppPlatformPortsGate = missingAppPlatformPortsReport.results.find(
     result => result.name === 'graph-comparison',
   );
-  assert.equal(missingBootstrapImportGate.status, 'FAIL');
-  assert.match(missingBootstrapImportGate.error, /assembly bootstrap workspace roots/);
-  fs.writeFileSync(bootstrapPath, bootstrapSource);
+  assert.equal(missingAppPlatformPortsGate.status, 'FAIL');
+  assert.match(missingAppPlatformPortsGate.error, /assembly App\.tsx/);
+  fs.writeFileSync(appPath, appSource);
 
   const uiDevHostPackagePath = path.join(
     fixtureRoot,
@@ -193,18 +188,6 @@ try {
       assert.match(gate(report, 'graph-comparison').error, /ui\.base\.dev-host/);
     },
   );
-
-  const appPath = path.join(fixtureRoot, 'apps/terminal/assembly/android/sample-terminal/App.tsx');
-  const appSource = fs.readFileSync(appPath, 'utf8');
-  fs.writeFileSync(
-    appPath,
-    appSource.replace("import {skeletonModuleNames} from './src/skeletonBootstrap';\n", ''),
-  );
-  const missingAppEdgeReport = runStaticChecks({root: fixtureRoot, batch: 2});
-  const missingAppEdgeGate = missingAppEdgeReport.results.find(result => result.name === 'graph-comparison');
-  assert.equal(missingAppEdgeGate.status, 'FAIL');
-  assert.match(missingAppEdgeGate.error, /assembly App\.tsx/);
-  fs.writeFileSync(appPath, appSource);
 
   const fixtureGraphPath = path.join(fixtureRoot, 'apps/terminal/skeleton-graph.ts');
   const displayModuleNamePath = path.join(
@@ -351,8 +334,13 @@ try {
     fixtureRoot,
     'apps/terminal/adapter/android/persist-kv/src/dependencies.ts',
   );
+  const persistImplementationPath = path.join(
+    fixtureRoot,
+    'apps/terminal/adapter/android/persist-kv/src/androidPersistKv.ts',
+  );
   const originalPersistPackage = fs.readFileSync(persistPackagePath, 'utf8');
   const originalPersistDependencies = fs.readFileSync(persistDependenciesPath, 'utf8');
+  const originalPersistImplementation = fs.readFileSync(persistImplementationPath, 'utf8');
   const originalFixtureGraph = fs.readFileSync(fixtureGraphPath, 'utf8');
   try {
     const persistPackage = JSON.parse(originalPersistPackage);
@@ -365,6 +353,13 @@ try {
       originalPersistDependencies
         .replaceAll('@catering-v2s/kernel-base-platform-ports', '@catering-v2s/kernel-base-contracts')
         .replaceAll('platformPorts', 'contracts'),
+    );
+    fs.writeFileSync(
+      persistImplementationPath,
+      originalPersistImplementation.replace(
+        "'@catering-v2s/kernel-base-platform-ports'",
+        "'@catering-v2s/kernel-base-contracts'",
+      ),
     );
     const persistGraphPattern =
       /('adapter\.android\.persist-kv':\s*\{[\s\S]*?dependencies:\s*)\['kernel\.base\.platform-ports'\]/;
@@ -380,6 +375,7 @@ try {
   } finally {
     fs.writeFileSync(persistPackagePath, originalPersistPackage);
     fs.writeFileSync(persistDependenciesPath, originalPersistDependencies);
+    fs.writeFileSync(persistImplementationPath, originalPersistImplementation);
     fs.writeFileSync(fixtureGraphPath, originalFixtureGraph);
   }
 

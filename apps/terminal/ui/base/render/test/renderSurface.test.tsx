@@ -1,5 +1,6 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {createElement, type ComponentType, type ReactElement} from 'react'
+import {View} from 'react-native'
 import {describe, expect, it} from 'vitest'
 import type {
   LogEvent,
@@ -147,6 +148,12 @@ describe('render surface hosts', () => {
     ))
     const screens = renderer.root.findAllByType('render-screen')
     expect(screens.map(screen => screen.props.marker)).toEqual(['primary', 'secondary'])
+    const screenContainers = renderer.root.findAll(node => node.type === View && node.props.testID === 'ui-base-render:screen-container')
+    const layerStacks = renderer.root.findAll(node => node.type === View && node.props.testID === 'ui-base-render:layer-stack')
+    expect(screenContainers).toHaveLength(2)
+    expect(layerStacks).toHaveLength(2)
+    expect(screenContainers.every(node => node.type === View)).toBe(true)
+    expect(layerStacks.every(node => node.type === View)).toBe(true)
     renderer.unmount()
   })
 

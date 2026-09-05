@@ -29,7 +29,7 @@ review 通过之后。
 | 段 | 内容 | 原 CP | 收口 |
 | --- | --- | --- | --- |
 | **第一段** | `kernel` 与 `ui` 两个目录下的 sample 包做完整，并在 Expo Web 上真实启动 | CP-6 ＋ CP-9（不含浏览器自动化） | **先交 Dexter 体验**，再交 Dexter 与 Claude 静态 review |
-| **第二段** | `adapter` 与 `assembly`，真机第二段验收与全批对账 | CP-7、CP-8、CP-10、CP-11 | 第一段 review 通过后另行授权 |
+| **第二段** | `adapter` 与 `assembly`，Android 第二段验收（按裁定使用双屏 Android 模拟器）与全批对账 | CP-7、CP-8、CP-10、CP-11 | 第一段 review 通过后另行授权；已于 2026-09-05 授权并完成 |
 
 **第一段自足性的依据**（本轮亲验）：
 
@@ -245,13 +245,13 @@ tsconfig include、devDependencies、invariants `REAL_TESTS`、runner 收集路�
 
 ⚠️ 报告中这两条**不得表述为「Web 已验刷新／resize」**，只能表述为
 「声明级／落盘级已由 focused test 证明，真实浏览器行为本轮未取证」。
-它们进入欠账，与真机段一并处理。
+它们进入欠账，与 Android 第二段一并处理。
 
 ### 7.5 判据分层（需求 §11.1 已写死，本文只是搬过来对齐）
 
 | 层 | 判据 | 本段的意义 |
 | --- | --- | --- |
-| Web 段专属 | **S-25** | 验外壳开发设施，真机上不存在，**不进第二段复验清单** |
+| Web 段专属 | **S-25** | 验外壳开发设施，Android 第二段不存在，**不进第二段复验清单** |
 | 本段可终判 | 场景 1–9 单屏路径、S-1…S-11、S-13a/b、S-14、S-15、S-18…S-23 及 active P | focused test 绿即为该判据的最终结果 |
 | 本段只作前置证据 | **S-12、S-16、S-17、S-24** 及场景 4–8 的双屏路径 | 第一段绿**不等于完成**，第二段必须复验 |
 | 本段给不出证据 | **S-27、S-28、S-29** | Kotlin 拉起副屏、真实 `getDisplayInfo`、MMKV 落盘在 Web 上不存在，**不得以「Web 已验双屏内容分区」代证** |
@@ -282,8 +282,9 @@ tsconfig include、devDependencies、invariants `REAL_TESTS`、runner 收集路�
 ### 9.1 已有的制度保障
 
 - 需求第 1302 行：Web 段不依赖 D-6 结论；
-- 原计划第 193 行、详设第 232 行：D-6 spike 若只能形成第二 VM、独立进程、独立 store
-  或独立 React 实例，**停止交 Dexter，不得自行降级继续**。
+- 原计划第 193 行、详设第 232 行的停止条件仍然有效：若实现只能形成第二 VM、独立进程、
+  独立 store 或独立 React 实例，**停止交 Dexter，不得自行降级继续**。
+  ⚠️ 但 D-6 本身已解（需求 §2.1c），这条现在是**防退化闸门**，不再是未知项。
 
 ⇒ 不存在「为了让 Android 跑起来，回头改 `ui` 层」的合法路径。
 
@@ -295,8 +296,8 @@ tsconfig include、devDependencies、invariants `REAL_TESTS`、runner 收集路�
 
 **缓解**：第一段收口 review 必须专门核「外壳实现有没有**因为是外壳**而掩盖了签名缺陷」，
 而不只看 Web 跑绿。具体地，逐项对照十个 binding 的签名与第二段真实 adapter 的已知需要
-（`getDisplayInfo` 三态、MMKV 字符串边界与版本化 envelope、`launchDisplayId` 与
-`initialProps` 两字段），书面回答每一项「真实实现是否能在不改签名的前提下落进来」。
+（`getDisplayInfo` 三态、MMKV 的**字符串原样**边界（信封已于 §11.2 裁定不建）、
+`launchDisplayId` 与 `initialProps` 两字段），书面回答每一项「真实实现是否能在不改签名的前提下落进来」。
 
 ---
 
@@ -314,9 +315,70 @@ tsconfig include、devDependencies、invariants `REAL_TESTS`、runner 收集路�
 
 ---
 
-## 11. 文档性质
+## 11. 第二段开工准备（2026-09-05 补）
+
+### 11.1 执行环境已定
+
+第二段在 **Codex 机器上的双屏 Android 虚拟机**执行（Dexter 2026-09-05 裁定），
+不另等实体 POS。口径、覆盖面与三类欠账见需求 §11.1 的裁定段。
+
+### 11.2 需求侧已补齐的四项
+
+| 项 | 结论 | 位置 |
+| --- | --- | --- |
+| MMKV 值编码 | **不建信封**。state 层的 codec 已完成 JSON 编解码与非有限数拒绝，adapter 只做逐字节原样存取；S-29 红向量改为「adapter 用 typed API 或 `String(value)` 解释值」 | 需求 §2.1b |
+| MMKV 选型 | 用纯 Android `com.tencent:mmkv`（非 `react-native-mmkv`）、静态 artifact（非 `mmkv-shared`）；版本线取决于 POS 的 ABI | 需求 §2.1b-1 |
+| `device` 三态 | adapter 必须让 `valid`／`unavailable`／`malformed` 都可达；`malformed` 若真实实现产不出，须由替身覆盖并写明 | 需求 §5.x `readDisplayInfo` 段 |
+| Expo Web 入口 | 纯 ESM 已由 Dexter 实证验收，不再是待办 | 需求 §6.7 |
+
+### 11.3 开工前前置事项的收口状态
+
+| # | 事项 | 归属 |
+| --- | --- | --- |
+| ~~P-A~~ | 目标 POS 的 ABI | ✅ **已裁定：全部 64 位**（Dexter 2026-09-05）⇒ MMKV 用 `2.4.2`。将来引入新机型时须重新确认 ABI，见需求 §2.1b-1 ③ |
+| ~~P-B~~ | Expo SDK 57／RN 0.86.3 实际的 `minSdkVersion` 与 NDK 版本是否满足 MMKV 2.4.x（要求 minSdk 23＋、NDK r26d＋） | ✅ **已闭合**：本机模板 Gradle 解析与 RN 版本文件均得到 `minSdkVersion=24`、`ndkVersion=27.1.12297006`；24 ≥ 23，27.1 ≥ r26d；证据见 implementation design §7.4 与 CP-11 evidence |
+
+P-B 已闭合，不再阻塞本批。**注意 P-A 裁定并不豁免 P-B** ——
+64 位只解决 ABI；若未来引入 API 21–22 或需要重新解析不同的 Expo/RN/Android 构建组合，仍须重新取得本机实际值，不能沿用本次结论。
+
+### 11.4 详设补充与实施状态
+
+现有详设 §7.2 对 `sample-terminal` 的端口表已足够支撑 CP-8，可直接实施。
+此前 §7.3 对三个 adapter 的规格深度不均；三处补充现已写入 implementation design §7.3，
+并按第二段授权完成实现与 CP-7 第一刀验证：
+
+1. **`dual-screen` 的 carrier** —— ✅ **D-6 已于 2026-09-05 解开**（需求 §2.1c）并完成：
+   carrier ＝ 同进程 `Presentation` ＋ 复用应用 `ReactHost` 的第二个 `ReactSurface`。
+   carrier 与六项周边规格已写入详设，并由双屏 Android 模拟器第一刀证据覆盖 `Presentation` context/主题、
+   拔屏收尾顺序和 `ExpoReactHostFactory`/`ReactHostImpl` 行为一致性。详设不把模拟器证据升级为真实 POS 证据。
+2. **`device` 的 adapter 侧** —— 已补齐 Kotlin `DisplayManager` 快照、三态桥结果、JS binding、malformed 替身边界，
+   并按 CP-7 focused proof 与 CP-10 模拟器运行证据核对；真实 adapter 不主动制造 malformed。
+3. **`persist-kv` 的 Kotlin 实现形态** —— 已补齐 MMKV 实例隔离、`StateStoragePort` 八个方法、
+   `listKeys`／`clear` namespace 语义及字符串 API 保真约束，并由 Kotlin 编译、APK 构建、focused test 和模拟器重启读回核对。
+
+### 11.5 第二段执行顺序（当前状态）
+
+**D-6 已解，原「先 spike 后设计」的两趟顺序取消。** 三处详设一次写完整，
+然后 CP-7 第一刀按设计接线并在双屏 Android 模拟器上跑通；当前实现证据见 CP-11 evidence。
+
+⚠️ 仍保留一条停止条件：若实证发现 §2.1c 的链路在 Expo 57／RN 0.86.3 下根本不成立，
+停下来交 Dexter；但**不得因为主题、生命周期一类的局部问题就退回独立进程或独立实例形态**。
+
+---
+
+## 12. 文档性质
 
 本文是**执行顺序修订**，不构成对需求或详设的修改，也不改变任何判据的严格度。
-第一段完成并自验通过后，**先停下来交 Dexter 体验**；
-体验反馈处理完毕，再交 Dexter 与 Claude 做静态 review；
-第二段在该 review 通过后另行授权。
+第一段体验与静态 review 已完成；Dexter 已于 2026-09-05 另行授权第二段 CP-7、CP-8、CP-10、CP-11，当前状态与证据见下方实施状态段。
+
+## 13. 第二段实施后状态（2026-09-05）
+
+~~~text
+IMPLEMENTATION_AUTHORITY=true（Dexter 2026-09-05）
+IMPLEMENTATION_STATUS=CP-7_CP-8_CP-10_CP-11_COMPLETED_PENDING_CLAUDE_REVIEW
+ANDROID_VALIDATION=DUAL_SCREEN_ANDROID_EMULATOR_ONLY_NOT_REAL_POS
+CURRENT_EVIDENCE=doc/evidence/platform/2026-09-05-v2s-terminal-sample-second-segment-implementation-evidence-codex.md
+NOT_AUTHORIZED=真实 POS、浏览器自动化/L2、DEV、seed、UAT、部署、NativeWind、React Native Reusables、automation backend
+UNVERIFIED_BOUNDARY=厂商定制 ROM 的 Presentation/多显示差异；真实 POS 分辨率、DPI、性能；S-12 Web 刷新与 S-26 浏览器 resize 未做浏览器自动化
+HISTORICAL_FIRST_SEGMENT_TEXT_ABOVE=仅保留原两段计划的编写时快照；当前第二段授权以本节与 Dexter 直接授权为准
+~~~

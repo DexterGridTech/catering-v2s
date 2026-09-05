@@ -9,7 +9,7 @@
 - 外部评审：`doc/review/platform/2026-09-01-v2s-sales-menu-design-review-claude.md`
 - 作者 intake：`doc/review/platform/2026-09-01-v2s-sales-menu-external-design-review-intake-codex.md`
 - 执行原则：contract/backend/API closure → frontend/IA/L2 closure → DEV reset/seed；不得并行跨越 owner/contract 未冻结边界。
-- 当前执行状态：`SM-05_FOCUSED_RECOVERY_REQUIRED`；SM-06 及以后尚未到达。
+- 当前执行状态：`SM-06_TO_SM-12_FORMAL_DELIVERY_COMPLETE_CLAUDE_REVIEW_PENDING`；当前实现与本仓证据已收口，待 Dexter 转交 Claude 做外部 implementation review。
 
 ## 0 · 本计划如何使用
 
@@ -26,7 +26,9 @@
 
 动态命令只有在 Dexter 对当次实施明确授权后才可执行。Roadmap 只记录能力授权，不替代当前会话直接指派。Git、部署、UAT 不属于本计划完成前提。
 
-### 1a · 当前字节执行修订：CP-05 normal projection 的跨阶段边界（2026-09-01）
+### 1a · 2026-09-01 CP-05 normal projection 的跨阶段边界（历史执行说明，已被后续证据 supersede）
+
+> **状态声明（2026-09-05）**：本节记录的是 operation denominator 从 238 扩展到 268 时的历史 CP-05 pending 与 calibration 执行约束。后续受管 backend acceptance 已记录 operation measurement `268/268`，当前 `scripts/verify --validate-only` 已 PASS，因此本节的 `OPEN_GLOBAL_PREREQUISITE` 不再是当前 SM-06～SM-12 的 active blocker。以下内容保留用于解释当时的执行边界，不得覆盖本计划顶部当前状态、SM-06～SM-12 聚合证据或实施完成定义。
 
 当前仓库的 performance source 明确规定：CP-05 budget projection 只能在当前 operation exact-set 的
 真实 HTTP completion evidence、三次受管 measurement、business/cleanup PASS 后生成；在此之前只允许
@@ -37,19 +39,23 @@ contract/admin/auth/source-denominator 的产品或设计偏移。
 
 因此执行口径固定为：
 
-1. SM-01 必须先完成 source denominator → calibration edge projection → binding/admin/IAM 的静态闭环；
+1. 【历史执行口径】SM-01 当时必须先完成 source denominator → calibration edge projection → binding/admin/IAM 的静态闭环；
    `V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=CALIBRATION scripts/verify --validate-only` 是本阶段允许的
    verify 入口。正常 CP-05 首败必须保留，不能称为 normal PASS，也不能用跳过/放宽断言关闭。
-2. 该 CP-05 pending 不计作 SM-01 的三维设计偏移；它作为 `OPEN_GLOBAL_PREREQUISITE` 保留在实施证据，
-   不得丢失。SM-02→SM-05 仍严格串行，期间不得提前生成预算或运行依赖未闭合 route 的 acceptance。
-3. SM-05 的真实 backend-acceptance HTTP exact-set closure 后，按受管 CP-05 路径刷新 report；随后在
+2. 【历史执行口径，已关闭】该 CP-05 pending 当时不计作 SM-01 的三维设计偏移，并曾作为 `OPEN_GLOBAL_PREREQUISITE`
+   保留在实施证据；该 pending 已由后续证据关闭。SM-02→SM-05 当时严格串行，期间不得提前生成预算或运行依赖未闭合 route 的 acceptance。
+3. 【历史执行口径】SM-05 的真实 backend-acceptance HTTP exact-set closure 后，当时需按受管 CP-05 路径刷新 report；随后在
    进入整体测试与 SM-12 收口前，必须重新运行正常 `edge-codegen --check`、`scripts/verify --validate-only`
    及其 owning generated checks。若 CP-05 仍红，回 owning source/受管测量根因修复，不得推进整体测试。
 
 这条修订只修正不可提前满足的验证时序，不改变任何 operation、业务语义、预算值、授权、测试分母或
 SM-00→SM-12 串行顺序；若当前性能规范被后续 Dexter 裁定替换，以新裁定为准并重新记录冲突。
 
-### 1b · 2026-09-01 执行路径审计与纠偏（必须遵守）
+> **历史段落结束（2026-09-05）**：以上 1a 的 pending/open 口径不再作为当前执行准入。当前 review 只按现有 operation completion、backend acceptance、browser L2、seed/readback、cleanup 与静态 verify 证据判定，不将本历史段落重新升级为新的性能或产品阻断。
+
+### 1b · 2026-09-01 执行路径审计与纠偏（历史复盘，已被当前交付状态 supersede）
+
+> **状态声明（2026-09-05）**：本节记录的是 2026-09-01 的暂停恢复诊断与当时的 SM-05 recovery gate，现仅保留为历史上下文，不再作为当前 active gate。当前 SM-05 已由后续受管 backend acceptance、31-operation completion mapping、18-case browser L2、seed/readback 和 cleanup 产物收敛；当前执行入口以本计划顶部状态、SM-06～SM-12 聚合证据及本计划的实施完成定义为准。不得再次套用本节下方“不得进入 SM-06～SM-11”的历史限制。
 
 本节是对本轮近 13 小时执行的只读复盘，不是新的产品语义或新的 operation。两名 fresh 独立审计者
 分别重开当前计划、需求、IA、详设、项目记忆、owning source 及最新受管运行证据，结论一致：销售菜单
@@ -107,6 +113,8 @@ preview 403、ordered cursor 422 与 P2 proof。该顺序只是失败族的诊�
 
 本节的完成标志不是“跑过一次全量”，而是：失败族根因已闭合、15 行台账逐条有新鲜证据、SM-05 fresh
 三维对账 `OPEN=0`。本节不授权扩大产品范围，也不覆盖后续 implementation review 的两轮上限。
+
+> **历史段落结束（2026-09-05）**：以上 1b 的 failure-family 诊断、禁止推进条件和恢复算法均属于已完成前置阶段的历史记录；当前不得将其解释为 SM-06～SM-12 的 active 阻断。当前证据以本计划 SM-06～SM-12 各节及 `doc/evidence/platform/2026-09-05-v2s-sales-menu-sm06-sm12-formal-delivery-evidence-codex.md` 为准。
 
 ### 1c · 当前字节执行修订：SM-02 排序交换（2026-09-01）
 
@@ -450,8 +458,8 @@ role/label/placeholder/text/index/CSS/XPath 或外层 wrapper 不能替代 testI
 依据 `doc/review/platform/2026-09-03-v2s-sales-menu-ui-testid-preflight-cycle-c-round2-codex.md` 的 fresh independent
 Round 2 final review，前置门已关闭；该 PASS 仅解除 L2 脚本开发准入，不代表动态浏览器 L2、HTTP、business 或 cleanup 已通过。
 
-当前准入分母已按唯一 blueprint 复算为 18 个 case/action、254 个声明控件条目、78 个 unique binding
-control key；共享 scope surface 的 trigger、selector、动态 option、confirm、cancel 均使用 `roleHomeTestIds`
+当前准入分母已按唯一 blueprint 复算为 18 个 case/action、236 个声明控件条目、68 个 case-used unique control key、78 个
+locator binding control key；共享 scope surface 的 trigger、selector、动态 option、confirm、cancel 均使用 `roleHomeTestIds`
 唯一源并逐控件建模；本固定 STORE/STORE-readonly Journey 的 setup 只实际记录 `STORE_SCOPE_TRIGGER`。逐
 case/action 的常量、实际节点、binding/touch、focused/static proof 与 fresh review 表在
 详设 §11.2a，实施以该表为唯一逐控件清单。菜单级直接按钮、manager 动态行 MenuItem、Modal/Drawer 提交与

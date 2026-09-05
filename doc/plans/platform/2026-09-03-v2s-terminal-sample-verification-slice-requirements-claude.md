@@ -13,7 +13,7 @@
 > **自建 `createSecondaryReactInstanceManager()`** ⇒ 仍是独立 React 实例。
 > ✅ 而 TER 裁定原文明写「POC 的『副屏独立进程』整套跨进程广播协议**不搬**」。
 > ⇒ **两个变体都不是可照抄的答案**。§2.1c 重写为「承载机制未决 ＋ 可定那半」：
-> 新增 **D-6 / `OPEN-DUALSCREEN-SINGLE-VM-CARRIER`**（阻塞 CP-7 的 dual-screen 与 CP-8，
+> ~~新增 **D-6 / `OPEN-DUALSCREEN-SINGLE-VM-CARRIER`**~~（**2026-09-05 已解，见 §2.1c**；原文如下，阻塞 CP-7 的 dual-screen 与 CP-8，
 > 必须真机 spike 回答，**不得退回独立进程／独立实例形态**，做不到则停下交 Dexter）；
 > 拉起时机、目标屏选取、幂等回滚、`initialProps`、同步注册、无 port 六项**与承载机制正交**，仍可定。
 > 并给 **S-27 补第⑥项**：副屏与主屏**同属一个 JS VM／一个 store**（主屏 dispatch 后副屏读到同一 store 的新值），
@@ -230,15 +230,46 @@ TER 已建成 7 个包并各自通过评审：`contracts` `platform-ports` `stat
 
 ##### 因此本节分成两半
 
-**未决那半（`OPEN-DUALSCREEN-SINGLE-VM-CARRIER`）**：
-单 VM 多 Root Surface 在 **Expo SDK 57 ／ RN 0.86.3** 下**具体如何承载**，仓内**零证据**。
-候选包括但不限于：同进程 `Presentation` ＋ **复用同一 `ReactHost`／`ReactSurface`**（不自建实例）、
-或 RN 新架构下的多 `ReactSurface` 挂载。
+##### D-6 已解：carrier 就是「同进程 `Presentation` ＋ 复用应用 `ReactHost` 的第二个 `ReactSurface`」
 
-⚠️ **裁前不得动手**：CP-7 的 `dual-screen` 部分与 CP-8 的 native 接线均阻塞于本项。
-⚠️ **必须由一次真机 spike 回答**，不得由文档推断，也**不得退回 POC 的独立进程/独立实例形态** ——
-那会直接违反 `TER_SINGLE_VM_SINGLE_STORE_MULTI_SURFACE`。
-⚠️ 若 spike 结论是「当前版本组合下做不到单 VM」，**停下交 Dexter**，不得自行降级为双 VM 并继续。
+⚠️ **本节 2026-09-05 重写（Dexter 要求扫清实施前障碍）。** 原文把 carrier 登记为
+`OPEN-DUALSCREEN-SINGLE-VM-CARRIER`、要求「必须真机 spike 回答，不得由文档推断」。
+**那条限制被错误地扩大了** —— 它本意是禁止「照抄哪个 POC 变体」，
+不该被读成「不许查公开资料」。多 Root Surface 共用一个 JS VM 在 RN 新架构下是**公开的一等公民能力**，
+不是没人做过的事。以下链路逐环取自一手源码，Claude 2026-09-05 联网核查。
+
+**为什么两个 POC 变体都失败**：它们都是**旧架构时代**的做法 ——
+一个开独立进程，一个自建 `createSecondaryReactInstanceManager()`。
+RN 0.76 起新架构默认 bridgeless，`ReactHost` **本身就支持多 surface**，不需要自建实例。
+
+**链路（逐环一手依据）**
+
+| 环 | 事实 | 出处 |
+| --- | --- | --- |
+| ① Expo 应用暴露 `ReactHost` | `class MainApplication : Application(), ReactApplication`，`override val reactHost: ReactHost by lazy { ExpoReactHostFactory.getDefaultReactHost(...) }` | expo/expo 的 bare 模板 `MainApplication.kt` |
+| ② Expo module 内取到它 | `appContext.reactContext?.applicationContext as? ReactApplication` → `.reactHost`；`appContext` 另有 `activityProvider` 与 `hasActiveReactInstance` | Expo Modules API 文档 `AppContext` 属性表 |
+| ③ 同一 host 造第二个 surface | `reactHost.createSurface(context, moduleName, initialProps): ReactSurface`，内部 `ReactSurfaceImpl(context, moduleName, initialProps)` ＋ `ReactSurfaceView(context, surface)` ＋ `surface.attach(this)` | `ReactHostImpl.kt` |
+| ④ **单 VM 单 store 由此成立** | host 维护 `attachedSurfaces: MutableSet<ReactSurfaceImpl>`，所有 surface 都走**同一个** `reactInstance.startSurface(surface)`，共用一个 `BridgelessReactContext` | 同上 |
+| ⑤ 把 surface 放到副屏 | `ReactSurface` 暴露 `view: ViewGroup?`、`start()`／`stop()`／`detach()`／`prerender()`；用 `Presentation(context, targetDisplay)` 的 context 调 ③，再 `presentation.setContentView(surface.view)`，然后 `surface.start()` | `ReactSurface.kt` 接口 |
+
+⇒ **`initialProps` 天然落位**：③ 的第三个参数就是 `Bundle?`，
+每个 surface 各传自己的 `displayIndex` 与 `displayCount`，与本节下半的规格直接对上。
+
+⇒ **不得再自建 `ReactInstanceManager`／`ReactHost`**，也不得开独立进程。
+若实现里出现第二个 host 或 `android:process`，即违反 `TER_SINGLE_VM_SINGLE_STORE_MULTI_SURFACE`。
+
+**仍须在双屏虚拟机上实证的三点**（是**验证既定设计**，不再是开放式探索）
+
+1. `Presentation` 的 context 能否直接用于 `createSurface` —— 可能需要 `ContextThemeWrapper`
+   或用 presentation 自己的主题上下文；报错即换形态，不改架构。
+2. 副屏拔出／`Presentation.onDisplayRemoved` 时的收尾顺序：先 `surface.stop()` 再 `detach()`，
+   确认不泄漏、不影响主屏 surface。
+3. `ExpoReactHostFactory.getDefaultReactHost` 返回的 host 与裸 RN 的 `ReactHostImpl` 行为一致
+   （它返回标准 `ReactHost`，预期一致，但未亲验）。
+
+⚠️ 这三点属 `UNVERIFIED`，由 CP-7 的第一刀在虚拟机上跑通即闭合。
+⚠️ 若实证发现该链路在 Expo 57／RN 0.86.3 下**根本不成立**，停下来交 Dexter；
+但**不得因为遇到主题、生命周期一类的局部问题就退回独立进程或独立实例形态**。
 
 **可定那半（与承载机制无关，照 POC v1 亲验所得）**：
 
@@ -280,10 +311,96 @@ MMKV……assembly 层只保留桥接，**不再直接依赖 JS 侧 `react-nativ
 manifest），本就为 Kotlin 侧原生实现准备；而 POC v1 那种 JS 侧 MMKV 落在 assembly，
 违反 §6.8「装配层只有端口表」。**本轮不新增 JS 侧 MMKV 依赖。**
 
-⚠️ **值编码**：`StateStoragePort` 读写的是字符串，而 slice 值有 `null`／`boolean`／`number`／
-`string`／对象五类。✅ 亲验 POC v1 用带版本的类型信封（`{v: 1, type, value}`）保住类型区分。
-本轮须显式规定编码形态，**不得让 `null` 与字符串 `"null"` 不可区分** —— 那会让 S-12 的
-「`passcode` 已消失」与「值为空串」混为一谈。
+⚠️ **值编码：`persist-kv` 不做任何编码，按字符串原样存取**（Claude 2026-09-05 亲验后收口，
+本条推翻 v13「须显式规定编码形态」的欠账，也**不采用 POC v1 的 `{v, type, value}` 信封**）。
+
+✅ **亲验依据**（`kernel/base/state/src/foundations/persistenceCodec.ts`）：
+
+| 事实 | 位置 |
+| --- | --- |
+| `encodeStateJsonValue` = `JSON.stringify(canonicalizeStateJsonValue(value))` | 该文件 `encodeStateJsonValue` |
+| `decodeStateJsonValue` = `JSON.parse` ＋ `isStateJsonValue` 校验 | 同文件 `decodeStateJsonValue` |
+| 非有限数（`NaN`／`Infinity`）在编码前即被 `Number.isFinite` 拒绝，返回 `failed`，**不会被静默写成 `null`** | 同文件 `validateJsonValue` |
+| 对象键在编码前排序，编码结果稳定可比 | 同文件 `canonicalize` |
+
+⇒ **state 层已经把每个值 JSON 编码成字符串**再交给 `StateStoragePort.write({key, value})`，
+adapter 收到的是**已编码的不透明字符串**。而 JSON 本身已经区分 `null`（编码为 `null`）
+与字符串 `"null"`（编码为 `"\"null\""`），五类值的类型往返由 state 层的 codec 保证。
+
+⇒ 因此在 adapter 里再套一层类型信封是**重复编码**：多一层格式、多一个真相源、
+多一处将来要迁移的东西，却不解决任何 state 层没解决的问题。按 KISS 与
+「简单方案已满足需求就不升级」，**本轮不建信封**。
+
+⚠️ **改由一条硬约束替代**：`persist-kv` 必须**逐字节原样**存取字符串 ——
+不得解释、不得转换、不得推断类型、不得用 MMKV 的 typed API（`encode(key, Boolean)`／
+`decodeInt` 之类）、不得 `String(value)`。写进去什么字符串，读出来必须是同一个字符串。
+
+⚠️ **真实风险不在"编码形态"而在"adapter 擅自解释"** —— 那正是 S-29 要防的：
+一旦 adapter 用 MMKV 的类型化接口存取，`null` 与 `"null"` 就会被压成同一个东西，
+S-12 的「`passcode` 已消失」与「值为空串」随之混为一谈。
+
+##### 2.1b-1 MMKV 选型：用哪个 artifact、哪条线、哪个版本
+
+Claude 2026-09-05 联网核查，事实与出处如下。⚠️ 这些是**外部事实**，CP-7 开工前须由 Codex
+用当时的一手资料复核一遍再落版本号，不得直接抄本节数字。
+
+**① 不用 `react-native-mmkv`，用纯 Android 的 `com.tencent:mmkv`。**
+
+通用教程普遍推荐 Expo 项目用 `react-native-mmkv`，但**那条建议不适用于本仓**，四条理由：
+
+1. 本轮的存储契约是 `StateStoragePort`，`persist-kv` 的职责就是在 Kotlin 侧实现它。
+   `react-native-mmkv` 是一套 **JS 侧存储 API**，引入它等于在端口之外再开一条存储路径，
+   正是分层要防的越界；§2.1b 与详设 §7.3 也已写明「不加 JS MMKV」。
+2. `react-native-mmkv` v4 已改为 **Nitro Module**，会连带引入 `react-native-nitro-modules`
+   及其 codegen／原生工具链 —— 为一个只在自有端口背后使用的能力，代价过大。
+3. 两者**同用 `com.tencent.mmkv` 命名空间**，混用会触发
+   `Namespace 'com.tencent.mmkv' is used in multiple modules` 构建冲突。
+4. 五个 adapter 的 expo-module 脚手架（`build.gradle`／`AndroidManifest`／
+   `expo-module.config.json`）本就是为 Kotlin 侧原生实现准备的。
+
+**② artifact 选 `com.tencent:mmkv`（静态链接 libc++），不选 `mmkv-shared`。**
+
+官方 wiki：`mmkv` 静态链接 libc++；`mmkv-shared` 共享链接、解包省约 2 MB，
+**仅在项目已因其他 JNI 库带入 `libc++_shared.so` 时才推荐**。RN 确实带入了它，
+所以 `mmkv-shared` 技术上可用。
+
+但本轮选静态，理由是**风险与收益不匹配**：NDK 27 一代对 libc++ 的结构与链接方式有改动，
+已知会让部分 RN 版本构建出问题；共享链接把 ABI 匹配变成一个额外失败面，
+而 2 MB 体积在当前阶段没有任何价值。⇒ 体积若将来真成为约束，再单独评估 `mmkv-shared`。
+
+**③ 版本线取决于 POS 硬件的 ABI —— 这一项需 Dexter 提供事实。**
+
+MMKV 有两条并行维护线，**分界点是 32 位支持**：
+
+| 线 | 最新版（2026-09 核查） | 32 位 `armeabi-v7a` | minSdk | 维护策略 |
+| --- | --- | --- | --- | --- |
+| **2.4.x** | `2.4.2`（2026-08-21） | ❌ **v2.0.0 起不再支持** | 23 | 新特性在这条线 |
+| **1.3.x LTS** | `1.3.17`（2026-08-03） | ✅ 支持 | 21 | 只修关键缺陷 |
+
+⚠️ **POS 终端常见 32 位 ARM。** 若目标硬件是 `armeabi-v7a`，选 2.4.x 会在真实设备上装不起来；
+而**模拟器发现不了这一点** —— 模拟器通常是 x86_64 或 arm64，全绿也不能代证。
+
+✅ **已裁定：目标 POS 全部为 64 位**（Dexter 2026-09-05）。
+⇒ **用 `com.tencent:mmkv:2.4.2`**，走 2.4.x 主线，不用 1.3.x LTS。
+
+⚠️ 上表保留不是备选，是**留下判据**：将来若出现 32 位或 API 21～22 的目标设备，
+2.4.x 直接不可用，必须回到 1.3.x LTS 重新评估 —— 这条不因本次裁定而消失。
+⇒ 引入新的目标机型时，**先确认 ABI 再确认版本**，不得默认沿用本次结论。
+
+**④ 环境要求与仓内实况。**
+
+官方 wiki：MMKV 要求 **minSdk 23+**、**NDK r26d+**；16K page size 支持在 1.3.14 起补齐
+（「Upgrade to NDK r28.1 to have full support of 16K pagesize」），2.4.x 更新于该版本。
+
+✅ 亲验仓内实况：**没有 `gradle/libs.versions.toml`**，Android 侧版本不走 version catalog；
+五个 adapter 的 `android/build.gradle` 用 `expo-module-gradle-plugin` 提供 Android 配置，
+`persist-kv` 的 build.gradle 目前**没有任何 dependencies 块**。
+⇒ 版本必须钉在该 adapter 自己的 `build.gradle` 里，并在 README 记录选型理由。
+
+⚠️ **CP-7 开工前必须证明而不是假定**：Expo SDK 57 / RN 0.86.3 实际使用的 `minSdkVersion`
+与 NDK 版本，是否满足 MMKV 所选线的要求。我查了 Expo SDK 57 changelog 与 RN 0.86 相关资料，
+**没有拿到这两个确切数字**，标 `UNVERIFIED`；Codex 须从本机实际 Gradle 解析结果取值，
+不能从教程推断。无法证明兼容时停下来交 Dexter。
 
 ⚠️ **Web 段的持久化不在本条范围内**：`test-expo` 的端口表自行绑一个 Web 侧
 `StateStoragePort`（与它绑 `DevicePort` 同理，属平台绑定层的正当职责）。
@@ -346,7 +463,7 @@ Reusables，但它们尚未安装，且会牵动 Expo、Metro 与 Tailwind 配�
 
 | # | 事项 | 说明 |
 | --- | --- | --- |
-| **D-6** | `OPEN-DUALSCREEN-SINGLE-VM-CARRIER`：Expo 57 ／ RN 0.86.3 下，单 VM 多 Root Surface **具体如何承载** | 见 §2.1c。✅ 亲验两个 POC v1 变体**都达不到单 VM**（一个独立进程、一个自建 React 实例），而 TER 裁定明写「POC 的副屏独立进程整套不搬」。⇒ **仓内零证据**，必须一次真机 spike 回答，不得由文档推断。⚠️ 若结论是当前版本组合做不到，**停下交 Dexter**，不得自行降级为双 VM |
+| ~~D-6~~ | `OPEN-DUALSCREEN-SINGLE-VM-CARRIER`：Expo 57 ／ RN 0.86.3 下，单 VM 多 Root Surface **具体如何承载** | ✅ **2026-09-05 已解，见 §2.1c**。carrier ＝ 同进程 `Presentation` ＋ 复用应用 `ReactHost` 的第二个 `ReactSurface`；`ReactHostImpl` 的 `attachedSurfaces` 与同一 `reactInstance.startSurface` 保证单 VM 单 store。两个 POC 变体失败的原因是它们都是**旧架构做法**（独立进程／自建 `ReactInstanceManager`）。⚠️ 余三点局部实证（`Presentation` context 主题、拔屏收尾顺序、`ExpoReactHostFactory` 行为一致性）在 CP-7 第一刀闭合，**不再阻塞设计** |
 
 #### 已作废
 
@@ -670,6 +787,24 @@ const hasSecondary = resolveSecondarySurfaceAvailable(info)
    双屏流程在单屏设备上**会卡死**（顾客无处可点）。
 2. **每次处理命令时实时求值，不得缓存**（正式需求稿第 504 行原文）。
    ⇒ 场景 4 与场景 6 各读一次端口，这是被裁定的正确形态，不是浪费。
+
+⚠️ **adapter 侧必须让三态都可达**（Claude 2026-09-05 补，v13 只写了 kernel 侧）。
+上述三态分类住在 `readDisplayInfo`，但**能不能分出来取决于 adapter 返回什么形状**。
+`adapter/android/device` 因此必须满足：
+
+| 态 | adapter 须能产生的形状 |
+| --- | --- |
+| `valid` | `PortResult` 成功且 `value.displayCount` 为**有限正整数** |
+| `unavailable` | 端口不可用或 Kotlin 侧读不到 `DisplayManager` 时的**明确失败／不可用结果**，不是抛裸异常 |
+| `malformed` | 成功但 `displayCount` **形状不对**（缺字段、非数、零、负数、非整数） |
+
+⚠️ **`malformed` 必须可构造，否则 S-17 是空判据。** 若真实 Kotlin 实现永远产不出坏形状，
+就必须在 focused test 里用**替身 `DevicePort`** 构造该形状来验 `readDisplayInfo` 的分类，
+并在交付中写明：`malformed` 分支由替身覆盖、真实 adapter 路径未覆盖。
+不得因为"实现里不会发生"就跳过这条判据。
+
+⚠️ **超时值由调用方给**：`device.getDisplayInfo({timeoutMs})` 的 `timeoutMs` 是入参，
+adapter 不自设超时、不自行重试；超时归 `readDisplayInfo` 归类为未知 ⇒ 安全降级单屏。
 3. **屏身份与屏数经 `initialProps` 送达，不由 JS 侧异步查询**（v8 整条重写）。
 
    > ⚠️ **v2–v7 这一条是我自己发明的协议，POC v1 从没这么做过，TER 的裁定原文也不是这个。**
@@ -1214,9 +1349,8 @@ v13 原写法是 `registerRootComponent(require('./test-expo/App').default)` —
 的包里混用 `import` 与 `require`，靠 Metro 的转换才不炸，**形态是错的**，范本会被照抄。
 ⇒ 改为静态 `import` 后 `registerRootComponent(App)`，这也是 Expo 的规范入口形态。
 
-⚠️ **改完必须实证**：纯 ESM 入口能否在当前 Expo 版本下正常启动，**由一次真实
-`expo start --web` 验证**，不以「看起来对」收口。若实证失败，停下来交 Dexter，
-不得退回混用形态、也不得改 `"type"` 字段绕过。
+✅ **已实证**：Dexter 2026-09-05 已在 Expo Web 上验收纯 ESM 入口可正常启动。
+本条不再是待办；将来若入口形态再变，仍须重新实跑验证，不得以「看起来对」收口。
 
 **`sample-console` 的** `expo` / `expo-status-bar` / `react-dom` / `react-native-web`
 一律进 **devDependencies** —— 因为它的 `src/` 不 import 这些，只有 `index.js` 与 `test-expo/`
@@ -1316,8 +1450,9 @@ Android 侧每个 surface 的根组件只按 `props.displayIndex` 取本屏 `dis
 ⚠️ v2–v7 曾写「两个宿主入口函数形态一样，不是两套独立逻辑」，**v8 已撤销该自造协议**
 （§5.1 约束 3 的表：Android 与 Expo Web 的 surface 创建者与屏数来源本来就不同）。
 
-⚠️ **两棵 Android surface 如何共用同一个 assembly（单 VM／单 store）＝ D-6**，
-仓内零证据、必须真机 spike 回答（§2.1c、§11.1 第二段），**本节不预设承载形态**；
+✅ **两棵 Android surface 如何共用同一个 assembly（单 VM／单 store）＝ D-6，已解**（2026-09-05）：
+同一个 `ReactHost` 用 `createSurface` 造两个 `ReactSurface`，副屏那个挂进 `Presentation`；
+链路与一手依据见 §2.1c。**不得自建第二个 host 或开独立进程**；
 Web 段（第一段）不依赖该结论 —— 两棵树同在一个 JS 环境里，由同一次
 `createSampleAssembly` 的 `createSurface` 各出一棵。
 
@@ -1349,7 +1484,7 @@ Web 段（第一段）不依赖该结论 —— 两棵树同在一个 JS 环境�
 
 ```json
 "terminalSurfaces": {
-  "layout": "row",
+  "layout": "column",
   "scaleToFit": true,
   "surfaces": {
     "PRIMARY":   { "width": 1920, "height": 1080 },
@@ -1363,6 +1498,8 @@ Web 段（第一段）不依赖该结论 —— 两棵树同在一个 JS 环境�
 | `layout` | `"row"`（横向并排）｜ `"column"`（纵向堆叠） |
 | `surfaces.<displayMode>` | **每个 displayMode 各自的逻辑尺寸** —— 真实 POS 的主屏与客显通常不同分辨率，故不共用一组尺寸 |
 | `scaleToFit` | 见下方「形状不变」的说明 |
+
+本 sample 当前体验采用 `column`：主屏与客显上下排列、各自保持声明的逻辑尺寸并在外壳内水平居中；`row` 仍是该通用声明支持的另一种排布值。
 
 **「不随浏览器大小改变形状」的确切含义**：surface 按声明的**逻辑尺寸**渲染，
 浏览器 resize **不改变它的宽高与宽高比**。但 1920 ＋ 1024 ＝ 2944px 宽装不进多数开发屏，
@@ -1635,7 +1772,7 @@ Web 段（第一段）不依赖该结论 —— 两棵树同在一个 JS 环境�
 | **S-26** | **surface 尺寸与排布**（§6.7b）：外壳按 `terminalSurfaces` 声明的逻辑尺寸渲染两棵树，① 浏览器 resize 后两棵 surface 的**宽高与宽高比不变**；② `layout` 改 `row`／`column` 后排布方向随之改变；③ 两个 displayMode 各自用**自己**那组尺寸（不共用一组）。红向量：把外壳容器改成 `flex: 1` 跟随视口 ⇒ ① 必红 |
 | **S-27** | **`dual-screen` 单机双屏启动**（§2.1c，**只能在第二段真机验**）：① 单屏设备上启动器**不拉起**副屏 Activity（`displays.size < 2` 直接 return）；② 双屏设备上副屏 Activity 被拉到**正确的 displayId**；③ 主屏收到 `displayIndex = 0`、副屏收到 `1`，两者 `displayCount` 均为实际屏数；④ **重复调用启动器不产生第二个副屏实例**（幂等）；⑤ `registerRootComponent` 仍是同步调用（源码断言，不得被改成异步） ；⑥ **副屏与主屏同属一个 JS VM／一个 store** —— 可证伪形式：主屏 dispatch 一条命令后**副屏读到同一 store 的新值**；两侧各自持有独立 store 则必红。这是 `TER_SINGLE_VM_SINGLE_STORE_MULTI_SURFACE` 的真机对应物（§2.1c 末段） |
 | **S-28** | **`device` 的真实 `getDisplayInfo`**（**只能在第二段真机验**）：单屏设备返回 `displayCount = 1`、双屏设备返回 `2`，且 `readDisplayInfo` 判为 `valid` 态。⚠️ **这条与 S-27 必须分别验**：S-27 证明 Kotlin 侧把屏拉起来了，S-28 证明**业务侧那条通路**也读到了真实屏数 —— §2.1a 第 2 条的假绿正是两者只有其一时发生的 |
-| **S-29** | **`persist-kv` 的 MMKV 落盘与值编码**（§2.1b）：① 五类值（`null`／布尔／数字／字符串／对象）写入后读回**类型不变**；② `null` 与字符串 `"null"` **可区分**；③ 杀进程重开后值仍在。红向量：把类型信封去掉、直接存 `String(value)` ⇒ ① ② 必红 |
+| **S-29** | **`persist-kv` 的 MMKV 落盘与字符串保真**（§2.1b）：① 五类值（`null`／布尔／数字／字符串／对象）经 state codec 编码后写入、读回**解码得到同一值且类型不变**；② `null` 与字符串 `"null"` **可区分**（前者编码为 `null`、后者为 `"\"null\""`，adapter 必须原样保住这两个不同字符串）；③ 杀进程重开后值仍在。红向量：让 adapter 用 MMKV 的 typed API 存取、或对值做 `String(value)`／`JSON.parse` 再存 ⇒ ① ② 必红 |
 
 ### 9.3 设计模式判据（与功能判据同等级，不可为凑功能豁免）
 
@@ -1714,6 +1851,28 @@ Web 段（第一段）不依赖该结论 —— 两棵树同在一个 JS 环境�
 第二段（真机）：切到真机双屏，验 dual-screen 的单机双屏启动、
                device 的真实 getDisplayInfo、persist-kv 的真实落盘
 ```
+
+⚠️ **第二段的执行环境是 Codex 机器上的双屏 Android 虚拟机**（Dexter 2026-09-05 裁定）。
+本文其余各处写的"真机"，在本轮一律按此环境执行，**不另等实体 POS**。
+
+**为什么模拟器足以承担本段判据**（Claude 独立判断，按机制逐条推）：
+D-6 问的是「`ReactHost`／`ReactSurface` 是否复用、是否同一 JS VM 与同一 store」——
+**纯软件层问题，与硬件无关**；S-27 的五项加第六项（`displays.size < 2` 判断、
+`launchDisplayId`、幂等回滚、`displayIndex`／`displayCount` 传递、注册保持同步、跨屏同 store）
+同样全在软件层；S-28 靠 `DisplayManager` 返回的真实 `Display` 计数，模拟器的副屏是真实
+`Display` 对象，关掉副屏即可验单屏分支；S-29 靠本地文件落盘与杀进程重开，模拟器有真实文件系统。
+
+⚠️ **但模拟器覆盖不到三类事实，必须显式登记为欠账，不得以第二段全绿代证**：
+
+| 未覆盖 | 后果 |
+| --- | --- |
+| **目标 POS 的 ABI**（32 位 `armeabi-v7a` 与否） | 直接决定 MMKV 版本线，见 §2.1b-1 ③。模拟器多为 x86_64／arm64，全绿也发现不了装不上 |
+| 厂商定制 ROM 对 `Presentation`／多显示的行为差异 | carrier 可能在真实 POS 上行为不同 |
+| 真实屏幕分辨率、DPI 与性能特征 | 本轮判据不涉及，但首次上真实硬件时可能翻车 |
+
+⚠️ 我**没有亲验过** Android 模拟器多显示实现与真机的等价性，这是外部事实，标 `UNVERIFIED`。
+⇒ 第二段交付时必须写明「在双屏 Android 模拟器上验证，未在真实 POS 硬件上验证」，
+不得表述为「真机已验」。
 
 **理由**：本轮**第一次引入 Kotlin 与真机验证**，失败面显著变大。若两段混跑，
 一条判据红了分不清是接线、Kotlin 还是设备。分段之后，第一段红＝接线问题，

@@ -16,7 +16,7 @@
     "@catering-v2s/kernel-base-platform-ports": "workspace:*",
     "@catering-v2s/ui-integration-sample-console": "workspace:*",
     "expo": "~57.0.18",
-    "expo-status-bar": "~57.0.1",
+    "expo-modules-core": "~57.0.14",
     "react": "19.2.3",
     "react-native": "0.86.3"
   },
