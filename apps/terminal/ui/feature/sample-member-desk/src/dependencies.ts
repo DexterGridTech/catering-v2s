@@ -6,6 +6,7 @@ import {moduleName as memberRegistry} from '@catering-v2s/kernel-feature-sample-
 import {moduleName as staffSession} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {moduleName as render} from '@catering-v2s/ui-base-render';
 import {moduleName as primitives} from '@catering-v2s/ui-base-primitives';
+import {moduleName as input} from '@catering-v2s/ui-base-input';
 
 export const dependencyModuleNames = [
   displayContext,
@@ -16,5 +17,6 @@ export const dependencyModuleNames = [
   staffSession,
   render,
   primitives,
+  input,
 ] as const;
 export const devDependencyModuleNames = [] as const;

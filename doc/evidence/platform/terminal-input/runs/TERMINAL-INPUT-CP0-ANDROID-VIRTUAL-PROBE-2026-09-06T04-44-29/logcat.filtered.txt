@@ -1,0 +1,15 @@
+09-06 08:44:29.345 16551 16551 I TerminalDualScreen: event=display-snapshot-read displayCount=2 secondaryDisplayId=2
+09-06 08:44:29.396 16551 16551 I TerminalDualScreen: event=ime-insets-listener-attached window=primary displayIndex=0 displayId=0
+09-06 08:44:29.403 16551 16551 I TerminalDualScreen: event=secondary-surface-context-normalized primaryDensityDpi=320 surfaceDensityDpi=320
+09-06 08:44:29.445 16551 16551 I TerminalDualScreen: event=secondary-start-requested displayId=2 displayCount=2
+09-06 08:44:32.644 16551 16551 I TerminalDualScreen: event=secondary-start-completed
+09-06 08:44:33.024 16551 16597 I ReactNativeJS: [cp0-probe] focused displayIndex=0
+09-06 08:44:33.130 16551 16551 I TerminalDualScreen: event=ime-insets window=primary displayIndex=0 displayId=0 visible=true bottomPx=736 bottomLogical=368.0
+09-06 08:44:33.147 16551 16551 I TerminalDualScreen: event=ime-insets window=primary displayIndex=0 displayId=0 visible=true bottomPx=736 bottomLogical=368.0
+09-06 08:45:34.223 16551 16597 I ReactNativeJS: [cp0-probe] layout=virtual-7 {"x":24,"y":115,"width":592,"height":35}
+09-06 08:45:34.225 16551 16597 I ReactNativeJS: [cp0-probe] layout=virtual-8 {"x":24,"y":162,"width":592,"height":35}
+09-06 08:45:34.225 16551 16597 I ReactNativeJS: [cp0-probe] layout=submit {"x":24,"y":209,"width":592,"height":35}
+09-06 08:45:34.225 16551 16597 I ReactNativeJS: [cp0-probe] focused displayIndex=1
+09-06 08:45:47.599 16551 16597 I ReactNativeJS: [cp0-probe] virtual-typed displayIndex=1 length=1
+09-06 08:45:47.667 16551 16597 I ReactNativeJS: [cp0-probe] virtual-typed displayIndex=1 length=2
+09-06 08:45:47.717 16551 16597 I ReactNativeJS: [cp0-probe] submitted displayIndex=1 length=2

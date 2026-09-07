@@ -1,18 +1,40 @@
-import {createRequire} from 'node:module'
-import path from 'node:path'
+import {createElement} from 'react'
 
-const requireNative = createRequire(path.resolve(process.cwd(), 'package.json'))
-const Text = requireNative('react-native/Libraries/Text/Text').default
-const View = requireNative('react-native/Libraries/Components/View/View').default
-const Pressable = requireNative('react-native/Libraries/Components/Pressable/Pressable').default
-const TextInput = requireNative('react-native/Libraries/Components/TextInput/TextInput').default
-const StyleSheet = requireNative('react-native/Libraries/StyleSheet/StyleSheet').default
-const useColorScheme = requireNative('react-native/Libraries/Utilities/useColorScheme').default
-const useWindowDimensions = requireNative('react-native/Libraries/Utilities/useWindowDimensions').default
+// The focused renderer harness is node-only. These host names preserve the
+// React Native tree shape without loading platform-native implementation
+// modules, which are not executable in this environment.
+const Text = 'Text'
+const View = 'View'
+const ScrollView = 'ScrollView'
+const Pressable = 'Pressable'
+const TextInput = Object.assign(
+  (props: Readonly<Record<string, unknown>>) => createElement('TextInput', props),
+  {State: {currentlyFocusedInput: (): {focus: () => void} | null => null}},
+)
+const Keyboard = {
+  dismiss: () => undefined,
+  addListener: (_eventName: string, _listener: (event: unknown) => void) => ({remove: () => undefined}),
+}
+const StyleSheet = {
+  create: <TStyles extends object>(styles: TStyles): TStyles => styles,
+  flatten: (style: unknown): unknown => Array.isArray(style)
+    ? Object.assign({}, ...style.filter(Boolean))
+    : style,
+}
+const useColorScheme = (): 'light' | 'dark' | null => null
+const useWindowDimensions = () => ({width: 320, height: 640, scale: 1, fontScale: 1})
+// BackHandler's platform implementation is not executable in the node-only
+// renderer harness. Keep the native surface shape so LayerStack can exercise
+// registration and cleanup without pretending to run Android here.
+const BackHandler = {
+  addEventListener: (_eventName: string, _handler: (event: unknown) => boolean | null | undefined) => ({
+    remove: () => undefined,
+  }),
+}
 
 const testGlobals = globalThis as typeof globalThis & {
   __restoreReactNativeTestGlobals?: () => void
 }
 testGlobals.__restoreReactNativeTestGlobals?.()
 
-export {Pressable, StyleSheet, Text, TextInput, useColorScheme, useWindowDimensions, View}
+export {BackHandler, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, useWindowDimensions, View}

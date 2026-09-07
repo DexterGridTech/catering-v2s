@@ -10,7 +10,7 @@ export type MemberRowProps = Readonly<{
 }>
 
 export const MemberRow = ({testID, name, phone}: MemberRowProps) => (
-  <PrimitiveContainer testID={testID}>
+  <PrimitiveContainer testID={testID} layout="content">
     <PrimitiveText testID={`${testID}:content`}>
       {name} {phone}
     </PrimitiveText>

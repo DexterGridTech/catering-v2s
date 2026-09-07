@@ -1,5 +1,6 @@
 import type {ComponentType} from 'react'
 import type {
+  LayerGuard,
   LayerTier,
   RendererBinding,
   RendererCatalog,
@@ -12,6 +13,7 @@ const APPROVED_RENDERER_BINDING_KEYS = Object.freeze([
   'rendererKey',
   'component',
   'layerTier',
+  'layerGuard',
 ] as const)
 
 const hasExactRendererBindingKeys = (binding: object): boolean => {
@@ -23,7 +25,7 @@ const hasExactRendererBindingKeys = (binding: object): boolean => {
 const canonicalBinding = (binding: RendererBinding): RendererBinding => {
   if (typeof binding !== 'object' || binding === null || Array.isArray(binding)
     || !hasExactRendererBindingKeys(binding)) {
-    throw new Error('[ui-base-render] renderer binding fields must equal rendererKey, component, layerTier')
+    throw new Error('[ui-base-render] renderer binding fields must equal rendererKey, component, layerTier, layerGuard')
   }
   if (typeof binding.rendererKey !== 'string' || binding.rendererKey.trim().length === 0) {
     throw new Error('[ui-base-render] rendererKey must be non-empty')
@@ -34,10 +36,14 @@ const canonicalBinding = (binding: RendererBinding): RendererBinding => {
   if (binding.layerTier !== 'standard' && binding.layerTier !== 'alert') {
     throw new Error('[ui-base-render] renderer layerTier is invalid')
   }
+  if (binding.layerGuard !== 'dismissible' && binding.layerGuard !== 'decisive') {
+    throw new Error('[ui-base-render] renderer layerGuard is invalid')
+  }
   return Object.freeze({
     rendererKey: binding.rendererKey,
     component: binding.component,
     layerTier: binding.layerTier,
+    layerGuard: binding.layerGuard,
   })
 }
 
@@ -45,6 +51,7 @@ type RendererBindingInput = Readonly<{
   readonly rendererKey: string
   readonly component: unknown
   readonly layerTier: LayerTier
+  readonly layerGuard: LayerGuard
 }>
 
 type ValidRendererBinding<TValue> = TValue extends RendererBinding<infer _TProps>
@@ -65,5 +72,6 @@ export const createRendererCatalog = <TValue>(
   }
   const resolve = (rendererKey: string): RendererBinding | undefined => byRendererKey.get(rendererKey)
   const tierOf = (rendererKey: string): LayerTier | undefined => byRendererKey.get(rendererKey)?.layerTier
-  return Object.freeze({resolve, tierOf})
+  const guardOf = (rendererKey: string): LayerGuard | undefined => byRendererKey.get(rendererKey)?.layerGuard
+  return Object.freeze({resolve, tierOf, guardOf})
 }

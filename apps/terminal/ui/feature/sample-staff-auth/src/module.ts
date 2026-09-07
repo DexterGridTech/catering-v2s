@@ -1,17 +1,26 @@
 import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime'
 import {dependencyModuleNames} from './dependencies'
-import {authNoticeDismissedCommand} from './commands'
+import {
+  authNoticeDismissedCommand,
+  authSystemFailureDismissedCommand,
+  authSystemFailureObservedCommand,
+} from './commands'
 import {
   createAuthNavigationActor,
   createAuthNoticeActor,
   createAuthResultActor,
+  createAuthSystemNoticeActor,
 } from './features/actors/actors'
 import {moduleKind, moduleName} from './moduleName'
 
-const commands = [authNoticeDismissedCommand] as const
+const commands = [
+  authNoticeDismissedCommand,
+  authSystemFailureObservedCommand,
+  authSystemFailureDismissedCommand,
+] as const
 
 const runtimeModuleDependencies = dependencyModuleNames.filter(
-  name => name !== 'ui.base.render' && name !== 'ui.base.primitives',
+  name => name !== 'ui.base.input' && name !== 'ui.base.render' && name !== 'ui.base.primitives',
 )
 
 export const createSampleStaffAuthModule = (): RuntimeModule => {
@@ -19,6 +28,7 @@ export const createSampleStaffAuthModule = (): RuntimeModule => {
     createAuthResultActor(),
     createAuthNavigationActor(),
     createAuthNoticeActor(),
+    createAuthSystemNoticeActor(),
   ] as const
   return Object.freeze({
     moduleName,

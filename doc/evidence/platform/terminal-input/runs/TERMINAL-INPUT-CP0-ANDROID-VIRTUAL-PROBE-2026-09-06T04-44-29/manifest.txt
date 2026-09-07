@@ -1,0 +1,13 @@
+RUN_ID=TERMINAL-INPUT-CP0-ANDROID-VIRTUAL-PROBE-2026-09-06T04-44-29
+TARGET=apps/terminal/assembly/android/sample-terminal
+PACKAGE=com.anonymous.sampleterminal
+DEVICE=emulator-5554
+DEVICE_SCOPE=双屏 Android 模拟器；未在真实 POS 硬件验证
+METRO_PORT=8081
+APP_PID=16551
+STARTED_UTC=2026-09-06T04:44:29Z
+LAST_KNOWN_GOOD=主屏 system IME visible=true 且 bottomPx=736；副屏虚拟按键回写 length=1、length=2；副屏提交回读 length=2
+FIRST_FAILURE=原始探针记录的 Presentation system IME 不可见；该失败属于当前产品裁定的 SECONDARY system-IME 非能力边界，不是本次副屏 virtual-input 路径失败
+BROKEN_BOUNDARY=SECONDARY system IME token/visibility 不在目标 Presentation window；当前产品不要求该能力
+CLEANUP=PASS
+CLEANUP_READBACK=adb shell pidof com.anonymous.sampleterminal 为空；Metro 8081 与 logcat session 已停止；临时 App.tsx 已恢复生产实现

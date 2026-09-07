@@ -64,20 +64,31 @@ describe('test-expo host shell', () => {
       typeof event === 'object' && event !== null && (event as {readonly event?: string}).event === 'startup-failed',
     )).toBe(false)
 
-    const layoutTargets = renderer!.root.findAll(node =>
-      typeof node.type === 'string' && typeof node.props.onLayout === 'function',
-    )
-    expect(layoutTargets).toHaveLength(1)
-    await act(async () => {
-      ;(layoutTargets[0].props.onLayout as (event: {readonly nativeEvent: {readonly layout: {readonly width: number}}}) => void)({
-        nativeEvent: {layout: {width: 1000}},
+    const assertResponsiveSurface = (testID: string): void => {
+      const surface = renderer!.root.findByProps({testID})
+      const style = StyleSheet.flatten(surface.props.style) as {
+        readonly aspectRatio?: unknown
+        readonly transform?: unknown
+        readonly width?: unknown
+        readonly height?: unknown
+      }
+      expect(typeof style.aspectRatio).toBe('number')
+      expect(style.transform).toBeUndefined()
+      expect(typeof style.width).not.toBe('number')
+      expect(typeof style.height).not.toBe('number')
+    }
+    for (const [index, frame] of renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'}).entries()) {
+      act(() => {
+        ;(frame.props.onLayout as (event: unknown) => void)({
+          nativeEvent: {layout: index === 0 ? {width: 1157, height: 723} : {width: 962, height: 541}},
+        })
       })
-      await nextTurn()
-    })
+    }
+    assertResponsiveSurface('sample-console:test-expo:surface:PRIMARY')
     const canvas = renderer!.root.findByProps({testID: 'sample-console:test-expo:canvas'})
-    const canvasStyle = StyleSheet.flatten(canvas.props.style) as {readonly alignSelf?: string; readonly width?: number}
-    expect(canvasStyle.width).toBe(944)
-    expect(canvasStyle.alignSelf).toBe('center')
+    const canvasStyle = StyleSheet.flatten(canvas.props.style) as {readonly width?: unknown; readonly transform?: unknown}
+    expect(canvasStyle.width).toBe('100%')
+    expect(canvasStyle.transform).toBeUndefined()
 
     const toggle = renderer!.root.findByProps({testID: 'sample-console:test-expo:surface-toggle'})
     expect(typeof toggle.props.onPress).toBe('function')
@@ -88,6 +99,15 @@ describe('test-expo host shell', () => {
 
     await waitFor(renderer!, () => renderer!.root.findAllByProps({testID: 'sample-console:test-expo:surface:SECONDARY'}).length > 0)
     expect(renderer!.root.findAllByProps({testID: 'sample-console:test-expo:surface:PRIMARY'}).length).toBeGreaterThan(0)
+    for (const [index, frame] of renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'}).entries()) {
+      act(() => {
+        ;(frame.props.onLayout as (event: unknown) => void)({
+          nativeEvent: {layout: index === 0 ? {width: 1157, height: 723} : {width: 962, height: 541}},
+        })
+      })
+    }
+    assertResponsiveSurface('sample-console:test-expo:surface:PRIMARY')
+    assertResponsiveSurface('sample-console:test-expo:surface:SECONDARY')
     expect(createAssembly).toHaveBeenCalledTimes(1)
   })
 })

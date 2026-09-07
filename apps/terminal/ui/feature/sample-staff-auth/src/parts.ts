@@ -1,5 +1,6 @@
 import {definePart} from '@catering-v2s/ui-base-render'
 import {AuthNotice} from './components/AuthNotice'
+import {AuthSystemNotice} from './components/AuthSystemNotice'
 import {StaffLogin} from './components/StaffLogin'
 
 export const loginPart = definePart({
@@ -27,4 +28,17 @@ export const noticePart = definePart({
   layerTier: 'alert',
 })
 
-export const parts = Object.freeze([loginPart, noticePart])
+export const systemNoticePart = definePart({
+  partKey: 'sample.auth.system-notice',
+  rendererKey: 'sample.auth.system-notice',
+  containerKeys: [],
+  displayModes: ['PRIMARY'] as const,
+  workspaces: ['MAIN'] as const,
+  instanceModes: ['MASTER'] as const,
+  title: '系统失败提示',
+  description: '向店员说明登录或退出的基础设施失败，并允许继续操作',
+  component: AuthSystemNotice,
+  layerTier: 'alert',
+})
+
+export const parts = Object.freeze([loginPart, noticePart, systemNoticePart])

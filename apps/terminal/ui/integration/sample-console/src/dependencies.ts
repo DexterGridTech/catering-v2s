@@ -6,6 +6,7 @@ import {moduleName as uiState} from '@catering-v2s/kernel-base-ui-state'
 import {moduleName as staffSession} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {moduleName as memberRegistry} from '@catering-v2s/kernel-feature-sample-member-registry'
 import {moduleName as render} from '@catering-v2s/ui-base-render'
+import {moduleName as input} from '@catering-v2s/ui-base-input'
 import {moduleName as staffAuth} from '@catering-v2s/ui-feature-sample-staff-auth'
 import {moduleName as memberDesk} from '@catering-v2s/ui-feature-sample-member-desk'
 import {moduleName as devHost} from '@catering-v2s/ui-base-dev-host'
@@ -19,6 +20,7 @@ export const dependencyModuleNames = [
   staffSession,
   memberRegistry,
   render,
+  input,
   staffAuth,
   memberDesk,
 ] as const;

@@ -14,7 +14,8 @@ import {
 } from '@catering-v2s/kernel-base-runtime'
 import {createUiCatalog, createUiStateModule} from '@catering-v2s/kernel-base-ui-state'
 import {createRendererCatalog, RenderProvider, SurfaceRoot, type RenderProviderProps} from '@catering-v2s/ui-base-render'
-import {createElement, type ReactElement} from 'react'
+import {InputSurfaceFrame} from '@catering-v2s/ui-base-input'
+import {createElement, useEffect, useState, type ReactElement, type ReactNode} from 'react'
 import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk'
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth'
 import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry'
@@ -28,6 +29,42 @@ export type SampleAssembly = Readonly<{
   readonly runtime: Runtime
   readonly createSurface: (displayMode: DisplayMode) => ReactElement
 }>
+
+type SurfaceImeInsetsSnapshot = Readonly<{
+  readonly visible: boolean
+  readonly bottomLogical: number
+}>
+
+type SurfaceImeInsetsSource = Readonly<{
+  readonly getSnapshot: () => SurfaceImeInsetsSnapshot | null
+  readonly subscribe: (listener: (snapshot: SurfaceImeInsetsSnapshot) => void) => () => void
+}>
+
+const SurfaceInputFrame = ({
+  imeInsetsSource,
+  children,
+}: Readonly<{
+  readonly imeInsetsSource?: SurfaceImeInsetsSource
+  readonly children?: ReactNode
+}>) => {
+  const [snapshot, setSnapshot] = useState<SurfaceImeInsetsSnapshot | null>(
+    () => imeInsetsSource?.getSnapshot() ?? null,
+  )
+
+  useEffect(() => {
+    if (imeInsetsSource === undefined) return undefined
+    setSnapshot(imeInsetsSource.getSnapshot())
+    return imeInsetsSource.subscribe(setSnapshot)
+  }, [imeInsetsSource])
+
+  return createElement(
+    InputSurfaceFrame,
+    {
+      imeInset: snapshot?.visible === true ? Math.max(0, snapshot.bottomLogical) : 0,
+    },
+    children,
+  )
+}
 
 export const createSurfaceForDisplayIndex = (
   assembly: SampleAssembly,
@@ -56,6 +93,7 @@ const createDispatchCommand = (runtime: Runtime): RenderProviderProps['dispatchC
 export const createSampleAssembly = async (input: Readonly<{
   readonly platformPorts: PlatformPorts
   readonly persistenceKey?: string
+  readonly imeInsetsSources?: Readonly<Partial<Record<DisplayMode, SurfaceImeInsetsSource>>>
 }>): Promise<SampleAssembly> => {
   const definedParts = [
     ...sampleStaffAuthAssembly.parts,
@@ -67,7 +105,6 @@ export const createSampleAssembly = async (input: Readonly<{
   )
   const variables = [
     ...sampleStaffAuthAssembly.variables,
-    ...sampleMemberDeskAssembly.variables,
   ] as const
   const uiStateModule = createUiStateModule({catalog: uiCatalog, variables})
   const modules: readonly RuntimeModule[] = [
@@ -109,7 +146,17 @@ export const createSampleAssembly = async (input: Readonly<{
       dispatchCommand,
       selectUiVariable,
     },
-    createElement(SurfaceRoot, {displayMode, containerKey: mainContainerKey}),
+    createElement(SurfaceRoot, {
+      displayMode,
+      containerKey: mainContainerKey,
+      renderContentFrame: ({content}) => createElement(
+        SurfaceInputFrame,
+        {
+          imeInsetsSource: input.imeInsetsSources?.[displayMode],
+        },
+        content,
+      ),
+    }),
   )
 
   return Object.freeze({runtime, createSurface})

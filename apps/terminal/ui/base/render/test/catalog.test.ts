@@ -45,6 +45,7 @@ describe('renderer catalog boundaries', () => {
     ])
     expect(Reflect.ownKeys(rendererCatalog.resolve('catalog-renderer') ?? {}).sort()).toEqual([
       'component',
+      'layerGuard',
       'layerTier',
       'rendererKey',
     ])
@@ -53,6 +54,7 @@ describe('renderer catalog boundaries', () => {
     expect(Object.prototype.hasOwnProperty.call(defined.rendererBinding, 'title')).toBe(false)
     expect(Object.prototype.hasOwnProperty.call(defined.rendererBinding, 'description')).toBe(false)
     expect(defined.rendererBinding.layerTier).toBe('standard')
+    expect(defined.rendererBinding.layerGuard).toBe('dismissible')
   })
 
   it('rejects duplicate renderer keys and exposes no mutation entry point', () => {
@@ -134,7 +136,7 @@ describe('renderer catalog boundaries', () => {
   it('rejects a non-component at the typed catalog boundary', () => {
     expect(() => {
       // @ts-expect-error A renderer binding must use the named React component boundary.
-      createRendererCatalog([{rendererKey: 'invalid-renderer', component: 42, layerTier: 'standard'}])
+      createRendererCatalog([{rendererKey: 'invalid-renderer', component: 42, layerTier: 'standard', layerGuard: 'dismissible'}])
     }).toThrow(/component/)
   })
 })

@@ -52,8 +52,8 @@ v13 场景 4 「点新增会员 → `member-form`」，场景 6 「点提交」�
 **从 4 到 6 之间没有任何出口** —— 店员填了一半发现顾客走了、填错了人、
 或者根本点错了按钮，界面上没有返回，只有提交。
 
-⚠️ 这不只是少个按钮：副屏此时停在 `customer-member{mode:'preview'}`，
-顾客正看着一份半成品资料，而店员没有办法把它撤下来。
+⚠️ 2026-09-05 修订：`preview` 态已下线（编辑值不再进 store，副屏无可镜像之物），
+此时副屏停在 `customer-welcome`。断点本身不变 —— 店员填了一半仍然没有出口。
 
 ### 2.2 补法
 
@@ -148,7 +148,7 @@ v13 场景 7b：主屏 `member-list` ＋ `waiting-confirm` ＋ `registry-notice`
 
 | 出口 | 双屏（通知出现时屏是 `member-list`） | 单屏（通知出现时屏已是 `member-form`） |
 | --- | --- | --- |
-| **修改后重试** | 关 `registry-notice` 与 `waiting-confirm` 两层 ＋ `showScreen(member-form)`；副屏 `preview` | **只关 `registry-notice`**（屏已正确，无第二层可关、无副屏） |
+| **修改后重试** | 关 `registry-notice` 与 `waiting-confirm` 两层 ＋ `showScreen(member-form)`，表单以 `pending` 回填；副屏 `customer-welcome` | **只关 `registry-notice`**（屏已正确，无第二层可关、无副屏） |
 | **放弃本次登记** | 关两层，留在 `member-list`；副屏 `customer-welcome` | 关 `registry-notice` ＋ `showScreen(member-list)` |
 
 ⚠️ 数据语义两种形态一致：**重试保留**登记 uiVariables，**放弃清空**。
@@ -318,14 +318,25 @@ Android 返回键当前**零处理**，会直接退出应用 —— 在 Kiosk �
 
 ## 9. 副屏：顾客视角的三条纪律
 
-副屏的设计原则和主屏不同 —— **顾客不是操作者，是被服务者**。
+副屏的设计原则和主屏不同 —— **顾客不是店务操作者**。
+
+⚠️ **2026-09-05 修订**：原文写「顾客不是操作者，是被服务者」，
+在 Dexter 追加顾客侧年龄录入之后**这句话已不成立**。
+准确的表述是：**顾客只在自己的数据上操作，不参与任何店务操作**。
+店务（登录、建档、导航、异常处置）仍全在主屏。
 
 **其一，副屏永远不显示店员的操作细节。** 顾客看到的是「您的登记信息」，
-不是「员工正在填写表单」。
+不是「员工正在填写表单」。⚠️ 这条**不受年龄录入影响** ——
+年龄是**顾客自己的数据**，不是店员的操作细节。
 
-**其二，副屏只在需要顾客决策时才出现动作。** 副屏能拿到的 mode 只有
-`preview`（纯展示、零动作）与 `confirm`（确认、拒绝两个按钮）；
-`welcome` 同样零动作。
+**其二，副屏的动作限于「顾客对自己这一单的决定与补充」。**
+⚠️ **2026-09-05 修订**：原文写「只在需要顾客决策时才出现动作 …… 只有确认、拒绝两个按钮」，
+现已扩为**决策 ＋ 有限录入**：`confirm` 态含确认、拒绝**与一个可选的年龄输入**
+（见 sample 需求 §4.5）；`welcome` 仍是零动作。
+⚠️ 2026-09-05：`preview` 态已下线，店员录入期间副屏保持 `welcome`。
+
+⚠️ **边界要守住**：副屏可录入的只能是**顾客本人才知道、且只属于这一单**的信息。
+不得把店员的字段（姓名、电话）挪到副屏让顾客填 —— 那会把店务推给顾客。
 
 ⚠️ `handheld-confirm` **永远不会出现在副屏** —— 它是单屏专属形态，
 屏幕在店员与顾客之间传递，故额外带「交还店员」。
@@ -336,6 +347,11 @@ Android 返回键当前**零处理**，会直接退出应用 —— 在 Kiosk �
 
 ⇒ 这条同时是一条**可机械检查的判据**：
 副屏在场的层集合必须为空，任何 `openLayer` 到 `SECONDARY` 的调用都应视为设计错误。
+
+⚠️ **虚拟键盘不破这条**：按 input 需求 §1b.6，键盘挂在 `SurfaceRoot` 的**底部区**，
+它既不是屏也不是层 ⇒ 副屏出现键盘时，层集合**仍然为空**。
+⚠️ 反过来说：**不得把副屏键盘实现成一个 layer** —— 那会同时破掉本条纪律
+与 input 需求 §1b.6 的挂载形态。
 
 ---
 
@@ -363,7 +379,7 @@ Android 返回键当前**零处理**，会直接退出应用 —— 在 Kiosk �
 
 | mode | 用于 | 顾客可见动作 |
 | --- | --- | --- |
-| `preview` | 录入中的实时预览 | 无 |
+| ~~`preview`~~ | ⚠️ **2026-09-05 下线**：编辑值不进 store，无可预览之物；录入期间副屏保持 `welcome` | — |
 | `confirm` | **双屏**副屏确认 | 确认、拒绝 |
 | `handheld-confirm` | **单屏**占满整屏确认 | 确认、拒绝、**交还店员** |
 
@@ -515,7 +531,7 @@ screen mode 或业务 command —— 那些一旦进 props，控件就带上了�
 | `registry-notice` | `:message` · `:dismiss` | `:retry` · `:abandon`，**移除 `:dismiss`** | 场景 8 由「知道了」改为两个出口，v13 §4.3 第 8 行需同步 |
 | `member-form` | `:name` · `:phone` · `:submit` · `:loading` | `:cancel` | — |
 | `member-list` | `:row` · `:add` · `:logout` | `:empty-action` | 空态引导，§8.2 |
-| `customer-member` | `:name` · `:phone`；confirm 态另有 `:confirm` · `:reject` | `handheld-confirm` 态另有 `:hand-back` | 见 §10.2 |
+| `customer-member` | `:name` · `:phone` · **`:age`**；confirm 态另有 `:confirm` · `:reject` | `handheld-confirm` 态另有 `:hand-back` | 见 §10.2；⚠️ **2026-09-05 新增 `:age`**（顾客侧可选年龄输入，sample 需求 §4.5），**两种 mode 都有** |
 
 ⚠️ **`registry-notice` 移除 `:dismiss` 是破坏性变更** —— 它从「读完关掉」变为
 「必须选一条出口」。v13 §4.3 场景 8「店员点『知道了』」随之作废，需一并修订。
@@ -528,8 +544,8 @@ screen mode 或业务 command —— 那些一旦进 props，控件就带上了�
 | §4.4 「差异只在三处」 | 改为四处，见 §10.5（撤回形态单双屏不同） |
 | §6.9 testID 清单 | 按上表补齐 |
 | **S-15** | 层部件由三个增至**六个**；判据的分母须同步 |
-| **S-16** | 需覆盖 `customer-member` 的**三种** mode，含 `handheld-confirm` |
-| §6.9 props 契约 | `customer-member` 的 props 由 `{mode:'preview'\|'confirm'}` 扩为**三值**，含 `'handheld-confirm'` |
+| **S-16** | 需覆盖 `customer-member` 的**两种** mode（`confirm`／`handheld-confirm`）⚠️ **2026-09-05 更正**：原写「三种」，与本表下一行「props 改为 `{confirm\|handheld-confirm\}`」自相矛盾 —— `preview` 已下线 ⇒ 是两种。**两种都须覆盖年龄输入**（sample 需求 §4.5） |
+| §6.9 props 契约 | `customer-member` 的 props 改为 `{mode:'confirm'\|'handheld-confirm'}` —— `preview` 下线、`handheld-confirm` 新增，**仍是两值** |
 | **P-11** | 六条新命令中的 `public` 命令须纳入「派发点显式带 `requestId`」的判定分母 |
 | **P-12** | v13 的 allowed-list 仍只含旧命令 ⇒ 须补入六条新命令；并登记 `noticeDismissedCommand` 原触发点消失 |
 | §11.2b 的三个新 layer | `partKey`、owner module、`displayMode`、props、guard、testID 已在本文逐项给出，v13 需照此补表 |

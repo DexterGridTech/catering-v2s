@@ -1,49 +1,110 @@
 import {logoutCommand} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {selectMembers as selectMemberRecords} from '@catering-v2s/kernel-feature-sample-member-registry'
-import {dispatchWithRequestId, useDispatchCommand, useUiStateSelector} from '@catering-v2s/ui-base-render'
 import {
+  dispatchWithRequestId,
+  useDispatchCommand,
+  useRequestInFlight,
+  useTrackedRequest,
+  useUiStateSelector,
+} from '@catering-v2s/ui-base-render'
+import {
+  PrimitiveActions,
   PrimitiveButton,
   PrimitiveContainer,
   PrimitiveHeading,
-  PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
-import {memberFormOpenedCommand} from '../commands'
+import {deskSystemFailureObservedCommand, memberFormOpenedCommand} from '../commands'
 import {MemberRow} from './MemberRow'
+import {classifyRequestResult} from './requestOutcome'
+import {EmptyState, ScrollArea} from './controls'
 
 export const MemberList = () => {
   const dispatchCommand = useDispatchCommand()
   const members = useUiStateSelector(selectMemberRecords) ?? []
+  const request = useTrackedRequest()
+  const requestInFlight = useRequestInFlight(request.requestId)
 
-  const openForm = () => dispatchWithRequestId(dispatchCommand, memberFormOpenedCommand, {})
-  const logout = () => dispatchWithRequestId(dispatchCommand, logoutCommand, {})
+  const openForm = () => dispatchWithRequestId(
+    dispatchCommand,
+    memberFormOpenedCommand,
+    {},
+  )
+
+  const observeSystemFailure = async (): Promise<void> => {
+    try {
+      await dispatchWithRequestId(
+        dispatchCommand,
+        deskSystemFailureObservedCommand,
+        {operation: 'logout'},
+      )
+    } catch (_error) {
+      // useDispatchCommand has already emitted the structured rejection diagnostic.
+    }
+  }
+
+  const logout = async () => {
+    if (requestInFlight) return
+    const requestId = request.start()
+    try {
+      const result = await dispatchWithRequestId(dispatchCommand, logoutCommand, {}, requestId)
+      const outcome = classifyRequestResult(result)
+      if (outcome !== 'running') request.finish(requestId)
+      if (outcome === 'system-failure') await observeSystemFailure()
+      return result
+    } catch (error) {
+      request.finish(requestId)
+      await observeSystemFailure()
+      throw error
+    }
+  }
 
   return (
     <PrimitiveContainer testID="sample.desk.member-list">
       <PrimitiveHeading testID="sample.desk.member-list:title">已登记会员</PrimitiveHeading>
-      {members.length === 0 ? (
-        <PrimitiveText testID="sample.desk.member-list:empty">暂无会员</PrimitiveText>
-      ) : members.map(member => (
-        <MemberRow
-          key={member.memberId}
-          testID="sample.desk.member-list:row"
-          name={member.name}
-          phone={member.phone}
-        />
-      ))}
-      <PrimitiveButton
-        testID="sample.desk.member-list:add"
-        accessibilityLabel="新增会员"
-        onPress={openForm}
-      >
-        新增
-      </PrimitiveButton>
-      <PrimitiveButton
-        testID="sample.desk.member-list:logout"
-        accessibilityLabel="退出"
-        onPress={logout}
-      >
-        退出
-      </PrimitiveButton>
+      <ScrollArea testID="sample.desk.member-list:scroll">
+        {members.length === 0 ? (
+          <EmptyState
+            testID="sample.desk.member-list:empty"
+            message="暂无会员"
+          />
+        ) : (
+          members.map(member => (
+            <MemberRow
+              key={member.memberId}
+              testID="sample.desk.member-list:row"
+              name={member.name}
+              phone={member.phone}
+            />
+          ))
+        )}
+      </ScrollArea>
+      <PrimitiveActions testID="sample.desk.member-list:actions">
+        {members.length === 0 ? (
+          <PrimitiveButton
+            testID="sample.desk.member-list:empty-action"
+            accessibilityLabel="新增会员"
+            onPress={openForm}
+          >
+            新增会员
+          </PrimitiveButton>
+        ) : (
+          <PrimitiveButton
+            testID="sample.desk.member-list:add"
+            accessibilityLabel="新增会员"
+            onPress={openForm}
+          >
+            新增
+          </PrimitiveButton>
+        )}
+        <PrimitiveButton
+          testID="sample.desk.member-list:logout"
+          accessibilityLabel="退出"
+          disabled={requestInFlight}
+          onPress={logout}
+        >
+          退出
+        </PrimitiveButton>
+      </PrimitiveActions>
     </PrimitiveContainer>
   )
 }

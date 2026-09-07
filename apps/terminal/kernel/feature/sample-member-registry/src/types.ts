@@ -2,6 +2,7 @@ export type Member = Readonly<{
   memberId: string
   name: string
   phone: string
+  age?: number
   registeredAt: number
 }>
 

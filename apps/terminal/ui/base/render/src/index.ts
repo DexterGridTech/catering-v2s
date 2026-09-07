@@ -1,14 +1,24 @@
 export {moduleName} from './moduleName';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
 export type {
+  LayerGuard,
   LayerTier,
   RendererBinding,
   RendererCatalog,
 } from './types/catalog';
 export type {
   RenderProviderProps,
+  SurfaceRootContentFrame,
   SurfaceRootProps,
 } from './types/props';
+export {
+  SurfaceFocusBoundaryContext,
+  useSurfaceFocusBoundary,
+} from './contexts/SurfaceFocusBoundaryContext';
+export type {
+  SurfaceFocusBoundaryListener,
+  SurfaceFocusBoundaryPhase,
+} from './contexts/SurfaceFocusBoundaryContext';
 export {createRendererCatalog} from './foundations/createRendererCatalog';
 export {definePart} from './foundations/definePart';
 export {dispatchWithRequestId} from './foundations/dispatchWithRequestId';

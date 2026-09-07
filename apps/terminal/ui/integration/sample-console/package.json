@@ -12,12 +12,12 @@
     "scaleToFit": true,
     "surfaces": {
       "PRIMARY": {
-        "width": 1920,
-        "height": 1080
+        "width": 1157,
+        "height": 723
       },
       "SECONDARY": {
-        "width": 1024,
-        "height": 600
+        "width": 962,
+        "height": 541
       }
     }
   },
@@ -35,8 +35,11 @@
     "@catering-v2s/kernel-feature-sample-member-registry": "workspace:*",
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*",
     "@catering-v2s/ui-base-render": "workspace:*",
+    "@catering-v2s/ui-base-input": "workspace:*",
     "@catering-v2s/ui-feature-sample-member-desk": "workspace:*",
-    "@catering-v2s/ui-feature-sample-staff-auth": "workspace:*"
+    "@catering-v2s/ui-feature-sample-staff-auth": "workspace:*",
+    "react-native-reanimated": "4.5.1",
+    "react-native-worklets": "0.10.1"
   },
   "peerDependencies": {
     "react": "19.2.3",
@@ -45,13 +48,16 @@
   "devDependencies": {
     "@catering-v2s/ui-base-dev-host": "workspace:*",
     "@types/react": "~19.2.2",
+    "babel-preset-expo": "~57.0.0",
     "expo": "~57.0.18",
     "expo-status-bar": "~57.0.1",
+    "nativewind": "4.2.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-web": "~0.21.0",
     "react-test-renderer": "19.2.3",
+    "tailwindcss": "3.4.19",
     "typescript": "~6.0.3",
     "vitest": "4.1.10"
   }

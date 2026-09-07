@@ -8,12 +8,13 @@ IA=doc/plans/platform/2026-09-05-v2s-terminal-ui-capability-and-experience-ia-de
 INTERACTION=doc/plans/platform/2026-09-05-v2s-terminal-ui-capability-and-experience-interaction-design-codex.md
 REQUIREMENTS=doc/plans/platform/2026-09-05-v2s-terminal-ui-capability-and-experience-requirements-claude.md
 IMPLEMENTATION_AUTHORITY=false
-AUTHORIZED_NOW=仅写详设、交互工件、IA、实施计划
-NOT_AUTHORIZED_NOW=生产代码、测试、依赖、运行、Android、Web、浏览器自动化、DEV、seed、UAT、部署
-PLAN_STATUS=READY_FOR_STATIC_REVIEW_WITH_IMPLEMENTATION_INPUT_GATE
+CURRENT_TASK_AUTHORIZATION=DEXTER_2026_09_05_IMPLEMENTATION
+AUTHORIZED_NOW=按 CP-1 至 CP-4 完成源码、测试、依赖与本机验证
+NOT_AUTHORIZED_NOW=§9 比例静态门、真实 POS、UAT、部署、DEV、seed、浏览器自动化
+PLAN_STATUS=READY_FOR_IMPLEMENTATION_UNDER_DEXTER_AUTHORIZATION
 
-本计划是实施输入，不是实施授权。实现前必须先完成需求/交互中
-layer type=6 与 layer partKey=7 的文字修正，并由 Dexter 另行授权 CP-1。
+本计划是实施输入，不替代 Dexter 授权。Dexter 已解除 source input gate；实现统一使用
+layer type=6 与 layer partKey=7 双分母，并按当前授权进入 CP-1。
 
 ## 1. 目标、架构与技术栈
 
@@ -35,7 +36,7 @@ terminalSurfaces 目标尺寸；部件内部按比例适配机型，两者不是
 
 - NativeWind + Tailwind：只在 CP-1 接线，版本以本机解析值为准。
 - React Native Reusables：copy-in 到 primitives，不能成为 workspace/runtime dependency。
-- React Native：现有八个 primitive 的底层能力继续由 primitives 隔离。
+- React Native：现有八个 primitive 的底层能力继续由 primitives 隔离；本批另有一个受控 `PrimitiveScrollView` 公共滚动契约。
 - theme：base tokens 在 primitives，app theme 在 sample-console/theme。
 - render：LayerStack 负责覆盖、模态、backdrop、Android back、focus；不负责业务语义。
 - automation backend：本批不建；控件挂点必须是未来 automation 的必经路径。
@@ -45,9 +46,9 @@ terminalSurfaces 目标尺寸；部件内部按比例适配机型，两者不是
 | CP | 主题 | 依赖 | 完成闸门 | 停止点 |
 |---|---|---|---|---|
 | CP-1 | 工具链与 Android 显示基线 | 无 | 本机解析兼容、真实 primitive class path、Web/Android 基线 | 版本或启动不可证明 |
-| CP-2 | RNR copy-in 与八项 public contract | CP-1 | contract/testID/className/依赖边界均可证伪 | contract 或强制挂点破坏 |
+| CP-2 | RNR copy-in、八项既有 contract 与受控滚动 contract | CP-1 | contract/testID/className/依赖边界均可证伪 | contract 或强制挂点破坏 |
 | CP-3 | theme 与 render layer | CP-2 | token、覆盖、guard、back、focus 均有 focused/red | render 需要业务依赖或 layer 仍不覆盖 |
-| CP-4 | Journey、actors、feature-local 控件 | CP-3 + 输入文字修正 | 12 catalog parts、15 IA views、7 layer keys、单双屏和失败恢复对账 | 输入矛盾或任一业务路径静默/越权 |
+| CP-4 | Journey、actors、feature-local 控件 | CP-3 | 12 catalog parts、15 IA views、7 layer keys、单双屏和失败恢复对账 | 实际分母/输入与已裁定实现输入不一致，或任一业务路径静默/越权 |
 
 ## 3. CP-1：工具链与 Android 显示基线
 
@@ -104,7 +105,7 @@ bootstrap、业务 assembly surfaceMode 或 kernel port，立即停止。
 ### 4.1 实施顺序
 
 1. 复制 RNR 需要的内部源码到 primitives/rnr，不引用 RNR package。
-2. 逐个把八个既有 export 映射到 RNR 内部实现；保持 export、props、呈现语义。
+2. 逐个保持八个既有 export 的 export、props、呈现语义，并新增窄的 `PrimitiveScrollView` 公共契约；该新增契约只允许强制 `testID` 与 children。
 3. 把 assertTestID 放在每个公共控件唯一必经路径，testID 挂真实 RN 节点。
 4. 把 base tokens 接入 primitives 内部；不把 className 暴露给 ui/feature。
 5. 同步 README、invariants、index 与测试；automation 仅保留未来挂点，不导入 backend。
@@ -128,7 +129,7 @@ focused/static：
 
 ### 4.3 判据与停止
 
-通过：八个 public contract 集合相等；空/空白 testID 抛错；RNR dependency 不进
+通过：八个既有 public contract 与受控滚动 contract 的集合、invariants、README 对齐；空/空白 testID 抛错；RNR dependency 不进
 package；feature 内零 className；所有控件仍可渲染。
 
 红向量：任一控件绕过 assertTestID；feature 写 className；RNR 通过 package
@@ -171,7 +172,8 @@ apps/terminal/ui/theme 或共享 app theme。
 2. 由 layer entry/renderer binding 提供 guard；layerTier 仍只决定排序。
 3. backdrop 点击只关闭 dismissible；decisive 不关闭。
 4. Android back 只处理最上层 dismissible；decisive 不退出、不关闭。
-5. 打开时捕获当前 focus，关闭时恢复；无 focus target 时安全 no-op。
+5. 通过 RN 0.86.3 的 `TextInput.State.currentlyFocusedInput` 打开时捕获当前 focus，
+   将 focus 送入可聚焦的 top layer wrapper，关闭最后一层时恢复；无 focus target 时安全 no-op。
 6. render 不 import feature、不决定业务文案、不返回 promise、不保存命令 payload。
 
 判据：
@@ -188,21 +190,20 @@ catalog import、实现 await showDialog、关闭后 focus 丢失。模型红与
 
 ## 6. CP-4：Journey 与体验闭环
 
-### 6.1 开工前输入闸门
+### 6.1 已解除的输入接缝与实现分母
 
-必须先把需求/交互的层计数改成：
+Dexter 已解除需求/交互的 source input gate。实现不得回到历史单数字口径，固定使用：
 
 - layer semantic type=6；
 - layer partKey=7；
 - catalog parts=12；
 - IA-ID=15。
 
-同时修正单屏顾客拒绝的 interaction map：不得写成直接 `reject→list`；批准的
+单屏顾客拒绝的 interaction map 已补齐两种屏幕形态；实现不得写成直接 `reject→list`；批准的
 闭环是 `reject→member-form + registry-notice`，再由 retry/abandon 分别回 form/list。
-当前 owning actor 与本计划均按此闭环，不能把冻结输入冲突留给实施者猜。
+当前 owning actor 与本计划均按此闭环，不能重新引入旧路径。
 
-不得以“六个层”同时代表 type 和 partKey。若 Dexter 选择其他分母，CP-4
-不按本计划继续，需重新生成 IA、详设和计划。
+不得以“六个层”同时代表 type 和 partKey；两个分母必须在实现、测试和交付报告中分列。
 
 ### 6.2 文件级实施清单
 
@@ -225,6 +226,14 @@ member-desk：
 - apps/terminal/ui/feature/sample-member-desk/src/components/
 - apps/terminal/ui/feature/sample-member-desk/test/
 - package.json、src/dependencies.ts、terminal-invariants.json、README.md
+
+CP-4 允许并要求一个已授权的 owner 接缝：`sample-member-registry` 新增
+`withdrawMemberCommand` 与 `memberWithdrawnCommand`。这不是把 UI 命令移进 kernel，
+而是把“撤回 pending、保留 draft、与 confirm/reject 竞态先到者赢”归还给 registry
+owner；UI 仍只拥有并派发 `memberSubmissionWithdrawnCommand` 意图。对应 owning source
+为该 kernel feature 的 `commands.ts`、`module.ts`、`features/actors/actors.ts`、
+`src/index.ts`、README、terminal-invariants 与 focused test；不得把 UI part、layer、
+display mode 或 raw error 传入 kernel。
 
 integration：
 
@@ -265,9 +274,11 @@ staff-auth 保留 authNoticeDismissedCommand；新增：
 - authSystemFailureObservedCommand
 - authSystemFailureDismissedCommand
 
-所有 feature-owned public command 在 producer 处显式带 requestId；module、
-allowed-list、invariants、focused tests 同步。kernel 业务 command 不因 UI 视觉
-批次改 owner。
+所有 feature-owned public command 在 producer 处经 `dispatchWithRequestId` 生成 requestId，
+带 loading 生命周期的业务动作复用 tracked requestId；module、allowed-list、invariants、
+focused tests 同步。kernel 业务 command 不因视觉偏好改 owner；本 CP 唯一新增的
+`withdrawMemberCommand`/`memberWithdrawnCommand` 是为修复撤回业务事实归属而经授权补回
+registry owner 的明确接缝，不能推广成 UI 绕过 owner 的通用模式。
 
 customer-member props：
 
@@ -284,20 +295,26 @@ hasSecondarySurface 选择 mode；所有“副屏回……”只在 actor 的双
 `finally` 形态要改为显式 success/catch，并且不能只观察 Promise rejection。
 `CommandDispatchResult` 在
 `apps/terminal/kernel/base/runtime/src/types/execution.ts` 明确有
-`completed`、`error`、`timed-out`、`partial-failed` 四种聚合结果；actor handler
+`running`、`completed`、`error`、`timed-out`、`partial-failed` 五种聚合结果；`running`
+是非终态，不能清除 loading 或打开 system notice；actor handler
 错误通常会以 fulfilled result 返回，dispatcher/ledger 边界才会 reject。
 
 实现顺序：
 
 1. start 原 request；
 2. `status=completed`：finish 原 request，保留既有成功 actor/state 链；
-3. resolved 非 completed：catch/结果分支都先 finish 原 request，再运行 feature-owned
+3. `status=running`：保留原 requestId 与 loading，不开 notice、不记失败诊断，等待 request ledger 后续终态；
+   `aggregateCommandStatus` 在 `completedAt === null` 或任一 actor 仍为 `running` 时
+   产生该状态；直接 dispatcher 的正常路径会等待 actor 终态后再返回，但中途
+   request ledger、peer/持久化回放或不完整生命周期观察仍可读到 `running`，所以
+   不能由未知非 completed 兜底吞掉它；
+4. resolved `error`/`timed-out`/`partial-failed`：先 finish 原 request，再运行 feature-owned
    的有限分类。已知 `AUTHENTICATION`/`BUSINESS`/`VALIDATION` 且已有对应 domain
    event/state 的业务失败沿 auth/registry notice，不开 system notice；
-4. `SYSTEM`、timeout、含 system actor 的 partial failure、Promise rejection，或
-   无法映射到已批准业务结果的非 completed 形状：生成新的 observation requestId，
+5. `SYSTEM`、timeout、含 system actor 的 partial failure、Promise rejection，或
+   除 `running` 外无法映射到已批准业务结果的未知非 completed 形状：生成新的 observation requestId，
    派本 feature 的 observation command；
-5. observation rejection 仅调用结构化 logger，不再生成 observation；原始 rejection
+6. observation rejection 仅调用结构化 logger，不再生成 observation；原始 rejection
    继续抛回，调用方不能得到假成功；
 6. system notice props 只允许静态 operation，如 submit-member、login、confirm-member。
    禁止 raw error、原始 payload、手机号、设备标识。system notice 的关闭动作是
@@ -320,7 +337,7 @@ focused red 分母必须同时包含：
 - DialogSurface：卡片、标题、正文、slot；
 - DialogActions：呈现主次动作排列；
 - EmptyState：说明与主动作；
-- ScrollArea：会员列表/表单唯一滚动祖先。
+- ScrollArea：会员列表/表单唯一滚动祖先；feature wrapper 只转接 `PrimitiveScrollView`，不得退化为 `PrimitiveContainer`/`View`。
 
 四者只在 feature 内组合 existing primitives，所有可寻址节点仍由 primitives
 提供强制 testID。props 只能描述呈现。CP-4 结束时统计两个 feature 的真实
@@ -449,8 +466,8 @@ T-1 仍是 DEXTER_DECISION。本计划不建立该门、不建立其红向量、
 
 ## 11. 计划完成状态
 
-PLAN_STATUS=READY_FOR_STATIC_REVIEW_WITH_IMPLEMENTATION_INPUT_GATE
+PLAN_STATUS=READY_FOR_IMPLEMENTATION_UNDER_DEXTER_AUTHORIZATION
 IMPLEMENTATION_AUTHORITY=false
 CURRENT_EVIDENCE=文档静态自审；未运行任何命令
-IMPLEMENTATION_ADMISSION=BLOCKED_BY_SOURCE_INPUT_GATE
-NEXT_REQUIRED_DECISION=先由 Dexter 决定是否修正冻结输入的六/七分母与单屏reject去向文字；静态 review 可先行，CP-1 仍须另行授权
+IMPLEMENTATION_ADMISSION=OPEN_UNDER_DEXTER_2026_09_05_AUTHORIZATION
+NEXT_REQUIRED_DECISION=按 CP-1 至 CP-4 执行；每个 CP 仍须 focused proof 与 fresh 独立静态 review

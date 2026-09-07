@@ -451,6 +451,24 @@ Reusables，但它们尚未安装，且会牵动 Expo、Metro 与 Tailwind 配�
 | **D-B** | `sample-terminal` 作为宿主拿不到屏数函数 | **立场**：装配层多知道一个 `display-context` 无所谓（Dexter 2026-09-04）。⚠️ **但本轮不加这条边** —— 该裁决的**前提**是「宿主要 await 查屏数」，而 v9 发现屏数经 `initialProps` 送达后该前提已作废（§5.1 约束 3）。⇒ 与 §2.5.4／§6.8 的「7 条依赖、不加 `display-context`」**一致**；`getSurfaceModes()` 方案同时撤销。⚠️ v12 此处曾写「⇒ 直接加依赖」，与 §2.5.4／§6.8 三处打架（Codex round-3 `V12-DEP-1`，`CONFIRMED`），v13 修正 |
 | **D-架构** | §2.5 该不该是精确白名单 | **不该**。唯一原则是 §2.5.1 的五条方向；白名单已整节替换。⇒ **将来加合法依赖不必回来开 OPEN** |
 
+#### 已裁决（2026-09-05，`ui/base/input` 专题连带）
+
+⚠️ 自审第 19 轮补：以下五条是 Dexter 2026-09-05 的裁定，
+原本只散落在正文各处与 input 需求里，**本登记表漏记** ——
+读者看上一节会以为 09-04 之后再无裁定。
+
+| # | 事项 | 裁决 | 影响本文何处 |
+| --- | --- | --- | --- |
+| **D-7** | 编辑中的输入值要不要进 store | **不进。** 只有点提交按钮才从 input 取值发命令；崩溃重启不还原未提交内容 | §6.9 规则修订、场景 5 取消、S-5／S-8 改载体、三个 uiVariable 删除 |
+| **D-8** | 键盘完成键在末字段的语义 | **关闭键盘，不提交**（POS 上误触发提交代价高） | input 需求 §3a；本文 §4.5.2a 据此说明顾客收键盘的路径 |
+| **D-9** | `sample.login.operator-name` 的持久化 | **保留持久化，但不得边输入边写**；改为登录成功后写 | §6.4 该变量的写入时机 |
+| **D-10** | 虚拟键盘要不要支持中文 | **不支持。** 需要中文就用系统键盘 | input 需求 §5.0；本文姓名字段走系统键盘 |
+| **D-11** | 顾客侧要不要录入 | **要。** 顾客在确认时补充年龄（可不填），**单屏双屏都要支持** | 本文 §4.5 全节、S-30～S-38；推翻 input 需求原「键盘只在 PRIMARY」纪律 |
+
+⚠️ **D-11 是范围扩张**（新增字段、新增契约变更、新增九条判据），
+不是澄清；⚠️ **D-7 与 D-10 是范围收缩**（去掉逐字派命令、去掉中文录入）。
+三者都不是「本来就该这样」，实施方不得当作原设计的自然推论。
+
 #### 仍待裁决（不阻塞详设，可与实施并行）
 
 | # | 事项 | 说明 |
@@ -665,15 +683,29 @@ View 只做两件事：**读 selector** 与 **`dispatchCommand`**。
 
 **角色**：店员（主屏）· 顾客（副屏）
 
-**旅途**：店员登录 → 查看已登记会员 → 新增会员 → **顾客确认后才生效**
+**旅途**：店员登录 → 查看已登记会员 → 新增会员（姓名、电话）→
+**顾客补充年龄（可不填）并确认后才生效**
 
 选它的理由：`需顾客确认` 是一次**跨 surface 的双向交互** —— 主屏发起、副屏决策、
 状态在确认后才提交。这比「主屏操作、副屏展示」苛刻得多。
 
+⚠️ **2026-09-05 Dexter 追加：顾客侧要录入。**
+
+> 「店员输入用户资料（无年龄）后给消费者确认，消费者需要补充自己的年龄（数字键盘），
+> 然后再点确认（也可以不补充），而且要同时支持单屏和双屏。」
+
+⇒ 旅途从「主屏录入、副屏只做决策」升级为**两侧都录入**。
+这多验到三件原来验不到的事：**顾客侧的键盘**、**跨 surface 的两段式录入**、
+**可选字段的空与非空两条路径**。详见 §4.5。
+
 ### 4.2 副屏语义（规范性）
 
-`customer-welcome`（待机）＝ **没有进行中的登记**。
-故顾客取消后副屏回**预览**而非待机（表单数据还在，流程未结束）。
+`customer-welcome`（待机）＝ **顾客侧没有待办**。
+
+⚠️ **2026-09-05 修订**：原文写「顾客取消后副屏回**预览**而非待机（表单数据还在，流程未结束）」——
+`preview` 态已下线（编辑值不进 store，无可预览之物）。
+⇒ 顾客取消后副屏回 **`customer-welcome`**：对顾客而言这一单已经结束，
+后续的「修改后重试」发生在店员侧，与顾客无关。
 
 ### 4.3 双屏场景矩阵
 
@@ -682,13 +714,20 @@ View 只做两件事：**读 selector** 与 **`dispatchCommand`**。
 | 1 | 开机，未登录 | `staff-login` | `customer-welcome` |
 | 2 | 工号或密码错 | `staff-login` ＋ `auth-notice`（alert 层） | `customer-welcome` |
 | 3 | 登录成功 | `member-list` | `customer-welcome` |
-| 4 | 点「新增会员」 | `member-form`（空） | `customer-member{mode:'preview'}` |
-| 5 | 店员录入中 | `member-form`（有值） | 同上，**实时同步** |
-| 6 | 点「提交」 | `member-list` ＋ `waiting-confirm`（standard 层） | `customer-member{mode:'confirm'}` |
+| 4 | 点「新增会员」 | `member-form`（空） | **`customer-welcome`（不变）** ⚠️ 2026-09-05 修订：`preview` 态下线 |
+| ~~5~~ | 店员录入中 | `member-form`（有值，**值在组件本地**） | **无变化** ⚠️ 2026-09-05 修订：编辑值不进 store ⇒ 副屏无可镜像之物，本场景取消 |
+| 6 | 点「提交」 | `member-list` ＋ `waiting-confirm`（standard 层） | `customer-member{mode:'confirm'}` ⚠️ **2026-09-05：含可选年龄输入＋数字键盘**，见 §4.5。键盘不是屏也不是层，故不入本矩阵（与 loading 同理），判据见 S-30、S-36 |
 | 7a | 顾客点「确认」 | `member-list`（含新会员） | `customer-welcome` |
-| 7b | 顾客点「取消」 | `member-list` ＋ `waiting-confirm` ＋ `registry-notice`（alert 层） | `customer-member{mode:'preview'}` |
-| 8 | 店员点「知道了」 | `member-form`（**数据仍在**） | 不变（preview） |
+| 7b | 顾客点「取消」 | `member-list` ＋ `waiting-confirm` ＋ `registry-notice`（alert 层） | **`customer-welcome`** ⚠️ 2026-09-05 修订 |
+| 8 | 店员在 `registry-notice` 上**选出口** | 选「修改后重试」⇒ `member-form`（**以 `pending` 回填**）；选「放弃本次登记」⇒ `member-list` | **`customer-welcome`（不变）** |
 | 9 | 店员退出 | `staff-login` | `customer-welcome` |
+
+⚠️ **场景 8 的两处 2026-09-05 修订**：① SECONDARY 原写「不变（preview）」，
+而 `preview` 态已在场景 4 下线 ⇒ 改为 `customer-welcome`。
+② PRIMARY 原写「数据仍在」**未说来源**，而编辑值不进 store 之后来源变了 ——
+表单在场景 6 已随 PRIMARY 切走而卸载，本地 draft 按「卸载即消失」已不存在。
+⇒ 数据回来的**唯一合法来源是 `pending`**（业务事实）。
+⚠️ **不得**为此让编辑缓冲跨挂载存活，那与 Dexter「未提交内容不需还原」的裁定冲突。判据见 S-8。
 
 ⚠️ **loading 是部件内部呈现态，不进场景矩阵。** 派出 `loginCommand` / `submitMemberCommand`
 等 `public` 命令后，发起部件按 §6.2 ④ 观察自己那条 request：未完成显示 `:loading` 并拒绝重复提交，
@@ -702,13 +741,14 @@ alert 必须盖在上面店员才看得见。`layerTier` 排序由真实交互�
 ⚠️ **单屏时 §4.3 的 SECONDARY 整列不存在**（没有第二棵 surface 树被挂载），
 不是「有副屏但隐藏」。
 
-单屏与双屏的差异**只在三处**：
+单屏与双屏的差异**只在四处**（⚠️ 2026-09-05 由三处增至四处：撤回形态单双屏不同）：
 
 | # | 单屏 PRIMARY | 双屏 PRIMARY |
 | --- | --- | --- |
-| 6 | `customer-member{mode:'confirm'}` **占满整屏**，文案提示店员把设备转给顾客 | `member-list` ＋ `waiting-confirm` |
+| 6 | `customer-member{mode:'handheld-confirm'}` **占满整屏**，文案提示店员把设备转给顾客 ⚠️ **2026-09-05 更正**：原写 `{mode:'confirm'}`，与部件契约表（`{'confirm'\|'handheld-confirm'}`）不符，单屏是 `handheld-confirm` | `member-list` ＋ `waiting-confirm` |
 | 7b | `member-form` ＋ `registry-notice` | `member-list` ＋ `waiting-confirm` ＋ `registry-notice` |
-| 8 | 关 `registry-notice` 即可（**无 `waiting-confirm` 可关**） | 关两层并 `showScreen(member-form)` |
+| 8 | 关 `registry-notice` 即可（**无 `waiting-confirm` 可关**） | 关两层，再按所选出口导航 |
+| 撤回 | 顾客侧的「交还店员」（`handheld-confirm` 的 `:hand-back`） | 店员侧 `waiting-confirm` 的「撤回」，经 `withdraw-confirm` 层确认 |
 
 其余场景（1／2／3／4／5／7a／9）PRIMARY **完全一致**。
 
@@ -719,6 +759,202 @@ alert 必须盖在上面店员才看得见。`layerTier` 排序由真实交互�
 **分支只出现在 `sample-member-desk` 的 actor 内一处，部件内零分支**（与依赖表第 138 行禁止
 kernel/feature 依赖 display-context、以及 P-9 一致，Codex review M-4，`CONFIRMED`——
 v5 在此处误写成 `member-registry`，那是 kernel 包，不可能碰屏数判断）。
+
+---
+
+### 4.4a ✅ 交互设计稿已**整体并入**本文（2026-09-05 收口）
+
+交互设计稿 `2026-09-05-v2s-terminal-sample-interaction-design-claude.md`
+的 §12.1 曾是一张「需同步修订的 v13 条目」清单。本文一度只零散引用它的部分结论，
+形成**两套规范并存**的半并状态（Codex 两轮评审均判为 M）。
+
+⇒ **Dexter 2026-09-05 授权后一次性并入**，逐项状态：
+
+| 项 | 处置 |
+| --- | --- |
+| `customer-member` 的 `handheld-confirm` mode | ✅ 已并（§4.4、部件契约表） |
+| `registry-notice` 改为两出口 | ✅ 已并：移除 `:dismiss`，改为 `:retry` ＋ `:abandon`，guard 由 dismissible 改 **decisive** |
+| 场景 8 | ✅ 已并：由「点知道了」改为**选出口** —— 重试回 `member-form`（以 `pending` 回填），放弃回 `member-list` |
+| S-8 引用的「修改后重试」 | ✅ 已闭：该出口现已在本文定义，判据不再指向不存在的控件 |
+| `:hand-back` · `:age` testID | ✅ 已并（§6.9 testID 表） |
+| §4.4「差异只在三处」 | ✅ 已并：改为**四处**，新增「撤回形态单双屏不同」一行 |
+| S-15 层部件分母 | ✅ 已并：三个 → **六个**（新增 `discard-confirm`／`withdraw-confirm`／`system-notice`） |
+| 三个新 layer 的正式契约 | ✅ 已并入 part 表（`[]` containerKeys · `['PRIMARY']` · `alert`） |
+| 六条新命令 | ✅ 已并入本包自有命令表 |
+| P-11／P-12 分母 | ✅ 已并：六条新命令入分母；`noticeDismissedCommand` 原触发点消失已登记 |
+| `deskNotice` actor | ✅ 已退役，由 `deskRetry` ／ `deskAbandon` 两个 actor 替代（§6.5、§7.2 链路表） |
+
+⚠️ **仍留给详设的一项**：`noticeDismissedCommand` **删除还是保留给
+`system-notice` 的 `:dismiss` 复用**。本文只登记「原触发点已消失」这一事实，
+不预设去留 —— 但在裁定前，它**不得**再作为 `registry-notice` 的出口。
+
+⚠️ **教训记录**：第 12 轮与 Codex 复核 M-3 两次发现，
+**改场景矩阵必须连带改 actor 表** —— 二者是同一事实的两个面，
+`deskForm`／`deskRejected`／`deskPending` 三个 actor 都曾因此漏改。
+矩阵是给人读的，actor 表才是实施方照着建的正本。
+
+---
+
+### 4.5 ⚠️ 顾客侧录入：年龄（Dexter 2026-09-05 追加）
+
+#### 4.5.1 场景
+
+| 步 | 谁 | 做什么 |
+| --- | --- | --- |
+| 1 | 店员 | 在 `member-form` 填姓名、电话（**没有年龄字段**），点提交 |
+| 2 | 顾客 | 在 `customer-member` 上看到姓名、电话，**外加一个空的年龄框** |
+| 3 | 顾客 | **可填可不填**年龄。要填就点年龄框，弹**纯数字键盘** |
+| 4 | 顾客 | 点「确认」。填了就带着年龄一起提交，没填就不带 |
+
+⚠️ **年龄是可选字段。** 不填直接确认是**正常路径**，不是异常，
+不得因为年龄为空就禁用确认按钮或弹校验提示。
+
+⚠️ **不设「跳过」按钮**：留空并点确认已经表达了「不补充」，
+多一个按钮就是多一次选择，与「更短、更自然、更少选择的路径」相悖。
+
+#### 4.5.2 单屏与双屏
+
+**同一个 `customer-member` 部件、同一段代码**，只是挂在不同 surface 上：
+
+| 形态 | 部件在哪 | 键盘在哪 |
+| --- | --- | --- |
+| 双屏 | SECONDARY，`mode:'confirm'` | **SECONDARY** |
+| 单屏 | PRIMARY，`mode:'handheld-confirm'`（店员把设备转给顾客） | **PRIMARY** |
+
+⚠️ **部件内不得为此出现单／双屏分支** —— 与 §4.4 既有约束一致：
+分支只在 `sample-member-desk` 的 actor 内一处，部件内零分支（P-9）。
+年龄输入对两种形态**完全相同**。
+
+⚠️ **本场景同时受 §8a 的 N-2／N-3 约束**（Codex 复核已确认这两条成立，此处显式绑定）：
+
+| 约束 | 对本场景的含义 |
+| --- | --- |
+| **P-3**：不得直读 `displayCount` 或自写 `?? 1` | `customer-member` 判断自己在哪种形态时，只能经 `readDisplayInfo` 与 `resolveSecondarySurfaceAvailable`；而按 P-9 它连这个判断都不该做 —— **形态由 `mode` prop 给** |
+| **P-4**：不得用 `Platform.OS`／`typeof window`／UA 嗅探决定屏数与布局 | 年龄输入在 Web 段与真机段是**同一段代码**，不得按平台分叉 |
+
+⚠️ 本部件是**唯一同时声明 `['PRIMARY','SECONDARY']` 的业务部件**
+（✅ 亲验 part 表），因此也是最容易违反这两条的地方 —— 实施时优先看这里。
+
+⚠️ 这条直接推翻了 input 需求原来的「虚拟键盘只出现在 PRIMARY」纪律，
+替代纪律见该文 §7.1：**键盘属于承载输入控件的那个 surface**。
+
+#### 4.5.2a ⚠️ 键盘升起后，顾客还够不够得着「确认」（自审第 15 轮）
+
+这是本场景最容易做砸的一处，文档原稿全程没规定。
+
+`customer-member` 的内容是：标题 → 姓名 → 电话 → **年龄输入** → 确认／拒绝按钮。
+键盘占屏 40–50%，内容区一收缩，**按钮可能被挤出可见区**。
+单屏 `handheld-confirm` 更挤 —— 它有**三个**按钮（确认／拒绝／交还店员）。
+
+⇒ **硬要求**：键盘升起时，**确认与拒绝必须仍然可见可点**。
+不得要求顾客「先想办法收起键盘才能确认」——
+顾客不是本机的熟练用户，收键盘对他不是已知动作。
+
+⚠️ **收键盘的路径也要有，且必须是顾客能想到的**：
+年龄是本屏**唯一**输入字段 ⇒ 按 input 需求 §3a，它就是**末字段**，
+完成键即**关闭键盘**（不提交）。这条路径成立，但**不能作为够到按钮的唯一手段**。
+
+⚠️ 判据见 S-37。反例：把年龄框放在按钮下方、或让内容区收缩后按钮溢出，必红。
+
+⚠️ **这不是排版建议，是可证伪要求**：POS 上顾客点不到确认就是流程断在这里，
+店员还在主屏等 —— 比 UI 难看严重得多。
+
+#### 4.5.2b 年龄的取值形态（最小规定）
+
+| 项 | 规定 | 理由 |
+| --- | --- | --- |
+| 键盘 | 纯数字键盘 | Dexter 明确 |
+| 长度 | **最多 3 位** | 不设范围校验，但要防 20 位数字撑爆 `number`。这是防呆不是业务规则 |
+| 空值 | 空即未填，`age` 为 `undefined` | 不填是正常路径（S-32） |
+| 类型转换 | 部件在**点确认那一刻**把字符串转成 `number`；命令载荷里是 `number \| undefined`，不是字符串 | 转换点唯一，避免 store 里出现两种形态 |
+
+⚠️ **不做年龄范围校验**（不判 0、不判 150）：本轮是架构验证切片，
+加校验就要连带定错误文案、错误层与恢复路径，与当前阶段不成比例。
+⚠️ 这是**有意留白**，不是遗漏。
+
+#### 4.5.2c ⚠️ 顾客输年龄时店员撤回（自审第 16 轮）
+
+✅ 亲验 `ui/feature/sample-member-desk/src/components/WaitingConfirm.tsx` 第 37-43 行：
+双屏等待期间，店员侧**有「撤回」按钮**。
+
+⇒ 存在一个原文没考虑的并发：**顾客正在副屏输年龄，店员在主屏撤回。**
+
+| 事实 | 结论 |
+| --- | --- |
+| 年龄按 §9a 从未进 store | 撤回后**没有残留可清**，不需要额外的清理动作 |
+| `canDecide` 已要求 `pending !== null`（✅ 亲验部件源码） | 撤回把 `pending` 清空后，顾客那一下「确认」**自然失效** |
+
+⇒ **不需要新机制**，但需要判据钉住它确实如此：见 S-38。
+
+⚠️ 顾客侧要有**可理解的收场**：撤回后副屏必须离开确认态（回 `customer-welcome`），
+不得停在一个点了没反应的确认按钮上。
+
+#### 4.5.2d ⚠️ 副屏上系统键盘不是退路（`UNVERIFIED`，须真机核）
+
+副屏是 Android `Presentation` 窗口。**Presentation 是否能拿到输入法焦点，本会话核不了**
+（静态读不出来，须真机验）。
+
+⇒ 但方向上有一条推论值得先记：
+若 Presentation 拿不到 IME 焦点，则**副屏上的系统键盘根本不可用** ——
+而虚拟键盘只需要 React 层的焦点状态，不依赖 Android 窗口焦点。
+
+⇒ 两个后果：
+
+| # | 后果 |
+| --- | --- |
+| 1 | 年龄用**数字＋虚拟键盘**这个选择在副屏上不只是偏好，可能是**唯一可行解** |
+| 2 | 将来若有人想在副屏放中文字段，按 §5.0 那要走系统键盘 —— **在副屏上可能做不到**。届时须重新设计，不得默认照搬主屏结论 |
+
+⚠️ 标 `UNVERIFIED`：以上是推论，不是已验事实。
+真机段必须实测 Presentation 上 `TextInput` 的焦点与光标行为，结果回填本节。
+
+#### 4.5.3 ⚠️ 由此产生的契约变更（五处，末一处是「明确不改」）
+
+✅ 亲验当前形态后确认，以下三处**必须改**：
+
+| # | 位置 | 现状 | 改为 |
+| --- | --- | --- | --- |
+| 1 | `kernel/feature/sample-member-registry/src/types.ts` 的 `Member` | `{memberId, name, phone, registeredAt}` —— **无年龄** | 加 `age?: number`（可选） |
+| 2 | 同上的 `confirmMemberCommand` | `defineCommand<EmptyPayload>`（✅ 亲验 `commands.ts`） | `defineCommand<Readonly<{age?: number}>>` |
+| 3 | `ui/feature/sample-member-desk/src/components/CustomerMember.tsx` 的 `decide()` | 派命令时载荷写死 `{}` | 确认路径带上年龄；拒绝／交还路径仍为 `{}` |
+| 4 | ⚠️ **`kernel/feature/sample-member-registry/src/features/actors/actors.ts` 的 `createConfirmMemberActor`** | ✅ 亲验：它只从 `pending` 取 `{memberId, name, phone, registeredAt}` 构造 `Member`，**完全不读命令载荷** | **必改**：读 `confirmMemberCommand` 载荷里的 `age`，规范化后写进 `Member.age` |
+| 5 | `confirmPending` reducer | 入参已是完整 `Member`（✅ 亲验 `slice.ts`） | **不改** |
+
+⚠️ **第 4 行是 Codex 评审 M-2 指出的遗漏，已采纳。** 原稿把「年龄由 confirm 处理方取」
+写在第 5 行「不改 reducer」的解释里，**没有把 actor 单列为必改项** ——
+那不是无歧义的详设输入。只改 `Member` 类型、命令类型与部件而不改这个 actor，
+年龄会被**静默丢弃**，S-33 必然失败。
+
+⇒ **完整链路（规范性，实施方按此逐环对照）**：
+
+~~~
+CustomerMember 本地年龄草稿（不进 store）
+  → confirmMemberCommand({age?: number})
+  → createConfirmMemberActor 读取并规范化 age
+  → 构造 Member.age
+  → confirmPending(member)
+~~~
+
+⚠️ 链路之外的三处**明确不动**：`submitMemberCommand`、`PendingMember`、`confirmPending` reducer。
+
+⚠️ **`PendingMember` 不改**（保持 `{name, phone}`）：
+年龄是顾客在确认那一刻才给的，按 §9a（编辑值不进 store）
+它在点确认之前**只存在于部件本地**，不进 `pending`。
+
+⚠️ **不得为年龄新增一条 `set-age` 命令** —— 那是逐字段提交，
+与「只有提交动作才发命令」的裁定冲突。年龄**搭 `confirmMemberCommand` 的车**。
+
+#### 4.5.4 判据
+
+本场景的判据是 **S-30 ～ S-39**（⚠️ 曾写「S-30 ～ S-36」，第 15／16 轮补 S-37／S-38、Codex 复核 S-3 后补 S-39，均已回改），与其它判据同列在 §9.2 主表，此处不复制。
+
+⚠️ 我起草时先把它们编成了 S-24～S-30，与主表既有的 S-24～S-29 **撞号**，已重编。
+⇒ 引用时以 §9.2 主表为准。
+
+⚠️ **S-36 的分量单独说明**：它是**在 Presentation 副屏上**验尺寸计算，
+若实现读了 `Dimensions.get('window')`（在副屏返回的是主窗口尺寸）此判据必红 ——
+这正是 input 需求 §7.2 说的那条从「不该读」升级为「会真的错」。
+⇒ **S-36 是双屏下唯一真实覆盖 input 需求 §1b.3a 收缩模型的判据**，不可省。
 
 ---
 
@@ -1203,7 +1439,7 @@ v1 写「不写 slice ＋ 派 openLayer」而未规定返回值，属 `TR-02` �
 
 ```
 memberSliceName = `${moduleName}.members`
-Member      = { memberId: string; name: string; phone: string; registeredAt: number }
+Member      = { memberId: string; name: string; phone: string; registeredAt: number; age?: number }
 MemberState = { members: readonly Member[]; pending: { name: string; phone: string } | null }
 initial     = { members: [], pending: null }
 persistIntent = 'owner-only'      syncIntent = 'isolated'
@@ -1214,7 +1450,7 @@ persistIntent = 'owner-only'      syncIntent = 'isolated'
 | command | payload | visibility | 谁派 |
 | --- | --- | --- | --- |
 | `submitMemberCommand` | `{ name: string; phone: string }` | `public` | UI 部件 |
-| `confirmMemberCommand` | `{}` | `public` | UI 部件 |
+| `confirmMemberCommand` | `{ age?: number }` | `public` | UI 部件 ⚠️ **2026-09-05**：年龄由顾客在确认时可选补充，见 §4.5 |
 | `rejectMemberCommand` | `{}` | `public` | UI 部件 |
 | `memberPendingCommand` | `{ name: string; phone: string }` | `public` | 本包 actor |
 | `memberConfirmedCommand` | `{ memberId: string }` | `public` | 本包 actor |
@@ -1225,7 +1461,7 @@ persistIntent = 'owner-only'      syncIntent = 'isolated'
 | actor | 监听 | 行为 |
 | --- | --- | --- |
 | `submit` | `submitMemberCommand` | 写 `pending` → 派 `memberPendingCommand` |
-| `confirm` | `confirmMemberCommand` | `pending` 为 `null` 时**抛错**（`TR-02`）；否则生成 `memberId`／`registeredAt`、入 `members`、清 `pending` → 派 `memberConfirmedCommand` |
+| `confirm` | `confirmMemberCommand` | `pending` 为 `null` 时**抛错**（`TR-02`）；否则生成 `memberId`／`registeredAt`、**从命令载荷读取并规范化 `age` 写入 `Member.age`（空即 `undefined`）**、入 `members`、清 `pending` → 派 `memberConfirmedCommand` |
 | `reject` | `rejectMemberCommand` | 清 `pending` → 派 `memberRejectedCommand` |
 
 **公开 selector**（`TR-03`：跨包读只能走 owner 导出的 selector）
@@ -1240,6 +1476,11 @@ persistIntent = 'owner-only'      syncIntent = 'isolated'
 **不得**按字符串键取 slice、不得依赖内部 state 形状。
 
 ⚠️ `memberId` 与 `registeredAt` 只能在 actor 内生成（状态写入），**不得在部件内生成**。
+
+⚠️ **`age` 与它们不同**：`age` 是**用户输入**，由部件经命令载荷传入，
+actor 只负责读取与规范化，**不得自行生成或推断**。
+⇒ 本表三行（`Member` 形状、`confirmMemberCommand` 载荷、`confirm` actor 行）
+已于 2026-09-05 与 §4.5.3 同步（Codex 复核 M-2 指出正本存在两套契约，已采纳）。
 
 ### 6.5 `ui/feature/sample-staff-auth`
 
@@ -1269,8 +1510,8 @@ persistIntent = 'owner-only'      syncIntent = 'isolated'
 
 | key | defaultValue | persistIntent |
 | --- | --- | --- |
-| `sample.login.operator-name` | `''` | **`'owner-only'`**（记住工号） |
-| `sample.login.passcode` | `''` | **`'never'`**（密码不落盘） |
+| `sample.login.operator-name` | `''` | **`'owner-only'`**（记住工号）。⚠️ **2026-09-05：写入时机改为登录成功后**，不再逐字写；登录失败不写 |
+| ~~`sample.login.passcode`~~ | — | ⚠️ **2026-09-05 删除**：改存组件本地，提交后即弃 |
 
 ⚠️ 两档 `persistIntent` 必须都出现。与 session slice 的 `operatorName` **用不同标识符**，不得混用。
 
@@ -1278,7 +1519,7 @@ persistIntent = 'owner-only'      syncIntent = 'isolated'
 
 | actor | 监听 | 行为 |
 | --- | --- | --- |
-| `authResult` | `loginFailedCommand` | 派 `openLayer(PRIMARY,'sample.auth.notice', {props:{reasonCode}})` —— **reasonCode 取自命令 payload 显式透传**；再派 `clearUiVariables{keys:['sample.login.passcode']}` |
+| `authResult` | `loginFailedCommand` | 派 `openLayer(PRIMARY,'sample.auth.notice', {props:{reasonCode}})` —— **reasonCode 取自命令 payload 显式透传**。⚠️ **2026-09-05：`clearUiVariables` 那半移除** —— passcode 变量已删，编辑值在组件本地，actor 够不着。**清空密码框改由登录部件自己做**：它观察自己那条 request 的 business-failure 结局后清本地 draft |
 | `authNav` | `logoutSucceededCommand` | 派 **`clearLayers(PRIMARY)`** ＋ `showScreen(PRIMARY,'main','sample.auth.login')` |
 | `authNav` | `sessionRestoredAnonymousCommand` | 派 `showScreen(PRIMARY,'main','sample.auth.login')`。**actor 内无 `if` 分支** —— 事件本身已表达结果（`TR-12` 约束 2） |
 | `authNav` | `loginSucceededCommand` | 派 `clearLayers(PRIMARY)`（关掉可能残留的失败提示层） |
@@ -1306,18 +1547,27 @@ request 未完成时按钮显示 loading 且**拒绝重复提交**。**零业务
 | 登记表单 | `sample.desk.member-form` | `['main']` | `['PRIMARY']` | 省略 |
 | 等待确认层 | `sample.desk.waiting-confirm` | `[]` | `['PRIMARY']` | **`'standard'`（显式）** |
 | 流程提示层 | `sample.desk.registry-notice` | `[]` | `['PRIMARY']` | `'alert'` |
+| 放弃确认层 | `sample.desk.discard-confirm` | `[]` | `['PRIMARY']` | `'alert'` |
+| 撤回确认层 | `sample.desk.withdraw-confirm` | `[]` | `['PRIMARY']` | `'alert'` |
+| 系统告知层 | `sample.desk.system-notice`／`sample.auth.system-notice` | `[]` | `['PRIMARY']` | `'alert'` |
 | 顾客待机 | `sample.desk.customer-welcome` | `['main']` | `['SECONDARY']` | 省略 |
 | 顾客信息 | `sample.desk.customer-member` | `['main']` | **`['PRIMARY','SECONDARY']`** | 省略 |
 
-| `sample.member.name` | `''` | `'never'` |
-| `sample.member.phone` | `''` | `'never'` |
+| ~~`sample.member.name`~~ | — | ⚠️ **2026-09-05 删除**：编辑值改存组件本地，消费者归零 |
+| ~~`sample.member.phone`~~ | — | ⚠️ **2026-09-05 删除**：同上 |
 
 **本包自有命令**（谁的屏谁导航、谁的层谁关，`kernel/feature` 不参与）
 
 | command | payload | visibility | 谁派 |
 | --- | --- | --- | --- |
 | `memberFormOpenedCommand` | `{}` | `public` | `member-list` 的 `:add` 按钮 |
-| `noticeDismissedCommand` | `{}` | `public` | `registry-notice` 的 `:dismiss` 按钮 |
+| ~~`noticeDismissedCommand`~~ | `{}` | `public` | ⚠️ **2026-09-05：原触发点消失** —— `registry-notice` 已移除 `:dismiss`。**是否删除、还是留给 `system-notice` 的 `:dismiss` 复用，属详设裁定**；在裁定前不得再作为 `registry-notice` 的出口 |
+| `memberFormCancelledCommand` | `{}` | `public` | 表单点取消 |
+| `memberDraftDiscardedCommand` | `{}` | `public` | `discard-confirm` 确认放弃 |
+| `memberSubmissionWithdrawnCommand` | `{}` | `public` | 撤回，含单屏「交还店员」 |
+| `memberRegistrationRetryRequestedCommand` | `{}` | `public` | `registry-notice` 选「修改后重试」 |
+| `memberRegistrationAbandonedCommand` | `{}` | `public` | `registry-notice` 选「放弃本次登记」 |
+| `systemFailureObservedCommand` | `{operation: string}` | `public` | **各 `ui/feature` 各自一条**；部件观察到自己那条 request 被 reject 时派 |
 
 **actor**（全部分支判据为 `resolveSecondarySurfaceAvailable(await readDisplayInfo(context.platformPorts.device))` —— **实时求值不缓存**，见 §5.1）
 
@@ -1326,14 +1576,19 @@ request 未完成时按钮显示 loading 且**拒绝重复提交**。**零业务
 | `deskNav` | `loginSucceededCommand` · `sessionRestoredAuthenticatedCommand` | `showScreen(PRIMARY,'main','sample.desk.member-list')`；双屏另加 `showScreen(SECONDARY,'main','sample.desk.customer-welcome')` |
 | `deskNav` | `logoutSucceededCommand` | 派 **`clearLayers(SECONDARY)`** ＋ 双屏 `showScreen(SECONDARY,'main','sample.desk.customer-welcome')` |
 | `deskNav` | `sessionRestoredAnonymousCommand` | 双屏时 `showScreen(SECONDARY,'main','sample.desk.customer-welcome')` |
-| `deskForm` | `memberFormOpenedCommand`（本包自有 `public` 命令，由「新增」按钮派） | `showScreen(PRIMARY,'main','sample.desk.member-form')`；双屏另加 `showScreen(SECONDARY,'main','sample.desk.customer-member',{mode:'preview'})` |
-| `deskPending` | `memberPendingCommand` | **双屏**：`showScreen(PRIMARY,'main','sample.desk.member-list')` ＋ `openLayer(PRIMARY,'sample.desk.waiting-confirm')` ＋ `showScreen(SECONDARY,'main','sample.desk.customer-member',{mode:'confirm'})`；**单屏**：`showScreen(PRIMARY,'main','sample.desk.customer-member',{mode:'confirm'})` |
-| `deskConfirmed` | `memberConfirmedCommand` | `clearUiVariables{keys:['sample.member.name','sample.member.phone']}` ＋ `showScreen(PRIMARY,'main','sample.desk.member-list')`；双屏另加 `closeLayer(PRIMARY,'sample.desk.waiting-confirm')` ＋ `showScreen(SECONDARY,'main','sample.desk.customer-welcome')` |
-| `deskRejected` | `memberRejectedCommand` | `openLayer(PRIMARY,'sample.desk.registry-notice', {props:{reasonCode}})` —— **reasonCode 取自命令 payload 显式透传**；双屏另加 `showScreen(SECONDARY,'main','sample.desk.customer-member',{mode:'preview'})`；单屏另加 `showScreen(PRIMARY,'main','sample.desk.member-form')` |
-| `deskNotice` | `noticeDismissedCommand`（本包自有 `public` 命令，由「知道了」按钮派） | `closeLayer(PRIMARY,'sample.desk.registry-notice')`；双屏另加 `closeLayer(PRIMARY,'sample.desk.waiting-confirm')` ＋ `showScreen(PRIMARY,'main','sample.desk.member-form')` |
+| `deskForm` | `memberFormOpenedCommand`（本包自有 `public` 命令，由「新增」按钮派） | `showScreen(PRIMARY,'main','sample.desk.member-form')`。⚠️ **2026-09-05：双屏那半整个删除** —— 原为 `showScreen(SECONDARY,…,{mode:'preview'})`，而场景 4 已裁定进表单时**副屏不变**（`preview` 态下线）。⇒ 本 actor **只动 PRIMARY**，不得对 SECONDARY 派任何 `showScreen`。判据见 S-4 |
+| `deskPending` | `memberPendingCommand` | **双屏**：`showScreen(PRIMARY,'main','sample.desk.member-list')` ＋ `openLayer(PRIMARY,'sample.desk.waiting-confirm')` ＋ `showScreen(SECONDARY,'main','sample.desk.customer-member',{mode:'confirm'})`；**单屏**：`showScreen(PRIMARY,'main','sample.desk.customer-member',{mode:'handheld-confirm'})` ⚠️ **2026-09-05 更正**（Codex 评审 M-3）：原写 `{mode:'confirm'}`，与 §4.4 矩阵及部件契约表不符 —— 单屏是 `handheld-confirm`（它才带「交还店员」出口） |
+| `deskConfirmed` | `memberConfirmedCommand` | ⚠️ **2026-09-05：`clearUiVariables` 那半整个移除**（两个登记变量已删；表单 draft 随部件卸载消失，无需清理）＋ `showScreen(PRIMARY,'main','sample.desk.member-list')`；双屏另加 `closeLayer(PRIMARY,'sample.desk.waiting-confirm')` ＋ `showScreen(SECONDARY,'main','sample.desk.customer-welcome')` |
+| `deskRejected` | `memberRejectedCommand` | `openLayer(PRIMARY,'sample.desk.registry-notice', {props:{reasonCode}})` —— **reasonCode 取自命令 payload 显式透传**；双屏另加 `showScreen(SECONDARY,'main','sample.desk.customer-welcome')` ⚠️ **2026-09-05 更正**：原为 `customer-member{mode:'preview'}`，`preview` 态已下线，场景 7b 裁定副屏回 `customer-welcome`；单屏另加 `showScreen(PRIMARY,'main','sample.desk.member-form')` |
+| `deskRetry` | `memberRegistrationRetryRequestedCommand`（「修改后重试」） | `closeLayer(PRIMARY,'sample.desk.registry-notice')`；双屏另加 `closeLayer(PRIMARY,'sample.desk.waiting-confirm')` ＋ `showScreen(PRIMARY,'main','sample.desk.member-form')`（表单以 `pending` 回填） |
+| `deskAbandon` | `memberRegistrationAbandonedCommand`（「放弃本次登记」） | 同上两个 `closeLayer`，但导航到 `showScreen(PRIMARY,'main','sample.desk.member-list')`，并清 `pending` |
+| ~~`deskNotice`~~ | ~~`noticeDismissedCommand`~~ | ⚠️ **2026-09-05 退役**：`registry-notice` 移除 `:dismiss` 后该 actor 失去触发源，由上两行替代 |
 
-**`customer-member` 的 props**：`{ mode: 'preview' \| 'confirm' }`。
-业务数据读 `sample-member-registry` 的 slice 与登记 uiVariable，不经 props 传递。
+**`customer-member` 的 props**：`{ mode: 'confirm' \| 'handheld-confirm' }`
+⚠️ **2026-09-05 修订**：原写 `{'preview' \| 'confirm'}`，`preview` 态已下线、
+单屏新增 `handheld-confirm`；正本见 §6.x 的部件契约表（本行原为未同步的副本）。
+业务数据读 `sample-member-registry` 的 slice（`pending`／`members`），不经 props 传递。
+⚠️ **不再读登记 uiVariable** —— 两个登记变量已删，见 §6.4。
 
 ### 6.7 `ui/integration/sample-console`
 
@@ -1622,7 +1877,7 @@ Web 段（第一段）不依赖该结论 —— 两棵树同在一个 JS 环境�
 | `sample.desk.waiting-confirm` | 无 | `pending` |
 | `sample.desk.registry-notice` | `{ reasonCode: string }` | props |
 | `sample.desk.customer-welcome` | 无 | 无 |
-| `sample.desk.customer-member` | `{ mode: 'preview' 或 'confirm' }` | `pending` 或两个登记 uiVariable |
+| `sample.desk.customer-member` | `{ mode: 'confirm' \| 'handheld-confirm' }` ⚠️ **2026-09-05**：`preview` 态下线、新增单屏 `handheld-confirm`；**两种 mode 都含可选年龄输入**（§4.5），部件内不得为单／双屏分支 | `pending` |
 
 **testID 清单**（按 §8 约定 `` `${partKey}:<element>` ``，**行为测试据此定位**）
 
@@ -1633,16 +1888,16 @@ Web 段（第一段）不依赖该结论 —— 两棵树同在一个 JS 环境�
 | `sample.desk.member-list` | `:row` · `:add` · `:logout` |
 | `sample.desk.member-form` | `:name` · `:phone` · `:submit` · `:loading` |
 | `sample.desk.waiting-confirm` | `:message` |
-| `sample.desk.registry-notice` | `:message` · `:dismiss` |
+| `sample.desk.registry-notice` | `:message` · **`:retry`** · **`:abandon`** ⚠️ **2026-09-05：移除 `:dismiss`**，改为两个出口（修改后重试／放弃本次登记），guard 由 dismissible 改为 **decisive** |
 | `sample.desk.customer-welcome` | `:message` |
-| `sample.desk.customer-member` | `:name` · `:phone`；`confirm` 态另有 `:confirm` · `:reject` |
+| `sample.desk.customer-member` | `:name` · `:phone` · **`:age`**；`confirm` 态另有 `:confirm` · `:reject`；**`handheld-confirm` 态另有 `:hand-back`** ⚠️ **2026-09-05 补**（Codex 评审 M-3）：`:age` 是顾客侧可选年龄输入（§4.5，两种 mode 都有）；`:hand-back` 来自交互设计稿 §10.2，本文原先漏记 |
 
 **八个部件一律禁止**
 
 | # | 禁止 | 依据 |
 | --- | --- | --- |
 | 1 | `dispatchAction` / `store.dispatch` / `useDispatch` | `TR-01` · P-1 |
-| 2 | 表单值存 `useState`（**requestId 除外**，见 §6.2 ③） | V-4 · P-7 |
+| ~~2~~ | ~~表单值存 `useState`~~ | ⚠️ **2026-09-05 反转**：Dexter 裁定「input 里的 value 不进 state，编辑内容不通过 command 发送，只有点提交才取值发命令」。⇒ **表单编辑值就应该存在组件本地**；禁止的是让编辑值成为其它部件的读取源。见 `2026-09-05-v2s-terminal-input-requirements-claude.md` §9a |
 | 3 | 依据屏数分支 | §4.4 · P-9 |
 | 4 | **裸读**别的包的业务 slice：按字符串键从 `getState()` 取、或依赖其内部 state 形状。⚠️ **经 owner 导出的 selector 跨包读是允许的**（`TR-03`），`sample-member-desk` 的部件正是这样读 `selectMembers`／`selectPendingMember` | `TR-03` · P-7 |
 | 5 | 决定「该显示哪个屏」 | V-3 · P-7 |
@@ -1689,7 +1944,9 @@ Web 段（第一段）不依赖该结论 —— 两棵树同在一个 JS 环境�
 | 6 | `submitMemberCommand` | `submit` 写 `pending` | `memberPendingCommand` | `deskPending`（单／双屏分支） |
 | 7a | `confirmMemberCommand` | `confirm` 入 `members`、清 `pending` | `memberConfirmedCommand` | `deskConfirmed` |
 | 7b | `rejectMemberCommand` | `reject` 清 `pending` | `memberRejectedCommand` | `deskRejected` |
-| 8 | `noticeDismissedCommand` | —（ui 自有命令） | — | `deskNotice` |
+| 8a | `memberRegistrationRetryRequestedCommand` | —（ui 自有命令） | — | `deskRetry` |
+| 8b | `memberRegistrationAbandonedCommand` | —（ui 自有命令） | — | `deskAbandon` |
+| ~~8~~ | ~~`noticeDismissedCommand`~~ | — | — | ⚠️ **2026-09-05 退役**，见 §6.5 |
 | 9 | `logoutCommand` | `logout` 清 session slice | `logoutSucceededCommand` | 见 §7.1 —— ⚠️ **两个 displayMode 各派一次 `clearLayers`**：✅ 亲验其 payload 为 `{displayMode}`（一次只清一个），且 `showScreen` 的 reducer **不清层**，**不得以 showScreen 代替清层** |
 
 ⚠️ ✅ 亲验 `clearUiVariablesCommand` 的 payload 是 `{keys: readonly string[]}` ——
@@ -1707,7 +1964,7 @@ Web 段（第一段）不依赖该结论 —— 两棵树同在一个 JS 环境�
 | slice name | `` `${moduleName}.<slice>` `` | `kernel.feature.sample-staff-session.session` |
 | `partKey` / `rendererKey` | `sample.<domain>.<part>`，二者取同值 | `sample.desk.member-form` |
 | `containerKey` | 本轮唯一容器 `'main'` | — |
-| uiVariable key | `sample.<domain>.<name>` | `sample.login.passcode` |
+| uiVariable key | `sample.<domain>.<name>` | `sample.login.operator-name` |
 | `layerId` | 与 `partKey` 同值（本轮每类层最多一个实例） | `sample.desk.waiting-confirm` |
 | testID | `` `${partKey}:<element>` `` | `sample.desk.member-form:submit` |
 
@@ -1745,20 +2002,20 @@ Web 段（第一段）不依赖该结论 —— 两棵树同在一个 JS 环境�
 | S-1 | 开机后 PRIMARY 为 `staff-login`；**双屏时 SECONDARY 为 `customer-welcome`，不得是 `container-empty` 兜底** |
 | S-2 | 登录失败时 alert 层在场，且 session slice **未**变为 `authenticated` |
 | S-3 | 登录成功后 PRIMARY 为 `member-list`，**且该导航由 `sample-member-desk`（ui 层）监听 `loginSucceededCommand` 的 actor 发出** —— `kernel/feature` 侧不得出现该 partKey |
-| S-4 | 【双屏】进表单后 SECONDARY 由 `customer-welcome` 换为 `customer-member`，props `mode` 为 `'preview'` |
-| S-5 | 【双屏】主屏写入 uiVariable 后**副屏部件读到同值** |
+| S-4 | 【双屏】⚠️ **2026-09-05 反转**：原文要求「进表单后 SECONDARY 换为 `customer-member{mode:'preview'}`」—— 那正是场景 4 已下线的行为，留着会逼实施方把 `preview` 态原样建回来。**改验其反面**：店员点「新增会员」进入表单后，**SECONDARY 保持 `customer-welcome` 不变**，且**不得**有任何针对 SECONDARY 的 `showScreen`。判据自带反例：一旦重新加回进表单时切副屏，必红 |
+| S-5 | 【双屏】⚠️ **2026-09-05 改挂载体**：编辑期不再写 uiVariable ⇒ 原载体消失。改验**提交后的业务事实跨屏可见** —— 主屏提交后副屏 `confirm` 态读到同一 `pending` 的姓名与电话。验的仍是跨 surface 状态同步，且比编辑中间态更真实 |
 | S-6 | 【双屏】提交后 PRIMARY 为 `member-list`、`waiting-confirm` 层在场、SECONDARY 为 `confirm` 形态，**三者同时成立** |
 | S-7a | 顾客确认后会员进入 `members`、`pending` 为 `null`、等待层消失、【双屏】副屏回待机 |
 | S-7b | 【双屏】standard 与 alert 两层同时在场，**且 alert 排在 standard 之后**。⚠️ 单屏下同时只有一层，验不到排序（§4.4） |
-| S-8 | 关层后回到 `member-form`，**两个登记 uiVariable 值仍在** |
+| S-8 | ⚠️ **2026-09-05 改载体**：两个登记 uiVariable 已删 ⇒ 改验「顾客拒绝后选『修改后重试』，表单以 `pending` 的姓名电话回填」。数据在 store 的业务事实里，不依赖编辑期写入 |
 | S-9 | 退出后 **PRIMARY 与 SECONDARY 两个 displayMode 的层都被清空**。⚠️ **夹具必须先制造两屏残留层再 logout**（Codex review N-3）：✅ 亲验 `showScreen` 的 reducer **不清 layer**，若从干净态直接退出，该断言是 vacuous pass |
 | S-10 | 真实组装后 `status === 'started'`，且 **§6.7 的九项 modules 清单逐个断言 descriptor 在场**：三个 base descriptor（`contracts`／`platform-ports`／`state`）＋ `display-context` ＋ `ui-state` ＋ 四个 sample module。**缺一即红**，部分组装不得通过。⚠️ `kernel.base.runtime` 由 `createRuntime` 自动加入，单独断言其在场 |
 | S-11 | **真实 root 经 `selectScreen` 读出 `showScreenCommand` 写入的 placement** —— 头号目标 |
-| S-12 | **重启后** `members` 与 `sample.login.operator-name` 仍在；`sample.login.passcode` 与两个登记变量已消失。⚠️ **「重启」按段各有确切含义，不得含糊**：Web 段＝**刷新页面**（进程与 JS 上下文重建）；真机段＝**杀进程后重开**。⚠️ **两段都必须是真持久化**——Web 段用 `test-expo` 绑的 Web 侧 `StateStoragePort`、真机段用 MMKV；**不得用内存态端口跑此判据**（§2.1a 第 3 条：那会假绿） |
+| S-12 | **重启后** `members` 与 `sample.login.operator-name` 仍在。⚠️ **2026-09-05：`'never'` 半边换载体** —— 原文用的三个 uiVariable 已删（§6.4），改用 **request ledger**：`runtime.request-ledger.MASTER/SLAVE` 两个 slice 恒为 `'never'`（✅ 亲验 `kernel/base/runtime/src/application/createInternalRuntimeModule.ts:57-58`、`src/features/slices/requestLedger.ts:159`），每个 runtime 必带，且 render 层读得到（✅ 亲验 `ui/base/render/test/renderState.test.tsx:128`）。**判据改为**：重启前先派一条命令（如提交登记）使 ledger 中留下该 requestId 的记录 —— 清理是**按时间窗的显式命令**，不是完成即清（✅ 亲验 `features/actors/cleanupRequestLedgerActor.ts`），故重启前该记录仍在 —— 重启后该 requestId **不得出现**。⚠️ **两半必须同一次重启内一起断言**：`members` 回来了才证明 flush 真的发生过，ledger 不回来才算真「never」；只断言后者会因「压根没 flush」而假绿。⚠️ 两个业务 slice 均为 `'owner-only'`（✅ 亲验 `sample-staff-session/src/slice.ts:31`、`sample-member-registry/src/slice.ts:35`），本 sample 不再有业务级 `'never'` 载体，这是**有意的**：`persistIntent` 的分支在持久化层是同一段代码，ledger 已覆盖该路径，不为凑第二个实例而新造载体。⚠️ **「重启」按段各有确切含义，不得含糊**：Web 段＝**刷新页面**（进程与 JS 上下文重建）；真机段＝**杀进程后重开**。⚠️ **两段都必须是真持久化**——Web 段用 `test-expo` 绑的 Web 侧 `StateStoragePort`、真机段用 MMKV；**不得用内存态端口跑此判据**（§2.1a 第 3 条：那会假绿） |
 | S-13a | **全 unavailable 矩阵**：10 个 binding 全为 unavailable/memory ⇒ 屏数未知 ⇒ **单屏**。此时 S-1／S-2／S-3／S-7a／S-9 的**单屏形态**成立，且 §4.4 的三处差异按单屏走 |
 | S-13b | **双屏矩阵**：仅 `device` 绑一个返回 `displayCount: 2` 的实现、其余九个 binding 仍 unavailable/memory ⇒ S-4／S-5／S-6／S-7b 成立。⚠️ 两个矩阵**不可合并** —— 全 unavailable 时双屏场景在定义上不可达（W-7 的 `?? 1` 降级） |
 | S-14 | 五类兜底：`runtime-unavailable` 与 `container-empty` 运行时可达；`missing-catalog-entry` / `missing-renderer` / `invalid-props` 由**测试构造坏 catalog** 覆盖，**不在运行时页面放坏部件** |
-| S-15 | **三个**层部件（`sample.auth.notice`／`sample.desk.waiting-confirm`／`sample.desk.registry-notice`，均 `containerKeys: []`）不出现在 `selectAvailableParts('main', …)`；屏级部件按 context 正确出现（Codex review S-3，`CONFIRMED`：v6 写成「四个」） |
+| S-15 | ⚠️ **2026-09-05：分母由三个增至六个** —— 新增 `sample.desk.discard-confirm`／`sample.desk.withdraw-confirm`／`system-notice`（各 feature 各一）。原**三个**层部件（`sample.auth.notice`／`sample.desk.waiting-confirm`／`sample.desk.registry-notice`，均 `containerKeys: []`）不出现在 `selectAvailableParts('main', …)`；屏级部件按 context 正确出现（Codex review S-3，`CONFIRMED`：v6 写成「四个」） |
 | S-16 | **单屏形态**：屏数为 1 时 `customer-member` 出现在 PRIMARY 且无 `waiting-confirm`；屏数为 2 时出现在 SECONDARY 且 PRIMARY 有 `waiting-confirm`。**同一部件、同一 props 形状**。⚠️ **两段都要验**：Web 段用 `test-expo` 注入的 `DevicePort` 造出 1／2 两种屏数；真机段用**真实双屏设备**复验，且此时屏数来自 `adapter-android-device` 的真实 `getDisplayInfo`。**Web 段结果不得当作最终 PASS**（§11.1） |
 | S-17 | **屏数未知不崩**：`readDisplayInfo` 返回 `unavailable` 或 `malformed` 时 `resolveSecondarySurfaceAvailable` 为 `false`（降级单屏），actor **不抛错**、流程继续走单屏分支。⚠️ 本判据验的是**降级路径本身**，故仍需一条注入 `unavailable` 端口的用例；**但它不得成为 S-16 的替代** —— 真实屏数路径必须另有 S-16 的真机证据 |
 | S-18 | `resolveSecondarySurfaceAvailable` 的**四个分支各一条断言**：`valid` 且 `>= 2` → `true`；`valid` 且 `== 1` → `false`；`unavailable` → `false`；`malformed` → `false`。红向量改这个纯函数 |
@@ -1773,6 +2030,16 @@ Web 段（第一段）不依赖该结论 —— 两棵树同在一个 JS 环境�
 | **S-27** | **`dual-screen` 单机双屏启动**（§2.1c，**只能在第二段真机验**）：① 单屏设备上启动器**不拉起**副屏 Activity（`displays.size < 2` 直接 return）；② 双屏设备上副屏 Activity 被拉到**正确的 displayId**；③ 主屏收到 `displayIndex = 0`、副屏收到 `1`，两者 `displayCount` 均为实际屏数；④ **重复调用启动器不产生第二个副屏实例**（幂等）；⑤ `registerRootComponent` 仍是同步调用（源码断言，不得被改成异步） ；⑥ **副屏与主屏同属一个 JS VM／一个 store** —— 可证伪形式：主屏 dispatch 一条命令后**副屏读到同一 store 的新值**；两侧各自持有独立 store 则必红。这是 `TER_SINGLE_VM_SINGLE_STORE_MULTI_SURFACE` 的真机对应物（§2.1c 末段） |
 | **S-28** | **`device` 的真实 `getDisplayInfo`**（**只能在第二段真机验**）：单屏设备返回 `displayCount = 1`、双屏设备返回 `2`，且 `readDisplayInfo` 判为 `valid` 态。⚠️ **这条与 S-27 必须分别验**：S-27 证明 Kotlin 侧把屏拉起来了，S-28 证明**业务侧那条通路**也读到了真实屏数 —— §2.1a 第 2 条的假绿正是两者只有其一时发生的 |
 | **S-29** | **`persist-kv` 的 MMKV 落盘与字符串保真**（§2.1b）：① 五类值（`null`／布尔／数字／字符串／对象）经 state codec 编码后写入、读回**解码得到同一值且类型不变**；② `null` 与字符串 `"null"` **可区分**（前者编码为 `null`、后者为 `"\"null\""`，adapter 必须原样保住这两个不同字符串）；③ 杀进程重开后值仍在。红向量：让 adapter 用 MMKV 的 typed API 存取、或对值做 `String(value)`／`JSON.parse` 再存 ⇒ ① ② 必红 |
+| **S-30** | 【双屏】顾客点年龄框，**SECONDARY 上**弹出纯数字键盘（§4.5） | 把 SECONDARY 的键盘宿主拿掉则弹不出，必红 |
+| **S-31** | 【单屏】`handheld-confirm` 下点年龄框，**PRIMARY 上**弹出纯数字键盘 | 同上。⚠️ 与 S-30 用**同一个部件同一段代码**，若需要为单／双屏分支才通过，即违反 P-9 |
+| **S-32** | **不填年龄**直接确认 ⇒ 登记成功，`members` 新增一条且其 `age` 为空 | 空年龄被拦下、被禁用确认按钮或弹校验，必红 —— 不填是正常路径 |
+| **S-33** | **填了年龄**再确认 ⇒ 新增那条的 `age` 等于所填值 | 年龄丢失、被截断或串到别的字段，必红 |
+| **S-34** | 顾客录入年龄期间，**PRIMARY 读不到该值**（双屏） | 出现逐字同步，必红 —— 那会从另一头破掉 §9a 的「编辑值不进 store」 |
+| **S-35** | 顾客**拒绝**时年龄被整体丢弃，不落任何 store | 拒绝后仍有年龄残留，必红 |
+| **S-36** | 年龄键盘出现后，**年龄框仍完整可见**（内容区收缩＋焦点滚入可见区） | 年龄框被键盘盖住，必红。⚠️ 见 §4.5.4 关于本条分量的说明 |
+| **S-37** | 年龄键盘升起时，`customer-member` 的**确认与拒绝仍可见可点**（单屏三个按钮同样成立） | 内容区收缩后按钮溢出可见区，或必须先收键盘才能点，必红。⚠️ 见 §4.5.2a |
+| **S-38** | 【双屏】顾客正在输年龄时店员点「撤回」⇒ ① 副屏离开确认态回 `customer-welcome`；② 顾客随后点「确认」不产生任何登记；③ store 中无年龄残留 | 撤回后副屏停在无反应的确认态，或顾客那一下仍登记成功，必红。⚠️ 见 §4.5.2c |
+| **S-39** | 内容区不足以容纳键盘的窄 surface 上点年龄框 ⇒ **不出现「已获得焦点但无法输入、也无法继续」的死状态**；年龄仍可不填，确认／拒绝／交还仍可点 | 出现焦点已给、键盘没有、又无出路的状态，必红。⚠️ 见 input 需求 §7.2b（Codex 复核 S-3） |
 
 ### 9.3 设计模式判据（与功能判据同等级，不可为凑功能豁免）
 
@@ -1791,8 +2058,8 @@ Web 段（第一段）不依赖该结论 —— 两棵树同在一个 JS 环境�
 | P-8 | **无竞态**：不存在「两个模块的 actor 监听同一命令、其中一方读取另一方本次写入的 slice」的形态 | ❌ review（§3.6）。红夹具：把 §7.1 的因果链改回「同听 `loginCommand`」，S-3 应变得不稳定 |
 | P-9 | 部件源码中**零 `if` 分支依赖屏数**；单屏／双屏分支只在 `sample-member-desk` 的 actor 内 | ❌ review（§4.4） |
 | **P-10** | **灵魂判据**：两个 `kernel/feature` 包源码中 `partKey`／`containerKey`／`displayMode` 字面量**零命中** | ✅ 禁止句（§2.5.2 · §3.5）。⚠️ 依赖那半已归 P-5a，此处不重复 |
-| P-11 | **按 visibility 判定**：从部件或 `install` 发起的 **`public`** 命令派发点必须显式带 `requestId`；**`internal`** 命令不要求；actor 内的子命令**验证继承**（不显式给，或给与父相同的值）。⚠️ 例外：`install` 派 internal 命令若其 actor 会派出 public 子命令，则该 internal 命令**也必须带** requestId（§6.3） | ⚠️ 半机械 —— 逐点判 visibility，不可写成「所有 `dispatchCommand(` 必须出现 requestId」的一刀切禁止句（会误伤合法 internal） |
-| P-12 | `ui/feature` 的 actor **不得监听 `kernel/feature` 的请求命令**（`loginCommand`／`logoutCommand`／`submitMemberCommand`／`confirmMemberCommand`／`rejectMemberCommand`），只监听 kernel 派出的**领域事件命令**。⚠️ **允许**监听本包自有的呈现请求命令（`memberFormOpenedCommand`／`noticeDismissedCommand`／`authNoticeDismissedCommand`）—— 那不跨包、无并发对手 | ✅ 禁止句（按命令来源包判定）＋ ❌ review（§3.6 并发理由） |
+| P-11 | ⚠️ **2026-09-05：分母补入六条新命令**（`memberFormCancelled`／`memberDraftDiscarded`／`memberSubmissionWithdrawn`／`memberRegistrationRetryRequested`／`memberRegistrationAbandoned`／各 feature 的 `systemFailureObserved`），它们均为 `public`。**按 visibility 判定**：从部件或 `install` 发起的 **`public`** 命令派发点必须显式带 `requestId`；**`internal`** 命令不要求；actor 内的子命令**验证继承**（不显式给，或给与父相同的值）。⚠️ 例外：`install` 派 internal 命令若其 actor 会派出 public 子命令，则该 internal 命令**也必须带** requestId（§6.3） | ⚠️ 半机械 —— 逐点判 visibility，不可写成「所有 `dispatchCommand(` 必须出现 requestId」的一刀切禁止句（会误伤合法 internal） |
+| P-12 | ⚠️ **2026-09-05：allowed-list 须补入上述六条新命令**；并登记 `noticeDismissedCommand` 原触发点消失（`registry-notice` 移除 `:dismiss`），其去留属详设裁定。`ui/feature` 的 actor **不得监听 `kernel/feature` 的请求命令**（`loginCommand`／`logoutCommand`／`submitMemberCommand`／`confirmMemberCommand`／`rejectMemberCommand`），只监听 kernel 派出的**领域事件命令**。⚠️ **允许**监听本包自有的呈现请求命令（`memberFormOpenedCommand`／`noticeDismissedCommand`／`authNoticeDismissedCommand`）—— 那不跨包、无并发对手 | ✅ 禁止句（按命令来源包判定）＋ ❌ review（§3.6 并发理由） |
 | P-13 | render 的 TypeScript AST import-capability 门继续拒绝 `getStore` / `dispatchAction` / `useDispatch` 来源、`react-redux`、state store/句柄及 reducer/slice 构造；W-11 合法的窄 `dispatchCommand` 与 `useDispatchCommand` 不得被误禁 | ✅ import 断言＋W-11 正控制 |
 | **P-14** | **业务包对尺寸零感知**（§6.7b 边界）：六个 sample 业务／集成**库侧**源码中 `terminalSurfaces` 与尺寸字面量（`1920`／`1080`／`1024`／`600`）**零命中**；`sample-console/test-expo/**` 与 `package.json` **除外** | ✅ 禁止句。红向量：在任一 part 里写一个尺寸字面量 ⇒ 必红 |
 

@@ -110,7 +110,7 @@ function runPublicSurface({root, invariant, checker, indexSourceFile}) {
   const domain = actual.filter(name => !INFRASTRUCTURE_EXPORTS.includes(name))
   const expectedDomain = invariant.publicExports.filter(name => !INFRASTRUCTURE_EXPORTS.includes(name))
   assertExactList('render domain exports', domain, expectedDomain)
-  if (actual.length !== 21) throw new Error(`render public export count must be 21; actual=${actual.length}`)
+  if (actual.length !== 27) throw new Error(`render public export count must be 27; actual=${actual.length}`)
   void root
 }
 

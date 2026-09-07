@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* App identity is owned by this integration package. */
+:root {
+  --color-canvas: 241 245 249;
+  --color-surface: 255 255 255;
+  --color-foreground: 15 23 42;
+  --color-muted-foreground: 71 85 105;
+  --color-border: 203 213 225;
+  --color-action: 15 23 42;
+  --color-action-foreground: 255 255 255;
+}

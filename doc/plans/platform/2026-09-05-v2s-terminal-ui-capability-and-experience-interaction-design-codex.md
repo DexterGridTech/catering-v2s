@@ -388,12 +388,12 @@ ACTION_ROSTER=每个 user-facing surface 单独列出；single/double 分支不�
 SECONDARY_RULE=所有“副屏回”只在 hasSecondarySurface 分支；单屏无 SECONDARY
 LAYER_GUARD=6 种语义类型逐一声明，7 个 partKey 逐一注册
 DEXTER_WIREFRAME_REVIEW=UNSET
-INTERACTION_STATUS=READY_FOR_STATIC_REVIEW_WITH_SOURCE_INPUT_GATE；implementation-facing 设计已形成
-INPUT_CORRECTION_REQUIRED=单屏顾客拒绝旧行的 `reject→list` 须改为 `reject→member-form + registry-notice`；retry/abandon 再分别回 form/list
+INTERACTION_STATUS=READY_FOR_IMPLEMENTATION_INPUT；implementation-facing 设计已形成
+INPUT_SOURCE_RESOLUTION=DEXTER_2026_09_05_RESOLVED：双屏与单屏通知出现后的屏切换已写入源交互设计；实现使用 `reject→member-form + registry-notice`，再由 retry/abandon 分流
 
 ## 13. Dexter 看图结论
 
 - 看图日期：未发生；本轮只交低保真文本线框
 - 低保真线框结论：`UNSET`
 - 高保真 demo 结论：`NOT_REQUIRED`
-- 允许进入静态 review：本工件的 implementation-facing 内容已形成；当前冻结输入仍有 source correction gate，故不得据此直接授权实施
+- 允许进入 implementation-facing 实施：输入接缝已由 Dexter 解除；本工件仍不替代代码实施授权

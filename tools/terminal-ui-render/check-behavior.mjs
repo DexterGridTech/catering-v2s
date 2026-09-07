@@ -8,6 +8,7 @@ const toolsRoot = path.dirname(fileURLToPath(import.meta.url))
 const repositoryRoot = path.resolve(toolsRoot, '../..')
 const renderSource = path.join(repositoryRoot, 'apps/terminal/ui/base/render')
 const uiStateSource = path.join(repositoryRoot, 'apps/terminal/kernel/base/ui-state')
+const sharedTestSupportSource = path.join(repositoryRoot, 'tools/terminal-shared')
 const vitestPath = path.join(repositoryRoot, 'node_modules/.bin/vitest')
 
 const linkedPackages = Object.freeze([
@@ -47,6 +48,7 @@ const createSandbox = () => {
   const baseRoot = path.join(terminalRoot, 'kernel/base')
   const renderRoot = path.join(terminalRoot, 'ui/base/render')
   const uiStateRoot = path.join(baseRoot, 'ui-state')
+  const sharedTestSupportRoot = path.join(root, 'tools/terminal-shared')
   const nodeModulesRoot = path.join(root, 'node_modules')
   fs.mkdirSync(path.dirname(renderRoot), {recursive: true})
   fs.mkdirSync(baseRoot, {recursive: true})
@@ -56,6 +58,13 @@ const createSandbox = () => {
   )
   copyPackage(renderSource, renderRoot)
   copyPackage(uiStateSource, uiStateRoot)
+  fs.mkdirSync(sharedTestSupportRoot, {recursive: true})
+  for (const fileName of ['react-native-vitest-entry.ts', 'react-native-vitest.setup.cjs']) {
+    fs.copyFileSync(
+      path.join(sharedTestSupportSource, fileName),
+      path.join(sharedTestSupportRoot, fileName),
+    )
+  }
   for (const packageName of linkedPackages) {
     fs.symlinkSync(
       path.join(repositoryRoot, 'apps/terminal/kernel/base', packageName),
@@ -73,6 +82,8 @@ const createSandbox = () => {
   }
   for (const packageName of [
     '@reduxjs/toolkit',
+    '@babel/core',
+    'babel-preset-expo',
     'react',
     'react-is',
     'react-test-renderer',
@@ -82,6 +93,11 @@ const createSandbox = () => {
   ]) {
     linkNodeModule(nodeModulesRoot, packageName, path.join(repositoryRoot, 'node_modules', packageName))
   }
+  linkNodeModule(
+    nodeModulesRoot,
+    'react-native',
+    path.join(repositoryRoot, 'apps/terminal/node_modules/react-native'),
+  )
   return Object.freeze({root, renderRoot, uiStateRoot})
 }
 
@@ -151,6 +167,26 @@ const mutations = Object.freeze([
     ),
   },
   {
+    id: 'OVERLAY_BOUNDS',
+    testFile: 'test/renderSurface.test.tsx',
+    testName: 'resolves screen and layer through both catalogs and orders layers by tier/time/id',
+    apply: sandbox => replaceOnce(
+      path.join(sandbox.renderRoot, 'src/components/LayerStack.tsx'),
+      "  stack: {\n    position: 'absolute',\n    top: 0,",
+      "  stack: {\n    position: 'relative',\n    top: 0,",
+    ),
+  },
+  {
+    id: 'OVERLAY_Z_ORDER',
+    testFile: 'test/renderSurface.test.tsx',
+    testName: 'resolves screen and layer through both catalogs and orders layers by tier/time/id',
+    apply: sandbox => replaceOnce(
+      path.join(sandbox.renderRoot, 'src/components/LayerStack.tsx'),
+      '    zIndex: 1000,\n    elevation: 1000,\n  },\n  backdrop:',
+      '    zIndex: 0,\n    elevation: 0,\n  },\n  backdrop:',
+    ),
+  },
+  {
     id: 'MISSING_PATH',
     testFile: 'test/renderSurface.test.tsx',
     testName: 'reports missing catalog, missing renderer, and invalid props on screen and layer paths',
@@ -196,8 +232,8 @@ const mutations = Object.freeze([
     testName: 'rejects duplicate renderer keys and exposes no mutation entry point',
     apply: sandbox => replaceOnce(
       path.join(sandbox.renderRoot, 'src/foundations/createRendererCatalog.ts'),
-      'return Object.freeze({resolve, tierOf})',
-      'return {resolve, tierOf}',
+      'return Object.freeze({resolve, tierOf, guardOf})',
+      'return {resolve, tierOf, guardOf}',
     ),
   },
   {

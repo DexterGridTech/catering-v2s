@@ -30,7 +30,9 @@ selector 身份不会再次执行 selector；root 不变但 selector 身份变�
 
 安装期使用 `definePart` 同时得到两半：`catalogEntry` 交给 ui-state 的 `createUiCatalog`，
 `rendererBinding` 交给本包的 `createRendererCatalog`。两张 catalog 构建后冻结且没有 register；
-`catalogEntry` 保存准入字段（包括可为空的 `containerKeys`），renderer binding 保存 component 与 `layerTier`。
+`catalogEntry` 保存准入字段（包括可为空的 `containerKeys`），renderer binding 保存 component、`layerTier`
+与正交的 `layerGuard`。`layerTier` 只决定标准层/告警层的排序，`layerGuard` 决定遮罩与返回键是否
+可以关闭顶层 layer：`dismissible` 可关闭，`decisive` 不可绕过。
 文案只存在 catalog，不进入 state 或 renderer binding。
 
 `SurfaceRoot` 必须显式接收 `displayMode` 与 `containerKey`。screen 与 layer 都使用 ui-state 的选择器，
@@ -39,9 +41,15 @@ catalog 缺失、renderer 缺失和非法 props 使用不同的 fallback 语义�
 
 ## 公共面
 
-当前公共面固定为 21 项：3 项基础包元数据导出、5 项类型、4 个渲染组件、2 个 catalog 工厂、6 个 hook
-与 1 个 request helper，其中包括 `useDispatchCommand`、`useUiVariable`、`dispatchWithRequestId`、
-`useRequestInFlight` 与 `useTrackedRequest`。
+当前公共面固定为 27 项：3 项基础包元数据导出、9 项类型/焦点协议、1 个焦点 context、4 个渲染组件、2 个 catalog 工厂、7 个 hook
+与 1 个 request helper，其中包括 `SurfaceFocusBoundaryContext`、`SurfaceRootContentFrame`、
+`useSurfaceFocusBoundary`、`useDispatchCommand`、`useUiVariable`、`dispatchWithRequestId`、
+`useRequestInFlight` 与 `useTrackedRequest`。焦点协议只允许 `suspend` 与 `restore` 两个 phase；
+render 只发出生命周期事件，不读取 input 的 active field 或 keyboard owner。
+
+`SurfaceRoot` 可选接收 `renderContentFrame({content})`。默认路径仍将 assembly children、
+`ScreenContainer` 与 `LayerStack` 放在一个 `flex: 1` content subtree；frame consumer 可以把这个
+content subtree 与自己的底部 sibling 放入同一 surface frame，而不让 render 反向依赖 input。
 测试接缝与内部 fallback/诊断实现不进入 `src/index.ts` 或 package publicExports。
 
 ## 目录与测试

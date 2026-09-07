@@ -6,6 +6,18 @@ description: Derive a reviewable catering-v2s implementation plan from an approv
 
 Confirm the explicit program and current Roadmap authorization first. Reopen applicable project-memory and Heritage sources, including `SOLUTION_REASONABLENESS_FIRST`, `UI_USER_TASK_VALIDATION` and `AMBIGUITY_REQUIRES_DEXTER`. Before decomposing implementation, state the business user's actual task, Dexter's stage/cost intent, at least one viable alternative and why the recommendation is better. For UI, prove each operation comes from an approved Journey, is logical in context and has no better path; attribute constraints to backend/owner/contract/document ambiguity rather than inheriting them silently, and ask Dexter when product semantics are ambiguous. Then produce implementation units with exact create/update/delete/retain paths, owner and transaction boundaries, failure behavior, evidence and red controls.
 
+The plan is incomplete unless it contains an explicit delivery step named `逐代码与详设对账`
+(line-by-line reconciliation of the produced code against the implementation-facing design),
+stating its scope, executor, criteria and result form. Scope is every changed line, not a sample.
+Results are only `MATCHED` or `OPEN`. **Passing this reconciliation is the precondition for
+delivering the implementation to Dexter and Claude for post-implementation review** — with any
+`OPEN` outstanding the correct report is "实施未就绪", never "已交付 review".
+This is NOT the same control as the three-dimensional reconciliation (requirements + design/IA +
+project-memory standards) that runs before whole-scope testing, and neither substitutes for the
+other: that one gates testing, this one gates handing work to human review.
+Authority: Dexter 2026-09-06. Canonical wording lives in
+`doc/platform/implementation-task-template.md`.
+
 Any new or modified backend HTTP operation is incomplete until the plan reads
 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md` and contains its
 backend-acceptance scenario intent: non-empty `identity`, `fixture`, `request`, and `businessOracle`.

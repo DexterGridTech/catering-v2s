@@ -7,6 +7,7 @@ export {
   PrimitiveHeading,
   PrimitiveInput,
   PrimitiveLabel,
+  PrimitiveScrollView,
   PrimitiveStatus,
   PrimitiveText,
 } from './components';
@@ -17,7 +18,13 @@ export type {
   PrimitiveContainerProps,
   PrimitiveHeadingProps,
   PrimitiveInputProps,
+  PrimitiveInputHandle,
+  PrimitiveInputSelection,
+  PrimitiveInputSelectionChangeEvent,
   PrimitiveLabelProps,
+  PrimitiveMeasureInWindowCallback,
+  PrimitiveScrollViewProps,
+  PrimitiveScrollViewHandle,
   PrimitiveStatusProps,
   PrimitiveTextProps,
 } from './components';

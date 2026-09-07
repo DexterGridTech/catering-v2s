@@ -10,6 +10,7 @@
     "test/**/*.tsx",
     "test-expo/**/*.ts",
     "test-expo/**/*.tsx",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "nativewind-env.d.ts"
   ]
 }

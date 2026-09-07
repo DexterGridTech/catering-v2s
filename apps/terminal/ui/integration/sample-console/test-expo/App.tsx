@@ -1,5 +1,6 @@
 import {createTestExpoApp} from '@catering-v2s/ui-base-dev-host'
 import {createSampleAssembly, terminalSurfaces} from '../src'
+import '../theme/global.css'
 
 const App = createTestExpoApp({
   appName: 'sample-console',

@@ -10,9 +10,10 @@ describe('sample-console package surface', () => {
       'kernel.base.platform-ports',
       'kernel.base.runtime',
       'kernel.base.ui-state',
-      'kernel.feature.sample-member-registry',
-      'kernel.feature.sample-staff-session',
-      'ui.base.render',
+    'kernel.feature.sample-member-registry',
+    'kernel.feature.sample-staff-session',
+    'ui.base.input',
+    'ui.base.render',
       'ui.feature.sample-member-desk',
       'ui.feature.sample-staff-auth',
     ]);
@@ -21,8 +22,8 @@ describe('sample-console package surface', () => {
       layout: 'column',
       scaleToFit: true,
       surfaces: {
-        PRIMARY: {width: 1920, height: 1080},
-        SECONDARY: {width: 1024, height: 600},
+        PRIMARY: {width: 1157, height: 723},
+        SECONDARY: {width: 962, height: 541},
       },
     });
     expect(typeof createSampleAssembly).toBe('function');

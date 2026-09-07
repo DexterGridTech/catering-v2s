@@ -11,7 +11,8 @@
     "Member", "MemberRejectedPayload", "MemberState", "PendingMember",
     "confirmMemberCommand", "createSampleMemberRegistryModule", "dependencyModuleNames",
     "devDependencyModuleNames", "memberConfirmedCommand", "memberPendingCommand",
-    "memberRejectedCommand", "moduleKind", "moduleName", "rejectMemberCommand",
-    "selectMembers", "selectPendingMember", "submitMemberCommand"
+    "memberRejectedCommand", "memberWithdrawnCommand", "moduleKind", "moduleName",
+    "rejectMemberCommand", "selectMembers", "selectPendingMember", "submitMemberCommand",
+    "withdrawMemberCommand"
   ]
 }

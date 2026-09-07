@@ -1,8 +1,9 @@
 import {
   clearLayersCommand,
-  clearUiVariablesCommand,
   closeLayerCommand,
+  createUiVariableWrite,
   openLayerCommand,
+  setUiVariablesCommand,
   showScreenCommand,
 } from '@catering-v2s/kernel-base-ui-state'
 import {
@@ -17,8 +18,13 @@ import {
   logoutSucceededCommand,
   sessionRestoredAnonymousCommand,
 } from '@catering-v2s/kernel-feature-sample-staff-session'
-import {authNoticeDismissedCommand} from '../../commands'
+import {
+  authNoticeDismissedCommand,
+  authSystemFailureDismissedCommand,
+  authSystemFailureObservedCommand,
+} from '../../commands'
 import {moduleName} from '../../moduleName'
+import {operatorNameVariable} from '../../variables'
 
 const primary = 'PRIMARY' as const
 
@@ -37,9 +43,6 @@ export const createAuthResultActor = (): ActorDefinition => defineActor(moduleNa
       partKey: 'sample.auth.notice',
       props: {reasonCode: context.command.payload.reasonCode},
     })
-    await context.dispatchCommand(clearUiVariablesCommand, {
-      keys: ['sample.login.passcode'],
-    })
     return null
   }),
 ])
@@ -55,6 +58,9 @@ export const createAuthNavigationActor = (): ActorDefinition => defineActor(modu
     return null
   }),
   onCommand(loginSucceededCommand, async context => {
+    await context.dispatchCommand(setUiVariablesCommand, {
+      entries: [createUiVariableWrite(operatorNameVariable, context.command.payload.operatorName)],
+    })
     await context.dispatchCommand(clearLayersCommand, {displayMode: primary})
     return null
   }),
@@ -65,6 +71,25 @@ export const createAuthNoticeActor = (): ActorDefinition => defineActor(moduleNa
     await context.dispatchCommand(closeLayerCommand, {
       displayMode: primary,
       layerId: 'sample.auth.notice',
+    })
+    return null
+  }),
+])
+
+export const createAuthSystemNoticeActor = (): ActorDefinition => defineActor(moduleName, 'auth-system-notice', [
+  onCommand(authSystemFailureObservedCommand, async context => {
+    await context.dispatchCommand(openLayerCommand, {
+      displayMode: primary,
+      layerId: 'sample.auth.system-notice',
+      partKey: 'sample.auth.system-notice',
+      props: {operation: context.command.payload.operation},
+    })
+    return null
+  }),
+  onCommand(authSystemFailureDismissedCommand, async context => {
+    await context.dispatchCommand(closeLayerCommand, {
+      displayMode: primary,
+      layerId: 'sample.auth.system-notice',
     })
     return null
   }),

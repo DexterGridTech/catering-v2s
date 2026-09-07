@@ -10,6 +10,7 @@ import {
   unavailableTopologyHostPort,
 } from '@catering-v2s/kernel-base-platform-ports'
 import {createAndroidDevicePort} from '@catering-v2s/adapter-android-device'
+import {createAndroidImeInsetsSource} from '@catering-v2s/adapter-android-dual-screen'
 import {createAndroidPersistKvPort} from '@catering-v2s/adapter-android-persist-kv'
 import {createSampleAssembly} from '@catering-v2s/ui-integration-sample-console'
 
@@ -34,4 +35,8 @@ const platformPorts = createPlatformPorts({
 export const createSampleTerminalAssembly = () => createSampleAssembly({
   platformPorts,
   persistenceKey,
+  imeInsetsSources: {
+    PRIMARY: createAndroidImeInsetsSource(0),
+    SECONDARY: createAndroidImeInsetsSource(1),
+  },
 })

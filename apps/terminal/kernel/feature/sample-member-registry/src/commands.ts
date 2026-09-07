@@ -9,13 +9,18 @@ export const submitMemberCommand = defineCommand<Readonly<{name: string; phone: 
   visibility: 'public',
 })
 
-export const confirmMemberCommand = defineCommand<EmptyPayload>(moduleName, {
+export const confirmMemberCommand = defineCommand<Readonly<{readonly age?: number}>>(moduleName, {
   name: 'confirm-member',
   visibility: 'public',
 })
 
 export const rejectMemberCommand = defineCommand<EmptyPayload>(moduleName, {
   name: 'reject-member',
+  visibility: 'public',
+})
+
+export const withdrawMemberCommand = defineCommand<EmptyPayload>(moduleName, {
+  name: 'withdraw-member',
   visibility: 'public',
 })
 
@@ -31,5 +36,10 @@ export const memberConfirmedCommand = defineCommand<Readonly<{memberId: string}>
 
 export const memberRejectedCommand = defineCommand<MemberRejectedPayload>(moduleName, {
   name: 'member-rejected',
+  visibility: 'public',
+})
+
+export const memberWithdrawnCommand = defineCommand<EmptyPayload>(moduleName, {
+  name: 'member-withdrawn',
   visibility: 'public',
 })

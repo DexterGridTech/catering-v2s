@@ -6,8 +6,10 @@ import {
   memberConfirmedCommand,
   memberPendingCommand,
   memberRejectedCommand,
+  memberWithdrawnCommand,
   rejectMemberCommand,
   submitMemberCommand,
+  withdrawMemberCommand,
 } from '../../commands'
 import {createInvalidMemberPayloadError, createNoPendingMemberError} from '../../errors'
 import {moduleName} from '../../moduleName'
@@ -44,11 +46,16 @@ export const createSubmitMemberActor = (): ActorDefinition => defineActor(module
 export const createConfirmMemberActor = (): ActorDefinition => defineActor(moduleName, 'confirm', [
   onCommand(confirmMemberCommand, async context => {
     const pending = selectPendingMember(context.getState())
-    if (pending === null) throw createNoPendingMemberError(context)
+    if (pending === null) return null
+    const requestedAge = context.command.payload.age
+    const age = typeof requestedAge === 'number' && Number.isFinite(requestedAge)
+      ? requestedAge
+      : undefined
     const member = Object.freeze({
       memberId: String(createCommandId()),
       name: pending.name,
       phone: pending.phone,
+      ...(age === undefined ? {} : {age}),
       registeredAt: nowTimestampMs(),
     })
     context.dispatchAction(memberActions.confirmPending(member))
@@ -59,8 +66,14 @@ export const createConfirmMemberActor = (): ActorDefinition => defineActor(modul
 
 export const createRejectMemberActor = (): ActorDefinition => defineActor(moduleName, 'reject', [
   onCommand(rejectMemberCommand, async context => {
-    context.dispatchAction(memberActions.clearPending())
+    if (selectPendingMember(context.getState()) === null) return null
     await context.dispatchCommand(memberRejectedCommand, {reasonCode: 'customer-rejected'})
+    return null
+  }),
+  onCommand(withdrawMemberCommand, async context => {
+    if (selectPendingMember(context.getState()) === null) return null
+    context.dispatchAction(memberActions.clearPending())
+    await context.dispatchCommand(memberWithdrawnCommand, {})
     return null
   }),
 ])

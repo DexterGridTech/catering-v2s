@@ -8,8 +8,9 @@
   },
   "publicExports": [
     "PrimitiveActions", "PrimitiveActionsProps", "PrimitiveAddressableProps", "PrimitiveButton", "PrimitiveButtonProps",
-    "PrimitiveContainer", "PrimitiveContainerProps", "PrimitiveHeading", "PrimitiveHeadingProps", "PrimitiveInput", "PrimitiveInputProps",
-    "PrimitiveLabel", "PrimitiveLabelProps", "PrimitiveStatus", "PrimitiveStatusProps",
+    "PrimitiveContainer", "PrimitiveContainerProps", "PrimitiveHeading", "PrimitiveHeadingProps", "PrimitiveInput", "PrimitiveInputHandle", "PrimitiveInputProps",
+    "PrimitiveInputSelection", "PrimitiveInputSelectionChangeEvent",
+    "PrimitiveLabel", "PrimitiveLabelProps", "PrimitiveMeasureInWindowCallback", "PrimitiveScrollView", "PrimitiveScrollViewHandle", "PrimitiveScrollViewProps", "PrimitiveStatus", "PrimitiveStatusProps",
     "PrimitiveText", "PrimitiveTextProps", "dependencyModuleNames", "devDependencyModuleNames", "moduleName"
   ]
 }

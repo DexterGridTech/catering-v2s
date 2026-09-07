@@ -1,6 +1,15 @@
 import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime'
 import {dependencyModuleNames} from './dependencies'
-import {memberFormOpenedCommand, noticeDismissedCommand} from './commands'
+import {
+  deskSystemFailureDismissedCommand,
+  deskSystemFailureObservedCommand,
+  memberDraftDiscardedCommand,
+  memberFormCancelledCommand,
+  memberFormOpenedCommand,
+  memberRegistrationAbandonedCommand,
+  memberRegistrationRetryRequestedCommand,
+  memberSubmissionWithdrawnCommand,
+} from './commands'
 import {
   createDeskConfirmedActor,
   createDeskFormActor,
@@ -8,13 +17,23 @@ import {
   createDeskNoticeActor,
   createDeskPendingActor,
   createDeskRejectedActor,
+  createDeskSystemNoticeActor,
 } from './features/actors/actors'
 import {moduleKind, moduleName} from './moduleName'
 
-const commands = [memberFormOpenedCommand, noticeDismissedCommand] as const
+const commands = [
+  memberFormOpenedCommand,
+  memberFormCancelledCommand,
+  memberDraftDiscardedCommand,
+  memberSubmissionWithdrawnCommand,
+  memberRegistrationRetryRequestedCommand,
+  memberRegistrationAbandonedCommand,
+  deskSystemFailureObservedCommand,
+  deskSystemFailureDismissedCommand,
+] as const
 
 const runtimeModuleDependencies = dependencyModuleNames.filter(
-  name => name !== 'ui.base.render' && name !== 'ui.base.primitives',
+  name => name !== 'ui.base.render' && name !== 'ui.base.primitives' && name !== 'ui.base.input',
 )
 
 export const createSampleMemberDeskModule = (): RuntimeModule => {
@@ -25,6 +44,7 @@ export const createSampleMemberDeskModule = (): RuntimeModule => {
     createDeskConfirmedActor(),
     createDeskRejectedActor(),
     createDeskNoticeActor(),
+    createDeskSystemNoticeActor(),
   ] as const
   return Object.freeze({
     moduleName,

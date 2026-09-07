@@ -16,7 +16,7 @@ AUTHORIZED=写 IA、逐屏可复核结构、testID 与 owner 矩阵、交叉对�
 NOT_AUTHORIZED=生产代码、依赖、测试、Android、Web、浏览器自动化、DEV、seed、UAT、部署
 IMPLEMENTATION_AUTHORITY=false
 DEXTER_WIREFRAME_REVIEW=UNSET
-IA_STATUS=READY_FOR_STATIC_REVIEW_WITH_SOURCE_INPUT_GATE
+IA_STATUS=READY_FOR_IMPLEMENTATION_INPUT
 
 本工件把交互裁定转换为可实现的 IA，不重新裁决 Journey。交互源仍有一个必须在
 进入实施前修正的计数错误：它把 layer 的“类型数”和“partKey 数”混写。本文不
@@ -153,13 +153,13 @@ theme 与部件实现承接；固定 Web 画布与内部比例边界见第 4 节
 
 | 检查 | 判据 | 当前结果 |
 |---|---|---|
-| IA ↔ 交互工件 | 15 个 IA-ID 的 surface、入口、可见文案、mode 与 testID 均能在交互工件逐项找到 | `SOURCE_INPUT_GATE`：仅 layer type=6 与 partKey=7 的源文案仍待修订；其余逐项一致 |
-| IA ↔ implementation-facing 详设 | owner、命令、失败/恢复、尺寸边界、CP 落点与本 IA 相同 | `SOURCE_INPUT_GATE`：同上；详设已按正式 partKey 记录 7 |
+| IA ↔ 交互工件 | 15 个 IA-ID 的 surface、入口、可见文案、mode 与 testID 均能在交互工件逐项找到 | `PASS_BY_DEXTER_INPUT_RESOLUTION`：type=6 与 partKey=7 作为唯一实现输入；单屏 reject 的两种形态已由源文档补齐 |
+| IA ↔ implementation-facing 详设 | owner、命令、失败/恢复、尺寸边界、CP 落点与本 IA 相同 | `PASS_BY_STATIC_REVIEW`：详设按正式 partKey 记录 7，并按已解除的输入接缝实施 |
 | IA-ID ↔ Journey | 每个 user-facing IA-ID 回指 interaction map/roster；IA-SAMPLE-HOST 明确为技术宿主而非 Journey 节点 | `PASS_BY_STATIC_REVIEW` |
 | 计数自证 | IA-ID=15；catalog part=12；layer type=6；layer partKey=7；表格实际行数与声明相等 | `PASS_BY_STATIC_REVIEW` |
 
-交互源计数修正完成后，需把前两项从 `SOURCE_INPUT_GATE` 改成 `PASS`；不能
-用本工件的正确数字掩盖冻结输入的矛盾。
+Dexter 已解除输入接缝；实现统一使用 type=6、partKey=7 双分母，不能
+把两个数字合并为单一实现分母。
 
 ## 5.1 交互与 IA 的固定接缝
 
@@ -197,8 +197,8 @@ CATALOG_PART_DENOMINATOR=12
 INVISIBLE_DIMENSIONS_AS_OBSERVATIONS=是；本地 runtime/无 HTTP 的 N/A 均有理由
 FORBIDDEN_UI=显式列出 raw error、token、command/store/runtime、错误的副屏动作与单屏 SECONDARY
 TYPED_PROBLEMS=5 类，均映射到 owner 与用户可见处理
-CROSS_CHECK_WITH_INTERACTION=SOURCE_INPUT_GATE：type=6/partKey=7 与单屏 reject 去向的源文案待修正；其余逐项静态对账 PASS
-CROSS_CHECK_WITH_DESIGN=SOURCE_INPUT_GATE：同一计数与单屏 reject 修正完成后再置 PASS
+CROSS_CHECK_WITH_INTERACTION=PASS_BY_DEXTER_INPUT_RESOLUTION：type=6/partKey=7 双分母与单屏 reject 形态按本次实现输入固定；其余逐项静态对账 PASS
+CROSS_CHECK_WITH_DESIGN=PASS_BY_STATIC_REVIEW：同一计数与单屏 reject 形态已同步
 DEXTER_WIREFRAME_REVIEW=UNSET
-IA_STATUS=READY_FOR_STATIC_REVIEW_WITH_SOURCE_INPUT_GATE
-IMPLEMENTATION_ADMISSION=BLOCKED_BY_SOURCE_INPUT_GATE；本工件不构成 implementation authorization
+IA_STATUS=READY_FOR_IMPLEMENTATION_INPUT
+IMPLEMENTATION_ADMISSION=OPEN_UNDER_DEXTER_2026_09_05_AUTHORIZATION；本工件本身不替代授权

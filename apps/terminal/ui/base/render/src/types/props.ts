@@ -43,6 +43,11 @@ export type SurfaceRootProps = Readonly<{
   readonly displayMode: DisplayMode
   readonly containerKey: ContainerKey
   readonly children?: ReactNode
+  readonly renderContentFrame?: (frame: SurfaceRootContentFrame) => ReactNode
+}>
+
+export type SurfaceRootContentFrame = Readonly<{
+  readonly content: ReactNode
 }>
 
 export type RenderProviderProps = Readonly<{

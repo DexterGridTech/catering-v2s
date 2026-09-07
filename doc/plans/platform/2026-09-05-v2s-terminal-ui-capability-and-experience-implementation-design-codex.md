@@ -10,7 +10,7 @@ INTERACTION_REF=doc/plans/platform/2026-09-05-v2s-terminal-ui-capability-and-exp
 AUTHORIZED=写详设、交互工件、IA 与实施计划
 NOT_AUTHORIZED=生产代码、测试、依赖、Android/Web 运行、DEV、seed、UAT、部署
 IMPLEMENTATION_AUTHORITY=false
-DESIGN_STATUS=READY_FOR_STATIC_REVIEW_WITH_IMPLEMENTATION_INPUT_GATE
+DESIGN_STATUS=READY_FOR_IMPLEMENTATION_INPUT
 
 ## 1. 真实业务目标与方案比较
 
@@ -18,7 +18,8 @@ DESIGN_STATUS=READY_FOR_STATIC_REVIEW_WITH_IMPLEMENTATION_INPUT_GATE
 
 当前 sample 的主要缺口不是缺少漂亮样式，而是三类能力没有统一 owner：
 
-1. primitives 是八个无样式的裸 RN wrapper，统一 testID 已存在，但 RNR/NativeWind
+1. primitives 原有八个无样式的裸 RN wrapper，统一 testID 已存在；本次另经授权新增一个
+   仅含 `testID` 与 children 的受控 `PrimitiveScrollView`。RNR/NativeWind
    内胆、theme token 和 automation 挂点没有形成可扩展的控件边界。
 2. LayerStack 目前按树顺序渲染，缺少覆盖、模态阻挡、遮罩、返回键和焦点地板；
    业务层一旦增加确认弹窗，就会各自重复这些行为。
@@ -34,7 +35,7 @@ feature 中分叉；基础设施 rejection 会清掉 loading 后静默回到 idl
 |---|---|---|
 | A. 继续在每个 feature 里直接写 RN、各自处理 layer 和 theme | 最短期改动小，但复制 testID、遮罩、返回键和失败呈现；覆盖率随业务量下降 | 拒绝，因为不能解决 §4-C 的根因 |
 | B. 建一个跨应用通用 design-system/theme/automation 大包，一次性承载所有 Journey | 能集中能力，但主题被错误提升为共享事实，且把尚未观察到的业务重复提前抽象 | 拒绝，因为扩大边界、违反应用主题归属和先见重复再下沉 |
-| C. 采用四段地板：NativeWind 工具链 → primitives 内部 copy-in RNR → app-local theme + render overlay → feature-local Journey 控件和 actor | 能力路径单一；既有八个 public contract 不变；业务语义留在 feature；每段有独立红向量 | 采用 |
+| C. 采用四段地板：NativeWind 工具链 → primitives 内部 copy-in RNR → app-local theme + render overlay → feature-local Journey 控件和 actor | 能力路径单一；既有八个 public contract 不变，并以受控滚动 primitive 承载唯一滚动祖先；业务语义留在 feature；每段有独立红向量 | 采用 |
 
 我选了 C 而不是 A/B，因为它直接解决“谁默认提供可寻址和呈现能力”的结构问题，
 同时不把 theme 或尚未形成重复的业务组合组件提前提升为共享 owner。
@@ -49,8 +50,8 @@ system-notice partKey：
 
 按正式 partKey 复算，layer 语义类型为 6，layer partKey 为 7。这个结果不是
 详设任意改名，而是由 J-1 两个 feature 不互相 import 与正式 partKey 共同决定。
-本详设把 type=6、partKey=7 双分母固定下来，并将需求/交互文字修订列为实施前
-输入修正；在该文字修正完成前，不进入 CP-4 实施。
+本详设把 type=6、partKey=7 双分母固定下来；Dexter 已解除 source input gate，
+CP-4 直接以这两个分母作为唯一实现输入。
 
 noticeDismissedCommand 的裁定落在详设：member-desk 的旧命令删除，不复用给
 system-notice。原因是它原本表达 registry-notice 的“知道了”路径，而新 system
@@ -70,7 +71,7 @@ systemFailureDismissedCommand 各 feature 各自拥有。
 | CP | 主题 | owner | 主要输出 | 依赖 |
 |---|---|---|---|---|
 | CP-1 | NativeWind/Tailwind 工具链与 Android 显示基线 | sample-console / sample-terminal owner | 本机解析值、Web/Android 接线、横屏、甲档沉浸、Presentation 铺满 | 无；必须先证明版本兼容 |
-| CP-2 | primitives 的 RNR copy-in 内胆 | ui-base-primitives | 八个 public contract 的 RNR 内部实现、强制 testID、token 接缝 | CP-1 工具链 |
+| CP-2 | primitives 的 RNR copy-in 内胆 | ui-base-primitives | 八个既有 public contract 的 RNR 内部实现，加一个受控 `PrimitiveScrollView`，强制 testID、token 接缝 | CP-1 工具链 |
 | CP-3 | app theme 与 render layer 地板 | sample-console theme / ui-base-render | base tokens、app-local theme、overlay/modal/back/focus | CP-2 public contract |
 | CP-4 | Journey 重梳、feature-local 控件与闭环 | 两个 ui/feature + sample-console | 12 个 catalog part、15 IA 视图、单/双屏 actor 链、失败和恢复 | CP-3；且需先修 layer 分母文字 |
 
@@ -152,13 +153,13 @@ surfaceMode；不能解释启动错误；或只能靠旧 POC 的独立 VM/进程
 形态：
 
 - RNR 源码 copy-in，不声明 RNR workspace dependency；
-- 八个既有 export 名和 props 语义保留；
+- 八个既有 export 名和 props 语义保留；另增 `PrimitiveScrollView`，只接受强制 `testID` 与 children，作为 feature 滚动区域的唯一公共滚动祖先；
 - 每个 export 必须经过统一 assertTestID，再把 testID 挂到真实 RN 节点；
 - className 只存在于 primitives 内部，ui/feature 生产源码零命中；
 - automation backend 仍押后，但将来挂点不能有绕过 API；
 - 不在本 CP 新增业务控件。
 
-通过条件：八个公共 export 集合、invariants、README 对齐；空/空白 testID
+通过条件：八个既有公共 export 加受控滚动 export 的集合、invariants、README 对齐；空/空白 testID
 仍抛；RNR 内部 token 能改变真实 primitive；业务 feature 无 className。
 
 红向量：移除任一 assertTestID 旁路、把 className 写入 feature、把 RNR dependency
@@ -185,8 +186,9 @@ copy-in；需要把业务语义塞进 primitives。
 - base tokens 只在 primitives；
 - app theme 永远在 sample-console/theme，不建 ui/theme；
 - theme 不包含业务文案、command 或 actor；
-- LayerStack 绝对覆盖 surface、阻挡底层、渲染遮罩、处理 Android back、
-  记录打开前焦点并在关闭后恢复；
+- LayerStack 绝对覆盖 surface、阻挡底层、渲染遮罩、处理 Android back；按本机
+  RN 0.86.3 的真实 API 从 `TextInput.State.currentlyFocusedInput` 记录打开前焦点，
+  将焦点送入可聚焦的 top layer wrapper，并在最后一层关闭后恢复；无 target 安全 no-op；
 - layerTier 继续只表示排序覆盖优先级；guard 是独立的 dismissible/decisive 维度；
 - render 不知道业务 catalog 的语义，不返回 promise，不提供 await showDialog；
 - 业务确认仍派 feature-owned command。
@@ -203,7 +205,7 @@ app token 改变能改变最小 primitive。
 
 ### CP-4 Journey 与体验闭环
 
-前置：CP-3 完成；需求/交互把 layer type=6、partKey=7 的文字修正完成；T-1
+前置：CP-3 完成；采用已由 Dexter 解除的 layer type=6、partKey=7 双分母；T-1
 比例门仍未裁定时不建立该门。
 
 预计修改/新增 owning source：
@@ -218,6 +220,12 @@ app token 改变能改变最小 primitive。
 - apps/terminal/ui/feature/sample-member-desk/src/parts.ts
 - apps/terminal/ui/feature/sample-member-desk/src/features/actors/actors.ts
 - apps/terminal/ui/feature/sample-member-desk/src/components/
+- apps/terminal/kernel/feature/sample-member-registry/src/commands.ts
+- apps/terminal/kernel/feature/sample-member-registry/src/module.ts
+- apps/terminal/kernel/feature/sample-member-registry/src/features/actors/actors.ts
+- apps/terminal/kernel/feature/sample-member-registry/src/index.ts
+- apps/terminal/kernel/feature/sample-member-registry/test/
+- apps/terminal/kernel/feature/sample-member-registry/README.md、terminal-invariants.json
 - 两个 feature 的 test、README、terminal-invariants 与依赖声明
 - sample-console 的 assembly、theme、focused test
 
@@ -232,19 +240,28 @@ DialogSurface、DialogActions、EmptyState、ScrollArea。它们不是 primitive
 |---|---|---|
 | staff-auth | 保留 authNoticeDismissed；新增 authSystemFailureObserved、authSystemFailureDismissed | auth result / auth system notice actor |
 | member-desk | 保留 memberFormOpened；删除 noticeDismissed；新增 memberFormCancelled、memberDraftDiscarded、memberSubmissionWithdrawn、memberRegistrationRetryRequested、memberRegistrationAbandoned、deskSystemFailureObserved、deskSystemFailureDismissed | form/navigation/pending/rejected/system actor |
-| kernel features | 不新增 UI command | 继续由 registry/session owner 决定业务事实 |
+| kernel features | 不新增 UI command；registry 仅补 owner-owned withdraw business command/event | 继续由 registry/session owner 决定业务事实；UI 的 `memberSubmissionWithdrawnCommand` 仍留在 member-desk |
 
 请求结果与失败形态：
 
 `dispatchWithRequestId` 的返回值不是只有 Promise reject。依据
 `apps/terminal/kernel/base/runtime/src/types/execution.ts` 的 `CommandDispatchResult`，
-必须同时处理 `status=completed|error|timed-out|partial-failed`；actor error 会被
+必须同时处理 `status=running|completed|error|timed-out|partial-failed`；`running` 是
+非终态，actor error 会被
 `createCommandDispatcher` 收进 fulfilled result，只有 dispatcher/ledger 等边界仍会
 以 Promise rejection 离开。
 
 1. 业务部件 start requestId，派业务 public command。
 2. `status=completed` 才进入成功路径；先 finish 原 requestId。
-3. resolved 的非 completed 结果先 finish 原 requestId，再按 feature 的有限分类表处理：
+3. `status=running` 是非终态：不 finish 原 requestId、不记录失败诊断、不打开
+   system-notice；保留 requestId，让 request ledger 的后续终态观察决定 loading 与结果。
+   该状态不是凭空增加的兜底值：`aggregateCommandStatus` 在
+   `completedAt === null` 或任一 actor 仍为 `running` 时明确返回它；
+   `createCommandDispatcher` 的正常 `dispatchInternal` 会等待 actor 终态后再发出
+   `command.completed`，因此一次正常、完整的直接 dispatch 通常返回终态。`running`
+   仍可由 request ledger 的中途观察、peer/持久化回放或不完整的生命周期观察得到，
+   所以 selector 与 feature 分类必须保留这条非终态分支；不能把它压进失败兜底。
+4. resolved 的 `error`、`timed-out`、`partial-failed` 先 finish 原 requestId，再按 feature 的有限分类表处理：
    - 已知业务失败：`actorResults[].error.category` 为业务允许的
      `AUTHENTICATION` / `BUSINESS` / `VALIDATION`，且同一次 dispatch 已产生对应的
      owner domain event/state（例如 `loginFailedCommand`）。沿既有 auth/registry notice
@@ -252,11 +269,12 @@ DialogSurface、DialogActions、EmptyState、ScrollArea。它们不是 primitive
    - 基础设施失败：`SYSTEM` error、`timed-out`、含 system actor 的
      `partial-failed`，或 Promise rejection。生成新的 observation requestId，派本
      feature 自有 observation command。
-   - 未分类的非 completed 结果：按 system failure 处理并记录 operation；实现不得把
-     原始 error 或 actor result 塞进 UI，若无法证明分类则停止交 Dexter，不自行添加新业务语义。
-4. Promise rejection 也走第 3 步的基础设施分支；`useDispatchCommand` 的既有日志只
+   - 其他确实未知的非 completed 结果（不包括已明确处理的 `running`）：按 system
+     failure 处理并记录 operation；实现不得把原始 error 或 actor result 塞进 UI，若
+     无法证明分类则停止交 Dexter，不自行添加新业务语义。
+5. Promise rejection 也走第 4 步的基础设施分支；`useDispatchCommand` 的既有日志只
    负责诊断与 rethrow，不取代 feature 对 fulfilled failure 的分类。
-5. observation reject 只通过已有结构化诊断记录，禁止递归观察；原始 rejection
+6. observation reject 只通过已有结构化诊断记录，禁止递归观察；原始 rejection
    继续抛回，不伪装成功。system notice props 只含允许列表中的 operation；不含原始
    error、payload、手机号或设备标识。
 
@@ -340,7 +358,7 @@ DialogSurface、DialogActions、EmptyState、ScrollArea。它们不是 primitive
 
 | 变更事实 | 契约/生成源 | owner/source | UI surface/state | focused/static proof | 结论 |
 |---|---|---|---|---|---|
-| 8 primitives 内胆 | primitives public index | primitives components | all features | primitive contract test | CP-2 同步 |
+| 8 个既有 primitives 加受控滚动内胆 | primitives public index | primitives components | all features | primitive contract test | CP-2 同步 |
 | app theme | sample-console theme files | integration app | primitives consumer | token mutation | CP-3 同步 |
 | layer overlay | render types/LayerStack | ui-base-render | all layers | render focused | CP-3 同步 |
 | system notice | feature command/part/module | two ui features | auth/desk layers | reject focused | CP-4 同步 |
@@ -394,11 +412,11 @@ REASON=本专题只改 terminal UI 能力、runtime layer 呈现和 sample-local
 
 | 项目 | 当前状态 | 本批允许 | 本批禁止 |
 |---|---|---|---|
-| layer type/partKey 文字 | INPUT_CORRECTION_REQUIRED | 在文档中固定 type=6、partKey=7 | 带着六/七混写进入 CP-4 |
-| 单屏 customer reject 去向文字 | INPUT_CORRECTION_REQUIRED | 采用 member-form + registry-notice，再由 retry/abandon 分流 | 带着 reject→list 的旧行进入 CP-4 |
+| layer type/partKey 文字 | RESOLVED_BY_DEXTER | 实现固定 type=6、partKey=7 双分母 | 把两个分母合并成单一数字 |
+| 单屏 customer reject 去向文字 | RESOLVED_BY_DEXTER | 采用 member-form + registry-notice，再由 retry/abandon 分流 | 回退到直接 reject→list |
 | T-1 比例静态门 | DEXTER_DECISION | 记录为人工 review 判据 | 未裁定前建 checker 或 red vector |
 | NativeWind/Tailwind 解析 | UNVERIFIED | CP-1 本机解析 | 教程/POC 版本代替 |
-| RNR 控件新增公共面 | NOT_IN_THIS_BATCH | 保留八项 public contract | 把 feature-local 四控件直接下沉 |
+| RNR 控件新增公共面 | 已由 Dexter 本轮授权：仅新增受控 `PrimitiveScrollView` | 八项既有 public contract 不变；新增项只接受 testID 与 children | 不把 DialogSurface/DialogActions/EmptyState/ScrollArea 下沉 |
 
 ## 13. 停机条件
 
@@ -406,7 +424,7 @@ REASON=本专题只改 terminal UI 能力、runtime layer 呈现和 sample-local
 
 - CP-1 版本不能由本机解析值证明；
 - 需要让 kernel port、业务包或 sample assembly 感知 visual implementation；
-- NativeWind/RNR 破坏八个 primitive contract；
+- NativeWind/RNR 破坏八个既有 primitive contract 或受控滚动 contract；
 - render 必须 import feature 才能完成 layer；
 - system failure 不能做到不静默且不递归；
 - 单屏语义需要组件读取屏数；
@@ -427,9 +445,9 @@ REASON=本专题只改 terminal UI 能力、runtime layer 呈现和 sample-local
 
 ## 15. 交付状态
 
-DESIGN_STATUS=READY_FOR_STATIC_REVIEW_WITH_IMPLEMENTATION_INPUT_GATE
+DESIGN_STATUS=READY_FOR_IMPLEMENTATION_INPUT
 IMPLEMENTATION_AUTHORITY=false
-IMPLEMENTATION_ADMISSION=BLOCKED_BY_SOURCE_INPUT_GATE
+IMPLEMENTATION_ADMISSION=OPEN_UNDER_DEXTER_2026_09_05_AUTHORIZATION
 STATIC_PROOF=未运行；本轮只写文档
 DYNAMIC_PROOF=未运行；本轮不授权
-NEXT_AUTHORITY=先由 Dexter 决定是否修正冻结输入的六/七分母与单屏 reject 文案；静态 review 可先行，CP-1 仍须另行授权
+NEXT_AUTHORITY=按当前 Dexter 授权实施 CP-1；本详设不替代后续步骤级授权与独立 review

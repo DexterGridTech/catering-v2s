@@ -16,6 +16,7 @@
   `createSurfaceForDisplayIndex` 入口；一次性闭包持有 runtime 与 catalog。
 - `src/baseModuleDescriptors.ts`：contracts、platform-ports、state 的一次性 descriptor 集合。
 - `src/terminalSurfaces.ts`：读取本包 `package.json` 的固定逻辑 surface 配置并导出 typed 常量。
+- `theme/`：本应用的 NativeWind/Tailwind 语义色 token；主题属于 integration app，不抽到共享包。
 - `test-expo/App.tsx`：把本包的 assembly、surface 配置与运行时状态 reader 注入通用宿主的薄入口。
 - `test/`：Vitest focused test，包含 `.ts` 与 `.tsx`，跨包组装走真实调用链。
 
@@ -26,7 +27,7 @@
 - `createSurfaceForDisplayIndex`：接收一个既有 `SampleAssembly` 与 `0 | 1` 的物理屏序，
   从该 assembly 的 runtime 读取 display role 与 instance mode，统一调用
   `display-context.resolveSurfaceDisplayMode` 后再委托给该 assembly 的 `createSurface`。
-- `terminalSurfaces`：由本包 `package.json` 读取并校验后的固定 surface 配置。
+- `terminalSurfaces`：由本包 `package.json` 读取并校验后的固定逻辑 surface 配置。
 
 ## 用法
 
@@ -37,9 +38,13 @@
 `assembly.createSurface(displayMode)` 仍是通用宿主按已确定模式挂载 surface 的闭包入口。
 `persistenceKey` 仅用于测试隔离；生产端口由 assembly 的消费者注入。
 
+主题 token 由 `theme/global.css` 声明、由 `tailwind.config.cjs` 映射为语义 class；
+`ui/base/primitives` 只消费这些语义 class，不反向 import 应用主题。新增应用时复制自己的
+`theme/`，不要建立共享 theme 包或 `ui/theme` 层。
+
 Expo Web 的入口是根 `index.js`，它注册 `test-expo/App`；通用宿主读取传入的 `terminalSurfaces`，
-不在第二处解析 `package.json`。外层 flex 仅负责排布，surface 保持声明的固定逻辑尺寸，
-内部业务部件自行使用 primitives 的相对布局。
+不在第二处解析 `package.json`。外层 flex 仅负责排布，surface 保持声明的固定逻辑尺寸，业务部件
+仍只使用 primitives 的相对布局。
 
 ## 迭代指引
 

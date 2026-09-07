@@ -7,6 +7,8 @@ import {
   memberRejectedCommand,
   rejectMemberCommand,
   submitMemberCommand,
+  memberWithdrawnCommand,
+  withdrawMemberCommand,
 } from './commands'
 import {createConfirmMemberActor, createRejectMemberActor, createSubmitMemberActor} from './features/actors/actors'
 import {memberErrorDefinitions} from './errors'
@@ -20,6 +22,8 @@ const commands = [
   memberPendingCommand,
   memberConfirmedCommand,
   memberRejectedCommand,
+  withdrawMemberCommand,
+  memberWithdrawnCommand,
 ] as const
 
 export const createSampleMemberRegistryModule = (): RuntimeModule => {

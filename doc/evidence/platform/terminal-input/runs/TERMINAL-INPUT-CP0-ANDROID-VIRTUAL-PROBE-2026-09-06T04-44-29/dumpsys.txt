@@ -1,0 +1,14 @@
+DISPLAY_SNAPSHOT
+display 0: 2560 x 1600, density 320
+display 2: 1280 x 720, density 213
+
+INPUT_METHOD_SNAPSHOT_WHILE_SECONDARY_PROBE_FOCUSED
+mCurClient=... mSelfReportedDisplayId=2
+mFocusedWindowClient=... mSelfReportedDisplayId=2
+mCurTokenDisplayId=0
+mInputShown=false
+
+INTERPRETATION
+The secondary field was focused for the virtual-input path, while the system IME remained hidden. The
+token/visibility result is the accepted SECONDARY system-IME product boundary, not evidence that the
+virtual keyboard failed. The primary system-IME evidence is in logcat.filtered.txt.

@@ -1,3 +1,4 @@
+import {useState} from 'react'
 import {
   PrimitiveButton,
   PrimitiveContainer,
@@ -13,61 +14,104 @@ import {
   useTrackedRequest,
   useUiVariable,
 } from '@catering-v2s/ui-base-render'
+import {useInputField, useInputSnapshot} from '@catering-v2s/ui-base-input'
 import {loginCommand} from '@catering-v2s/kernel-feature-sample-staff-session'
-import {createUiVariableWrite, setUiVariablesCommand} from '@catering-v2s/kernel-base-ui-state'
-import {operatorNameVariable, passcodeVariable} from '../variables'
+import {authSystemFailureObservedCommand} from '../commands'
+import {classifyRequestResult} from './requestOutcome'
+import {ScrollArea} from './controls'
+import {operatorNameVariable} from '../variables'
+
+const operatorNameFieldId = 'sample.auth.login:operator-name'
+const passcodeFieldId = 'sample.auth.login:passcode'
+
+const PasscodeInput = ({editable}: Readonly<{readonly editable: boolean}>) => {
+  const field = useInputField({
+    fieldId: passcodeFieldId,
+    testID: passcodeFieldId,
+    accessibilityLabel: '密码',
+    editable,
+    keyboardKind: 'virtual',
+    layout: 'full',
+    secureTextEntry: true,
+  })
+  return <PrimitiveInput {...field.inputProps} />
+}
 
 export const StaffLogin = () => {
   const dispatchCommand = useDispatchCommand()
   const operatorName = useUiVariable(operatorNameVariable) ?? ''
-  const passcode = useUiVariable(passcodeVariable) ?? ''
+  const captureInputSnapshot = useInputSnapshot()
+  const [passcodeResetKey, setPasscodeResetKey] = useState(0)
   const request = useTrackedRequest()
   const requestInFlight = useRequestInFlight(request.requestId)
-
-  const writeVariable = (
-    declaration: typeof operatorNameVariable | typeof passcodeVariable,
-    value: string,
-  ) => dispatchWithRequestId(dispatchCommand, setUiVariablesCommand, {
-    entries: [createUiVariableWrite(declaration, value)],
+  const operatorNameField = useInputField({
+    fieldId: operatorNameFieldId,
+    testID: operatorNameFieldId,
+    accessibilityLabel: '工号',
+    editable: !requestInFlight,
+    initialValue: operatorName,
+    keyboardKind: 'virtual',
+    layout: 'full',
   })
 
-  const submit = () => {
+  const observeSystemFailure = async (): Promise<void> => {
+    try {
+      await dispatchWithRequestId(
+        dispatchCommand,
+        authSystemFailureObservedCommand,
+        {operation: 'login'},
+      )
+    } catch (_error) {
+      // useDispatchCommand has already emitted the structured rejection diagnostic.
+    }
+  }
+
+  const submit = async () => {
     if (requestInFlight) return
+    const snapshot = captureInputSnapshot()
+    const operatorNameValue = snapshot.fields[operatorNameFieldId]?.value ?? ''
+    const passcodeValue = snapshot.fields[passcodeFieldId]?.value ?? ''
     const requestId = request.start()
-    return dispatchWithRequestId(dispatchCommand, loginCommand, {operatorName, passcode}, requestId)
-      .finally(() => request.finish(requestId))
+    try {
+      const result = await dispatchWithRequestId(
+        dispatchCommand,
+        loginCommand,
+        {operatorName: operatorNameValue, passcode: passcodeValue},
+        requestId,
+      )
+      const outcome = classifyRequestResult(result)
+      if (outcome !== 'running') request.finish(requestId)
+      if (outcome === 'business-failure') setPasscodeResetKey(value => value + 1)
+      if (outcome === 'system-failure') await observeSystemFailure()
+      return result
+    } catch (error) {
+      request.finish(requestId)
+      await observeSystemFailure()
+      throw error
+    }
   }
 
   return (
     <PrimitiveContainer testID="sample.auth.login">
-      <PrimitiveHeading testID="sample.auth.login:title">店员登录</PrimitiveHeading>
-      <PrimitiveLabel
-        testID="sample.auth.login:operator-name-label"
-        nativeID="sample.auth.login:operator-name"
-      >
-        工号
-      </PrimitiveLabel>
-      <PrimitiveInput
-        testID="sample.auth.login:operator-name"
-        accessibilityLabel="工号"
-        value={operatorName}
-        onChangeText={value => writeVariable(operatorNameVariable, value)}
-        editable={!requestInFlight}
-      />
-      <PrimitiveLabel
-        testID="sample.auth.login:passcode-label"
-        nativeID="sample.auth.login:passcode"
-      >
-        密码
-      </PrimitiveLabel>
-      <PrimitiveInput
-        testID="sample.auth.login:passcode"
-        accessibilityLabel="密码"
-        value={passcode}
-        secureTextEntry
-        onChangeText={value => writeVariable(passcodeVariable, value)}
-        editable={!requestInFlight}
-      />
+      <ScrollArea testID="sample.auth.login:scroll">
+        <PrimitiveHeading testID="sample.auth.login:title">店员登录</PrimitiveHeading>
+        <PrimitiveLabel
+          testID="sample.auth.login:operator-name-label"
+          nativeID="sample.auth.login:operator-name"
+        >
+          工号
+        </PrimitiveLabel>
+        <PrimitiveInput
+          {...operatorNameField.inputProps}
+        />
+        <PrimitiveLabel
+          testID="sample.auth.login:passcode-label"
+          nativeID="sample.auth.login:passcode"
+        >
+          密码
+        </PrimitiveLabel>
+        <PasscodeInput key={passcodeResetKey} editable={!requestInFlight} />
+      </ScrollArea>
       <PrimitiveButton
         testID="sample.auth.login:submit"
         accessibilityLabel="登录"

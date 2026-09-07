@@ -1,0 +1,15 @@
+adb reverse tcp:8081 tcp:8081
+adb logcat -c
+adb install -r apps/terminal/assembly/android/sample-terminal/android/app/build/outputs/apk/debug/app-debug.apk
+yarn workspace @catering-v2s/assembly-android-sample-terminal start --port 8081 --dev-client
+adb logcat -v threadtime 'ReactNativeJS:I' 'TerminalDualScreen:I' 'InputMethodManager:I' 'GoogleInputMethodService:I' '*:S'
+adb shell am force-stop com.anonymous.sampleterminal
+adb shell am start -n com.anonymous.sampleterminal/.MainActivity
+adb shell input -d 2 tap 640 265
+adb shell input -d 2 tap 640 359
+adb shell input -d 2 tap 640 447
+adb logcat -d -v threadtime 'ReactNativeJS:I' 'TerminalDualScreen:I' 'InputMethodManager:I' 'GoogleInputMethodService:I' '*:S'
+adb shell dumpsys display
+adb shell dumpsys input_method
+adb shell am force-stop com.anonymous.sampleterminal
+adb shell pidof com.anonymous.sampleterminal

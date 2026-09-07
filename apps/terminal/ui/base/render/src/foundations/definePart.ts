@@ -3,6 +3,7 @@ import type {
   UiCatalogEntry,
 } from '@catering-v2s/kernel-base-ui-state'
 import type {
+  LayerGuard,
   LayerTier,
   RendererBinding,
 } from '../types/catalog'
@@ -24,6 +25,7 @@ type DefinePartCatalogFields = Pick<
 type DefinePartInput<TProps extends RenderComponentProps> = Readonly<DefinePartCatalogFields & {
   readonly component: ComponentType<TProps>
   readonly layerTier?: LayerTier
+  readonly layerGuard?: LayerGuard
 }>
 
 type DefinedPart<TProps extends RenderComponentProps> = Readonly<{
@@ -47,10 +49,24 @@ const requireLayerTier = <TProps extends RenderComponentProps>(
   return layerTier
 }
 
+const requireLayerGuard = <TProps extends RenderComponentProps>(
+  input: DefinePartInput<TProps>,
+): LayerGuard => {
+  if (hasOwn(input, 'layerGuard') && input.layerGuard === undefined) {
+    throw new Error('[ui-base-render] layerGuard must not be explicitly undefined')
+  }
+  const layerGuard = input.layerGuard ?? 'dismissible'
+  if (layerGuard !== 'dismissible' && layerGuard !== 'decisive') {
+    throw new Error('[ui-base-render] layerGuard is invalid')
+  }
+  return layerGuard
+}
+
 export const definePart = <TProps extends RenderComponentProps>(
   input: DefinePartInput<TProps>,
 ): DefinedPart<TProps> => {
   const layerTier = requireLayerTier(input)
+  const layerGuard = requireLayerGuard(input)
   const catalogEntry: UiCatalogEntry = Object.freeze({
     partKey: input.partKey,
     rendererKey: input.rendererKey,
@@ -65,6 +81,7 @@ export const definePart = <TProps extends RenderComponentProps>(
     rendererKey: input.rendererKey,
     component: input.component,
     layerTier,
+    layerGuard,
   })
   return Object.freeze({catalogEntry, rendererBinding})
 }

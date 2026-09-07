@@ -1,7 +1,7 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {createElement, type ComponentType, type ReactElement} from 'react'
-import {View} from 'react-native'
-import {describe, expect, it} from 'vitest'
+import {BackHandler, StyleSheet, TextInput, View} from 'react-native'
+import {describe, expect, it, vi} from 'vitest'
 import type {
   LogEvent,
   LogWriteInput,
@@ -12,8 +12,12 @@ import type {Runtime} from '@catering-v2s/kernel-base-runtime'
 import {
   createRendererCatalog,
   definePart,
+  LayerStack,
   RenderProvider,
+  ScreenContainer,
+  SurfaceFocusBoundaryContext,
   SurfaceRoot,
+  type RenderProviderProps,
 } from '../src/index'
 import {createUiCatalog} from '@catering-v2s/kernel-base-ui-state'
 import {createRenderPartDiagnosticReporter} from '../src/foundations/diagnostics'
@@ -71,10 +75,16 @@ const createLogger = (): Readonly<{logger: LoggerPort; events: LogWriteInput[]}>
   return {logger, events}
 }
 
-const mount = (element: ReactElement): ReactTestRenderer => {
+const mount = (
+  element: ReactElement,
+  createNodeMock?: (element: ReactElement) => unknown,
+): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined
   act(() => {
-    renderer = create(element)
+    renderer = (create as unknown as (
+      element: ReactElement,
+      options?: Readonly<{readonly createNodeMock: (element: ReactElement) => unknown}>,
+    ) => ReactTestRenderer)(element, createNodeMock === undefined ? undefined : {createNodeMock})
   })
   return renderer!
 }
@@ -84,6 +94,14 @@ const findFallbacks = (renderer: ReactTestRenderer) => renderer.root.findAll(nod
   && typeof node.props.testID === 'string'
   && node.props.testID.startsWith('ui-base-render:fallback:'),
 )
+
+const findByTestID = (renderer: ReactTestRenderer, testID: string) => {
+  const matches = renderer.root.findAll(node => node.props.testID === testID)
+  if (matches.length === 0) throw new Error(`testID not found: ${testID}`)
+  return matches[0]
+}
+
+type BackPressHandler = Parameters<typeof BackHandler.addEventListener>[1]
 
 const emptyContent = () => ({
   contentSets: {
@@ -111,6 +129,7 @@ const part = <TProps extends object>(input: Readonly<{
   readonly rendererKey: string
   readonly component: ComponentType<TProps>
   readonly layerTier?: 'standard' | 'alert'
+  readonly layerGuard?: 'dismissible' | 'decisive'
   readonly containerKeys?: readonly string[]
 }>) => definePart({
   partKey: input.partKey,
@@ -123,9 +142,134 @@ const part = <TProps extends object>(input: Readonly<{
   description: input.partKey,
   component: input.component,
   ...(input.layerTier === undefined ? {} : {layerTier: input.layerTier}),
+  ...(input.layerGuard === undefined ? {} : {layerGuard: input.layerGuard}),
 })
 
 describe('render surface hosts', () => {
+  it('passes one shrinkable content subtree through the frame seam', () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const defined = part({partKey: 'frame-part', rendererKey: 'frame-renderer', component: Screen})
+    const uiCatalog = createUiCatalog([defined.catalogEntry])
+    const rendererCatalog = createRendererCatalog([defined.rendererBinding])
+    source.setRoot(rootWithContent({
+      contentSets: {
+        PRIMARY: {containers: {root: {partKey: 'frame-part'}}, layers: []},
+        SECONDARY: {containers: {}, layers: []},
+      },
+    }))
+    source.setStatus('started')
+    let frameCalls = 0
+    const renderer = mount(createElement(
+      RenderProvider,
+      {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, ...unusedRenderProviderBindings},
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        renderContentFrame: ({content}) => {
+          frameCalls += 1
+          return createElement('surface-frame', {testID: 'surface-frame'}, content, createElement('keyboard-dock'))
+        },
+      }),
+    ))
+
+    const frame = findByTestID(renderer, 'surface-frame')
+    const frameProps = frame.props as Readonly<{readonly children: readonly ReactElement[] | ReactElement}>
+    const frameChildren = Array.isArray(frameProps.children) ? frameProps.children : [frameProps.children]
+    const content = frameChildren[0]!
+    const contentProps = content.props as Readonly<{readonly style: unknown; readonly children: readonly unknown[]}>
+    expect(frameCalls).toBe(1)
+    expect(content.type).toBe(View)
+    expect(StyleSheet.flatten(contentProps.style)).toMatchObject({flex: 1})
+    expect(contentProps.children).toEqual(expect.arrayContaining([
+      expect.objectContaining({type: ScreenContainer}),
+      expect.objectContaining({type: LayerStack}),
+    ]))
+    expect(renderer.root.findByType('render-screen').props.marker).toBeUndefined()
+    renderer.unmount()
+  })
+
+  it('notifies input consumers around the first and last layer focus boundary', () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const defined = part({
+      partKey: 'focus-boundary-layer',
+      rendererKey: 'focus-boundary-layer-renderer',
+      component: StandardLayer,
+      layerTier: 'alert',
+      layerGuard: 'dismissible',
+      containerKeys: [],
+    })
+    const uiCatalog = createUiCatalog([defined.catalogEntry])
+    const rendererCatalog = createRendererCatalog([defined.rendererBinding])
+    const root = (layers: readonly object[]) => rootWithContent({
+      contentSets: {
+        PRIMARY: {containers: {}, layers},
+        SECONDARY: {containers: {}, layers: []},
+      },
+    })
+    source.setRoot(root([]))
+    source.setStatus('started')
+    const events: string[] = []
+    const previousInput = {focus: vi.fn(() => { events.push('previous-focus') })}
+    const layerFocusTargets = new Map<string, {focus: () => void}>()
+    const renderer = mount(createElement(
+      RenderProvider,
+      {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, ...unusedRenderProviderBindings},
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        renderContentFrame: ({content}) => createElement(
+          SurfaceFocusBoundaryContext.Provider,
+          {value: phase => { events.push(phase) }},
+          content,
+        ),
+      }),
+    ), element => {
+      const testID = (element.props as {readonly testID?: unknown}).testID
+      if (typeof testID !== 'string' || !testID.startsWith('ui-base-render:layer:')) return {}
+      const existing = layerFocusTargets.get(testID)
+      if (existing !== undefined) return existing
+      const target = {focus: () => { events.push('layer-focus') }}
+      layerFocusTargets.set(testID, target)
+      return target
+    })
+
+    const focusedInput = vi.spyOn(TextInput.State, 'currentlyFocusedInput')
+      .mockReturnValue(previousInput as never)
+
+    act(() => {
+      source.setRoot(root([{layerId: 'focus-layer', partKey: 'focus-boundary-layer', openedAt: 1}]))
+      source.notify()
+    })
+    expect(events).toEqual(['suspend', 'layer-focus'])
+
+    act(() => {
+      source.setRoot(root([
+        {layerId: 'focus-layer', partKey: 'focus-boundary-layer', openedAt: 1},
+        {layerId: 'focus-layer-2', partKey: 'focus-boundary-layer', openedAt: 2},
+      ]))
+      source.notify()
+    })
+    expect(events).toEqual(['suspend', 'layer-focus', 'layer-focus'])
+
+    act(() => {
+      source.setRoot(root([{layerId: 'focus-layer', partKey: 'focus-boundary-layer', openedAt: 1}]))
+      source.notify()
+    })
+    expect(events).toEqual(['suspend', 'layer-focus', 'layer-focus', 'layer-focus'])
+
+    act(() => {
+      source.setRoot(root([]))
+      source.notify()
+    })
+    expect(events).toEqual([
+      'suspend', 'layer-focus', 'layer-focus', 'layer-focus', 'restore', 'previous-focus',
+    ])
+    focusedInput.mockRestore()
+    renderer.unmount()
+  })
+
   it('keeps explicit PRIMARY and SECONDARY surfaces on their own content sets', () => {
     const source = createSource()
     const {logger} = createLogger()
@@ -154,6 +298,8 @@ describe('render surface hosts', () => {
     expect(layerStacks).toHaveLength(2)
     expect(screenContainers.every(node => node.type === View)).toBe(true)
     expect(layerStacks.every(node => node.type === View)).toBe(true)
+    expect(renderer.root.findAll(node => node.props.testID === 'ui-base-render:layer-backdrop')).toHaveLength(0)
+    expect((StyleSheet.flatten(layerStacks[0].props.style) as {readonly position?: string}).position).toBe('absolute')
     renderer.unmount()
   })
 
@@ -257,7 +403,241 @@ describe('render surface hosts', () => {
       'standard-late',
       'alert',
     ])
+    const layerStack = findByTestID(renderer, 'ui-base-render:layer-stack')
+    expect(findByTestID(renderer, 'ui-base-render:layer-backdrop')).toBeDefined()
+    expect(StyleSheet.flatten(layerStack.props.style)).toMatchObject({
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      zIndex: 1000,
+      elevation: 1000,
+    })
+    expect(layerStack.props.pointerEvents).toBe('box-none')
+    const layerSurfaces = renderer.root.findAll(node =>
+      node.type === View
+      && typeof node.props.testID === 'string'
+      && node.props.testID.startsWith('ui-base-render:layer:'),
+    )
+    expect(layerSurfaces).toHaveLength(4)
+    expect(StyleSheet.flatten(layerSurfaces[0]!.props.style)).toMatchObject({
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    })
     renderer.unmount()
+  })
+
+  it('enforces decisive guards for backdrop and Android back without dispatching close', () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const defined = part({
+      partKey: 'decisive-layer-part',
+      rendererKey: 'decisive-layer-renderer',
+      component: StandardLayer,
+      layerTier: 'alert',
+      layerGuard: 'decisive',
+      containerKeys: [],
+    })
+    const uiCatalog = createUiCatalog([defined.catalogEntry])
+    const rendererCatalog = createRendererCatalog([defined.rendererBinding])
+    source.setRoot(rootWithContent({
+      contentSets: {
+        PRIMARY: {
+          containers: {},
+          layers: [{layerId: 'decisive', partKey: 'decisive-layer-part', openedAt: 1, props: {marker: 'decisive'}}],
+        },
+        SECONDARY: {containers: {}, layers: []},
+      },
+    }))
+    source.setStatus('started')
+
+    const dispatches: string[] = []
+    const dispatchCommand: RenderProviderProps['dispatchCommand'] = async command => {
+      dispatches.push(command.definition.commandName)
+      throw new Error('test dispatch rejection')
+    }
+    const backHandlers: BackPressHandler[] = []
+    const addBackHandler = vi.spyOn(BackHandler, 'addEventListener')
+    addBackHandler.mockImplementation((_eventName, handler) => {
+      backHandlers.push(handler)
+      return {remove: () => undefined} as ReturnType<typeof BackHandler.addEventListener>
+    })
+
+    const renderer = mount(createElement(
+      RenderProvider,
+      {...unusedRenderProviderBindings, stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, dispatchCommand},
+      createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
+    ))
+    act(() => {
+      const onPress = findByTestID(renderer, 'ui-base-render:layer-backdrop').props.onPress
+      if (typeof onPress !== 'function') throw new Error('layer backdrop must be pressable')
+      onPress()
+    })
+    expect(dispatches).toEqual([])
+    expect(backHandlers).toHaveLength(1)
+    expect(backHandlers[0]!({type: 'hardwareBackPress', timeStamp: 0})).toBe(true)
+    expect(dispatches).toEqual([])
+    renderer.unmount()
+    addBackHandler.mockRestore()
+  })
+
+  it('lets dismissible guards close through backdrop and Android back', async () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const defined = part({
+      partKey: 'dismissible-layer-part',
+      rendererKey: 'dismissible-layer-renderer',
+      component: StandardLayer,
+      layerTier: 'standard',
+      layerGuard: 'dismissible',
+      containerKeys: [],
+    })
+    const uiCatalog = createUiCatalog([defined.catalogEntry])
+    const rendererCatalog = createRendererCatalog([defined.rendererBinding])
+    source.setRoot(rootWithContent({
+      contentSets: {
+        PRIMARY: {
+          containers: {},
+          layers: [{layerId: 'dismissible', partKey: 'dismissible-layer-part', openedAt: 1, props: {marker: 'dismissible'}}],
+        },
+        SECONDARY: {containers: {}, layers: []},
+      },
+    }))
+    source.setStatus('started')
+
+    const dispatches: string[] = []
+    const dispatchCommand: RenderProviderProps['dispatchCommand'] = async command => {
+      dispatches.push(command.definition.commandName)
+      throw new Error('test dispatch rejection')
+    }
+    const backHandlers: BackPressHandler[] = []
+    const addBackHandler = vi.spyOn(BackHandler, 'addEventListener')
+    addBackHandler.mockImplementation((_eventName, handler) => {
+      backHandlers.push(handler)
+      return {remove: () => undefined} as ReturnType<typeof BackHandler.addEventListener>
+    })
+
+    const renderer = mount(createElement(
+      RenderProvider,
+      {...unusedRenderProviderBindings, stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, dispatchCommand},
+      createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
+    ))
+    await act(async () => {
+      const onPress = findByTestID(renderer, 'ui-base-render:layer-backdrop').props.onPress
+      if (typeof onPress !== 'function') throw new Error('layer backdrop must be pressable')
+      onPress()
+      await Promise.resolve()
+    })
+    expect(dispatches).toEqual(['kernel.base.ui-state.close-layer'])
+    await act(async () => {
+      expect(backHandlers[0]!({type: 'hardwareBackPress', timeStamp: 0})).toBe(true)
+      await Promise.resolve()
+    })
+    expect(dispatches).toEqual(['kernel.base.ui-state.close-layer', 'kernel.base.ui-state.close-layer'])
+    renderer.unmount()
+    addBackHandler.mockRestore()
+  })
+
+  it('moves focus into the top layer and restores the prior input after the last layer closes', () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const defined = part({
+      partKey: 'focus-layer-part',
+      rendererKey: 'focus-layer-renderer',
+      component: StandardLayer,
+      layerTier: 'standard',
+      layerGuard: 'dismissible',
+      containerKeys: [],
+    })
+    const uiCatalog = createUiCatalog([defined.catalogEntry])
+    const rendererCatalog = createRendererCatalog([defined.rendererBinding])
+    source.setRoot(rootWithContent(emptyContent()))
+    source.setStatus('started')
+
+    const previousInput = {focus: vi.fn()}
+    const layerFocusTarget = {focus: vi.fn()}
+    const focusedInput = vi.spyOn(TextInput.State, 'currentlyFocusedInput')
+      .mockReturnValue(previousInput as never)
+    const renderer = mount(
+      createElement(
+        RenderProvider,
+        {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, ...unusedRenderProviderBindings},
+        createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
+      ),
+      element => (element.props as {readonly testID?: string}).testID === 'ui-base-render:layer:focus-layer'
+        ? layerFocusTarget
+        : {},
+    )
+
+    act(() => {
+      source.setRoot(rootWithContent({
+        contentSets: {
+          PRIMARY: {
+            containers: {},
+            layers: [{layerId: 'focus-layer', partKey: 'focus-layer-part', openedAt: 1, props: {marker: 'focus'}}],
+          },
+          SECONDARY: {containers: {}, layers: []},
+        },
+      }))
+      source.notify()
+    })
+    expect(layerFocusTarget.focus).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      source.setRoot(rootWithContent(emptyContent()))
+      source.notify()
+    })
+    expect(previousInput.focus).toHaveBeenCalledTimes(1)
+    focusedInput.mockRestore()
+    renderer.unmount()
+  })
+
+  it('keeps a layer focusable without a prior input focus', () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const defined = part({
+      partKey: 'focus-without-input-part',
+      rendererKey: 'focus-without-input-renderer',
+      component: StandardLayer,
+      layerTier: 'standard',
+      layerGuard: 'dismissible',
+      containerKeys: [],
+    })
+    const uiCatalog = createUiCatalog([defined.catalogEntry])
+    const rendererCatalog = createRendererCatalog([defined.rendererBinding])
+    source.setRoot(rootWithContent({
+      contentSets: {
+        PRIMARY: {
+          containers: {},
+          layers: [{layerId: 'focus-without-input', partKey: 'focus-without-input-part', openedAt: 1}],
+        },
+        SECONDARY: {containers: {}, layers: []},
+      },
+    }))
+    source.setStatus('started')
+    const focusedInput = vi.spyOn(TextInput.State, 'currentlyFocusedInput').mockReturnValue(undefined as never)
+    const layerFocusTarget = {focus: vi.fn()}
+    const renderer = mount(
+      createElement(
+        RenderProvider,
+        {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, ...unusedRenderProviderBindings},
+        createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
+      ),
+      element => (element.props as {readonly testID?: string}).testID === 'ui-base-render:layer:focus-without-input'
+        ? layerFocusTarget
+        : {},
+    )
+    expect(layerFocusTarget.focus).toHaveBeenCalledTimes(1)
+    act(() => {
+      source.setRoot(rootWithContent(emptyContent()))
+      source.notify()
+    })
+    expect(() => renderer.unmount()).not.toThrow()
+    focusedInput.mockRestore()
   })
 
   it('reports missing catalog, missing renderer, and invalid props on screen and layer paths', () => {

@@ -1,10 +1,13 @@
 import {definePart} from '@catering-v2s/ui-base-render'
 import {CustomerMember} from './components/CustomerMember'
 import {CustomerWelcome} from './components/CustomerWelcome'
+import {DiscardConfirm} from './components/DiscardConfirm'
 import {MemberForm} from './components/MemberForm'
 import {MemberList} from './components/MemberList'
 import {RegistryNotice} from './components/RegistryNotice'
+import {DeskSystemNotice} from './components/DeskSystemNotice'
 import {WaitingConfirm} from './components/WaitingConfirm'
+import {WithdrawConfirm} from './components/WithdrawConfirm'
 
 const main = ['main'] as const
 const primary = ['PRIMARY'] as const
@@ -61,6 +64,48 @@ export const registryNoticePart = definePart({
   description: '向店员说明登记未完成的原因',
   component: RegistryNotice,
   layerTier: 'alert',
+  layerGuard: 'decisive',
+})
+
+export const discardConfirmPart = definePart({
+  partKey: 'sample.desk.discard-confirm',
+  rendererKey: 'sample.desk.discard-confirm',
+  containerKeys: [],
+  displayModes: primary,
+  workspaces: mainWorkspace,
+  instanceModes: masterInstance,
+  title: '放弃草稿确认',
+  description: '在取消录入或退出前确认是否放弃当前草稿',
+  component: DiscardConfirm,
+  layerTier: 'alert',
+  layerGuard: 'decisive',
+})
+
+export const withdrawConfirmPart = definePart({
+  partKey: 'sample.desk.withdraw-confirm',
+  rendererKey: 'sample.desk.withdraw-confirm',
+  containerKeys: [],
+  displayModes: primary,
+  workspaces: mainWorkspace,
+  instanceModes: masterInstance,
+  title: '撤回登记确认',
+  description: '在顾客确认前确认是否撤回本次登记',
+  component: WithdrawConfirm,
+  layerTier: 'alert',
+  layerGuard: 'decisive',
+})
+
+export const systemNoticePart = definePart({
+  partKey: 'sample.desk.system-notice',
+  rendererKey: 'sample.desk.system-notice',
+  containerKeys: [],
+  displayModes: primary,
+  workspaces: mainWorkspace,
+  instanceModes: masterInstance,
+  title: '系统失败提示',
+  description: '向店员说明登记链路的基础设施失败，并允许继续操作',
+  component: DeskSystemNotice,
+  layerTier: 'alert',
 })
 
 export const customerWelcomePart = definePart({
@@ -92,6 +137,9 @@ export const parts = Object.freeze([
   memberFormPart,
   waitingConfirmPart,
   registryNoticePart,
+  discardConfirmPart,
+  withdrawConfirmPart,
+  systemNoticePart,
   customerWelcomePart,
   customerMemberPart,
 ])

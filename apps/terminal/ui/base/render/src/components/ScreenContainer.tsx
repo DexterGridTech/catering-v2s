@@ -1,5 +1,5 @@
 import {createElement} from 'react'
-import {View} from 'react-native'
+import {StyleSheet, View} from 'react-native'
 import {selectScreen} from '@catering-v2s/kernel-base-ui-state'
 import {useRenderContext} from '../contexts/RenderContext'
 import {useSurfaceContext} from '../contexts/SurfaceContext'
@@ -16,7 +16,7 @@ export const ScreenContainer = () => {
   if (snapshot.root === undefined) {
     return createElement(
       View,
-      {testID: SCREEN_CONTAINER_TEST_ID},
+      {testID: SCREEN_CONTAINER_TEST_ID, style: styles.container},
       createElement(RenderFallback, {reason: 'runtime-unavailable'}),
     )
   }
@@ -25,14 +25,14 @@ export const ScreenContainer = () => {
   if (placement === undefined) {
     return createElement(
       View,
-      {testID: SCREEN_CONTAINER_TEST_ID},
+      {testID: SCREEN_CONTAINER_TEST_ID, style: styles.container},
       createElement(RenderFallback, {reason: 'container-empty'}),
     )
   }
 
   return createElement(
     View,
-    {testID: SCREEN_CONTAINER_TEST_ID},
+    {testID: SCREEN_CONTAINER_TEST_ID, style: styles.container},
     resolvePart({
       placement,
       displayMode,
@@ -43,3 +43,9 @@ export const ScreenContainer = () => {
     }),
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+})

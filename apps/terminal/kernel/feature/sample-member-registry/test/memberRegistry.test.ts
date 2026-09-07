@@ -6,10 +6,12 @@ import {
   memberConfirmedCommand,
   memberPendingCommand,
   memberRejectedCommand,
+  memberWithdrawnCommand,
   rejectMemberCommand,
   selectMembers,
   selectPendingMember,
   submitMemberCommand,
+  withdrawMemberCommand,
 } from '../src/index'
 import {
   createEventRecorderModule,
@@ -35,6 +37,8 @@ describe('sample member registry owner module', () => {
       ['kernel.feature.sample-member-registry.member-pending', 'public'],
       ['kernel.feature.sample-member-registry.member-confirmed', 'public'],
       ['kernel.feature.sample-member-registry.member-rejected', 'public'],
+      ['kernel.feature.sample-member-registry.withdraw-member', 'public'],
+      ['kernel.feature.sample-member-registry.member-withdrawn', 'public'],
     ])
     expect(module.actors?.map(actor => actor.name)).toEqual(['submit', 'confirm', 'reject'])
     expect(module.slices).toEqual([{
@@ -73,16 +77,14 @@ describe('sample member registry owner module', () => {
     })])
   })
 
-  it('rejects confirmation with no pending registration without mutating members', async () => {
+  it('treats confirmation with no pending registration as a late no-op', async () => {
     const runtime = createTestRuntime([createSampleMemberRegistryModule()])
     await runtime.start()
 
     const result = await runtime.dispatchCommand(confirmMemberCommand, {}, {requestId: createRequestId()})
 
-    expect(result.status).toBe('error')
-    expect(result.actorResults[0]?.error).toMatchObject({
-      code: 'ERR_TER_SAMPLE_MEMBER_NO_PENDING',
-    })
+    expect(result.status).toBe('completed')
+    expect(result.actorResults[0]?.error).toBeNull()
     expect(selectMembers(runtime.getState())).toEqual([])
     expect(selectPendingMember(runtime.getState())).toBeNull()
   })
@@ -100,13 +102,13 @@ describe('sample member registry owner module', () => {
     }, {requestId: createRequestId()})
 
     const requestId = createRequestId()
-    const result = await runtime.dispatchCommand(confirmMemberCommand, {}, {requestId})
+    const result = await runtime.dispatchCommand(confirmMemberCommand, {age: 37}, {requestId})
     const members = selectMembers(runtime.getState())
 
     expect(result.status).toBe('completed')
     expect(selectPendingMember(runtime.getState())).toBeNull()
     expect(members).toHaveLength(1)
-    expect(members[0]).toMatchObject({name: 'Bob', phone: '010-9876-5432'})
+    expect(members[0]).toMatchObject({name: 'Bob', phone: '010-9876-5432', age: 37})
     expect(members[0]?.memberId).toEqual(expect.any(String))
     expect(members[0]?.registeredAt).toEqual(expect.any(Number))
     expect(events.at(-1)).toEqual(expect.objectContaining({
@@ -141,7 +143,7 @@ describe('sample member registry owner module', () => {
     expect(selectPendingMember(second.getState())).toBeNull()
   })
 
-  it('rejects a pending registration, clears it, and emits the explicit reason', async () => {
+  it('rejects a pending registration while retaining it for desk retry, and emits the explicit reason', async () => {
     const events: RecordedEvent[] = []
     const runtime = createTestRuntime([
       createSampleMemberRegistryModule(),
@@ -157,13 +159,63 @@ describe('sample member registry owner module', () => {
     const result = await runtime.dispatchCommand(rejectMemberCommand, {}, {requestId})
 
     expect(result.status).toBe('completed')
-    expect(selectPendingMember(runtime.getState())).toBeNull()
+    expect(selectPendingMember(runtime.getState())).toEqual({
+      name: 'Carol',
+      phone: '010-1111-2222',
+    })
     expect(selectMembers(runtime.getState())).toEqual([])
     expect(events.at(-1)).toEqual(expect.objectContaining({
       commandName: memberRejectedCommand.commandName,
       payload: {reasonCode: 'customer-rejected'},
       requestId: String(requestId),
     }))
+  })
+
+  it('withdraws a pending registration without emitting a rejection reason', async () => {
+    const events: RecordedEvent[] = []
+    const runtime = createTestRuntime([
+      createSampleMemberRegistryModule(),
+      createEventRecorderModule([memberPendingCommand, memberRejectedCommand, memberWithdrawnCommand], events),
+    ])
+    await runtime.start()
+    await runtime.dispatchCommand(submitMemberCommand, {
+      name: 'Dana',
+      phone: '010-3333-4444',
+    }, {requestId: createRequestId()})
+
+    const requestId = createRequestId()
+    const result = await runtime.dispatchCommand(withdrawMemberCommand, {}, {requestId})
+
+    expect(result.status).toBe('completed')
+    expect(selectPendingMember(runtime.getState())).toBeNull()
+    expect(selectMembers(runtime.getState())).toEqual([])
+    expect(events.at(-1)).toEqual(expect.objectContaining({
+      commandName: memberWithdrawnCommand.commandName,
+      payload: {},
+      requestId: String(requestId),
+    }))
+    expect(events.some(event => event.commandName === memberRejectedCommand.commandName)).toBe(false)
+  })
+
+  it('makes late reject and withdraw commands no-ops after the first terminal decision', async () => {
+    const events: RecordedEvent[] = []
+    const runtime = createTestRuntime([
+      createSampleMemberRegistryModule(),
+      createEventRecorderModule([memberRejectedCommand, memberWithdrawnCommand], events),
+    ])
+    await runtime.start()
+    await runtime.dispatchCommand(submitMemberCommand, {
+      name: 'Eve',
+      phone: '010-5555-6666',
+    }, {requestId: createRequestId()})
+    await runtime.dispatchCommand(withdrawMemberCommand, {}, {requestId: createRequestId()})
+    const lateReject = await runtime.dispatchCommand(rejectMemberCommand, {}, {requestId: createRequestId()})
+    const lateWithdraw = await runtime.dispatchCommand(withdrawMemberCommand, {}, {requestId: createRequestId()})
+
+    expect(lateReject.status).toBe('completed')
+    expect(lateWithdraw.status).toBe('completed')
+    expect(events).toHaveLength(1)
+    expect(events[0]?.commandName).toBe(memberWithdrawnCommand.commandName)
   })
 
   it('requires request ids for externally dispatched public member request commands', async () => {
@@ -177,6 +229,8 @@ describe('sample member registry owner module', () => {
     await expect(runtime.dispatchCommand(confirmMemberCommand, {}))
       .rejects.toMatchObject({code: 'ERR_TER_RUNTIME_REQUEST_ID_REQUIRED'})
     await expect(runtime.dispatchCommand(rejectMemberCommand, {}))
+      .rejects.toMatchObject({code: 'ERR_TER_RUNTIME_REQUEST_ID_REQUIRED'})
+    await expect(runtime.dispatchCommand(withdrawMemberCommand, {}))
       .rejects.toMatchObject({code: 'ERR_TER_RUNTIME_REQUEST_ID_REQUIRED'})
   })
 })

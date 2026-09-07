@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native'
 import {
   readDisplayInfo,
@@ -46,11 +45,8 @@ export type TestExpoAppOptions<TAssembly extends TestExpoAssembly> = Readonly<{
   readonly getRuntimeStatus: (assembly: TAssembly) => TestExpoRuntimeStatus
 }>
 
-const SURFACE_MARGIN_X = 10
-const SURFACE_MARGIN_Y = 10
 const CONTENT_MAX_WIDTH = 1600
 const CONTENT_HORIZONTAL_PADDING = 28
-const HOST_CHROME_HEIGHT = 310
 
 const COLORS = {
   ink: '#EAF6FF',
@@ -75,8 +71,6 @@ const COLORS = {
 type SurfaceCanvasProps = Readonly<{
   readonly assembly: TestExpoAssembly
   readonly showSecondary: boolean
-  readonly contentWidth: number
-  readonly viewportHeight: number
   readonly terminalSurfaces: TerminalSurfaces
   readonly testIdPrefix: string
 }>
@@ -84,75 +78,38 @@ type SurfaceCanvasProps = Readonly<{
 const SurfaceCanvas = ({
   assembly,
   showSecondary,
-  contentWidth,
-  viewportHeight,
   terminalSurfaces,
   testIdPrefix,
 }: SurfaceCanvasProps) => {
   const primary = terminalSurfaces.surfaces.PRIMARY
   const secondary = terminalSurfaces.surfaces.SECONDARY
-  const surfaceCount = showSecondary ? 2 : 1
-  const contentLogicalWidth = terminalSurfaces.layout === 'row'
-    ? primary.width + (showSecondary ? secondary.width : 0)
-    : Math.max(primary.width, showSecondary ? secondary.width : 0)
-  const contentLogicalHeight = terminalSurfaces.layout === 'column'
-    ? primary.height + (showSecondary ? secondary.height : 0)
-    : Math.max(primary.height, showSecondary ? secondary.height : 0)
-  const logicalWidth = contentLogicalWidth + (
-    terminalSurfaces.layout === 'row'
-      ? SURFACE_MARGIN_X * 2 * surfaceCount
-      : SURFACE_MARGIN_X * 2
-  )
-  const logicalHeight = contentLogicalHeight + (
-    terminalSurfaces.layout === 'column'
-      ? SURFACE_MARGIN_Y * 2 * surfaceCount
-      : SURFACE_MARGIN_Y * 2
-  )
-  const availableWidth = Math.max(1, contentWidth)
-  const availableHeight = Math.max(1, viewportHeight - HOST_CHROME_HEIGHT)
-  const scale = terminalSurfaces.scaleToFit
-    ? terminalSurfaces.layout === 'column'
-      ? Math.min(1, availableWidth / logicalWidth)
-      : Math.min(1, availableWidth / logicalWidth, availableHeight / logicalHeight)
-    : 1
   const surfaceStyle = (size: SurfaceSize) => ({
-    width: size.width,
-    height: size.height,
-    flexShrink: 0,
-    marginHorizontal: SURFACE_MARGIN_X,
-    marginVertical: SURFACE_MARGIN_Y,
+    flex: terminalSurfaces.layout === 'row' ? 1 : undefined,
+    width: terminalSurfaces.layout === 'column' ? ('100%' as const) : undefined,
+    minWidth: 0,
+    aspectRatio: size.width / size.height,
+    flexShrink: 1,
   })
-
   return (
     <View
       testID={`${testIdPrefix}:canvas`}
-      style={[
-        styles.canvas,
-        {width: logicalWidth * scale, height: logicalHeight * scale},
-      ]}
+      style={styles.canvas}
     >
       <View
-        style={[
-          styles.logicalCanvas,
-          {
-            width: logicalWidth,
-            height: logicalHeight,
-            flexDirection: terminalSurfaces.layout === 'row' ? 'row' : 'column',
-            alignItems: terminalSurfaces.layout === 'column' ? 'center' : 'flex-start',
-            transform: [{scale}],
-            transformOrigin: 'top left',
-          },
-        ]}
+        style={[styles.responsiveStage, {
+          flexDirection: terminalSurfaces.layout === 'row' ? 'row' : 'column',
+          alignItems: terminalSurfaces.layout === 'column' ? 'center' : 'stretch',
+        }]}
       >
         <View
-          style={[surfaceStyle(primary), styles.surface, styles.primarySurface]}
+          style={[styles.surface, styles.primarySurface, surfaceStyle(primary)]}
           testID={`${testIdPrefix}:surface:PRIMARY`}
         >
           {assembly.createSurface('PRIMARY')}
         </View>
         {showSecondary ? (
           <View
-            style={[surfaceStyle(secondary), styles.surface, styles.secondarySurface]}
+            style={[styles.surface, styles.secondarySurface, surfaceStyle(secondary)]}
             testID={`${testIdPrefix}:surface:SECONDARY`}
           >
             {assembly.createSurface('SECONDARY')}
@@ -254,8 +211,6 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(
     const [assembly, setAssembly] = useState<TAssembly | undefined>()
     const [startupError, setStartupError] = useState(false)
     const [showSecondary, setShowSecondary] = useState<boolean | undefined>()
-    const {width: viewportWidth, height: viewportHeight} = useWindowDimensions()
-    const [contentOuterWidth, setContentOuterWidth] = useState<number>()
     const platformPorts = useMemo(
       () => createWebPlatformPorts(() => surfaceModeRef.current, {
         storageNamespace: options.appName,
@@ -305,21 +260,10 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(
       : assembly === undefined
         ? 'starting'
         : options.getRuntimeStatus(assembly)
-    const contentWidth = Math.max(
-      1,
-      (contentOuterWidth ?? Math.min(viewportWidth, CONTENT_MAX_WIDTH))
-        - CONTENT_HORIZONTAL_PADDING * 2,
-    )
-
     return (
       <View style={styles.root} testID={`${testIdPrefix}:root`}>
         <View style={styles.scroll}>
-          <View
-            style={styles.content}
-            onLayout={({nativeEvent: {layout}}) => {
-              setContentOuterWidth(current => current === layout.width ? current : layout.width)
-            }}
-          >
+          <View style={styles.content}>
             <View style={styles.stageHeader}>
               <View>
                 <Text style={styles.sectionEyebrow}>LIVE SURFACE PREVIEW</Text>
@@ -381,8 +325,6 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(
                 <SurfaceCanvas
                   assembly={assembly}
                   showSecondary={showSecondary}
-                  contentWidth={contentWidth}
-                  viewportHeight={viewportHeight}
                   terminalSurfaces={options.terminalSurfaces}
                   testIdPrefix={testIdPrefix}
                 />
@@ -612,7 +554,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   canvas: {
-    alignSelf: 'center',
+    width: '100%',
     overflow: 'hidden',
     borderRadius: 12,
     backgroundColor: '#0A2236',
@@ -620,8 +562,10 @@ const styles = StyleSheet.create({
     borderColor: '#368DD0',
     boxShadow: '0px 0px 14px rgba(24, 152, 211, 0.22)',
   },
-  logicalCanvas: {
-    overflow: 'hidden',
+  responsiveStage: {
+    width: '100%',
+    padding: 10,
+    gap: 12,
   },
   surface: {
     borderWidth: 1,

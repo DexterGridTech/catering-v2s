@@ -1,0 +1,5 @@
+COMMAND=./gradlew :catering-v2s-adapter-android-dual-screen:compileDebugKotlin :app:assembleDebug --no-daemon
+RESULT=BUILD SUCCESSFUL in 18s
+TASKS=352 actionable tasks: 47 executed, 305 up-to-date
+RESOLVED=minSdk=24 compileSdk=36 targetSdk=36 ndk=27.1.12297006
+WARNINGS=Android deprecated fullscreen/window API warnings only; no compile failure

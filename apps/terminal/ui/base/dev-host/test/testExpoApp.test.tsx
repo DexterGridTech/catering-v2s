@@ -55,12 +55,22 @@ describe('ui.base.dev-host surface lifecycle', () => {
     act(() => { renderer = create(<App />) })
     const mountedRenderer = renderer!
     await waitFor(mountedRenderer, () => mountedRenderer.root.findAllByProps({testID: 'dev-host-test:test-expo:surface:PRIMARY'}).length > 0)
+    const assertResponsiveSurface = (testID: string): void => {
+      const surface = mountedRenderer.root.findByProps({testID})
+      const styles = (Array.isArray(surface.props.style) ? surface.props.style : [surface.props.style])
+        .filter((value): value is Readonly<Record<string, unknown>> => typeof value === 'object' && value !== null)
+      expect(styles.some(style => style.transform !== undefined)).toBe(false)
+      expect(styles.some(style => typeof style.aspectRatio === 'number')).toBe(true)
+      expect(styles.some(style => typeof style.width === 'number' || typeof style.height === 'number')).toBe(false)
+    }
+    assertResponsiveSurface('dev-host-test:test-expo:surface:PRIMARY')
     const toggle = mountedRenderer.root.findByProps({testID: 'dev-host-test:test-expo:surface-toggle'})
     await act(async () => {
       ;(toggle.props.onPress as () => void)()
       await nextTurn()
     })
     await waitFor(mountedRenderer, () => mountedRenderer.root.findAllByProps({testID: 'dev-host-test:test-expo:surface:SECONDARY'}).length > 0)
+    assertResponsiveSurface('dev-host-test:test-expo:surface:SECONDARY')
 
     expect(lifecycle.PRIMARY).toEqual({mounts: 1, unmounts: 0})
     expect(lifecycle.SECONDARY).toEqual({mounts: 1, unmounts: 0})
@@ -69,4 +79,5 @@ describe('ui.base.dev-host surface lifecycle', () => {
     expect(lifecycle.PRIMARY).toEqual({mounts: 1, unmounts: 1})
     expect(lifecycle.SECONDARY).toEqual({mounts: 1, unmounts: 1})
   })
+
 })
