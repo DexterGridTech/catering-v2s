@@ -38,6 +38,8 @@ class WorkspaceReadAuthorizationFactsTest {
                         List.of(region), new OrganizationVisibilityLookup.ScopeContext(region, null, null, null)));
 
         assertEquals(sessionId, facts.sessionReadback().sessionId());
+        assertEquals("REGION", facts.sessionReadback().assignmentNodeType());
+        assertEquals(regionId, facts.sessionReadback().assignmentNodeId());
         assertEquals(regionId, facts.sessionReadback().scopeContext().region().dataNodeId());
         assertThrows(UnsupportedOperationException.class, () -> facts.pageAccessKeys()
                 .add("page.other"));

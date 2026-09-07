@@ -2,21 +2,25 @@ import {readFileSync} from 'node:fs';
 import {describe, expect, it} from 'vitest';
 
 const pageFileSource = readFileSync(new URL('./SalesMenuPage.tsx', import.meta.url), 'utf8');
+const readModelFileSource = readFileSync(new URL('../model/useSalesMenuReadModel.ts', import.meta.url), 'utf8');
 const mediaFileSource = readFileSync(new URL('./SalesMenuItemMediaEditor.tsx', import.meta.url), 'utf8');
 const detailFileSource = readFileSync(new URL('./SalesMenuItemDetailDrawer.tsx', import.meta.url), 'utf8');
 const editorFileSource = readFileSync(new URL('./SalesMenuItemEditorDrawer.tsx', import.meta.url), 'utf8');
 const candidateFileSource = readFileSync(new URL('./SalesMenuCandidateDrawer.tsx', import.meta.url), 'utf8');
 const managerFileSource = readFileSync(new URL('./SalesMenuManagerDrawer.tsx', import.meta.url), 'utf8');
+const createModalFileSource = readFileSync(new URL('./SalesMenuCreateModal.tsx', import.meta.url), 'utf8');
 const publishFileSource = readFileSync(new URL('./SalesMenuPublishDrawer.tsx', import.meta.url), 'utf8');
 const taskSurfacesSource = readFileSync(new URL('./SalesMenuTaskSurfaces.tsx', import.meta.url), 'utf8');
 const sharedSource = readFileSync(new URL('./salesMenuUiShared.ts', import.meta.url), 'utf8');
 const source = [
   pageFileSource,
+  readModelFileSource,
   mediaFileSource,
   detailFileSource,
   editorFileSource,
   candidateFileSource,
   managerFileSource,
+  createModalFileSource,
   publishFileSource,
   taskSurfacesSource,
   sharedSource,
@@ -50,11 +54,13 @@ const publishSource = publishFileSource;
 const traceSources = {
   all: source,
   page: pageSource,
+  readModel: readModelFileSource,
   detail: detailSource,
   editor: editorSource,
   media: mediaSource,
   candidate: candidateSource,
   manager: managerSource,
+  create: createModalFileSource,
   section: sectionSource,
   draft: draftTableSource,
   published: publishedSource,
@@ -66,9 +72,17 @@ const uiTrace: Array<[string, keyof typeof traceSources, string[]]> = [
   [
     'UI-01',
     'page',
-    ['<div {...testId(salesMenuTestIds.page)} data-scope-ref={queryContext.scopeRef}>', '门店销售菜单'],
+    [
+      '<div {...testId(salesMenuTestIds.page)} data-scope-ref={queryContext.scopeRef}>',
+      'testId(salesMenuTestIds.channelSelector)',
+      'testId(salesMenuTestIds.managerOpen)',
+    ],
   ],
-  ['UI-02', 'section', ['<Card', 'title="销售分区"', '新建分区', 'testId(salesMenuTestIds.sectionList)']],
+  [
+    'UI-02',
+    'section',
+    ['<Card', 'title="销售分区"', 'type="primary"', '新建分区', 'testId(salesMenuTestIds.sectionList)'],
+  ],
   [
     'UI-03',
     'section',
@@ -86,8 +100,12 @@ const uiTrace: Array<[string, keyof typeof traceSources, string[]]> = [
     'editor',
     ['onDelete(detail, stagedReleaseRef.current)', '删除销售项', 'testId(salesMenuTestIds.itemEditor)'],
   ],
-  ['UI-08', 'draft', ["title: '商品形态'", 'salesMenuProductShapeLabel(row.productShape)']],
-  ['UI-09', 'media', ["title: '展示图片'", '<AdminImageCollectionEditor', 'onStageMedia={stageMedia}']],
+  ['UI-08', 'draft', ['salesMenuProductShapeLabel(row.productShape)', '{row.itemCode}']],
+  [
+    'UI-09',
+    'media',
+    ["title: '展示图片'", '<AdminImageCollectionEditor', '<AssetPreview', 'onStageMedia={stageMedia}'],
+  ],
   [
     'UI-10',
     'editor',
@@ -109,7 +127,7 @@ const uiTrace: Array<[string, keyof typeof traceSources, string[]]> = [
     ['<Col xs={24} md={7}>', 'title="商品分类"', 'treeData={categoryTreeData}', 'read.candidates.cursor.reset()'],
   ],
   ['UI-14', 'candidate', ["title: '中文商品形态'", 'salesMenuProductShapeLabel(row.productShape)']],
-  ['UI-15', 'published', ["title: '商品形态'", 'salesMenuProductShapeLabel(row.productShape)']],
+  ['UI-15', 'published', ['salesMenuProductShapeLabel(row.productShape)', '{row.itemCode}']],
   ['UI-16', 'draft', ['title="草稿销售项"', "title: '销售约束'"]],
   ['UI-17', 'operation', ['title="操作记录"', 'testId(salesMenuTestIds.operationLog)']],
   ['UI-18', 'operation', ['salesMenuOperationLabel(row.operationKind)', 'SALES_MENU_OPERATION_COLUMN_TITLE']],
@@ -118,7 +136,18 @@ const uiTrace: Array<[string, keyof typeof traceSources, string[]]> = [
     'published',
     ["title: '销售状态'", 'salesMenuManualSaleStatusLabel(row.manualSaleStatus)', 'onStatus(row)'],
   ],
-  ['UI-20', 'page', ['生效与时段', '更新到前台', '同一经营入口可以同时启用多份菜单']],
+  [
+    'UI-20',
+    'page',
+    [
+      '生效与时段',
+      '更新到前台',
+      '同一经营入口可以同时启用多份菜单',
+      'testId(salesMenuTestIds.menuSelector)',
+      'read.selector.candidates.onPopupScroll',
+      'testId(salesMenuTestIds.menuRefresh)',
+    ],
+  ],
   [
     'UI-21',
     'draft',
@@ -129,7 +158,11 @@ const uiTrace: Array<[string, keyof typeof traceSources, string[]]> = [
   [
     'UI-24',
     'manager',
-    ["managerAction(row.salesMenuRef, 'toggle')", "row.activation?.status === 'ENABLED' ? '停用' : '启用'"],
+    [
+      "managerAction(row.salesMenuRef, 'toggle')",
+      "row.activation?.status === 'ENABLED' ? '停用' : '启用'",
+      'testId(salesMenuTestIds.managerCreate)',
+    ],
   ],
   ['UI-25', 'all', ['commands.copy(', "managerAction(row.salesMenuRef, 'copy')"]],
   ['UI-26', 'page', ['菜单已停用。', 'commands.activate(']],
@@ -141,19 +174,16 @@ const uiTrace: Array<[string, keyof typeof traceSources, string[]]> = [
 ];
 
 describe('sales menu IA static trace', () => {
-  it('uses the shared cursor surface independently for all seven required collections', () => {
-    expect((source.match(/<CursorPagination/g) ?? []).length).toBe(7);
-    for (const prefix of [
-      'pageCursor',
-      'selectorCursor',
-      'managerCursor',
-      'candidateCursor',
-      'draftCursor',
-      'publishedCursor',
-      'logCursor',
-    ]) {
+  it('keeps visible pagination for tables and accumulates selector candidates in dropdowns', () => {
+    expect((source.match(/<CursorPagination/g) ?? []).length).toBe(5);
+    for (const prefix of ['managerCursor', 'candidateCursor', 'draftCursor', 'publishedCursor', 'logCursor']) {
       expect(source).toContain(`salesMenuTestIds.${prefix}`);
     }
+    expect(readModelFileSource).toContain('useCursorCandidates');
+    expect(pageSource).toContain('read.channels.candidates.onPopupScroll');
+    expect(pageSource).toContain('read.selector.candidates.onPopupScroll');
+    expect(source).not.toContain('salesMenuTestIds.pageCursor');
+    expect(source).not.toContain('salesMenuTestIds.selectorCursor');
     expect(source).toContain('MEDIA_LIMITS = {maxImageCount: 6, maxImageBytes: 2 * 1024 * 1024}');
   });
 
@@ -166,8 +196,9 @@ describe('sales menu IA static trace', () => {
   });
 
   it('keeps the draft table and candidate drawer at the approved IA denominator', () => {
-    for (const title of ['菜单商品', '商品形态', '销售规格', '挂牌价', '销售约束'])
+    for (const title of ['菜单商品', '挂牌价', '销售规格', '销售约束'])
       expect(draftTableSource).toContain(`title: '${title}'`);
+    expect(draftTableSource).not.toContain("title: '商品形态'");
     expect(draftTableSource).toContain('SALES_MENU_OPERATION_COLUMN_TITLE');
     expect(draftTableSource).not.toContain('销售内容');
     expect(draftTableSource).not.toContain('展示图片');
@@ -183,6 +214,46 @@ describe('sales menu IA static trace', () => {
     expect(candidateDrawerSource).toContain('title="商品分类"');
   });
 
+  it('keeps the sales-menu display cells aligned with the approved density rules', () => {
+    const draftColumns = ['菜单商品', '挂牌价', '销售规格', '销售约束'];
+    const draftColumnPositions = draftColumns.map(title => draftTableSource.indexOf(`title: '${title}'`));
+    expect(draftColumnPositions.every(position => position >= 0)).toBe(true);
+    expect(draftColumnPositions).toEqual([...draftColumnPositions].sort((left, right) => left - right));
+    expect(draftTableSource).toContain('width: 210');
+    expect(draftTableSource).not.toContain('NameCodeText name={row.displayName} code={row.itemCode}');
+    expect(draftTableSource).toContain('{row.displayName}');
+    expect(draftTableSource).toContain('{row.itemCode}');
+    expect(draftTableSource).toContain('salesMenuProductShapeLabel(row.productShape)');
+    expect(draftTableSource).toContain('itemMediaLabel(row)');
+    expect(draftTableSource).toContain('<AssetPreview');
+    expect(draftTableSource).toContain('row.catalogPrimaryImageAssetRef');
+    expect(draftTableSource).toContain('width: 108');
+    expect(draftTableSource).toContain('width: 120');
+    expect(draftTableSource).toContain('width: 110');
+    expect(draftTableSource).toContain('tableLayout="fixed"');
+    expect(draftTableSource).toContain('scroll={{x: 620}}');
+    expect(draftTableSource).toContain('salesMenuConstraintLabel(row)');
+    expect(sharedSource).toContain('listedPriceCents === defaultPriceCents');
+    expect(sharedSource).toContain('salesMenuStackedLines(');
+    expect(sharedSource).toContain('salesMenuPublishedPriceLabel');
+    expect(sharedSource).not.toContain(".join('；')");
+    expect(sharedSource).not.toContain(".join('、')");
+
+    const publishedColumns = ['菜单商品', '挂牌价', '销售规格', '库存状态', '销售状态'];
+    const publishedColumnPositions = publishedColumns.map(title => publishedSource.indexOf(`title: '${title}'`));
+    expect(publishedColumnPositions.every(position => position >= 0)).toBe(true);
+    expect(publishedColumnPositions).toEqual([...publishedColumnPositions].sort((left, right) => left - right));
+    expect(publishedSource).toContain('width: 165');
+    expect(publishedSource).toContain('width: 80');
+    expect(publishedSource).toContain('width: 147');
+    expect(publishedSource).toContain('tableLayout="fixed"');
+    expect(publishedSource).toContain('scroll={{x: 652}}');
+    expect(publishedSource).toContain('salesMenuPublishedPriceLabel(row)');
+    expect(publishedSource).toContain('salesMenuSpecificationLabel(row)');
+    expect(publishedSource).toContain('salesMenuProductShapeLabel(row.productShape)');
+    expect(publishedSource).not.toContain("title: '商品形态'");
+  });
+
   it('retains candidate selection across cursor pages and makes off-page submission explicit', () => {
     expect(candidateDrawerSource).toContain('preserveSelectedRowKeys: true');
     expect(candidateDrawerSource).toContain('mergeSalesMenuCandidateSelection(');
@@ -190,23 +261,68 @@ describe('sales menu IA static trace', () => {
     expect(candidateDrawerSource).toContain('setSelected([])');
   });
 
-  it('binds selector actions to the native input and actual business-identity option root', () => {
-    const selectorSource = pageSource.slice(
-      pageSource.indexOf('<Select'),
-      pageSource.indexOf('<Button', pageSource.indexOf('<Select')),
-    );
+  it('binds both selectors to stable test ids and actual business-identity option roots', () => {
     expect(testIdsSource).toContain("menuSelectorInput: 'sales-menu-selector-input'");
     expect(source).toContain(
       "const SalesMenuSelectorInput = forwardRef<HTMLInputElement, ComponentPropsWithoutRef<'input'>>",
     );
-    expect(selectorSource).toContain('virtual={false}');
-    expect(selectorSource).toContain('components={{input: SalesMenuSelectorInput}}');
-    expect(selectorSource).toContain('showSearch');
-    expect(selectorSource).toContain('filterOption={false}');
-    expect(selectorSource).toContain('searchValue={read.selectorQuery}');
-    expect(selectorSource).toContain('read.setSelectorQuery(value)');
-    expect(selectorSource).toContain("'data-testid': salesMenuTestIds.menuOption(menu.salesMenuRef)");
-    expect(selectorSource).not.toContain('<Space {...testId(salesMenuTestIds.menuOption(menu.salesMenuRef))}>');
+    expect(pageSource).toContain('testId(salesMenuTestIds.channelSelector)');
+    expect(pageSource).toContain("'data-testid': salesMenuTestIds.channelOption(channel.channelRef)");
+    expect(pageSource).toContain('read.selectChannel(value as Uuid)');
+    expect(pageSource).toContain('virtual={false}');
+    expect(pageSource).toContain('components={{input: SalesMenuSelectorInput}}');
+    expect(pageSource).toContain('showSearch');
+    expect(pageSource).toContain('filterOption={false}');
+    expect(pageSource).toContain('searchValue={read.selectorQuery}');
+    expect(pageSource).toContain('read.setSelectorQuery(value)');
+    expect(pageSource).toContain("'data-testid': salesMenuTestIds.menuOption(menu.salesMenuRef)");
+    expect(pageSource).not.toContain('<Space {...testId(salesMenuTestIds.menuOption(menu.salesMenuRef))}>');
+  });
+
+  it('keeps the channel option row rich enough to explain the selected business entry', () => {
+    expect(pageSource).toContain('read.channels.templateByRef.get(channel.templateRef)');
+    expect(pageSource).toContain('{channel.channelName}');
+    expect(pageSource).toContain('渠道模板：');
+    expect(pageSource).toContain('closedCodeLabel(accessKindLabels, template.accessKind)');
+    expect(pageSource).toContain('closedCodeLabel(orderKindLabels, template.orderKind)');
+    expect(pageSource).toContain('模板状态：');
+    expect(pageSource).toContain('read.channels.candidates.onPopupScroll');
+  });
+
+  it('keeps the entry and menu controls in one section with single-line selector content', () => {
+    const entrySectionSource = pageSource.slice(
+      pageSource.indexOf('<Card title="经营入口"'),
+      pageSource.indexOf('{!selectedMenu ?'),
+    );
+    expect(entrySectionSource).not.toContain('title="菜单工作区"');
+
+    const channelOptionsSource = entrySectionSource.slice(
+      entrySectionSource.indexOf('options={channelItems.map'),
+      entrySectionSource.indexOf('onPopupScroll={event =>'),
+    );
+    expect(channelOptionsSource).not.toContain('direction="vertical"');
+    expect(channelOptionsSource).toContain('wrap={false}');
+    expect(channelOptionsSource).toContain("whiteSpace: 'nowrap'");
+
+    const menuSelectorOffset = entrySectionSource.indexOf('value={selectedMenuRef}');
+    const menuRowSource = entrySectionSource.slice(entrySectionSource.lastIndexOf('<Row', menuSelectorOffset));
+    expect(menuRowSource).toContain('<Segmented<SalesMenuMode>');
+    expect(menuRowSource).toContain('wrap={false}');
+  });
+
+  it('keeps menu actions in the same row as the menu selector', () => {
+    const menuSelectorOffset = pageSource.indexOf('value={selectedMenuRef}');
+    const menuRowSource = pageSource.slice(
+      pageSource.lastIndexOf('<Row', menuSelectorOffset),
+      pageSource.indexOf('{menuProblem &&'),
+    );
+    expect(menuRowSource).toContain('<Col flex="auto" style={{minWidth: 260}}>');
+    expect(menuRowSource).toContain('<Col flex="none">');
+    expect(menuRowSource).toContain('<Space wrap={false}>');
+    expect(menuRowSource).toContain('testId(salesMenuTestIds.menuSchedule)');
+    expect(menuRowSource).toContain('testId(salesMenuTestIds.menuPublish)');
+    expect(menuRowSource).toContain('刷新');
+    expect(menuRowSource).toContain('<Segmented<SalesMenuMode>');
   });
 
   it('keeps the Segmented option anchors explicit for the documented composite-control exception', () => {
@@ -216,10 +332,15 @@ describe('sales menu IA static trace', () => {
   });
 
   it('exposes the selected section state on the exact section action node', () => {
-    expect(sectionSource).toContain(
-      "aria-current={read.selectedSectionRef === section.salesSectionRef ? 'true' : undefined}",
-    );
+    expect(sectionSource).toContain("aria-current={active ? 'true' : undefined}");
     expect(sectionSource).toContain('testId(salesMenuTestIds.section(section.salesSectionRef))');
+    expect(sectionSource).toContain('theme.useToken()');
+    expect(sectionSource).toContain('background: active ? token.colorPrimaryBg : token.colorBgContainer');
+    expect(sectionSource).toContain("textAlign: 'left'");
+    expect(sectionSource).toContain("justifyContent: 'flex-start'");
+    expect(sectionSource).toContain("display: 'flex'");
+    expect(pageSource).toContain('<Col xs={24} lg={5} style={{minWidth: 0}}>');
+    expect(pageSource).toContain('<Col xs={24} lg={19} style={{minWidth: 0}}>');
   });
 
   it('uses generated exact invalidation for command readback and keeps broad refresh user initiated', () => {
@@ -253,6 +374,23 @@ describe('sales menu IA static trace', () => {
     expect(managerSource).toContain('disabled={!managerReadModelReady}');
   });
 
+  it('places menu creation in the manager drawer header rather than its content toolbar', () => {
+    const drawerStart = managerSource.indexOf('<Drawer');
+    const contentStart = managerSource.indexOf('<Space direction="vertical"', drawerStart);
+    const drawerHeaderSource = managerSource.slice(drawerStart, contentStart);
+    const contentToolbarSource = managerSource.slice(contentStart, managerSource.indexOf('{error &&', contentStart));
+    expect(drawerHeaderSource).toContain('extra={');
+    expect(drawerHeaderSource).toContain('testId(salesMenuTestIds.managerCreate)');
+    expect(drawerHeaderSource).toContain('onClick={event => onCreate(event.currentTarget)}');
+    expect(contentToolbarSource).toContain('<Input.Search');
+    expect(contentToolbarSource).not.toContain('testId(salesMenuTestIds.managerCreate)');
+  });
+
+  it('shows the menu schedule as a manager-table column from the owner summary', () => {
+    expect(managerSource).toContain("title: '菜单时段'");
+    expect(managerSource).toContain('salesMenuScheduleLabel(row.draftSchedule)');
+  });
+
   it('hydrates published read-only detail from the owner published-item operation', () => {
     expect(detailSource).toContain('operationsAdminRtkRequest.getOperationsSalesMenuPublishedItem(');
     expect(detailSource).toContain('useGetOperationsSalesMenuPublishedItemQuery');
@@ -283,13 +421,15 @@ describe('sales menu IA static trace', () => {
       'testId(salesMenuTestIds.sectionAction(section.salesSectionRef))',
       "testId(salesMenuTestIds.sectionMenuAction(section.salesSectionRef, 'rename'))",
       'testId(salesMenuTestIds.menuPublish)',
-      'testId(salesMenuTestIds.menuCreate)',
+      'testId(salesMenuTestIds.managerCreate)',
+      'testId(salesMenuTestIds.menuCreateModal)',
       "testId(salesMenuTestIds.itemMenuAction(row.salesItemRef, 'up'))",
       "testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'menu'))",
       "testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'rename'))",
       'testId(salesMenuTestIds.candidateRow(row.candidateRef))',
       'testId(salesMenuTestIds.menuSchedule)',
       'testId(salesMenuTestIds.menuPublish)',
+      'testId(salesMenuTestIds.menuRefresh)',
       'testId(salesMenuTestIds.itemDiscardConfirm)',
       'testId(salesMenuTestIds.itemDiscardCancel)',
       "testId(salesMenuTestIds.itemMediaChoice('CUSTOM'))",
@@ -334,9 +474,8 @@ describe('sales menu IA static trace', () => {
     expect((editorSource.match(/min=\{1\}/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
-  it('uses the foundation lifecycle for every editable sales-menu Drawer', () => {
+  it('uses the foundation lifecycle at each editable sales-menu overlay boundary', () => {
     for (const [lifecycle, afterOpenChange] of [
-      ['createLifecycle', 'createAfterOpenChange'],
       ['renameLifecycle', 'renameAfterOpenChange'],
       ['scheduleLifecycle', 'scheduleAfterOpenChange'],
     ]) {
@@ -345,6 +484,12 @@ describe('sales menu IA static trace', () => {
       expect(pageSource).toContain(`maskClosable={!${lifecycle}.submitting}`);
       expect(pageSource).toContain(`keyboard={!${lifecycle}.submitting}`);
     }
+    expect(createModalFileSource).toContain('onCancel={lifecycle.requestClose}');
+    expect(createModalFileSource).toContain('afterOpenChange={onAfterOpenChange}');
+    expect(createModalFileSource).toContain('maskClosable={!submitting}');
+    expect(createModalFileSource).toContain('keyboard={!submitting}');
+    expect(createModalFileSource).toContain('confirmLoading={submitting}');
+    expect(createModalFileSource).toContain('testId(salesMenuTestIds.menuCreateModal)');
     expect(pageSource).toContain('createTriggerRef.current?.focus()');
     expect(pageSource).toContain('menuActionTriggerRef.current?.focus()');
   });

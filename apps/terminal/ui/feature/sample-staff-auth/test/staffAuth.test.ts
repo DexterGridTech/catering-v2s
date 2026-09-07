@@ -21,8 +21,8 @@ import {
   authNoticeDismissedCommand,
   authSystemFailureDismissedCommand,
   authSystemFailureObservedCommand,
-} from '../src/commands'
-import {operatorNameVariable} from '../src/variables'
+} from '../src/features/commands/commands'
+import {operatorNameVariable} from '../src/features/variables/variables'
 
 type RuntimeStateRoot = ReturnType<Runtime['getState']>
 type TestInstanceQuery = Readonly<{

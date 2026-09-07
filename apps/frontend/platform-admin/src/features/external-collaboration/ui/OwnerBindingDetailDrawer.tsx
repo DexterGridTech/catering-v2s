@@ -1,6 +1,8 @@
 import {ReloadOutlined} from '@ant-design/icons';
-import {Alert, Button, Descriptions, Drawer, Spin, Space, Tag} from 'antd';
+import {Alert, Button, Descriptions, Drawer, Spin, Tag} from 'antd';
 import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
   isKnownClosedCode,
@@ -30,6 +32,7 @@ import {
   collaborationBindingStatusLabels,
   unbindKindLabels,
 } from '../model/collaborationCodeLabels';
+import {platformDetailDrawerTestIds} from '../../../app/automation/platformDetailDrawerTestIds';
 
 type DetailDrawerState = {target?: OwnerBindingView; isOpen: boolean; close: () => void};
 
@@ -163,6 +166,36 @@ export function OwnerBindingDetailDrawer({
   };
 
   const current = binding;
+  const actionItems = current
+    ? [
+        canEditOwnerBinding(profile, current.status)
+          ? {
+              key: 'edit',
+              label: (
+                <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.ownerBinding.edit}>
+                  编辑绑定
+                </AdminDetailActionLabel>
+              ),
+              onClick: () => onEdit(current),
+            }
+          : null,
+        {
+          key: 'remove',
+          danger: true,
+          disabled: !canDeleteOwnerBinding(profile, current.status) || removing,
+          label: (
+            <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.ownerBinding.remove}>
+              {!isKnownClosedCode(unbindKindLabels, profile.unbindKind)
+                ? '当前状态无法识别'
+                : profile.unbindKind === 'REQUIRES_ADAPTER_UNBIND'
+                  ? '申请解除授权'
+                  : '删除绑定'}
+            </AdminDetailActionLabel>
+          ),
+          onClick: () => void remove(),
+        },
+      ].filter((item): item is NonNullable<typeof item> => Boolean(item))
+    : [];
   return (
     <Drawer
       open={detail.isOpen}
@@ -170,27 +203,13 @@ export function OwnerBindingDetailDrawer({
       onClose={detail.close}
       maskClosable
       extra={
-        current ? (
-          <Space>
-            {canEditOwnerBinding(profile, current.status) && (
-              <Button onClick={() => onEdit(current)} {...testId('platform-owner-binding-edit')}>
-                编辑绑定
-              </Button>
-            )}
-            <Button
-              danger
-              loading={removing}
-              disabled={!canDeleteOwnerBinding(profile, current.status)}
-              onClick={() => void remove()}
-              {...testId('platform-owner-binding-delete')}
-            >
-              {!isKnownClosedCode(unbindKindLabels, profile.unbindKind)
-                ? '当前状态无法识别'
-                : profile.unbindKind === 'REQUIRES_ADAPTER_UNBIND'
-                  ? '申请解除授权'
-                  : '删除绑定'}
-            </Button>
-          </Space>
+        actionItems.length > 0 ? (
+          <AdminDetailActionMenu
+            items={actionItems}
+            triggerTestId={platformDetailDrawerTestIds.ownerBinding.actionMenu}
+            disabled={removing}
+            loading={removing}
+          />
         ) : undefined
       }
       {...adminDrawerSurfaceProps}

@@ -1,5 +1,7 @@
-import {Alert, Button, Descriptions, Drawer, Skeleton, Space} from 'antd';
+import {Alert, Descriptions, Drawer, Skeleton} from 'antd';
 import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
   testId,
@@ -23,6 +25,7 @@ import {
   canVoidBusinessEntity,
   toggleBusinessEntityStatus,
 } from './businessEntityLifecycle';
+import {operationsDetailDrawerTestIds} from '../../../app/automation/operationsDetailDrawerTestIds';
 
 export type BusinessEntity = Brand | Tenant | HeadCompany;
 export type BusinessEntityKind = 'BRAND' | 'TENANT' | 'HEAD_COMPANY';
@@ -172,6 +175,68 @@ export function BusinessEntityDetailDrawer({
 
   const entityLabel = detailLabels[kind];
   const statusTarget = selected ? toggleBusinessEntityStatus(selected.status) : undefined;
+  const actionItems = detailReady && selected
+    ? [
+        {
+          key: 'audit',
+          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessEntity.audit}>操作历史</AdminDetailActionLabel>,
+          onClick: () => setAuditOpen(true),
+        },
+        ...(canManageBusinessEntity(selected.status) && canEdit
+          ? [
+              {
+                key: 'edit',
+                label: (
+                  <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessEntity.edit}>
+                    {catalogActionLabel(editCapabilityByKind[kind])}
+                  </AdminDetailActionLabel>
+                ),
+                onClick: () => closeThen(onEdit),
+              },
+            ]
+          : []),
+        ...(canManageBusinessEntity(selected.status) && canAuthorizeBrands && isHeadCompany(selected, kind)
+          ? [
+              {
+                key: 'authorize-brands',
+                label: (
+                  <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessEntity.authorizeBrands}>
+                    经营品牌
+                  </AdminDetailActionLabel>
+                ),
+                onClick: () => closeThen(current => onAuthorizeBrands?.(current as HeadCompany)),
+              },
+            ]
+          : []),
+        ...(canManageBusinessEntity(selected.status) && canStatus && statusTarget
+          ? [
+              {
+                key: 'status',
+                label: (
+                  <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessEntity.status}>
+                    {statusTarget === 'DISABLED' ? '停用' : '启用'}
+                  </AdminDetailActionLabel>
+                ),
+                onClick: () => closeThen(current => onStatus(current, statusTarget)),
+              },
+            ]
+          : []),
+        ...(canManageBusinessEntity(selected.status) && canStatus && canVoidBusinessEntity(selected.status)
+          ? [
+              {
+                key: 'void',
+                danger: true,
+                label: (
+                  <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessEntity.void}>
+                    标记删除
+                  </AdminDetailActionLabel>
+                ),
+                onClick: () => closeThen(current => onStatus(current, 'VOIDED')),
+              },
+            ]
+          : []),
+      ]
+    : [];
   return (
     <>
       <Drawer
@@ -188,44 +253,12 @@ export function BusinessEntityDetailDrawer({
         {...adminDrawerSurfaceProps}
         {...testId('operations-business-entity-detail-drawer')}
         extra={
-          detailReady &&
-          selected && (
-            <Space>
-              <Button onClick={() => setAuditOpen(true)} {...testId('operations-business-entity-detail-audit-history')}>
-                操作历史
-              </Button>
-              {canManageBusinessEntity(selected.status) && canEdit && (
-                <Button onClick={() => closeThen(onEdit)} {...testId('operations-business-entity-detail-edit')}>
-                  {catalogActionLabel(editCapabilityByKind[kind])}
-                </Button>
-              )}
-              {canManageBusinessEntity(selected.status) && canAuthorizeBrands && isHeadCompany(selected, kind) && (
-                <Button
-                  onClick={() => closeThen(current => onAuthorizeBrands?.(current as HeadCompany))}
-                  {...testId('operations-business-entity-detail-authorize-brands')}
-                >
-                  经营品牌
-                </Button>
-              )}
-              {canManageBusinessEntity(selected.status) && canStatus && statusTarget && (
-                <Button
-                  onClick={() => closeThen(current => onStatus(current, statusTarget))}
-                  {...testId('operations-business-entity-detail-status')}
-                >
-                  {statusTarget === 'DISABLED' ? '停用' : '启用'}
-                </Button>
-              )}
-              {canManageBusinessEntity(selected.status) && canStatus && canVoidBusinessEntity(selected.status) && (
-                <Button
-                  danger
-                  onClick={() => closeThen(current => onStatus(current, 'VOIDED'))}
-                  {...testId('operations-business-entity-detail-void')}
-                >
-                  标记删除
-                </Button>
-              )}
-            </Space>
-          )
+          actionItems.length > 0 ? (
+            <AdminDetailActionMenu
+              items={actionItems}
+              triggerTestId={operationsDetailDrawerTestIds.businessEntity.actionMenu}
+            />
+          ) : undefined
         }
       >
         {detailLoading && <Skeleton active {...testId('operations-business-entity-detail-loading')} />}

@@ -32,17 +32,25 @@ export const createSwitchInstanceModeActor = (): ActorDefinition => defineActor(
     if (requested === 'SLAVE') {
       const displayInfo = await readDisplayInfo(context.platformPorts.device)
       if (displayInfo.status === 'unavailable') {
-        logDisplayDiagnostic(context, 'instance-mode.display-info-unavailable', 'Instance mode change has no usable display info', {
-          ...toDisplayInfoDiagnostic(displayInfo),
+        logDisplayDiagnostic({
+          context,
+          event: 'instance-mode.display-info-unavailable',
+          message: 'Instance mode change has no usable display info',
+          data: {...toDisplayInfoDiagnostic(displayInfo)},
         })
         throw createDisplayError(context, 'Display info was not available', {
           ...toDisplayInfoDiagnostic(displayInfo, 'portStatus'),
         })
       }
       if (displayInfo.status === 'malformed') {
-        logDisplayDiagnostic(context, 'instance-mode.display-info-malformed', 'Instance mode change received malformed display info', {
-          reason: 'MALFORMED_DISPLAY_COUNT',
-          valueType: displayInfo.valueType,
+        logDisplayDiagnostic({
+          context,
+          event: 'instance-mode.display-info-malformed',
+          message: 'Instance mode change received malformed display info',
+          data: {
+            reason: 'MALFORMED_DISPLAY_COUNT',
+            valueType: displayInfo.valueType,
+          },
         })
         throw createDisplayError(context, 'Display info was malformed', {
           reasonCode: 'malformed-display-count',

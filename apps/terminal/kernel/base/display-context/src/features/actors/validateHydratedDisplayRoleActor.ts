@@ -28,7 +28,12 @@ export const createValidateHydratedDisplayRoleActor = (): ActorDefinition => def
     }
 
     const diagnostic = toDiagnostic(displayInfo)
-    logDisplayDiagnostic(context, 'display-role.startup-corrected', 'Hydrated VICE role was corrected to CHIEF', diagnostic)
+    logDisplayDiagnostic({
+      context,
+      event: 'display-role.startup-corrected',
+      message: 'Hydrated VICE role was corrected to CHIEF',
+      data: diagnostic,
+    })
     context.dispatchAction(setDisplayRoleAction('CHIEF'))
     const persistence = await persistDisplayRole(context)
     return Object.freeze({

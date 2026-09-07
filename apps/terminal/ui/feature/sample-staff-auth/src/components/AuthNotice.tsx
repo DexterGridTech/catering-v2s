@@ -3,7 +3,7 @@ import {
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
 import {dispatchWithRequestId, useDispatchCommand} from '@catering-v2s/ui-base-render'
-import {authNoticeDismissedCommand} from '../commands'
+import {authNoticeDismissedCommand} from '../features/commands/commands'
 import {DialogActions, DialogSurface} from './controls'
 
 export type AuthNoticeProps = Readonly<{readonly reasonCode: string}>
@@ -13,11 +13,11 @@ const messageForReason = (reasonCode: string): string =>
 
 export const AuthNotice = ({reasonCode}: AuthNoticeProps) => {
   const dispatchCommand = useDispatchCommand()
-  const dismiss = () => dispatchWithRequestId(
+  const dismiss = () => dispatchWithRequestId({
     dispatchCommand,
-    authNoticeDismissedCommand,
-    {},
-  )
+    definition: authNoticeDismissedCommand,
+    payload: {},
+  })
 
   return (
     <DialogSurface testID="sample.auth.notice" title="登录失败">

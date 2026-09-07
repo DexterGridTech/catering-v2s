@@ -1,5 +1,5 @@
 import type {DevicePort} from '@catering-v2s/kernel-base-platform-ports'
-import {createAndroidDevicePort} from '../src/androidDevice'
+import {createAndroidDevicePort} from '../src/implementations/androidDevice'
 import {describe, expect, it, vi} from 'vitest'
 
 const {requireNativeModuleMock} = vi.hoisted(() => ({requireNativeModuleMock: vi.fn()}))

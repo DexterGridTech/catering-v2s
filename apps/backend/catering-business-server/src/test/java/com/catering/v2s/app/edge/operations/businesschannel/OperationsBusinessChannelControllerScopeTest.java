@@ -3,6 +3,7 @@ package com.catering.v2s.app.edge.operations.businesschannel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -54,7 +55,7 @@ class OperationsBusinessChannelControllerScopeTest {
 
         verify(fixture.organizationReads).store(fixture.workspaceId, KEY, foreignStore);
         verify(fixture.salesMenuChannels, never())
-                .listSalesMenuEligibleChannels(any(), any(), any(), any(), any(), any(), any());
+                .listSalesMenuEligibleChannels(any(), any(), any(), any(), anyInt(), any(), any());
     }
 
     @Test
@@ -126,7 +127,8 @@ class OperationsBusinessChannelControllerScopeTest {
                         fixture.request, KEY, fixture.selectedStoreId, "SALES_MENU", null, 10, null, null));
 
         verify(fixture.salesMenuChannels, never())
-                .listSalesMenuEligibleChannels(any(), any(), any(), any(), any(), any(), any());
+                .listSalesMenuEligibleChannels(any(), any(), any(), any(), anyInt(), any(), any());
+        verify(fixture.organizationReads, never()).store(any(), any(), any());
     }
 
     @Test
@@ -179,6 +181,75 @@ class OperationsBusinessChannelControllerScopeTest {
         fixture.controller.templates(fixture.request, KEY, null, null, null);
 
         verify(fixture.channels).pageTemplates(fixture.workspaceId, KEY, fixture.projectId, null, null, null, null);
+    }
+
+    @Test
+    void storeAssignedTemplateListUsesItsOwnerValidatedProjectAndStoreTemplates() {
+        Fixture fixture = fixture();
+        WorkspaceSessionReadback storeSession = new WorkspaceSessionReadback(
+                fixture.session.sessionId(),
+                fixture.workspaceId,
+                KEY,
+                fixture.session.accountId(),
+                fixture.session.currentAssignmentId(),
+                new WorkspaceSessionEntryReadback.ScopeContext(
+                        null, fixture.session.scopeContext().project(), fixture.session.scopeContext().store(), null),
+                fixture.session.contextVersion(),
+                fixture.session.authorizationRevision(),
+                fixture.session.pageAccessKeys(),
+                fixture.session.actionCapabilityKeys(),
+                fixture.session.accountDisplayName(),
+                ServiceNodeTypes.STORE,
+                fixture.selectedStoreId);
+        when(fixture.sessions.requireWorkspaceRead(any(), eq(KEY))).thenReturn(storeSession);
+        OrganizationOverviewTaskReadService.Item store = mock(OrganizationOverviewTaskReadService.Item.class);
+        when(store.project())
+                .thenReturn(new OrganizationOverviewTaskReadService.Reference(
+                        fixture.projectId, "PROJECT-01", "Project 01", true));
+        when(fixture.organizationReads.store(fixture.workspaceId, KEY, fixture.selectedStoreId)).thenReturn(store);
+        when(fixture.channels.pageTemplates(
+                        fixture.workspaceId, KEY, fixture.projectId, null, ServiceNodeTypes.STORE, null, null))
+                .thenReturn(new BusinessChannelReadback.TemplatePage(List.of(), null, 0L));
+
+        var result = fixture.controller.templates(fixture.request, KEY, null, null, null);
+
+        assertEquals(0, result.items().size());
+        verify(fixture.organizationReads).store(fixture.workspaceId, KEY, fixture.selectedStoreId);
+        verify(fixture.channels).pageTemplates(
+                fixture.workspaceId, KEY, fixture.projectId, null, ServiceNodeTypes.STORE, null, null);
+        verify(fixture.authorization, never()).resolveSelectedProjectScope(any(), any());
+    }
+
+    @Test
+    void storeAssignedTemplateListRejectsAProjectOutsideItsSelectedStoreOwner() {
+        Fixture fixture = fixture();
+        WorkspaceSessionReadback storeSession = new WorkspaceSessionReadback(
+                fixture.session.sessionId(),
+                fixture.workspaceId,
+                KEY,
+                fixture.session.accountId(),
+                fixture.session.currentAssignmentId(),
+                new WorkspaceSessionEntryReadback.ScopeContext(
+                        null, fixture.session.scopeContext().project(), fixture.session.scopeContext().store(), null),
+                fixture.session.contextVersion(),
+                fixture.session.authorizationRevision(),
+                fixture.session.pageAccessKeys(),
+                fixture.session.actionCapabilityKeys(),
+                fixture.session.accountDisplayName(),
+                ServiceNodeTypes.STORE,
+                fixture.selectedStoreId);
+        when(fixture.sessions.requireWorkspaceRead(any(), eq(KEY))).thenReturn(storeSession);
+        OrganizationOverviewTaskReadService.Item store = mock(OrganizationOverviewTaskReadService.Item.class);
+        when(store.project())
+                .thenReturn(new OrganizationOverviewTaskReadService.Reference(
+                        fixture.projectId, "PROJECT-01", "Project 01", true));
+        when(fixture.organizationReads.store(fixture.workspaceId, KEY, fixture.selectedStoreId)).thenReturn(store);
+
+        assertThrows(
+                WorkspaceUserService.TaskScopeDeniedException.class,
+                () -> fixture.controller.templates(fixture.request, KEY, UUID.randomUUID(), null, null));
+
+        verify(fixture.channels, never()).pageTemplates(any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -256,8 +327,8 @@ class OperationsBusinessChannelControllerScopeTest {
                 Set.of(),
                 Set.of(),
                 "Operations tester",
-                ServiceNodeTypes.STORE,
-                selectedStoreId);
+                ServiceNodeTypes.PROJECT,
+                projectId);
         OperationsSessionResolver sessions = mock(OperationsSessionResolver.class);
         BusinessChannelReadApi channels = mock(BusinessChannelReadApi.class);
         BusinessChannelOwnerApi salesMenuChannels = mock(BusinessChannelOwnerApi.class);
@@ -298,7 +369,8 @@ class OperationsBusinessChannelControllerScopeTest {
                 salesMenuChannels,
                 bindings,
                 organizationReads,
-                authorization);
+                authorization,
+                sessions);
     }
 
     private record Fixture(
@@ -312,5 +384,6 @@ class OperationsBusinessChannelControllerScopeTest {
             BusinessChannelOwnerApi salesMenuChannels,
             CollaborationBindingReadApi bindings,
             OperationsOrganizationTaskReadService organizationReads,
-            WorkspaceUserService authorization) {}
+            WorkspaceUserService authorization,
+            OperationsSessionResolver sessions) {}
 }

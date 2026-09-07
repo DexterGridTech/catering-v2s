@@ -25,5 +25,3 @@ export type RendererCatalog = Readonly<{
   readonly tierOf: (rendererKey: string) => LayerTier | undefined
   readonly guardOf: (rendererKey: string) => LayerGuard | undefined
 }>
-
-export type {UiCatalog, UiCatalogEntry}

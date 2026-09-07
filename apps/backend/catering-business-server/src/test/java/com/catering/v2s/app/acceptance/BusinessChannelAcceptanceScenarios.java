@@ -802,6 +802,36 @@ final class BusinessChannelAcceptanceScenarios {
         host.completeInvitation(context, storeFixture);
         OperationsFixture storeViewer =
                 selectStore(context, new OperationsFixture(storeFixture, host.login(context, storeFixture)));
+        BackendAcceptanceTest.Response storeTemplates = context.get(
+                TEMPLATE_LIST,
+                "/api/operations/group-workspaces/" + storeViewer.fixture().groupWorkspaceKey()
+                        + "/business-channel-templates?pageSize=20",
+                storeViewer.session().cookie(),
+                Set.of(200));
+        JsonNode storeTemplateItems = requiredJsonNode(
+                storeTemplates.json(),
+                "/items",
+                JsonNodeType.ARRAY,
+                "BUSINESS: store assignment can read its owner-scoped template metadata");
+        assertNotNull(
+                find(
+                        storeTemplateItems,
+                        "templateRef",
+                        storeTemplate.json().path("templateRef").asText()),
+                "BUSINESS: store assignment reads the STORE template used by its channel selector");
+        assertNotNull(
+                find(
+                        storeTemplateItems,
+                        "templateRef",
+                        disabledStoreTemplate.json().path("templateRef").asText()),
+                "BUSINESS: store assignment retains disabled STORE template metadata for status display");
+        assertFalse(
+                storeTemplateItems.toString().contains(projectTemplate.json().path("templateRef").asText()),
+                "BUSINESS: store assignment does not read PROJECT template metadata");
+        storeTemplateItems.forEach(row -> assertEquals(
+                "STORE",
+                row.path("operatorKind").asText(),
+                "BUSINESS: store assignment template metadata remains STORE-owned"));
         BackendAcceptanceTest.Response candidates = context.get(
                 TEMPLATE_CANDIDATES,
                 "/api/operations/group-workspaces/" + storeViewer.fixture().groupWorkspaceKey()

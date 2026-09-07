@@ -4,6 +4,7 @@ import {defineConfig} from 'vitest/config'
 const testReactNativeEntry = fileURLToPath(new URL('../../../../../tools/terminal-shared/react-native-vitest-entry.ts', import.meta.url))
 
 export default defineConfig({
+  define: {__DEV__: 'false'},
   resolve: {
     alias: [{find: /^react-native$/, replacement: testReactNativeEntry}],
   },

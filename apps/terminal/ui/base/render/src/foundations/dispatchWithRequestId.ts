@@ -5,9 +5,12 @@ import type {RenderProviderProps} from '../types/props'
 
 type DispatchCommand = RenderProviderProps['dispatchCommand']
 
-export const dispatchWithRequestId = <TPayload extends StateJsonValue>(
-  dispatchCommand: DispatchCommand,
-  definition: CommandDefinition<TPayload>,
-  payload: TPayload,
-  requestId: RequestId = createRequestId(),
-) => dispatchCommand(createCommand(definition, payload), {requestId})
+export const dispatchWithRequestId = <TPayload extends StateJsonValue>(input: Readonly<{
+  dispatchCommand: DispatchCommand;
+  definition: CommandDefinition<TPayload>;
+  payload: TPayload;
+  requestId?: RequestId;
+}>) => input.dispatchCommand(
+  createCommand(input.definition, input.payload),
+  {requestId: input.requestId ?? createRequestId()},
+)

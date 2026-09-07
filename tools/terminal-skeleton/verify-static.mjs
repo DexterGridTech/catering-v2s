@@ -21,6 +21,8 @@ const renderTestPath = path.join(toolDirectory, '../terminal-ui-render/check-sta
 const renderCheckPath = path.join(toolDirectory, '../terminal-ui-render/check-static.mjs');
 const layeringTestPath = path.join(toolDirectory, '../terminal-layering/check-static.test.mjs');
 const layeringCheckPath = path.join(toolDirectory, '../terminal-layering/check-static.mjs');
+const readabilityTestPath = path.join(toolDirectory, '../terminal-readability/check-static.test.mjs');
+const readabilityCheckPath = path.join(toolDirectory, '../terminal-readability/check-static.mjs');
 
 const staticRunId = `ter-local-static-${process.pid}-${Date.now()}`;
 
@@ -64,6 +66,8 @@ function run(label, command, args) {
 }
 
 debugLog('verify-static.start', {cwd: path.resolve(toolDirectory, '../..'), pid: process.pid, node: process.version});
+run('readability-model-test', process.execPath, [readabilityTestPath]);
+run('readability-real-static', process.execPath, [readabilityCheckPath]);
 run('model-test', process.execPath, [testPath]);
 run('real-static-tree', process.execPath, [checkPath]);
 run('contracts-model-test', process.execPath, [contractsTestPath]);

@@ -4,7 +4,7 @@ import {
   memberRegistrationAbandonedCommand,
   memberRegistrationRetryRequestedCommand,
   type RegistryNoticeReason,
-} from '../commands'
+} from '../features/commands/commands'
 import {DialogActions, DialogSurface} from './controls'
 
 export type RegistryNoticeProps = Readonly<{readonly reasonCode: RegistryNoticeReason}>
@@ -14,16 +14,16 @@ const messageForReason = (reasonCode: RegistryNoticeReason): string =>
 
 export const RegistryNotice = ({reasonCode}: RegistryNoticeProps) => {
   const dispatchCommand = useDispatchCommand()
-  const retry = () => dispatchWithRequestId(
+  const retry = () => dispatchWithRequestId({
     dispatchCommand,
-    memberRegistrationRetryRequestedCommand,
-    {reasonCode},
-  )
-  const abandon = () => dispatchWithRequestId(
+    definition: memberRegistrationRetryRequestedCommand,
+    payload: {reasonCode},
+  })
+  const abandon = () => dispatchWithRequestId({
     dispatchCommand,
-    memberRegistrationAbandonedCommand,
-    {},
-  )
+    definition: memberRegistrationAbandonedCommand,
+    payload: {},
+  })
 
   return (
     <DialogSurface testID="sample.desk.registry-notice" title="登记未完成">

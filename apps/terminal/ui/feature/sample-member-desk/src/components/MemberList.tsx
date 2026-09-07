@@ -13,7 +13,7 @@ import {
   PrimitiveContainer,
   PrimitiveHeading,
 } from '@catering-v2s/ui-base-primitives'
-import {deskSystemFailureObservedCommand, memberFormOpenedCommand} from '../commands'
+import {deskSystemFailureObservedCommand, memberFormOpenedCommand} from '../features/commands/commands'
 import {MemberRow} from './MemberRow'
 import {classifyRequestResult} from './requestOutcome'
 import {EmptyState, ScrollArea} from './controls'
@@ -24,19 +24,19 @@ export const MemberList = () => {
   const request = useTrackedRequest()
   const requestInFlight = useRequestInFlight(request.requestId)
 
-  const openForm = () => dispatchWithRequestId(
+  const openForm = () => dispatchWithRequestId({
     dispatchCommand,
-    memberFormOpenedCommand,
-    {},
-  )
+    definition: memberFormOpenedCommand,
+    payload: {},
+  })
 
   const observeSystemFailure = async (): Promise<void> => {
     try {
-      await dispatchWithRequestId(
+      await dispatchWithRequestId({
         dispatchCommand,
-        deskSystemFailureObservedCommand,
-        {operation: 'logout'},
-      )
+        definition: deskSystemFailureObservedCommand,
+        payload: {operation: 'logout'},
+      })
     } catch (_error) {
       // useDispatchCommand has already emitted the structured rejection diagnostic.
     }
@@ -46,7 +46,7 @@ export const MemberList = () => {
     if (requestInFlight) return
     const requestId = request.start()
     try {
-      const result = await dispatchWithRequestId(dispatchCommand, logoutCommand, {}, requestId)
+      const result = await dispatchWithRequestId({dispatchCommand, definition: logoutCommand, payload: {}, requestId})
       const outcome = classifyRequestResult(result)
       if (outcome !== 'running') request.finish(requestId)
       if (outcome === 'system-failure') await observeSystemFailure()

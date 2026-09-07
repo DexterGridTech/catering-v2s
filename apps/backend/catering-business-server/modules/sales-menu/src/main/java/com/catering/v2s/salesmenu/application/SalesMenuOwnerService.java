@@ -26,6 +26,8 @@ import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMediaMode;
 import com.catering.v2s.salesmenu.domain.SalesMenuItemPageQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuItemQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuListQuery;
+import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTarget;
+import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTargetKind;
 import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleState;
 import com.catering.v2s.salesmenu.domain.SalesMenuMoveDirection;
 import com.catering.v2s.salesmenu.domain.SalesMenuOperationQuery;
@@ -37,6 +39,8 @@ import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentInput;
 import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentKind;
 import com.catering.v2s.salesmenu.domain.SalesMenuSalesUnit;
 import com.catering.v2s.salesmenu.domain.SalesMenuSchedule;
+import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOption;
+import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOptionValue;
 import com.catering.v2s.salesmenu.domain.SalesMenuScope;
 import com.catering.v2s.salesmenu.domain.SalesMenuTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionKind;
@@ -264,12 +268,19 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts =
                 readDraftCatalogFacts(query.item().menu().scope(), List.of(itemRow));
         CatalogOwnerApi.SalesMenuItemFacts fact = facts.get(itemRow.catalogItemRef());
+        Map<UUID, List<SkuRow>> selectedSkuRows = skuRowsByItem(List.of(itemRow));
         return draftItem(
                 itemRow,
                 mediaByItem(List.of(itemRow)),
-                skuRowsByItem(List.of(itemRow)),
+                selectedSkuRows,
+                selectedOrderOptionsByItem(List.of(itemRow)),
+                catalogOrderOptions(fact),
+                skuCandidates(fact),
+                staleSelectedSkuRefs(fact, selectedSkuRows
+                        .getOrDefault(itemRow.salesItemRef(), List.of())),
                 catalogSalesUnit(fact),
-                fact == null ? null : fact.defaultPriceCents());
+                fact == null ? null : fact.defaultPriceCents(),
+                fact == null ? null : fact.defaultImageAssetRef());
     }
 
     @Override
@@ -282,12 +293,21 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         ItemPage page = pagedItemRows(query, SalesMenuVersionKind.PUBLISHED);
         Map<UUID, List<UUID>> mediaByItem = mediaByItem(page.rows());
         Map<UUID, List<SkuRow>> skuByItem = skuRowsByItem(page.rows());
-        Map<UUID, ManualSaleStatusRow> manualStatusByItem = manualStatusByItem(query.channelRef(), page.rows());
+        Map<ManualTargetKey, ManualSaleStatusRow> manualStatusByTarget =
+                manualStatusByTarget(query.channelRef(), page.rows());
         Map<UUID, SalesMenuReadback.InventoryAvailabilityFact> inventoryByItem =
                 inventoryAvailabilityByItem(query.menu().scope(), page.rows(), skuByItem);
+        Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> selectedOrderOptions =
+                selectedOrderOptionsByItem(page.rows());
         return new SalesMenuReadback.PublishedItemPage(
                 page.rows().stream()
-                        .map(row -> publishedItem(row, mediaByItem, skuByItem, manualStatusByItem, inventoryByItem))
+                        .map(row -> publishedItem(
+                                row,
+                                mediaByItem,
+                                skuByItem,
+                                manualStatusByTarget,
+                                inventoryByItem,
+                                selectedOrderOptions))
                         .toList(),
                 query.page().cursor(),
                 itemNextCursor(page));
@@ -310,8 +330,9 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 itemRow,
                 mediaByItem(List.of(itemRow)),
                 skuByItem,
-                manualStatusByItem(query.channelRef(), List.of(itemRow)),
-                inventoryAvailabilityByItem(query.item().menu().scope(), List.of(itemRow), skuByItem));
+                manualStatusByTarget(query.channelRef(), List.of(itemRow)),
+                inventoryAvailabilityByItem(query.item().menu().scope(), List.of(itemRow), skuByItem),
+                selectedOrderOptionsByItem(List.of(itemRow)));
     }
 
     @Override
@@ -394,8 +415,9 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         arguments.add(query.page().pageSize() + 1);
         List<SalesMenuReadback.OperationRecord> records = repository
                 .query(
-                        "SELECT record_ref,occurred_at_epoch_millis,operation_kind,collection_ref,target_ref,result,"
-                                + "failure_code,actor_display_snapshot FROM sales_menu.sales_operation_record "
+                        "SELECT record_ref,occurred_at_epoch_millis,operation_kind,collection_ref,target_ref,target_kind,"
+                                + "target_display_snapshot,result,failure_code,actor_display_snapshot "
+                                + "FROM sales_menu.sales_operation_record "
                                 + "WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? "
                                 + "AND collection_ref=? AND (channel_ref IS NULL OR channel_ref=?)"
                                 + frontier
@@ -409,6 +431,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                         row.operationKind(),
                         row.collectionRef(),
                         row.targetRef(),
+                        row.targetKind(),
+                        row.targetDisplaySnapshot(),
                         SalesMenuOperationResult.valueOf(row.result()),
                         row.failureCode(),
                         row.actorDisplaySnapshot()))
@@ -731,18 +755,9 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                     ItemRow current = preflight.current();
                     Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts = preflight.facts();
                     CatalogOwnerApi.SalesMenuItemFacts fact = facts.get(current.catalogItemRef());
-                    List<SkuRow> authoritativeSkus = fact == null
-                            ? command.saleContent().skuPrices().stream()
-                                    .map(sku -> new SkuRow(
-                                            command.salesItemRef(),
-                                            sku.skuRef(),
-                                            sku.listedPriceCents(),
-                                            sku.skuCode(),
-                                            sku.skuName(),
-                                            sku.standardPriceCents(),
-                                            command.saleContent().skuPrices().indexOf(sku)))
-                                    .toList()
-                            : authoritativeSkuRows(fact, command.saleContent());
+                    List<SkuRow> authoritativeSkus = authoritativeSkuRows(fact, command.saleContent());
+                    List<SalesMenuReadback.SalesMenuOrderOption> authoritativeOrderOptions =
+                            preflight.orderOptions();
                     requireCas(command.context().target(), command.expectedVersion());
                     claimStagedAssets(command, current);
                     repository.update(
@@ -755,9 +770,9 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                                     + "WHERE version_ref=? AND sales_item_ref=?",
                             command.displayNameOverride(),
                             command.saleContent().listedPriceCents(),
-                            fact == null ? current.resolvedItemName() : fact.itemName(),
-                            fact == null ? current.resolvedItemCode() : fact.itemCode(),
-                            fact == null ? current.resolvedProductShape() : fact.shapeKey(),
+                            fact.itemName(),
+                            fact.itemCode(),
+                            fact.shapeKey(),
                             writeJson(command.orderingConstraints()),
                             command.displayMedia().mode().name(),
                             version,
@@ -780,6 +795,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                                 sku.defaultPriceCents(),
                                 sku.displayOrder());
                     }
+                    replaceOrderOptions(version, command.salesItemRef(), authoritativeOrderOptions);
                     replaceMedia(version, command.salesItemRef(), command.displayMedia());
                     advanceDraftRevision(version);
                     SalesMenuReadback.Command readback = command(
@@ -812,6 +828,16 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                     UUID version = locked.draftVersion();
                     repository.update(
                             "DELETE FROM sales_menu.sales_version_item_sku WHERE version_ref=? AND sales_item_ref=?",
+                            version,
+                            command.salesItemRef());
+                    repository.update(
+                            "DELETE FROM sales_menu.sales_version_item_order_option_value "
+                                    + "WHERE version_ref=? AND sales_item_ref=?",
+                            version,
+                            command.salesItemRef());
+                    repository.update(
+                            "DELETE FROM sales_menu.sales_version_item_order_option WHERE version_ref=? "
+                                    + "AND sales_item_ref=?",
                             version,
                             command.salesItemRef());
                     repository.update(
@@ -938,6 +964,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                                     + "WHERE collection_ref=?",
                             published,
                             menu.salesMenuRef());
+                    removeUnpublishedChildManualStatuses(menu.salesMenuRef(), published);
                     SalesMenuReadback.Command readback = command(
                             "publishOperationsSalesMenu",
                             command.context(),
@@ -954,6 +981,27 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 });
     }
 
+    private void removeUnpublishedChildManualStatuses(UUID collectionRef, UUID publishedVersion) {
+        repository.update(
+                "DELETE FROM sales_menu.sales_manual_status_current current_status "
+                        + "USING sales_menu.sales_item item "
+                        + "WHERE current_status.sales_item_ref=item.sales_item_ref "
+                        + "AND item.collection_ref=? "
+                        + "AND current_status.target_kind <> 'ITEM' "
+                        + "AND NOT EXISTS ("
+                        + "SELECT 1 FROM sales_menu.sales_version_item_sku sku "
+                        + "WHERE sku.version_ref=? AND sku.sales_item_ref=current_status.sales_item_ref "
+                        + "AND current_status.target_kind='SKU' AND sku.sku_ref=current_status.target_ref) "
+                        + "AND NOT EXISTS ("
+                        + "SELECT 1 FROM sales_menu.sales_version_item_order_option_value option_value "
+                        + "WHERE option_value.version_ref=? AND option_value.sales_item_ref=current_status.sales_item_ref "
+                        + "AND current_status.target_kind='ORDER_OPTION_VALUE' "
+                        + "AND option_value.definition_value_ref=current_status.target_ref)",
+                collectionRef,
+                publishedVersion,
+                publishedVersion);
+    }
+
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public SalesMenuReadback.Command setManualSoldOut(SalesMenuOwnerApi.ManualSoldOutCommand command) {
@@ -963,6 +1011,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 command.expectedVersion(),
                 command.channelRef(),
                 command.salesItemRef(),
+                command.target(),
                 SalesMenuManualSaleState.MANUAL_SOLD_OUT,
                 command.reason(),
                 false);
@@ -978,6 +1027,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 command.expectedVersion(),
                 command.channelRef(),
                 command.salesItemRef(),
+                command.target(),
                 SalesMenuManualSaleState.NORMAL,
                 null,
                 true);
@@ -1017,8 +1067,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts =
                 catalogFacts(command.context().scope(), Set.of(current.catalogItemRef()), menuLock.store());
         CatalogOwnerApi.SalesMenuItemFacts fact = facts.get(current.catalogItemRef());
-        if (catalog != null && organization != null) requireDraftItemUpdate(fact, command);
-        return new UpdateItemPreflight(menu, locked.draftVersion(), current, facts);
+        List<SalesMenuReadback.SalesMenuOrderOption> orderOptions = requireDraftItemUpdate(fact, command);
+        return new UpdateItemPreflight(menu, locked.draftVersion(), current, facts, orderOptions);
     }
 
     private PublishPreflight preflightPublish(
@@ -1061,10 +1111,11 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         long now = time.currentEpochMillis();
         repository.update(
                 "INSERT INTO sales_menu.sales_operation_record(record_ref,workspace_uuid,group_workspace_key,"
-                        + "store_ref,channel_ref,collection_ref,operation_kind,target_ref,result,failure_code,"
+                        + "store_ref,channel_ref,collection_ref,operation_kind,target_ref,target_kind,"
+                        + "target_display_snapshot,result,failure_code,"
                         + "actor_type,"
                         + "actor_id,actor_display_snapshot,occurred_at_epoch_millis,idempotency_key) "
-                        + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                        + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 record,
                 command.context().scope().workspaceUuid(),
                 command.context().scope().groupWorkspaceKey(),
@@ -1073,6 +1124,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 command.context().salesMenuRef(),
                 command.operationKind(),
                 command.targetRef(),
+                command.targetKind(),
+                command.targetDisplaySnapshot(),
                 SalesMenuOperationResult.FAILED.name(),
                 command.failureCode(),
                 command.context().actor().actorType(),
@@ -1086,6 +1139,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 command.operationKind(),
                 command.context().salesMenuRef(),
                 command.targetRef(),
+                command.targetKind(),
+                command.targetDisplaySnapshot(),
                 SalesMenuOperationResult.FAILED,
                 command.failureCode(),
                 command.context().actor().displaySnapshot());
@@ -1261,6 +1316,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             long expectedVersion,
             UUID channel,
             UUID item,
+            SalesMenuManualSaleTarget target,
             SalesMenuManualSaleState state,
             String reason,
             boolean restore) {
@@ -1274,24 +1330,30 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                         context.salesMenuRef(),
                         channel,
                         item,
+                        target,
                         state,
                         reason,
                         expectedVersion),
                 () -> {
                     SalesMenuAggregate menu = lockMenuTarget(context, channel);
-                    requireItem(publishedVersion(menu.salesMenuRef()), item);
-                    return menu;
+                    ItemRow publishedItem = itemRows(menu, SalesMenuVersionKind.PUBLISHED, null, item).stream()
+                            .findFirst()
+                            .orElseThrow(() -> problem("SALES_MENU_MANUAL_TARGET_INVALID", 422, "人工销售目标不属于当前发布版本"));
+                    return new ManualLock(menu, publishedItem);
                 },
-                ManualPreflight::new,
+                locked -> new ManualPreflight(
+                        locked.menu(),
+                        target,
+                        requirePublishedManualTarget(locked.item(), target)),
                 preflight -> {
                     var menu = preflight.menu();
                     requireCas(context.target(), expectedVersion);
                     long now = time.currentEpochMillis();
                     repository.update(
-                            "INSERT INTO sales_menu.sales_manual_status_current(sales_item_ref,channel_ref,state,"
-                                    + "reason,"
-                                    + "changed_at_epoch_millis,actor_type,actor_id,actor_display_snapshot,version) "
-                                    + "VALUES(?,?,?,?,?,?,?,?,1) ON CONFLICT (sales_item_ref,channel_ref) "
+                            "INSERT INTO sales_menu.sales_manual_status_current(sales_item_ref,channel_ref,target_kind,"
+                                    + "target_ref,state,reason,changed_at_epoch_millis,actor_type,actor_id,"
+                                    + "actor_display_snapshot,version) VALUES(?,?,?,?,?,?,?,?,?,?,1) "
+                                    + "ON CONFLICT (sales_item_ref,channel_ref,target_kind,target_ref) "
                                     + "DO UPDATE SET "
                                     + "state=EXCLUDED.state,reason=EXCLUDED.reason,"
                                     + "changed_at_epoch_millis=EXCLUDED.changed_at_epoch_millis,"
@@ -1300,6 +1362,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                                     + "version=sales_menu.sales_manual_status_current.version+1",
                             item,
                             channel,
+                            target.targetKind().name(),
+                            target.targetRef(),
                             state.name(),
                             reason,
                             now,
@@ -1308,11 +1372,13 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                             context.actor().displaySnapshot());
                     repository.update(
                             "INSERT INTO sales_menu.sales_manual_status_event(event_ref,sales_item_ref,channel_ref,"
-                                    + "event_kind,reason,actor_type,actor_id,actor_display_snapshot,"
-                                    + "occurred_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?,?)",
+                                    + "target_kind,target_ref,event_kind,reason,actor_type,actor_id,"
+                                    + "actor_display_snapshot,occurred_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
                             UUID.randomUUID(),
                             item,
                             channel,
+                            target.targetKind().name(),
+                            target.targetRef(),
                             restore ? "RESTORED" : "SOLD_OUT",
                             reason,
                             context.actor().actorType(),
@@ -1320,10 +1386,57 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                             context.actor().displaySnapshot(),
                             now);
                     SalesMenuReadback.Command readback = command(
-                            operation, context, menu.salesMenuRef(), item, SalesMenuCommandReadbackStatus.APPLIED);
-                    recordSuccess(operation, context, channel, menu.salesMenuRef(), item);
+                            operation,
+                            context,
+                            menu.salesMenuRef(),
+                            target.targetRef(),
+                            SalesMenuCommandReadbackStatus.APPLIED);
+                    recordSuccess(
+                            operation,
+                            context,
+                            channel,
+                            menu.salesMenuRef(),
+                            target.targetRef(),
+                            target.targetKind().name(),
+                            preflight.targetDisplayName());
                     return readback;
                 });
+    }
+
+    private String requirePublishedManualTarget(ItemRow item, SalesMenuManualSaleTarget target) {
+        if (target == null) throw problem("SALES_MENU_MANUAL_TARGET_INVALID", 422, "人工销售目标不能为空");
+        if (target.targetKind() == SalesMenuManualSaleTargetKind.ITEM) {
+            if (!item.salesItemRef().equals(target.targetRef())) {
+                throw problem("SALES_MENU_MANUAL_TARGET_INVALID", 422, "人工销售目标不属于当前销售项");
+            }
+            return displayName(item);
+        }
+        if (target.targetKind() == SalesMenuManualSaleTargetKind.SKU) {
+            return repository
+                    .query(
+                            "SELECT resolved_sku_name FROM sales_menu.sales_version_item_sku "
+                                    + "WHERE version_ref=? AND sales_item_ref=? AND sku_ref=?",
+                            (result, ignored) -> result.getString("resolved_sku_name"),
+                            item.versionRef(),
+                            item.salesItemRef(),
+                            target.targetRef())
+                    .stream()
+                    .findFirst()
+                    .orElseThrow(() -> problem(
+                            "SALES_MENU_MANUAL_TARGET_INVALID", 422, "人工规格目标不属于当前发布版本"));
+        }
+        return repository
+                .query(
+                        "SELECT resolved_value_name FROM sales_menu.sales_version_item_order_option_value "
+                                + "WHERE version_ref=? AND sales_item_ref=? AND definition_value_ref=?",
+                        (result, ignored) -> result.getString("resolved_value_name"),
+                        item.versionRef(),
+                        item.salesItemRef(),
+                        target.targetRef())
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> problem(
+                        "SALES_MENU_MANUAL_TARGET_INVALID", 422, "人工选项值目标不属于当前发布版本"));
     }
 
     private <L, P, T> T receipt(
@@ -1404,6 +1517,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             UUID salesMenuRef,
             UUID channelRef,
             UUID salesItemRef,
+            SalesMenuManualSaleTarget target,
             SalesMenuManualSaleState state,
             String reason,
             long expectedVersion) {}
@@ -1531,6 +1645,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 SalesMenuOwnerService::itemRow,
                 sourceVersion);
         Map<UUID, List<SkuRow>> sourceSkus = persistedSkuRowsByItem(sourceItems);
+        Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> sourceOrderOptions =
+                selectedOrderOptionsByItem(sourceItems);
         Map<UUID, List<UUID>> sourceMedia = mediaByItem(sourceItems, false);
         for (var row : sourceItems) {
             UUID item = UUID.randomUUID();
@@ -1569,6 +1685,34 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                         sku.resolvedSkuName(),
                         sku.defaultPriceCents(),
                         sku.displayOrder());
+            for (var option : sourceOrderOptions.getOrDefault(row.salesItemRef(), List.of())) {
+                repository.update(
+                        "INSERT INTO sales_menu.sales_version_item_order_option(version_ref,sales_item_ref,"
+                                + "definition_ref,resolved_definition_name,selection_mode,required,min_selection_count,"
+                                + "max_selection_count,display_order) VALUES(?,?,?,?,?,?,?,?,?)",
+                        targetVersion,
+                        item,
+                        option.definitionRef(),
+                        option.name(),
+                        option.selectionMode(),
+                        option.required(),
+                        option.minSelectionCount(),
+                        option.maxSelectionCount(),
+                        option.displayOrder());
+                for (var value : option.values())
+                    repository.update(
+                            "INSERT INTO sales_menu.sales_version_item_order_option_value(version_ref,sales_item_ref,"
+                                    + "definition_ref,definition_value_ref,resolved_value_name,display_order,"
+                                    + "default_value,extra_price) VALUES(?,?,?,?,?,?,?,?)",
+                            targetVersion,
+                            item,
+                            option.definitionRef(),
+                            value.definitionValueRef(),
+                            value.name(),
+                            value.displayOrder(),
+                            value.defaultValue(),
+                            value.extraPrice());
+            }
             List<UUID> mediaRefs = sourceMedia.getOrDefault(row.salesItemRef(), List.of());
             for (int index = 0; index < mediaRefs.size(); index++)
                 repository.update(
@@ -1611,6 +1755,22 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                         + "display_order) SELECT ?,sales_item_ref,sku_ref,listed_price_cents,"
                         + "resolved_sku_code,resolved_sku_name,default_price_cents,display_order "
                         + "FROM sales_menu.sales_version_item_sku WHERE version_ref=?",
+                to,
+                from);
+        repository.update(
+                "INSERT INTO sales_menu.sales_version_item_order_option(version_ref,sales_item_ref,definition_ref,"
+                        + "resolved_definition_name,selection_mode,required,min_selection_count,max_selection_count,"
+                        + "display_order) SELECT ?,sales_item_ref,definition_ref,resolved_definition_name,selection_mode,"
+                        + "required,min_selection_count,max_selection_count,display_order "
+                        + "FROM sales_menu.sales_version_item_order_option WHERE version_ref=?",
+                to,
+                from);
+        repository.update(
+                "INSERT INTO sales_menu.sales_version_item_order_option_value(version_ref,sales_item_ref,"
+                        + "definition_ref,definition_value_ref,resolved_value_name,display_order,default_value,"
+                        + "extra_price) SELECT ?,sales_item_ref,definition_ref,definition_value_ref,resolved_value_name,"
+                        + "display_order,default_value,extra_price FROM sales_menu.sales_version_item_order_option_value "
+                        + "WHERE version_ref=?",
                 to,
                 from);
         repository.update(
@@ -1665,6 +1825,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts = catalogFacts(menu.scope(), catalogRefs, store);
         Map<UUID, List<SkuRow>> skuByItem = skuRowsByItem(rows);
+        Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> orderOptionsByItem =
+                selectedOrderOptionsByItem(rows);
         Map<UUID, List<UUID>> mediaByItem = mediaByItem(rows, false);
         Set<UUID> invalidAssetRefsFromOwner = new LinkedHashSet<>();
         if (assets != null) {
@@ -1709,8 +1871,13 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                     blockers.add(new SalesMenuReadback.PublicationBlocker(
                             SalesMenuPublicationBlockerKind.CATALOG_ITEM_INVALID,
                             row.salesItemRef(),
-                            "salesMenu.saleContent.invalid"));
+                        "salesMenu.saleContent.invalid"));
                 }
+                validatePublishedOrderOptionFacts(
+                        row,
+                        fact,
+                        orderOptionsByItem.getOrDefault(row.salesItemRef(), List.of()),
+                        blockers);
                 if (contentKind(fact.shapeKey()) != SalesMenuSaleContentKind.SKU_SELECTION
                         && row.listedPriceCents() == null) {
                     blockers.add(new SalesMenuReadback.PublicationBlocker(
@@ -1757,7 +1924,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                     SalesMenuPublicationBlockerKind.SCHEDULE_INVALID, null, "salesMenu.schedule.invalid"));
         }
         return new PublicationValidation(
-                currentDraftVersion, rows, facts, skuByItem, mediaByItem, List.copyOf(blockers));
+                currentDraftVersion, rows, facts, skuByItem, orderOptionsByItem, mediaByItem, List.copyOf(blockers));
     }
 
     private void validatePublishedSkuFacts(
@@ -1793,6 +1960,61 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         }
     }
 
+    private void validatePublishedOrderOptionFacts(
+            ItemRow row,
+            CatalogOwnerApi.SalesMenuItemFacts fact,
+            List<SalesMenuReadback.SalesMenuOrderOption> selected,
+            List<SalesMenuReadback.PublicationBlocker> blockers) {
+        if (contentKind(fact.shapeKey()) != SalesMenuSaleContentKind.DIRECT) {
+            if (!selected.isEmpty() || (fact.orderOptions() != null && !fact.orderOptions().isEmpty())) {
+                blockers.add(new SalesMenuReadback.PublicationBlocker(
+                        SalesMenuPublicationBlockerKind.ORDER_OPTION_SELECTION_INVALID,
+                        row.salesItemRef(),
+                        "salesMenu.orderOptionSelection.invalid"));
+            }
+            return;
+        }
+        List<CatalogOwnerApi.SalesMenuOrderOptionFact> catalogOptions =
+                fact.orderOptions() == null ? List.of() : fact.orderOptions();
+        Map<UUID, CatalogOwnerApi.SalesMenuOrderOptionFact> catalogByRef = new LinkedHashMap<>();
+        catalogOptions.forEach(option -> catalogByRef.put(option.definitionRef(), option));
+        Map<UUID, SalesMenuReadback.SalesMenuOrderOption> selectedByRef = new LinkedHashMap<>();
+        boolean duplicate = false;
+        for (var option : selected) duplicate |= selectedByRef.put(option.definitionRef(), option) != null;
+        if (duplicate || !catalogByRef.keySet().equals(selectedByRef.keySet())) {
+            blockers.add(new SalesMenuReadback.PublicationBlocker(
+                    SalesMenuPublicationBlockerKind.ORDER_OPTION_SELECTION_INVALID,
+                    row.salesItemRef(),
+                    "salesMenu.orderOptionSelection.invalid"));
+            return;
+        }
+        for (var catalogOption : catalogOptions) {
+            var snapshot = selectedByRef.get(catalogOption.definitionRef());
+            Set<UUID> selectedValueRefs = snapshot.values().stream()
+                    .map(SalesMenuReadback.SalesMenuOrderOptionValue::definitionValueRef)
+                    .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+            if (selectedValueRefs.size() != snapshot.values().size()) {
+                blockers.add(new SalesMenuReadback.PublicationBlocker(
+                        SalesMenuPublicationBlockerKind.ORDER_OPTION_SELECTION_INVALID,
+                        row.salesItemRef(),
+                        "salesMenu.orderOptionSelection.invalid"));
+                continue;
+            }
+            Set<UUID> currentValueRefs = catalogOption.values().stream()
+                    .map(CatalogOwnerApi.SalesMenuOrderOptionValueFact::definitionValueRef)
+                    .collect(java.util.stream.Collectors.toSet());
+            int minimum = catalogOption.minSelectionCount() == null
+                    ? (catalogOption.required() ? 1 : 0)
+                    : catalogOption.minSelectionCount();
+            if (!currentValueRefs.containsAll(selectedValueRefs) || selectedValueRefs.size() < minimum) {
+                blockers.add(new SalesMenuReadback.PublicationBlocker(
+                        SalesMenuPublicationBlockerKind.ORDER_OPTION_SELECTION_INVALID,
+                        row.salesItemRef(),
+                        "salesMenu.orderOptionSelection.invalid"));
+            }
+        }
+    }
+
     private SalesMenuOwnerApi.Problem publicationInvalid(List<SalesMenuReadback.PublicationBlocker> blockers) {
         SalesMenuPublicationBlockerKind kind = blockers.getFirst().kind();
         String code =
@@ -1802,6 +2024,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                     case CHANNEL_INELIGIBLE -> "SALES_MENU_CHANNEL_INELIGIBLE";
                     case CATALOG_ITEM_INVALID -> "SALES_MENU_ITEM_REFERENCE_INVALID";
                     case SKU_SELECTION_EMPTY, SKU_INVALID -> "SALES_MENU_SKU_REFERENCE_INVALID";
+                    case ORDER_OPTION_SELECTION_INVALID -> "SALES_MENU_ORDER_OPTION_SELECTION_INVALID";
                     case LISTED_PRICE_MISSING -> "SALES_MENU_PRICE_REQUIRED";
                     case ORDERING_CONSTRAINT_INVALID -> "SALES_MENU_CONSTRAINT_INVALID";
                     case DISPLAY_ASSET_PENDING_OR_INVALID -> "SALES_MENU_ASSET_INVALID";
@@ -1821,7 +2044,43 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 validation.draftVersion());
         insertPublicationItems(publishedVersion, validation.rows(), validation.facts(), collectionRef);
         insertPublicationSkus(publishedVersion, validation.rows(), validation.facts(), validation.skuByItem());
+        insertPublicationOrderOptions(publishedVersion, validation.orderOptionsByItem());
         insertPublicationMedia(publishedVersion, validation.rows(), validation.mediaByItem());
+    }
+
+    private void insertPublicationOrderOptions(
+            UUID publishedVersion,
+            Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> orderOptionsByItem) {
+        for (var entry : orderOptionsByItem.entrySet()) {
+            for (var option : entry.getValue()) {
+                repository.update(
+                        "INSERT INTO sales_menu.sales_version_item_order_option(version_ref,sales_item_ref,"
+                                + "definition_ref,resolved_definition_name,selection_mode,required,min_selection_count,"
+                                + "max_selection_count,display_order) VALUES(?,?,?,?,?,?,?,?,?)",
+                        publishedVersion,
+                        entry.getKey(),
+                        option.definitionRef(),
+                        option.name(),
+                        option.selectionMode(),
+                        option.required(),
+                        option.minSelectionCount(),
+                        option.maxSelectionCount(),
+                        option.displayOrder());
+                for (var value : option.values())
+                    repository.update(
+                            "INSERT INTO sales_menu.sales_version_item_order_option_value(version_ref,sales_item_ref,"
+                                    + "definition_ref,definition_value_ref,resolved_value_name,display_order,"
+                                    + "default_value,extra_price) VALUES(?,?,?,?,?,?,?,?)",
+                            publishedVersion,
+                            entry.getKey(),
+                            option.definitionRef(),
+                            value.definitionValueRef(),
+                            value.name(),
+                            value.displayOrder(),
+                            value.defaultValue(),
+                            value.extraPrice());
+            }
+        }
     }
 
     private void insertPublicationItems(
@@ -2179,15 +2438,23 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts = readDraftCatalogFacts(scope, rows);
         Map<UUID, List<UUID>> mediaByItem = mediaByItem(rows);
         Map<UUID, List<SkuRow>> skuByItem = skuRowsByItem(rows);
+        Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> selectedOrderOptions =
+                selectedOrderOptionsByItem(rows);
         return rows.stream()
                 .map(row -> {
                     CatalogOwnerApi.SalesMenuItemFacts fact = facts.get(row.catalogItemRef());
+                    List<SkuRow> selectedSkus = skuByItem.getOrDefault(row.salesItemRef(), List.of());
                     return draftItem(
                             row,
                             mediaByItem,
                             skuByItem,
+                            selectedOrderOptions,
+                            catalogOrderOptions(fact),
+                            skuCandidates(fact),
+                            staleSelectedSkuRefs(fact, selectedSkus),
                             catalogSalesUnit(fact),
-                            fact == null ? null : fact.defaultPriceCents());
+                            fact == null ? null : fact.defaultPriceCents(),
+                            fact == null ? null : fact.defaultImageAssetRef());
                 })
                 .toList();
     }
@@ -2205,16 +2472,29 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             ItemRow row,
             Map<UUID, List<UUID>> mediaByItem,
             Map<UUID, List<SkuRow>> skuByItem,
+            Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> selectedOrderOptionsByItem,
+            List<SalesMenuReadback.SalesMenuOrderOption> catalogOrderOptions,
+            List<SalesMenuReadback.SalesMenuSkuCandidate> skuCandidates,
+            List<UUID> staleSelectedSkuRefs,
             SalesMenuSalesUnit salesUnit,
-            Long defaultPriceCents) {
+            Long defaultPriceCents,
+            UUID catalogPrimaryImageAssetRef) {
         return new SalesMenuReadback.DraftItemView(
                 row.salesItemRef(),
                 row.catalogItemRef(),
                 row.resolvedItemCode(),
                 displayName(row),
                 publicShape(row.resolvedProductShape()),
+                catalogOrderOptions,
+                skuCandidates,
+                staleSelectedSkuRefs,
                 defaultPriceCents,
-                content(row, skuByItem.getOrDefault(row.salesItemRef(), List.of()), salesUnit),
+                catalogPrimaryImageAssetRef,
+                content(
+                        row,
+                        skuByItem.getOrDefault(row.salesItemRef(), List.of()),
+                        selectedOrderOptionsByItem.getOrDefault(row.salesItemRef(), List.of()),
+                        salesUnit),
                 ordering(row),
                 displayMedia(row, mediaByItem.getOrDefault(row.salesItemRef(), List.of())),
                 row.displayOrder(),
@@ -2227,10 +2507,22 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             ItemRow row,
             Map<UUID, List<UUID>> mediaByItem,
             Map<UUID, List<SkuRow>> skuByItem,
-            Map<UUID, ManualSaleStatusRow> manualStatusByItem,
-            Map<UUID, SalesMenuReadback.InventoryAvailabilityFact> inventoryByItem) {
-        var draft = draftItem(row, mediaByItem, skuByItem, frozenSalesUnit(row), null);
-        ManualSaleStatusRow status = manualStatusByItem.get(row.salesItemRef());
+            Map<ManualTargetKey, ManualSaleStatusRow> manualStatusByTarget,
+            Map<UUID, SalesMenuReadback.InventoryAvailabilityFact> inventoryByItem,
+            Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> selectedOrderOptionsByItem) {
+        var draft = draftItem(
+                row,
+                mediaByItem,
+                skuByItem,
+                selectedOrderOptionsByItem,
+                List.of(),
+                List.of(),
+                List.of(),
+                frozenSalesUnit(row),
+                null,
+                null);
+        ManualSaleStatusRow status = manualStatusByTarget.get(
+                new ManualTargetKey(row.salesItemRef(), SalesMenuManualSaleTargetKind.ITEM, row.salesItemRef()));
         var manual = status == null
                 ? new SalesMenuReadback.ManualSaleStatusFact(SalesMenuManualSaleState.NORMAL, null, null, null)
                 : new SalesMenuReadback.ManualSaleStatusFact(
@@ -2252,11 +2544,23 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                         row.salesItemRef(),
                         new SalesMenuReadback.InventoryAvailabilityFact("APPLICABLE", "UNKNOWN", "READ_UNAVAILABLE")),
                 manual,
+                manualSaleTargetStatuses(
+                        row,
+                        skuByItem.getOrDefault(row.salesItemRef(), List.of()),
+                        selectedOrderOptionsByItem.getOrDefault(row.salesItemRef(), List.of()),
+                        manualStatusByTarget),
                 draft.version());
     }
 
-    private SalesMenuSaleContent content(ItemRow row, List<SkuRow> skus, SalesMenuSalesUnit salesUnit) {
+    private SalesMenuSaleContent content(
+            ItemRow row,
+            List<SkuRow> skus,
+            List<SalesMenuReadback.SalesMenuOrderOption> selectedOrderOptions,
+            SalesMenuSalesUnit salesUnit) {
         SalesMenuSaleContentKind kind = contentKind(row.resolvedProductShape());
+        List<SalesMenuSelectedOrderOption> selected = selectedOrderOptions.stream()
+                .map(this::selectedOrderOption)
+                .toList();
         if (kind == SalesMenuSaleContentKind.SKU_SELECTION) {
             return new SalesMenuSaleContent(
                     kind,
@@ -2269,10 +2573,181 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                                     sku.defaultPriceCents(),
                                     sku.listedPriceCents()))
                             .toList(),
+                    selected,
                     null);
         }
         return new SalesMenuSaleContent(
-                kind, row.listedPriceCents(), List.of(), kind == SalesMenuSaleContentKind.WEIGHTED ? salesUnit : null);
+                kind,
+                row.listedPriceCents(),
+                List.of(),
+                selected,
+                kind == SalesMenuSaleContentKind.WEIGHTED ? salesUnit : null);
+    }
+
+    private List<SalesMenuReadback.SalesMenuOrderOption> catalogOrderOptions(
+            CatalogOwnerApi.SalesMenuItemFacts fact) {
+        if (fact == null || fact.orderOptions() == null) return List.of();
+        if (contentKind(fact.shapeKey()) != SalesMenuSaleContentKind.DIRECT && !fact.orderOptions().isEmpty()) {
+            throw problem("SALES_MENU_ORDER_OPTION_SHAPE_UNSUPPORTED", 422, "当前商品形态不支持销售选项选择");
+        }
+        return fact.orderOptions().stream()
+                .map(option -> new SalesMenuReadback.SalesMenuOrderOption(
+                        option.definitionRef(),
+                        option.name(),
+                        option.selectionMode(),
+                        option.displayOrder(),
+                        option.required(),
+                        option.minSelectionCount(),
+                        option.maxSelectionCount(),
+                        option.values().stream()
+                                .map(value -> new SalesMenuReadback.SalesMenuOrderOptionValue(
+                                        value.definitionValueRef(),
+                                        value.name(),
+                                        value.displayOrder(),
+                                        value.defaultValue(),
+                                        value.extraPrice()))
+                                .toList()))
+                .toList();
+    }
+
+    private SalesMenuSelectedOrderOption selectedOrderOption(SalesMenuReadback.SalesMenuOrderOption option) {
+        return new SalesMenuSelectedOrderOption(
+                option.definitionRef(),
+                option.name(),
+                option.selectionMode(),
+                option.displayOrder(),
+                option.required(),
+                option.minSelectionCount(),
+                option.maxSelectionCount(),
+                option.values().stream()
+                        .map(value -> new SalesMenuSelectedOrderOptionValue(
+                                value.definitionValueRef(),
+                                value.name(),
+                                value.displayOrder(),
+                                value.defaultValue(),
+                                value.extraPrice()))
+                        .toList());
+    }
+
+    private List<SalesMenuReadback.SalesMenuSkuCandidate> skuCandidates(
+            CatalogOwnerApi.SalesMenuItemFacts fact) {
+        if (fact == null || fact.skus() == null) return List.of();
+        return fact.skus().stream()
+                .filter(sku -> "ENABLED".equals(sku.status()) && sku.standardSalePrice() != null)
+                .map(sku -> new SalesMenuReadback.SalesMenuSkuCandidate(
+                        sku.productSkuRef(), sku.skuName(), sku.skuCode(), sku.standardSalePrice()))
+                .toList();
+    }
+
+    private List<UUID> staleSelectedSkuRefs(CatalogOwnerApi.SalesMenuItemFacts fact, List<SkuRow> selected) {
+        if (fact == null || selected.isEmpty()) return List.of();
+        Set<UUID> candidateRefs = fact.skus().stream()
+                .filter(sku -> "ENABLED".equals(sku.status()) && sku.standardSalePrice() != null)
+                .map(CatalogOwnerApi.SalesMenuSkuFact::productSkuRef)
+                .collect(java.util.stream.Collectors.toSet());
+        return selected.stream()
+                .map(SkuRow::skuRef)
+                .filter(ref -> !candidateRefs.contains(ref))
+                .distinct()
+                .toList();
+    }
+
+    private Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> selectedOrderOptionsByItem(
+            List<ItemRow> rows) {
+        if (rows.isEmpty()) return Map.of();
+        List<UUID> itemRefs = rows.stream().map(ItemRow::salesItemRef).distinct().toList();
+        String placeholders = String.join(",", Collections.nCopies(itemRefs.size(), "?"));
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(rows.getFirst().versionRef());
+        arguments.addAll(itemRefs);
+        List<OrderOptionGroupRow> groups = repository.query(
+                "SELECT sales_item_ref,definition_ref,resolved_definition_name,selection_mode,required,"
+                        + "min_selection_count,max_selection_count,display_order "
+                        + "FROM sales_menu.sales_version_item_order_option WHERE version_ref=? "
+                        + "AND sales_item_ref IN (" + placeholders + ") "
+                        + "ORDER BY sales_item_ref,display_order,definition_ref",
+                SalesMenuOwnerService::orderOptionGroupRow,
+                arguments.toArray());
+        if (groups.isEmpty()) return Map.of();
+        List<Object> valueArguments = new ArrayList<>();
+        valueArguments.add(rows.getFirst().versionRef());
+        valueArguments.addAll(itemRefs);
+        List<OrderOptionValueRow> values = repository.query(
+                "SELECT sales_item_ref,definition_ref,definition_value_ref,resolved_value_name,display_order,"
+                        + "default_value,extra_price "
+                        + "FROM sales_menu.sales_version_item_order_option_value WHERE version_ref=? "
+                        + "AND sales_item_ref IN (" + placeholders + ") "
+                        + "ORDER BY sales_item_ref,definition_ref,display_order,definition_value_ref",
+                SalesMenuOwnerService::orderOptionValueRow,
+                valueArguments.toArray());
+        Map<OptionKey, List<OrderOptionValueRow>> valuesByGroup = new LinkedHashMap<>();
+        values.forEach(value -> valuesByGroup
+                .computeIfAbsent(new OptionKey(value.salesItemRef(), value.definitionRef()), ignored -> new ArrayList<>())
+                .add(value));
+        Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> result = new LinkedHashMap<>();
+        for (OrderOptionGroupRow group : groups) {
+            List<SalesMenuReadback.SalesMenuOrderOptionValue> optionValues = valuesByGroup
+                    .getOrDefault(new OptionKey(group.salesItemRef(), group.definitionRef()), List.of())
+                    .stream()
+                    .map(value -> new SalesMenuReadback.SalesMenuOrderOptionValue(
+                            value.definitionValueRef(),
+                            value.name(),
+                            Math.toIntExact(value.displayOrder()),
+                            value.defaultValue(),
+                            value.extraPrice()))
+                    .toList();
+            result.computeIfAbsent(group.salesItemRef(), ignored -> new ArrayList<>())
+                    .add(new SalesMenuReadback.SalesMenuOrderOption(
+                            group.definitionRef(),
+                            group.name(),
+                            group.selectionMode(),
+                            Math.toIntExact(group.displayOrder()),
+                            group.required(),
+                            group.minSelectionCount(),
+                            group.maxSelectionCount(),
+                            optionValues));
+        }
+        result.replaceAll((ignored, options) -> List.copyOf(options));
+        return Map.copyOf(result);
+    }
+
+    private List<SalesMenuReadback.ManualSaleTargetStatus> manualSaleTargetStatuses(
+            ItemRow row,
+            List<SkuRow> skus,
+            List<SalesMenuReadback.SalesMenuOrderOption> options,
+            Map<ManualTargetKey, ManualSaleStatusRow> statuses) {
+        List<SalesMenuReadback.ManualSaleTargetStatus> result = new ArrayList<>();
+        for (SkuRow sku : skus) {
+            result.add(manualSaleTargetStatus(
+                    new ManualTargetKey(row.salesItemRef(), SalesMenuManualSaleTargetKind.SKU, sku.skuRef()),
+                    sku.resolvedSkuName(),
+                    statuses));
+        }
+        for (SalesMenuReadback.SalesMenuOrderOption option : options) {
+            for (SalesMenuReadback.SalesMenuOrderOptionValue value : option.values()) {
+                result.add(manualSaleTargetStatus(
+                        new ManualTargetKey(
+                                row.salesItemRef(),
+                                SalesMenuManualSaleTargetKind.ORDER_OPTION_VALUE,
+                                value.definitionValueRef()),
+                        value.name(),
+                        statuses));
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private SalesMenuReadback.ManualSaleTargetStatus manualSaleTargetStatus(
+            ManualTargetKey key, String displayName, Map<ManualTargetKey, ManualSaleStatusRow> statuses) {
+        ManualSaleStatusRow status = statuses.get(key);
+        return new SalesMenuReadback.ManualSaleTargetStatus(
+                key.targetKind(),
+                key.targetRef(),
+                displayName,
+                status == null ? SalesMenuManualSaleState.NORMAL : SalesMenuManualSaleState.valueOf(status.state()),
+                status == null ? null : status.reason(),
+                status == null ? null : status.changedAtEpochMillis(),
+                status == null ? null : status.actorDisplaySnapshot());
     }
 
     private SalesMenuSalesUnit catalogSalesUnit(CatalogOwnerApi.SalesMenuItemFacts fact) {
@@ -2483,7 +2958,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         return new SalesMenuReadback.InventoryAvailabilityFact("APPLICABLE", "AUTO_UNAVAILABLE", reason.name());
     }
 
-    private Map<UUID, ManualSaleStatusRow> manualStatusByItem(UUID channel, List<ItemRow> rows) {
+    private Map<ManualTargetKey, ManualSaleStatusRow> manualStatusByTarget(UUID channel, List<ItemRow> rows) {
         if (rows.isEmpty()) return Map.of();
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
@@ -2491,15 +2966,17 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         List<Object> arguments = new ArrayList<>();
         arguments.add(channel);
         arguments.addAll(itemRefs);
-        Map<UUID, ManualSaleStatusRow> result = new HashMap<>();
+        Map<ManualTargetKey, ManualSaleStatusRow> result = new HashMap<>();
         repository
                 .query(
-                        "SELECT sales_item_ref,state,reason,changed_at_epoch_millis,actor_display_snapshot "
+                        "SELECT sales_item_ref,target_kind,target_ref,state,reason,changed_at_epoch_millis,"
+                                + "actor_display_snapshot "
                                 + "FROM sales_menu.sales_manual_status_current WHERE channel_ref=? "
                                 + "AND sales_item_ref IN (" + placeholders + ")",
                         SalesMenuOwnerService::manualSaleStatusRow,
                         arguments.toArray())
-                .forEach(row -> result.put(row.salesItemRef(), row));
+                .forEach(row -> result.put(
+                        new ManualTargetKey(row.salesItemRef(), row.targetKind(), row.targetRef()), row));
         return Map.copyOf(result);
     }
 
@@ -2577,13 +3054,55 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 item);
         if (media.mode() == SalesMenuDisplayMediaMode.CUSTOM)
             for (int i = 0; i < media.assetRefs().size(); i++)
-                repository.update(
-                        "INSERT INTO sales_menu.sales_version_item_media(version_ref,sales_item_ref,"
+                    repository.update(
+                            "INSERT INTO sales_menu.sales_version_item_media(version_ref,sales_item_ref,"
                                 + "asset_ref,display_order) VALUES(?,?,?,?)",
                         version,
                         item,
                         media.assetRefs().get(i),
                         i);
+    }
+
+    private void replaceOrderOptions(
+            UUID version, UUID item, List<SalesMenuReadback.SalesMenuOrderOption> options) {
+        repository.update(
+                "DELETE FROM sales_menu.sales_version_item_order_option_value "
+                        + "WHERE version_ref=? AND sales_item_ref=?",
+                version,
+                item);
+        repository.update(
+                "DELETE FROM sales_menu.sales_version_item_order_option WHERE version_ref=? AND sales_item_ref=?",
+                version,
+                item);
+        for (SalesMenuReadback.SalesMenuOrderOption option : options) {
+            repository.update(
+                    "INSERT INTO sales_menu.sales_version_item_order_option(version_ref,sales_item_ref,"
+                            + "definition_ref,resolved_definition_name,selection_mode,required,min_selection_count,"
+                            + "max_selection_count,display_order) VALUES(?,?,?,?,?,?,?,?,?)",
+                    version,
+                    item,
+                    option.definitionRef(),
+                    option.name(),
+                    option.selectionMode(),
+                    option.required(),
+                    option.minSelectionCount(),
+                    option.maxSelectionCount(),
+                    option.displayOrder());
+            for (SalesMenuReadback.SalesMenuOrderOptionValue value : option.values()) {
+                repository.update(
+                        "INSERT INTO sales_menu.sales_version_item_order_option_value(version_ref,sales_item_ref,"
+                                + "definition_ref,definition_value_ref,resolved_value_name,display_order,"
+                                + "default_value,extra_price) VALUES(?,?,?,?,?,?,?,?)",
+                        version,
+                        item,
+                        option.definitionRef(),
+                        value.definitionValueRef(),
+                        value.name(),
+                        value.displayOrder(),
+                        value.defaultValue(),
+                        value.extraPrice());
+            }
+        }
     }
 
     private Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> catalogFacts(SalesMenuScope scope, Set<UUID> itemRefs) {
@@ -2594,7 +3113,9 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
     private Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> catalogFacts(
             SalesMenuScope scope, Set<UUID> itemRefs, OrganizationOwnerApi.SalesMenuStoreJudgment store) {
         if (catalog == null || organization == null || itemRefs.isEmpty()) return Map.of();
-        return catalog.readSalesMenuItemFacts(store.dataNodeRef(), store.brandRef(), itemRefs);
+        Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts =
+                catalog.readSalesMenuItemFacts(store.dataNodeRef(), store.brandRef(), itemRefs);
+        return facts == null ? Map.of() : facts;
     }
 
     private void requireDraftCatalogItem(CatalogOwnerApi.SalesMenuItemFacts fact) {
@@ -2619,7 +3140,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 || "WEIGHTED".equalsIgnoreCase(shape);
     }
 
-    private void requireDraftItemUpdate(
+    private List<SalesMenuReadback.SalesMenuOrderOption> requireDraftItemUpdate(
             CatalogOwnerApi.SalesMenuItemFacts fact, SalesMenuOwnerApi.ItemUpdateCommand command) {
         requireDraftCatalogItem(fact);
         SalesMenuSaleContentInput content = command.saleContent();
@@ -2628,9 +3149,14 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         if (content.kind() != expectedKind) {
             throw problem("SALES_MENU_DRAFT_INVALID", 422, "销售内容形态与商品目录不匹配");
         }
+        List<SalesMenuReadback.SalesMenuOrderOption> authoritativeOptions =
+                authoritativeOrderOptionRows(fact, content);
         switch (contentKind(fact.shapeKey())) {
             case SKU_SELECTION -> {
                 if (content.listedPriceCents() != null || content.skuPrices().isEmpty()) {
+                    if (content.skuPrices().isEmpty()) {
+                        throw problem("SALES_MENU_SKU_SELECTION_EMPTY", 422, "按规格商品至少选择一个规格");
+                    }
                     throw problem("SALES_MENU_DRAFT_INVALID", 422, "按规格商品必须逐规格维护挂牌价");
                 }
                 Set<UUID> selected = new LinkedHashSet<>();
@@ -2643,7 +3169,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                             .findFirst()
                             .orElseThrow(() ->
                                     problem("SALES_MENU_SKU_REFERENCE_INVALID", 422, SKU_REFERENCE_INVALID_MESSAGE));
-                    if (sku.standardSalePrice() == null || "VOIDED".equals(sku.status())) {
+                    if (sku.standardSalePrice() == null || !"ENABLED".equals(sku.status())) {
                         throw problem("SALES_MENU_SKU_REFERENCE_INVALID", 422, "商品规格不可销售");
                     }
                 }
@@ -2664,6 +3190,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 }
             }
         }
+        return authoritativeOptions;
     }
 
     private void requirePublicPrice(SalesMenuSaleContentInput content) {
@@ -2680,7 +3207,9 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         for (int index = 0; index < content.skuPrices().size(); index++) {
             var requested = content.skuPrices().get(index);
             var catalogSku = byRef.get(requested.skuRef());
-            if (catalogSku == null || catalogSku.standardSalePrice() == null) {
+            if (catalogSku == null
+                    || catalogSku.standardSalePrice() == null
+                    || !"ENABLED".equals(catalogSku.status())) {
                 throw problem("SALES_MENU_SKU_REFERENCE_INVALID", 422, "商品规格引用无效");
             }
             result.add(new SkuRow(
@@ -2691,6 +3220,80 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                     catalogSku.skuName(),
                     catalogSku.standardSalePrice(),
                     index));
+        }
+        return List.copyOf(result);
+    }
+
+    private List<SalesMenuReadback.SalesMenuOrderOption> authoritativeOrderOptionRows(
+            CatalogOwnerApi.SalesMenuItemFacts fact, SalesMenuSaleContentInput content) {
+        List<com.catering.v2s.salesmenu.domain.SalesMenuOrderOptionSelectionInput> submitted =
+                content.orderOptionSelections();
+        SalesMenuSaleContentKind kind = contentKind(fact.shapeKey());
+        if (kind != SalesMenuSaleContentKind.DIRECT) {
+            if (!submitted.isEmpty() || (fact.orderOptions() != null && !fact.orderOptions().isEmpty())) {
+                throw problem(
+                        "SALES_MENU_ORDER_OPTION_SHAPE_UNSUPPORTED",
+                        422,
+                        "当前商品形态不支持销售选项选择");
+            }
+            return List.of();
+        }
+        List<CatalogOwnerApi.SalesMenuOrderOptionFact> catalogOptions =
+                fact.orderOptions() == null ? List.of() : fact.orderOptions();
+        Map<UUID, CatalogOwnerApi.SalesMenuOrderOptionFact> catalogByRef = new LinkedHashMap<>();
+        for (var option : catalogOptions) {
+            if (catalogByRef.put(option.definitionRef(), option) != null) {
+                throw problem("SALES_MENU_ORDER_OPTION_REFERENCE_INVALID", 422, "商品选项定义重复");
+            }
+        }
+        Map<UUID, com.catering.v2s.salesmenu.domain.SalesMenuOrderOptionSelectionInput> submittedByRef =
+                new LinkedHashMap<>();
+        for (var selection : submitted) {
+            if (submittedByRef.put(selection.definitionRef(), selection) != null) {
+                throw problem("SALES_MENU_ORDER_OPTION_SELECTION_INVALID", 422, "商品选项定义重复");
+            }
+        }
+        if (!catalogByRef.keySet().equals(submittedByRef.keySet())) {
+            throw problem("SALES_MENU_ORDER_OPTION_SELECTION_INVALID", 422, "商品选项定义集合已变化");
+        }
+        List<SalesMenuReadback.SalesMenuOrderOption> result = new ArrayList<>();
+        for (var option : catalogOptions) {
+            var selection = submittedByRef.get(option.definitionRef());
+            Set<UUID> selectedValueRefs = new LinkedHashSet<>();
+            for (UUID valueRef : selection.selectedValueRefs()) {
+                if (!selectedValueRefs.add(valueRef)) {
+                    throw problem("SALES_MENU_ORDER_OPTION_SELECTION_INVALID", 422, "商品选项值重复");
+                }
+            }
+            Map<UUID, CatalogOwnerApi.SalesMenuOrderOptionValueFact> valuesByRef = new LinkedHashMap<>();
+            for (var value : option.values()) valuesByRef.put(value.definitionValueRef(), value);
+            if (!valuesByRef.keySet().containsAll(selectedValueRefs)) {
+                throw problem("SALES_MENU_ORDER_OPTION_REFERENCE_INVALID", 422, "商品选项值引用无效");
+            }
+            int minimum = option.minSelectionCount() == null
+                    ? (option.required() ? 1 : 0)
+                    : option.minSelectionCount();
+            if (selectedValueRefs.size() < minimum) {
+                throw problem("SALES_MENU_ORDER_OPTION_SELECTION_INVALID", 422, "必选商品选项至少选择一个值");
+            }
+            List<SalesMenuReadback.SalesMenuOrderOptionValue> resolvedValues = option.values().stream()
+                    .filter(value -> selectedValueRefs.contains(value.definitionValueRef()))
+                    .map(value -> new SalesMenuReadback.SalesMenuOrderOptionValue(
+                            value.definitionValueRef(),
+                            value.name(),
+                            value.displayOrder(),
+                            value.defaultValue(),
+                            value.extraPrice()))
+                    .toList();
+            result.add(new SalesMenuReadback.SalesMenuOrderOption(
+                    option.definitionRef(),
+                    option.name(),
+                    option.selectionMode(),
+                    option.displayOrder(),
+                    option.required(),
+                    option.minSelectionCount(),
+                    option.maxSelectionCount(),
+                    resolvedValues));
         }
         return List.copyOf(result);
     }
@@ -2964,11 +3567,22 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
 
     private void recordSuccess(
             String operation, SalesMenuOwnerApi.CommandContext context, UUID channel, UUID menu, UUID target) {
+        recordSuccess(operation, context, channel, menu, target, null, null);
+    }
+
+    private void recordSuccess(
+            String operation,
+            SalesMenuOwnerApi.CommandContext context,
+            UUID channel,
+            UUID menu,
+            UUID target,
+            String targetKind,
+            String targetDisplaySnapshot) {
         repository.update(
                 "INSERT INTO sales_menu.sales_operation_record(record_ref,workspace_uuid,group_workspace_key,"
-                        + "store_ref,channel_ref,collection_ref,operation_kind,target_ref,result,actor_type,actor_id,"
-                        + "actor_display_snapshot,occurred_at_epoch_millis,idempotency_key) "
-                        + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                        + "store_ref,channel_ref,collection_ref,operation_kind,target_ref,target_kind,"
+                        + "target_display_snapshot,result,actor_type,actor_id,actor_display_snapshot,"
+                        + "occurred_at_epoch_millis,idempotency_key) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 UUID.randomUUID(),
                 context.scope().workspaceUuid(),
                 context.scope().groupWorkspaceKey(),
@@ -2977,6 +3591,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 menu,
                 operation,
                 target,
+                targetKind,
+                targetDisplaySnapshot,
                 SalesMenuOperationResult.SUCCESS.name(),
                 context.actor().actorType(),
                 context.actor().actorId(),
@@ -3093,6 +3709,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 result.getString("operation_kind"),
                 result.getObject("collection_ref", UUID.class),
                 result.getObject("target_ref", UUID.class),
+                result.getString("target_kind"),
+                result.getString("target_display_snapshot"),
                 result.getString("result"),
                 result.getString("failure_code"),
                 result.getString("actor_display_snapshot"));
@@ -3183,10 +3801,35 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
     private static ManualSaleStatusRow manualSaleStatusRow(ResultSet result, int ignored) throws SQLException {
         return new ManualSaleStatusRow(
                 result.getObject("sales_item_ref", UUID.class),
+                SalesMenuManualSaleTargetKind.valueOf(result.getString("target_kind")),
+                result.getObject("target_ref", UUID.class),
                 result.getString("state"),
                 result.getString("reason"),
                 result.getObject("changed_at_epoch_millis", Long.class),
                 result.getString("actor_display_snapshot"));
+    }
+
+    private static OrderOptionGroupRow orderOptionGroupRow(ResultSet result, int ignored) throws SQLException {
+        return new OrderOptionGroupRow(
+                result.getObject("sales_item_ref", UUID.class),
+                result.getObject("definition_ref", UUID.class),
+                result.getString("resolved_definition_name"),
+                result.getString("selection_mode"),
+                result.getBoolean("required"),
+                result.getObject("min_selection_count", Integer.class),
+                result.getObject("max_selection_count", Integer.class),
+                result.getLong("display_order"));
+    }
+
+    private static OrderOptionValueRow orderOptionValueRow(ResultSet result, int ignored) throws SQLException {
+        return new OrderOptionValueRow(
+                result.getObject("sales_item_ref", UUID.class),
+                result.getObject("definition_ref", UUID.class),
+                result.getObject("definition_value_ref", UUID.class),
+                result.getString("resolved_value_name"),
+                result.getLong("display_order"),
+                result.getBoolean("default_value"),
+                result.getObject("extra_price", Long.class));
     }
 
     private static UuidValueRow uuidValueRow(ResultSet result, int ignored) throws SQLException {
@@ -3220,6 +3863,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             List<ItemRow> rows,
             Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts,
             Map<UUID, List<SkuRow>> skuByItem,
+            Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> orderOptionsByItem,
             Map<UUID, List<UUID>> mediaByItem,
             List<SalesMenuReadback.PublicationBlocker> blockers) {}
 
@@ -3238,11 +3882,15 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             SalesMenuAggregate menu,
             UUID draftVersion,
             ItemRow current,
-            Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts) {}
+            Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts,
+            List<SalesMenuReadback.SalesMenuOrderOption> orderOptions) {}
 
     private record PublishPreflight(SalesMenuAggregate menu, PublicationValidation validation) {}
 
-    private record ManualPreflight(SalesMenuAggregate menu) {}
+    private record ManualLock(SalesMenuAggregate menu, ItemRow item) {}
+
+    private record ManualPreflight(
+            SalesMenuAggregate menu, SalesMenuManualSaleTarget target, String targetDisplayName) {}
 
     private record ActivationRow(UUID channelRef, String status, long version) {}
 
@@ -3254,6 +3902,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             String operationKind,
             UUID collectionRef,
             UUID targetRef,
+            String targetKind,
+            String targetDisplaySnapshot,
             String result,
             String failureCode,
             String actorDisplaySnapshot) {}
@@ -3309,7 +3959,37 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             UUID sectionRef, String name, long displayOrder, long itemCount, boolean canMoveUp, boolean canMoveDown) {}
 
     private record ManualSaleStatusRow(
-            UUID salesItemRef, String state, String reason, Long changedAtEpochMillis, String actorDisplaySnapshot) {}
+            UUID salesItemRef,
+            SalesMenuManualSaleTargetKind targetKind,
+            UUID targetRef,
+            String state,
+            String reason,
+            Long changedAtEpochMillis,
+            String actorDisplaySnapshot) {}
+
+    private record ManualTargetKey(
+            UUID salesItemRef, SalesMenuManualSaleTargetKind targetKind, UUID targetRef) {}
+
+    private record OptionKey(UUID salesItemRef, UUID definitionRef) {}
+
+    private record OrderOptionGroupRow(
+            UUID salesItemRef,
+            UUID definitionRef,
+            String name,
+            String selectionMode,
+            boolean required,
+            Integer minSelectionCount,
+            Integer maxSelectionCount,
+            long displayOrder) {}
+
+    private record OrderOptionValueRow(
+            UUID salesItemRef,
+            UUID definitionRef,
+            UUID definitionValueRef,
+            String name,
+            long displayOrder,
+            boolean defaultValue,
+            Long extraPrice) {}
 
     private record UuidValueRow(UUID value) {}
 }

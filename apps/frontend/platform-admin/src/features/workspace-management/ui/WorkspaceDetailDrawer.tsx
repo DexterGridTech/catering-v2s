@@ -1,6 +1,14 @@
 import {Alert, Button, Descriptions, Drawer, Image, Space, Tag} from 'antd';
-import {adminDrawerSurfaceProps, NameCodeText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
+  adminDrawerSurfaceProps,
+  NameCodeText,
+  testId,
+  useOverlayLock,
+} from '@catering-v2s/admin-ui-foundation';
 import type {GroupWorkspaceDetail} from '../../../app/api/generated/platform-edge';
+import {platformDetailDrawerTestIds} from '../../../app/automation/platformDetailDrawerTestIds';
 
 export function WorkspaceDetailDrawer({
   open,
@@ -26,6 +34,43 @@ export function WorkspaceDetailDrawer({
   onAudit: () => void;
 }) {
   useOverlayLock(open);
+  const actionItems = workspace
+    ? [
+        ...(!workspace.commercialGroup?.initialized
+          ? [
+              {
+                key: 'initialize',
+                label: (
+                  <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.workspace.initialize}>
+                    初始化商业集团
+                  </AdminDetailActionLabel>
+                ),
+                onClick: onInitialize,
+              },
+            ]
+          : []),
+        {
+          key: 'audit',
+          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.workspace.audit}>操作历史</AdminDetailActionLabel>,
+          onClick: onAudit,
+        },
+        {
+          key: 'edit',
+          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.workspace.edit}>编辑</AdminDetailActionLabel>,
+          onClick: onEdit,
+        },
+        {
+          key: 'status',
+          danger: workspace.status === 'ENABLED',
+          label: (
+            <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.workspace.status}>
+              {workspace.status === 'ENABLED' ? '停用' : '启用'}
+            </AdminDetailActionLabel>
+          ),
+          onClick: onStatus,
+        },
+      ]
+    : [];
   return (
     <Drawer
       title="集团空间详情"
@@ -38,24 +83,12 @@ export function WorkspaceDetailDrawer({
       {...adminDrawerSurfaceProps}
       {...testId('platform-workspace-detail-drawer')}
       extra={
-        workspace && (
-          <Space>
-            {!workspace.commercialGroup?.initialized && (
-              <Button onClick={onInitialize} {...testId('platform-workspace-initialize')}>
-                初始化商业集团
-              </Button>
-            )}
-            <Button onClick={onAudit} {...testId('platform-workspace-audit-history')}>
-              操作历史
-            </Button>
-            <Button onClick={onEdit} {...testId('platform-workspace-edit')}>
-              编辑
-            </Button>
-            <Button danger={workspace.status === 'ENABLED'} onClick={onStatus} {...testId('platform-workspace-status')}>
-              {workspace.status === 'ENABLED' ? '停用' : '启用'}
-            </Button>
-          </Space>
-        )
+        actionItems.length > 0 ? (
+          <AdminDetailActionMenu
+            items={actionItems}
+            triggerTestId={platformDetailDrawerTestIds.workspace.actionMenu}
+          />
+        ) : undefined
       }
     >
       {problem && !workspace && (

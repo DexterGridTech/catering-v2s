@@ -3,7 +3,7 @@ import {
   applyKeyboardKey,
   normalizeSelection,
   type EditState,
-} from '../src/model/editText'
+} from '../src/foundations/editText'
 
 const state = (value: string, start: number, end = start, overrides: Partial<EditState> = {}): EditState => ({
   value,

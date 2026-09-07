@@ -35,7 +35,7 @@ import {
   memberRegistrationAbandonedCommand,
   memberRegistrationRetryRequestedCommand,
   memberSubmissionWithdrawnCommand,
-} from '../../commands'
+} from '../commands/commands'
 import {moduleName} from '../../moduleName'
 
 const primary = 'PRIMARY' as const
@@ -45,16 +45,16 @@ const main = 'main' as const
 const hasSecondarySurface = async (context: ActorExecutionContext): Promise<boolean> =>
   resolveSecondarySurfaceAvailable(await readDisplayInfo(context.platformPorts.device))
 
-const show = (
-  context: ActorExecutionContext,
-  displayMode: typeof primary | typeof secondary,
-  partKey: string,
-  props?: Readonly<Record<string, string>>,
-) => context.dispatchCommand(showScreenCommand, {
-  displayMode,
+const show = (input: Readonly<{
+  context: ActorExecutionContext
+  displayMode: typeof primary | typeof secondary
+  partKey: string
+  props?: Readonly<Record<string, string>>
+}>) => input.context.dispatchCommand(showScreenCommand, {
+  displayMode: input.displayMode,
   containerKey: main,
-  partKey,
-  ...(props === undefined ? {} : {props}),
+  partKey: input.partKey,
+  ...(input.props === undefined ? {} : {props: input.props}),
 })
 
 const clearPrimaryLayers = (context: ActorExecutionContext) =>
@@ -69,25 +69,25 @@ const returnToList = async (
   context: ActorExecutionContext,
   secondarySurface: boolean,
 ): Promise<void> => {
-  await show(context, primary, 'sample.desk.member-list')
-  if (secondarySurface) await show(context, secondary, 'sample.desk.customer-welcome')
+  await show({context, displayMode: primary, partKey: 'sample.desk.member-list'})
+  if (secondarySurface) await show({context, displayMode: secondary, partKey: 'sample.desk.customer-welcome'})
 }
 
 const returnToForm = async (
   context: ActorExecutionContext,
 ): Promise<void> => {
-  await show(context, primary, 'sample.desk.member-form')
+  await show({context, displayMode: primary, partKey: 'sample.desk.member-form'})
 }
 
 export const createDeskNavigationActor = (): ActorDefinition => defineActor(moduleName, 'desk-navigation', [
   onCommand(staffLoginSucceededCommand, async context => {
-    await show(context, primary, 'sample.desk.member-list')
-    if (await hasSecondarySurface(context)) await show(context, secondary, 'sample.desk.customer-welcome')
+    await show({context, displayMode: primary, partKey: 'sample.desk.member-list'})
+    if (await hasSecondarySurface(context)) await show({context, displayMode: secondary, partKey: 'sample.desk.customer-welcome'})
     return null
   }),
   onCommand(staffSessionRestoredAuthenticatedCommand, async context => {
-    await show(context, primary, 'sample.desk.member-list')
-    if (await hasSecondarySurface(context)) await show(context, secondary, 'sample.desk.customer-welcome')
+    await show({context, displayMode: primary, partKey: 'sample.desk.member-list'})
+    if (await hasSecondarySurface(context)) await show({context, displayMode: secondary, partKey: 'sample.desk.customer-welcome'})
     return null
   }),
   onCommand(staffLogoutSucceededCommand, async context => {
@@ -95,19 +95,19 @@ export const createDeskNavigationActor = (): ActorDefinition => defineActor(modu
     const secondarySurface = await hasSecondarySurface(context)
     if (secondarySurface) {
       await context.dispatchCommand(clearLayersCommand, {displayMode: secondary})
-      await show(context, secondary, 'sample.desk.customer-welcome')
+      await show({context, displayMode: secondary, partKey: 'sample.desk.customer-welcome'})
     }
     return null
   }),
   onCommand(staffSessionRestoredAnonymousCommand, async context => {
-    if (await hasSecondarySurface(context)) await show(context, secondary, 'sample.desk.customer-welcome')
+    if (await hasSecondarySurface(context)) await show({context, displayMode: secondary, partKey: 'sample.desk.customer-welcome'})
     return null
   }),
 ])
 
 export const createDeskFormActor = (): ActorDefinition => defineActor(moduleName, 'desk-form', [
   onCommand(memberFormOpenedCommand, async context => {
-    await show(context, primary, 'sample.desk.member-form')
+    await show({context, displayMode: primary, partKey: 'sample.desk.member-form'})
     return null
   }),
 ])
@@ -116,16 +116,16 @@ export const createDeskPendingActor = (): ActorDefinition => defineActor(moduleN
   onCommand(registryMemberPendingCommand, async context => {
     const secondarySurface = await hasSecondarySurface(context)
     if (secondarySurface) {
-      await show(context, primary, 'sample.desk.member-list')
+      await show({context, displayMode: primary, partKey: 'sample.desk.member-list'})
       await context.dispatchCommand(openLayerCommand, {
         displayMode: primary,
         layerId: 'sample.desk.waiting-confirm',
         partKey: 'sample.desk.waiting-confirm',
       })
-      await show(context, secondary, 'sample.desk.customer-member', {mode: 'confirm'})
+      await show({context, displayMode: secondary, partKey: 'sample.desk.customer-member', props: {mode: 'confirm'}})
       return null
     }
-    await show(context, primary, 'sample.desk.customer-member', {mode: 'handheld-confirm'})
+    await show({context, displayMode: primary, partKey: 'sample.desk.customer-member', props: {mode: 'handheld-confirm'}})
     return null
   }),
   onCommand(memberSubmissionWithdrawnCommand, async context => {
@@ -154,9 +154,9 @@ export const createDeskRejectedActor = (): ActorDefinition => defineActor(module
       props: {reasonCode: context.command.payload.reasonCode},
     })
     if (await hasSecondarySurface(context)) {
-      await show(context, secondary, 'sample.desk.customer-welcome')
+        await show({context, displayMode: secondary, partKey: 'sample.desk.customer-welcome'})
     } else {
-      await show(context, primary, 'sample.desk.member-form')
+      await show({context, displayMode: primary, partKey: 'sample.desk.member-form'})
     }
     return null
   }),
@@ -209,7 +209,7 @@ export const createDeskNoticeActor = (): ActorDefinition => defineActor(moduleNa
     if (secondarySurface) {
       await closePrimaryLayer(context, 'sample.desk.withdraw-confirm')
       await closePrimaryLayer(context, 'sample.desk.waiting-confirm')
-      await show(context, secondary, 'sample.desk.customer-welcome')
+      await show({context, displayMode: secondary, partKey: 'sample.desk.customer-welcome'})
     }
     await returnToForm(context)
     return null

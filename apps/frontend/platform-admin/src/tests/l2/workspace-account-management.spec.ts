@@ -1,5 +1,6 @@
 import {expect, test} from '@playwright/test';
-import {chooseAntOption, requiredL2Env, selectWorkspace, signInPlatform, signOutPlatform} from './platformL2';
+import {platformDetailDrawerTestIds} from '../../app/automation/platformDetailDrawerTestIds';
+import {chooseAntOption, clickPlatformDetailAction, requiredL2Env, selectWorkspace, signInPlatform, signOutPlatform} from './platformL2';
 
 test(
   'platform administrator delegates account filters, shows loading detail, ' +
@@ -145,14 +146,18 @@ test(
     await expect(
       page.getByTestId('workspace-account-detail-drawer').getByText('账号详情', {exact: true}),
     ).toBeVisible();
-    await expect(page.getByRole('button', {name: '重置登录凭据'})).toBeVisible();
+    const detailDrawer = page.getByTestId('workspace-account-detail-drawer');
     await expect(
       page.getByRole('dialog', {name: '账号详情'}).getByRole('heading', {name: '任职', exact: true}),
     ).toBeVisible();
     await expect(
       page.getByRole('dialog', {name: '账号详情'}).getByRole('heading', {name: '登录历史', exact: true}),
     ).toBeVisible();
-    await page.getByTestId('workspace-account-reset-credential').click();
+    await clickPlatformDetailAction(
+      page,
+      platformDetailDrawerTestIds.account.actionMenu,
+      platformDetailDrawerTestIds.account.credential,
+    );
     await expect(page.getByRole('dialog', {name: /确认将/})).toBeVisible();
     const requestPromise = page.waitForRequest(
       request =>

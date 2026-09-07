@@ -1,38 +1,36 @@
-import type {
-  LoggerPort,
-  PortResult,
-  StateStoragePort,
-} from '@catering-v2s/kernel-base-platform-ports'
+import type {LoggerPort} from '@catering-v2s/kernel-base-platform-ports'
 import type {
   PersistenceFailure,
   PersistenceHealth,
   PersistenceHealthListener,
   PersistenceOperationResult,
-  PersistenceFlushMode,
   PersistenceStorageKind,
   StateStorageTimeoutPolicy,
 } from '../types/persistence'
-import type {
-  RegisteredStateRuntimePersistence,
-  RegisteredStateRuntimeSlice,
-} from '../types/slice'
+import type {RegisteredStateRuntimeSlice} from '../types/slice'
 import type {StateRoot} from '../types/runtime'
-import type {StateJsonValue} from '../types/value'
 import {
-  createPersistenceFieldKey,
   createPersistenceNamespacePrefix,
   createPersistenceRecordEntryKey,
-  createPersistenceRecordPrefix,
-  parsePersistenceKey,
-  assertNoKeyspaceConflicts,
-  type PersistenceKeyDescriptor,
 } from './keyspace'
 import {
-  decodeStateJsonValue,
   encodeStateJsonValue,
 } from './persistenceCodec'
-
-type StoragePorts = Readonly<Record<PersistenceStorageKind, StateStoragePort>>
+import {
+  descriptorStorageKey,
+  groupEntries,
+  isSucceeded,
+  keysForStorage,
+  makeFailure,
+  planStorageMigration,
+  portFailure,
+  storageKinds,
+  type MigrationEntry,
+  type PersistenceEntry,
+  type PersistenceFlushSelection,
+  type StoragePorts,
+  type StorageState,
+} from './persistencePrimitives'
 
 export interface HydrateStateRuntimeInput {
   readonly persistenceKey: string
@@ -45,220 +43,33 @@ export interface HydrateStateRuntimeInput {
 export interface HydrateStateRuntimeResult {
   readonly preloadedState: StateRoot
   readonly engine: PersistenceEngine
+} 
+
+type FlushOutput = {
+  readonly writtenKeys: string[]
+  readonly removedKeys: string[]
+  readonly failures: PersistenceFailure[]
 }
 
-interface PersistenceEntry {
-  readonly sliceName: string
-  readonly descriptor: RegisteredStateRuntimePersistence
-  readonly storageKind: PersistenceStorageKind
-  readonly key?: string
-  readonly prefix?: string
-  readonly oldStorageKind?: PersistenceStorageKind
-}
-
-interface MigrationEntry {
-  readonly fromStorageKind: PersistenceStorageKind
-  readonly toStorageKind: PersistenceStorageKind
-  readonly oldKey: string
-  readonly newKey: string
-  readonly encoded: string
-  readonly writeRequired: boolean
-  readonly flushMode?: PersistenceFlushMode
-}
-
-interface StorageState {
-  readonly cache: Map<string, string>
-  readonly dirty: Set<string>
-  readonly blocked: boolean
-  readonly rebaselineAttempted: boolean
-}
-
-type PersistenceFlushSelection = 'all' | 'immediate'
-
-const storageKinds: readonly PersistenceStorageKind[] = ['plain', 'protected']
-
-const oppositeStorageKind = (
-  storageKind: PersistenceStorageKind,
-): PersistenceStorageKind => storageKind === 'plain' ? 'protected' : 'plain'
-
-const defaultProtection = (entry: RegisteredStateRuntimePersistence): PersistenceStorageKind =>
-  entry.protection === 'protected' ? 'protected' : 'plain'
-
-const descriptorStorageKey = (
-  entry: RegisteredStateRuntimePersistence,
-): string => entry.kind === 'field' ? entry.storageKey : entry.storageKeyPrefix
-
-const planStorageMigration = (
+const candidateMigrationKeysForEntry = (
   entry: PersistenceEntry,
-  key: string,
-  currentRaw: string | undefined,
-  oldRaw: string | undefined,
-): MigrationEntry | undefined => {
-  if (entry.oldStorageKind === undefined || oldRaw === undefined) {
-    return undefined
+  currentValues: ReadonlyMap<string, string>,
+  oldValues: ReadonlyMap<string, string>,
+): Set<string> => {
+  const candidateKeys = new Set<string>()
+  if (entry.key !== undefined) {
+    candidateKeys.add(entry.key)
   }
-  return {
-    fromStorageKind: entry.oldStorageKind,
-    toStorageKind: entry.storageKind,
-    oldKey: key,
-    newKey: key,
-    encoded: oldRaw,
-    writeRequired: currentRaw === undefined,
-    flushMode: entry.descriptor.flushMode,
-  }
-}
-
-const makeFailure = (
-  input: Omit<PersistenceFailure, 'message'> & {readonly message?: string},
-): PersistenceFailure => ({
-  ...input,
-  message: input.message ?? input.kind,
-})
-
-const portFailure = (
-  phase: PersistenceFailure['phase'],
-  storageKind: PersistenceStorageKind,
-  operation: PersistenceFailure['operation'],
-  result: Exclude<PortResult<unknown>, {readonly status: 'succeeded'}>,
-  storageKey?: string,
-): PersistenceFailure => {
-  if (result.status === 'unavailable') {
-    return makeFailure({
-      kind: 'PORT_UNAVAILABLE',
-      phase,
-      storageKind,
-      operation,
-      storageKey,
-      code: result.reason,
-      message: result.message,
-    })
-  }
-  if (result.status === 'timed-out') {
-    return makeFailure({
-      kind: 'PORT_TIMED_OUT',
-      phase,
-      storageKind,
-      operation,
-      storageKey,
-      code: 'TIMED_OUT',
-      message: `${operation} timed out after ${result.timeoutMs}ms`,
-    })
-  }
-  return makeFailure({
-    kind: 'PORT_FAILED',
-    phase,
-    storageKind,
-    operation,
-    storageKey,
-    code: result.error.code,
-    message: result.error.message,
-  })
-}
-
-const isSucceeded = <TValue>(
-  result: PortResult<TValue>,
-): result is Extract<PortResult<TValue>, {readonly status: 'succeeded'}> =>
-  result.status === 'succeeded'
-
-const createEntryDescriptors = (
-  persistenceKey: string,
-  slices: readonly RegisteredStateRuntimeSlice[],
-): readonly PersistenceEntry[] => {
-  const entries: PersistenceEntry[] = []
-  const keyDescriptors: PersistenceKeyDescriptor[] = []
-  for (const slice of slices) {
-    for (const descriptor of slice.persistence) {
-      const storageKind = defaultProtection(descriptor)
-      if (descriptor.kind === 'field') {
-        const key = createPersistenceFieldKey({
-          persistenceKey,
-          sliceName: slice.name,
-          storageKey: descriptorStorageKey(descriptor),
-        })
-        entries.push({
-          sliceName: slice.name,
-          descriptor,
-          storageKind,
-          key,
-          oldStorageKind: oppositeStorageKind(storageKind),
-        })
-        keyDescriptors.push({storageKind, key})
-        continue
-      }
-      const prefix = createPersistenceRecordPrefix({
-        persistenceKey,
-        sliceName: slice.name,
-        storageKeyPrefix: descriptorStorageKey(descriptor),
-      })
-      entries.push({
-        sliceName: slice.name,
-        descriptor,
-        storageKind,
-        prefix,
-        oldStorageKind: oppositeStorageKind(storageKind),
-      })
-      keyDescriptors.push({storageKind, key: prefix, prefix})
-    }
-  }
-  assertNoKeyspaceConflicts(keyDescriptors)
-  return entries
-}
-
-const groupEntries = (
-  entries: readonly PersistenceEntry[],
-  storageKind: PersistenceStorageKind,
-  includeOld = false,
-): readonly PersistenceEntry[] =>
-  entries.filter((entry) =>
-    entry.storageKind === storageKind
-    || (includeOld && entry.oldStorageKind === storageKind),
-  )
-
-const keysForStorage = (
-  listedKeys: readonly string[],
-  entries: readonly PersistenceEntry[],
-): readonly string[] => {
-  const wanted = new Set<string>()
-  for (const entry of entries) {
-    if (entry.key !== undefined && listedKeys.includes(entry.key)) {
-      wanted.add(entry.key)
-    }
-    if (entry.prefix !== undefined) {
-      for (const key of listedKeys) {
-        if (key.startsWith(entry.prefix)) {
-          wanted.add(key)
-        }
+  if (entry.prefix !== undefined) {
+    for (const key of [...currentValues.keys(), ...oldValues.keys()]) {
+      if (key.startsWith(entry.prefix)) {
+        candidateKeys.add(key)
       }
     }
   }
-  return [...wanted].sort()
+  return candidateKeys
 }
 
-const applyDecodedEntry = (
-  hydrated: Map<string, object>,
-  slice: RegisteredStateRuntimeSlice,
-  entry: PersistenceEntry,
-  key: string,
-  value: StateJsonValue,
-): void => {
-  const current = hydrated.get(slice.name) ?? slice.reducer(undefined, {type: '@@INIT'})
-  if (entry.descriptor.kind === 'field') {
-    hydrated.set(slice.name, entry.descriptor.writeField(current, value))
-    return
-  }
-  const parsed = parsePersistenceKey(key)
-  if (parsed?.entryKey === undefined) {
-    return
-  }
-  const existingEntries = entry.descriptor.getEntries(current)
-  const next = entry.descriptor.applyEntries(current, {
-    ...existingEntries,
-    [parsed.entryKey]: value,
-  })
-  if (next !== undefined) {
-    hydrated.set(slice.name, next)
-  }
-}
 
 export class PersistenceEngine {
   readonly #persistenceKey: string
@@ -277,22 +88,22 @@ export class PersistenceEngine {
     removedKeys: [],
   })
 
-  constructor(
-    input: HydrateStateRuntimeInput,
-    entries: readonly PersistenceEntry[],
-    storageState: Map<PersistenceStorageKind, StorageState>,
-    migrations: readonly MigrationEntry[],
-    health: PersistenceHealth,
-  ) {
-    this.#persistenceKey = input.persistenceKey
-    this.#slices = input.slices
-    this.#entries = entries
-    this.#storagePorts = input.storagePorts
-    this.#timeouts = input.timeouts
-    this.#logger = input.logger
-    this.#storageState = storageState
-    this.#migrations = [...migrations]
-    this.#health = Object.freeze(health)
+  constructor(input: Readonly<{
+    runtime: HydrateStateRuntimeInput
+    entries: readonly PersistenceEntry[]
+    storageState: Map<PersistenceStorageKind, StorageState>
+    migrations: readonly MigrationEntry[]
+    health: PersistenceHealth
+  }>) {
+    this.#persistenceKey = input.runtime.persistenceKey
+    this.#slices = input.runtime.slices
+    this.#entries = input.entries
+    this.#storagePorts = input.runtime.storagePorts
+    this.#timeouts = input.runtime.timeouts
+    this.#logger = input.runtime.logger
+    this.#storageState = input.storageState
+    this.#migrations = [...input.migrations]
+    this.#health = Object.freeze(input.health)
   }
 
   getHealth(): PersistenceHealth {
@@ -321,6 +132,175 @@ export class PersistenceEngine {
       .catch(() => undefined)
       .then(() => this.#resetNow(dispatchReset))
     return this.#queue
+  }
+
+  async #flushFieldEntry(input: Readonly<{
+    entry: PersistenceEntry
+    sliceState: Readonly<object>
+    output: FlushOutput
+  }>): Promise<void> {
+    const descriptor = input.entry.descriptor
+    if (descriptor.kind !== 'field') {
+      throw new Error('Expected a field persistence entry')
+    }
+    const {entry, sliceState, output} = input
+    const value = descriptor.readField(sliceState)
+    const shouldPersist = descriptor.shouldPersist?.(value, sliceState) ?? true
+    if (!shouldPersist) {
+      if (entry.key !== undefined && this.#hasCached(entry.storageKind, entry.key)) {
+        const failure = await this.#removeKey('flush', entry.storageKind, entry.key)
+        if (failure === undefined) {
+          output.removedKeys.push(entry.key)
+          this.#deleteCached(entry.storageKind, entry.key)
+        } else {
+          output.failures.push(failure)
+          this.#markDirty(entry.storageKind, entry.key)
+        }
+      } else if (entry.key !== undefined) {
+        this.#clearDirtyIfNoPendingMigration(entry.storageKind, entry.key)
+      }
+      return
+    }
+    const encoded = encodeStateJsonValue(value)
+    if (encoded.status === 'failed') {
+      output.failures.push(makeFailure({
+        kind: 'ENCODE_REJECTED',
+        phase: 'flush',
+        storageKind: entry.storageKind,
+        operation: 'encode',
+        storageKey: entry.key,
+        message: encoded.message,
+      }))
+      if (entry.key !== undefined) {
+        this.#markDirty(entry.storageKind, entry.key)
+      }
+      return
+    }
+    if (entry.key === undefined) return
+    if (this.#getCached(entry.storageKind, entry.key) === encoded.encoded) {
+      this.#clearDirtyIfNoPendingMigration(entry.storageKind, entry.key)
+      return
+    }
+    const failure = await this.#writeEncoded({
+      phase: 'flush',
+      storageKind: entry.storageKind,
+      storageKey: entry.key,
+      encoded: encoded.encoded,
+    })
+    if (failure === undefined) {
+      output.writtenKeys.push(entry.key)
+      this.#setCached(entry.storageKind, entry.key, encoded.encoded)
+    } else {
+      output.failures.push(failure)
+      this.#markDirty(entry.storageKind, entry.key)
+    }
+  }
+
+  async #flushRecordEntry(input: Readonly<{
+    entry: PersistenceEntry
+    sliceState: Readonly<object>
+    entryKey: string
+    value: import('../types/value').StateJsonValue
+    currentKeys: Set<string>
+    output: FlushOutput
+  }>): Promise<void> {
+    if (input.entry.descriptor.kind !== 'record') {
+      throw new Error('Expected a record persistence entry')
+    }
+    const {entry, sliceState, entryKey, value, currentKeys, output} = input
+    const shouldPersist = entry.descriptor.shouldPersistEntry?.(entryKey, value, sliceState) ?? true
+    let storageKey: string
+    try {
+      storageKey = createPersistenceRecordEntryKey({
+        persistenceKey: this.#persistenceKey,
+        sliceName: entry.sliceName,
+        storageKeyPrefix: descriptorStorageKey(entry.descriptor),
+        entryKey,
+      })
+    } catch (error) {
+      output.failures.push(makeFailure({
+        kind: 'ENCODE_REJECTED',
+        phase: 'flush',
+        storageKind: entry.storageKind,
+        operation: 'encode',
+        message: error instanceof Error
+          ? `record entry key rejected: ${error.message}`
+          : 'record entry key rejected',
+      }))
+      return
+    }
+    currentKeys.add(storageKey)
+    if (!shouldPersist) {
+      if (this.#hasCached(entry.storageKind, storageKey)) {
+        const failure = await this.#removeKey('flush', entry.storageKind, storageKey)
+        if (failure === undefined) {
+          output.removedKeys.push(storageKey)
+          this.#deleteCached(entry.storageKind, storageKey)
+        } else {
+          output.failures.push(failure)
+          this.#markDirty(entry.storageKind, storageKey)
+        }
+      } else {
+        this.#clearDirtyIfNoPendingMigration(entry.storageKind, storageKey)
+      }
+      return
+    }
+    const encoded = encodeStateJsonValue(value)
+    if (encoded.status === 'failed') {
+      output.failures.push(makeFailure({
+        kind: 'ENCODE_REJECTED',
+        phase: 'flush',
+        storageKind: entry.storageKind,
+        operation: 'encode',
+        storageKey,
+        message: encoded.message,
+      }))
+      this.#markDirty(entry.storageKind, storageKey)
+      return
+    }
+    if (this.#getCached(entry.storageKind, storageKey) === encoded.encoded) {
+      this.#clearDirtyIfNoPendingMigration(entry.storageKind, storageKey)
+      return
+    }
+    const failure = await this.#writeEncoded({
+      phase: 'flush',
+      storageKind: entry.storageKind,
+      storageKey,
+      encoded: encoded.encoded,
+    })
+    if (failure === undefined) {
+      output.writtenKeys.push(storageKey)
+      this.#setCached(entry.storageKind, storageKey, encoded.encoded)
+    } else {
+      output.failures.push(failure)
+      this.#markDirty(entry.storageKind, storageKey)
+    }
+  }
+
+  async #removeStalePrefixEntries(input: Readonly<{
+    entry: PersistenceEntry
+    currentKeys: ReadonlySet<string>
+    output: FlushOutput
+  }>): Promise<void> {
+    const prefix = input.entry.prefix
+    if (prefix === undefined) return
+    for (const cachedKey of this.#cachedKeys(input.entry.storageKind)) {
+      if (cachedKey.startsWith(prefix) && !input.currentKeys.has(cachedKey)) {
+        const failure = await this.#removeKey('flush', input.entry.storageKind, cachedKey)
+        if (failure === undefined) {
+          input.output.removedKeys.push(cachedKey)
+          this.#deleteCached(input.entry.storageKind, cachedKey)
+        } else {
+          input.output.failures.push(failure)
+          this.#markDirty(input.entry.storageKind, cachedKey)
+        }
+      }
+    }
+    for (const dirtyKey of this.#dirtyKeysFor(input.entry.storageKind)) {
+      if (dirtyKey.startsWith(prefix) && !input.currentKeys.has(dirtyKey)) {
+        this.#clearDirtyIfNoPendingMigration(input.entry.storageKind, dirtyKey)
+      }
+    }
   }
 
   async #flushNow(
@@ -371,12 +351,12 @@ export class PersistenceEngine {
         continue
       }
       if (migration.writeRequired) {
-        const writeFailure = await this.#writeEncoded(
-          'migration',
-          migration.toStorageKind,
-          migration.newKey,
-          migration.encoded,
-        )
+        const writeFailure = await this.#writeEncoded({
+          phase: 'migration',
+          storageKind: migration.toStorageKind,
+          storageKey: migration.newKey,
+          encoded: migration.encoded,
+        })
         if (writeFailure !== undefined) {
           failures.push(writeFailure)
           this.#markDirty(migration.toStorageKind, migration.newKey)
@@ -414,55 +394,11 @@ export class PersistenceEngine {
         continue
       }
       if (entry.descriptor.kind === 'field') {
-        const value = entry.descriptor.readField(sliceState)
-        const shouldPersist = entry.descriptor.shouldPersist?.(value, sliceState) ?? true
-        if (!shouldPersist) {
-          if (entry.key !== undefined && this.#hasCached(entry.storageKind, entry.key)) {
-            const failure = await this.#removeKey('flush', entry.storageKind, entry.key)
-            if (failure === undefined) {
-              removedKeys.push(entry.key)
-              this.#deleteCached(entry.storageKind, entry.key)
-            } else {
-              failures.push(failure)
-              this.#markDirty(entry.storageKind, entry.key)
-            }
-          } else if (entry.key !== undefined) {
-            this.#clearDirtyIfNoPendingMigration(entry.storageKind, entry.key)
-          }
-          continue
-        }
-        const encoded = encodeStateJsonValue(value)
-        if (encoded.status === 'failed') {
-          failures.push(makeFailure({
-            kind: 'ENCODE_REJECTED',
-            phase: 'flush',
-            storageKind: entry.storageKind,
-            operation: 'encode',
-            storageKey: entry.key,
-            message: encoded.message,
-          }))
-          if (entry.key !== undefined) {
-            this.#markDirty(entry.storageKind, entry.key)
-          }
-          continue
-        }
-        if (entry.key !== undefined && this.#getCached(entry.storageKind, entry.key) === encoded.encoded) {
-          this.#clearDirtyIfNoPendingMigration(entry.storageKind, entry.key)
-        } else if (entry.key !== undefined) {
-          const failure = await this.#writeEncoded(
-            'flush',
-            entry.storageKind,
-            entry.key,
-            encoded.encoded,
-          )
-          if (failure === undefined) {
-            writtenKeys.push(entry.key)
-            this.#setCached(entry.storageKind, entry.key, encoded.encoded)
-          } else {
-            failures.push(failure)
-            this.#markDirty(entry.storageKind, entry.key)
-          }
-        }
+        await this.#flushFieldEntry({
+          entry,
+          sliceState,
+          output: {writtenKeys, removedKeys, failures},
+        })
         continue
       }
 
@@ -472,95 +408,20 @@ export class PersistenceEngine {
         if (value === undefined) {
           continue
         }
-        const shouldPersist =
-          entry.descriptor.shouldPersistEntry?.(entryKey, value, sliceState) ?? true
-        let storageKey: string
-        try {
-          storageKey = createPersistenceRecordEntryKey({
-            persistenceKey: this.#persistenceKey,
-            sliceName: entry.sliceName,
-            storageKeyPrefix: descriptorStorageKey(entry.descriptor),
-            entryKey,
-          })
-        } catch (error) {
-          failures.push(makeFailure({
-            kind: 'ENCODE_REJECTED',
-            phase: 'flush',
-            storageKind: entry.storageKind,
-            operation: 'encode',
-            message: error instanceof Error
-              ? `record entry key rejected: ${error.message}`
-              : 'record entry key rejected',
-          }))
-          continue
-        }
-        currentKeys.add(storageKey)
-        if (!shouldPersist) {
-          if (this.#hasCached(entry.storageKind, storageKey)) {
-            const failure = await this.#removeKey('flush', entry.storageKind, storageKey)
-            if (failure === undefined) {
-              removedKeys.push(storageKey)
-              this.#deleteCached(entry.storageKind, storageKey)
-            } else {
-              failures.push(failure)
-              this.#markDirty(entry.storageKind, storageKey)
-            }
-          } else {
-            this.#clearDirtyIfNoPendingMigration(entry.storageKind, storageKey)
-          }
-          continue
-        }
-        const encoded = encodeStateJsonValue(value)
-        if (encoded.status === 'failed') {
-          failures.push(makeFailure({
-            kind: 'ENCODE_REJECTED',
-            phase: 'flush',
-            storageKind: entry.storageKind,
-            operation: 'encode',
-            storageKey,
-            message: encoded.message,
-          }))
-          this.#markDirty(entry.storageKind, storageKey)
-          continue
-        }
-        if (this.#getCached(entry.storageKind, storageKey) === encoded.encoded) {
-          this.#clearDirtyIfNoPendingMigration(entry.storageKind, storageKey)
-        } else {
-          const failure = await this.#writeEncoded(
-            'flush',
-            entry.storageKind,
-            storageKey,
-            encoded.encoded,
-          )
-          if (failure === undefined) {
-            writtenKeys.push(storageKey)
-            this.#setCached(entry.storageKind, storageKey, encoded.encoded)
-          } else {
-            failures.push(failure)
-            this.#markDirty(entry.storageKind, storageKey)
-          }
-        }
+        await this.#flushRecordEntry({
+          entry,
+          sliceState,
+          entryKey,
+          value,
+          currentKeys,
+          output: {writtenKeys, removedKeys, failures},
+        })
       }
-
-      if (entry.prefix !== undefined) {
-        for (const cachedKey of this.#cachedKeys(entry.storageKind)) {
-          if (cachedKey.startsWith(entry.prefix) && !currentKeys.has(cachedKey)) {
-            const failure = await this.#removeKey('flush', entry.storageKind, cachedKey)
-            if (failure === undefined) {
-              removedKeys.push(cachedKey)
-              this.#deleteCached(entry.storageKind, cachedKey)
-            } else {
-              failures.push(failure)
-              this.#markDirty(entry.storageKind, cachedKey)
-            }
-          }
-        }
-        for (const dirtyKey of this.#dirtyKeysFor(entry.storageKind)) {
-          if (dirtyKey.startsWith(entry.prefix) && !currentKeys.has(dirtyKey)) {
-            this.#clearDirtyIfNoPendingMigration(entry.storageKind, dirtyKey)
-          }
-        }
-      }
+      await this.#removeStalePrefixEntries({
+        entry,
+        currentKeys,
+        output: {writtenKeys, removedKeys, failures},
+      })
     }
 
     if (failures.length > 0) {
@@ -589,7 +450,7 @@ export class PersistenceEngine {
         timeoutMs: this.#timeouts.resetMs,
       })
       if (!isSucceeded(listed)) {
-        failures.push(portFailure('reset', storageKind, 'listKeys', listed))
+        failures.push(portFailure({phase: 'reset', storageKind, operation: 'listKeys', result: listed}))
         continue
       }
       const prefix = createPersistenceNamespacePrefix(this.#persistenceKey)
@@ -644,7 +505,7 @@ export class PersistenceEngine {
       timeoutMs: this.#timeouts.readMs,
     })
     if (!isSucceeded(listed)) {
-      this.#updateHealth(portFailure('hydrate', storageKind, 'listKeys', listed))
+      this.#updateHealth(portFailure({phase: 'hydrate', storageKind, operation: 'listKeys', result: listed}))
       return false
     }
     const entries = groupEntries(this.#entries, storageKind, true)
@@ -654,7 +515,7 @@ export class PersistenceEngine {
       timeoutMs: this.#timeouts.readMs,
     })
     if (!isSucceeded(read)) {
-      this.#updateHealth(portFailure('hydrate', storageKind, 'readMany', read))
+      this.#updateHealth(portFailure({phase: 'hydrate', storageKind, operation: 'readMany', result: read}))
       return false
     }
     const cache = new Map<string, string>()
@@ -680,21 +541,11 @@ export class PersistenceEngine {
       }
       const currentValues = cacheFor(entry.storageKind)
       const oldValues = cacheFor(oldStorageKind)
-      const candidateKeys = new Set<string>()
-      if (entry.key !== undefined) {
-        candidateKeys.add(entry.key)
-      }
-      if (entry.prefix !== undefined) {
-        for (const key of [...currentValues.keys(), ...oldValues.keys()]) {
-          if (key.startsWith(entry.prefix)) {
-            candidateKeys.add(key)
-          }
-        }
-      }
+      const candidateKeys = candidateMigrationKeysForEntry(entry, currentValues, oldValues)
       for (const key of [...candidateKeys].sort()) {
         const currentRaw = currentValues.get(key)
         const oldRaw = oldValues.get(key)
-        const migration = planStorageMigration(entry, key, currentRaw, oldRaw)
+        const migration = planStorageMigration({entry, key, currentRaw, oldRaw})
         if (migration !== undefined) {
           this.#migrations.push(migration)
         }
@@ -704,21 +555,27 @@ export class PersistenceEngine {
     return true
   }
 
-  async #writeEncoded(
-    phase: PersistenceFailure['phase'],
-    storageKind: PersistenceStorageKind,
-    storageKey: string,
-    encoded: string,
-  ): Promise<PersistenceFailure | undefined> {
-    const result = await this.#storagePorts[storageKind].write({
-      key: storageKey,
-      value: encoded,
+  async #writeEncoded(input: Readonly<{
+    phase: PersistenceFailure['phase']
+    storageKind: PersistenceStorageKind
+    storageKey: string
+    encoded: string
+  }>): Promise<PersistenceFailure | undefined> {
+    const result = await this.#storagePorts[input.storageKind].write({
+      key: input.storageKey,
+      value: input.encoded,
       timeoutMs: this.#timeouts.writeMs,
     })
     if (isSucceeded(result)) {
       return undefined
     }
-    return portFailure(phase, storageKind, 'write', result, storageKey)
+    return portFailure({
+      phase: input.phase,
+      storageKind: input.storageKind,
+      operation: 'write',
+      result,
+      storageKey: input.storageKey,
+    })
   }
 
   async #removeKey(
@@ -733,7 +590,7 @@ export class PersistenceEngine {
     if (isSucceeded(result)) {
       return undefined
     }
-    return portFailure(phase, storageKind, 'remove', result, storageKey)
+    return portFailure({phase, storageKind, operation: 'remove', result, storageKey})
   }
 
   #cachedKeys(storageKind: PersistenceStorageKind): readonly string[] {
@@ -818,188 +675,5 @@ export class PersistenceEngine {
     for (const listener of this.#listeners) {
       listener(next)
     }
-  }
-}
-
-export const hydrateStateRuntime = async (
-  input: HydrateStateRuntimeInput,
-): Promise<HydrateStateRuntimeResult> => {
-  const entries = createEntryDescriptors(input.persistenceKey, input.slices)
-  const storageState = new Map<PersistenceStorageKind, StorageState>()
-  const migrations: MigrationEntry[] = []
-  const hydrated = new Map<string, object>()
-  const failures: PersistenceFailure[] = []
-  const readValuesByKind = new Map<PersistenceStorageKind, ReadonlyMap<string, string>>()
-
-  for (const storageKind of storageKinds) {
-    storageState.set(storageKind, {
-      cache: new Map<string, string>(),
-      dirty: new Set<string>(),
-      blocked: false,
-      rebaselineAttempted: false,
-    })
-  }
-
-  for (const storageKind of storageKinds) {
-    const storageEntries = groupEntries(entries, storageKind, true)
-    if (storageEntries.length === 0) {
-      continue
-    }
-    const port = input.storagePorts[storageKind]
-    const listed = await port.listKeys({
-      timeoutMs: input.timeouts.readMs,
-    })
-    if (!isSucceeded(listed)) {
-      const failure = portFailure('hydrate', storageKind, 'listKeys', listed)
-      failures.push(failure)
-      input.logger.error({
-        category: 'state.persistence',
-        event: 'state.persistence.hydrate.failure',
-        message: failure.message,
-        data: {
-          phase: failure.phase,
-          operation: failure.operation,
-          storageKind: failure.storageKind,
-        },
-      })
-      storageState.set(storageKind, {
-        cache: new Map<string, string>(),
-        dirty: new Set<string>(),
-        blocked: true,
-        rebaselineAttempted: false,
-      })
-      continue
-    }
-
-    const keys = keysForStorage(listed.value, storageEntries)
-    const read = await port.readMany({
-      keys,
-      timeoutMs: input.timeouts.readMs,
-    })
-    if (!isSucceeded(read)) {
-      const failure = portFailure('hydrate', storageKind, 'readMany', read)
-      failures.push(failure)
-      input.logger.error({
-        category: 'state.persistence',
-        event: 'state.persistence.hydrate.failure',
-        message: failure.message,
-        data: {
-          phase: failure.phase,
-          operation: failure.operation,
-          storageKind: failure.storageKind,
-        },
-      })
-      storageState.set(storageKind, {
-        cache: new Map<string, string>(),
-        dirty: new Set<string>(),
-        blocked: true,
-        rebaselineAttempted: false,
-      })
-      continue
-    }
-
-    const portValues = new Map(
-      read.value
-        .filter((item) => item.result.state === 'found')
-        .map((item) => [
-          item.key,
-          item.result.state === 'found' ? item.result.value : '',
-        ]),
-    )
-    const values = new Map<string, string>()
-    for (const [key, value] of portValues) {
-      if (keysForStorage([key], storageEntries).includes(key)) {
-        values.set(key, value)
-      }
-    }
-    readValuesByKind.set(storageKind, values)
-  }
-
-  for (const entry of entries) {
-    const currentState = storageState.get(entry.storageKind)
-    const currentValues = readValuesByKind.get(entry.storageKind) ?? new Map<string, string>()
-    const oldStorageKind = entry.oldStorageKind
-    const oldState = oldStorageKind === undefined
-      ? undefined
-      : storageState.get(oldStorageKind)
-    const oldValues = oldStorageKind === undefined
-      ? new Map<string, string>()
-      : readValuesByKind.get(oldStorageKind) ?? new Map<string, string>()
-    const candidateKeys = new Set<string>()
-    if (entry.key !== undefined) {
-      candidateKeys.add(entry.key)
-    }
-    if (entry.prefix !== undefined) {
-      for (const key of [...currentValues.keys(), ...oldValues.keys()]) {
-        if (key.startsWith(entry.prefix)) {
-          candidateKeys.add(key)
-        }
-      }
-    }
-    for (const key of [...candidateKeys].sort()) {
-      // A failed current backend is a protection boundary: do not hydrate its
-      // entries from the opposite (legacy) backend.  The legacy value can be
-      // migrated only after the current backend establishes a known baseline.
-      if (currentState?.blocked === true) {
-        continue
-      }
-      const currentRaw = currentValues.get(key)
-      const oldRaw = oldState?.blocked === true
-        ? undefined
-        : oldValues.get(key)
-      const selectedRaw = currentRaw ?? oldRaw
-      if (selectedRaw === undefined) {
-        continue
-      }
-      if (currentRaw !== undefined) {
-        currentState?.cache.set(key, currentRaw)
-      } else if (oldStorageKind !== undefined) {
-        if (oldRaw !== undefined) {
-          oldState?.cache.set(key, oldRaw)
-        }
-      }
-      const decoded = decodeStateJsonValue(selectedRaw)
-      if (decoded.status === 'failed') {
-        const failure = makeFailure({
-          kind: 'DECODE_REJECTED',
-          phase: 'hydrate',
-          storageKind: currentRaw !== undefined ? entry.storageKind : oldStorageKind ?? entry.storageKind,
-          operation: 'decode',
-          storageKey: key,
-          message: decoded.message,
-        })
-        failures.push(failure)
-        input.logger.warn({
-          category: 'state.persistence',
-          event: 'state.persistence.hydrate.decode-rejected',
-          message: failure.message,
-          data: {storageKind: failure.storageKind, storageKey: key},
-        })
-        continue
-      }
-      const slice = input.slices.find((candidate) => candidate.name === entry.sliceName)
-      if (slice !== undefined) {
-        applyDecodedEntry(hydrated, slice, entry, key, decoded.value)
-      }
-      const migration = planStorageMigration(entry, key, currentRaw, oldRaw)
-      if (migration !== undefined) {
-        migrations.push(migration)
-      }
-    }
-  }
-
-  const preloadedState: StateRoot = Object.fromEntries(hydrated.entries())
-  const health: PersistenceHealth = {
-    status: failures.length === 0 ? 'healthy' : 'degraded',
-    revision: 0,
-    lastFailure: failures[failures.length - 1],
-    dirtyKeys: [],
-    blockedStorageKinds: storageKinds.filter(
-      (storageKind) => storageState.get(storageKind)?.blocked === true,
-    ),
-  }
-  return {
-    preloadedState,
-    engine: new PersistenceEngine(input, entries, storageState, migrations, health),
   }
 }

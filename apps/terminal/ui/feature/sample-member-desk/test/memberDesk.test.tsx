@@ -22,7 +22,7 @@ import {
   confirmMemberCommand,
   submitMemberCommand,
 } from '@catering-v2s/kernel-feature-sample-member-registry'
-import {deskSystemFailureObservedCommand} from '../src/commands'
+import {deskSystemFailureObservedCommand} from '../src/features/commands/commands'
 
 type RuntimeStateRoot = ReturnType<Runtime['getState']>
 type TestInstanceQuery = Readonly<{

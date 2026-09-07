@@ -5,25 +5,16 @@ import type {
   SyncStateDiff,
 } from '@catering-v2s/kernel-base-state'
 import type {Runtime} from '../types/runtime'
+import {readRuntimeStateSyncAccessor} from '../foundations/runtimeStateSyncAccessorRegistry'
 
 type RuntimeStateSyncAccessor = Readonly<{
   createFullSyncPayload: (sliceName: string) => StateSyncPayloadResult
   applyAuthoritativeSync: (sliceName: string, payload: SyncStateDiff) => StateSyncApplyResult
 }>
 
-const accessors = new WeakMap<object, () => StateRuntime | undefined>()
-
-/** Production registers this test-only read accessor; the StateRuntime itself remains internal. */
-export const registerRuntimeStateSyncAccessorForTest = (
-  runtime: Runtime,
-  getStateRuntime: () => StateRuntime | undefined,
-): void => {
-  accessors.set(runtime, getStateRuntime)
-}
-
 /** Test-only seam; deliberately absent from the package root exports. */
 export const runtimeStateSyncForTest = (runtime: Runtime): RuntimeStateSyncAccessor => {
-  const getStateRuntime = accessors.get(runtime)
+  const getStateRuntime = readRuntimeStateSyncAccessor(runtime)
   if (getStateRuntime === undefined) throw new Error('Runtime state sync test accessor is not registered')
   return Object.freeze({
     createFullSyncPayload: (sliceName: string): StateSyncPayloadResult => {

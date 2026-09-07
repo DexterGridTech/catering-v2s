@@ -1,6 +1,14 @@
 import {Button, Descriptions, Drawer, Space, Table, Tag, Typography} from 'antd';
-import {adminDrawerSurfaceProps, NameCodePathText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
+  adminDrawerSurfaceProps,
+  NameCodePathText,
+  testId,
+  useOverlayLock,
+} from '@catering-v2s/admin-ui-foundation';
 import type {WorkspaceAccount} from '../../../app/api/generated/platform-edge';
+import {platformDetailDrawerTestIds} from '../../../app/automation/platformDetailDrawerTestIds';
 import {
   canManageWorkspaceIam,
   toggleWorkspaceIamStatus,
@@ -38,6 +46,42 @@ export function WorkspaceAccountDetailDrawer({
   onAudit,
 }: Props) {
   useOverlayLock(open);
+  const actionItems = account
+    ? [
+        {
+          key: 'audit',
+          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.account.audit}>操作历史</AdminDetailActionLabel>,
+          onClick: onAudit,
+        },
+        ...(canManageWorkspaceIam(account.status)
+          ? [
+              {
+                key: 'credential',
+                label: (
+                  <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.account.credential}>
+                    重置登录凭据
+                  </AdminDetailActionLabel>
+                ),
+                onClick: () => onOpenAction({kind: 'CREDENTIAL_RESET'}),
+              },
+              ...(toggleWorkspaceIamStatus(account.status)
+                ? [
+                    {
+                      key: 'status',
+                      label: (
+                        <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.account.status}>
+                          {account.status === 'ENABLED' ? '停用账号' : '启用账号'}
+                        </AdminDetailActionLabel>
+                      ),
+                      onClick: () =>
+                        onOpenAction({kind: 'STATUS', targetStatus: toggleWorkspaceIamStatus(account.status)!}),
+                    },
+                  ]
+                : []),
+            ]
+          : []),
+      ]
+    : [];
   return (
     <Drawer
       title="账号详情"
@@ -50,33 +94,12 @@ export function WorkspaceAccountDetailDrawer({
       {...adminDrawerSurfaceProps}
       {...testId('workspace-account-detail-drawer')}
       extra={
-        account && (
-          <Space>
-            <Button onClick={onAudit} {...testId('workspace-account-audit-history')}>
-              操作历史
-            </Button>
-            {canManageWorkspaceIam(account.status) && (
-              <>
-                <Button
-                  onClick={() => onOpenAction({kind: 'CREDENTIAL_RESET'})}
-                  {...testId('workspace-account-reset-credential')}
-                >
-                  重置登录凭据
-                </Button>
-                {toggleWorkspaceIamStatus(account.status) && (
-                  <Button
-                    onClick={() =>
-                      onOpenAction({kind: 'STATUS', targetStatus: toggleWorkspaceIamStatus(account.status)!})
-                    }
-                    {...testId('workspace-account-transition-status')}
-                  >
-                    {account.status === 'ENABLED' ? '停用账号' : '启用账号'}
-                  </Button>
-                )}
-              </>
-            )}
-          </Space>
-        )
+        actionItems.length > 0 ? (
+          <AdminDetailActionMenu
+            items={actionItems}
+            triggerTestId={platformDetailDrawerTestIds.account.actionMenu}
+          />
+        ) : undefined
       }
     >
       {account && (

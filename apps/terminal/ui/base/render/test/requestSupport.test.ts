@@ -52,7 +52,11 @@ describe('render request helpers', () => {
   it('creates a request id and dispatches the typed command payload', async () => {
     const spy = createDispatchSpy()
 
-    await expect(dispatchWithRequestId(spy.dispatchCommand, definition, {value: 'created'})).resolves.toBe(result)
+    await expect(dispatchWithRequestId({
+      dispatchCommand: spy.dispatchCommand,
+      definition,
+      payload: {value: 'created'},
+    })).resolves.toBe(result)
 
     expect(spy.calls).toHaveLength(1)
     expect(spy.calls[0]?.commandName).toBe(definition.commandName)
@@ -64,7 +68,12 @@ describe('render request helpers', () => {
     const spy = createDispatchSpy()
     const requestId = createRequestId()
 
-    await dispatchWithRequestId(spy.dispatchCommand, definition, {value: 'explicit'}, requestId)
+    await dispatchWithRequestId({
+      dispatchCommand: spy.dispatchCommand,
+      definition,
+      payload: {value: 'explicit'},
+      requestId,
+    })
 
     expect(spy.calls[0]?.requestId).toBe(requestId)
   })

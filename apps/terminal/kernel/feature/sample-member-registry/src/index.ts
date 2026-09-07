@@ -10,7 +10,7 @@ export {
   rejectMemberCommand,
   submitMemberCommand,
   withdrawMemberCommand,
-} from './commands'
-export {createSampleMemberRegistryModule} from './module'
-export {selectMembers, selectPendingMember} from './selectors'
-export type {Member, MemberRejectedPayload, MemberState, PendingMember} from './types'
+} from './features/commands/commands'
+export {createSampleMemberRegistryModule} from './application/module'
+export {selectMembers, selectPendingMember} from './selectors/selectors'
+export type {Member, MemberRejectedPayload, MemberState, PendingMember} from './types/types'

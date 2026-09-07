@@ -665,3 +665,113 @@ screen 的 `containerKey` 在 definition 里（`primaryRootContainer` / `seconda
 - **新规则由实例产生**，写在修完之后 —— 没有实例的规则不进本文。
 - **每条规则必须自带反例与反例栏**，否则它不是规范，是口号。
 - 通用工作纪律见 §0 的指针表，不在本文复述。
+
+---
+
+## 7 · 2026-09-07 可读性整改规则
+
+### 7.1 `src/` 目录词表
+
+`apps/terminal/**/src/` 的根目录只能按需使用以下闭合词表；需要表外目录时，必须先修改本节并说明
+为什么现有词不能承接。根下仍保留三个法定文件：`index.ts`、`moduleName.ts`、`dependencies.ts`。
+
+| 目录 | 装什么 | 明确不装什么 |
+|---|---|---|
+| `types/` | 只有 `type`/`interface`/类型级常量，零运行时值 | 任何有运行时行为的东西 |
+| `foundations/` | 纯函数与纯工厂；共享注册表与无副作用基础设施 | store、网络、平台 API、有副作用的东西、React |
+| `implementations/` | 已声明端口的真实实现，可触达平台 API | 端口以外的业务逻辑 |
+| `features/` | command 驱动的业务单元；固定子目录 `actors/`、`commands/`、`slices/`、`variables/` | 纯函数、React |
+| `selectors/` | 跨包读的唯一入口（状态读取与派生 selector） | 写操作 |
+| `application/` | 包的组装与入口：module descriptor、runtime 工厂 | 业务逻辑 |
+| `components/` | React 组件，以及直接产出 `ReactNode` 的渲染函数 | 不产出 `ReactNode` 的东西 |
+| `hooks/` | React hooks；一文件一 hook，`useX` 命名 | 非 hook |
+| `contexts/` | React context 定义及其 Provider | 消费 context 的业务组件 |
+| `defaults/` | 已声明端口的默认/不可用实现 | 真实实现、普通配置 |
+| `parts/` | part 声明（`definePart` 的产物） | 组件实现、renderer |
+| `assembly/` | 装配：把 module、catalog、surface 拼起来 | 业务逻辑 |
+| `theme/` | 设计 token | 组件 |
+| `vendor/` | 外部代码的仓内拷贝，原样保留不改写 | 自己写的代码 |
+| `testing/` | 把生产设施暴露给测试的逃生口 | 测试本身（去 `test/`）、生产逻辑 |
+
+`features/` 的直接子目录只允许 `actors/`、`commands/`、`slices/`、`variables/`；更深层目录由所属
+feature 自己组织，不由本条目录词表递归猜测职责。`testing/` 不得从生产 `src/index.ts` 公开导出，且
+不得进入生产 import graph。
+
+### 7.2 规则档位
+
+`L` 表示可由确定的 AST、路径或 import graph checker 判定；`R` 表示必须由评审读取职责、反例与
+行为 oracle 判定，不得用关键词或正则把语义伪装成机器门。每条规则都保留一个仓内实例与一个可使
+对应判定变红的反例。
+
+### `TR-R01` · 单元按职责拆分
+
+**规则（R）**：单元不得承担多个变更理由；拆分轴是职责，不是冻结的行数阈值。
+
+**仓内实例**：dispatcher、persistence engine 与 `InputProvider` 各自存在相互独立的变更理由，需在
+拆分前建立职责到 behavior oracle 的对照表。
+
+**反例栏**：把已拆开的两个职责合回同一个函数、类或组件，且移除其中一个职责的独立 oracle；此
+语义不能由本节的机器 checker 代替，必须由 review 判定。
+
+### `TR-R02` · export 必须靠近定义
+
+**规则（L）**：禁止文件中的本地 `export { ... }` 汇总块；定义处的 `export const/function/class` 才是
+公开声明位置。带 `from` 的 re-export 仅允许作为显式模块边界。
+
+**仓内实例**：当前有 33 个文件在文件末尾维护本地 export 汇总块。
+
+**反例栏**：在非 `index.ts` 文件中加入 `export {value}`；AST checker 必须报告该文件与行号。
+
+### `TR-R03` · 业务组件不直接调用 createElement
+
+**规则（L）**：`apps/terminal/**/src/**` 中业务组件不得调用 React `createElement`。唯一明示例外是
+`apps/terminal/ui/base/render/src/components/resolvePart.ts`，因为它是动态 part renderer 且直接产出
+ReactNode；新增例外必须先修改本节。
+
+**仓内实例**：四个生产渲染文件存在该调用，其中只有上述 renderer 具备例外理由。
+
+**反例栏**：在 allowlist 之外通过 named import、别名或 `React.createElement` 调用它；TypeChecker/AST
+checker 必须报告调用点。
+
+### `TR-R04` · 函数参数不超过三个
+
+**规则（L）**：有执行体的函数、方法、构造器与 accessor 的位置参数超过 3 个时，必须改为对象参数或
+另一个有明确职责的单元。解构参数与 rest 参数各按一个位置参数计算。
+
+**仓内实例**：现有源码中有 7 个四参数执行单元。
+
+**反例栏**：新增 `function f(a, b, c, d) {}`；checker 必须按 AST 参数个数报告。
+
+### `TR-R05` · 控制嵌套不超过三层
+
+**规则（L）**：每个 function-like 单元内，`if`、`for`（含 in/of）、`while`、`switch`、`try` 的词法
+控制嵌套深度不得超过 3。`case`、`catch`、`finally` 不额外加层；三元、conditional、`&&`、`||`、
+`??` 不计；进入嵌套函数时重新从 0 计算。
+
+**仓内实例**：现有源码中有 22 个控制深度超过 3 的 function-like 单元。
+
+**反例栏**：构造四层 `if`/`for`/`while`/`try` 控制嵌套；AST visitor 必须报告最深层与所属单元，不能用
+调用次数、源码字符串或 lint 文本作为唯一证明。
+
+### `TR-R06` · source 根与 features 直接子目录必须闭合
+
+**规则（L）**：逐 package 枚举 `src/` 根 direct children；根文件只允许三个法定文件，根目录必须来自
+本节 15 项词表。若存在 `src/features/`，其 direct children 目录只允许 `actors`、`commands`、`slices`、
+`variables`；`features/` 更深层目录不由本条约束。
+
+**仓内实例**：35 个散文件与 3 个旧目录名需要归位。
+
+**反例栏**：在根增加 `misc.ts`、`src/unknown/` 或 `src/features/misc/`；路径 checker 必须分别报告。
+
+### `TR-R07` · testing 不得进入生产 import graph
+
+**规则（L）**：从每个 package 的生产 `src/index.ts` 解析 runtime value import/export graph；同 package 的
+`src/testing/**` 不得可达。`import type` 与 type-only export 只解析语法、不计 runtime reachability；
+生产与测试可以共享 `foundations/` 中同一个 registry。包内测试可深路径进入 `src/testing/`，跨包测试只能
+走 package 的 `./testing` 子路径；测试入口不作为生产 entry。
+
+**仓内实例**：`kernel/base/runtime` 的生产 `createRuntime` 曾从 `src/testing` 引入注册函数，需把共享
+registry 与注册函数移入 `foundations/`。
+
+**反例栏**：生产 entry 直接 import `src/testing/startupDiagnostics.ts`，即便该文件没有任何
+`startup.` 字面量，graph checker 仍必须变红。

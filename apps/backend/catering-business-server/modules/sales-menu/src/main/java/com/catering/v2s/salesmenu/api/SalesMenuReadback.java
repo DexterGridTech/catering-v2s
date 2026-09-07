@@ -4,6 +4,7 @@ import com.catering.v2s.salesmenu.domain.SalesMenuAssetTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuCommandReadbackStatus;
 import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMedia;
 import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleState;
+import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTargetKind;
 import com.catering.v2s.salesmenu.domain.SalesMenuOperationResult;
 import com.catering.v2s.salesmenu.domain.SalesMenuOrderingConstraints;
 import com.catering.v2s.salesmenu.domain.SalesMenuPublicationBlockerKind;
@@ -65,20 +66,104 @@ public final class SalesMenuReadback {
         }
     }
 
+    public record SalesMenuOrderOptionValue(
+            UUID definitionValueRef,
+            String name,
+            int displayOrder,
+            boolean defaultValue,
+            Long extraPrice) {}
+
+    public record SalesMenuOrderOption(
+            UUID definitionRef,
+            String name,
+            String selectionMode,
+            int displayOrder,
+            boolean required,
+            Integer minSelectionCount,
+            Integer maxSelectionCount,
+            List<SalesMenuOrderOptionValue> values) {
+        public SalesMenuOrderOption {
+            values = List.copyOf(Objects.requireNonNull(values, "values"));
+        }
+    }
+
     public record DraftItemView(
             UUID salesItemRef,
             UUID catalogItemRef,
             String itemCode,
             String displayName,
             String productShape,
+            List<SalesMenuOrderOption> catalogOrderOptions,
+            List<SalesMenuSkuCandidate> skuCandidates,
+            List<UUID> staleSelectedSkuRefs,
             Long defaultPriceCents,
+            UUID catalogPrimaryImageAssetRef,
             SalesMenuSaleContent saleContent,
             SalesMenuOrderingConstraints orderingConstraints,
             SalesMenuDisplayMedia displayMedia,
             long displayOrder,
             boolean canMoveUp,
             boolean canMoveDown,
-            long version) {}
+            long version) {
+        public DraftItemView(
+                UUID salesItemRef,
+                UUID catalogItemRef,
+                String itemCode,
+                String displayName,
+                String productShape,
+                List<SalesMenuOrderOption> orderOptions,
+                Long defaultPriceCents,
+                UUID catalogPrimaryImageAssetRef,
+                SalesMenuSaleContent saleContent,
+                SalesMenuOrderingConstraints orderingConstraints,
+                SalesMenuDisplayMedia displayMedia,
+                long displayOrder,
+                boolean canMoveUp,
+                boolean canMoveDown,
+                long version) {
+            this(
+                    salesItemRef,
+                    catalogItemRef,
+                    itemCode,
+                    displayName,
+                    productShape,
+                    orderOptions,
+                    List.of(),
+                    List.of(),
+                    defaultPriceCents,
+                    catalogPrimaryImageAssetRef,
+                    saleContent,
+                    orderingConstraints,
+                    displayMedia,
+                    displayOrder,
+                    canMoveUp,
+                    canMoveDown,
+                    version);
+        }
+
+        public DraftItemView {
+            catalogOrderOptions = List.copyOf(Objects.requireNonNull(catalogOrderOptions, "catalogOrderOptions"));
+            skuCandidates = List.copyOf(Objects.requireNonNull(skuCandidates, "skuCandidates"));
+            staleSelectedSkuRefs = List.copyOf(Objects.requireNonNull(staleSelectedSkuRefs, "staleSelectedSkuRefs"));
+        }
+    }
+
+    public record SalesMenuSkuCandidate(UUID skuRef, String skuName, String skuCode, long standardPriceCents) {
+        public SalesMenuSkuCandidate {
+            Objects.requireNonNull(skuRef, "skuRef");
+            skuName = required(skuName, "skuName");
+            skuCode = required(skuCode, "skuCode");
+            if (standardPriceCents < 0) throw new IllegalArgumentException("standardPriceCents cannot be negative");
+        }
+
+        private static String required(String value, String field) {
+            String normalized = Objects.requireNonNullElse(value, "").trim();
+            if (normalized.isEmpty() || normalized.length() > 160) {
+                throw new IllegalArgumentException(field + " is invalid");
+            }
+            return normalized;
+        }
+    }
 
     public record InventoryAvailabilityFact(String applicability, String state, String reason) {}
 
@@ -97,7 +182,67 @@ public final class SalesMenuReadback {
             long displayOrder,
             InventoryAvailabilityFact inventoryAvailability,
             ManualSaleStatusFact manualSaleStatus,
-            long version) {}
+            List<ManualSaleTargetStatus> manualSaleTargetStatuses,
+            long version) {
+        public PublishedItemView(
+                UUID salesItemRef,
+                UUID catalogItemRef,
+                String itemCode,
+                String displayName,
+                String productShape,
+                List<SalesMenuOrderOption> orderOptions,
+                SalesMenuSaleContent saleContent,
+                SalesMenuOrderingConstraints orderingConstraints,
+                SalesMenuDisplayMedia displayMedia,
+                long displayOrder,
+                InventoryAvailabilityFact inventoryAvailability,
+                ManualSaleStatusFact manualSaleStatus,
+                long version) {
+            this(
+                    salesItemRef,
+                    catalogItemRef,
+                    itemCode,
+                    displayName,
+                    productShape,
+                    saleContent,
+                    orderingConstraints,
+                    displayMedia,
+                    displayOrder,
+                    inventoryAvailability,
+                    manualSaleStatus,
+                    List.of(),
+                    version);
+        }
+
+        public PublishedItemView {
+            manualSaleTargetStatuses =
+                    List.copyOf(Objects.requireNonNull(manualSaleTargetStatuses, "manualSaleTargetStatuses"));
+        }
+    }
+
+    public record ManualSaleTargetStatus(
+            SalesMenuManualSaleTargetKind targetKind,
+            UUID targetRef,
+            String resolvedTargetDisplayName,
+            SalesMenuManualSaleState state,
+            String reason,
+            Long changedAt,
+            String changedByDisplayName) {
+        public ManualSaleTargetStatus {
+            Objects.requireNonNull(targetKind, "targetKind");
+            Objects.requireNonNull(targetRef, "targetRef");
+            Objects.requireNonNull(state, "state");
+            resolvedTargetDisplayName = required(resolvedTargetDisplayName, "resolvedTargetDisplayName");
+        }
+
+        private static String required(String value, String field) {
+            String normalized = Objects.requireNonNullElse(value, "").trim();
+            if (normalized.isEmpty() || normalized.length() > 160) {
+                throw new IllegalArgumentException(field + " is invalid");
+            }
+            return normalized;
+        }
+    }
 
     public record DraftItemPage(List<DraftItemView> items, String cursor, String nextCursor) {
         public DraftItemPage {
@@ -148,9 +293,33 @@ public final class SalesMenuReadback {
             String operationKind,
             UUID salesMenuRef,
             UUID targetRef,
+            String targetKind,
+            String targetDisplaySnapshot,
             SalesMenuOperationResult result,
             String failureCode,
-            String actorDisplayName) {}
+            String actorDisplayName) {
+        public OperationRecord(
+                UUID operationRecordRef,
+                long occurredAt,
+                String operationKind,
+                UUID salesMenuRef,
+                UUID targetRef,
+                SalesMenuOperationResult result,
+                String failureCode,
+                String actorDisplayName) {
+            this(
+                    operationRecordRef,
+                    occurredAt,
+                    operationKind,
+                    salesMenuRef,
+                    targetRef,
+                    null,
+                    null,
+                    result,
+                    failureCode,
+                    actorDisplayName);
+        }
+    }
 
     public record OperationRecordPage(List<OperationRecord> items, String cursor, String nextCursor) {
         public OperationRecordPage {

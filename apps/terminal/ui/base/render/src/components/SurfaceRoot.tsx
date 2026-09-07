@@ -1,4 +1,4 @@
-import {createElement, useMemo} from 'react'
+import {useMemo} from 'react'
 import {StyleSheet, View} from 'react-native'
 import {LayerStack} from './LayerStack'
 import {ScreenContainer} from './ScreenContainer'
@@ -10,22 +10,20 @@ export const SurfaceRoot = ({displayMode, containerKey, children, renderContentF
     () => Object.freeze({displayMode, containerKey}),
     [containerKey, displayMode],
   )
-  const content = createElement(
-    View,
-    {style: styles.content},
-    children,
-    createElement(ScreenContainer),
-    createElement(LayerStack),
+  const content = (
+    <View style={styles.content}>
+      {children}
+      <ScreenContainer />
+      <LayerStack />
+    </View>
   )
   const framedContent = renderContentFrame?.({content}) ?? content
-  return createElement(
-    SurfaceContext.Provider,
-    {value: surfaceValue},
-    createElement(
-      View,
-      {testID: 'ui-base-render:surface-root', style: styles.root},
-      framedContent,
-    ),
+  return (
+    <SurfaceContext.Provider value={surfaceValue}>
+      <View testID="ui-base-render:surface-root" style={styles.root}>
+        {framedContent}
+      </View>
+    </SurfaceContext.Provider>
   )
 }
 

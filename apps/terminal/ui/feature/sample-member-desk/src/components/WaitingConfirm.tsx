@@ -16,10 +16,14 @@ import {
 export const WaitingConfirm = () => {
   const dispatchCommand = useDispatchCommand()
   const pending = useUiStateSelector(selectPendingMember)
-  const withdraw = () => dispatchWithRequestId(dispatchCommand, openLayerCommand, {
-    displayMode: 'PRIMARY',
-    layerId: 'sample.desk.withdraw-confirm',
-    partKey: 'sample.desk.withdraw-confirm',
+  const withdraw = () => dispatchWithRequestId({
+    dispatchCommand,
+    definition: openLayerCommand,
+    payload: {
+      displayMode: 'PRIMARY',
+      layerId: 'sample.desk.withdraw-confirm',
+      partKey: 'sample.desk.withdraw-confirm',
+    },
   })
 
   return (

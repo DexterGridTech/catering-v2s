@@ -1,87 +1,24 @@
-import {Alert, Button, Image, Radio, Space, Typography} from 'antd';
+import {Alert, Radio, Space, Typography} from 'antd';
 import {
   AdminImageCollectionEditor,
   type AdminImageCollectionItem,
   type AdminImageCollectionStatus,
   testId,
 } from '@catering-v2s/admin-ui-foundation';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {operationsLogger, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
-import {publicRtkRequest} from '../../../app/api/generated/public-edge.rtk';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {operationsLogger, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import {
   OPERATIONS_ADMIN_OPERATION_IDS,
   type SalesMenuDisplayMedia,
   type SalesMenuDraftItemView,
   type Uuid,
 } from '../../../app/api/generated/operations-edge';
-import {wireUuid} from '../../../app/api/wireUuid';
+import {AssetPreview} from '../../../app/components/AssetPreview';
 import type {OperationsPageContext} from '../../../app/routing/model';
 import {salesMenuTestIds} from '../salesMenuTestIds';
 import {commandErrorMessage, type SalesMenuCommands} from './salesMenuUiShared';
 
 const MEDIA_LIMITS = {maxImageCount: 6, maxImageBytes: 2 * 1024 * 1024} as const;
-
-export function SalesMenuAssetPreview({
-  assetRef,
-  localFile,
-  alt,
-  testId: previewTestId,
-}: {
-  assetRef?: string;
-  localFile?: File;
-  alt: string;
-  testId?: string;
-}) {
-  const [localUrl, setLocalUrl] = useState<string>();
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    if (!localFile) {
-      setLocalUrl(undefined);
-      return;
-    }
-    const nextUrl = URL.createObjectURL(localFile);
-    setLocalUrl(nextUrl);
-    return () => URL.revokeObjectURL(nextUrl);
-  }, [localFile]);
-  const request = useMemo(
-    () => (assetRef ? publicRtkRequest.getPublicAssetContent({assetRef: wireUuid(assetRef)}, {}) : undefined),
-    [assetRef],
-  );
-  const assetQuery = operationsRtk.useGetPublicAssetContentQuery(request!, {
-    skip: Boolean(localFile || !assetRef || !request),
-  });
-  useEffect(() => setFailed(false), [assetRef, localUrl, assetQuery.currentData?.publicUrl]);
-  const source = localUrl ?? assetQuery.currentData?.publicUrl;
-  if (!source || failed || assetQuery.isError)
-    return (
-      <span
-        style={{width: 96, height: 72, display: 'grid', placeItems: 'center', overflow: 'hidden'}}
-        role="status"
-        data-testid={previewTestId}
-      >
-        <Typography.Text type="secondary" style={{fontSize: 12}}>
-          图片不可用
-        </Typography.Text>
-        {assetRef && !localFile && (
-          <Button size="small" type="link" onClick={() => void assetQuery.refetch()}>
-            重试加载
-          </Button>
-        )}
-      </span>
-    );
-  return (
-    <Image
-      width={96}
-      height={72}
-      src={source}
-      alt={alt}
-      preview
-      style={{objectFit: 'cover'}}
-      onError={() => setFailed(true)}
-      data-testid={previewTestId}
-    />
-  );
-}
 
 type SalesMenuMediaItem = AdminImageCollectionItem & {
   assetRef?: Uuid;
@@ -427,7 +364,15 @@ export function SalesMenuMediaEditor({
         </Radio>
       </Radio.Group>
       {mediaMode === 'INHERIT_CATALOG' ? (
-        <Typography.Text type="secondary">预览使用商品当前主图；菜单不会复制出另一份图片。</Typography.Text>
+        <Space direction="vertical" size={8}>
+          <AssetPreview
+            assetRef={item.catalogPrimaryImageAssetRef ?? undefined}
+            alt={`${item.displayName}商品主图`}
+            width={96}
+            height={72}
+          />
+          <Typography.Text type="secondary">预览使用商品当前主图；菜单不会复制出另一份图片。</Typography.Text>
+        </Space>
       ) : (
         <>
           {problem && <Alert type="error" showIcon title={problem} />}
@@ -449,10 +394,12 @@ export function SalesMenuMediaEditor({
                 </span>
               ),
               renderPreview: (asset, index, previewId) => (
-                <SalesMenuAssetPreview
+                <AssetPreview
                   assetRef={asset.assetRef}
                   localFile={asset.file}
                   alt={`${index === 0 ? '主图' : `附图 ${index}`}预览`}
+                  width={96}
+                  height={72}
                   testId={previewId}
                 />
               ),

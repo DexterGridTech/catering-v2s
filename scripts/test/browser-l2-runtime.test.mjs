@@ -56,6 +56,14 @@ const salesMenuL2Source = readFileSync(
   path.join(root, 'apps/frontend/operations-admin/src/tests/l2/sales-menu.spec.ts'),
   'utf8',
 );
+const salesMenuPageSource = readFileSync(
+  path.join(root, 'apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx'),
+  'utf8',
+);
+const salesMenuUiSharedSource = readFileSync(
+  path.join(root, 'apps/frontend/operations-admin/src/features/sales-menu/ui/salesMenuUiShared.ts'),
+  'utf8',
+);
 const operationsL2Source = readFileSync(
   path.join(root, 'apps/frontend/operations-admin/src/tests/l2/operationsL2.ts'),
   'utf8',
@@ -135,10 +143,7 @@ test('sales-menu role-locked store scope records only its actual trigger touch',
     salesMenuL2Source.indexOf('async function selectStoreScope'),
     salesMenuL2Source.indexOf('async function openSalesMenu'),
   );
-  assert.match(
-    salesMenuScopeSource,
-    /touch => recordControlTouch\(storeScopeControlKey\(touch\), touch\.testId\)/,
-  );
+  assert.match(salesMenuScopeSource, /touch => recordControlTouch\(storeScopeControlKey\(touch\), touch\.testId\)/);
   const scopeControlKeys = new Set(
     salesMenuBlueprint.scenarios
       .flatMap(scenario => scenario.cases ?? [])
@@ -147,26 +152,76 @@ test('sales-menu role-locked store scope records only its actual trigger touch',
   assert.deepEqual([...scopeControlKeys], ['STORE_SCOPE_TRIGGER']);
 });
 
-test('sales-menu declares channel pagination only for its dedicated 21-channel journey', () => {
-  const paginationCases = salesMenuBlueprint.scenarios
+test('sales-menu declares one channel selector and popup accumulation for every case', () => {
+  const selectorCases = salesMenuBlueprint.scenarios
     .flatMap(scenario => scenario.cases ?? [])
-    .filter(row => row.controlKeys.includes('SALES_MENU_CHANNEL_PAGINATION'))
+    .filter(row => row.controlKeys.includes('SALES_MENU_CHANNEL_SELECTOR'))
     .map(row => row.caseId);
-  const runtimePaginationCases = salesMenuGeneratedScenarios.scenarios
+  const runtimeSelectorCases = salesMenuGeneratedScenarios.scenarios
     .flatMap(scenario => scenario.cases ?? [])
-    .filter(row => row.parameter.controlKeys.includes('SALES_MENU_CHANNEL_PAGINATION'))
+    .filter(row => row.parameter.controlKeys.includes('SALES_MENU_CHANNEL_SELECTOR'))
     .map(row => row.caseId);
-  const findChannelCardSource = salesMenuL2Source.slice(
-    salesMenuL2Source.indexOf('async function findChannelCard'),
+  const channelSelectorSource = salesMenuL2Source.slice(
+    salesMenuL2Source.indexOf('async function loadChannelOption'),
     salesMenuL2Source.indexOf('async function chooseChannel'),
   );
-  assert.deepEqual(paginationCases, ['sales-menu-entry-and-channels']);
-  assert.deepEqual(runtimePaginationCases, paginationCases);
-  assert.match(
-    findChannelCardSource,
-    /resetCursorToFirstPage\(page, salesMenuTestIds\.pageCursor, 'SALES_MENU_CHANNEL_PAGINATION', false\)/,
+  assert.equal(selectorCases.length, 18);
+  assert.deepEqual(runtimeSelectorCases, selectorCases);
+  assert.match(channelSelectorSource, /salesMenuTestIds\.channelOption\(channelRef\)/);
+  assert.match(channelSelectorSource, /scrollTop = element\.scrollHeight/);
+  assert.match(channelSelectorSource, /SALES_MENU_CHANNEL_SELECTOR_OPTIONS_READY/);
+  assert.doesNotMatch(salesMenuL2Source, /SALES_MENU_CHANNEL_PAGINATION|findChannelCard|channelCard/);
+});
+
+test('sales-menu blueprint records selector access instead of retired entry pagination', () => {
+  const entryCase = salesMenuBlueprint.scenarios
+    .flatMap(scenario => scenario.cases ?? [])
+    .find(row => row.caseId === 'sales-menu-entry-and-channels');
+  assert.ok(entryCase);
+  const steps = entryCase.steps.join(' ');
+  const oracles = entryCase.businessOracle.join(' ');
+  assert.match(steps, /经营入口下拉/);
+  assert.match(steps, /弹层滚动/);
+  assert.match(oracles, /rich Select/);
+  assert.match(oracles, /弹层滚动/);
+  assert.doesNotMatch(`${steps} ${oracles}`, /逐页|显式分页/);
+  assert.equal(salesMenuFixture.ownerFacts?.channelCandidatePageSize, 20);
+  assert.equal(salesMenuFixture.ownerFacts?.channelPageSize, undefined);
+});
+
+test('sales-menu entry and menu controls share one section and one-line rows', () => {
+  const entrySectionSource = salesMenuPageSource.slice(
+    salesMenuPageSource.indexOf('<Card title="经营入口"'),
+    salesMenuPageSource.indexOf('{!selectedMenu ?'),
   );
-  assert.doesNotMatch(findChannelCardSource, /recordControlTouch\('SALES_MENU_CHANNEL_PAGINATION'/);
+  assert.notEqual(entrySectionSource, '');
+  assert.doesNotMatch(entrySectionSource, /title="菜单工作区"/);
+
+  const channelOptionsSource = entrySectionSource.slice(
+    entrySectionSource.indexOf('options={channelItems.map'),
+    entrySectionSource.indexOf('onPopupScroll={event =>'),
+  );
+  assert.doesNotMatch(channelOptionsSource, /direction="vertical"/);
+  assert.match(channelOptionsSource, /wrap=\{false\}/);
+  assert.match(channelOptionsSource, /whiteSpace: 'nowrap'/);
+
+  const menuSelectorOffset = entrySectionSource.indexOf('value={selectedMenuRef}');
+  assert.notEqual(menuSelectorOffset, -1);
+  const menuRowSource = entrySectionSource.slice(entrySectionSource.lastIndexOf('<Row', menuSelectorOffset));
+  assert.match(menuRowSource, /<Segmented<SalesMenuMode>/);
+  assert.match(menuRowSource, /wrap=\{false\}/);
+  assert.match(menuRowSource, /testId\(salesMenuTestIds\.menuRefresh\)/);
+  assert.deepEqual(salesMenuBlueprint.bindings.controls.SALES_MENU_MENU_REFRESH, {
+    testId: 'sales-menu-menu-refresh',
+    sourceFiles: [
+      'apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts',
+      'apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx',
+    ],
+  });
+  assert.deepEqual(salesMenuBlueprint.bindings.controls.SALES_MENU_MANAGER_ACTION.sourceFiles, [
+    'apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts',
+    'apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuManagerDrawer.tsx',
+  ]);
 });
 
 test('sales-menu case control denominators follow each case action trace', () => {
@@ -181,7 +236,9 @@ test('sales-menu case control denominators follow each case action trace', () =>
   const caseRows = salesMenuBlueprint.scenarios.flatMap(scenario => scenario.cases ?? []);
   const baselineItemCaseRows = caseRows.filter(row => {
     const caseFixture = salesMenuFixture.caseFixtures[row.fixtureRef];
-    return Array.isArray(caseFixture?.baselineCandidateFixtureIds) && caseFixture.baselineCandidateFixtureIds.length > 0;
+    return (
+      Array.isArray(caseFixture?.baselineCandidateFixtureIds) && caseFixture.baselineCandidateFixtureIds.length > 0
+    );
   });
   assert.ok(baselineItemCaseRows.length > 0);
   for (const row of baselineItemCaseRows) assert.equal(row.controlKeys.includes('SALES_MENU_ITEM_TABLE'), true);
@@ -270,7 +327,7 @@ test('sales-menu shared selection chain uses DOM read models rather than query c
   );
   assert.match(
     sharedSelectionSource,
-    /await expect\(channel\)\.toContainText\('当前入口'\);[\s\S]*?await expect\(menuSelector\.locator\)\.toBeEnabled\(\);/,
+    /await expect\(selector\)\.toBeEnabled\(\);[\s\S]*?const channelOption = await loadChannelOption\(page, channelRef\);[\s\S]*?await expect\(menuSelector\.locator\)\.toBeEnabled\(\);/,
   );
   assert.match(
     sharedSelectionSource,
@@ -298,6 +355,35 @@ test('sales-menu manager pagination uses current DOM state without HTTP-count di
   assert.match(managerPaginationSource, /readModelSourceBasis: 'CURRENT_DOM_READ_MODEL'/);
   assert.doesNotMatch(managerPaginationSource, /runtime\.observations\.filter/);
   assert.doesNotMatch(managerPaginationSource, /waitForOperation\(/);
+});
+
+test('sales-menu table presentation keeps the approved columns and density rules', () => {
+  const draftStart = salesMenuPageSource.indexOf('function DraftSalesItemTable');
+  const publishedStart = salesMenuPageSource.indexOf('function PublishedSalesItemTable');
+  const operationStart = salesMenuPageSource.indexOf('function SalesMenuOperationTable');
+  const draftSource = salesMenuPageSource.slice(draftStart, publishedStart);
+  const publishedSource = salesMenuPageSource.slice(publishedStart, operationStart);
+  for (const [tableSource, columns] of [
+    [draftSource, ['菜单商品', '挂牌价', '商品形态', '销售规格', '销售约束']],
+    [publishedSource, ['菜单商品', '挂牌价', '商品形态', '销售规格', '库存状态', '销售状态']],
+  ]) {
+    let previous = -1;
+    for (const title of columns) {
+      const position = tableSource.indexOf(`title: '${title}'`);
+      assert.ok(position > previous, `column ${title} is out of order`);
+      previous = position;
+    }
+  }
+  assert.match(draftSource, /itemMediaLabel\(row\)/);
+  assert.match(draftSource, /\{row\.displayName\}[\s\S]*?\{row\.itemCode\}/);
+  assert.match(publishedSource, /salesMenuPublishedPriceLabel\(row\)/);
+  assert.match(publishedSource, /salesMenuSpecificationLabel\(row\)/);
+  assert.match(salesMenuUiSharedSource, /listedPriceCents === defaultPriceCents/);
+  assert.match(salesMenuUiSharedSource, /salesMenuStackedLines\(/);
+  assert.match(salesMenuUiSharedSource, /salesMenuPublishedPriceLabel/);
+  assert.doesNotMatch(salesMenuUiSharedSource, /\.join\('；'\)|\.join\('、'\)/);
+  assert.match(salesMenuPageSource, /<Col xs=\{24\} lg=\{5\} style=\{\{minWidth: 0\}\}>/);
+  assert.match(salesMenuPageSource, /<Col xs=\{24\} lg=\{19\} style=\{\{minWidth: 0\}\}>/);
 });
 
 test('shared option selection waits on the native input before opening an owner-backed portal', () => {
@@ -1415,7 +1501,10 @@ test('browser L2 readiness evidence binds current repository bytes and exposes o
     binding.files.every(file => file.path.startsWith('apps/backend/') || file.path.startsWith('apps/frontend/')),
     true,
   );
-  assert.equal(binding.files.some(file => file.path.startsWith('tools/') || file.path.startsWith('scripts/')), false);
+  assert.equal(
+    binding.files.some(file => file.path.startsWith('tools/') || file.path.startsWith('scripts/')),
+    false,
+  );
   assert.deepEqual(binding.excludedFilePatterns, ['.DS_Store', '*.log', '*.apk', '*.aab', '*.keystore']);
   assert.equal(
     binding.files.some(

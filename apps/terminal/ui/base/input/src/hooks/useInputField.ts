@@ -5,10 +5,10 @@ import {
   type EditResult,
   type EditState,
   type KeyboardKey,
-} from '../model/editText'
-import type {InputRegistrationToken} from '../model/snapshot'
-import {useInputController, useInputFieldKeyboardState, useInputScrollAncestor} from '../context'
-import type {InputFieldOptions, InputFieldResult} from '../types'
+} from '../foundations/editText'
+import type {InputRegistrationToken} from '../foundations/snapshot'
+import {useInputController, useInputFieldKeyboardState, useInputScrollAncestor} from '../contexts/context'
+import type {InputFieldOptions, InputFieldResult} from '../types/types'
 import type {PrimitiveInputHandle} from '@catering-v2s/ui-base-primitives'
 
 type InputPressEvent = Readonly<{

@@ -115,7 +115,7 @@ function validatePolicy() {
     'SALES_MENU_L2_FIXTURE_BOUNDARY_INVALID',
   );
   assert(
-    fixture.ownerFacts?.channelPageSize === 20 &&
+    fixture.ownerFacts?.channelCandidatePageSize === 20 &&
       fixture.ownerFacts?.menuPageSize === 20 &&
       fixture.ownerFacts?.candidatePageSize === 20,
     'SALES_MENU_L2_FIXTURE_PAGE_SIZE_INVALID',

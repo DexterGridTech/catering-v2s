@@ -19,14 +19,17 @@ import {
   Table,
   Tag,
   Typography,
+  theme,
 } from 'antd';
 import type {MenuProps, TableColumnsType} from 'antd';
 import {
   CursorPagination,
-  NameCodeText,
   adminDrawerSurfaceProps,
   adminListState,
+  closedCodeLabel,
   testId,
+  useOverlayLock,
+  useSubmissionLifecycle,
   useDrawerFormLifecycle,
 } from '@catering-v2s/admin-ui-foundation';
 import {
@@ -55,7 +58,6 @@ import type {
 import {ACTION_CAPABILITIES} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {
-  formatSalesMenuPrice,
   salesMenuChannelStatusLabel,
   salesMenuInventoryAvailabilityLabel,
   salesMenuManualSaleStatusLabel,
@@ -67,18 +69,21 @@ import {
 } from '../model/salesMenuModel';
 import {useSalesMenuCommands} from '../model/useSalesMenuCommands';
 import {useSalesMenuReadModel} from '../model/useSalesMenuReadModel';
+import {accessKindLabels, orderKindLabels} from '../../business-channel/model/businessChannelCodeLabels';
 import {salesMenuTestIds} from '../salesMenuTestIds';
-import {SalesMenuAssetPreview} from './SalesMenuItemMediaEditor';
+import {AssetPreview} from '../../../app/components/AssetPreview';
 import {SalesMenuTaskSurfaces} from './SalesMenuTaskSurfaces';
 import {
   commandErrorMessage,
   formatOccurredAt,
   menuStateLabel,
   problemMessage,
-  saleContentLabel,
   salesMenuConstraintLabel,
   salesMenuPriceLabel,
+  salesMenuPublishedPriceLabel,
   salesMenuSpecificationLabel,
+  type SalesMenuStackedLabel,
+  itemMediaLabel,
   type DraftOrPublishedItem,
   type SalesMenuCommands,
   type SalesMenuReadModel,
@@ -90,6 +95,35 @@ const SalesMenuSelectorInput = forwardRef<HTMLInputElement, ComponentPropsWithou
 ));
 
 SalesMenuSelectorInput.displayName = 'SalesMenuSelectorInput';
+
+type SalesMenuManualTargetKind = 'ITEM' | 'SKU' | 'ORDER_OPTION_VALUE';
+type SalesMenuStatusTarget = {
+  targetKind: SalesMenuManualTargetKind;
+  targetRef: Uuid;
+  groupLabel: string;
+  label: string;
+  state: 'NORMAL' | 'MANUAL_SOLD_OUT';
+  reason: string | null;
+};
+
+function statusTargetKey(target: Pick<SalesMenuStatusTarget, 'targetKind' | 'targetRef'>): string {
+  return `${target.targetKind}:${String(target.targetRef)}`;
+}
+
+function statusTargetStateLabel(state: SalesMenuStatusTarget['state']): string {
+  return state === 'MANUAL_SOLD_OUT' ? '人工沽清' : '正常销售';
+}
+
+function SalesMenuStackedCell({value}: {value: SalesMenuStackedLabel}) {
+  if (!Array.isArray(value)) return value;
+  return (
+    <span style={{display: 'grid', gap: 2}}>
+      {value.map((line, index) => (
+        <span key={`${line}-${index}`}>{line}</span>
+      ))}
+    </span>
+  );
+}
 
 function SalesMenuSectionPanel({
   read,
@@ -108,6 +142,7 @@ function SalesMenuSectionPanel({
   onDelete: (section: SalesMenuSectionView) => void;
   onMove: (section: SalesMenuSectionView, direction: 'UP' | 'DOWN') => void;
 }) {
+  const {token} = theme.useToken();
   const page = read.mode === 'PUBLISHED' ? read.publishedSections.page : read.draftSections.page;
   const rows = page?.items ?? [];
   if (read.mode === 'OPERATIONS')
@@ -132,7 +167,7 @@ function SalesMenuSectionPanel({
       title="销售分区"
       extra={
         <Button
-          type="link"
+          type="primary"
           icon={<PlusOutlined />}
           onClick={onCreate}
           disabled={!canEdit}
@@ -146,6 +181,7 @@ function SalesMenuSectionPanel({
       <Space direction="vertical" size={4} style={{display: 'flex'}}>
         {rows.length === 0 && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无销售分区" />}
         {rows.map(section => {
+          const active = read.selectedSectionRef === section.salesSectionRef;
           const menuItems: MenuProps['items'] = [
             {
               key: 'rename',
@@ -177,17 +213,29 @@ function SalesMenuSectionPanel({
           return (
             <div key={section.salesSectionRef} style={{display: 'flex', alignItems: 'center', gap: 4, minWidth: 0}}>
               <Button
-                type={read.selectedSectionRef === section.salesSectionRef ? 'primary' : 'text'}
+                type="text"
                 onClick={() => read.setSelectedSectionRef(section.salesSectionRef)}
                 style={{
+                  appearance: 'none',
+                  width: '100%',
+                  minHeight: 40,
+                  padding: '8px 10px',
+                  border: `1px solid ${active ? token.colorPrimaryBorder : token.colorBorderSecondary}`,
+                  borderInlineStart: `3px solid ${active ? token.colorPrimary : 'transparent'}`,
+                  borderRadius: token.borderRadius,
+                  background: active ? token.colorPrimaryBg : token.colorBgContainer,
+                  color: token.colorText,
+                  cursor: 'pointer',
+                  font: 'inherit',
                   flex: '1 1 auto',
-                  minWidth: 0,
                   textAlign: 'left',
+                  display: 'flex',
+                  justifyContent: 'flex-start',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                 }}
-                aria-current={read.selectedSectionRef === section.salesSectionRef ? 'true' : undefined}
+                aria-current={active ? 'true' : undefined}
                 {...testId(salesMenuTestIds.section(section.salesSectionRef))}
               >
                 {section.name} <Typography.Text type="secondary">({section.itemCount})</Typography.Text>
@@ -238,43 +286,61 @@ function DraftSalesItemTable({
       title: '菜单商品',
       key: 'displayName',
       fixed: 'left',
-      width: 280,
+      width: 210,
       render: (_, row) => (
         <Space align="start" size={8}>
-          {row.displayMedia.mode === 'CUSTOM' && row.displayMedia.primaryAssetRef ? (
-            <SalesMenuAssetPreview assetRef={row.displayMedia.primaryAssetRef} alt={`${row.displayName}展示图`} />
-          ) : (
-            <span
-              style={{width: 96, height: 72, display: 'grid', placeItems: 'center', background: '#f5f5f5'}}
-              aria-label="沿用商品图片"
-            >
-              <Typography.Text type="secondary" style={{fontSize: 12}}>
-                沿用商品图片
-              </Typography.Text>
-            </span>
-          )}
-          <Space direction="vertical" size={0}>
+          <Space direction="vertical" size={2} align="center" style={{width: 96, flex: '0 0 96px'}}>
+            <AssetPreview
+              assetRef={
+                row.displayMedia.mode === 'CUSTOM'
+                  ? (row.displayMedia.primaryAssetRef ?? undefined)
+                  : (row.catalogPrimaryImageAssetRef ?? undefined)
+              }
+              alt={`${row.displayName}展示图`}
+              width={96}
+              height={72}
+            />
+            <Typography.Text type="secondary" style={{fontSize: 12, whiteSpace: 'nowrap'}}>
+              {itemMediaLabel(row)}
+            </Typography.Text>
+          </Space>
+          <Space direction="vertical" size={0} style={{minWidth: 0}}>
             <Button
               type="link"
-              style={{padding: 0, height: 'auto'}}
+              style={{padding: 0, height: 'auto', maxWidth: '100%', display: 'block', textAlign: 'left'}}
               onClick={event => onEdit(row, event.currentTarget)}
               {...testId(salesMenuTestIds.item(row.salesItemRef))}
             >
-              <NameCodeText name={row.displayName} code={row.itemCode} emphasizeName />
+              {row.displayName}
             </Button>
+            <Typography.Text type="secondary" style={{fontSize: 12}}>
+              {row.itemCode}
+            </Typography.Text>
+            <Typography.Text type="secondary" style={{fontSize: 12}}>
+              {salesMenuProductShapeLabel(row.productShape)}
+            </Typography.Text>
           </Space>
         </Space>
       ),
     },
     {
-      title: '商品形态',
-      key: 'productShape',
-      width: 150,
-      render: (_, row) => salesMenuProductShapeLabel(row.productShape),
+      title: '挂牌价',
+      key: 'price',
+      width: 108,
+      render: (_, row) => <SalesMenuStackedCell value={salesMenuPriceLabel(row)} />,
     },
-    {title: '销售规格', key: 'saleContent', width: 180, render: (_, row) => salesMenuSpecificationLabel(row)},
-    {title: '挂牌价', key: 'price', width: 320, render: (_, row) => salesMenuPriceLabel(row)},
-    {title: '销售约束', key: 'constraints', width: 220, render: (_, row) => salesMenuConstraintLabel(row)},
+    {
+      title: '销售规格',
+      key: 'saleContent',
+      width: 120,
+      render: (_, row) => <SalesMenuStackedCell value={salesMenuSpecificationLabel(row)} />,
+    },
+    {
+      title: '销售约束',
+      key: 'constraints',
+      width: 110,
+      render: (_, row) => <SalesMenuStackedCell value={salesMenuConstraintLabel(row)} />,
+    },
     {
       title: SALES_MENU_OPERATION_COLUMN_TITLE,
       key: 'actions',
@@ -340,6 +406,7 @@ function DraftSalesItemTable({
         )}
         <Table<SalesMenuDraftItemView>
           size="small"
+          tableLayout="fixed"
           rowKey="salesItemRef"
           {...adminListState({
             loading: read.draftItems.query.isFetching,
@@ -350,7 +417,7 @@ function DraftSalesItemTable({
           dataSource={rows}
           columns={columns}
           pagination={false}
-          scroll={{x: 1400}}
+          scroll={{x: 620}}
         />
         <CursorPagination
           state={read.draftItems.cursor}
@@ -379,7 +446,7 @@ function PublishedSalesItemTable({
       title: '菜单商品',
       key: 'displayName',
       fixed: 'left',
-      width: 220,
+      width: 165,
       render: (_, row) => (
         <Space direction="vertical" size={0}>
           <Button
@@ -393,24 +460,23 @@ function PublishedSalesItemTable({
           <Typography.Text type="secondary" style={{fontSize: 12}}>
             {row.itemCode}
           </Typography.Text>
+          <Typography.Text type="secondary" style={{fontSize: 12}}>
+            {salesMenuProductShapeLabel(row.productShape)}
+          </Typography.Text>
         </Space>
       ),
     },
     {
-      title: '商品形态',
-      key: 'productShape',
-      width: 150,
-      render: (_, row) => salesMenuProductShapeLabel(row.productShape),
-    },
-    {title: '销售规格', key: 'saleContent', width: 220, render: (_, row) => saleContentLabel(row)},
-    {
       title: '挂牌价',
       key: 'price',
-      width: 120,
-      render: (_, row) =>
-        row.saleContent.kind === 'SKU_SELECTION'
-          ? '按规格分别设置'
-          : formatSalesMenuPrice(row.saleContent.listedPriceCents),
+      width: 80,
+      render: (_, row) => <SalesMenuStackedCell value={salesMenuPublishedPriceLabel(row)} />,
+    },
+    {
+      title: '销售规格',
+      key: 'saleContent',
+      width: 147,
+      render: (_, row) => <SalesMenuStackedCell value={salesMenuSpecificationLabel(row)} />,
     },
     {
       title: '库存状态',
@@ -443,6 +509,7 @@ function PublishedSalesItemTable({
         )}
         <Table<SalesMenuPublishedItemView>
           size="small"
+          tableLayout="fixed"
           rowKey="salesItemRef"
           {...adminListState({
             loading: read.publishedItems.query.isFetching,
@@ -453,7 +520,7 @@ function PublishedSalesItemTable({
           dataSource={rows}
           columns={columns}
           pagination={false}
-          scroll={{x: 1050}}
+          scroll={{x: 652}}
         />
         <CursorPagination
           state={read.publishedItems.cursor}
@@ -542,9 +609,13 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
   const menuActionTriggerRef = useRef<HTMLElement | null>(null);
   const [detailItem, setDetailItem] = useState<DraftOrPublishedItem>();
   const [statusItem, setStatusItem] = useState<SalesMenuPublishedItemView>();
+  const [statusTargetRef, setStatusTargetRef] = useState<string>();
   const [statusChoice, setStatusChoice] = useState<'NORMAL' | 'SOLD_OUT'>('NORMAL');
   const [soldOutReason, setSoldOutReason] = useState('');
+  const statusReasonRef = useRef<HTMLTextAreaElement | null>(null);
   const [confirmation, setConfirmation] = useState<{title: string; content: ReactNode; run: () => Promise<void>}>();
+  const statusSubmission = useSubmissionLifecycle();
+  useOverlayLock(Boolean(statusItem));
 
   const selectedMenu = read.selectedMenu;
   const selectedMenuRef = read.selectedMenuRef;
@@ -594,6 +665,9 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
   useEffect(() => {
     if (scheduleOpen) resetScheduleLifecycle();
   }, [resetScheduleLifecycle, scheduleOpen]);
+  useEffect(() => {
+    if (statusItem) statusSubmission.reset();
+  }, [statusItem, statusSubmission]);
   const createAfterOpenChange = useCallback(
     (visible: boolean) => {
       createLifecycle.afterOpenChange(visible);
@@ -657,6 +731,81 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
   const askConfirmation = useCallback((title: string, content: ReactNode, run: () => Promise<void>) => {
     setConfirmation({title, content, run});
   }, []);
+
+  const statusTargets = useMemo<SalesMenuStatusTarget[]>(() => {
+    if (!statusItem) return [];
+    const childStatusByKey = new Map(
+      statusItem.manualSaleTargetStatuses.map(status => [statusTargetKey(status), status] as const),
+    );
+    const childTarget = (
+      targetKind: Exclude<SalesMenuManualTargetKind, 'ITEM'>,
+      targetRef: Uuid,
+      groupLabel: string,
+      label: string,
+    ): SalesMenuStatusTarget => {
+      const status = childStatusByKey.get(statusTargetKey({targetKind, targetRef}));
+      return {
+        targetKind,
+        targetRef,
+        groupLabel,
+        label,
+        state: status?.state ?? 'NORMAL',
+        reason: status?.reason ?? null,
+      };
+    };
+    const targets: SalesMenuStatusTarget[] = [
+      {
+        targetKind: 'ITEM',
+        targetRef: statusItem.salesItemRef,
+        groupLabel: '整个销售项',
+        label: statusItem.displayName,
+        state: statusItem.manualSaleStatus.state,
+        reason: statusItem.manualSaleStatus.reason,
+      },
+    ];
+    if (statusItem.saleContent.kind === 'SKU_SELECTION') {
+      targets.push(
+        ...statusItem.saleContent.skuPrices.map(price =>
+          childTarget('SKU', price.skuRef, '销售规格', price.skuName),
+        ),
+      );
+    }
+    if (statusItem.saleContent.kind === 'DIRECT') {
+      for (const option of statusItem.saleContent.selectedOrderOptions) {
+        for (const value of option.values) {
+          targets.push(
+            childTarget(
+              'ORDER_OPTION_VALUE',
+              value.definitionValueRef,
+              `销售选项：${option.name}`,
+              value.name,
+            ),
+          );
+        }
+      }
+    }
+    return targets;
+  }, [statusItem]);
+
+  const selectedStatusTarget = statusTargets.find(target => statusTargetKey(target) === statusTargetRef);
+
+  useEffect(() => {
+    if (!statusItem || commands.isBusy) return;
+    const refreshed = read.publishedItems.page?.items.find(item => item.salesItemRef === statusItem.salesItemRef);
+    if (refreshed && refreshed !== statusItem) setStatusItem(refreshed);
+  }, [commands.isBusy, read.publishedItems.page, statusItem]);
+
+  const refreshPublishedStatus = useCallback(() => {
+    void read.refresh().catch(error => {
+      operationsLogger.warn({
+        event: 'sales-menu.status',
+        phase: 'READBACK',
+        outcome: 'FAILED',
+        operationId: 'sales-menu-status-readback',
+        errorCode: error instanceof Error ? error.message : 'SALES_MENU_STATUS_READBACK_FAILED',
+      });
+    });
+  }, [read.refresh]);
 
   const createMenu = useCallback(async () => {
     if (!storeRef || !selectedChannelRef || !createName.trim()) return;
@@ -877,14 +1026,30 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
 
   const openStatus = useCallback((item: SalesMenuPublishedItemView) => {
     setStatusItem(item);
+    setStatusTargetRef(statusTargetKey({targetKind: 'ITEM', targetRef: item.salesItemRef}));
     setStatusChoice(item.manualSaleStatus.state === 'MANUAL_SOLD_OUT' ? 'SOLD_OUT' : 'NORMAL');
-    setSoldOutReason('');
+    setSoldOutReason(item.manualSaleStatus.reason ?? '');
+    statusSubmission.reset();
   }, []);
 
+  const selectStatusTarget = useCallback(
+    (nextTargetRef: string) => {
+      setStatusTargetRef(nextTargetRef);
+      const nextTarget = statusTargets.find(target => statusTargetKey(target) === nextTargetRef);
+      if (nextTarget) {
+        setStatusChoice(nextTarget.state === 'MANUAL_SOLD_OUT' ? 'SOLD_OUT' : 'NORMAL');
+        setSoldOutReason(nextTarget.reason ?? '');
+      }
+      statusSubmission.markBusinessIntentChanged();
+    },
+    [statusSubmission, statusTargets],
+  );
+
   const submitStatus = useCallback(() => {
-    if (!statusItem || !basePath || !selectedChannelRef || !selectedMenu || !canEdit) return;
+    if (!statusItem || !basePath || !selectedChannelRef || !selectedMenu || !canEdit || !selectedStatusTarget) return;
     if (statusChoice === 'SOLD_OUT' && !soldOutReason.trim()) {
       setFeedback({type: 'error', message: '设置人工沽清时必须填写原因。'});
+      window.requestAnimationFrame(() => statusReasonRef.current?.focus());
       return;
     }
     const expectedVersion = selectedMenu.version;
@@ -899,6 +1064,8 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
       operationId,
       diagnostic: {
         salesItemRef: String(statusItem.salesItemRef),
+        targetKind: selectedStatusTarget.targetKind,
+        targetRef: String(selectedStatusTarget.targetRef),
         channelRef: String(selectedChannelRef),
         itemVersion: statusItem.version,
         menuVersion: expectedVersion,
@@ -907,54 +1074,72 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
       },
     });
     if (statusChoice === 'NORMAL') {
-      setStatusItem(undefined);
       askConfirmation('确认恢复销售？', '恢复的是人工销售状态；库存自动不可售不会在此处恢复。', async () => {
         await runCommand(
           () =>
             commands.restore(
               {...basePath, salesItemRef: statusItem.salesItemRef, channelRef: selectedChannelRef},
-              {confirm: true, expectedVersion},
+              {
+                target: {
+                  targetKind: selectedStatusTarget.targetKind,
+                  targetRef: selectedStatusTarget.targetRef,
+                },
+                confirm: true,
+                expectedVersion,
+              },
             ),
           '销售状态已恢复为正常销售。',
+          refreshPublishedStatus,
         );
       });
       return;
     }
     void runCommand(
       () =>
-        commands.soldOut(
-          {...basePath, salesItemRef: statusItem.salesItemRef, channelRef: selectedChannelRef},
-          {reason: soldOutReason.trim(), expectedVersion},
-        ),
+          commands.soldOut(
+            {...basePath, salesItemRef: statusItem.salesItemRef, channelRef: selectedChannelRef},
+            {
+              target: {
+                targetKind: selectedStatusTarget.targetKind,
+                targetRef: selectedStatusTarget.targetRef,
+              },
+              reason: soldOutReason.trim(),
+              expectedVersion,
+            },
+          ),
       '销售状态已设置为沽清。',
-      () => setStatusItem(undefined),
+      refreshPublishedStatus,
     );
   }, [
     askConfirmation,
     basePath,
     canEdit,
     commands,
+    refreshPublishedStatus,
     runCommand,
     selectedChannelRef,
     selectedMenu,
     soldOutReason,
     statusChoice,
     statusItem,
+    selectedStatusTarget,
+    statusReasonRef,
   ]);
 
-  const channelCards = read.channels.page?.items ?? [];
-  const selectorItems = [...(read.selector.page?.items ?? [])];
+  const channelItems = read.channels.items;
+  const selectorItems = [...read.selector.items];
   if (selectedMenu && !selectorItems.some(menu => menu.salesMenuRef === selectedMenu.salesMenuRef))
     selectorItems.unshift(selectedMenu);
   const channelProblem = problemMessage(read.channels.query.error, '经营入口暂时无法获取，请重试。');
+  const channelTemplateProblem = problemMessage(
+    read.channels.templateQuery.error,
+    '渠道模板信息暂时无法获取，请重试。',
+  );
   const menuProblem = problemMessage(read.selector.query.error, '菜单列表暂时无法获取，请重试。');
 
   return (
     <div {...testId(salesMenuTestIds.page)} data-scope-ref={queryContext.scopeRef}>
       <Space direction="vertical" size={16} style={{display: 'flex'}}>
-        <Typography.Title level={2} style={{margin: 0}}>
-          门店销售菜单
-        </Typography.Title>
         {feedback && (
           <Alert
             type={feedback.type}
@@ -969,53 +1154,91 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
           <Alert type="info" showIcon title="请先选择门店数据节点。" />
         ) : (
           <>
-            <Card title="经营入口" size="small" {...testId(salesMenuTestIds.channelCards)}>
-              {channelProblem && (
-                <Alert
-                  type="error"
-                  showIcon
-                  title={channelProblem}
-                  action={<Button onClick={() => void read.channels.query.refetch()}>重试</Button>}
-                />
+            <Card title="经营入口" size="small">
+              {(channelProblem || channelTemplateProblem) && (
+                <Space direction="vertical" size={8} style={{display: 'flex', marginBottom: 12}}>
+                  {channelProblem && (
+                    <Alert
+                      type="error"
+                      showIcon
+                      title={channelProblem}
+                      action={<Button onClick={() => void read.channels.query.refetch()}>重试</Button>}
+                    />
+                  )}
+                  {channelTemplateProblem && (
+                    <Alert
+                      type="warning"
+                      showIcon
+                      title={channelTemplateProblem}
+                      action={<Button onClick={() => void read.channels.templateQuery.refetch()}>重试</Button>}
+                    />
+                  )}
+                </Space>
               )}
-              <Row gutter={[12, 12]}>
-                {channelCards.map(channel => (
-                  <Col xs={24} sm={12} key={channel.channelRef}>
-                    <Card
-                      size="small"
-                      hoverable
-                      onClick={() => read.selectChannel(channel.channelRef)}
-                      style={{borderColor: channel.channelRef === selectedChannelRef ? '#1677ff' : undefined}}
-                      {...testId(salesMenuTestIds.channelCard(channel.channelRef))}
-                    >
-                      <Space direction="vertical" size={4} style={{display: 'flex'}}>
-                        <Space>
-                          <Typography.Text strong>{channel.channelName}</Typography.Text>
-                          {channel.channelRef === selectedChannelRef && <Tag color="blue">当前入口</Tag>}
-                        </Space>
-                        <Typography.Text type={channel.status === 'ENABLED' ? 'success' : 'warning'}>
-                          {salesMenuChannelStatusLabel(channel.status)}
-                        </Typography.Text>
-                        <Typography.Text type="secondary">菜单按顺序游标分页查看</Typography.Text>
-                      </Space>
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-              {read.channels.query.isFetching && channelCards.length === 0 && <Spin />}
-              {!read.channels.query.isFetching && channelCards.length === 0 && (
-                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无可管理的堂食或外带经营入口" />
-              )}
-              <CursorPagination
-                state={read.channels.cursor}
-                nextCursor={read.channels.page?.nextCursor ?? undefined}
-                testIdPrefix={salesMenuTestIds.pageCursor}
-                style={{marginTop: 12}}
-              />
-            </Card>
-            <Card size="small" title="菜单工作区">
               <Space direction="vertical" size={12} style={{display: 'flex'}}>
                 <Row gutter={[12, 12]} align="middle">
+                  <Col flex="auto">
+                    <Select
+                      value={selectedChannelRef}
+                      placeholder="选择经营入口"
+                      loading={read.channels.query.isFetching}
+                      disabled={!read.scopeReady}
+                      style={{width: '100%'}}
+                      virtual={false}
+                      options={channelItems.map(channel => {
+                        const template = read.channels.templateByRef.get(channel.templateRef);
+                        return {
+                          value: channel.channelRef,
+                          label: (
+                            <Space size={8} wrap={false} style={{display: 'flex', whiteSpace: 'nowrap'}}>
+                              <Typography.Text strong style={{whiteSpace: 'nowrap'}}>
+                                {channel.channelName}
+                              </Typography.Text>
+                              <Tag
+                                color={
+                                  channel.status === 'ENABLED'
+                                    ? 'success'
+                                    : channel.status === 'VOIDED'
+                                      ? 'error'
+                                      : 'warning'
+                                }
+                                style={{marginInlineEnd: 0}}
+                              >
+                                {salesMenuChannelStatusLabel(channel.status)}
+                              </Tag>
+                              <Typography.Text type="secondary" style={{whiteSpace: 'nowrap'}}>
+                                渠道模板：
+                                {template?.templateName ?? (read.channels.templateQuery.isFetching ? '加载中…' : '—')}
+                                {' · '}
+                                接入：{template ? closedCodeLabel(accessKindLabels, template.accessKind) : '—'}
+                                {' · '}
+                                订单：{template ? closedCodeLabel(orderKindLabels, template.orderKind) : '—'}
+                                {' · '}
+                                模板状态：{template ? salesMenuChannelStatusLabel(template.status) : '—'}
+                              </Typography.Text>
+                            </Space>
+                          ),
+                          'data-testid': salesMenuTestIds.channelOption(channel.channelRef),
+                        };
+                      })}
+                      onPopupScroll={event =>
+                        read.channels.candidates.onPopupScroll(event, read.channels.query.isFetching)
+                      }
+                      onChange={value => read.selectChannel(value as Uuid)}
+                      {...testId(salesMenuTestIds.channelSelector)}
+                    />
+                  </Col>
+                  <Col flex="none">
+                    <Button
+                      onClick={() => setManagerOpen(true)}
+                      disabled={!selectedChannelRef}
+                      {...testId(salesMenuTestIds.managerOpen)}
+                    >
+                      管理菜单
+                    </Button>
+                  </Col>
+                </Row>
+                <Row gutter={[12, 12]} align="middle" wrap={false} style={{overflowX: 'auto', paddingBottom: 4}}>
                   <Col flex="none">
                     <Segmented<SalesMenuMode>
                       value={read.mode}
@@ -1034,61 +1257,77 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                       {...testId(salesMenuTestIds.modes)}
                     />
                   </Col>
-                  <Col flex="auto">
-                    <Space wrap>
-                      <Select
-                        value={selectedMenuRef}
-                        placeholder="选择菜单"
-                        loading={read.selector.query.isFetching}
-                        disabled={!selectedChannelRef}
-                        showSearch
-                        filterOption={false}
-                        searchValue={read.selectorQuery}
-                        style={{minWidth: 260}}
-                        virtual={false}
-                        components={{input: SalesMenuSelectorInput}}
-                        options={selectorItems.map(menu => ({
-                          value: menu.salesMenuRef,
-                          label: (
-                            <Space>
-                              <span>{menu.name}</span>
-                              <Typography.Text type="secondary">{menuStateLabel(menu)}</Typography.Text>
-                            </Space>
-                          ),
-                          'data-testid': salesMenuTestIds.menuOption(menu.salesMenuRef),
-                        }))}
-                        onSearch={value => {
-                          read.setSelectorQuery(value);
-                          read.selector.cursor.reset();
-                        }}
-                        onChange={value => {
-                          read.setSelectorQuery('');
-                          read.selector.cursor.reset();
-                          read.selectMenu(value as Uuid);
-                        }}
-                        {...testId(salesMenuTestIds.menuSelector)}
-                      />
-                      <Button
-                        onClick={() => setManagerOpen(true)}
-                        disabled={!selectedChannelRef}
-                        {...testId(salesMenuTestIds.managerOpen)}
-                      >
-                        管理菜单
-                      </Button>
-                      <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={event => {
-                          createTriggerRef.current = event.currentTarget;
-                          setCreateOpen(true);
-                        }}
-                        disabled={!canEdit || !selectedChannelRef}
-                        {...testId(salesMenuTestIds.menuCreate)}
-                      >
-                        新建菜单
-                      </Button>
-                    </Space>
+                  <Col flex="auto" style={{minWidth: 260}}>
+                    <Select
+                      value={selectedMenuRef}
+                      placeholder="选择菜单"
+                      loading={read.selector.query.isFetching}
+                      disabled={!selectedChannelRef}
+                      showSearch
+                      filterOption={false}
+                      searchValue={read.selectorQuery}
+                      style={{width: '100%', minWidth: 260}}
+                      virtual={false}
+                      components={{input: SalesMenuSelectorInput}}
+                      options={selectorItems.map(menu => ({
+                        value: menu.salesMenuRef,
+                        label: (
+                          <Space wrap={false} style={{whiteSpace: 'nowrap'}}>
+                            <span>{menu.name}</span>
+                            <Typography.Text type="secondary">{menuStateLabel(menu)}</Typography.Text>
+                          </Space>
+                        ),
+                        'data-testid': salesMenuTestIds.menuOption(menu.salesMenuRef),
+                      }))}
+                      onPopupScroll={event =>
+                        read.selector.candidates.onPopupScroll(event, read.selector.query.isFetching)
+                      }
+                      onSearch={value => read.setSelectorQuery(value)}
+                      onChange={value => {
+                        read.setSelectorQuery('');
+                        read.selectMenu(value as Uuid);
+                      }}
+                      {...testId(salesMenuTestIds.menuSelector)}
+                    />
                   </Col>
+                  {selectedMenu && (
+                    <Col flex="none">
+                      <Space wrap={false}>
+                        <Tag>{menuStateLabel(selectedMenu)}</Tag>
+                        <Typography.Text type="secondary">
+                          {salesMenuScheduleLabel(selectedMenu.draftSchedule)}
+                        </Typography.Text>
+                        <Button
+                          disabled={!canEdit}
+                          onMouseDown={event => (menuActionTriggerRef.current = event.currentTarget)}
+                          onClick={() => {
+                            setSchedule(selectedMenu.draftSchedule);
+                            setScheduleOpen(true);
+                          }}
+                          {...testId(salesMenuTestIds.menuSchedule)}
+                        >
+                          生效与时段
+                        </Button>
+                        {read.mode === 'DRAFT' && (
+                          <Button
+                            type="primary"
+                            disabled={!canEdit || selectedMenu.archived}
+                            onClick={() => setPublishOpen(true)}
+                            {...testId(salesMenuTestIds.menuPublish)}
+                          >
+                            更新到前台
+                          </Button>
+                        )}
+                        <Button
+                          icon={<ReloadOutlined />}
+                          onClick={() => void read.refresh()}
+                          {...testId(salesMenuTestIds.menuRefresh)}
+                        >
+                          刷新
+                        </Button>
+                      </Space>
+                    </Col>
+                  )}
                 </Row>
                 {menuProblem && (
                   <Alert
@@ -1098,44 +1337,11 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                     action={<Button onClick={() => void read.selector.query.refetch()}>重试</Button>}
                   />
                 )}
-                <CursorPagination
-                  state={read.selector.cursor}
-                  nextCursor={read.selector.page?.nextCursor ?? undefined}
-                  testIdPrefix={salesMenuTestIds.selectorCursor}
-                />
-                {selectedMenu && (
-                  <Space wrap>
-                    <Tag>{menuStateLabel(selectedMenu)}</Tag>
-                    <Typography.Text type="secondary">
-                      {salesMenuScheduleLabel(selectedMenu.draftSchedule)}
-                    </Typography.Text>
-                    <Button
-                      disabled={!canEdit}
-                      onMouseDown={event => (menuActionTriggerRef.current = event.currentTarget)}
-                      onClick={() => {
-                        setSchedule(selectedMenu.draftSchedule);
-                        setScheduleOpen(true);
-                      }}
-                      {...testId(salesMenuTestIds.menuSchedule)}
-                    >
-                      生效与时段
-                    </Button>
-                    {read.mode === 'DRAFT' && (
-                      <Button
-                        type="primary"
-                        disabled={!canEdit || selectedMenu.archived}
-                        onClick={() => setPublishOpen(true)}
-                        {...testId(salesMenuTestIds.menuPublish)}
-                      >
-                        更新到前台
-                      </Button>
-                    )}
-                    <Button icon={<ReloadOutlined />} onClick={() => void read.refresh()}>
-                      刷新
-                    </Button>
-                  </Space>
-                )}
               </Space>
+              {read.channels.query.isFetching && channelItems.length === 0 && <Spin />}
+              {!read.channels.query.isFetching && channelItems.length === 0 && (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无可管理的经营入口" />
+              )}
             </Card>
             {!selectedMenu ? (
               <Card size="small">
@@ -1143,7 +1349,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
               </Card>
             ) : (
               <Row gutter={[16, 16]} align="top">
-                <Col xs={24} lg={6} style={{minWidth: 0}}>
+                <Col xs={24} lg={5} style={{minWidth: 0}}>
                   <SalesMenuSectionPanel
                     read={read}
                     menu={selectedMenu}
@@ -1170,7 +1376,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                     }}
                   />
                 </Col>
-                <Col xs={24} lg={18} style={{minWidth: 0}}>
+                <Col xs={24} lg={19} style={{minWidth: 0}}>
                   {read.mode === 'DRAFT' && (
                     <DraftSalesItemTable
                       read={read}
@@ -1222,7 +1428,19 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
           onRename: openRenameMenu,
           onCopy: copyMenu,
           onArchive: archiveMenu,
+          onCreate: trigger => {
+            createTriggerRef.current = trigger;
+            setCreateOpen(true);
+          },
           canEdit,
+        }}
+        create={{
+          open: createOpen,
+          name: createName,
+          lifecycle: createLifecycle,
+          onNameChange: setCreateName,
+          onSubmit: () => void createMenu(),
+          onAfterOpenChange: createAfterOpenChange,
         }}
         candidate={{
           open: candidateOpen && read.candidateOpen,
@@ -1279,45 +1497,6 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
         }}
       />
 
-      <Drawer
-        open={createOpen}
-        title="新建菜单"
-        onClose={createLifecycle.requestClose}
-        afterOpenChange={createAfterOpenChange}
-        maskClosable={!createLifecycle.submitting}
-        keyboard={!createLifecycle.submitting}
-        closable={!createLifecycle.submitting}
-        footer={
-          <Space>
-            <Button onClick={createLifecycle.requestClose} disabled={createLifecycle.submitting}>
-              取消
-            </Button>
-            <Button
-              type="primary"
-              onClick={() => void createMenu()}
-              disabled={!createName.trim() || createLifecycle.submitting}
-              loading={createLifecycle.submitting}
-              {...testId(salesMenuTestIds.menuCreateSubmit)}
-            >
-              创建菜单
-            </Button>
-          </Space>
-        }
-        {...adminDrawerSurfaceProps}
-        {...testId(salesMenuTestIds.menuCreateDrawer)}
-      >
-        <Input
-          value={createName}
-          onChange={event => {
-            setCreateName(event.target.value);
-            createLifecycle.setDirty(true);
-            createLifecycle.markBusinessIntentChanged();
-          }}
-          placeholder="请输入菜单名称"
-          autoFocus
-          {...testId(salesMenuTestIds.menuCreateName)}
-        />
-      </Drawer>
       <Drawer
         open={renameOpen}
         title="重命名菜单"

@@ -307,7 +307,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 query.brandRef(),
                 pageRows.stream().map(SalesMenuItemRow::itemRef).toList(),
                 false,
-                true);
+                true,
+                false);
         List<CatalogOwnerApi.SalesMenuCandidate> candidates =
                 pageRows.stream().map(row -> salesMenuCandidate(row, facts)).toList();
         String nextCursor = hasNext
@@ -355,7 +356,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 brandRef,
                 rows.stream().map(SalesMenuItemRow::itemRef).toList(),
                 true,
-                false);
+                false,
+                true);
         Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> result = new LinkedHashMap<>();
         rows.forEach(row -> result.put(row.itemRef(), salesMenuItemFacts(row, facts)));
         return Map.copyOf(result);
@@ -394,6 +396,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 row.defaultPriceCents(),
                 facts.salesUnitsByItem().get(row.itemRef()),
                 salesMenuPrimaryImage(facts.imagesByItem().get(row.itemRef())),
+                salesMenuOrderOptionFacts(facts.orderOptionsByItem().get(row.itemRef())),
                 salesMenuSkuSummary(row.shapeKey(), skus, axes),
                 skus,
                 axes);
@@ -404,10 +407,14 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             String brandRef,
             Collection<UUID> itemRefs,
             boolean includeSalesUnits,
-            boolean includeCategoryNames) {
+            boolean includeCategoryNames,
+            boolean includeOrderOptions) {
         if (itemRefs == null || itemRefs.isEmpty()) return SalesMenuFactSnapshot.empty();
         List<UUID> refs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
         CatalogSkuFacts.ListReadback skuReadback = skuFacts.readByItemRefsForList(refs);
+        Map<UUID, ArrayNode> orderOptionsByItem = includeOrderOptions
+                ? itemDefinitionFacts.readOrderOptionConfigs(refs)
+                : Map.of();
         Map<UUID, InventoryOwnerApi.UnitSnapshot> salesUnitsByItem = new LinkedHashMap<>();
         if (includeSalesUnits) {
             itemUnitRefsByItemRefs(refs).forEach((itemRef, units) -> {
@@ -440,7 +447,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 itemMediaFacts.readByItemRefs(refs),
                 Map.copyOf(categoryRefsByItem),
                 Map.copyOf(categoryNamesByItem),
-                Map.copyOf(salesUnitsByItem));
+                Map.copyOf(salesUnitsByItem),
+                Map.copyOf(orderOptionsByItem));
     }
 
     private List<CatalogOwnerApi.SalesMenuSkuFact> salesMenuSkuFacts(ArrayNode values) {
@@ -448,7 +456,9 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         List<CatalogOwnerApi.SalesMenuSkuFact> result = new ArrayList<>();
         for (JsonNode value : values) {
             String status = requiredSalesMenuText(value, "sku.status");
-            if ("VOIDED".equals(status)) continue;
+            // This is the task-shaped SalesMenu candidate projection. Only Catalog ENABLED
+            // SKUs are selectable; DISABLED/VOIDED remain Catalog facts but are not candidates.
+            if (!"ENABLED".equals(status)) continue;
             result.add(new CatalogOwnerApi.SalesMenuSkuFact(
                     requiredSalesMenuUuid(value, "productSkuRef"),
                     requiredSalesMenuText(value, "skuCode"),
@@ -461,6 +471,35 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                     requiredSalesMenuText(value, "variantCombinationDigest"),
                     salesMenuUuidFacts(value.get("mediaRefs"), "sku.mediaRefs"),
                     salesMenuSkuAttributeFacts(value.get("attributeValueRefs"))));
+        }
+        return List.copyOf(result);
+    }
+
+    private List<CatalogOwnerApi.SalesMenuOrderOptionFact> salesMenuOrderOptionFacts(ArrayNode values) {
+        if (values == null || !values.isArray()) return List.of();
+        List<CatalogOwnerApi.SalesMenuOrderOptionFact> result = new ArrayList<>();
+        for (JsonNode value : values) {
+            List<CatalogOwnerApi.SalesMenuOrderOptionValueFact> optionValues = new ArrayList<>();
+            JsonNode valuesNode = value.get("values");
+            if (valuesNode != null && !valuesNode.isNull()) {
+                if (!valuesNode.isArray()) throw salesMenuResultProblem("orderOptions.values");
+                for (JsonNode optionValue : valuesNode)
+                    optionValues.add(new CatalogOwnerApi.SalesMenuOrderOptionValueFact(
+                            requiredSalesMenuUuid(optionValue, "orderOption.definitionValueRef"),
+                            requiredSalesMenuText(optionValue, "orderOption.name"),
+                            optionValue.path("displayOrder").asInt(0),
+                            optionValue.path("defaultValue").asBoolean(false),
+                            optionalSalesMenuLong(optionValue.get("extraPrice"), "orderOption.extraPrice")));
+            }
+            result.add(new CatalogOwnerApi.SalesMenuOrderOptionFact(
+                    requiredSalesMenuUuid(value, "orderOption.definitionRef"),
+                    requiredSalesMenuText(value, "orderOption.name"),
+                    requiredSalesMenuText(value, "orderOption.selectionMode"),
+                    value.path("displayOrder").asInt(0),
+                    value.path("required").asBoolean(false),
+                    optionalSalesMenuInteger(value.get("minSelectionCount"), "orderOption.minSelectionCount"),
+                    optionalSalesMenuInteger(value.get("maxSelectionCount"), "orderOption.maxSelectionCount"),
+                    optionValues));
         }
         return List.copyOf(result);
     }
@@ -590,6 +629,12 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         if (value == null || value.isMissingNode() || value.isNull()) return null;
         if (!value.isIntegralNumber()) throw salesMenuResultProblem(field);
         return value.longValue();
+    }
+
+    private static Integer optionalSalesMenuInteger(JsonNode value, String field) {
+        if (value == null || value.isMissingNode() || value.isNull()) return null;
+        if (!value.isIntegralNumber()) throw salesMenuResultProblem(field);
+        return value.intValue();
     }
 
     private static CatalogOwnerApi.Problem salesMenuResultProblem(String field) {
@@ -13772,9 +13817,10 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             Map<UUID, ArrayNode> imagesByItem,
             Map<UUID, ArrayNode> categoryRefsByItem,
             Map<UUID, List<String>> categoryNamesByItem,
-            Map<UUID, InventoryOwnerApi.UnitSnapshot> salesUnitsByItem) {
+            Map<UUID, InventoryOwnerApi.UnitSnapshot> salesUnitsByItem,
+            Map<UUID, ArrayNode> orderOptionsByItem) {
         static SalesMenuFactSnapshot empty() {
-            return new SalesMenuFactSnapshot(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+            return new SalesMenuFactSnapshot(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
         }
     }
 

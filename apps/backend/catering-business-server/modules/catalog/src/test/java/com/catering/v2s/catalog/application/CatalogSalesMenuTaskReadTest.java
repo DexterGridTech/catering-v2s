@@ -40,6 +40,9 @@ class CatalogSalesMenuTaskReadTest {
     private static final UUID ATTRIBUTE_REF = UUID.fromString("66666666-6666-4666-8666-666666666666");
     private static final UUID VALUE_REF = UUID.fromString("77777777-7777-4777-8777-777777777777");
     private static final UUID TIE_BREAKER = UUID.fromString("88888888-8888-4888-8888-888888888888");
+    private static final UUID ORDER_OPTION_CONFIG_REF = UUID.fromString("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+    private static final UUID ORDER_OPTION_DEFINITION_REF = UUID.fromString("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb");
+    private static final UUID ORDER_OPTION_VALUE_REF = UUID.fromString("cccccccc-cccc-4ccc-8ccc-cccccccccccc");
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -168,7 +171,7 @@ class CatalogSalesMenuTaskReadTest {
         assertEquals(
                 Set.of(ITEM_REF, OTHER_ITEM_REF),
                 Set.of(arguments.getValue()[2], arguments.getValue()[3]));
-        verify(jdbc, times(4)).query(anyString(), any(PreparedStatementSetter.class), any(ResultSetExtractor.class));
+        verify(jdbc, times(5)).query(anyString(), any(PreparedStatementSetter.class), any(ResultSetExtractor.class));
     }
 
     @Test
@@ -184,6 +187,7 @@ class CatalogSalesMenuTaskReadTest {
                     String sql = invocation.getArgument(0, String.class);
                     ResultSet result = mock(ResultSet.class);
                     if (sql.contains("catalog.catalog_sku sku")) skuRow(result);
+                    else if (sql.contains("catalog.catalog_item_order_option_config")) orderOptionRow(result);
                     else if (sql.contains("FROM catalog.catalog_item WHERE item_ref IN")) unitRow(result);
                     else if (sql.contains("catalog.catalog_item_image")) imageRow(result);
                     else if (sql.contains("catalog.catalog_item_category")) categoryRow(result);
@@ -203,6 +207,11 @@ class CatalogSalesMenuTaskReadTest {
         assertEquals("COUNT", facts.salesUnitSnapshot().unitDimension());
         assertEquals(0, facts.salesUnitSnapshot().precision());
         assertEquals(IMAGE_REF, facts.defaultImageAssetRef());
+        assertEquals(1, facts.orderOptions().size());
+        assertEquals("甜度", facts.orderOptions().getFirst().name());
+        assertEquals("SINGLE", facts.orderOptions().getFirst().selectionMode());
+        assertEquals(1, facts.orderOptions().getFirst().values().size());
+        assertEquals("少糖", facts.orderOptions().getFirst().values().getFirst().name());
         assertEquals(List.of(CATEGORY_REF), facts.categoryRefs());
         assertEquals(1, facts.skus().size());
         assertEquals(SKU_REF, facts.skus().getFirst().productSkuRef());
@@ -306,6 +315,28 @@ class CatalogSalesMenuTaskReadTest {
         when(result.next()).thenReturn(true, false);
         when(result.getObject(1, UUID.class)).thenReturn(ITEM_REF);
         when(result.getObject(2, UUID.class)).thenReturn(IMAGE_REF);
+    }
+
+    private static void orderOptionRow(ResultSet result) throws Exception {
+        when(result.next()).thenReturn(true, false);
+        when(result.getObject(1, UUID.class)).thenReturn(ITEM_REF);
+        when(result.getObject(2, UUID.class)).thenReturn(ORDER_OPTION_CONFIG_REF);
+        when(result.getObject(3, UUID.class)).thenReturn(ORDER_OPTION_DEFINITION_REF);
+        when(result.getString(4)).thenReturn("甜度");
+        when(result.getString(5)).thenReturn("SINGLE");
+        when(result.getInt(6)).thenReturn(0);
+        when(result.getBoolean(7)).thenReturn(true);
+        when(result.getObject(8)).thenReturn(1);
+        when(result.getInt(8)).thenReturn(1);
+        when(result.getObject(9)).thenReturn(1);
+        when(result.getInt(9)).thenReturn(1);
+        when(result.getObject(10, UUID.class)).thenReturn(ORDER_OPTION_VALUE_REF);
+        when(result.getString(11)).thenReturn("少糖");
+        when(result.getInt(12)).thenReturn(0);
+        when(result.getObject(13)).thenReturn(1);
+        when(result.getBoolean(14)).thenReturn(false);
+        when(result.getObject(15)).thenReturn(null);
+        when(result.getString(16)).thenReturn(null);
     }
 
     private static void unitRow(ResultSet result) throws Exception {

@@ -45,6 +45,43 @@ const assertHandlerDefinition = (
   }
 }
 
+const registerActorHandlers = (input: Readonly<{
+  actor: ActorDefinition
+  actorKey: string
+  definitions?: RegisteredCommandDefinitions
+  messages: ActorValidationMessages
+  handlersByCommand: Map<string, RegisteredActorHandler[]>
+  handlers: Set<string>
+  order: number
+}>): number => {
+  let nextOrder = input.order
+  for (const handler of input.actor.handlers) {
+    assertHandlerDefinition(handler, input.messages.handlerDefinition?.(input.actorKey))
+    if (input.definitions !== undefined && !input.definitions.has(handler.commandName)) {
+      throw new Error(`Actor handler command is not registered: ${handler.commandName}`)
+    }
+    const handlerKey = `${input.actorKey}:${handler.commandName}`
+    if (input.handlers.has(handlerKey)) {
+      throw new Error(`Duplicate runtime actor handler: ${handlerKey}`)
+    }
+    input.handlers.add(handlerKey)
+    const actorInfo: ActorInfo = Object.freeze({
+      actorKey: input.actorKey,
+      moduleName: input.actor.moduleName,
+      actorName: input.actor.actorName,
+    })
+    const next = input.handlersByCommand.get(handler.commandName) ?? []
+    next.push(Object.freeze({
+      actor: actorInfo,
+      commandName: handler.commandName,
+      handle: handler.handle,
+      order: nextOrder++,
+    }))
+    input.handlersByCommand.set(handler.commandName, next)
+  }
+  return nextOrder
+}
+
 export const createActorRegistry = (
   modules: readonly RuntimeActorModule[],
   definitions?: RegisteredCommandDefinitions,
@@ -66,30 +103,15 @@ export const createActorRegistry = (
         throw new Error(`Duplicate runtime actor: ${actorKey}`)
       }
       actors.add(actorKey)
-      for (const handler of actor.handlers) {
-        assertHandlerDefinition(handler, messages.handlerDefinition?.(actorKey))
-        if (definitions !== undefined && !definitions.has(handler.commandName)) {
-          throw new Error(`Actor handler command is not registered: ${handler.commandName}`)
-        }
-        const handlerKey = `${actorKey}:${handler.commandName}`
-        if (handlers.has(handlerKey)) {
-          throw new Error(`Duplicate runtime actor handler: ${handlerKey}`)
-        }
-        handlers.add(handlerKey)
-        const actorInfo: ActorInfo = Object.freeze({
-          actorKey,
-          moduleName: actor.moduleName,
-          actorName: actor.actorName,
-        })
-        const next = handlersByCommand.get(handler.commandName) ?? []
-        next.push(Object.freeze({
-          actor: actorInfo,
-          commandName: handler.commandName,
-          handle: handler.handle,
-          order: order++,
-        }))
-        handlersByCommand.set(handler.commandName, next)
-      }
+      order = registerActorHandlers({
+        actor,
+        actorKey,
+        definitions,
+        messages,
+        handlersByCommand,
+        handlers,
+        order,
+      })
     }
   }
 

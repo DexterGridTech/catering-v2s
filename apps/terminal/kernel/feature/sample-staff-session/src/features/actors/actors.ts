@@ -9,12 +9,12 @@ import {
   logoutSucceededCommand,
   sessionRestoredAnonymousCommand,
   sessionRestoredAuthenticatedCommand,
-} from '../../commands'
-import {createInvalidCredentialsError} from '../../errors'
+} from '../commands/commands'
+import {createInvalidCredentialsError} from '../../foundations/errors'
 import {moduleName} from '../../moduleName'
-import {selectSessionState} from '../../selectors'
-import {sessionActions} from '../../slice'
-import type {LoginPayload} from '../../types'
+import {selectSessionState} from '../../selectors/selectors'
+import {sessionActions} from '../slices/slice'
+import type {LoginPayload} from '../../types/types'
 
 const credentials: readonly LoginPayload[] = [
   Object.freeze({operatorName: 'A001', passcode: '1111'}),

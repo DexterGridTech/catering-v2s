@@ -5,5 +5,6 @@ public record SalesMenuSaleContent(
     String kind,
     Long listedPriceCents,
     java.util.List<SalesMenuSkuPrice> skuPrices,
+    java.util.List<SalesMenuSaleContentSelectedOrderOptionsItem> selectedOrderOptions,
     SalesMenuSaleContentSalesUnit salesUnit
 ) {}

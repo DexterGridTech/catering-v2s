@@ -1,0 +1,8 @@
+[
+  {"ruleId":"TR-R02","checkerId":"tr-r02-local-export","enabled":true},
+  {"ruleId":"TR-R03","checkerId":"tr-r03-create-element","enabled":true},
+  {"ruleId":"TR-R04","checkerId":"tr-r04-parameter-count","enabled":true},
+  {"ruleId":"TR-R05","checkerId":"tr-r05-control-depth","enabled":true},
+  {"ruleId":"TR-R06","checkerId":"tr-r06-source-layout","enabled":true},
+  {"ruleId":"TR-R07","checkerId":"tr-r07-testing-graph","enabled":true}
+]

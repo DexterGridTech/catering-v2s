@@ -1,8 +1,8 @@
-import {MoreOutlined} from '@ant-design/icons';
+import {MoreOutlined, PlusOutlined} from '@ant-design/icons';
 import {Alert, Button, Drawer, Dropdown, Input, Space, Table} from 'antd';
 import {CursorPagination, adminListState, adminWideDrawerSurfaceProps, testId} from '@catering-v2s/admin-ui-foundation';
 import {type SalesMenuDetail, type SalesMenuSummary} from '../../../app/api/generated/operations-edge';
-import {salesMenuChannelStatusLabel} from '../model/salesMenuModel';
+import {salesMenuChannelStatusLabel, salesMenuScheduleLabel} from '../model/salesMenuModel';
 import {salesMenuTestIds} from '../salesMenuTestIds';
 import {menuStateLabel, problemMessage, type SalesMenuReadModel} from './salesMenuUiShared';
 
@@ -15,6 +15,7 @@ export function SalesMenuManagerDrawer({
   onRename,
   onCopy,
   onArchive,
+  onCreate,
   canEdit,
 }: {
   open: boolean;
@@ -25,6 +26,7 @@ export function SalesMenuManagerDrawer({
   onRename: (menu: SalesMenuSummary) => void;
   onCopy: (menu: SalesMenuSummary) => void;
   onArchive: (menu: SalesMenuSummary) => void;
+  onCreate: (trigger: HTMLElement) => void;
   canEdit: boolean;
 }) {
   const page = read.manager.page;
@@ -39,6 +41,17 @@ export function SalesMenuManagerDrawer({
       maskClosable
       {...adminWideDrawerSurfaceProps}
       width="min(880px, calc(100vw - 48px))"
+      extra={
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          disabled={!canEdit || !managerReadModelReady}
+          onClick={event => onCreate(event.currentTarget)}
+          {...testId(salesMenuTestIds.managerCreate)}
+        >
+          新建菜单
+        </Button>
+      }
       {...testId(salesMenuTestIds.menuManager)}
     >
       <Space direction="vertical" size={12} style={{display: 'flex'}}>
@@ -92,6 +105,11 @@ export function SalesMenuManagerDrawer({
               title: '经营入口',
               key: 'activation',
               render: (_, row) => salesMenuChannelStatusLabel(row.activation?.status ?? 'DISABLED'),
+            },
+            {
+              title: '菜单时段',
+              key: 'schedule',
+              render: (_, row) => salesMenuScheduleLabel(row.draftSchedule),
             },
             {
               title: '启停',

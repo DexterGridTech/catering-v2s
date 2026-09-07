@@ -16,10 +16,10 @@ import {
 } from '@catering-v2s/ui-base-render'
 import {useInputField, useInputSnapshot} from '@catering-v2s/ui-base-input'
 import {loginCommand} from '@catering-v2s/kernel-feature-sample-staff-session'
-import {authSystemFailureObservedCommand} from '../commands'
+import {authSystemFailureObservedCommand} from '../features/commands/commands'
 import {classifyRequestResult} from './requestOutcome'
 import {ScrollArea} from './controls'
-import {operatorNameVariable} from '../variables'
+import {operatorNameVariable} from '../features/variables/variables'
 
 const operatorNameFieldId = 'sample.auth.login:operator-name'
 const passcodeFieldId = 'sample.auth.login:passcode'
@@ -56,11 +56,11 @@ export const StaffLogin = () => {
 
   const observeSystemFailure = async (): Promise<void> => {
     try {
-      await dispatchWithRequestId(
+      await dispatchWithRequestId({
         dispatchCommand,
-        authSystemFailureObservedCommand,
-        {operation: 'login'},
-      )
+        definition: authSystemFailureObservedCommand,
+        payload: {operation: 'login'},
+      })
     } catch (_error) {
       // useDispatchCommand has already emitted the structured rejection diagnostic.
     }
@@ -73,12 +73,12 @@ export const StaffLogin = () => {
     const passcodeValue = snapshot.fields[passcodeFieldId]?.value ?? ''
     const requestId = request.start()
     try {
-      const result = await dispatchWithRequestId(
+      const result = await dispatchWithRequestId({
         dispatchCommand,
-        loginCommand,
-        {operatorName: operatorNameValue, passcode: passcodeValue},
+        definition: loginCommand,
+        payload: {operatorName: operatorNameValue, passcode: passcodeValue},
         requestId,
-      )
+      })
       const outcome = classifyRequestResult(result)
       if (outcome !== 'running') request.finish(requestId)
       if (outcome === 'business-failure') setPasscodeResetKey(value => value + 1)

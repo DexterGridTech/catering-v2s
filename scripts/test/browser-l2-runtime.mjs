@@ -1085,7 +1085,7 @@ function validateSalesMenuContractDenominators({
   if (fixture.kind !== 'sales-menu-l2-fixture' || fixture.fixtureClass !== 'TEST' || fixture.seedRuntimeInput !== false)
     fail('SALES_MENU_L2_FIXTURE_BOUNDARY_INVALID');
   if (
-    fixture.ownerFacts?.channelPageSize !== 20 ||
+    fixture.ownerFacts?.channelCandidatePageSize !== 20 ||
     fixture.ownerFacts?.menuPageSize !== 20 ||
     fixture.ownerFacts?.candidatePageSize !== 20 ||
     fixture.ownerFacts?.expectedEligibleChannelCount !== 21 ||
@@ -5344,7 +5344,7 @@ async function bootstrapSalesMenuFacts({identity, base}) {
         storeName: 'L2验证门店',
         storeRef: String(base.org.storeRef),
       },
-      channelPageSize: 20,
+      channelCandidatePageSize: 20,
       menuPageSize: 20,
       candidatePageSize: 20,
       draftItemPageSize: 20,

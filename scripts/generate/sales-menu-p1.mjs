@@ -94,9 +94,21 @@ function validateTestControlInteractionBindings(controls) {
     selector.optionTestIdTemplate !== 'sales-menu-option-${menuRef}' ||
     selector.interaction !== 'NATIVE_INPUT_AND_OPTION_ROOT' ||
     selector.actualActionNode !== 'NATIVE_SELECT_INPUT_AND_OPTION_ROOT' ||
-    selector.focusedStaticProof !== 'apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.static.test.ts'
+    selector.focusedStaticProof !==
+      'apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.static.test.ts'
   )
     fail('SALES_MENU_P1_SELECTOR_ACTUAL_NODE_BINDING_INVALID');
+
+  const channelSelector = controls.SALES_MENU_CHANNEL_SELECTOR;
+  if (
+    channelSelector?.testId !== 'sales-menu-channel-selector' ||
+    channelSelector.optionTestIdTemplate !== 'sales-menu-channel-option-${channelRef}' ||
+    channelSelector.interaction !== 'SELECT_TRIGGER_AND_OPTION_ROOT' ||
+    channelSelector.actualActionNode !== 'SELECT_TRIGGER_AND_OPTION_ROOT' ||
+    channelSelector.focusedStaticProof !==
+      'apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.static.test.ts'
+  )
+    fail('SALES_MENU_P1_CHANNEL_SELECTOR_ACTUAL_NODE_BINDING_INVALID');
 }
 
 function flattenCases(blueprint) {
@@ -115,6 +127,17 @@ function blueprintDenominator(blueprint) {
     caseIds,
     operationIds,
   };
+}
+
+function validateEntrySelectorLayout(blueprint, caseRows) {
+  const entryCase = caseRows.find(row => row.caseId === 'sales-menu-entry-and-channels');
+  if (!entryCase) fail('SALES_MENU_P1_ENTRY_CASE_MISSING');
+  const steps = (entryCase.steps ?? []).join(' ');
+  const oracles = (entryCase.businessOracle ?? []).join(' ');
+  if (!steps.includes('经营入口下拉') || !steps.includes('弹层滚动') || /逐页|显式分页/.test(steps))
+    fail('SALES_MENU_P1_ENTRY_SELECTOR_STEP_DRIFT');
+  if (!oracles.includes('rich Select') || !oracles.includes('弹层滚动') || /逐页|显式分页/.test(oracles))
+    fail('SALES_MENU_P1_ENTRY_SELECTOR_ORACLE_DRIFT');
 }
 
 function generatedOperationMap() {
@@ -151,7 +174,7 @@ function validateFixture(fixture, caseRows) {
       fail('SALES_MENU_P1_FIXTURE_ID_INVALID', name);
   }
   if (
-    fixture.ownerFacts?.channelPageSize !== 20 ||
+    fixture.ownerFacts?.channelCandidatePageSize !== 20 ||
     fixture.ownerFacts?.menuPageSize !== 20 ||
     fixture.ownerFacts?.candidatePageSize !== 20
   )
@@ -213,6 +236,7 @@ function validateBlueprint(blueprint, fixture, {readiness = null} = {}) {
   if (caseRows.length === 0 || caseIds.some(caseId => typeof caseId !== 'string' || caseId.length === 0))
     fail('SALES_MENU_P1_CASE_DENOMINATOR_INVALID');
   if (new Set(caseIds).size !== caseIds.length) fail('SALES_MENU_P1_CASE_DUPLICATE');
+  validateEntrySelectorLayout(blueprint, caseRows);
 
   const operationMap = generatedOperationMap();
   const coverage = blueprint.operationCoverage;
@@ -310,7 +334,11 @@ function validateBlueprint(blueprint, fixture, {readiness = null} = {}) {
     // late responses may land inside a user-action window, so they must be
     // explicit in each case's network denominator rather than treated as
     // unexplained noise by the action gate.
-    for (const sharedOperationId of ['getOperationsStoreBusinessChannels', 'getOperationsWorkspaceSessionEntry']) {
+    for (const sharedOperationId of [
+      'getOperationsStoreBusinessChannels',
+      'getOperationsBusinessChannelTemplates',
+      'getOperationsWorkspaceSessionEntry',
+    ]) {
       const declared = new Set([...operationIds, ...(network?.backgroundAllowed ?? [])]);
       if (!declared.has(sharedOperationId))
         fail('SALES_MENU_P1_SHARED_PAGE_OPERATION_UNDECLARED', `${row.caseId}:${sharedOperationId}`);
@@ -322,9 +350,10 @@ function validateBlueprint(blueprint, fixture, {readiness = null} = {}) {
       if (!requestIds.has(backgroundOperationId))
         fail('SALES_MENU_P1_BACKGROUND_OPERATION_BUDGET_MISSING', `${row.caseId}:${backgroundOperationId}`);
     }
-    for (const operationId of operationIds) {
+    for (const operationId of new Set([...operationIds, ...(network?.backgroundAllowed ?? [])])) {
       if (!operationMap.has(operationId)) fail('SALES_MENU_P1_CASE_ROUTE_DRIFT', `${row.caseId}:${operationId}`);
-      operationConsumers.set(operationId, (operationConsumers.get(operationId) ?? 0) + 1);
+      if (operationConsumers.has(operationId))
+        operationConsumers.set(operationId, (operationConsumers.get(operationId) ?? 0) + 1);
     }
     const timing = row.parameter?.timing;
     if (
@@ -375,7 +404,7 @@ function derive(blueprint, fixture, readiness) {
     schemaVersion: 1,
     kind: 'sales-menu-l2-activation-candidate',
     revision: blueprint.revision,
-    sourceRevision: 'SALES_MENU_L2_P1_20260903',
+    sourceRevision: 'SALES_MENU_L2_P1_20260907',
     approvedCaseIds: [...caseIds],
     fixtureRefs: caseRows.map(row => row.fixtureRef),
     testIdSource: testIdsPath,
@@ -579,11 +608,25 @@ function runSelfTest() {
     if (!(error instanceof Error) || !error.message.startsWith('SALES_MENU_P1_SELECTOR_ACTUAL_NODE_BINDING_INVALID'))
       throw error;
   }
+  const channelSelectorBindingMutation = readJson(blueprintPath);
+  channelSelectorBindingMutation.bindings.controls.SALES_MENU_CHANNEL_SELECTOR.testId = 'sales-menu-channel';
+  try {
+    validateBlueprint(channelSelectorBindingMutation, readJson(fixturePath));
+    fail('SALES_MENU_P1_SELF_TEST_CHANNEL_SELECTOR_ACTUAL_NODE_DID_NOT_FAIL');
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      !error.message.startsWith('SALES_MENU_P1_CHANNEL_SELECTOR_ACTUAL_NODE_BINDING_INVALID')
+    )
+      throw error;
+  }
   const baselineItemControlMutation = readJson(blueprintPath);
   const baselineItemFixture = readJson(fixturePath);
   const baselineItemCaseId = flattenCases(baselineItemControlMutation).find(row => {
     const caseFixture = baselineItemFixture.caseFixtures?.[row.fixtureRef];
-    return Array.isArray(caseFixture?.baselineCandidateFixtureIds) && caseFixture.baselineCandidateFixtureIds.length > 0;
+    return (
+      Array.isArray(caseFixture?.baselineCandidateFixtureIds) && caseFixture.baselineCandidateFixtureIds.length > 0
+    );
   })?.caseId;
   const baselineItemCase = baselineItemControlMutation.scenarios
     .flatMap(scenario => scenario.cases ?? [])

@@ -1,5 +1,7 @@
 import {Button, Descriptions, Drawer, Space, Typography} from 'antd';
 import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
   activeInvitationPageUrl,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
@@ -9,6 +11,7 @@ import {
 } from '@catering-v2s/admin-ui-foundation';
 import {useState} from 'react';
 import type {WorkspaceInvitation} from '../../../app/api/generated/operations-edge';
+import {operationsDetailDrawerTestIds} from '../../../app/automation/operationsDetailDrawerTestIds';
 import {OperationsAuditHistoryModal} from '../../audit-history';
 
 type Props = {
@@ -40,6 +43,41 @@ export function WorkspaceInvitationDetailDrawer({open, invitation, canInvite, on
   useOverlayLock(open);
   const actionable = invitation?.status === 'ACTIVE' && canInvite;
   const invitationPageUrl = invitation ? activeInvitationPageUrl(invitation) : undefined;
+  const actionItems = invitation
+    ? [
+        {
+          key: 'audit',
+          label: (
+            <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.workspaceInvitation.audit}>
+              操作历史
+            </AdminDetailActionLabel>
+          ),
+          onClick: () => setAuditOpen(true),
+        },
+        ...(actionable
+          ? [
+              {
+                key: 'cancel',
+                label: (
+                  <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.workspaceInvitation.cancel}>
+                    取消邀请
+                  </AdminDetailActionLabel>
+                ),
+                onClick: () => onRequestAction('cancel'),
+              },
+              {
+                key: 'reissue',
+                label: (
+                  <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.workspaceInvitation.reissue}>
+                    重新发送
+                  </AdminDetailActionLabel>
+                ),
+                onClick: () => onRequestAction('reissue'),
+              },
+            ]
+          : []),
+      ]
+    : [];
   return (
     <>
       <Drawer
@@ -52,26 +90,11 @@ export function WorkspaceInvitationDetailDrawer({open, invitation, canInvite, on
         {...adminDrawerSurfaceProps}
         {...testId('operations-workspace-invitation-detail-drawer')}
         extra={
-          invitation ? (
-            <Space>
-              <Button onClick={() => setAuditOpen(true)} {...testId('operations-workspace-invitation-audit-history')}>
-                操作历史
-              </Button>
-              {actionable && (
-                <Button onClick={() => onRequestAction('cancel')} {...testId('operations-workspace-invitation-cancel')}>
-                  取消邀请
-                </Button>
-              )}
-              {actionable && (
-                <Button
-                  type="primary"
-                  onClick={() => onRequestAction('reissue')}
-                  {...testId('operations-workspace-invitation-reissue')}
-                >
-                  重新发送
-                </Button>
-              )}
-            </Space>
+          actionItems.length > 0 ? (
+            <AdminDetailActionMenu
+              items={actionItems}
+              triggerTestId={operationsDetailDrawerTestIds.workspaceInvitation.actionMenu}
+            />
           ) : undefined
         }
       >

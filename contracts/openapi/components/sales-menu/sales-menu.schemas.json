@@ -308,6 +308,7 @@
           "kind",
           "listedPriceCents",
           "skuPrices",
+          "selectedOrderOptions",
           "salesUnit"
         ],
         "properties": {
@@ -329,6 +330,95 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SalesMenuSkuPrice"
+            }
+          },
+          "selectedOrderOptions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "definitionRef",
+                "name",
+                "selectionMode",
+                "displayOrder",
+                "required",
+                "minSelectionCount",
+                "maxSelectionCount",
+                "values"
+              ],
+              "properties": {
+                "definitionRef": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "selectionMode": {
+                  "type": "string",
+                  "enum": [
+                    "SINGLE",
+                    "MULTIPLE"
+                  ]
+                },
+                "displayOrder": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "minSelectionCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "nullable": true
+                },
+                "maxSelectionCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "nullable": true
+                },
+                "values": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "definitionValueRef",
+                      "name",
+                      "displayOrder",
+                      "defaultValue",
+                      "extraPrice"
+                    ],
+                    "properties": {
+                      "definitionValueRef": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160
+                      },
+                      "displayOrder": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "defaultValue": {
+                        "type": "boolean"
+                      },
+                      "extraPrice": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "nullable": true
+                      }
+                    }
+                  }
+                }
+              }
             }
           },
           "salesUnit": {
@@ -439,7 +529,11 @@
           "itemCode",
           "displayName",
           "productShape",
+          "catalogOrderOptions",
+          "skuCandidates",
+          "staleSelectedSkuRefs",
           "defaultPriceCents",
+          "catalogPrimaryImageAssetRef",
           "saleContent",
           "orderingConstraints",
           "displayMedia",
@@ -477,11 +571,146 @@
               "SERVICE"
             ]
           },
+          "catalogOrderOptions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "definitionRef",
+                "name",
+                "selectionMode",
+                "displayOrder",
+                "required",
+                "minSelectionCount",
+                "maxSelectionCount",
+                "values"
+              ],
+              "properties": {
+                "definitionRef": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "selectionMode": {
+                  "type": "string",
+                  "enum": [
+                    "SINGLE",
+                    "MULTIPLE"
+                  ]
+                },
+                "displayOrder": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "minSelectionCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "nullable": true
+                },
+                "maxSelectionCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "nullable": true
+                },
+                "values": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "definitionValueRef",
+                      "name",
+                      "displayOrder",
+                      "defaultValue",
+                      "extraPrice"
+                    ],
+                    "properties": {
+                      "definitionValueRef": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160
+                      },
+                      "displayOrder": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "defaultValue": {
+                        "type": "boolean"
+                      },
+                      "extraPrice": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "nullable": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "skuCandidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "skuRef",
+                "skuName",
+                "skuCode",
+                "standardPriceCents"
+              ],
+              "properties": {
+                "skuRef": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "skuName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "skuCode": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "standardPriceCents": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "staleSelectedSkuRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           "defaultPriceCents": {
             "type": "integer",
             "minimum": 0,
             "nullable": true,
             "description": "Current Catalog default price for read-only comparison; null for SKU selection, whose defaults are per SKU."
+          },
+          "catalogPrimaryImageAssetRef": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Current Catalog primary display asset for INHERIT_CATALOG; null when no active Catalog image."
           },
           "saleContent": {
             "$ref": "#/components/schemas/SalesMenuSaleContent"
@@ -623,6 +852,7 @@
           "displayOrder",
           "inventoryAvailability",
           "manualSaleStatus",
+          "manualSaleTargetStatuses",
           "version"
         ],
         "properties": {
@@ -672,6 +902,66 @@
           },
           "manualSaleStatus": {
             "$ref": "#/components/schemas/ManualSaleStatusFact"
+          },
+          "manualSaleTargetStatuses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "targetKind",
+                "targetRef",
+                "resolvedTargetDisplayName",
+                "state",
+                "reason",
+                "changedAt",
+                "changedByDisplayName"
+              ],
+              "properties": {
+                "targetKind": {
+                  "type": "string",
+                  "enum": [
+                    "ITEM",
+                    "SKU",
+                    "ORDER_OPTION_VALUE"
+                  ]
+                },
+                "targetRef": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "resolvedTargetDisplayName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "NORMAL",
+                    "MANUAL_SOLD_OUT"
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 240,
+                  "nullable": true
+                },
+                "changedAt": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0,
+                  "nullable": true
+                },
+                "changedByDisplayName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160,
+                  "nullable": true
+                }
+              }
+            }
           },
           "version": {
             "type": "integer",
@@ -836,6 +1126,7 @@
               "CATALOG_ITEM_INVALID",
               "SKU_SELECTION_EMPTY",
               "SKU_INVALID",
+              "ORDER_OPTION_SELECTION_INVALID",
               "LISTED_PRICE_MISSING",
               "ORDERING_CONSTRAINT_INVALID",
               "DISPLAY_ASSET_PENDING_OR_INVALID",
@@ -893,6 +1184,8 @@
           "operationKind",
           "salesMenuRef",
           "targetRef",
+          "targetKind",
+          "targetDisplaySnapshot",
           "result",
           "failureCode",
           "actorDisplayName"
@@ -919,6 +1212,20 @@
           "targetRef": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "targetKind": {
+            "type": "string",
+            "enum": [
+              "ITEM",
+              "SKU",
+              "ORDER_OPTION_VALUE"
+            ]
+          },
+          "targetDisplaySnapshot": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
             "nullable": true
           },
           "result": {
@@ -1358,7 +1665,8 @@
             "required": [
               "kind",
               "listedPriceCents",
-              "skuPrices"
+              "skuPrices",
+              "orderOptionSelections"
             ],
             "properties": {
               "kind": {
@@ -1379,6 +1687,30 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/SalesMenuSkuPrice"
+                }
+              },
+              "orderOptionSelections": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "definitionRef",
+                    "selectedValueRefs"
+                  ],
+                  "properties": {
+                    "definitionRef": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "selectedValueRefs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    }
+                  }
                 }
               }
             },
@@ -1437,10 +1769,33 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "target",
           "reason",
           "expectedVersion"
         ],
         "properties": {
+          "target": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "targetKind",
+              "targetRef"
+            ],
+            "properties": {
+              "targetKind": {
+                "type": "string",
+                "enum": [
+                  "ITEM",
+                  "SKU",
+                  "ORDER_OPTION_VALUE"
+                ]
+              },
+              "targetRef": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
           "reason": {
             "type": "string",
             "minLength": 1,
@@ -1457,10 +1812,33 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "target",
           "confirm",
           "expectedVersion"
         ],
         "properties": {
+          "target": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "targetKind",
+              "targetRef"
+            ],
+            "properties": {
+              "targetKind": {
+                "type": "string",
+                "enum": [
+                  "ITEM",
+                  "SKU",
+                  "ORDER_OPTION_VALUE"
+                ]
+              },
+              "targetRef": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
           "confirm": {
             "type": "boolean"
           },

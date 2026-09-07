@@ -164,7 +164,7 @@ try {
   const appSource = fs.readFileSync(appPath, 'utf8');
   fs.writeFileSync(
     appPath,
-    appSource.replace("import {createSampleTerminalAssembly} from './src/platformPorts'\n", ''),
+    appSource.replace("import {createSampleTerminalAssembly} from './src/assembly/platformPorts'\n", ''),
   );
   const missingAppPlatformPortsReport = runStaticChecks({root: fixtureRoot, batch: 2});
   const missingAppPlatformPortsGate = missingAppPlatformPortsReport.results.find(
@@ -336,7 +336,7 @@ try {
   );
   const persistImplementationPath = path.join(
     fixtureRoot,
-    'apps/terminal/adapter/android/persist-kv/src/androidPersistKv.ts',
+    'apps/terminal/adapter/android/persist-kv/src/implementations/androidPersistKv.ts',
   );
   const originalPersistPackage = fs.readFileSync(persistPackagePath, 'utf8');
   const originalPersistDependencies = fs.readFileSync(persistDependenciesPath, 'utf8');
@@ -621,7 +621,7 @@ try {
 
   const workspaceSupportPath = path.join(
     fixtureRoot,
-    'apps/terminal/kernel/base/state/src/supports/workspace.ts',
+    'apps/terminal/kernel/base/state/src/foundations/workspace.ts',
   );
   withTextMutation(
     workspaceSupportPath,

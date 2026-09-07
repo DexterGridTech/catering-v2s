@@ -10,12 +10,12 @@ import {
   rejectMemberCommand,
   submitMemberCommand,
   withdrawMemberCommand,
-} from '../../commands'
-import {createInvalidMemberPayloadError, createNoPendingMemberError} from '../../errors'
+} from '../commands/commands'
+import {createInvalidMemberPayloadError, createNoPendingMemberError} from '../../foundations/errors'
 import {moduleName} from '../../moduleName'
-import {selectPendingMember} from '../../selectors'
-import {memberActions} from '../../slice'
-import type {PendingMember} from '../../types'
+import {selectPendingMember} from '../../selectors/selectors'
+import {memberActions} from '../slices/slice'
+import type {PendingMember} from '../../types/types'
 
 const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)

@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {createInputRegistry} from '../src/model/snapshot'
+import {createInputRegistry} from '../src/foundations/snapshot'
 
 describe('input snapshot registry', () => {
   it('captures current values synchronously as a frozen snapshot', () => {

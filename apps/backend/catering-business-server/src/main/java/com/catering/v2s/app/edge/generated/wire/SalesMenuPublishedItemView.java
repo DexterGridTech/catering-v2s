@@ -13,5 +13,6 @@ public record SalesMenuPublishedItemView(
     Long displayOrder,
     InventoryAvailabilityFact inventoryAvailability,
     ManualSaleStatusFact manualSaleStatus,
+    java.util.List<SalesMenuPublishedItemViewManualSaleTargetStatusesItem> manualSaleTargetStatuses,
     Long version
 ) {}

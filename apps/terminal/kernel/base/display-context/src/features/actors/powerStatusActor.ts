@@ -29,8 +29,11 @@ export const createPowerStatusActor = (): ActorDefinition => defineActor(moduleN
     const instanceMode = selectRuntimeInstanceMode(context.getState())
     const displayInfo = await readDisplayInfo(context.platformPorts.device)
     if (displayInfo.status === 'unavailable') {
-      logDisplayDiagnostic(context, 'power-status.display-info-unavailable', 'Power event was observed without usable display info', {
-        ...toDisplayInfoDiagnostic(displayInfo),
+      logDisplayDiagnostic({
+        context,
+        event: 'power-status.display-info-unavailable',
+        message: 'Power event was observed without usable display info',
+        data: {...toDisplayInfoDiagnostic(displayInfo)},
       })
       return Object.freeze({
         changed: false,
@@ -41,9 +44,14 @@ export const createPowerStatusActor = (): ActorDefinition => defineActor(moduleN
       })
     }
     if (displayInfo.status === 'malformed') {
-      logDisplayDiagnostic(context, 'power-status.display-info-malformed', 'Power event was observed with malformed display info', {
-        reason: 'MALFORMED_DISPLAY_COUNT',
-        valueType: displayInfo.valueType,
+      logDisplayDiagnostic({
+        context,
+        event: 'power-status.display-info-malformed',
+        message: 'Power event was observed with malformed display info',
+        data: {
+          reason: 'MALFORMED_DISPLAY_COUNT',
+          valueType: displayInfo.valueType,
+        },
       })
       return Object.freeze({
         changed: false,

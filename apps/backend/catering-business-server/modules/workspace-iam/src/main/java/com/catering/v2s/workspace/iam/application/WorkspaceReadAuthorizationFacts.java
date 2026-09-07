@@ -41,7 +41,9 @@ public record WorkspaceReadAuthorizationFacts(
                 authorizationRevision,
                 pageAccessKeys,
                 actionCapabilityKeys,
-                accountDisplayName);
+                accountDisplayName,
+                assignmentNodeType,
+                assignmentNodeId);
     }
 
     private WorkspaceSessionEntryReadback.ScopeContext scopeContext() {

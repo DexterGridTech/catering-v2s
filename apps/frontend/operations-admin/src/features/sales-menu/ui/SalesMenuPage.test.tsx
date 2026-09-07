@@ -69,7 +69,7 @@ describe('sales menu page boundary', () => {
         </App>
       </Provider>,
     );
-    expect(markup).toContain('门店销售菜单');
+    expect(markup).not.toContain('门店销售菜单');
     expect(markup).toContain('data-scope-ref="00000000-0000-4000-8000-000000000001"');
     expect(markup).toContain('data-testid="sales-menu-selector-input"');
     expect(markup).not.toContain('选择门店');

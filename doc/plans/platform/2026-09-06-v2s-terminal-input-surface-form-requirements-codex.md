@@ -6,6 +6,19 @@
 > SCOPE: 横屏与竖屏的产品形态、surface 拓扑、输入 surface 自测量边界
 > DEPENDENCY: 本文通过后，才能冻结键盘视觉重构需求 v2；本文不授权详设或实施
 
+## 0.1 2026-09-07 Web 预览宿主缩放增补（Dexter 直接指派）
+
+本增补只修正 Web 开发预览的呈现边界，不改变 input 的几何 owner：Web host 可以把按声明
+逻辑尺寸组成的整组 logical stage 统一等比缩放，以适应页面可用宽度；`InputSurfaceFrame`
+与 `InputProvider` 不读取 host scale、不建立物理尺寸桥，local `onLayout` 仍由 input 自己
+负责。Web 缩放后的真实命中必须用 DOM `getBoundingClientRect()` 与 `elementFromPoint()`
+观察，不能用 transform 前逻辑尺寸声称 Web 物理 hit target 或 Android 48dp 已满足。
+
+因此，本文件 §5.2 中“任何 ancestor transform 都不得包裹 `InputSurfaceFrame`”仅保留为
+input 包自身不得引入 transform/桥接的约束；对 `testExpoApp.SurfaceCanvas` 的唯一
+`logicalStage` host preview transform 由本增补 supersede。Android/native 不读取 Web
+预览配置，也不因本增补改变方向锁、Presentation、IME 或拓扑。
+
 ## 1. 目的与裁定范围
 
 本文件解决的是输入组件所处的产品形态问题，不是键帽视觉问题。
@@ -217,20 +230,17 @@ sample-console 的 PRIMARY 1157 × 723 与 SECONDARY 962 × 541 继续保留为�
 
 ### 5.2 Web 缩放边界
 
-本轮只接受一条可执行路径：交互式 input frame 必须直接占据最终响应式盒子，
-其 `onLayout` 的 width/height 必须等于实际 pointer 命中区域的布局尺寸。任何会
-改变布局盒子与 pointer 命中盒子关系的 `scaleToFit` 或 ancestor `transform` 都不得
-包裹 `InputSurfaceFrame`；不能用 transform 前的逻辑 width/height 宣称 48 的物理
-hit target 已满足。
+input frame 的 `onLayout` 仍必须来自它自己实际占据的逻辑 frame；input 不读取 host
+scale，也不把 transform 前逻辑 width/height 作为 Web 物理 hit target 证明。Web host
+可保留固定逻辑画布，并由 `SurfaceCanvas` 的未缩放 canvas `onLayout` 测量可用宽度，
+在固定 logical stage 上施加唯一 preview transform；该 transform 不是 input 包的几何
+机制，也不得新增“把缩放后的有效盒子反映回来”的第二套物理尺寸桥接契约。
 
-Web host 如果仍需保留固定逻辑画布，只能用于不承载交互输入的静态外壳。输入交互
-子树必须放在无缩放的响应式容器中，不能新增“把缩放后的有效盒子反映回来”的第二套
-物理尺寸桥接契约。具体 DOM/View 树调整属于详设，但验收唯一看 input frame 实际
-布局盒子与实际 pointer 命中区域是否一致。
-
-可证伪红向量：在交互 `InputSurfaceFrame` 外恢复 ancestor transform，并继续把
-1157 × 723 或 962 × 541 作为几何输入，FORM-R5 必须失败；若测试只能读取 transform
-前的逻辑尺寸而不能观察实际命中区域，也不得判定通过。
+具体 DOM/View 树调整属于详设；Web 验收必须同时看 input frame 的 local layout、真实
+DOM rect 和 `elementFromPoint` 命中。可证伪红向量：在 `SurfaceCanvas` 删除唯一 host
+stage scale 后 S-26 的 resize/比例判据必须失败；在 `InputSurfaceFrame` 内引入自有
+transform、读取 host scale 或用 transform 前尺寸冒充 Web/Android hit target 时，
+FORM-R5 必须失败。
 
 ### 5.3 Android surface 边界
 

@@ -1,4 +1,4 @@
-import {expect, type Page} from '@playwright/test';
+import {expect, type Locator, type Page} from '@playwright/test';
 import {roleHomeTestIds} from '../../features/role-home-bootstrap/roleHomeTestIds';
 
 type OperationsDataScopeType = 'REGION' | 'PROJECT' | 'STORE' | 'HEAD_COMPANY';
@@ -35,7 +35,7 @@ function currentVisibleOption(page: Page, label?: string, optionTestId?: string)
  * ownership rather than duplicating a click helper per feature suite.
  */
 export async function visibleOperationsMenuItem(page: Page, label: string | RegExp) {
-  const dropdown = page.locator('.ant-dropdown:not(.ant-dropdown-hidden):visible').last();
+  const dropdown = visibleOperationsDropdown(page);
   await expect(dropdown).toBeVisible();
   const item =
     typeof label === 'string'
@@ -43,6 +43,44 @@ export async function visibleOperationsMenuItem(page: Page, label: string | RegE
       : dropdown.getByRole('menuitem', {name: label});
   await expect(item).toBeVisible();
   return item;
+}
+
+function visibleOperationsDropdown(page: Page): Locator {
+  return page.locator('.ant-dropdown:not(.ant-dropdown-hidden):visible').last();
+}
+
+/** Open one detail Drawer action Popup and return its current visible portal. */
+export async function openOperationsDetailActionMenu(page: Page, actionMenuTestId: string): Promise<Locator> {
+  const trigger = page.getByTestId(actionMenuTestId);
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+  const dropdown = visibleOperationsDropdown(page);
+  await expect(dropdown).toBeVisible();
+  return dropdown;
+}
+
+/** Resolve a real menu label anchor in the currently visible detail-action portal. */
+export async function visibleOperationsMenuTestId(page: Page, actionTestId: string): Promise<Locator> {
+  const dropdown = visibleOperationsDropdown(page);
+  await expect(dropdown).toBeVisible();
+  const action = dropdown.getByTestId(actionTestId);
+  await expect(action).toBeVisible();
+  return action;
+}
+
+/**
+ * Detail Drawer actions are rendered in an Ant Design popup portal. Bind both
+ * sides of the interaction to app-owned TestIds instead of relying on the
+ * old flat-button location or visible action copy.
+ */
+export async function clickOperationsDetailAction(
+  page: Page,
+  actionMenuTestId: string,
+  actionTestId: string,
+): Promise<void> {
+  await openOperationsDetailActionMenu(page, actionMenuTestId);
+  const action = await visibleOperationsMenuTestId(page, actionTestId);
+  await action.click();
 }
 
 /** Select an exact owner-returned option and prove it became this control's value. */

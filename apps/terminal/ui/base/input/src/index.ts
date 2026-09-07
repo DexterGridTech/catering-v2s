@@ -12,6 +12,6 @@ export type {
   InputFieldResult,
   InputSurfaceFrameProps,
   KeyboardKind,
-} from './types';
-export type {KeyboardLayout} from './types';
-export type {InputRegistrationToken, InputSnapshot} from './model/snapshot';
+} from './types/types';
+export type {KeyboardLayout} from './types/types';
+export type {InputRegistrationToken, InputSnapshot} from './foundations/snapshot';

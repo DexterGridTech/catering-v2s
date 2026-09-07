@@ -3121,8 +3121,12 @@ export const EDGE_PROBLEM_CODES = [
   "SALES_MENU_IDEMPOTENCY_CONFLICT",
   "SALES_MENU_ITEM_REFERENCE_INVALID",
   "SALES_MENU_MANUAL_REASON_REQUIRED",
+  "SALES_MENU_MANUAL_TARGET_INVALID",
   "SALES_MENU_MOVE_BOUNDARY",
   "SALES_MENU_NOT_FOUND",
+  "SALES_MENU_ORDER_OPTION_REFERENCE_INVALID",
+  "SALES_MENU_ORDER_OPTION_SELECTION_INVALID",
+  "SALES_MENU_ORDER_OPTION_SHAPE_UNSUPPORTED",
   "SALES_MENU_PRICE_REQUIRED",
   "SALES_MENU_PUBLICATION_REQUIRED",
   "SALES_MENU_RESULT_UNKNOWN",
@@ -3824,7 +3828,31 @@ export type SalesMenuDraftItemView = {
   itemCode: string;
   displayName: string;
   productShape: "ORDINARY" | "SKU" | "WEIGHTED" | "COMPOSITE" | "SERVICE";
+  catalogOrderOptions: Array<{
+  definitionRef: string & { readonly __uuid: "Uuid" };
+  name: string;
+  selectionMode: "SINGLE" | "MULTIPLE";
+  displayOrder: number;
+  required: boolean;
+  minSelectionCount: (number) | null;
+  maxSelectionCount: (number) | null;
+  values: Array<{
+  definitionValueRef: string & { readonly __uuid: "Uuid" };
+  name: string;
+  displayOrder: number;
+  defaultValue: boolean;
+  extraPrice: (number) | null;
+}>;
+}>;
+  skuCandidates: Array<{
+  skuRef: string & { readonly __uuid: "Uuid" };
+  skuName: string;
+  skuCode: string;
+  standardPriceCents: number;
+}>;
+  staleSelectedSkuRefs: Array<string & { readonly __uuid: "Uuid" }>;
   defaultPriceCents: (number) | null;
+  catalogPrimaryImageAssetRef: (string & { readonly __uuid: "Uuid" }) | null;
   saleContent: SalesMenuSaleContent;
   orderingConstraints: SalesMenuOrderingConstraints;
   displayMedia: SalesMenuDisplayMedia;
@@ -3863,6 +3891,10 @@ export type SalesMenuItemUpdateRequest = {
   kind: "DIRECT" | "SKU_SELECTION" | "WEIGHTED" | "COMPOSITE";
   listedPriceCents: (number) | null;
   skuPrices: Array<SalesMenuSkuPrice>;
+  orderOptionSelections: Array<{
+  definitionRef: string & { readonly __uuid: "Uuid" };
+  selectedValueRefs: Array<string & { readonly __uuid: "Uuid" }>;
+}>;
 };
   orderingConstraints: SalesMenuOrderingConstraints;
   displayMedia: SalesMenuDisplayMedia;
@@ -3875,11 +3907,19 @@ export type SalesMenuItemsAddRequest = {
 };
 
 export type SalesMenuManualRestoreRequest = {
+  target: {
+  targetKind: "ITEM" | "SKU" | "ORDER_OPTION_VALUE";
+  targetRef: string & { readonly __uuid: "Uuid" };
+};
   confirm: boolean;
   expectedVersion: number;
 };
 
 export type SalesMenuManualSoldOutRequest = {
+  target: {
+  targetKind: "ITEM" | "SKU" | "ORDER_OPTION_VALUE";
+  targetRef: string & { readonly __uuid: "Uuid" };
+};
   reason: string;
   expectedVersion: number;
 };
@@ -3890,6 +3930,8 @@ export type SalesMenuOperationRecord = {
   operationKind: string;
   salesMenuRef: string & { readonly __uuid: "Uuid" };
   targetRef: (string & { readonly __uuid: "Uuid" }) | null;
+  targetKind: "ITEM" | "SKU" | "ORDER_OPTION_VALUE";
+  targetDisplaySnapshot: (string) | null;
   result: "SUCCESS" | "FAILED";
   failureCode: (string) | null;
   actorDisplayName: string;
@@ -3913,7 +3955,7 @@ export type SalesMenuPage = {
 };
 
 export type SalesMenuPublicationBlocker = {
-  kind: "STORE_DISABLED" | "CHANNEL_DISABLED" | "CHANNEL_INELIGIBLE" | "CATALOG_ITEM_INVALID" | "SKU_SELECTION_EMPTY" | "SKU_INVALID" | "LISTED_PRICE_MISSING" | "ORDERING_CONSTRAINT_INVALID" | "DISPLAY_ASSET_PENDING_OR_INVALID" | "SCHEDULE_INVALID";
+  kind: "STORE_DISABLED" | "CHANNEL_DISABLED" | "CHANNEL_INELIGIBLE" | "CATALOG_ITEM_INVALID" | "SKU_SELECTION_EMPTY" | "SKU_INVALID" | "ORDER_OPTION_SELECTION_INVALID" | "LISTED_PRICE_MISSING" | "ORDERING_CONSTRAINT_INVALID" | "DISPLAY_ASSET_PENDING_OR_INVALID" | "SCHEDULE_INVALID";
   salesItemRef: (string & { readonly __uuid: "Uuid" }) | null;
   messageKey: string;
 };
@@ -3947,6 +3989,15 @@ export type SalesMenuPublishedItemView = {
   displayOrder: number;
   inventoryAvailability: InventoryAvailabilityFact;
   manualSaleStatus: ManualSaleStatusFact;
+  manualSaleTargetStatuses: Array<{
+  targetKind: "ITEM" | "SKU" | "ORDER_OPTION_VALUE";
+  targetRef: string & { readonly __uuid: "Uuid" };
+  resolvedTargetDisplayName: string;
+  state: "NORMAL" | "MANUAL_SOLD_OUT";
+  reason: (string) | null;
+  changedAt: (number) | null;
+  changedByDisplayName: (string) | null;
+}>;
   version: number;
 };
 
@@ -3963,6 +4014,22 @@ export type SalesMenuSaleContent = {
   kind: "DIRECT" | "SKU_SELECTION" | "WEIGHTED" | "COMPOSITE";
   listedPriceCents: (number) | null;
   skuPrices: Array<SalesMenuSkuPrice>;
+  selectedOrderOptions: Array<{
+  definitionRef: string & { readonly __uuid: "Uuid" };
+  name: string;
+  selectionMode: "SINGLE" | "MULTIPLE";
+  displayOrder: number;
+  required: boolean;
+  minSelectionCount: (number) | null;
+  maxSelectionCount: (number) | null;
+  values: Array<{
+  definitionValueRef: string & { readonly __uuid: "Uuid" };
+  name: string;
+  displayOrder: number;
+  defaultValue: boolean;
+  extraPrice: (number) | null;
+}>;
+}>;
   salesUnit: {
   unitRef: string & { readonly __uuid: "Uuid" };
   code: string;

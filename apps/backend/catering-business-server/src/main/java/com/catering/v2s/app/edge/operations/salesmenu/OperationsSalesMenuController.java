@@ -579,16 +579,24 @@ public final class OperationsSalesMenuController {
         var scope = support.scope(session, groupWorkspaceKey, storeRef);
         var context = support.commandContext(session, scope, salesMenuRef, REQ_SET_SOLD_OUT, idempotencyKey);
         return SalesMenuWireMapper.command(
-                runCommand("setOperationsSalesMenuItemSoldOut", context, salesItemRef, channelRef, () -> {
-                    support.requireEligibleChannel(scope, channelRef);
-                    return commandBindings.bindSetOperationsSalesMenuItemSoldOut(
-                            new SalesMenuCommandApi.ManualSoldOutCommand(
-                                    context,
-                                    channelRef,
-                                    salesItemRef,
-                                    support.requiredManualReason(body == null ? null : body.reason()),
-                                    support.expected(body == null ? null : body.expectedVersion(), "expectedVersion")));
-                }));
+                runCommand(
+                        "setOperationsSalesMenuItemSoldOut",
+                        context,
+                        manualTargetRef(salesItemRef, body),
+                        manualTargetKind(body),
+                        channelRef,
+                        () -> {
+                            support.requireEligibleChannel(scope, channelRef);
+                            return commandBindings.bindSetOperationsSalesMenuItemSoldOut(
+                                    new SalesMenuCommandApi.ManualSoldOutCommand(
+                                            context,
+                                            channelRef,
+                                            salesItemRef,
+                                            support.manualTarget(body == null ? null : body.target()),
+                                            support.requiredManualReason(body == null ? null : body.reason()),
+                                            support.expected(
+                                                    body == null ? null : body.expectedVersion(), "expectedVersion")));
+                        }));
     }
 
     @PostMapping("/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore")
@@ -608,16 +616,23 @@ public final class OperationsSalesMenuController {
         }
         var context = support.commandContext(session, scope, salesMenuRef, REQ_RESTORE, idempotencyKey);
         return SalesMenuWireMapper.command(
-                runCommand("restoreOperationsSalesMenuItemSale", context, salesItemRef, channelRef, () -> {
-                    support.requireEligibleChannel(scope, channelRef);
-                    return commandBindings.bindRestoreOperationsSalesMenuItemSale(
-                            new SalesMenuCommandApi.ManualRestoreCommand(
-                                    context,
-                                    channelRef,
-                                    salesItemRef,
-                                    body.confirm(),
-                                    support.expected(body.expectedVersion(), "expectedVersion")));
-                }));
+                runCommand(
+                        "restoreOperationsSalesMenuItemSale",
+                        context,
+                        manualTargetRef(salesItemRef, body),
+                        manualTargetKind(body),
+                        channelRef,
+                        () -> {
+                            support.requireEligibleChannel(scope, channelRef);
+                            return commandBindings.bindRestoreOperationsSalesMenuItemSale(
+                                    new SalesMenuCommandApi.ManualRestoreCommand(
+                                            context,
+                                            channelRef,
+                                            salesItemRef,
+                                            support.manualTarget(body.target()),
+                                            body.confirm(),
+                                            support.expected(body.expectedVersion(), "expectedVersion")));
+                        }));
     }
 
     private SalesMenuTarget target(
@@ -661,6 +676,36 @@ public final class OperationsSalesMenuController {
             UUID channelRef,
             java.util.function.Supplier<SalesMenuReadback.Command> command) {
         return failureRecorder.execute(operationKind, context, targetRef, channelRef, command);
+    }
+
+    private SalesMenuReadback.Command runCommand(
+            String operationKind,
+            SalesMenuCommandApi.CommandContext context,
+            UUID targetRef,
+            String targetKind,
+            UUID channelRef,
+            java.util.function.Supplier<SalesMenuReadback.Command> command) {
+        return failureRecorder.execute(operationKind, context, targetRef, targetKind, channelRef, command);
+    }
+
+    private UUID manualTargetRef(UUID fallback, SalesMenuManualSoldOutRequest body) {
+        return body == null || body.target() == null || body.target().targetRef() == null
+                ? fallback
+                : body.target().targetRef();
+    }
+
+    private String manualTargetKind(SalesMenuManualSoldOutRequest body) {
+        return body == null || body.target() == null ? null : body.target().targetKind();
+    }
+
+    private UUID manualTargetRef(UUID fallback, SalesMenuManualRestoreRequest body) {
+        return body == null || body.target() == null || body.target().targetRef() == null
+                ? fallback
+                : body.target().targetRef();
+    }
+
+    private String manualTargetKind(SalesMenuManualRestoreRequest body) {
+        return body == null || body.target() == null ? null : body.target().targetKind();
     }
 
     private static <T> ResponseEntity<T> created(T value) {

@@ -107,16 +107,40 @@ public interface CatalogOwnerApi {
             Long defaultPriceCents,
             InventoryOwnerApi.UnitSnapshot salesUnitSnapshot,
             UUID defaultImageAssetRef,
+            List<SalesMenuOrderOptionFact> orderOptions,
             SalesMenuSkuSummary skuSummary,
             List<SalesMenuSkuFact> skus,
             List<SalesMenuSkuVariantAxisFact> variantAxes) {
         public SalesMenuItemFacts {
             categoryRefs = List.copyOf(Objects.requireNonNull(categoryRefs, "categoryRefs"));
+            orderOptions = List.copyOf(Objects.requireNonNull(orderOptions, "orderOptions"));
             Objects.requireNonNull(skuSummary, "skuSummary");
             skus = List.copyOf(Objects.requireNonNull(skus, "skus"));
             variantAxes = List.copyOf(Objects.requireNonNull(variantAxes, "variantAxes"));
         }
     }
+
+    /** Catalog-owned item-level point-order options needed by sales-menu list projections. */
+    record SalesMenuOrderOptionFact(
+            UUID definitionRef,
+            String name,
+            String selectionMode,
+            int displayOrder,
+            boolean required,
+            Integer minSelectionCount,
+            Integer maxSelectionCount,
+            List<SalesMenuOrderOptionValueFact> values) {
+        public SalesMenuOrderOptionFact {
+            values = List.copyOf(Objects.requireNonNull(values, "values"));
+        }
+    }
+
+    record SalesMenuOrderOptionValueFact(
+            UUID definitionValueRef,
+            String name,
+            int displayOrder,
+            boolean defaultValue,
+            Long extraPrice) {}
 
     /** Structured SKU summary; display text is deliberately left to the consumer. */
     record SalesMenuSkuSummary(

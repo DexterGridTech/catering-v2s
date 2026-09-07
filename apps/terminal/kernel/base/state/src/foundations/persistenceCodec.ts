@@ -28,6 +28,38 @@ const isPlainObject = (value: unknown): value is object => {
   return prototype === Object.prototype || prototype === null
 }
 
+function validateArrayJsonValue(
+  value: readonly unknown[],
+  active: WeakSet<object>,
+): boolean {
+  for (let index = 0; index < value.length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index))
+    if (descriptor === undefined || !('value' in descriptor)) {
+      return false
+    }
+    if (!validateJsonValue(descriptor.value, active)) {
+      return false
+    }
+  }
+  return true
+}
+
+function validateObjectJsonValue(
+  value: object,
+  active: WeakSet<object>,
+): boolean {
+  for (const key of Object.keys(value)) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key)
+    if (descriptor === undefined || !('value' in descriptor)) {
+      return false
+    }
+    if (!validateJsonValue(descriptor.value, active)) {
+      return false
+    }
+  }
+  return true
+}
+
 const validateJsonValue = (
   value: unknown,
   active: WeakSet<object>,
@@ -51,16 +83,7 @@ const validateJsonValue = (
     }
     active.add(value)
     try {
-      for (let index = 0; index < value.length; index += 1) {
-        const descriptor = Object.getOwnPropertyDescriptor(value, String(index))
-        if (descriptor === undefined || !('value' in descriptor)) {
-          return false
-        }
-        if (!validateJsonValue(descriptor.value, active)) {
-          return false
-        }
-      }
-      return true
+      return validateArrayJsonValue(value, active)
     } finally {
       active.delete(value)
     }
@@ -71,16 +94,7 @@ const validateJsonValue = (
     }
     active.add(value)
     try {
-      for (const key of Object.keys(value)) {
-        const descriptor = Object.getOwnPropertyDescriptor(value, key)
-        if (descriptor === undefined || !('value' in descriptor)) {
-          return false
-        }
-        if (!validateJsonValue(descriptor.value, active)) {
-          return false
-        }
-      }
-      return true
+      return validateObjectJsonValue(value, active)
     } finally {
       active.delete(value)
     }

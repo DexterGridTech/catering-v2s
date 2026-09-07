@@ -5,8 +5,8 @@ import {describe, expect, it, vi} from 'vitest'
 import {InputSurfaceFrame} from '../src/components/InputSurfaceFrame'
 import {useInputField} from '../src/hooks/useInputField'
 import {useInputSnapshot} from '../src/hooks/useInputSnapshot'
-import {useInputKeyboardState} from '../src/context'
-import type {InputFieldResult} from '../src/types'
+import {useInputKeyboardState} from '../src/contexts/context'
+import type {InputFieldResult} from '../src/types/types'
 import {Keyboard, TextInput} from 'react-native'
 import {useRef} from 'react'
 
@@ -575,6 +575,7 @@ describe('input provider', () => {
     expect(state?.blockedCapacity).toBe('unsupported-width')
     expect(state?.visible).toBe(false)
     expect(renderer.root.findByProps({testID: 'sample:decision'})).toBeDefined()
+    expect(renderer.root.findByProps({testID: 'ui.base.input:unsupported-size'}).props.children).toContain('至少 360 个逻辑单位')
     expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0)
     act(() => { renderer.unmount() })
   })

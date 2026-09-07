@@ -27,39 +27,39 @@ export const createDisplayError = (
   details: {message, ...details},
 })
 
-const logDisplayMessage = (
-  context: ActorExecutionContext,
-  event: string,
-  message: string,
-  data: LogFields,
-  level: 'warn' | 'error',
-): void => {
-  const logger = context.platformPorts.logger.withContext({
-    commandId: context.command.commandId,
-    commandName: context.command.commandName,
-    requestId: context.command.requestId ?? undefined,
-    nodeId: context.localNodeId,
+const logDisplayMessage = (input: Readonly<{
+  context: ActorExecutionContext;
+  event: string;
+  message: string;
+  data: LogFields;
+  level: 'warn' | 'error';
+}>): void => {
+  const logger = input.context.platformPorts.logger.withContext({
+    commandId: input.context.command.commandId,
+    commandName: input.context.command.commandName,
+    requestId: input.context.command.requestId ?? undefined,
+    nodeId: input.context.localNodeId,
   })
-  logger[level]({
+  logger[input.level]({
     category: 'display-context',
-    event,
-    message,
-    data,
+    event: input.event,
+    message: input.message,
+    data: input.data,
   })
 }
 
-export const logDisplayDiagnostic = (
-  context: ActorExecutionContext,
-  event: string,
-  message: string,
-  data: LogFields,
-): void => logDisplayMessage(context, event, message, data, 'warn')
+export const logDisplayDiagnostic = (input: Readonly<{
+  context: ActorExecutionContext;
+  event: string;
+  message: string;
+  data: LogFields;
+}>): void => logDisplayMessage({...input, level: 'warn'})
 
-export const logDisplayError = (
-  context: ActorExecutionContext,
-  event: string,
-  message: string,
-  data: LogFields,
-): void => {
-  logDisplayMessage(context, event, message, data, 'error')
+export const logDisplayError = (input: Readonly<{
+  context: ActorExecutionContext;
+  event: string;
+  message: string;
+  data: LogFields;
+}>): void => {
+  logDisplayMessage({...input, level: 'error'})
 }

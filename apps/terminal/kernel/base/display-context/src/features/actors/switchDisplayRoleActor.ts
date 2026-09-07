@@ -62,17 +62,25 @@ export const createSwitchDisplayRoleActor = (): ActorDefinition => defineActor(m
 
     const displayInfo = await readDisplayInfo(context.platformPorts.device)
     if (displayInfo.status === 'unavailable') {
-      logDisplayDiagnostic(context, 'display-role.display-info-unavailable', 'Display role change has no usable display info', {
-        ...toDisplayInfoDiagnostic(displayInfo),
+      logDisplayDiagnostic({
+        context,
+        event: 'display-role.display-info-unavailable',
+        message: 'Display role change has no usable display info',
+        data: {...toDisplayInfoDiagnostic(displayInfo)},
       })
       throw createDisplayError(context, 'Display info was not available', {
         ...toDisplayInfoDiagnostic(displayInfo, 'portStatus'),
       })
     }
     if (displayInfo.status === 'malformed') {
-      logDisplayDiagnostic(context, 'display-role.display-info-malformed', 'Display role change received malformed display info', {
-        reason: 'MALFORMED_DISPLAY_COUNT',
-        valueType: displayInfo.valueType,
+      logDisplayDiagnostic({
+        context,
+        event: 'display-role.display-info-malformed',
+        message: 'Display role change received malformed display info',
+        data: {
+          reason: 'MALFORMED_DISPLAY_COUNT',
+          valueType: displayInfo.valueType,
+        },
       })
       throw createDisplayError(context, 'Display info was malformed', {
         reasonCode: 'malformed-display-count',

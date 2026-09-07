@@ -22,7 +22,7 @@ import {
   PrimitiveLabel,
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
-import {deskSystemFailureObservedCommand, memberSubmissionWithdrawnCommand} from '../commands'
+import {deskSystemFailureObservedCommand, memberSubmissionWithdrawnCommand} from '../features/commands/commands'
 import {classifyRequestResult} from './requestOutcome'
 import {ScrollArea} from './controls'
 
@@ -53,11 +53,11 @@ export const CustomerMember = ({mode}: CustomerMemberProps) => {
     operation: 'confirm-member' | 'reject-member' | 'withdraw-member',
   ): Promise<void> => {
     try {
-      await dispatchWithRequestId(
+      await dispatchWithRequestId({
         dispatchCommand,
-        deskSystemFailureObservedCommand,
-        {operation},
-      )
+        definition: deskSystemFailureObservedCommand,
+        payload: {operation},
+      })
     } catch (_error) {
       // useDispatchCommand has already emitted the structured rejection diagnostic.
     }
@@ -71,7 +71,7 @@ export const CustomerMember = ({mode}: CustomerMemberProps) => {
     if (!canDecide) return
     const requestId = request.start()
     try {
-      const result = await dispatchWithRequestId(dispatchCommand, command, payload, requestId)
+      const result = await dispatchWithRequestId({dispatchCommand, definition: command, payload, requestId})
       const outcome = classifyRequestResult(result)
       if (outcome !== 'running') request.finish(requestId)
       if (outcome === 'system-failure') await observeSystemFailure(operation)

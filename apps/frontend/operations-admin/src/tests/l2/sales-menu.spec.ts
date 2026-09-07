@@ -989,100 +989,98 @@ function storeScopeControlKey(touch: OperationsDataScopeTouch): string {
   return 'STORE_SCOPE_CANCEL';
 }
 
-async function openSalesMenu(page: Page, facts: OwnerCase, verifyChannelCards: boolean): Promise<void> {
+async function openSalesMenu(page: Page, facts: OwnerCase, verifyChannelSelector: boolean): Promise<void> {
   await page.goto(routeFromStoreProfile());
   await expect(page.getByTestId('operations-shell-menu')).toBeVisible();
   await selectStoreScope(page, facts);
   await requireControl(page, 'SALES_MENU_PAGE', facts);
-  if (!verifyChannelCards) return;
-  await requireControl(page, 'SALES_MENU_CHANNEL_CARDS', facts);
-  const channelRefs = factStringArray(facts, 'channelRefs');
-  const channelPageSize = factNumber((ownerFixture?.ownerFacts ?? {}) as OwnerCase, ['channelPageSize'], 20);
-  for (const channelRef of channelRefs.slice(0, channelPageSize))
-    await expect(page.getByTestId(salesMenuTestIds.channelCard(channelRef))).toBeVisible();
+  if (!verifyChannelSelector) return;
+  const selector = await requireControl(page, 'SALES_MENU_CHANNEL_SELECTOR', facts);
+  await expect(selector).toBeEnabled();
 }
 
-async function findChannelCard(
-  page: Page,
-  facts: OwnerCase,
-  channelRef = factText(facts, ['channelRef']),
-): Promise<Locator> {
-  // Locating the selected fixture may require cursor routing, but only the
-  // dedicated 21-channel journey asserts channel pagination as business UI.
-  await resetCursorToFirstPage(page, salesMenuTestIds.pageCursor, 'SALES_MENU_CHANNEL_PAGINATION', false);
-  const testId = salesMenuTestIds.channelCard(channelRef);
-  for (let pageIndex = 1; pageIndex <= 20; pageIndex += 1) {
-    const candidate = page.getByTestId(testId);
-    const next = page.getByTestId(`${salesMenuTestIds.pageCursor}-next`);
-    // The channel query is backed by RTK Query currentData.  During the short
-    // response-to-render interval the list is still empty and the next cursor
-    // is disabled, so checking both once can mistake an unsettled read model
-    // for a missing channel.  Wait for a DOM-visible target or a usable next
-    // cursor; the action locator remains the exact channel-card test ID.
+async function waitForChannelOption(page: Page, channelRef: string): Promise<Locator> {
+  const optionTestId = salesMenuTestIds.channelOption(channelRef);
+  const option = page.getByTestId(optionTestId);
+  await expect.poll(() => option.count(), {timeout: 5_000}).toBe(1);
+  locatorMetadata.set(option, {controlKey: 'SALES_MENU_CHANNEL_SELECTOR', testId: optionTestId});
+  await expect(option).toBeVisible();
+  return option;
+}
+
+async function loadChannelOption(page: Page, channelRef: string): Promise<Locator> {
+  const optionTestId = salesMenuTestIds.channelOption(channelRef);
+  const option = page.getByTestId(optionTestId);
+  const initialCount = await option.count();
+  if (initialCount > 1)
+    throw new Error(`SALES_MENU_L2_TEST_ID_NOT_UNIQUE:SALES_MENU_CHANNEL_SELECTOR:${optionTestId}:${initialCount}`);
+  if (initialCount === 1) return waitForChannelOption(page, channelRef);
+
+  const popup = page.locator('.ant-select-dropdown:visible').last();
+  await expect(popup).toBeVisible();
+  const scrollHolder = popup.locator('.rc-virtual-list-holder').last();
+  const scrollTarget = (await scrollHolder.count()) > 0 ? scrollHolder : popup;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const beforeOptionCount = await popup.getByRole('option').count();
+    await scrollTarget.evaluate(element => {
+      element.scrollTop = element.scrollHeight;
+      element.dispatchEvent(new Event('scroll', {bubbles: true}));
+    });
     await expect
-      .poll(
-        async () => {
-          const count = await candidate.count();
-          if (count > 1) return `DUPLICATE:${count}`;
-          if (count === 1) return 'TARGET';
-          return (await next.isEnabled()) ? 'NEXT' : 'PENDING';
-        },
-        {timeout: 5_000},
-      )
-      .not.toBe('PENDING');
-    const count = await candidate.count();
-    const nextEnabled = await next.isEnabled();
-    appendDebugEvent({
-      kind: 'TEST_CHECKPOINT',
-      caseId: activeCaseContext?.caseId ?? null,
-      scenarioId: activeCaseContext?.scenarioId ?? null,
-      checkpoint: 'SALES_MENU_CHANNEL_PAGE_READ_MODEL_SETTLED',
-      channelRef,
-      pageIndex,
-      targetTestId: testId,
-      targetCount: count,
-      nextEnabled,
-      settledVia: count === 1 ? 'TARGET' : nextEnabled ? 'NEXT' : 'NONE',
-    });
-    if (count > 1) throw new Error(`SALES_MENU_L2_TEST_ID_NOT_UNIQUE:SALES_MENU_CHANNEL_CARD:${testId}:${count}`);
-    if (count === 1) {
-      locatorMetadata.set(candidate, {controlKey: 'SALES_MENU_CHANNEL_CARD', testId});
-      await expect(candidate).toBeVisible();
-      recordControlTouch('SALES_MENU_CHANNEL_CARD', testId);
-      appendDebugEvent({
-        kind: 'TEST_CHECKPOINT',
-        caseId: activeCaseContext?.caseId ?? null,
-        scenarioId: activeCaseContext?.scenarioId ?? null,
-        checkpoint: 'SALES_MENU_CHANNEL_CARD_VISIBLE',
-        channelRef,
-        pageIndex,
-        testId,
-      });
-      return candidate;
-    }
-    await expect(next).toBeVisible();
-    if (!nextEnabled) break;
-    appendDebugEvent({
-      kind: 'TEST_CHECKPOINT',
-      caseId: activeCaseContext?.caseId ?? null,
-      scenarioId: activeCaseContext?.scenarioId ?? null,
-      checkpoint: 'SALES_MENU_CHANNEL_PAGINATION_REQUIRED',
-      channelRef,
-      pageIndex,
-      testId: `${salesMenuTestIds.pageCursor}-next`,
-      controlKey: 'SALES_MENU_CHANNEL_PAGINATION',
-    });
-    await next.click();
-    await expect(page.getByTestId(salesMenuTestIds.pageCursor)).toContainText(`第 ${pageIndex + 1} 页`);
+      .poll(async () => (await option.count()) === 1 || (await popup.getByRole('option').count()) > beforeOptionCount, {
+        timeout: 5_000,
+      })
+      .toBe(true);
+    const optionCount = await option.count();
+    if (optionCount > 1)
+      throw new Error(`SALES_MENU_L2_TEST_ID_NOT_UNIQUE:SALES_MENU_CHANNEL_SELECTOR:${optionTestId}:${optionCount}`);
+    if (optionCount === 1) return waitForChannelOption(page, channelRef);
   }
-  throw new Error(`SALES_MENU_L2_CHANNEL_REF_NOT_VISIBLE:${channelRef}`);
+  throw new Error(`SALES_MENU_L2_CHANNEL_OPTION_NOT_VISIBLE:${channelRef}`);
+}
+
+async function verifyChannelDropdownCoverage(page: Page, facts: OwnerCase): Promise<void> {
+  const selector = await requireControl(page, 'SALES_MENU_CHANNEL_SELECTOR', facts);
+  await selector.click();
+  recordActionForLocator(selector, 'click');
+  const channelRefs = factStringArray(facts, 'channelRefs');
+  const channelCandidatePageSize = factNumber(
+    (ownerFixture?.ownerFacts ?? {}) as OwnerCase,
+    ['channelCandidatePageSize'],
+    20,
+  );
+  for (const channelRef of channelRefs.slice(0, channelCandidatePageSize)) {
+    const option = await waitForChannelOption(page, channelRef);
+    recordControlTouch('SALES_MENU_CHANNEL_SELECTOR', salesMenuTestIds.channelOption(channelRef));
+    await expect(option).toBeVisible();
+  }
+  for (const channelRef of channelRefs.slice(channelCandidatePageSize)) {
+    const option = await loadChannelOption(page, channelRef);
+    recordControlTouch('SALES_MENU_CHANNEL_SELECTOR', salesMenuTestIds.channelOption(channelRef));
+    await expect(option).toBeVisible();
+  }
+  appendDebugEvent({
+    kind: 'TEST_CHECKPOINT',
+    caseId: activeCaseContext?.caseId ?? null,
+    scenarioId: activeCaseContext?.scenarioId ?? null,
+    checkpoint: 'SALES_MENU_CHANNEL_SELECTOR_OPTIONS_READY',
+    optionCount: channelRefs.length,
+    channelCandidatePageSize,
+    readModelSourceBasis: 'CURRENT_DOM_READ_MODEL',
+  });
+  await page.keyboard.press('Escape');
 }
 
 async function chooseChannel(page: Page, facts: OwnerCase, runtime: CaseRuntime): Promise<void> {
-  const channel = await findChannelCard(page, facts);
-  await channel.click();
-  recordActionForLocator(channel, 'click');
-  await expect(channel).toContainText('当前入口');
+  const selector = await requireControl(page, 'SALES_MENU_CHANNEL_SELECTOR', facts);
+  await expect(selector).toBeEnabled();
+  await selector.click();
+  recordActionForLocator(selector, 'click');
+  const channelRef = factText(facts, ['channelRef']);
+  const channelOption = await loadChannelOption(page, channelRef);
+  await channelOption.click();
+  recordControlTouch('SALES_MENU_CHANNEL_SELECTOR', salesMenuTestIds.channelOption(channelRef), 'ACTION');
+  recordActionForLocator(channelOption, 'click');
   const menuSelector = await waitForBoundControl(page, 'SALES_MENU_SELECTOR', facts);
   await expect(menuSelector.locator).toBeVisible();
   await expect(menuSelector.locator).toBeEnabled();
@@ -1452,20 +1450,9 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
   const facts = runtime.facts;
   switch (runtime.row.caseId) {
     case 'sales-menu-entry-and-channels':
-      {
-        const channelRefs = factStringArray(facts, 'channelRefs');
-        const channelPageSize = factNumber((ownerFixture?.ownerFacts ?? {}) as OwnerCase, ['channelPageSize'], 20);
-        const secondPageRefs = channelRefs.slice(channelPageSize);
-        if (secondPageRefs.length === 0) throw new Error('SALES_MENU_L2_CHANNEL_SECOND_PAGE_FACT_MISSING');
-        await clickCursorNext(page, salesMenuTestIds.pageCursor, 'SALES_MENU_CHANNEL_PAGINATION');
-        for (const channelRef of secondPageRefs)
-          await expect(page.getByTestId(salesMenuTestIds.channelCard(channelRef))).toBeVisible();
-        await resetCursorToFirstPage(page, salesMenuTestIds.pageCursor, 'SALES_MENU_CHANNEL_PAGINATION');
-      }
+      await verifyChannelDropdownCoverage(page, facts);
       await chooseChannel(page, facts, runtime);
       await ensureMenuSelected(page, facts, runtime);
-      if (await page.getByTestId(`${salesMenuTestIds.selectorCursor}-next`).isEnabled())
-        await clickCursorNext(page, salesMenuTestIds.selectorCursor, 'SALES_MENU_SELECTOR_PAGINATION');
       break;
     case 'sales-menu-section-actions': {
       await prepareDraft(page, facts, runtime);
@@ -1837,8 +1824,6 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
     case 'sales-menu-menu-management-and-multi-active': {
       await chooseChannel(page, facts, runtime);
       await ensureMenuSelected(page, facts, runtime);
-      if (await page.getByTestId(`${salesMenuTestIds.selectorCursor}-next`).isEnabled())
-        await clickCursorNext(page, salesMenuTestIds.selectorCursor, 'SALES_MENU_SELECTOR_PAGINATION');
       await clickBoundControl(page, 'SALES_MENU_MANAGER_OPEN', facts, '管理菜单');
       await requireControl(page, 'SALES_MENU_MANAGER', facts);
       const menuRefs = factStringArray(facts, 'menuRefs');
@@ -1878,11 +1863,9 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       recordActionForLocator(targetToggle, 'click');
       await waitForOperation(runtime, 'setOperationsSalesMenuActivation');
 
-      await page.keyboard.press('Escape');
-      await expect(page.getByTestId(salesMenuTestIds.menuManager)).toBeHidden();
       const createMenuName = factText(facts, ['createMenuName'], `L2菜单${Date.now()}`);
-      await clickBoundControl(page, 'SALES_MENU_MENU_CREATE', facts, '新建菜单');
-      await requireControl(page, 'SALES_MENU_MENU_CREATE_DRAWER', facts);
+      await clickBoundControl(page, 'SALES_MENU_MANAGER_CREATE', facts, '新建菜单');
+      await requireControl(page, 'SALES_MENU_MENU_CREATE_MODAL', facts);
       await fillBoundControl(page, 'SALES_MENU_MENU_CREATE_NAME', facts, createMenuName);
       await clickBoundControl(page, 'SALES_MENU_MENU_CREATE_SUBMIT', facts, '创建菜单');
       const createdMenu = await waitForOperation(runtime, 'createOperationsSalesMenu');
@@ -1891,7 +1874,9 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
         'salesMenuRef',
         `SALES_MENU_L2_CREATE_READBACK_REF_MISSING:${runtime.row.caseId}`,
       );
-      await expect(visibleTestId(page, salesMenuTestIds.menuCreateDrawer)).toBeHidden();
+      await expect(visibleTestId(page, salesMenuTestIds.menuCreateModal)).toBeHidden();
+      await page.keyboard.press('Escape');
+      await expect(page.getByTestId(salesMenuTestIds.menuManager)).toBeHidden();
 
       await clickBoundControl(page, 'SALES_MENU_MANAGER_OPEN', facts, '管理菜单');
       await requireControl(page, 'SALES_MENU_MANAGER', facts);
@@ -2105,16 +2090,18 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await requireControl(page, 'SALES_MENU_SECTION_LIST', facts);
       await expect(await requireControl(page, 'SALES_MENU_MENU_SCHEDULE', facts)).toBeDisabled();
       await expect(await requireControl(page, 'SALES_MENU_MENU_PUBLISH', facts)).toBeDisabled();
-      await expect(await requireControl(page, 'SALES_MENU_MENU_CREATE', facts)).toBeDisabled();
       await clickBoundControl(page, 'SALES_MENU_MANAGER_OPEN', facts, '管理菜单');
       await requireControl(page, 'SALES_MENU_MANAGER', facts);
+      await expect(await requireControl(page, 'SALES_MENU_MANAGER_CREATE', facts)).toBeDisabled();
       const targetMenuRef = factText(facts, ['menuRef']);
       const targetToggle = await findManagerAction(page, runtime, targetMenuRef, 'toggle');
       await expect(targetToggle).toBeDisabled();
       const foreignProjectChannelRef = factText(facts, ['foreignProjectChannelRef']);
       const foreignStoreChannelRef = factText(facts, ['foreignStoreChannelRef']);
-      await expect(page.getByTestId(salesMenuTestIds.channelCard(foreignProjectChannelRef))).toHaveCount(0);
-      await expect(page.getByTestId(salesMenuTestIds.channelCard(foreignStoreChannelRef))).toHaveCount(0);
+      const channelSelector = await clickRequiredControl(page, 'SALES_MENU_CHANNEL_SELECTOR', facts);
+      await expect(page.getByTestId(salesMenuTestIds.channelOption(foreignProjectChannelRef))).toHaveCount(0);
+      await expect(page.getByTestId(salesMenuTestIds.channelOption(foreignStoreChannelRef))).toHaveCount(0);
+      await channelSelector.press('Escape');
       break;
     }
     default:
@@ -2191,7 +2178,7 @@ test.describe('销售菜单 · generated browser-L2 contract', () => {
               }
             : undefined,
         );
-        await openSalesMenu(page, facts, row.parameter.controlKeys.includes('SALES_MENU_CHANNEL_CARDS'));
+        await openSalesMenu(page, facts, row.parameter.controlKeys.includes('SALES_MENU_CHANNEL_SELECTOR'));
         await runDeclaredAction(runtime, async () => {
           await runCaseJourney(page, runtime);
           await responseObserver.drain();

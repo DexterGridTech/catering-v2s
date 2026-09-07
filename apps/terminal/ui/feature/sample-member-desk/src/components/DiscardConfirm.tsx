@@ -6,7 +6,7 @@ import {
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
 import {dispatchWithRequestId, useDispatchCommand} from '@catering-v2s/ui-base-render'
-import {memberDraftDiscardedCommand, type DraftDiscardIntent} from '../commands'
+import {memberDraftDiscardedCommand, type DraftDiscardIntent} from '../features/commands/commands'
 import {DialogActions, DialogSurface} from './controls'
 
 export type DiscardConfirmProps = Readonly<{
@@ -15,9 +15,13 @@ export type DiscardConfirmProps = Readonly<{
 
 export const DiscardConfirm = ({intent}: DiscardConfirmProps) => {
   const dispatchCommand = useDispatchCommand()
-  const keep = () => dispatchWithRequestId(dispatchCommand, closeLayerCommand, {
-    displayMode: 'PRIMARY',
-    layerId: 'sample.desk.discard-confirm',
+  const keep = () => dispatchWithRequestId({
+    dispatchCommand,
+    definition: closeLayerCommand,
+    payload: {
+      displayMode: 'PRIMARY',
+      layerId: 'sample.desk.discard-confirm',
+    },
   })
 
   return (
@@ -36,11 +40,11 @@ export const DiscardConfirm = ({intent}: DiscardConfirmProps) => {
         <PrimitiveButton
           testID="sample.desk.discard-confirm:discard"
           accessibilityLabel="放弃"
-          onPress={() => dispatchWithRequestId(
+          onPress={() => dispatchWithRequestId({
             dispatchCommand,
-            memberDraftDiscardedCommand,
-            {intent},
-          )}
+            definition: memberDraftDiscardedCommand,
+            payload: {intent},
+          })}
         >
           放弃
         </PrimitiveButton>

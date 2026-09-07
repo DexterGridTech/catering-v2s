@@ -1,6 +1,8 @@
-import {Alert, Button, Card, Descriptions, Dropdown, Drawer, Modal, Space, Tabs, Tooltip, Typography} from 'antd';
+import {Alert, Button, Card, Descriptions, Drawer, Modal, Space, Tabs, Tooltip, Typography} from 'antd';
 import {useEffect, useMemo, useState} from 'react';
 import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
   adminWideDrawerSurfaceProps,
   createContentIdempotencyKey,
   NameCodeText,
@@ -161,14 +163,18 @@ export function CatalogItemViewDrawer({
           action?.canEnable
             ? {
                 key: 'enable',
-                label: <span {...testId(catalogTestIds.control.statusEnable)}>启用</span>,
+                label: (
+                  <AdminDetailActionLabel testIdValue={catalogTestIds.control.statusEnable}>启用</AdminDetailActionLabel>
+                ),
                 onClick: () => confirmStatusChange('ENABLED'),
               }
             : null,
           action?.canDisable
             ? {
                 key: 'disable',
-                label: <span {...testId(catalogTestIds.control.statusDisable)}>停用</span>,
+                label: (
+                  <AdminDetailActionLabel testIdValue={catalogTestIds.control.statusDisable}>停用</AdminDetailActionLabel>
+                ),
                 onClick: () => confirmStatusChange('DISABLED'),
               }
             : null,
@@ -177,20 +183,64 @@ export function CatalogItemViewDrawer({
                 key: 'void',
                 danger: true,
                 label: (
-                  <span {...testId(catalogTestIds.static.itemVoid)}>
+                  <AdminDetailActionLabel testIdValue={catalogTestIds.static.itemVoid}>
                     <span {...testId(catalogTestIds.control.statusVoid)}>标记删除</span>
-                  </span>
+                  </AdminDetailActionLabel>
                 ),
                 onClick: markItemDeleted,
               }
             : null,
           {
             key: 'copy',
-            label: <span {...testId(catalogTestIds.static.itemCopyLocalOpen)}>从已有商品复制配置</span>,
+            label: (
+              <AdminDetailActionLabel testIdValue={catalogTestIds.static.itemCopyLocalOpen}>
+                从已有商品复制配置
+              </AdminDetailActionLabel>
+            ),
             onClick: () => onCopy?.({itemCode: detail.item.code, targetShapeKey: detail.item.shapeKey}),
           },
         ].filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
       : [];
+  const actionItems = detail
+    ? [
+        ...(canWriteCatalog && action?.canEdit && !sourceLocked && !isReferencedDetail
+          ? [
+              {
+                key: 'edit',
+                label: <AdminDetailActionLabel testIdValue={catalogTestIds.static.itemEdit}>编辑</AdminDetailActionLabel>,
+                onClick: onEdit,
+              },
+            ]
+          : []),
+        ...(isReferencedDetail
+          ? [
+              {
+                key: 'return-current',
+                label: (
+                  <AdminDetailActionLabel testIdValue={catalogTestIdControls.view.returnCurrent}>
+                    返回当前商品
+                  </AdminDetailActionLabel>
+                ),
+                onClick: () => setViewedItemCode(itemCode),
+              },
+            ]
+          : []),
+        ...(canWriteCatalog && sourceLocked
+          ? [
+              {
+                key: 'temporary-promotion',
+                label: (
+                  <AdminDetailActionLabel testIdValue={catalogTestIds.static.itemTemporaryPromotion}>
+                    检查是否可以转为正式商品
+                  </AdminDetailActionLabel>
+                ),
+                onClick: () => setPromotionOpen(true),
+              },
+            ]
+          : []),
+        ...moreActions,
+      ]
+    : [];
 
   return (
     <Drawer
@@ -207,30 +257,12 @@ export function CatalogItemViewDrawer({
         )
       }
       extra={
-        detail && (
-          <Space>
-            {canWriteCatalog && action?.canEdit && !sourceLocked && !isReferencedDetail && (
-              <Button onClick={onEdit} {...testId(catalogTestIds.static.itemEdit)}>
-                编辑
-              </Button>
-            )}
-            {isReferencedDetail && <Button onClick={() => setViewedItemCode(itemCode)}>返回当前商品</Button>}
-            {canWriteCatalog && sourceLocked && (
-              <Button
-                type="primary"
-                onClick={() => setPromotionOpen(true)}
-                {...testId(catalogTestIds.static.itemTemporaryPromotion)}
-              >
-                检查是否可以转为正式商品
-              </Button>
-            )}
-            {moreActions.length > 0 && (
-              <Dropdown menu={{items: moreActions}}>
-                <Button {...testId(catalogTestIdControls.view.more)}>更多</Button>
-              </Dropdown>
-            )}
-          </Space>
-        )
+        actionItems.length > 0 ? (
+          <AdminDetailActionMenu
+            items={actionItems}
+            triggerTestId={catalogTestIdControls.view.action}
+          />
+        ) : undefined
       }
       {...adminWideDrawerSurfaceProps}
       {...testId(catalogTestIds.surface.itemViewDrawer)}

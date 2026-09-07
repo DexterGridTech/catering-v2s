@@ -42,6 +42,57 @@ const pathForKey = (path: string, key: string): string =>
 
 const pathForIndex = (path: string, index: number): string => `${path}[${index}]`
 
+const isCloneFailure = (
+  value: StateJsonValue | CloneStateJsonValueResult,
+): value is CloneStateJsonValueResult & {readonly status: 'invalid'} =>
+  typeof value === 'object'
+  && value !== null
+  && 'status' in value
+  && value.status === 'invalid'
+
+function cloneArrayValue(
+  value: readonly unknown[],
+  path: string,
+  ancestors: WeakSet<object>,
+): StateJsonValue | CloneStateJsonValueResult {
+  const cloned: StateJsonValue[] = []
+  for (let index = 0; index < value.length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index))
+    if (descriptor === undefined || !('value' in descriptor)) {
+      const itemPath = pathForIndex(path, index)
+      return invalid('accessor-property', itemPath, `Accessor array item at ${itemPath}`)
+    }
+    const child = cloneValue(descriptor.value, pathForIndex(path, index), ancestors)
+    if (isCloneFailure(child)) return child
+    cloned.push(child)
+  }
+  return Object.freeze(cloned)
+}
+
+function cloneObjectValue(
+  value: object,
+  path: string,
+  ancestors: WeakSet<object>,
+): StateJsonValue | CloneStateJsonValueResult {
+  const cloned: JsonObjectClone = Object.create(null) as JsonObjectClone
+  for (const key of Object.keys(value)) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key)
+    if (descriptor === undefined || !('value' in descriptor)) {
+      const keyPath = pathForKey(path, key)
+      return invalid('accessor-property', keyPath, `Accessor property at ${keyPath}`)
+    }
+    const child = cloneValue(descriptor.value, pathForKey(path, key), ancestors)
+    if (isCloneFailure(child)) return child
+    Object.defineProperty(cloned, key, {
+      value: child,
+      enumerable: true,
+      configurable: true,
+      writable: false,
+    })
+  }
+  return Object.freeze(cloned)
+}
+
 const cloneValue = (
   value: unknown,
   path: string,
@@ -87,48 +138,13 @@ const cloneValue = (
 
   ancestors.add(value)
   try {
-    if (Array.isArray(value)) {
-      const cloned: StateJsonValue[] = []
-      for (let index = 0; index < value.length; index += 1) {
-        const descriptor = Object.getOwnPropertyDescriptor(value, String(index))
-        if (descriptor === undefined || !('value' in descriptor)) {
-          return invalid('accessor-property', pathForIndex(path, index), `Accessor array item at ${pathForIndex(path, index)}`)
-        }
-        const child = cloneValue(descriptor.value, pathForIndex(path, index), ancestors)
-        if (isCloneFailure(child)) return child
-        cloned.push(child)
-      }
-      return Object.freeze(cloned)
-    }
-
-    const cloned: JsonObjectClone = Object.create(null) as JsonObjectClone
-    for (const key of Object.keys(value)) {
-      const descriptor = Object.getOwnPropertyDescriptor(value, key)
-      if (descriptor === undefined || !('value' in descriptor)) {
-        return invalid('accessor-property', pathForKey(path, key), `Accessor property at ${pathForKey(path, key)}`)
-      }
-      const child = cloneValue(descriptor.value, pathForKey(path, key), ancestors)
-      if (isCloneFailure(child)) return child
-      Object.defineProperty(cloned, key, {
-        value: child,
-        enumerable: true,
-        configurable: true,
-        writable: false,
-      })
-    }
-    return Object.freeze(cloned)
+    return Array.isArray(value)
+      ? cloneArrayValue(value, path, ancestors)
+      : cloneObjectValue(value, path, ancestors)
   } finally {
     ancestors.delete(value)
   }
 }
-
-const isCloneFailure = (
-  value: StateJsonValue | CloneStateJsonValueResult,
-): value is CloneStateJsonValueResult & {readonly status: 'invalid'} =>
-  typeof value === 'object'
-  && value !== null
-  && 'status' in value
-  && value.status === 'invalid'
 
 export const cloneStateJsonValue = (
   value: unknown,

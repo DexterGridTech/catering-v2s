@@ -1,5 +1,7 @@
 import {Alert, Button, Descriptions, Drawer, Skeleton, Space} from 'antd';
 import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
   NameCodeText,
@@ -12,6 +14,7 @@ import {operationsRtk} from '../../../app/api/OperationsTransport';
 import type {ExtensionDefinition, JsonValue, OrganizationStore} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
+import {operationsDetailDrawerTestIds} from '../../../app/automation/operationsDetailDrawerTestIds';
 
 type Props = {
   store?: OrganizationStore;
@@ -86,6 +89,37 @@ export function StoreDetailDrawer({
     onClose();
     next(selected);
   };
+  const actionItems = ready && selected
+    ? [
+        {
+          key: 'audit',
+          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.store.audit}>操作历史</AdminDetailActionLabel>,
+          onClick: onAudit,
+        },
+        ...(canEdit
+          ? [
+              {
+                key: 'edit',
+                label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.store.edit}>编辑</AdminDetailActionLabel>,
+                onClick: () => closeThen(onEdit),
+              },
+            ]
+          : []),
+        ...(canTransition
+          ? [
+              {
+                key: 'status',
+                label: (
+                  <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.store.status}>
+                    {selected.status === 'ENABLED' ? '停用' : '启用'}
+                  </AdminDetailActionLabel>
+                ),
+                onClick: () => closeThen(onStatus),
+              },
+            ]
+          : []),
+      ]
+    : [];
 
   return (
     <Drawer
@@ -102,24 +136,12 @@ export function StoreDetailDrawer({
       {...adminDrawerSurfaceProps}
       {...testId('operations-store-detail-drawer')}
       extra={
-        ready &&
-        selected && (
-          <Space>
-            <Button onClick={onAudit} {...testId('operations-store-detail-audit')}>
-              操作历史
-            </Button>
-            {canEdit && (
-              <Button onClick={() => closeThen(onEdit)} {...testId('operations-store-detail-edit')}>
-                编辑
-              </Button>
-            )}
-            {canTransition && (
-              <Button onClick={() => closeThen(onStatus)} {...testId('operations-store-detail-status')}>
-                {selected.status === 'ENABLED' ? '停用' : '启用'}
-              </Button>
-            )}
-          </Space>
-        )
+        actionItems.length > 0 ? (
+          <AdminDetailActionMenu
+            items={actionItems}
+            triggerTestId={operationsDetailDrawerTestIds.store.actionMenu}
+          />
+        ) : undefined
       }
     >
       {loading && <Skeleton active {...testId('operations-store-detail-loading')} />}

@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
 
-const preview = readFileSync(
+const preview = readFileSync(new URL('../../app/components/AssetPreview.tsx', import.meta.url), 'utf8');
+const catalogPreview = readFileSync(
   new URL('../../features/catalog-management/ui/CatalogAssetPreview.tsx', import.meta.url),
   'utf8',
 );
@@ -31,6 +32,7 @@ test('catalog previews staged files locally and only asks the public asset endpo
   assert.match(preview, /skip: Boolean\(localFile \|\| !assetRef \|\| !request\)/);
   assert.doesNotMatch(preview, /wireUuid\(assetRef \?\? ''\)/);
   assert.match(preview, /const sourceUrl = localPreviewUrl \?\? publicUrl/);
+  assert.match(catalogPreview, /export \{AssetPreview as CatalogAssetPreview\}/);
   assert.match(basicEditor, /localFile=\{asset\.staged \? asset\.file : undefined\}/);
   assert.match(basicEditor, /: asset\.staged\s+\? '待保存'/);
   assert.match(editorSession, /const stageStagedAsset = useCallback/);

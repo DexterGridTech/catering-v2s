@@ -4,7 +4,14 @@ import {appendFileSync} from 'node:fs';
 import fs from 'node:fs';
 import path from 'node:path';
 import type {InventoryUnitSnapshot} from '../../features/inventory-management/ui/inventoryManagementModel';
-import {selectOperationsDataScope, selectOperationsOption, visibleOperationsMenuItem} from './operationsL2';
+import {operationsDetailDrawerTestIds} from '../../app/automation/operationsDetailDrawerTestIds';
+import {
+  clickOperationsDetailAction,
+  openOperationsDetailActionMenu,
+  selectOperationsDataScope,
+  selectOperationsOption,
+  visibleOperationsMenuTestId,
+} from './operationsL2';
 import {
   catalogItemRowTestId,
   catalogItemSelectionTestId,
@@ -16,6 +23,15 @@ import {
 function inventoryUnitText(snapshot: InventoryUnitSnapshot) {
   return `${snapshot.name}（${snapshot.code}）`;
 }
+
+const detailActionMenuTestIdByControlKey: Record<string, string> = {
+  CATALOG_ITEM_EDIT: catalogTestIdControls.view.action,
+  CATALOG_LOCAL_COPY_OPEN: catalogTestIdControls.view.action,
+  INVENTORY_ACTION_COUNT: operationsDetailDrawerTestIds.inventory.actionMenu,
+  INVENTORY_ACTION_INCREASE: operationsDetailDrawerTestIds.inventory.actionMenu,
+  INVENTORY_ACTION_ADJUST: operationsDetailDrawerTestIds.inventory.actionMenu,
+  INVENTORY_ACTION_CONFIGURE: operationsDetailDrawerTestIds.inventory.actionMenu,
+};
 
 type ScopeFacts = {
   kind: 'STORE' | 'HEAD_COMPANY';
@@ -1053,6 +1069,8 @@ async function requireControl(page: Page, key: string, facts: OwnerCase): Promis
 }
 
 async function clickRequiredControl(page: Page, key: string, facts: OwnerCase): Promise<Locator> {
+  const actionMenuTestId = detailActionMenuTestIdByControlKey[key];
+  if (actionMenuTestId) await openOperationsDetailActionMenu(page, actionMenuTestId);
   const locator = await requireControl(page, key, facts);
   await locator.click();
   recordActionForLocator(locator, 'click');
@@ -1247,8 +1265,7 @@ async function openCatalogItem(
 
 async function openCatalogEditor(page: Page, facts: OwnerCase): Promise<Locator> {
   const drawer = await openCatalogItem(page, facts, 'CATALOG_ITEM_VIEW_DRAWER');
-  await requireControl(page, 'CATALOG_ITEM_EDIT', facts);
-  await visibleTestId(page, catalogTestIds.static.itemEdit).click();
+  await clickRequiredControl(page, 'CATALOG_ITEM_EDIT', facts);
   const editor = await requireControl(page, 'CATALOG_ITEM_EDIT_DRAWER', facts);
   const name = editor.getByTestId(catalogTestIds.static.itemEditName);
   await expect(name).toBeVisible();
@@ -1386,10 +1403,10 @@ async function closeDrawer(page: Page, drawer: Locator): Promise<void> {
   await expect(drawer).toBeHidden();
 }
 
-async function openLocalCopy(page: Page, drawer: Locator): Promise<Locator> {
-  await expect(drawer.getByTestId('catalog-item-copy-local-open')).toBeVisible();
-  await drawer.getByTestId('catalog-item-copy-local-open').click();
-  const copy = visibleTestId(page, 'catalog-local-copy-drawer');
+async function openLocalCopy(page: Page, drawer: Locator, facts: OwnerCase): Promise<Locator> {
+  await expect(drawer).toBeVisible();
+  await clickRequiredControl(page, 'CATALOG_LOCAL_COPY_OPEN', facts);
+  const copy = visibleTestId(page, catalogTestIds.surface.localCopyDrawer);
   await expect(copy).toBeVisible();
   return copy;
 }
@@ -1649,12 +1666,15 @@ async function clickGeneratedCommand(
 
 async function openCatalogStatusActions(page: Page, facts: OwnerCase): Promise<void> {
   await clickRequiredControl(page, 'CATALOG_ITEM_STATUS_ACTION', facts);
-  await visibleOperationsMenuItem(page, '停用');
+  await visibleOperationsMenuTestId(page, catalogTestIds.control.statusDisable);
 }
 
 async function disableCatalogItem(page: Page, facts: OwnerCase): Promise<void> {
-  await openCatalogStatusActions(page, facts);
-  await (await visibleOperationsMenuItem(page, '停用')).click();
+  await clickOperationsDetailAction(
+    page,
+    catalogTestIdControls.view.action,
+    catalogTestIds.control.statusDisable,
+  );
   const completion = waitForGeneratedOperation(page, 'transitionOperationsCatalogItemStatus');
   await confirmCatalogLifecycle(page, '停用', facts);
   const response = await completion;
@@ -1857,7 +1877,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await searchCatalog(page, facts);
       {
         const drawer = await openCatalogItem(page, facts);
-        await openLocalCopy(page, drawer);
+        await openLocalCopy(page, drawer, facts);
         return;
       }
     case 'CI-L2-006-01':
@@ -1866,8 +1886,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await searchCatalog(page, facts);
       {
         const drawer = await openCatalogItem(page, facts);
-        await requireControl(page, 'CATALOG_ITEM_EDIT', facts);
-        await page.getByTestId('catalog-item-edit').click();
+        await clickRequiredControl(page, 'CATALOG_ITEM_EDIT', facts);
         await typeSequentially(page.getByTestId('catalog-item-edit-name'), `${facts.itemName ?? '商品'}-L2`);
         await page.keyboard.press('Escape');
         await requireControl(page, 'CATALOG_DIRTY_CONTINUE', facts);
@@ -1983,7 +2002,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await searchCatalog(page, facts);
       {
         const drawer = await openCatalogItem(page, facts);
-        const copy = await openLocalCopy(page, drawer);
+        const copy = await openLocalCopy(page, drawer, facts);
         await requireControl(page, 'CATALOG_COPY_SELECTION', facts);
         if (facts.sourceItemCode) {
           await copy.getByTestId(catalogTestIdControls.copy.sourceRow(facts.sourceItemCode)).click();
@@ -2008,8 +2027,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await searchCatalog(page, facts);
       {
         const drawer = await openCatalogItem(page, facts);
-        await requireControl(page, 'CATALOG_ITEM_EDIT', facts);
-        await page.getByTestId('catalog-item-edit').click();
+        await clickRequiredControl(page, 'CATALOG_ITEM_EDIT', facts);
         await requireControl(page, 'CATALOG_MEDIA_EDITOR', facts);
         await requireControl(page, 'CATALOG_MEDIA_LIST', facts);
         await requireControl(page, 'CATALOG_MEDIA_STATUS', facts);
@@ -2022,7 +2040,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await searchCatalog(page, facts);
       {
         const drawer = await openCatalogItem(page, facts);
-        await page.getByTestId('catalog-item-edit').click();
+        await clickRequiredControl(page, 'CATALOG_ITEM_EDIT', facts);
         await requireControl(page, 'CATALOG_MEDIA_LIST', facts);
         await requireControl(page, 'CATALOG_MEDIA_MOVE', facts);
         await requireControl(page, 'CATALOG_MEDIA_PRIMARY', facts);
@@ -2098,7 +2116,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await signIn(page);
       await openInventory(page, facts);
       await openInventoryTarget(page, facts);
-      await (await requireControl(page, 'INVENTORY_ACTION_ADJUST', facts)).click();
+      await clickRequiredControl(page, 'INVENTORY_ACTION_ADJUST', facts);
       await page
         .getByTestId('inventory-action-quantity')
         .locator('input')
@@ -2127,7 +2145,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await searchCatalog(page, facts);
       {
         const drawer = await openCatalogItem(page, facts);
-        const copy = await openLocalCopy(page, drawer);
+        const copy = await openLocalCopy(page, drawer, facts);
         await requireControl(page, 'CATALOG_COPY_PREFLIGHT', facts);
         await copy.getByTestId('catalog-local-copy-preflight').click();
         await requireControl(page, 'CATALOG_COMPATIBILITY_FACTS', facts);
@@ -2173,7 +2191,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await signIn(page);
       await openInventory(page, facts);
       await openInventoryTarget(page, facts);
-      await (await requireControl(page, 'INVENTORY_ACTION_ADJUST', facts)).click();
+      await clickRequiredControl(page, 'INVENTORY_ACTION_ADJUST', facts);
       await typeSequentially(page.getByTestId('inventory-action-note'), facts.note ?? 'overlay lock');
       await page
         .getByTestId('inventory-action-quantity')
@@ -2259,7 +2277,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         await openTab(drawer, 'sku-specifications-pricing');
         await openTab(drawer, 'production-prompts');
         await openTab(drawer, 'inventory-bom');
-        await expect(drawer.getByTestId('catalog-item-edit')).toBeVisible();
+        await requireControl(page, 'CATALOG_ITEM_EDIT', facts);
         return;
       }
     case 'catalog-view-failure':
@@ -2401,8 +2419,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await searchCatalog(page, facts);
       {
         const drawer = await openCatalogItem(page, facts);
-        await requireControl(page, 'CATALOG_ITEM_EDIT', facts);
-        await visibleTestId(page, 'catalog-item-edit').click();
+        await clickRequiredControl(page, 'CATALOG_ITEM_EDIT', facts);
         const editor = await requireControl(page, 'CATALOG_ITEM_EDIT_DRAWER', facts);
         await requireControl(page, 'CATALOG_ITEM_TABS', facts);
         await openTab(editor, 'production-prompts');

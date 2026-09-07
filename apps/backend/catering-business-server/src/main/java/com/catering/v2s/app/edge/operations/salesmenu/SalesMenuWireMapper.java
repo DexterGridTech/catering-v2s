@@ -11,6 +11,9 @@ import com.catering.v2s.app.edge.generated.wire.SalesMenuCommandReadback;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuDetail;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuDisplayMedia;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuDraftItemView;
+import com.catering.v2s.app.edge.generated.wire.SalesMenuDraftItemViewCatalogOrderOptionsItem;
+import com.catering.v2s.app.edge.generated.wire.SalesMenuDraftItemViewCatalogOrderOptionsItemValuesItem;
+import com.catering.v2s.app.edge.generated.wire.SalesMenuDraftItemViewSkuCandidatesItem;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuItemCandidate;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuItemPage;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuOperationRecord;
@@ -21,15 +24,20 @@ import com.catering.v2s.app.edge.generated.wire.SalesMenuPublicationBlocker;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuPublicationPreview;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuPublishedItemPage;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuPublishedItemView;
+import com.catering.v2s.app.edge.generated.wire.SalesMenuPublishedItemViewManualSaleTargetStatusesItem;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuPublishedSectionList;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuSaleContent;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuSaleContentSalesUnit;
+import com.catering.v2s.app.edge.generated.wire.SalesMenuSaleContentSelectedOrderOptionsItem;
+import com.catering.v2s.app.edge.generated.wire.SalesMenuSaleContentSelectedOrderOptionsItemValuesItem;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuSchedule;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuSectionList;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuSectionView;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuSkuPrice;
 import com.catering.v2s.app.edge.generated.wire.SalesMenuSummary;
 import com.catering.v2s.salesmenu.api.SalesMenuReadback;
+import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOption;
+import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOptionValue;
 import java.util.List;
 
 /** Maps owner-native sales-menu facts to the generated operations wire types. */
@@ -83,7 +91,11 @@ final class SalesMenuWireMapper {
                 value.itemCode(),
                 value.displayName(),
                 value.productShape(),
+                value.catalogOrderOptions().stream().map(SalesMenuWireMapper::catalogOrderOption).toList(),
+                value.skuCandidates().stream().map(SalesMenuWireMapper::skuCandidate).toList(),
+                value.staleSelectedSkuRefs(),
                 value.defaultPriceCents(),
+                value.catalogPrimaryImageAssetRef(),
                 saleContent(value.saleContent()),
                 ordering(value.orderingConstraints()),
                 displayMedia(value.displayMedia()),
@@ -113,6 +125,9 @@ final class SalesMenuWireMapper {
                 value.displayOrder(),
                 inventory(value.inventoryAvailability()),
                 manual(value.manualSaleStatus()),
+                value.manualSaleTargetStatuses().stream()
+                        .map(SalesMenuWireMapper::manualSaleTargetStatus)
+                        .toList(),
                 value.version());
     }
 
@@ -203,6 +218,9 @@ final class SalesMenuWireMapper {
                 value.kind().name(),
                 value.listedPriceCents(),
                 value.skuPrices().stream().map(SalesMenuWireMapper::skuPrice).toList(),
+                value.selectedOrderOptions().stream()
+                        .map(SalesMenuWireMapper::selectedOrderOption)
+                        .toList(),
                 value.salesUnit() == null
                         ? null
                         : new SalesMenuSaleContentSalesUnit(
@@ -216,6 +234,81 @@ final class SalesMenuWireMapper {
     private static SalesMenuSkuPrice skuPrice(com.catering.v2s.salesmenu.domain.SalesMenuSkuPrice value) {
         return new SalesMenuSkuPrice(
                 value.skuRef(), value.skuName(), value.skuCode(), value.standardPriceCents(), value.listedPriceCents());
+    }
+
+    private static SalesMenuDraftItemViewCatalogOrderOptionsItem catalogOrderOption(
+            SalesMenuReadback.SalesMenuOrderOption value) {
+        return new SalesMenuDraftItemViewCatalogOrderOptionsItem(
+                value.definitionRef(),
+                value.name(),
+                value.selectionMode(),
+                (long) value.displayOrder(),
+                value.required(),
+                value.minSelectionCount() == null ? null : value.minSelectionCount().longValue(),
+                value.maxSelectionCount() == null ? null : value.maxSelectionCount().longValue(),
+                value.values().stream().map(SalesMenuWireMapper::catalogOrderOptionValue).toList());
+    }
+
+    private static SalesMenuDraftItemViewCatalogOrderOptionsItemValuesItem catalogOrderOptionValue(
+            SalesMenuReadback.SalesMenuOrderOptionValue value) {
+        return new SalesMenuDraftItemViewCatalogOrderOptionsItemValuesItem(
+                value.definitionValueRef(),
+                value.name(),
+                (long) value.displayOrder(),
+                value.defaultValue(),
+                value.extraPrice());
+    }
+
+    private static SalesMenuSaleContentSelectedOrderOptionsItem selectedOrderOption(
+            SalesMenuReadback.SalesMenuOrderOption value) {
+        return new SalesMenuSaleContentSelectedOrderOptionsItem(
+                value.definitionRef(),
+                value.name(),
+                value.selectionMode(),
+                (long) value.displayOrder(),
+                value.required(),
+                value.minSelectionCount() == null ? null : value.minSelectionCount().longValue(),
+                value.maxSelectionCount() == null ? null : value.maxSelectionCount().longValue(),
+                value.values().stream().map(SalesMenuWireMapper::selectedOrderOptionValue).toList());
+    }
+
+    private static SalesMenuSaleContentSelectedOrderOptionsItem selectedOrderOption(
+            SalesMenuSelectedOrderOption value) {
+        return new SalesMenuSaleContentSelectedOrderOptionsItem(
+                value.definitionRef(),
+                value.name(),
+                value.selectionMode(),
+                (long) value.displayOrder(),
+                value.required(),
+                value.minSelectionCount() == null ? null : value.minSelectionCount().longValue(),
+                value.maxSelectionCount() == null ? null : value.maxSelectionCount().longValue(),
+                value.values().stream().map(SalesMenuWireMapper::selectedOrderOptionValue).toList());
+    }
+
+    private static SalesMenuSaleContentSelectedOrderOptionsItemValuesItem selectedOrderOptionValue(
+            SalesMenuReadback.SalesMenuOrderOptionValue value) {
+        return new SalesMenuSaleContentSelectedOrderOptionsItemValuesItem(
+                value.definitionValueRef(),
+                value.name(),
+                (long) value.displayOrder(),
+                value.defaultValue(),
+                value.extraPrice());
+    }
+
+    private static SalesMenuSaleContentSelectedOrderOptionsItemValuesItem selectedOrderOptionValue(
+            SalesMenuSelectedOrderOptionValue value) {
+        return new SalesMenuSaleContentSelectedOrderOptionsItemValuesItem(
+                value.definitionValueRef(),
+                value.name(),
+                (long) value.displayOrder(),
+                value.defaultValue(),
+                value.extraPrice());
+    }
+
+    private static SalesMenuDraftItemViewSkuCandidatesItem skuCandidate(
+            SalesMenuReadback.SalesMenuSkuCandidate value) {
+        return new SalesMenuDraftItemViewSkuCandidatesItem(
+                value.skuRef(), value.skuName(), value.skuCode(), value.standardPriceCents());
     }
 
     private static SalesMenuOrderingConstraints ordering(
@@ -236,6 +329,18 @@ final class SalesMenuWireMapper {
     private static ManualSaleStatusFact manual(SalesMenuReadback.ManualSaleStatusFact value) {
         return new ManualSaleStatusFact(
                 value.state().name(), value.reason(), value.changedAt(), value.changedByDisplayName());
+    }
+
+    private static SalesMenuPublishedItemViewManualSaleTargetStatusesItem manualSaleTargetStatus(
+            SalesMenuReadback.ManualSaleTargetStatus value) {
+        return new SalesMenuPublishedItemViewManualSaleTargetStatusesItem(
+                value.targetKind().name(),
+                value.targetRef(),
+                value.resolvedTargetDisplayName(),
+                value.state().name(),
+                value.reason(),
+                value.changedAt(),
+                value.changedByDisplayName());
     }
 
     private static SalesMenuItemCandidate candidate(SalesMenuReadback.ItemCandidate value) {
@@ -262,6 +367,8 @@ final class SalesMenuWireMapper {
                 value.operationKind(),
                 value.salesMenuRef(),
                 value.targetRef(),
+                value.targetKind(),
+                value.targetDisplaySnapshot(),
                 value.result().name(),
                 value.failureCode(),
                 value.actorDisplayName());

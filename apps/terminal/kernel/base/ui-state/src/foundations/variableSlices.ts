@@ -121,22 +121,22 @@ const applyVariableEntries = (
   return Object.freeze({values: Object.freeze(values)})
 }
 
-const createVariableDescriptor = (
-  registry: VariableRegistry,
-  _workspace: WorkspaceKey,
-  sliceName: string,
-  reducer: StateRuntimeSliceDescriptor<VariableState>['reducer'],
-): StateRuntimeSliceDescriptor<VariableState> => ({
-  name: sliceName,
-  reducer,
+const createVariableDescriptor = (input: Readonly<{
+  registry: VariableRegistry
+  _workspace: WorkspaceKey
+  sliceName: string
+  reducer: StateRuntimeSliceDescriptor<VariableState>['reducer']
+}>): StateRuntimeSliceDescriptor<VariableState> => ({
+  name: input.sliceName,
+  reducer: input.reducer,
   persistIntent: 'owner-only',
   persistence: [
     {
       kind: 'record',
       storageKeyPrefix: 'variables',
       getEntries: serializeVariableEntries,
-      applyEntries: (state, entries) => applyVariableEntries(state, entries, registry),
-      shouldPersistEntry: entryKey => registry.get(entryKey)?.persistIntent === 'owner-only',
+      applyEntries: (state, entries) => applyVariableEntries(state, entries, input.registry),
+      shouldPersistEntry: entryKey => input.registry.get(entryKey)?.persistIntent === 'owner-only',
     },
   ],
   syncIntent: 'isolated',
@@ -161,12 +161,12 @@ export const createVariableStateFamily = (
       MAIN: mainSlice.reducer,
       BRANCH: branchSlice.reducer,
     },
-    createDescriptor: (workspace, sliceName, reducer) => createVariableDescriptor(
+    createDescriptor: (_workspace, sliceName, reducer) => createVariableDescriptor({
       registry,
-      workspace,
+      _workspace,
       sliceName,
       reducer,
-    ),
+    }),
   })
   return Object.freeze({
     stateKeys,

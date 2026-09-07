@@ -79,10 +79,13 @@ describe('sales menu frontend model', () => {
 
   it('keeps page controls and visible copy under one stable test-id source', () => {
     expect(salesMenuTestIds.page).toBe('sales-menu-page');
-    expect(salesMenuTestIds.channelCard('channel-1')).toBe('sales-menu-channel-channel-1');
+    expect(salesMenuTestIds.channelSelector).toBe('sales-menu-channel-selector');
+    expect(salesMenuTestIds.channelOption('channel-1')).toBe('sales-menu-channel-option-channel-1');
     expect(salesMenuTestIds.mode('DRAFT')).toBe('sales-menu-mode-draft');
     expect(salesMenuTestIds.menuSelector).toBe('sales-menu-selector');
     expect(salesMenuTestIds.menuOption('menu-1')).toBe('sales-menu-option-menu-1');
+    expect(salesMenuTestIds.managerCreate).toBe('sales-menu-manager-create');
+    expect(salesMenuTestIds.menuCreateModal).toBe('sales-menu-menu-create-modal');
     expect(salesMenuTestIds.candidateCategoryTree).toBe('sales-menu-candidate-category-tree');
   });
 

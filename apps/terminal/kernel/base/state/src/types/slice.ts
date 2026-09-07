@@ -12,7 +12,7 @@ import type {
 } from './sync'
 import type {StateJsonValue} from './value'
 
-const stateRuntimeSliceRegistrationBrand: unique symbol = Symbol(
+export const stateRuntimeSliceRegistrationBrand: unique symbol = Symbol(
   'stateRuntimeSliceRegistrationBrand',
 )
 
@@ -122,5 +122,3 @@ export interface RegisteredStateRuntimeSlice {
   readonly persistence: readonly RegisteredStateRuntimePersistence[]
   readonly sync?: RegisteredStateRuntimeSync
 }
-
-export {stateRuntimeSliceRegistrationBrand}

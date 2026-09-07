@@ -65,6 +65,8 @@ class SalesMenuOwnerServiceOwnerApiTest {
     private static final UUID ASSET = UUID.fromString("99999999-9999-4999-8999-999999999999");
     private static final UUID DRAFT = UUID.fromString("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
     private static final UUID PUBLISHED = UUID.fromString("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb");
+    private static final UUID ORDER_OPTION_DEFINITION = UUID.fromString("cccccccc-cccc-4ccc-8ccc-cccccccccccc");
+    private static final UUID ORDER_OPTION_VALUE = UUID.fromString("dddddddd-dddd-4ddd-8ddd-dddddddddddd");
 
     private record UpdateCall(String sql, Object[] arguments) {}
 
@@ -117,6 +119,9 @@ class SalesMenuOwnerServiceOwnerApiTest {
         assertEquals(null, result.saleContent().listedPriceCents());
         assertEquals(155L, result.saleContent().skuPrices().getFirst().listedPriceCents());
         assertEquals(120L, result.saleContent().skuPrices().getFirst().standardPriceCents());
+        assertEquals(ASSET, result.catalogPrimaryImageAssetRef());
+        assertEquals("甜度", result.orderOptions().getFirst().name());
+        assertEquals("少糖", result.orderOptions().getFirst().values().getFirst().name());
         verify(catalog).readSalesMenuItemFacts("node", "brand", Set.of(CATALOG_ITEM));
         verify(assets).readSalesMenuItemImages(Set.of(ASSET));
     }
@@ -179,6 +184,7 @@ class SalesMenuOwnerServiceOwnerApiTest {
                         ArgumentMatchers.contains("sales_manual_status_current"),
                         any(RowMapper.class),
                         any(Object[].class));
+        verify(catalog).readSalesMenuItemFacts("node", "brand", Set.of(CATALOG_ITEM));
     }
 
     @Test
@@ -890,7 +896,17 @@ class SalesMenuOwnerServiceOwnerApiTest {
                 List.of(),
                 120L,
                 null,
-                null,
+                ASSET,
+                List.of(new CatalogOwnerApi.SalesMenuOrderOptionFact(
+                        ORDER_OPTION_DEFINITION,
+                        "甜度",
+                        "SINGLE",
+                        0,
+                        true,
+                        1,
+                        1,
+                        List.of(new CatalogOwnerApi.SalesMenuOrderOptionValueFact(
+                                ORDER_OPTION_VALUE, "少糖", 0, false, null)))),
                 new CatalogOwnerApi.SalesMenuSkuSummary("SKU", 1, 1, 1, List.of("size"), 120L, 120L),
                 List.of(new CatalogOwnerApi.SalesMenuSkuFact(
                         SKU, "SKU-1", "Small", 120L, true, "ENABLED", 4, 0, "digest", List.of(), List.of())),

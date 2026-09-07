@@ -42,7 +42,7 @@ export {
   createFullSliceSyncPayload,
   applySliceSyncDiff,
   createSyncTombstone,
-} from './supports/sync';
+} from './foundations/sync';
 
 export type {
   StateRuntimeSliceDescriptor,
@@ -56,7 +56,7 @@ export {
   createPartitionedStateKeys,
   readPartitionedState,
   toPartitionedStateDescriptors,
-} from './supports/partitioned';
+} from './foundations/partitioned';
 
 export type {
   StateResetActor,
@@ -80,4 +80,4 @@ export {
   createWorkspaceStateKeys,
   createWorkspaceActionDispatcher,
   toWorkspaceStateDescriptors,
-} from './supports/workspace';
+} from './foundations/workspace';

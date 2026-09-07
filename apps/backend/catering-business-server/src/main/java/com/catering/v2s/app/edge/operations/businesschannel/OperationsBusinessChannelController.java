@@ -100,15 +100,13 @@ public final class OperationsBusinessChannelController {
             @RequestParam(required = false) String sortKey,
             @RequestParam(required = false) String sortDirection) {
         WorkspaceSessionReadback session = sessions.requireWorkspaceRead(request, groupWorkspaceKey);
-        UUID scopedProjectRef = organizationAuthorization
-                .resolveSelectedProjectScope(session, projectRef)
-                .targetId();
+        TemplateReadScope scope = resolveTemplateReadScope(session, groupWorkspaceKey, projectRef);
         return BusinessChannelWireMapper.templatePage(businessChannels.pageTemplates(
                 session.workspaceUuid(),
                 session.groupWorkspaceKey(),
-                scopedProjectRef,
+                scope.projectRef(),
                 null,
-                null,
+                scope.operatorKind(),
                 sortKey,
                 sortDirection));
     }
@@ -159,9 +157,9 @@ public final class OperationsBusinessChannelController {
         if (!"SALES_MENU".equals(usage)) {
             throw new InvalidEdgeRequestException("usage must be SALES_MENU");
         }
+        int normalizedPageSize = salesMenuPageSize(pageSize);
         WorkspaceSessionReadback session = sessions.requireWorkspaceRead(request, groupWorkspaceKey);
         requireScopedStore(session, groupWorkspaceKey, storeRef);
-        int normalizedPageSize = salesMenuPageSize(pageSize);
         if (businessChannelOwner == null) {
             throw new IllegalStateException("business-channel sales-menu owner is unavailable");
         }
@@ -458,6 +456,34 @@ public final class OperationsBusinessChannelController {
         return store;
     }
 
+    /**
+     * Template metadata is also needed by the store-scoped sales-menu surface. A store assignment may read only the
+     * store-owned templates under its owner-validated project; it must not be promoted to a project scope merely to
+     * enrich the channel selector. Project-scoped sessions retain the existing project read path.
+     */
+    private TemplateReadScope resolveTemplateReadScope(
+            WorkspaceSessionReadback session, String groupWorkspaceKey, UUID requestedProjectRef) {
+        if (isStoreAssignedSession(session)) {
+            UUID selectedStoreRef = requireStore(session);
+            OrganizationOverviewTaskReadService.Item store =
+                    requireScopedStore(session, groupWorkspaceKey, selectedStoreRef);
+            UUID storeProjectRef = store.project().id();
+            if (requestedProjectRef != null && !requestedProjectRef.equals(storeProjectRef)) {
+                throw new WorkspaceUserService.TaskScopeDeniedException();
+            }
+            return new TemplateReadScope(storeProjectRef, ServiceNodeTypes.STORE);
+        }
+        return new TemplateReadScope(
+                organizationAuthorization.resolveSelectedProjectScope(session, requestedProjectRef).targetId(), null);
+    }
+
+    private static boolean isStoreAssignedSession(WorkspaceSessionReadback session) {
+        return session != null
+                && ServiceNodeTypes.STORE.equals(session.assignmentNodeType())
+                && session.scopeContext() != null
+                && session.scopeContext().store() != null;
+    }
+
     private void requireStoreProjectPair(WorkspaceSessionReadback session, UUID projectRef, UUID storeRef) {
         if (projectRef == null) throw new InvalidEdgeRequestException("projectRef is required");
         if (storeRef == null) throw new InvalidEdgeRequestException("storeRef is required");
@@ -509,6 +535,8 @@ public final class OperationsBusinessChannelController {
             throw new WorkspaceAuthenticationService.SessionInvalidException();
         return value.scopeContext().store().dataNodeId();
     }
+
+    private record TemplateReadScope(UUID projectRef, String operatorKind) {}
 
     private static String ownerNodeType(String value) {
         if (!ServiceNodeTypes.PROJECT.equals(value) && !ServiceNodeTypes.STORE.equals(value)) {

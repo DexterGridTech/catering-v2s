@@ -1,5 +1,5 @@
 import {Alert, Button, Card, Col, Descriptions, Drawer, Row, Space, Table, Typography} from 'antd';
-import {NameCodeText, adminDrawerSurfaceProps, testId} from '@catering-v2s/admin-ui-foundation';
+import {NameCodeText, adminDrawerSurfaceProps, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useMemo} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
@@ -14,6 +14,10 @@ import {
 } from '../model/salesMenuModel';
 import {salesMenuTestIds} from '../salesMenuTestIds';
 import {itemMediaLabel, saleContentLabel, type DraftOrPublishedItem} from './salesMenuUiShared';
+
+function manualTargetKindLabel(kind: 'ITEM' | 'SKU' | 'ORDER_OPTION_VALUE'): string {
+  return kind === 'SKU' ? '规格' : kind === 'ORDER_OPTION_VALUE' ? '销售选项' : '整个销售项';
+}
 
 export function SalesMenuItemDetailDrawer({
   item,
@@ -56,6 +60,7 @@ export function SalesMenuItemDetailDrawer({
   }, [publishedDetailQuery.currentData, publishedDetailQuery.isError, publishedRow]);
   const displayedItem = publishedRow ? publishedDetail : item;
   const published = Boolean(publishedRow);
+  useOverlayLock(open);
   return (
     <Drawer
       open={open}
@@ -100,26 +105,56 @@ export function SalesMenuItemDetailDrawer({
           </Descriptions>
           {displayedItem.saleContent.kind === 'SKU_SELECTION' && (
             <Card size="small" title="规格与挂牌价">
-              <Table<SalesMenuSkuPrice>
-                size="small"
-                rowKey="skuRef"
-                pagination={false}
-                dataSource={displayedItem.saleContent.skuPrices}
-                columns={[
-                  {title: '规格', dataIndex: 'skuName', key: 'skuName'},
-                  {title: '规格编码', dataIndex: 'skuCode', key: 'skuCode'},
-                  {
-                    title: '商品默认价',
-                    key: 'standardPrice',
-                    render: (_, row) => formatSalesMenuPrice(row.standardPriceCents),
-                  },
-                  {
-                    title: '菜单挂牌价',
-                    key: 'listedPrice',
-                    render: (_, row) => formatSalesMenuPrice(row.listedPriceCents),
-                  },
-                ]}
-              />
+              {displayedItem.saleContent.skuPrices.length === 0 ? (
+                <Typography.Text type="secondary">未选择规格。</Typography.Text>
+              ) : (
+                <Table<SalesMenuSkuPrice>
+                  size="small"
+                  rowKey="skuRef"
+                  pagination={false}
+                  dataSource={displayedItem.saleContent.skuPrices}
+                  columns={[
+                    {title: '规格', dataIndex: 'skuName', key: 'skuName'},
+                    {title: '规格编码', dataIndex: 'skuCode', key: 'skuCode'},
+                    {
+                      title: '商品默认价',
+                      key: 'standardPrice',
+                      render: (_, row) => formatSalesMenuPrice(row.standardPriceCents),
+                    },
+                    {
+                      title: '菜单挂牌价',
+                      key: 'listedPrice',
+                      render: (_, row) => formatSalesMenuPrice(row.listedPriceCents),
+                    },
+                  ]}
+                />
+              )}
+            </Card>
+          )}
+          {displayedItem.saleContent.kind === 'DIRECT' && (
+            <Card size="small" title="已配置销售选项">
+              {displayedItem.saleContent.selectedOrderOptions.length === 0 ? (
+                <Typography.Text type="secondary">未配置销售选项。</Typography.Text>
+              ) : (
+                <Space direction="vertical" size={8} style={{display: 'flex'}}>
+                  {displayedItem.saleContent.selectedOrderOptions.map(option => (
+                    <Descriptions key={option.definitionRef} bordered size="small" column={1}>
+                      <Descriptions.Item label={option.name}>
+                        {option.values.length === 0
+                          ? '未配置选项值'
+                          : option.values
+                              .map(value => {
+                                const extraPrice = value.extraPrice !== null && value.extraPrice !== 0
+                                  ? `（加价 ${formatSalesMenuPrice(value.extraPrice)}）`
+                                  : '';
+                                return `${value.name}${extraPrice}`;
+                              })
+                              .join('、')}
+                      </Descriptions.Item>
+                    </Descriptions>
+                  ))}
+                </Space>
+              )}
             </Card>
           )}
           {displayedItem.saleContent.kind === 'WEIGHTED' && (
@@ -136,18 +171,34 @@ export function SalesMenuItemDetailDrawer({
             </Card>
           )}
           {published && publishedDetail && (
-            <Row gutter={[12, 12]}>
-              <Col span={12}>
-                <Card size="small" title="库存状态">
-                  {salesMenuInventoryAvailabilityLabel(publishedDetail.inventoryAvailability)}
+            <Space direction="vertical" size={12} style={{display: 'flex'}}>
+              <Row gutter={[12, 12]}>
+                <Col span={12}>
+                  <Card size="small" title="库存状态">
+                    {salesMenuInventoryAvailabilityLabel(publishedDetail.inventoryAvailability)}
+                  </Card>
+                </Col>
+                <Col span={12}>
+                  <Card size="small" title="销售项人工状态">
+                    {salesMenuManualSaleStatusLabel(publishedDetail.manualSaleStatus)}
+                  </Card>
+                </Col>
+              </Row>
+              {publishedDetail.manualSaleTargetStatuses.length > 0 && (
+                <Card size="small" title="规格与销售选项人工状态">
+                  <Descriptions bordered size="small" column={1}>
+                    {publishedDetail.manualSaleTargetStatuses.map(status => (
+                      <Descriptions.Item
+                        key={`${status.targetKind}-${status.targetRef}`}
+                        label={`${manualTargetKindLabel(status.targetKind)}：${status.resolvedTargetDisplayName}`}
+                      >
+                        {status.state === 'MANUAL_SOLD_OUT' ? '已沽清' : '正常销售'}
+                      </Descriptions.Item>
+                    ))}
+                  </Descriptions>
                 </Card>
-              </Col>
-              <Col span={12}>
-                <Card size="small" title="销售状态">
-                  {salesMenuManualSaleStatusLabel(publishedDetail.manualSaleStatus)}
-                </Card>
-              </Col>
-            </Row>
+              )}
+            </Space>
           )}
         </Space>
       )}

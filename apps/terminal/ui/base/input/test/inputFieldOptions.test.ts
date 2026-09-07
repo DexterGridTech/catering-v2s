@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import type {InputFieldOptions} from '../src/types'
+import type {InputFieldOptions} from '../src/types/types'
 
 describe('InputFieldOptions', () => {
   it('keeps layout required for virtual fields and absent for system fields', () => {

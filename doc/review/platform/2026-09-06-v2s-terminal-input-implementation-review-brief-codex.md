@@ -1,5 +1,12 @@
 # TER terminal input 实施结果 review brief
 
+> HISTORICAL_RECORD=true：本 brief 对应 2026-09-06 的 input CP-0..CP-3 交付状态；
+> 2026-09-07 Web 宿主缩放修复的当前证据与 brief 见
+> `doc/evidence/platform/terminal-input/web-surface-scale-2026-09-07.md`、
+> `doc/evidence/platform/terminal-input/reconciliation-web-surface-scale-2026-09-07.md`
+> 与同日新增 review brief。本文件中的 `S-26_BROWSER_RESIZE=UNVERIFIED` 不覆盖同日
+> 已取得的 Web DOM 证据。
+
 ## 交付状态
 
 ```text

@@ -1,4 +1,4 @@
-import {createAndroidPersistKvPort} from '../src/androidPersistKv'
+import {createAndroidPersistKvPort} from '../src/implementations/androidPersistKv'
 import {describe, expect, it, vi} from 'vitest'
 
 const {requireNativeModuleMock} = vi.hoisted(() => ({requireNativeModuleMock: vi.fn()}))

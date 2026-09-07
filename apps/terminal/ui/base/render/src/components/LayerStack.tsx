@@ -5,7 +5,7 @@ import {useRenderContext} from '../contexts/RenderContext'
 import {useSurfaceContext} from '../contexts/SurfaceContext'
 import {useSurfaceFocusBoundary} from '../contexts/SurfaceFocusBoundaryContext'
 import {dispatchWithRequestId} from '../foundations/dispatchWithRequestId'
-import {RenderFallback, resolvePart} from '../foundations/resolvePart'
+import {RenderFallback, resolvePart} from './resolvePart'
 import {useDispatchCommand} from '../hooks/useDispatchCommand'
 import {useRenderSnapshot} from '../hooks/useRenderSnapshot'
 
@@ -69,16 +69,17 @@ const tierRank = (
 const compareStrings = (left: string, right: string): number =>
   left === right ? 0 : left < right ? -1 : 1
 
-const compareLayers = (
-  left: Layer,
-  right: Layer,
-  uiCatalog: Parameters<typeof resolvePart>[0]['uiCatalog'],
-  rendererCatalog: Parameters<typeof resolvePart>[0]['rendererCatalog'],
-): number => {
-  const tierDelta = tierRank(left, uiCatalog, rendererCatalog) - tierRank(right, uiCatalog, rendererCatalog)
+const compareLayers = (input: Readonly<{
+  left: Layer;
+  right: Layer;
+  uiCatalog: Parameters<typeof resolvePart>[0]['uiCatalog'];
+  rendererCatalog: Parameters<typeof resolvePart>[0]['rendererCatalog'];
+}>): number => {
+  const tierDelta = tierRank(input.left, input.uiCatalog, input.rendererCatalog)
+    - tierRank(input.right, input.uiCatalog, input.rendererCatalog)
   if (tierDelta !== 0) return tierDelta
-  if (left.openedAt !== right.openedAt) return left.openedAt - right.openedAt
-  return compareStrings(left.layerId, right.layerId)
+  if (input.left.openedAt !== input.right.openedAt) return input.left.openedAt - input.right.openedAt
+  return compareStrings(input.left.layerId, input.right.layerId)
 }
 
 const layerGuardOf = (
@@ -105,7 +106,7 @@ export const LayerStack = () => {
   const layers = snapshot.root === undefined
     ? []
     : selectLayers(snapshot.root, displayMode) as readonly Layer[]
-  const orderedLayers = [...layers].sort((left, right) => compareLayers(left, right, uiCatalog, rendererCatalog))
+  const orderedLayers = [...layers].sort((left, right) => compareLayers({left, right, uiCatalog, rendererCatalog}))
   const layerSignature = orderedLayers.map(layer => layer.layerId).join('\u0000')
   const topLayer = orderedLayers.at(-1)
   const topLayerId = topLayer?.layerId ?? null
@@ -144,11 +145,11 @@ export const LayerStack = () => {
 
   const dismissTopLayer = useCallback(() => {
     if (topLayer === undefined || topGuard !== 'dismissible') return
-    void dispatchWithRequestId(
+    void dispatchWithRequestId({
       dispatchCommand,
-      closeLayerCommand,
-      {displayMode, layerId: topLayer.layerId},
-    ).catch(() => undefined)
+      definition: closeLayerCommand,
+      payload: {displayMode, layerId: topLayer.layerId},
+    }).catch(() => undefined)
   }, [dispatchCommand, displayMode, topGuard, topLayer])
 
   useEffect(() => {

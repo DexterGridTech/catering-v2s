@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
   "kind": "sales-menu-l2-execution-profile",
-  "revision": "SALES_MENU_L2_P1_20260903",
+  "revision": "SALES_MENU_L2_P1_20260907",
   "mode": "FRAMEWORK_ONLY",
   "enabledCaseIds": [],
   "sourceOfTruth": "contracts/policy/sales-menu-l2-case-blueprint.json",
   "noSeedRuntimeInput": true,
   "activationCandidate": {
     "path": "contracts/policy/sales-menu-l2-activation-candidate.json",
-    "digest": "c890ff2520fbbd23d46febe76ced59d311dabe44b973af4a8c3657ab43080419"
+    "digest": "35d3beb5fb82f23a9cbf39da130a08a3c00c42ca7a787b536ddb2fc1fe806e23"
   },
   "enablementRule": "P1 enables only the candidate exact set after a matching PASS held readiness manifest; generated output is never hand-edited."
 }

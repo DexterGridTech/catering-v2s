@@ -28,7 +28,7 @@ wire error 还带失败的 key（`writeMany` 对 `encode` 返回 false 或抛异
 
 结构：
 
-- `src/androidPersistKv.ts`：lazy native binding，按 persistenceKey 绑定完整 `StateStoragePort`；
+- `src/implementations/androidPersistKv.ts`：lazy native binding，按 persistenceKey 绑定完整 `StateStoragePort`；
 - `android/.../TerminalPersistKvModule.kt`：MMKV 初始化、实例隔离与八个方法；
 - `test/androidPersistKv.test.ts`：opaque string 与 typed bridge failure proof。
 

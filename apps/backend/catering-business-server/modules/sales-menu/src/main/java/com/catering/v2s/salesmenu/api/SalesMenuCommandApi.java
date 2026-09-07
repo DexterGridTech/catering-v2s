@@ -5,6 +5,8 @@ import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.salesmenu.domain.SalesMenuActivationStatus;
 import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMedia;
 import com.catering.v2s.salesmenu.domain.SalesMenuMoveDirection;
+import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTarget;
+import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTargetKind;
 import com.catering.v2s.salesmenu.domain.SalesMenuOrderingConstraints;
 import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentInput;
 import com.catering.v2s.salesmenu.domain.SalesMenuSchedule;
@@ -283,17 +285,34 @@ public interface SalesMenuCommandApi {
     }
 
     record ManualSoldOutCommand(
-            CommandContext context, UUID channelRef, UUID salesItemRef, String reason, long expectedVersion) {
+            CommandContext context,
+            UUID channelRef,
+            UUID salesItemRef,
+            SalesMenuManualSaleTarget target,
+            String reason,
+            long expectedVersion) {
+        public ManualSoldOutCommand(
+                CommandContext context, UUID channelRef, UUID salesItemRef, String reason, long expectedVersion) {
+            this(
+                    context,
+                    channelRef,
+                    salesItemRef,
+                    new SalesMenuManualSaleTarget(SalesMenuManualSaleTargetKind.ITEM, salesItemRef),
+                    reason,
+                    expectedVersion);
+        }
+
         public ManualSoldOutCommand {
             Objects.requireNonNull(context, "context");
             Objects.requireNonNull(channelRef, "channelRef");
             Objects.requireNonNull(salesItemRef, "salesItemRef");
+            Objects.requireNonNull(target, "target");
             reason = requiredManualReason(reason);
         }
 
         public SalesMenuOwnerApi.ManualSoldOutCommand ownerCommand() {
             return new SalesMenuOwnerApi.ManualSoldOutCommand(
-                    context.ownerContext(), channelRef, salesItemRef, reason, expectedVersion);
+                    context.ownerContext(), channelRef, salesItemRef, target, reason, expectedVersion);
         }
 
         private static String requiredManualReason(String value) {
@@ -306,16 +325,33 @@ public interface SalesMenuCommandApi {
     }
 
     record ManualRestoreCommand(
-            CommandContext context, UUID channelRef, UUID salesItemRef, boolean confirm, long expectedVersion) {
+            CommandContext context,
+            UUID channelRef,
+            UUID salesItemRef,
+            SalesMenuManualSaleTarget target,
+            boolean confirm,
+            long expectedVersion) {
+        public ManualRestoreCommand(
+                CommandContext context, UUID channelRef, UUID salesItemRef, boolean confirm, long expectedVersion) {
+            this(
+                    context,
+                    channelRef,
+                    salesItemRef,
+                    new SalesMenuManualSaleTarget(SalesMenuManualSaleTargetKind.ITEM, salesItemRef),
+                    confirm,
+                    expectedVersion);
+        }
+
         public ManualRestoreCommand {
             Objects.requireNonNull(context, "context");
             Objects.requireNonNull(channelRef, "channelRef");
             Objects.requireNonNull(salesItemRef, "salesItemRef");
+            Objects.requireNonNull(target, "target");
         }
 
         public SalesMenuOwnerApi.ManualRestoreCommand ownerCommand() {
             return new SalesMenuOwnerApi.ManualRestoreCommand(
-                    context.ownerContext(), channelRef, salesItemRef, confirm, expectedVersion);
+                    context.ownerContext(), channelRef, salesItemRef, target, confirm, expectedVersion);
         }
     }
 

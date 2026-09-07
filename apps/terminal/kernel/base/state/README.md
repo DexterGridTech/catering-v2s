@@ -61,9 +61,11 @@ src/
     keyspace.ts                 key 语法、解析、冲突检查（**唯一**产生存储键的地方）
     persistenceCodec.ts         JSON-safe 校验、canonical 编解码（**唯一**的 canonical 实现）
     createStateStore.ts         preloaded store 与两个**私有** root action
-    persistenceEngine.ts        hydrate · 差量 flush · 迁移 · reset · 队列 · health
+    persistencePrimitives.ts    descriptor · keyspace grouping · failure helpers
+    persistenceHydration.ts     hydrate · migration discovery · initial health
+    persistenceEngine.ts        差量 flush · 迁移 · reset · 队列 · health
     createStateRuntime.ts       async 装配，唯一对外 facade
-  supports/
+  foundations/
     sync.ts       summary / diff / full payload / apply / tombstone（**纯函数，零状态**）
     workspace.ts  workspace 的 key、dispatcher 与 descriptor 展开
 test/
@@ -251,7 +253,7 @@ root action 的 type 与 creator 全部 package-private。
 | **加/改一个公开导出** | ① `src/index.ts` 逐项显式导出；② 门里的 `expectedPublicExports`；③ 详设的 exact list。**三方精确相等，漏一处门就红** |
 | **加一个存储键的形态** | `keyspace.ts` 是**唯一**产生键的地方；必须同时补冲突检查与可逆编码往返用例 |
 | **加一种持久化粒度** | 公开 descriptor 联合 + **内部 erased 形态** + 引擎的三条路径（hydrate/flush/迁移）+ 对应用例 |
-| **动 `sensitive`/`canonical` 编码** | `persistenceCodec.ts` 是**唯一**的 canonical 实现，`supports/sync.ts` 复用它。**不要在同步侧再写一份** |
+| **动 `sensitive`/`canonical` 编码** | `persistenceCodec.ts` 是**唯一**的 canonical 实现，`foundations/sync.ts` 复用它。**不要在同步侧再写一份** |
 
 ⚠️ 门里的 expected 清单是**手写常量**，**不得改成从源码自动派生** —— 否则多出来的导出永远抓不到。
 
@@ -287,9 +289,9 @@ node tools/terminal-state/check-static.test.mjs && node tools/terminal-state/che
   不允许回退成「`kind` + 一堆可选字段」。引擎据此不使用可选链或字面量兜底，缺失在
   构造期断言/类型层 fail closed，而不是静默丢数据。新增 descriptor kind 时必须新增完整分支，
   并同步构造期校验、引擎消费与门测试。
-- **`persistenceEngine.ts` 已超过 1000 行**，承担 entry 构建、hydrate、flush、迁移、reset、
-  队列与 health 七项职责。现在不拆是因为持久化算法内部耦合紧；
-  但**新增第四类持久化粒度时先拆**，三条自然缝是 hydrate / flush+迁移 / queue+health。
+- **持久化职责按自然边界分开**：`persistencePrimitives.ts` 持有 descriptor/key/cache 的共享纯原语，
+  `persistenceHydration.ts` 负责 hydrate 与 migration discovery，`persistenceEngine.ts` 负责已 hydrated
+  状态的 flush、迁移执行、reset、队列与 health；三者共享既有类型和结果语义，不新增 public facade。
 
 ### 8.4 遇到这些停下来问，不要自己决定
 

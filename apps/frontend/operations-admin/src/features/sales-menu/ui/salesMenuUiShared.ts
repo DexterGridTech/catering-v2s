@@ -16,6 +16,7 @@ import {useSalesMenuReadModel} from '../model/useSalesMenuReadModel';
 import {formatSalesMenuPrice, salesMenuDraftStateLabel} from '../model/salesMenuModel';
 
 export type DraftOrPublishedItem = SalesMenuDraftItemView | SalesMenuPublishedItemView;
+export type SalesMenuStackedLabel = string | readonly string[];
 export type SalesMenuReadModel = ReturnType<typeof useSalesMenuReadModel>;
 export type SalesMenuCommands = ReturnType<typeof useSalesMenuCommands>;
 
@@ -63,29 +64,71 @@ export function saleContentLabel(item: DraftOrPublishedItem): string {
   return `直接销售 · ${formatSalesMenuPrice(content.listedPriceCents)}`;
 }
 
-export function salesMenuSpecificationLabel(item: DraftOrPublishedItem): string {
+function salesMenuStackedLines(lines: readonly string[]): readonly string[] {
+  return lines;
+}
+
+function salesMenuOrderOptionLines(item: DraftOrPublishedItem): readonly string[] {
+  return item.saleContent.selectedOrderOptions.map(option => {
+    const values = option.values.reduce(
+      (text, value, index) => {
+        const extraPrice = value.extraPrice !== null && value.extraPrice !== 0
+          ? `（加价 ${formatSalesMenuPrice(value.extraPrice)}）`
+          : '';
+        return `${text}${index === 0 ? '' : '、'}${value.name}${extraPrice}`;
+      },
+      '',
+    );
+    return `${option.name}：${values || '未配置'}`;
+  });
+}
+
+export function salesMenuSpecificationLabel(item: DraftOrPublishedItem): SalesMenuStackedLabel {
   const content = item.saleContent;
-  if (content.kind === 'SKU_SELECTION') {
-    return content.skuPrices.length > 0 ? content.skuPrices.map(price => price.skuName).join('、') : '未选择规格';
-  }
-  if (content.kind === 'WEIGHTED') return '按称重数量';
-  return '无规格';
+  const contentLines = content.kind === 'SKU_SELECTION'
+    ? content.skuPrices.map(price => price.skuName)
+    : content.kind === 'WEIGHTED'
+      ? ['按称重数量']
+      : [];
+  const optionLines = salesMenuOrderOptionLines(item);
+  const lines = [...contentLines, ...optionLines];
+  if (lines.length > 0) return lines.length === 1 ? lines[0] : salesMenuStackedLines(lines);
+  return content.kind === 'SKU_SELECTION' ? '未选择规格' : '无规格';
 }
 
-export function salesMenuConstraintLabel(item: DraftOrPublishedItem): string {
+export function salesMenuConstraintLabel(item: DraftOrPublishedItem): SalesMenuStackedLabel {
   if (item.saleContent.kind === 'WEIGHTED') return '不适用';
-  return `起售量 ${item.orderingConstraints.minItemQuantity ?? '未设置'}；订购倍数 ${item.orderingConstraints.quantityStep ?? '未设置'}`;
+  return salesMenuStackedLines([
+    `起售量 ${item.orderingConstraints.minItemQuantity ?? '未设置'}`,
+    `订购倍数 ${item.orderingConstraints.quantityStep ?? '未设置'}`,
+  ]);
 }
 
-export function salesMenuPriceLabel(item: DraftOrPublishedItem): string {
+function salesMenuPriceComparisonLabel(listedPriceCents: number | null, defaultPriceCents: number | null): string {
+  if (listedPriceCents === defaultPriceCents) return formatSalesMenuPrice(listedPriceCents);
+  return `菜单 ${formatSalesMenuPrice(listedPriceCents)} / 默认 ${formatSalesMenuPrice(defaultPriceCents)}`;
+}
+
+export function salesMenuPriceLabel(item: SalesMenuDraftItemView): SalesMenuStackedLabel {
   if (item.saleContent.kind === 'SKU_SELECTION') {
     return item.saleContent.skuPrices.length > 0
-      ? item.saleContent.skuPrices
-          .map(
+      ? salesMenuStackedLines(
+          item.saleContent.skuPrices.map(
             price =>
-              `${price.skuName}：菜单 ${formatSalesMenuPrice(price.listedPriceCents)} / 默认 ${formatSalesMenuPrice(price.standardPriceCents)}`,
-          )
-          .join('；')
+              `${price.skuName}：${salesMenuPriceComparisonLabel(price.listedPriceCents, price.standardPriceCents)}`,
+          ),
+        )
+      : '未设置';
+  }
+  return salesMenuPriceComparisonLabel(item.saleContent.listedPriceCents, item.defaultPriceCents);
+}
+
+export function salesMenuPublishedPriceLabel(item: SalesMenuPublishedItemView): SalesMenuStackedLabel {
+  if (item.saleContent.kind === 'SKU_SELECTION') {
+    return item.saleContent.skuPrices.length > 0
+      ? salesMenuStackedLines(
+          item.saleContent.skuPrices.map(price => `${price.skuName}：${formatSalesMenuPrice(price.listedPriceCents)}`),
+        )
       : '未设置';
   }
   return formatSalesMenuPrice(item.saleContent.listedPriceCents);
@@ -107,6 +150,7 @@ export function blockerLabel(kind: string): string {
     SKU_INVALID: '存在规格信息已失效。',
     LISTED_PRICE_MISSING: '存在商品尚未设置挂牌价。',
     ORDERING_CONSTRAINT_INVALID: '存在商品的起售量或订购倍数不合法。',
+    ORDER_OPTION_SELECTION_INVALID: '存在商品的可售选项集合未通过校验。',
     DISPLAY_ASSET_PENDING_OR_INVALID: '存在菜单图片仍在处理中或不可用。',
     SCHEDULE_INVALID: '菜单时段设置不完整。',
   };

@@ -1,5 +1,7 @@
 import {Alert, Button, Card, Descriptions, Drawer, Empty, Skeleton, Space, Table, Tag} from 'antd';
 import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
   adminWideDetailDescriptionsProps,
   adminWideDrawerSurfaceProps,
   CursorPagination,
@@ -16,11 +18,8 @@ import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inv
 import type {Uuid} from '../../../app/api/generated/catalog-inventory-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
 import type {OperationsPageContext} from '../../../app/routing/model';
-import {
-  INVENTORY_ACTION_TRIGGER_TEST_IDS,
-  InventoryActionModal,
-  type InventoryActionKind,
-} from './InventoryActionModal';
+import {InventoryActionModal, type InventoryActionKind} from './InventoryActionModal';
+import {operationsDetailDrawerTestIds} from '../../../app/automation/operationsDetailDrawerTestIds';
 import {
   envelopeData,
   inventoryConversionLabel,
@@ -66,7 +65,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
   const historyCursorState = useCursorStack({resetKey: targetRef ?? ''});
   const referenceCursorState = useCursorStack({resetKey: targetRef ?? ''});
   const ledgerCursorState = useCursorStack({resetKey: targetRef ?? ''});
-  const actionTriggerRef = useRef<HTMLElement | null>(null);
+  const actionTriggerRef = useRef<HTMLButtonElement | null>(null);
   const open = Boolean(targetRef);
   const contentTabRefreshVersion = useRefreshVersion(operationsContentTabRefreshSignal);
   useOverlayLock(open);
@@ -143,8 +142,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
     setAction(undefined);
     window.requestAnimationFrame(() => actionTriggerRef.current?.focus());
   };
-  const openAction = (nextAction: InventoryActionKind, trigger: HTMLElement) => {
-    actionTriggerRef.current = trigger;
+  const openAction = (nextAction: InventoryActionKind) => {
     setAction(nextAction);
   };
   const title = currentView ? (
@@ -158,6 +156,30 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
   ) : (
     '库存对象详情'
   );
+  const actionItems = currentView && canEdit
+    ? [
+        {
+          key: 'count',
+          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.inventory.count}>存量盘点</AdminDetailActionLabel>,
+          onClick: () => openAction('COUNT'),
+        },
+        {
+          key: 'increase',
+          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.inventory.increase}>库存增加</AdminDetailActionLabel>,
+          onClick: () => openAction('INCREASE'),
+        },
+        {
+          key: 'adjust',
+          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.inventory.adjust}>人工调整</AdminDetailActionLabel>,
+          onClick: () => openAction('ADJUST'),
+        },
+        {
+          key: 'configure',
+          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.inventory.configure}>快捷配置</AdminDetailActionLabel>,
+          onClick: () => openAction('CONFIGURE'),
+        },
+      ]
+    : [];
   const identityBlocked = Boolean(current.error);
   const zoneItems = [
     {
@@ -434,33 +456,12 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
         {...adminWideDrawerSurfaceProps}
         {...testId('inventory-target-drawer')}
         extra={
-          currentView && canEdit ? (
-            <Space wrap>
-              <Button
-                onClick={event => openAction('COUNT', event.currentTarget)}
-                {...testId(INVENTORY_ACTION_TRIGGER_TEST_IDS.COUNT)}
-              >
-                存量盘点
-              </Button>
-              <Button
-                onClick={event => openAction('INCREASE', event.currentTarget)}
-                {...testId(INVENTORY_ACTION_TRIGGER_TEST_IDS.INCREASE)}
-              >
-                库存增加
-              </Button>
-              <Button
-                onClick={event => openAction('ADJUST', event.currentTarget)}
-                {...testId(INVENTORY_ACTION_TRIGGER_TEST_IDS.ADJUST)}
-              >
-                人工调整
-              </Button>
-              <Button
-                onClick={event => openAction('CONFIGURE', event.currentTarget)}
-                {...testId(INVENTORY_ACTION_TRIGGER_TEST_IDS.CONFIGURE)}
-              >
-                快捷配置
-              </Button>
-            </Space>
+          actionItems.length > 0 ? (
+            <AdminDetailActionMenu
+              items={actionItems}
+              triggerTestId={operationsDetailDrawerTestIds.inventory.actionMenu}
+              triggerRef={actionTriggerRef}
+            />
           ) : undefined
         }
       >

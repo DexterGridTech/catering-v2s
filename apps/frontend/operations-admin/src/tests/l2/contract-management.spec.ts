@@ -1,5 +1,6 @@
 import {expect, test, type Page} from '@playwright/test';
-import {expandOperationsQuery, selectOperationsDataScope, selectOperationsOption} from './operationsL2';
+import {operationsDetailDrawerTestIds} from '../../app/automation/operationsDetailDrawerTestIds';
+import {clickOperationsDetailAction, expandOperationsQuery, selectOperationsDataScope, selectOperationsOption} from './operationsL2';
 
 function requiredL2Env(name: string) {
   const value = process.env[name];
@@ -104,7 +105,11 @@ test(
     await page.getByRole('button', {name: contractNo, exact: true}).click();
     await expect(page.getByTestId('operations-contract-detail-drawer')).toBeVisible();
     await expect(page.getByText('货号')).toBeVisible();
-    await page.getByTestId('operations-contract-detail-invalidate').click();
+    await clickOperationsDetailAction(
+      page,
+      operationsDetailDrawerTestIds.contract.actionMenu,
+      operationsDetailDrawerTestIds.contract.invalidate,
+    );
     await expect(page.getByRole('dialog', {name: /确认作废合同/})).toBeVisible();
     await page.getByTestId('operations-contract-invalidate-cancel').click();
     await expect(page.getByTestId('operations-contract-detail-drawer')).toBeHidden();

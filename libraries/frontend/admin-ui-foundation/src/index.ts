@@ -40,6 +40,12 @@ export {
   adminWideDetailDescriptionsProps,
   adminWideDrawerSurfaceProps,
 } from './overlay/drawerSurface';
+export {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
+  type AdminDetailActionLabelProps,
+  type AdminDetailActionMenuProps,
+} from './overlay/detailActionMenu';
 export {contextScopedQueryArgs} from './list/contextScopedQueryArgs';
 export type {ContextScopedQueryContext} from './list/contextScopedQueryArgs';
 export {adminListState} from './list/adminListState';

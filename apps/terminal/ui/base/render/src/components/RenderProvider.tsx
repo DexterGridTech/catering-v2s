@@ -1,10 +1,4 @@
-import {
-  createElement,
-  useEffect,
-  useMemo,
-  useRef,
-  useSyncExternalStore,
-} from 'react'
+import {useEffect, useMemo, useRef, useSyncExternalStore} from 'react'
 import {createRenderPartDiagnosticReporter} from '../foundations/diagnostics'
 import {createRenderSnapshotReader} from '../foundations/createRenderSnapshotReader'
 import {RenderContext, type RenderContextValue} from '../contexts/RenderContext'
@@ -22,6 +16,32 @@ export const RenderProvider = ({
   const snapshotReader = useMemo(() => createRenderSnapshotReader(stateSource), [stateSource])
   const status = useSyncExternalStore(stateSource.subscribe, stateSource.getStatus, stateSource.getStatus)
   const previousStatus = useRef(status)
+  const startupReported = useRef(false)
+  useEffect(() => {
+    if (!__DEV__ || startupReported.current) return
+    startupReported.current = true
+    const parts = uiCatalog.entries.map(entry => {
+      const binding = rendererCatalog.resolve(entry.rendererKey)
+      return {
+        partKey: entry.partKey,
+        rendererKey: entry.rendererKey,
+        layerTier: binding?.layerTier ?? null,
+        layerGuard: binding?.layerGuard ?? null,
+      }
+    })
+    logger.info({
+      category: 'startup.parts',
+      event: 'startup.parts',
+      message: 'UI parts and renderer bindings registered',
+      data: {
+        count: parts.length,
+        parts,
+        missingRendererKeys: [...new Set(parts
+          .filter(part => part.layerTier === null)
+          .map(part => part.rendererKey))],
+      },
+    })
+  }, [logger, rendererCatalog, uiCatalog])
   useEffect(() => {
     if (previousStatus.current === status) return
     logger.info({
@@ -54,5 +74,5 @@ export const RenderProvider = ({
     uiCatalog,
   ])
 
-  return createElement(RenderContext.Provider, {value: contextValue}, children)
+  return <RenderContext.Provider value={contextValue}>{children}</RenderContext.Provider>
 }

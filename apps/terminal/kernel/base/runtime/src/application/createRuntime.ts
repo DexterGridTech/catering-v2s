@@ -44,10 +44,10 @@ import {createRuntimeJournal} from '../foundations/createRuntimeJournal'
 import {createActorRegistry} from '../foundations/createActorRegistry'
 import {assertNonEmptyString} from '../foundations/assertNonEmptyString'
 import {createRuntimeResourceRegistry} from '../foundations/createRuntimeResourceRegistry'
+import {registerRuntimeResourceAccessor} from '../foundations/runtimeResourceAccessorRegistry'
+import {registerRuntimeStateSyncAccessor} from '../foundations/runtimeStateSyncAccessorRegistry'
 import {createStateSubscription} from '../foundations/createStateSubscription'
 import {commandDefinitionBrand} from '../types/command'
-import {registerRuntimeResourceAccessorForTest} from '../testing/releaseRuntimeForTest'
-import {registerRuntimeStateSyncAccessorForTest} from '../testing/runtimeStateSyncForTest'
 
 const lifecycleErrorDefinition = {
   key: `${moduleName}.lifecycle_failed`,
@@ -206,6 +206,52 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
     subsystem: 'runtime',
     component: input.state.runtimeName,
   })
+
+  if (__DEV__) {
+    logger.info({
+      category: 'startup.modules',
+      event: 'startup.modules',
+      message: 'Runtime modules registered',
+      data: {
+        count: descriptors.length,
+        moduleNames: descriptors.map(descriptor => descriptor.moduleName),
+        modules: descriptors.map(descriptor => ({moduleName: descriptor.moduleName, kind: descriptor.kind})),
+      },
+    })
+    logger.info({
+      category: 'startup.slices',
+      event: 'startup.slices',
+      message: 'Runtime state slices registered',
+      data: {
+        count: descriptors.reduce((count, descriptor) => count + descriptor.stateSliceNames.length, 0),
+        slices: descriptors.flatMap(descriptor => descriptor.stateSliceNames.map(sliceName => ({
+          moduleName: descriptor.moduleName,
+          sliceName,
+        }))),
+      },
+    })
+    logger.info({
+      category: 'startup.commands',
+      event: 'startup.commands',
+      message: 'Runtime commands registered',
+      data: {
+        count: definitions.size,
+        commands: [...definitions.values()].map(definition => ({
+          moduleName: definition.moduleName,
+          commandName: definition.commandName,
+        })),
+      },
+    })
+    logger.info({
+      category: 'startup.actors',
+      event: 'startup.actors',
+      message: 'Runtime actors registered',
+      data: {
+        count: actorRegistry.actorCount,
+        actorKeys: descriptors.flatMap(descriptor => [...descriptor.actorKeys]),
+      },
+    })
+  }
 
   let stateRuntime: StateRuntime | undefined
   let dispatcher: ReturnType<typeof createCommandDispatcher> | undefined
@@ -382,6 +428,15 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
           message: failure.message,
           data: {status},
         })
+        if (__DEV__) {
+          logger.error({
+            category: 'startup.failed',
+            event: 'startup.failed',
+            message: 'Runtime startup failed',
+            data: {owner: moduleName, status},
+            error: {name: failure.name, code: failure.code, message: failure.message},
+          })
+        }
         throw failure
       }
     })()
@@ -430,7 +485,7 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
     getStore,
     dispatchCommand,
   }
-  registerRuntimeResourceAccessorForTest(runtime, resources)
-  registerRuntimeStateSyncAccessorForTest(runtime, () => stateRuntime)
+  registerRuntimeResourceAccessor(runtime, resources)
+  registerRuntimeStateSyncAccessor(runtime, () => stateRuntime)
   return runtime
 }

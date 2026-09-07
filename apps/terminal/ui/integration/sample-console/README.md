@@ -12,10 +12,10 @@
 
 ## 结构
 
-- `src/assembly.tsx`：唯一的 `createSampleAssembly` 组装入口，以及按物理屏序创建 surface 的
+- `src/assembly/assembly.tsx`：唯一的 `createSampleAssembly` 组装入口，以及按物理屏序创建 surface 的
   `createSurfaceForDisplayIndex` 入口；一次性闭包持有 runtime 与 catalog。
-- `src/baseModuleDescriptors.ts`：contracts、platform-ports、state 的一次性 descriptor 集合。
-- `src/terminalSurfaces.ts`：读取本包 `package.json` 的固定逻辑 surface 配置并导出 typed 常量。
+- `src/application/baseModuleDescriptors.ts`：contracts、platform-ports、state 的一次性 descriptor 集合。
+- `src/application/terminalSurfaces.ts`：读取本包 `package.json` 的固定逻辑 surface 配置并导出 typed 常量。
 - `theme/`：本应用的 NativeWind/Tailwind 语义色 token；主题属于 integration app，不抽到共享包。
 - `test-expo/App.tsx`：把本包的 assembly、surface 配置与运行时状态 reader 注入通用宿主的薄入口。
 - `test/`：Vitest focused test，包含 `.ts` 与 `.tsx`，跨包组装走真实调用链。
@@ -43,8 +43,9 @@
 `theme/`，不要建立共享 theme 包或 `ui/theme` 层。
 
 Expo Web 的入口是根 `index.js`，它注册 `test-expo/App`；通用宿主读取传入的 `terminalSurfaces`，
-不在第二处解析 `package.json`。外层 flex 仅负责排布，surface 保持声明的固定逻辑尺寸，业务部件
-仍只使用 primitives 的相对布局。
+不在第二处解析 `package.json`。surface 保持声明的固定逻辑尺寸；`scaleToFit` 开启时由通用宿主
+测量自己的预览 canvas，并对整组逻辑 stage 等比缩放，业务部件仍只使用 primitives 的相对布局。
+Native 不读取这份 Web 预览配置。
 
 ## 迭代指引
 

@@ -117,22 +117,24 @@
       "SalesMenuSaleContentInput": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["kind", "listedPriceCents", "skuPrices"],
+        "required": ["kind", "listedPriceCents", "skuPrices", "orderOptionSelections"],
         "properties": {
           "kind": {"type": "string", "enum": ["DIRECT", "SKU_SELECTION", "WEIGHTED", "COMPOSITE"]},
           "listedPriceCents": {"type": "integer", "minimum": 0, "nullable": true},
-          "skuPrices": {"type": "array", "items": {"$ref": "#/components/schemas/SalesMenuSkuPrice"}}
+          "skuPrices": {"type": "array", "items": {"$ref": "#/components/schemas/SalesMenuSkuPrice"}},
+          "orderOptionSelections": {"type": "array", "items": {"$ref": "#/components/schemas/SalesMenuOrderOptionSelectionInput"}}
         },
         "description": "Client-editable sale definition. The sales unit is owned by Catalog and is not writable here."
       },
       "SalesMenuSaleContent": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["kind", "listedPriceCents", "skuPrices", "salesUnit"],
+        "required": ["kind", "listedPriceCents", "skuPrices", "selectedOrderOptions", "salesUnit"],
         "properties": {
           "kind": {"type": "string", "enum": ["DIRECT", "SKU_SELECTION", "WEIGHTED", "COMPOSITE"]},
           "listedPriceCents": {"type": "integer", "minimum": 0, "nullable": true},
           "skuPrices": {"type": "array", "items": {"$ref": "#/components/schemas/SalesMenuSkuPrice"}},
+          "selectedOrderOptions": {"type": "array", "items": {"$ref": "#/components/schemas/SalesMenuOrderOption"}},
           "salesUnit": {"$ref": "#/components/schemas/SalesMenuSalesUnit", "nullable": true}
         }
       },
@@ -155,17 +157,68 @@
           "primaryAssetRef": {"type": "string", "format": "uuid", "nullable": true}
         }
       },
+      "SalesMenuOrderOptionValue": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["definitionValueRef", "name", "displayOrder", "defaultValue", "extraPrice"],
+        "properties": {
+          "definitionValueRef": {"type": "string", "format": "uuid"},
+          "name": {"type": "string", "minLength": 1, "maxLength": 160},
+          "displayOrder": {"type": "integer", "minimum": 0},
+          "defaultValue": {"type": "boolean"},
+          "extraPrice": {"type": "integer", "minimum": 0, "nullable": true}
+        }
+      },
+      "SalesMenuOrderOption": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["definitionRef", "name", "selectionMode", "displayOrder", "required", "minSelectionCount", "maxSelectionCount", "values"],
+        "properties": {
+          "definitionRef": {"type": "string", "format": "uuid"},
+          "name": {"type": "string", "minLength": 1, "maxLength": 160},
+          "selectionMode": {"type": "string", "enum": ["SINGLE", "MULTIPLE"]},
+          "displayOrder": {"type": "integer", "minimum": 0},
+          "required": {"type": "boolean"},
+          "minSelectionCount": {"type": "integer", "minimum": 0, "nullable": true},
+          "maxSelectionCount": {"type": "integer", "minimum": 0, "nullable": true},
+          "values": {"type": "array", "items": {"$ref": "#/components/schemas/SalesMenuOrderOptionValue"}}
+        }
+      },
+      "SalesMenuOrderOptionSelectionInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["definitionRef", "selectedValueRefs"],
+        "properties": {
+          "definitionRef": {"type": "string", "format": "uuid"},
+          "selectedValueRefs": {"type": "array", "items": {"type": "string", "format": "uuid"}}
+        }
+      },
+      "SalesMenuSkuCandidate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["skuRef", "skuName", "skuCode", "standardPriceCents"],
+        "properties": {
+          "skuRef": {"type": "string", "format": "uuid"},
+          "skuName": {"type": "string", "minLength": 1, "maxLength": 160},
+          "skuCode": {"type": "string", "minLength": 1, "maxLength": 160},
+          "standardPriceCents": {"type": "integer", "minimum": 0}
+        }
+      },
       "SalesMenuDraftItemView": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["salesItemRef", "catalogItemRef", "itemCode", "displayName", "productShape", "defaultPriceCents", "saleContent", "orderingConstraints", "displayMedia", "displayOrder", "canMoveUp", "canMoveDown", "version"],
+        "required": ["salesItemRef", "catalogItemRef", "itemCode", "displayName", "productShape", "catalogOrderOptions", "skuCandidates", "staleSelectedSkuRefs", "defaultPriceCents", "catalogPrimaryImageAssetRef", "saleContent", "orderingConstraints", "displayMedia", "displayOrder", "canMoveUp", "canMoveDown", "version"],
         "properties": {
           "salesItemRef": {"type": "string", "format": "uuid"},
           "catalogItemRef": {"type": "string", "format": "uuid"},
           "itemCode": {"type": "string", "minLength": 1, "maxLength": 160},
           "displayName": {"type": "string", "minLength": 1, "maxLength": 160},
           "productShape": {"type": "string", "enum": ["ORDINARY", "SKU", "WEIGHTED", "COMPOSITE", "SERVICE"]},
+          "catalogOrderOptions": {"type": "array", "items": {"$ref": "#/components/schemas/SalesMenuOrderOption"}},
+          "skuCandidates": {"type": "array", "items": {"$ref": "#/components/schemas/SalesMenuSkuCandidate"}},
+          "staleSelectedSkuRefs": {"type": "array", "items": {"type": "string", "format": "uuid"}},
           "defaultPriceCents": {"type": "integer", "minimum": 0, "nullable": true, "description": "Current Catalog default price for read-only comparison; null for SKU selection, whose defaults are per SKU."},
+          "catalogPrimaryImageAssetRef": {"type": "string", "format": "uuid", "nullable": true, "description": "Current Catalog primary display asset for INHERIT_CATALOG; null when no active Catalog image."},
           "saleContent": {"$ref": "#/components/schemas/SalesMenuSaleContent"},
           "orderingConstraints": {"$ref": "#/components/schemas/SalesMenuOrderingConstraints"},
           "displayMedia": {"$ref": "#/components/schemas/SalesMenuDisplayMedia"},
@@ -206,10 +259,37 @@
           "changedByDisplayName": {"type": "string", "minLength": 1, "maxLength": 160, "nullable": true}
         }
       },
+      "SalesMenuManualSaleTargetKind": {
+        "type": "string",
+        "enum": ["ITEM", "SKU", "ORDER_OPTION_VALUE"]
+      },
+      "SalesMenuManualSaleTarget": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["targetKind", "targetRef"],
+        "properties": {
+          "targetKind": {"$ref": "#/components/schemas/SalesMenuManualSaleTargetKind"},
+          "targetRef": {"type": "string", "format": "uuid"}
+        }
+      },
+      "SalesMenuManualSaleTargetStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["targetKind", "targetRef", "resolvedTargetDisplayName", "state", "reason", "changedAt", "changedByDisplayName"],
+        "properties": {
+          "targetKind": {"$ref": "#/components/schemas/SalesMenuManualSaleTargetKind"},
+          "targetRef": {"type": "string", "format": "uuid"},
+          "resolvedTargetDisplayName": {"type": "string", "minLength": 1, "maxLength": 160},
+          "state": {"type": "string", "enum": ["NORMAL", "MANUAL_SOLD_OUT"]},
+          "reason": {"type": "string", "minLength": 1, "maxLength": 240, "nullable": true},
+          "changedAt": {"type": "integer", "format": "int64", "minimum": 0, "nullable": true},
+          "changedByDisplayName": {"type": "string", "minLength": 1, "maxLength": 160, "nullable": true}
+        }
+      },
       "SalesMenuPublishedItemView": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["salesItemRef", "catalogItemRef", "itemCode", "displayName", "productShape", "saleContent", "orderingConstraints", "displayMedia", "displayOrder", "inventoryAvailability", "manualSaleStatus", "version"],
+        "required": ["salesItemRef", "catalogItemRef", "itemCode", "displayName", "productShape", "saleContent", "orderingConstraints", "displayMedia", "displayOrder", "inventoryAvailability", "manualSaleStatus", "manualSaleTargetStatuses", "version"],
         "properties": {
           "salesItemRef": {"type": "string", "format": "uuid"},
           "catalogItemRef": {"type": "string", "format": "uuid"},
@@ -222,6 +302,7 @@
           "displayOrder": {"type": "integer", "minimum": 0},
           "inventoryAvailability": {"$ref": "#/components/schemas/InventoryAvailabilityFact"},
           "manualSaleStatus": {"$ref": "#/components/schemas/ManualSaleStatusFact"},
+          "manualSaleTargetStatuses": {"type": "array", "items": {"$ref": "#/components/schemas/SalesMenuManualSaleTargetStatus"}},
           "version": {"type": "integer", "format": "int64", "minimum": 0}
         }
       },
@@ -272,7 +353,7 @@
         "additionalProperties": false,
         "required": ["kind", "salesItemRef", "messageKey"],
         "properties": {
-          "kind": {"type": "string", "enum": ["STORE_DISABLED", "CHANNEL_DISABLED", "CHANNEL_INELIGIBLE", "CATALOG_ITEM_INVALID", "SKU_SELECTION_EMPTY", "SKU_INVALID", "LISTED_PRICE_MISSING", "ORDERING_CONSTRAINT_INVALID", "DISPLAY_ASSET_PENDING_OR_INVALID", "SCHEDULE_INVALID"]},
+          "kind": {"type": "string", "enum": ["STORE_DISABLED", "CHANNEL_DISABLED", "CHANNEL_INELIGIBLE", "CATALOG_ITEM_INVALID", "SKU_SELECTION_EMPTY", "SKU_INVALID", "ORDER_OPTION_SELECTION_INVALID", "LISTED_PRICE_MISSING", "ORDERING_CONSTRAINT_INVALID", "DISPLAY_ASSET_PENDING_OR_INVALID", "SCHEDULE_INVALID"]},
           "salesItemRef": {"type": "string", "format": "uuid", "nullable": true},
           "messageKey": {"type": "string", "minLength": 1, "maxLength": 120}
         }
@@ -291,13 +372,15 @@
       "SalesMenuOperationRecord": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["operationRecordRef", "occurredAt", "operationKind", "salesMenuRef", "targetRef", "result", "failureCode", "actorDisplayName"],
+        "required": ["operationRecordRef", "occurredAt", "operationKind", "salesMenuRef", "targetRef", "targetKind", "targetDisplaySnapshot", "result", "failureCode", "actorDisplayName"],
         "properties": {
           "operationRecordRef": {"type": "string", "format": "uuid"},
           "occurredAt": {"type": "integer", "format": "int64", "minimum": 0},
           "operationKind": {"type": "string", "minLength": 1, "maxLength": 120},
           "salesMenuRef": {"type": "string", "format": "uuid"},
           "targetRef": {"type": "string", "format": "uuid", "nullable": true},
+          "targetKind": {"$ref": "#/components/schemas/SalesMenuManualSaleTargetKind", "nullable": true},
+          "targetDisplaySnapshot": {"type": "string", "minLength": 1, "maxLength": 160, "nullable": true},
           "result": {"type": "string", "enum": ["SUCCESS", "FAILED"]},
           "failureCode": {"type": "string", "minLength": 1, "maxLength": 120, "nullable": true},
           "actorDisplayName": {"type": "string", "minLength": 1, "maxLength": 160}
@@ -487,8 +570,9 @@
       "SalesMenuManualSoldOutRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["reason", "expectedVersion"],
+        "required": ["target", "reason", "expectedVersion"],
         "properties": {
+          "target": {"$ref": "#/components/schemas/SalesMenuManualSaleTarget"},
           "reason": {"type": "string", "minLength": 1, "maxLength": 240},
           "expectedVersion": {"type": "integer", "format": "int64", "minimum": 0}
         }
@@ -496,8 +580,9 @@
       "SalesMenuManualRestoreRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["confirm", "expectedVersion"],
+        "required": ["target", "confirm", "expectedVersion"],
         "properties": {
+          "target": {"$ref": "#/components/schemas/SalesMenuManualSaleTarget"},
           "confirm": {"type": "boolean"},
           "expectedVersion": {"type": "integer", "format": "int64", "minimum": 0}
         }

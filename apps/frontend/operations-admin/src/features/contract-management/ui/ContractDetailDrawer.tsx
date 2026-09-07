@@ -1,5 +1,7 @@
 import {Alert, Button, Descriptions, Drawer, Skeleton, Space} from 'antd';
 import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
   NameCodeText,
@@ -14,6 +16,7 @@ import type {JsonValue, StoreContract} from '../../../app/api/generated/operatio
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import {OperationsAuditHistoryModal} from '../../audit-history';
+import {operationsDetailDrawerTestIds} from '../../../app/automation/operationsDetailDrawerTestIds';
 
 type Props = {
   contract?: StoreContract;
@@ -81,6 +84,38 @@ export function ContractDetailDrawer({
     onClose();
     next(current);
   };
+  const actionItems = detailReady && selected
+    ? [
+        {
+          key: 'audit',
+          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.contract.audit}>操作历史</AdminDetailActionLabel>,
+          onClick: () => setAuditOpen(true),
+        },
+        ...(canEdit && selected.status === 'VALID'
+          ? [
+              {
+                key: 'edit',
+                label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.contract.edit}>编辑</AdminDetailActionLabel>,
+                onClick: () => closeThen(onEdit),
+              },
+            ]
+          : []),
+        ...(canInvalidate && selected.status === 'VALID'
+          ? [
+              {
+                key: 'invalidate',
+                danger: true,
+                label: (
+                  <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.contract.invalidate}>
+                    作废
+                  </AdminDetailActionLabel>
+                ),
+                onClick: () => closeThen(onInvalidate),
+              },
+            ]
+          : []),
+      ]
+    : [];
   return (
     <>
       <Drawer
@@ -97,28 +132,12 @@ export function ContractDetailDrawer({
         {...adminDrawerSurfaceProps}
         {...testId('operations-contract-detail-drawer')}
         extra={
-          detailReady &&
-          selected && (
-            <Space>
-              <Button onClick={() => setAuditOpen(true)} {...testId('operations-contract-detail-audit-history')}>
-                操作历史
-              </Button>
-              {canEdit && selected.status === 'VALID' && (
-                <Button onClick={() => closeThen(onEdit)} {...testId('operations-contract-detail-edit')}>
-                  编辑
-                </Button>
-              )}
-              {canInvalidate && selected.status === 'VALID' && (
-                <Button
-                  danger
-                  onClick={() => closeThen(onInvalidate)}
-                  {...testId('operations-contract-detail-invalidate')}
-                >
-                  作废
-                </Button>
-              )}
-            </Space>
-          )
+          actionItems.length > 0 ? (
+            <AdminDetailActionMenu
+              items={actionItems}
+              triggerTestId={operationsDetailDrawerTestIds.contract.actionMenu}
+            />
+          ) : undefined
         }
       >
         {detailQuery.isFetching && !selected && <Skeleton active {...testId('operations-contract-detail-loading')} />}

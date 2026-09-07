@@ -1,4 +1,4 @@
-import {useInputController} from '../context'
+import {useInputController} from '../contexts/context'
 
 /**
  * Reads the current provider registry synchronously at an explicit submit boundary.

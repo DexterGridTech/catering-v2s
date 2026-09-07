@@ -1,5 +1,6 @@
 import {expect, test, type Page} from '@playwright/test';
-import {expandOperationsQuery, selectOperationsOption} from './operationsL2';
+import {operationsDetailDrawerTestIds} from '../../app/automation/operationsDetailDrawerTestIds';
+import {clickOperationsDetailAction, expandOperationsQuery, selectOperationsOption} from './operationsL2';
 
 function requiredL2Env(name: string) {
   const value = process.env[name];
@@ -31,8 +32,13 @@ test('operations administrator reaches owner-read head-company detail and receiv
   await signInOperations(page);
   await page.goto(requiredL2Env('R5_L2_BUSINESS_ENTITY_ROUTE'));
   await page.getByRole('button').filter({hasText: headCompanyName}).first().click();
-  await expect(page.getByTestId('operations-business-entity-detail-drawer')).toBeVisible();
-  await page.getByTestId('operations-business-entity-detail-authorize-brands').click();
+  const detailDrawer = page.getByTestId('operations-business-entity-detail-drawer');
+  await expect(detailDrawer).toBeVisible();
+  await clickOperationsDetailAction(
+    page,
+    operationsDetailDrawerTestIds.businessEntity.actionMenu,
+    operationsDetailDrawerTestIds.businessEntity.authorizeBrands,
+  );
   await expect(page.getByTestId('operations-head-company-brand-candidate')).toBeVisible();
   await expect(page.getByText(brandName, {exact: false})).toBeVisible();
 
@@ -52,8 +58,13 @@ test('operations administrator can enable a disabled head company through its pe
   await signInOperations(page);
   await page.goto(requiredL2Env('R5_L2_BUSINESS_ENTITY_ROUTE'));
   await page.getByRole('button').filter({hasText: headCompanyName}).first().click();
-  await expect(page.getByTestId('operations-business-entity-detail-drawer')).toBeVisible();
-  await page.getByTestId('operations-business-entity-detail-status').click();
+  const detailDrawer = page.getByTestId('operations-business-entity-detail-drawer');
+  await expect(detailDrawer).toBeVisible();
+  await clickOperationsDetailAction(
+    page,
+    operationsDetailDrawerTestIds.businessEntity.actionMenu,
+    operationsDetailDrawerTestIds.businessEntity.status,
+  );
   const statusDialog = page.getByRole('dialog', {name: /确认启用/});
   await expect(statusDialog).toBeVisible();
   const statusResponse = page.waitForResponse(
@@ -67,7 +78,7 @@ test('operations administrator can enable a disabled head company through its pe
   expect(response.status()).toBe(200);
   expect(response.request().postDataJSON()).toMatchObject({targetStatus: 'ENABLED'});
   await expect(response.json()).resolves.toMatchObject({status: 'ENABLED'});
-  await expect(page.getByTestId('operations-business-entity-detail-status')).toHaveText(/停\s*用/);
+  await expect(detailDrawer.getByText('启用', {exact: true})).toBeVisible();
 });
 
 test(

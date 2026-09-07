@@ -1,7 +1,7 @@
 # V2S 销售菜单 SM-06～SM-12 正式交付与验证证据
 
 ~~~yaml
-status: IMPLEMENTATION_DELIVERY_COMPLETE_CLAUDE_REVIEW_PENDING
+status: IMPLEMENTATION_DELIVERY_COMPLETE_ROOT_FIX_VALIDATED_CLAUDE_REVIEW_PENDING
 scope: SM-06..SM-12
 reviewCycleId: SALES-MENU-SM06-SM12-IMPLEMENTATION-20260905
 sourceBinding: apps/backend-and-apps/frontend-only
@@ -291,3 +291,23 @@ status=AUTHOR_CLOSED_AFTER_FINAL_REVIEW_FINDING_REPAIR
 ~~~
 
 独立 review 记录见 doc/review/platform/2026-09-05-v2s-sales-menu-sm06-sm12-implementation-review-codex.md：Round 1 为 NO-GO（0/2/1），Round 2 final 为 NO-GO（0/1/0），唯一剩余计划状态 finding 已由主 agent 修复；该 review cycle 已达到两轮上限，未伪称最后文档修复获得第三轮 reviewer GO。当前 evidence 按作者处置收口，Claude 的外部 review handoff 见 doc/review/platform/2026-09-05-v2s-sales-menu-sm06-sm12-implementation-review-request-claude.md。
+
+## 11. 2026-09-07 门店 assignment 模板读取权限根因修复
+
+本次页面出现的 `当前账号无权执行此操作` 已定位为真实根因而非前端兜底：`getOperationsBusinessChannelTemplates` 原先对所有 session 都调用项目 scope resolver；门店 assignment 的 session readback 又丢失了既有 `assignmentNodeType/assignmentNodeId`，导致合法门店会话被错误送入项目节点授权并返回 typed 403。修复只恢复已有 session authorization facts，并在 STORE assignment 分支复用 `requireScopedStore` 取得 owner-validated project 后以 `operatorKind=STORE` 读取模板；项目 assignment 路径未改变。
+
+修复后的独立证据：
+
+~~~
+controller scope focused: r5-tc-1788769065136-16486 PASS; cleanup PASS
+workspace-iam focused: r5-tc-1788769138080-17826 PASS; cleanup PASS
+real HTTP acceptance: r5-tc-1788769813743-30881
+  scenario=business-channel.store-template-scope
+  CONTRACT=PASS BUSINESS=PASS DB_OPERATIONS=12 businessMode=REAL cleanup=PASS
+DEV restore: r5-dev-1788769884248-32503-3bb0bfdd-bee3-47bc-9ef1-83c5dbcbfaf7
+  topology=REMOTE_TRUSTED_HOST/REMOTE_LOCALHOST/HTTP_AND_ASSET_ONLY readiness=PASS
+~~~
+
+`BusinessChannelAcceptanceScenarios.storeTemplateScope` 已补上同一真实 HTTP 场景中的模板列表断言：当前 STORE assignment 能读到启用及停用 STORE 模板元数据，不能读到 PROJECT 模板；已有跨节点场景继续验证 foreign project 的 typed denial。该回归复用既有 operation、fixture 与 owner helper，没有新增权限、API、字段或数据模型。
+
+页面读回时，当前受管 DEV session 已能正常展示门店销售菜单和经营入口，不再出现原 403。若切换到 `S-PRE` scope 仍为空，应按 seed 事实解释：当前 seed 的经营渠道在 `S-OP`，不能跨门店展示；这不是把权限扩大到 S-PRE 的理由。页面读回仅作为问题定位辅助，不替代正式 browser L2/UAT 证据。

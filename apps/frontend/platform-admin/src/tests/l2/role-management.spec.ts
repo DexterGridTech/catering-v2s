@@ -1,5 +1,6 @@
 import {expect, test} from '@playwright/test';
-import {requiredL2Env, selectWorkspace, signInPlatform, signOutPlatform} from './platformL2';
+import {platformDetailDrawerTestIds} from '../../app/automation/platformDetailDrawerTestIds';
+import {clickPlatformDetailAction, requiredL2Env, selectWorkspace, signInPlatform, signOutPlatform} from './platformL2';
 
 test('platform administrator verifies a role detail and proves atomic role edit owner readback', async ({page}) => {
   const roleName = requiredL2Env('R5_L2_PLATFORM_ROLE_NAME');
@@ -25,8 +26,7 @@ test('platform administrator verifies a role detail and proves atomic role edit 
   await expect(detailDialog.getByText('可使用的功能菜单', {exact: true})).toBeVisible();
   await expect(detailDialog.locator('.ant-tree')).toHaveCount(2);
   await expect(detailDialog.locator('.ant-tree-checkbox')).toHaveCount(0);
-  await expect(page.getByRole('button', {name: '编辑业务角色'})).toBeVisible();
-  await page.getByRole('button', {name: '编辑业务角色'}).click();
+  await clickPlatformDetailAction(page, platformDetailDrawerTestIds.role.actionMenu, platformDetailDrawerTestIds.role.edit);
   await expect(page.getByTestId('workspace-role-edit-submit')).toBeVisible();
   await expect(page.getByTestId('workspace-role-page-access').locator('.ant-tree')).toBeVisible();
   await expect(page.getByTestId('workspace-role-capability-access').locator('.ant-tree')).toBeVisible();

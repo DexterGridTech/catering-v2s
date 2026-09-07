@@ -5,6 +5,7 @@ const reactNativeEntry = fileURLToPath(new URL('../../../../../tools/terminal-sh
 const reactNativeSetup = fileURLToPath(new URL('../../../../../tools/terminal-shared/react-native-vitest.setup.cjs', import.meta.url))
 
 export default defineConfig({
+  define: {__DEV__: 'false'},
   resolve: {alias: [{find: /^react-native$/, replacement: reactNativeEntry}]},
   test: {
     environment: 'node',

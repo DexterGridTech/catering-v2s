@@ -1,5 +1,7 @@
 import {Alert, Button, Descriptions, Drawer, Space, Tag, Typography} from 'antd';
 import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
   closedCodeLabel,
@@ -36,6 +38,7 @@ import {
   businessChannelActionAvailability,
   canTransitionBusinessChannelStatus,
 } from '../model/businessChannelActionPolicy';
+import {operationsDetailDrawerTestIds} from '../../../app/automation/operationsDetailDrawerTestIds';
 
 function dimensionStatusLabel(status: string) {
   if (status === 'ENABLED') return lifecycleStatusLabels.ENABLED;
@@ -142,6 +145,47 @@ export function BusinessChannelDetailDrawer({
       setProblem(operationsProblemOf(error).detail);
     }
   };
+  const actionItems = channel
+    ? [
+        ...(onEdit && channelActions?.canEdit
+          ? [
+              {
+                key: 'edit',
+                label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessChannel.edit}>编辑</AdminDetailActionLabel>,
+                onClick: () => closeThen(() => onEdit(channel)),
+              },
+            ]
+          : []),
+        ...(channelActions?.canMaintainBinding
+          ? [
+              {
+                key: 'binding',
+                label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessChannel.binding}>维护绑定</AdminDetailActionLabel>,
+                onClick: () => setBindingOpen(true),
+              },
+            ]
+          : []),
+        ...(channelActions?.canDisable
+          ? [
+              {
+                key: 'disable',
+                danger: true,
+                label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessChannel.status}>停用</AdminDetailActionLabel>,
+                onClick: () => void transition('DISABLED'),
+              },
+            ]
+          : []),
+        ...(channelActions?.canEnable
+          ? [
+              {
+                key: 'enable',
+                label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessChannel.status}>恢复启用</AdminDetailActionLabel>,
+                onClick: () => void transition('ENABLED'),
+              },
+            ]
+          : []),
+      ]
+    : [];
   return (
     <>
       <Drawer
@@ -157,30 +201,12 @@ export function BusinessChannelDetailDrawer({
         {...adminDrawerSurfaceProps}
         {...testId('business-channel-detail')}
         extra={
-          channel && (
-            <Space>
-              {onEdit && channelActions?.canEdit && (
-                <Button onClick={() => closeThen(() => onEdit(channel))} {...testId('business-channel-edit-open')}>
-                  编辑
-                </Button>
-              )}
-              {channelActions?.canMaintainBinding && (
-                <Button onClick={() => setBindingOpen(true)} {...testId('business-channel-binding')}>
-                  维护绑定
-                </Button>
-              )}
-              {channelActions?.canDisable && (
-                <Button danger onClick={() => void transition('DISABLED')} {...testId('business-channel-status')}>
-                  停用
-                </Button>
-              )}
-              {channelActions?.canEnable && (
-                <Button onClick={() => void transition('ENABLED')} {...testId('business-channel-status')}>
-                  恢复启用
-                </Button>
-              )}
-            </Space>
-          )
+          actionItems.length > 0 ? (
+            <AdminDetailActionMenu
+              items={actionItems}
+              triggerTestId={operationsDetailDrawerTestIds.businessChannel.actionMenu}
+            />
+          ) : undefined
         }
       >
         {problem && <Alert type="error" showIcon title="读取失败" description={problem} />}

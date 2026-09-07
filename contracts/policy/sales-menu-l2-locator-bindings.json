@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "sales-menu-l2-locator-bindings",
-  "revision": "SALES_MENU_L2_P1_20260903",
+  "revision": "SALES_MENU_L2_P1_20260907",
   "bindingMode": "CASE_PARAMETER_CONTROL_KEYS",
   "sourceOfTruth": "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
   "caseBlueprint": "contracts/policy/sales-menu-l2-case-blueprint.json",
@@ -101,22 +101,15 @@
         "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
       ]
     },
-    "SALES_MENU_CHANNEL_CARDS": {
-      "testId": "sales-menu-channel-cards",
+    "SALES_MENU_CHANNEL_SELECTOR": {
+      "testId": "sales-menu-channel-selector",
+      "optionTestIdTemplate": "sales-menu-channel-option-${channelRef}",
+      "interaction": "SELECT_TRIGGER_AND_OPTION_ROOT",
+      "actualActionNode": "SELECT_TRIGGER_AND_OPTION_ROOT",
+      "focusedStaticProof": "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.static.test.ts",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
-      ]
-    },
-    "SALES_MENU_CHANNEL_CARD": {
-      "testIdTemplate": "sales-menu-channel-${channelRef}",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
-      ]
-    },
-    "SALES_MENU_CHANNEL_PAGINATION": {
-      "testIdPrefix": "sales-menu-page-pagination",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
       ]
     },
     "SALES_MENU_MODE": {
@@ -143,32 +136,39 @@
         "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
       ]
     },
-    "SALES_MENU_MENU_CREATE": {
-      "testId": "sales-menu-menu-create",
+    "SALES_MENU_MENU_REFRESH": {
+      "testId": "sales-menu-menu-refresh",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
         "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
       ]
     },
-    "SALES_MENU_MENU_CREATE_DRAWER": {
-      "testId": "sales-menu-menu-create-drawer",
+    "SALES_MENU_MANAGER_CREATE": {
+      "testId": "sales-menu-manager-create",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
-        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuManagerDrawer.tsx"
+      ]
+    },
+    "SALES_MENU_MENU_CREATE_MODAL": {
+      "testId": "sales-menu-menu-create-modal",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuCreateModal.tsx"
       ]
     },
     "SALES_MENU_MENU_CREATE_NAME": {
       "testId": "sales-menu-menu-create-name",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
-        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuCreateModal.tsx"
       ]
     },
     "SALES_MENU_MENU_CREATE_SUBMIT": {
       "testId": "sales-menu-menu-create-submit",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
-        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuCreateModal.tsx"
       ]
     },
     "SALES_MENU_MANAGER_OPEN": {
@@ -182,7 +182,7 @@
       "testIdTemplate": "sales-menu-manager-${menuRef}-action-${action}",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
-        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuManagerDrawer.tsx"
       ]
     },
     "SALES_MENU_SELECTOR": {
@@ -194,12 +194,6 @@
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
         "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
-      ]
-    },
-    "SALES_MENU_SELECTOR_PAGINATION": {
-      "testIdPrefix": "sales-menu-selector-pagination",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
       ]
     },
     "SALES_MENU_MANAGER": {

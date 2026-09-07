@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {calculateScrollOffset} from '../src/model/scrollIntoView'
+import {calculateScrollOffset} from '../src/foundations/scrollIntoView'
 
 const rect = (y: number, height: number) => ({x: 0, y, width: 100, height})
 

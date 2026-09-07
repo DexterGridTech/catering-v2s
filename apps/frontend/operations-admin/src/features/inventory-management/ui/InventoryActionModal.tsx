@@ -83,16 +83,6 @@ const reasonOptions: Array<{label: string; value: InventoryReasonCode}> = [
   {label: '其他已核实原因', value: 'OTHER'},
 ];
 
-// The trigger IDs are declared beside the action surface and consumed by the
-// detail Drawer. The Drawer itself keeps the stable `inventory-action-modal`
-// surface ID so a trigger and its opened action cannot collide in the DOM.
-export const INVENTORY_ACTION_TRIGGER_TEST_IDS: Record<InventoryActionKind, string> = {
-  COUNT: 'inventory-action-count',
-  INCREASE: 'inventory-action-increase',
-  ADJUST: 'inventory-action-adjust',
-  CONFIGURE: 'inventory-action-configure',
-};
-
 /** Detail refreshes change balances and versions, but not the action surface identity. */
 export function inventoryActionResetKey(action?: InventoryActionKind, targetRef?: string) {
   return `${action ?? ''}:${targetRef ?? ''}`;

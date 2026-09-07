@@ -1,5 +1,7 @@
 import {Alert, Button, Descriptions, Drawer, Space, Typography} from 'antd';
 import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
   adminDrawerSurfaceProps,
   NameCodeText,
   testId,
@@ -7,6 +9,7 @@ import {
   ValidityStatus,
 } from '@catering-v2s/admin-ui-foundation';
 import type {ContractOverviewItem} from '../../../app/api/generated/platform-edge';
+import {platformDetailDrawerTestIds} from '../../../app/automation/platformDetailDrawerTestIds';
 
 export function ContractOverviewDetailDrawer({
   open,
@@ -30,6 +33,15 @@ export function ContractOverviewDetailDrawer({
       label: field.name,
       children: field.value || '—',
     })) ?? [];
+  const actionItems = item
+    ? [
+        {
+          key: 'audit',
+          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.contractOverview.audit}>操作历史</AdminDetailActionLabel>,
+          onClick: onAudit,
+        },
+      ]
+    : [];
   return (
     <Drawer
       title="合同详情"
@@ -42,13 +54,12 @@ export function ContractOverviewDetailDrawer({
       {...adminDrawerSurfaceProps}
       {...testId('platform-contract-detail-drawer')}
       extra={
-        item && (
-          <Space>
-            <Button onClick={onAudit} {...testId('platform-contract-audit-history')}>
-              操作历史
-            </Button>
-          </Space>
-        )
+        actionItems.length > 0 ? (
+          <AdminDetailActionMenu
+            items={actionItems}
+            triggerTestId={platformDetailDrawerTestIds.contractOverview.actionMenu}
+          />
+        ) : undefined
       }
     >
       {problem && !item && (

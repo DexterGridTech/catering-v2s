@@ -1,6 +1,6 @@
 # TER Terminal 输入承载形态与虚拟键盘 v2 详设
 
-> STATUS: IMPLEMENTATION_READY_FOR_EXTERNAL_REVIEW
+> STATUS: IMPLEMENTATION_COMPLETE_PENDING_EXTERNAL_REVIEW
 > IMPLEMENTATION_AUTHORITY: true
 > REVIEW_TARGET: IMPLEMENTATION
 > DESIGN_REVIEW_CYCLE_ID: TERMINAL_INPUT_V2_DESIGN_2026-09-06
@@ -10,7 +10,7 @@
 
 ```text
 BUSINESS_SOURCE=doc/plans/platform/2026-09-06-v2s-terminal-input-surface-form-requirements-codex.md; doc/plans/platform/2026-09-06-v2s-terminal-input-keyboard-visual-redesign-requirements-v2-codex.md; doc/plans/platform/2026-09-03-v2s-terminal-sample-verification-slice-requirements-claude.md; doc/plans/platform/2026-09-05-v2s-terminal-input-requirements-claude.md
-JOURNEY_REFS=sample-staff-auth; sample-member-desk; customer-member; FORM-1..FORM-5; KEY-R1..KEY-R9
+JOURNEY_REFS=sample-staff-auth; sample-member-desk; customer-member; FORM-1..FORM-5; KEY-R1..KEY-R10
 IA_REF=本文件 §10 IA/交互矩阵；ia-design-template.md 的可见/不可见维度
 INTERACTION_REF=doc/plans/platform/2026-09-06-v2s-terminal-input-keyboard-visual-redesign-requirements-v2-codex.md
 AUTHORIZED=Dexter 已授权按本详设与实施计划完成 CP-0..CP-6；交付前必须完成两类对账
@@ -18,6 +18,25 @@ NOT_AUTHORIZED=不改 App 方向锁/拓扑/设备策略，不运行真实 POS/DE
 IMPLEMENTATION_AUTHORITY=true
 IMPLEMENTATION_ADMISSION=ADMITTED_BY_DEXTER
 ```
+
+### 0.1 2026-09-07 Web 预览缩放修复（Dexter 直接指派）
+
+本次修复明确区分两个尺寸事实：`terminalSurfaces.surfaces.*` 是 Web 预览的目标逻辑分辨率，
+`SurfaceCanvas` 自己的 `onLayout` 是当前页面可用的预览宽度。`apps/terminal/ui/base/dev-host/src/surfacePreview.ts`
+负责用前者建立固定逻辑 stage，并由 `SurfaceCanvas` 在 `scaleToFit=true` 时对包含已挂载
+surface 的整组 stage 统一等比缩放；`PRIMARY` 与 `SECONDARY` 不再用 flex/aspectRatio 各自
+挤压。首帧尚未收到 canvas layout 时不渲染 stage；`scaleToFit=false` 保持倍率 1 并允许外层滚动。
+
+这是 Web 开发宿主的用户指向性修复：`ui/base/input` 不读取页面尺寸、不读取 `scale`，也不把宿主
+倍率写入 `InputSurfaceFrame` 的 local metrics。Web 预览中 input 子树会随所属 surface 一起
+显示缩放，这是为了让体验者看到与声明分辨率同形的整块屏幕；该行为不声称缩放后的 Web 物理
+hit target 已满足 Android 48dp，Web 验证必须读取实际 `getBoundingClientRect()` 并用
+`elementFromPoint()` 观察命中。Native/Android 不读取此 Web 配置，也不改方向锁、拓扑或 imeInset。
+
+本节 supersede 本文原先“宿主不得以 ancestor transform 包裹 `InputSurfaceFrame`”的 Web
+宿主表述；仍保留的约束是：transform 只能由 dev-host 的 stage layout owner 管理，input
+包不得引入 transform、不得从 transform 前逻辑尺寸冒充物理 hit target、不得建立第二套
+物理尺寸桥接。原因已记录在本节，避免把用户要求的预览缩放误写成 input 几何真相。
 
 本详设的实施输入是两份已收口需求。本文规定将来实施时每一条代码如何与设计逐条比较，
 但不把“设计已写完”表述成“实现已完成”。副屏系统 IME 仍按产品决定关闭；副屏虚拟键盘
@@ -44,47 +63,47 @@ IMPLEMENTATION_ADMISSION=ADMITTED_BY_DEXTER
 
 ### 1.2 方案比较
 
-| 方案 | 结果 | 结论 |
-| --- | --- | --- |
-| A. 继续把 `terminalSurfaces` 静态尺寸传入 input，按固定逻辑画布缩放 | Presentation 和 Web 都会把别的尺寸当成本地尺寸；transform 前的命中尺寸不能证明触控面积 | 拒绝：不能解决根因 |
-| B. 在 input 中读取 `Dimensions`、`useWindowDimensions`、设备类型或 `Platform.OS` | 这些是应用/宿主级事实，Presentation 中不能保证代表当前 surface；设备分类也不能表达窄 Web 窗口 | 拒绝：跨 surface 错位且反向依赖环境 |
-| C. `InputSurfaceFrame` 自己在真实交互根 View 上 `onLayout`，既有 Android 宿主只提供 `imeInset`，Web 去除交互祖先 transform，键盘布局数据化 | 每个 surface 有本地宽高，input 不拥有宿主拓扑，视觉与命中区域可被同一事实验证 | **采用** |
+| 方案                                                                                                                                       | 结果                                                                                          | 结论                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ----------------------------------- |
+| A. 继续把 `terminalSurfaces` 静态尺寸传入 input，按固定逻辑画布缩放                                                                        | Presentation 和 Web 都会把别的尺寸当成本地尺寸；transform 前的命中尺寸不能证明触控面积        | 拒绝：不能解决根因                  |
+| B. 在 input 中读取 `Dimensions`、`useWindowDimensions`、设备类型或 `Platform.OS`                                                           | 这些是应用/宿主级事实，Presentation 中不能保证代表当前 surface；设备分类也不能表达窄 Web 窗口 | 拒绝：跨 surface 错位且反向依赖环境 |
+| C. `InputSurfaceFrame` 自己在真实交互根 View 上 `onLayout`，既有 Android 宿主只提供 `imeInset`，Web 宿主以固定逻辑 stage 等比缩放预览，键盘布局数据化 | 每个 surface 有本地宽高；input 不拥有宿主拓扑或预览倍率；Web 视觉仍保持声明形状 | **采用**                            |
 
 我选了 C 而不是 A/B，因为 C 直接读取造成错误的事实边界，同时不把屏数、设备类别或
 业务字段引入 `ui/base/input`。
 
 ## 2. CP 总览
 
-| CP | 主题 | owner | 主要输出 | 依赖 |
-| --- | --- | --- | --- | --- |
-| CP-0 | input 与既有 Android carrier 的边界 | `InputSurfaceFrame`、assembly 的 `imeInset` bridge | 不改方向锁、拓扑或设备策略；input 只消费既有 `imeInset` | 既有 Android carrier、input local onLayout |
-| CP-1 | 本地测量与容量状态 | `InputSurfaceFrame`、`InputProvider`、`keyboardHeight` | 去掉静态 `surfaceSize` 公共入口；onLayout 驱动尺寸、首帧安全、按轴可行性 | `SurfaceRoot.renderContentFrame`、`imeInset` |
-| CP-2 | 四种虚拟键盘与交互 | `keyboardLayout`、`VirtualKeyboard`、`InputProvider`、`useInputField` | full/alpha/numeric/financial 数据形态、dense token、region/key testID、互斥焦点、滚入可见区 | CP-1 capacity、既有 edit/snapshot/scroll 模型 |
-| CP-3 | sample 消费者与 Web 交互盒 | `MemberForm`、`testExpoApp.SurfaceCanvas`、`sample-console assembly` | 两个 sample-only 探针、竖屏真实业务矩阵、无 transform 交互树、assembly 不穿静态尺寸 | CP-1、CP-2、形态需求 |
-| CP-4 | focused/static 验证与模型红向量 | input/primitives/sample/adapter 各自测试与 typecheck | 真实焦点/容量/业务边界证据；模型红与生产树结果分开 | CP-0..CP-3 |
-| CP-5 | 全批三维对账与逐代码对账 | 主 agent；fresh 独立子 agent 只读复核 | 阶段/整体三维对账；代码↔详设逐行记录；交付 brief | CP-4 完成，且所有 OPEN 已修复 |
+| CP   | 主题                                | owner                                                                 | 主要输出                                                                                    | 依赖                                          |
+| ---- | ----------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| CP-0 | input 与既有 Android carrier 的边界 | `InputSurfaceFrame`、assembly 的 `imeInset` bridge                    | 不改方向锁、拓扑或设备策略；input 只消费既有 `imeInset`                                     | 既有 Android carrier、input local onLayout    |
+| CP-1 | 本地测量与容量状态                  | `InputSurfaceFrame`、`InputProvider`、`keyboardHeight`                | 去掉静态 `surfaceSize` 公共入口；onLayout 驱动尺寸、首帧安全、按轴可行性                    | `SurfaceRoot.renderContentFrame`、`imeInset`  |
+| CP-2 | 四种虚拟键盘与交互                  | `keyboardLayout`、`VirtualKeyboard`、`InputProvider`、`useInputField` | full/alpha/numeric/financial 数据形态、dense token、region/key testID、互斥焦点、滚入可见区 | CP-1 capacity、既有 edit/snapshot/scroll 模型 |
+| CP-3 | sample 消费者与 Web 交互盒          | `MemberForm`、`testExpoApp.SurfaceCanvas`、`sample-console assembly`  | 两个 sample-only 探针、竖屏真实业务矩阵、固定逻辑 stage 与唯一 host preview scale、assembly 不穿静态尺寸 | CP-1、CP-2、形态需求                          |
+| CP-4 | focused/static 验证与模型红向量     | input/primitives/sample/adapter 各自测试与 typecheck                  | 真实焦点/容量/业务边界证据；模型红与生产树结果分开                                          | CP-0..CP-3                                    |
+| CP-5 | 全批三维对账与逐代码对账            | 主 agent；fresh 独立子 agent 只读复核                                 | 阶段/整体三维对账；代码↔详设逐行记录；交付 brief                                            | CP-4 完成，且所有 OPEN 已修复                 |
 
 ## 3. 横切机制对照表
 
-| 机制 | ① 用哪个现成能力/规范 | ② 如何验证 | ③ 无现成时必须符合的形态 | ④ 本批适用全集 |
-| --- | --- | --- | --- | --- |
-| 读侧节点授权 | N/A：本批无 HTTP/owner 读授权；组件只读本地注册表 | [静态] 无新增 edge/HTTP import | 不引入新的服务读取 | input snapshot registry、sample 表单 |
-| 写授权与 grant 复核 | N/A：无服务端写 | [focused] 业务探针字段不进入 command | 不得把 sample-only 值写入业务模型 | `MemberForm` 四个输入字段；真实提交仅姓名/电话 |
-| 跨 owner 写与事务 | N/A：无跨 owner 持久化 | [静态] 命令调用面无新增跨 feature import | 保持 feature actor/command owner | `submitMemberCommand`、`confirmMemberCommand` 不改契约语义 |
-| 集合形态与分页 | N/A：输入字段注册表是 bounded local map，不是业务集合 | [focused] 注册/注销后快照只含 live 字段 | token 比对注销，不能遍历业务列表推断字段 | `InputSnapshot` live registry |
-| 缓存失效 / 改完刷新什么 | N/A：无远程缓存 | [focused] layout 重测只重新计算 geometry，不清业务值 | 尺寸变化不得丢输入值/selection | `InputProvider` metrics、`MemberForm` draft |
-| RTK 数据读取与加载判定 | N/A：本批不使用 RTK | [静态] 新增代码无 RTK 读侧 | 不把输入快照复制为服务器缓存 | input/sample 变更全集 |
-| 同一事实只有一个住址 | `snapshot.ts` 的 live registry 是编辑期事实；业务 command 是提交边界事实 | [focused] capture 同步冻结；sample-only 无业务消费 | 不增加第二个编辑值 store；不从 DOM 反读 | value/selection/registration、`Member`/command |
-| 失败可见且原因不得改写 | `InputCapacityState` 与现有 typed edit/command 结果；`SurfaceRoot` layer 由 render owner 管理 | [focused] unmeasured/width/height/axis 不可行各有可观察状态 | 不静默隐藏必填输入；不伪造 submit 成功 | `unmeasured`、`unsupported-width`、`unsupported-height`、`unsupported-horizontal` |
-| owner 错误到 HTTP 的映射与注册处 | N/A：无 HTTP | N/A | 不新建 problem code | — |
-| 幂等键构成与重放语义 | N/A：本批没有服务命令写 | [静态] 不新增幂等 API | 不把 input event 当远程 command | — |
-| 该用生成物的地方不得手搓字符串 | `terminalSurfaces` 保留为已有 package 元数据，input 不读取；testID 由 input 常量集中定义 | [静态] 搜索没有复制 terminal surface 数值；key/region ID 来自布局定义 | 业务不得散写键盘 testID；不引入生成字符串替代源 | `VirtualKeyboard`、`testExpoApp`、assembly |
-| 日志落点与脱敏字段 | `AGENTS.md` 与 observability standard；adapter 记录 topology/count，不记录输入值 | [静态] 搜索日志参数不含姓名、手机号、密码、原始键值 | 只记阶段、orientation、actual/effective displayCount、capacity 状态 | handler topology、测试 run manifest；禁止 password/raw payload |
-| 迁移回填与可逆性 | N/A：无数据库/迁移 | N/A | 不产生 migration/seed | — |
-| 前端共享行为(Drawer/列表/表单生命周期) | `SurfaceRoot.renderContentFrame`、`LayerStack`、`SurfaceFocusBoundaryContext`、`InputScrollArea` | [focused] layer suspend/restore、scroll ancestor、focus restore | render 不 import input；input 只消费 boundary context | render/input/sample integration |
-| 候选/下拉数据源 | N/A：无候选/下拉 | N/A | 不添加 IME 候选栏 | — |
-| 编码与名称呈现 | 现有 `KeyboardLayout` 类型、feature fieldId/testID 常量 | [静态] 四布局名称和 sample-only 文案逐项一致 | 能力命名，不把 alpha/financial 变成业务字段 | full/alpha/numeric/financial |
-| 会同时坏的东西是否已声明为原子组 | `InputSurfaceFrame` + provider + keyboard + scroll + sample/Web surface | [阶段对账] CP 完成后逐条 MATCHED/OPEN | API、测量、容量、焦点和 Web 命中不允许拆成半套 | CP-0..CP-5 全范围 |
+| 机制                                   | ① 用哪个现成能力/规范                                                                            | ② 如何验证                                                            | ③ 无现成时必须符合的形态                                            | ④ 本批适用全集                                                                    |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 读侧节点授权                           | N/A：本批无 HTTP/owner 读授权；组件只读本地注册表                                                | [静态] 无新增 edge/HTTP import                                        | 不引入新的服务读取                                                  | input snapshot registry、sample 表单                                              |
+| 写授权与 grant 复核                    | N/A：无服务端写                                                                                  | [focused] 业务探针字段不进入 command                                  | 不得把 sample-only 值写入业务模型                                   | `MemberForm` 四个输入字段；真实提交仅姓名/电话                                    |
+| 跨 owner 写与事务                      | N/A：无跨 owner 持久化                                                                           | [静态] 命令调用面无新增跨 feature import                              | 保持 feature actor/command owner                                    | `submitMemberCommand`、`confirmMemberCommand` 不改契约语义                        |
+| 集合形态与分页                         | N/A：输入字段注册表是 bounded local map，不是业务集合                                            | [focused] 注册/注销后快照只含 live 字段                               | token 比对注销，不能遍历业务列表推断字段                            | `InputSnapshot` live registry                                                     |
+| 缓存失效 / 改完刷新什么                | N/A：无远程缓存                                                                                  | [focused] layout 重测只重新计算 geometry，不清业务值                  | 尺寸变化不得丢输入值/selection                                      | `InputProvider` metrics、`MemberForm` draft                                       |
+| RTK 数据读取与加载判定                 | N/A：本批不使用 RTK                                                                              | [静态] 新增代码无 RTK 读侧                                            | 不把输入快照复制为服务器缓存                                        | input/sample 变更全集                                                             |
+| 同一事实只有一个住址                   | `snapshot.ts` 的 live registry 是编辑期事实；业务 command 是提交边界事实                         | [focused] capture 同步冻结；sample-only 无业务消费                    | 不增加第二个编辑值 store；不从 DOM 反读                             | value/selection/registration、`Member`/command                                    |
+| 失败可见且原因不得改写                 | `InputCapacityState` 与现有 typed edit/command 结果；`SurfaceRoot` layer 由 render owner 管理    | [focused] unmeasured/width/height/axis 不可行各有可观察状态           | 不静默隐藏必填输入；不伪造 submit 成功                              | `unmeasured`、`unsupported-width`、`unsupported-height`、`unsupported-horizontal` |
+| owner 错误到 HTTP 的映射与注册处       | N/A：无 HTTP                                                                                     | N/A                                                                   | 不新建 problem code                                                 | —                                                                                 |
+| 幂等键构成与重放语义                   | N/A：本批没有服务命令写                                                                          | [静态] 不新增幂等 API                                                 | 不把 input event 当远程 command                                     | —                                                                                 |
+| 该用生成物的地方不得手搓字符串         | `terminalSurfaces` 保留为已有 package 元数据，input 不读取；testID 由 input 常量集中定义         | [静态] 搜索没有复制 terminal surface 数值；key/region ID 来自布局定义 | 业务不得散写键盘 testID；不引入生成字符串替代源                     | `VirtualKeyboard`、`testExpoApp`、assembly                                        |
+| 日志落点与脱敏字段                     | `AGENTS.md` 与 observability standard；adapter 记录 topology/count，不记录输入值                 | [静态] 搜索日志参数不含姓名、手机号、密码、原始键值                   | 只记阶段、orientation、actual/effective displayCount、capacity 状态 | handler topology、测试 run manifest；禁止 password/raw payload                    |
+| 迁移回填与可逆性                       | N/A：无数据库/迁移                                                                               | N/A                                                                   | 不产生 migration/seed                                               | —                                                                                 |
+| 前端共享行为(Drawer/列表/表单生命周期) | `SurfaceRoot.renderContentFrame`、`LayerStack`、`SurfaceFocusBoundaryContext`、`InputScrollArea` | [focused] layer suspend/restore、scroll ancestor、focus restore       | render 不 import input；input 只消费 boundary context               | render/input/sample integration                                                   |
+| 候选/下拉数据源                        | N/A：无候选/下拉                                                                                 | N/A                                                                   | 不添加 IME 候选栏                                                   | —                                                                                 |
+| 编码与名称呈现                         | 现有 `KeyboardLayout` 类型、feature fieldId/testID 常量                                          | [静态] 四布局名称和 sample-only 文案逐项一致                          | 能力命名，不把 alpha/financial 变成业务字段                         | full/alpha/numeric/financial                                                      |
+| 会同时坏的东西是否已声明为原子组       | `InputSurfaceFrame` + provider + keyboard + scroll + sample/Web surface                          | [阶段对账] CP 完成后逐条 MATCHED/OPEN                                 | API、测量、容量、焦点和 Web 命中不允许拆成半套                      | CP-0..CP-5 全范围                                                                 |
 
 ### 3a. UI/testID 前置复核
 
@@ -96,12 +115,12 @@ L2_SCRIPT_ADMISSION=BLOCKED
 
 本轮 design-only 分母如下；真实节点尚未实现，故最后一列是“待实施观察”而不是运行证据：
 
-| case/action | 设计控件 | 设计 owner/testID source | 实际动作节点 | 本轮结论 |
-| --- | --- | --- | --- | --- |
-| MemberForm alpha probe focus/edit | `英文字符测试（仅 sample）` input | `MemberForm` fieldId/testID 固定值 | `PrimitiveInput` 实际 input 节点 | `MATCHED`（设计契约；实施后复核） |
-| MemberForm financial probe focus/edit | `金额格式测试（仅 sample）` input | `MemberForm` fieldId/testID 固定值 | `PrimitiveInput` 实际 input 节点 | `MATCHED`（设计契约；实施后复核） |
-| virtual keyboard regions | letters/digits/symbols/actions | `VirtualKeyboard` §4.4 region IDs | region View 下真实 `PrimitiveButton` | `MATCHED`（设计契约；实施后复核） |
-| virtual keyboard key action | text/action key | `KeyboardKeyDefinition.keyId` → §4.4 key ID | 真实 `PrimitiveButton`，不得是外层 wrapper | `MATCHED`（设计契约；实施后复核） |
+| case/action                           | 设计控件                          | 设计 owner/testID source                    | 实际动作节点                               | 本轮结论                          |
+| ------------------------------------- | --------------------------------- | ------------------------------------------- | ------------------------------------------ | --------------------------------- |
+| MemberForm alpha probe focus/edit     | `英文字符测试（仅 sample）` input | `MemberForm` fieldId/testID 固定值          | `PrimitiveInput` 实际 input 节点           | `MATCHED`（设计契约；实施后复核） |
+| MemberForm financial probe focus/edit | `金额格式测试（仅 sample）` input | `MemberForm` fieldId/testID 固定值          | `PrimitiveInput` 实际 input 节点           | `MATCHED`（设计契约；实施后复核） |
+| virtual keyboard regions              | letters/digits/symbols/actions    | `VirtualKeyboard` §4.4 region IDs           | region View 下真实 `PrimitiveButton`       | `MATCHED`（设计契约；实施后复核） |
+| virtual keyboard key action           | text/action key                   | `KeyboardKeyDefinition.keyId` → §4.4 key ID | 真实 `PrimitiveButton`，不得是外层 wrapper | `MATCHED`（设计契约；实施后复核） |
 
 将来 CP-3/CP-4 若获得 L2/浏览器授权，必须在写 binding 前重新打开四份需求/判据正本、
 本文 §4.4、真实 sample 组件与 `testExpoApp`，并把上述每行替换为真实节点证据；
@@ -117,11 +136,7 @@ L2_SCRIPT_ADMISSION=BLOCKED
 
 ```tsx
 <SurfaceRoot
-  renderContentFrame={({content}) => (
-    <InputSurfaceFrame imeInset={surfaceImeInset}>
-      {content}
-    </InputSurfaceFrame>
-  )}
+  renderContentFrame={({content}) => <InputSurfaceFrame imeInset={surfaceImeInset}>{content}</InputSurfaceFrame>}
 >
   {screenAndBusinessChildren}
 </SurfaceRoot>
@@ -195,21 +210,23 @@ candidate = min(MAX_DOCK_HEIGHT,
                  floor(frameHeight * MAX_DOCK_RATIO),
                  frameHeight - MIN_CONTENT_HEIGHT)
 availableDockHeight = max(0, candidate)
-dockHeight = min(availableDockHeight, verticalRequired(rowCount))
+dockHeight = min(availableDockHeight, verticalRequired(visualRowCount))
 ```
 
 `candidate` 是当前 frame 能提供的最大 dock 高度；当前布局的真实内容高度为：
 
 ```text
-verticalRequired(rowCount) = rowCount * KEY_CELL_HEIGHT
-                           + (rowCount - 1) * ROW_GAP
+verticalRequired(visualRowCount) = visualRowCount * KEY_CELL_HEIGHT
+                           + (visualRowCount - 1) * ROW_GAP
                            + 2 * DOCK_PADDING_VERTICAL
 ```
 
-渲染高度为 `min(candidate, verticalRequired(rowCount))`。因此五行 full/numeric/financial
-需要 `270`，四行 alpha 需要 `219`；content 使用上下各 `DOCK_PADDING_VERTICAL`，不再
+渲染高度为 `min(candidate, verticalRequired(visualRowCount))`。full、numeric 与 financial
+均为四个视觉行，需要 `219`；alpha 的三个视觉行需要 `168`。numeric/financial 的底部
+复合区仍只有一行高度，列内的水平分组不增加视觉行。content 使用上下各
+`DOCK_PADDING_VERTICAL`，不再
 设置 `rowBlockOffset`，所以键盘外框不为短布局预留上、下空白。若 `candidate` 小于
-`verticalRequired(rowCount)`，高度取 candidate、capacity 为 `unsupported-height`，键盘
+`verticalRequired(visualRowCount)`，高度取 candidate、capacity 为 `unsupported-height`，键盘
 不渲染并显示既定尺寸提示；不通过裁剪或缩小纵向命中区域来“适配”。布局切换时内容区
 按真实 dock 高度同步收缩/恢复，这是本次视觉复核后对原先“同一 surface 四布局 outer 高一致”
 约束的明确修订。
@@ -236,7 +253,7 @@ unmeasured | unsupported-width | unsupported-height | unsupported-horizontal | s
 ```
 
 判断顺序为 `!ready -> unmeasured`；宽度小于 360 -> `unsupported-width`；candidate 不满足
-当前布局的 `verticalRequired(rowCount)` -> `unsupported-height`；横向 cell 不满足当前布局 ->
+当前布局的 `verticalRequired(visualRowCount)` -> `unsupported-height`；横向 cell 不满足当前布局 ->
 `unsupported-horizontal`；其余为 `supported`。
 
 `InputProvider` 在 virtual field `onFocus` 前检查 capacity。非 `supported` 时不登记
@@ -246,12 +263,15 @@ dismiss，也不伪造提交成功。input 不接收 `required` prop，也不推
 StaffLogin 的必填路径通过该提示和 resize recovery 继续，MemberForm/年龄的可选语义与
 确认/拒绝/交还动作保持可用。
 
+提示按容量状态说明具体恢复动作；所有已测量的不可行状态都明确要求输入区域宽度至少
+为 `360` 个逻辑单位，`unsupported-height` 另明确要求增加高度。
+
 验收基线只用于 fixture：
 
-| frame fixture | candidate/dockHeight | 内容区剩余 |
-| --- | ---: | ---: |
-| 1157 × 723 | 320 | 403 |
-| 962 × 541 | 270 | 271 |
+| frame fixture | candidate / dockHeight | 内容区剩余 |
+| ------------- | ---------------------: | ---------: |
+| 1157 × 723    |              320 / 219 |        504 |
+| 962 × 541     |              270 / 219 |        322 |
 
 上述数字不得回流为运行时输入。
 
@@ -262,29 +282,50 @@ StaffLogin 的必填路径通过该提示和 resize recovery 继续，MemberForm
 
 ```ts
 type KeyboardLayout = 'full' | 'alpha' | 'numeric' | 'financial';
+type KeyboardRegion = 'letters' | 'digits' | 'symbols' | 'actions';
 type KeyboardKeyDefinition =
-  | { keyId: `text-${string}`; zone: 'letters' | 'digits' | 'symbols'; kind: 'text'; text: string }
-  | { keyId: 'shift' | 'caps' | 'backspace' | 'complete'; zone: 'actions'; kind: 'shift' | 'caps' | 'backspace' | 'complete' };
+  | {keyId: `text-${string}`; zone: 'letters' | 'digits' | 'symbols'; kind: 'text'; text: string}
+  | {
+      keyId: 'shift' | 'caps' | 'backspace' | 'complete';
+      zone: 'actions';
+      kind: 'shift' | 'caps' | 'backspace' | 'complete';
+    };
 type KeyboardRow = {
   keys: readonly KeyboardKeyDefinition[];
   align: 'start' | 'center';
+  region: KeyboardRegion;
+  sizing: 'shared' | 'fit';
+  grid?: {
+    columns: readonly {
+      span: number;
+      direction: 'row' | 'column';
+      keys: readonly KeyboardKeyDefinition[];
+    }[];
+    rowCount: number;
+  };
 };
 type KeyboardLayoutDefinition = {
   layout: KeyboardLayout;
   rows: readonly KeyboardRow[];
+  visualRowCount: number;
   maxColumns: number;
   horizontalMode: 'dense' | 'standard';
 };
 ```
 
-精确行数据如下；字符顺序固定，不由业务组件传入：
+精确行数据如下；字符顺序固定，不由业务组件传入。full/alpha 的动作键并入最后一个
+compound row；numeric/financial 的最后一个 `KeyboardRow` 是一行三列 composite grid，
+用于表达跨列与列内水平分组，不把同一个 key 复制成多个按钮。numeric 的 `0` 横跨前两列，
+右侧一列内部左右放 backspace/complete；financial 的 `-/.` 在第一列内部左右分布，`0`
+独占第二列，backspace/complete 在第三列内部左右分布。这样末行所有按键保持完整的一行
+高度，并与上方 `7/8/9` 三列对齐：
 
-| layout | rows（从上到下） | maxColumns | mode |
-| --- | --- | ---: | --- |
-| full | `1234567890`; `qwertyuiop`; `asdfghjkl`; `zxcvbnm`; `shift,caps,backspace,complete` | 10 | dense |
-| alpha | `qwertyuiop`; `asdfghjkl`; `zxcvbnm`; `shift,backspace,complete` | 10 | dense |
-| numeric | `123`; `456`; `789`; centered `0`; `backspace,complete` | 3 | standard |
-| financial | `123`; `456`; `789`; `-,0,.`; `backspace,complete` | 3 | standard |
+| layout    | rows（从上到下）                                                                 | maxColumns | mode            |
+| --------- | -------------------------------------------------------------------------------- | ---------: | --------------- |
+| full      | `1234567890`; `qwertyuiop`; `caps,asdfghjkl`; `shift,zxcvbnm,backspace,complete` |         10 | dense/shared    |
+| alpha     | `qwertyuiop`; `asdfghjkl`; `shift,zxcvbnm,backspace,complete`                    |         10 | dense/shared    |
+| numeric   | `123`; `456`; `789`; grid(`0`跨前两列, `backspace/complete`右列左右)              |          3 | standard/shared |
+| financial | `123`; `456`; `789`; grid(`-/.`左列左右, `0`中列, `backspace/complete`右列左右)      |          3 | standard/shared |
 
 字符 key 的 `keyId` 永远是 `text-${text}`；动作 key 永远使用自身 kind 字符串。
 `complete.hasNextField` 由 Provider 按当前 live registration order 在渲染时计算，
@@ -293,18 +334,26 @@ type KeyboardLayoutDefinition = {
 
 `VirtualKeyboard` 的 testID 规则固定：
 
-| 节点 | testID |
-| --- | --- |
-| root | `ui.base.input:virtual-keyboard` |
-| content | `ui.base.input:virtual-keyboard:content` |
-| letters region | `ui.base.input:virtual-keyboard:region:letters` |
-| digits region | `ui.base.input:virtual-keyboard:region:digits` |
-| symbols region | `ui.base.input:virtual-keyboard:region:symbols` |
-| actions region | `ui.base.input:virtual-keyboard:region:actions` |
-| each key | `ui.base.input:virtual-keyboard:${keyId}` |
+| 节点             | testID                                                    |
+| ---------------- | --------------------------------------------------------- |
+| root             | `ui.base.input:virtual-keyboard`                          |
+| content          | `ui.base.input:virtual-keyboard:content`                  |
+| letters region   | `ui.base.input:virtual-keyboard:region:letters`           |
+| digits region    | `ui.base.input:virtual-keyboard:region:digits`            |
+| symbols region   | `ui.base.input:virtual-keyboard:region:symbols`           |
+| actions region   | `ui.base.input:virtual-keyboard:region:actions`           |
+| compound segment | `ui.base.input:virtual-keyboard:segment:${zone}:${index}` |
+| each key         | `ui.base.input:virtual-keyboard:${keyId}`                 |
 
 不出现的 zone 不渲染空 region。所有 key 仍通过 `PrimitiveButton` 进入 automation
 注册路径；业务 feature 不需要知道 className、NativeWind 或布局 token。
+`VirtualKeyboard` 先按 `KeyboardRow.region` 将相邻行归并为一个完整的纵向 region 容器，
+再在容器内渲染行与 key group；region 容器必须包住该逻辑区的全部行，而不是只给第一行
+或第一段 key group 挂 testID。普通 row 仍按连续 `zone` 生成 segment；grid row 按列
+生成 `segment:grid:${columnIndex}`，列内的 key 按声明的 `direction` 水平并排或垂直堆叠。
+本批 numeric/financial 的列均为水平分组。compound/grid row
+的 row-level region 为 `actions`，所有按键都保留稳定 key-level testID；numeric 与
+financial 使用 shared cell width，不再用五列 fit 破坏与 `7/8/9` 的列对齐。
 
 ### 4.5 焦点、键盘 owner 与 LayerStack
 
@@ -382,25 +431,29 @@ input 显示，立即按计划停止并报告；不得把宿主问题伪装成 i
 
 ### 4.8 Web 交互子树与真实 pointer hit 区域
 
-`apps/terminal/ui/base/dev-host/src/testExpoApp.tsx` 的 `SurfaceCanvas` 仍可用
-`terminalSurfaces` 提供 baseline aspect ratio、状态标签和截图 fixture，但不得让
-`styles.logicalCanvas` 或其祖先以 `transform: scale(...)` 包裹 `SurfaceRoot`/
-`InputSurfaceFrame`。
+`apps/terminal/ui/base/dev-host/src/testExpoApp.tsx` 的 `SurfaceCanvas` 使用
+`terminalSurfaces` 提供每棵 surface 的目标逻辑尺寸，并在自己的 canvas `onLayout` 后
+通过 `calculateSurfacePreviewGeometry` 计算整体倍率。`styles.logicalStage` 固定为
+当前已挂载 surface 的逻辑组合尺寸；scale 只由 dev-host 的 stage layout owner 管理，
+不由 `ui/base/input` 读取或计算。
 
 目标树为：
 
 ```text
-SurfaceCanvas (outer shell may use host window dimensions)
-└─ responsiveSurfaceStage (untransformed)
-   ├─ primarySurfaceBox (actual responsive box)
-   │  └─ SurfaceRoot → InputSurfaceFrame
-   └─ secondarySurfaceBox (only when dual topology)
-      └─ SurfaceRoot → InputSurfaceFrame
+SurfaceCanvas (measures its own Web preview canvas)
+└─ scaledStage (rendered size = logical stage size × scale)
+   └─ logicalStage (fixed logical size; host transform: scale(scale))
+      ├─ primarySurfaceBox (fixed declared logical width/height)
+      │  └─ SurfaceRoot → InputSurfaceFrame
+      └─ secondarySurfaceBox (only when dual topology; fixed declared logical width/height)
+         └─ SurfaceRoot → InputSurfaceFrame
 ```
 
-surface box 用 flex/aspect-ratio/gap 直接布局；窄 Web 窗口可按宿主既定规则堆叠，但
-交互树始终是无 transform 的最终盒。`onLayout` 读到的盒就是 pointer 的布局盒，不能
-把逻辑画布宽高或 transform 前尺寸传给 input。
+surface box 用声明的固定 width/height 与 layout/gap 直接布局；窄 Web 窗口由宿主缩小
+整体倍率而不是挤压某一棵 surface。`InputSurfaceFrame.onLayout` 仍只记录 input 自己
+逻辑 frame 的 local metrics；不得把 host scale 写回 input，也不得把 transform 前逻辑
+尺寸当作缩放后的物理 hit target 证明。宿主缩放是 Web 预览的明确例外，因此交互树在
+Web 视觉上位于 host stage transform 内；这不改变 input 包的几何 owner。
 
 将来授权浏览器证明时，观察脚本必须：
 
@@ -408,10 +461,13 @@ surface box 用 flex/aspect-ratio/gap 直接布局；窄 Web 窗口可按宿主�
    `getBoundingClientRect()`；
 2. 用 rect 中心调用 `document.elementFromPoint(centerX,centerY)`，确认返回节点属于
    同一个真实 key 动作树；
-3. 从 key 向上检查交互祖先的 computed `transform`，逐级为 `none`；
-4. 以实际 rect 与 elementFromPoint 结果判定命中，不以 transform 前逻辑尺寸判定 48。
+3. 从 key 向上记录 computed `transform`，确认只有 dev-host 的 `logicalStage` 这一处
+   有意承担 preview scale，没有 input 内部或第二套物理尺寸桥；
+4. 以实际 rect 与 `elementFromPoint` 结果判定 Web 命中；不能以 transform 前逻辑尺寸
+   判定缩放后的 Web 物理 48，也不能把 Web 结果冒充 Android 触控证据。
 
-该观察不在本轮执行，必须与浏览器证据分档，不能被 focused test 或模型红向量替代。
+本轮观察记录在 `doc/evidence/platform/terminal-input/web-surface-scale-2026-09-07.md`；
+后续浏览器证据仍须与 focused test 和模型红向量分档，不能互相替代。
 
 ## 5. 公共 API、快照与业务字段边界
 
@@ -447,9 +503,9 @@ token 与 focused test 覆盖，不能把布局 token 或 NativeWind prop 下放
 在 `apps/terminal/ui/feature/sample-member-desk/src/components/MemberForm.tsx` 的
 phone 字段之后、业务动作之前新增两行：
 
-| 字段 | label | layout | fieldId/testID | 业务边界 |
-| --- | --- | --- | --- | --- |
-| 英文字符测试 | `英文字符测试（仅 sample）` | alpha | `sample.desk.member-form:keyboard-alpha-probe` | 只验证拉丁/shift/edit/complete；不进 Member/command/dirty |
+| 字段         | label                       | layout    | fieldId/testID                                     | 业务边界                                                   |
+| ------------ | --------------------------- | --------- | -------------------------------------------------- | ---------------------------------------------------------- |
+| 英文字符测试 | `英文字符测试（仅 sample）` | alpha     | `sample.desk.member-form:keyboard-alpha-probe`     | 只验证拉丁/shift/edit/complete；不进 Member/command/dirty  |
 | 金额格式测试 | `金额格式测试（仅 sample）` | financial | `sample.desk.member-form:keyboard-financial-probe` | 只验证数字、`.`、`-` 与编辑可达；不进 Member/command/dirty |
 
 下方固定辅助文案 `不保存到会员资料`，保证体验者不会把能力验证字段理解成业务字段。
@@ -461,103 +517,103 @@ phone 字段之后、业务动作之前新增两行：
 
 ### 6.1 可见 IA-ID
 
-| IA-ID | 业务任务 | surface/入口 | 控件与文案 | 错误/恢复 | focus/testID |
-| --- | --- | --- | --- | --- | --- |
-| IA-AUTH-FULL | 店员输入工号与密码并登录 | PRIMARY；single/dual landscape 或 portrait | `full`：数字、拉丁、shift/caps、删除、完成；字段标签沿用 StaffLogin | 不可行显示扩大窗口提示；恢复靠 resize 后重新点字段 | 两字段既有 field testID；键盘 region/key IDs 见 §4.4 |
-| IA-MEMBER-MIX | 店员录入会员姓名、电话并验证三种虚拟布局 | PRIMARY | system 姓名、virtual numeric 电话、sample-only alpha/financial；两个测试字段文案固定 | 字段值失败/取消按现有 actor；probe 不影响业务提交 | `MemberForm` fieldId 固定；键盘 owner 互斥 |
-| IA-CUSTOMER-AGE | 顾客确认年龄 | SECONDARY 双屏，PRIMARY handheld-confirm 单屏/竖屏 | virtual numeric age，`maxLength=3`；确认/拒绝/交还按钮 | 年龄可为空；撤回/拒绝清掉 pending 年龄，确认不写空 age | age 与 hand-back IDs；副屏不启用 system IME |
+| IA-ID           | 业务任务                                 | surface/入口                                       | 控件与文案                                                                           | 错误/恢复                                              | focus/testID                                         |
+| --------------- | ---------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------ | ---------------------------------------------------- |
+| IA-AUTH-FULL    | 店员输入工号与密码并登录                 | PRIMARY；single/dual landscape 或 portrait         | `full`：数字、拉丁、shift/caps、删除、完成；字段标签沿用 StaffLogin                  | 不可行显示扩大窗口提示；恢复靠 resize 后重新点字段     | 两字段既有 field testID；键盘 region/key IDs 见 §4.4 |
+| IA-MEMBER-MIX   | 店员录入会员姓名、电话并验证三种虚拟布局 | PRIMARY                                            | system 姓名、virtual numeric 电话、sample-only alpha/financial；两个测试字段文案固定 | 字段值失败/取消按现有 actor；probe 不影响业务提交      | `MemberForm` fieldId 固定；键盘 owner 互斥           |
+| IA-CUSTOMER-AGE | 顾客确认年龄                             | SECONDARY 双屏，PRIMARY handheld-confirm 单屏/竖屏 | virtual numeric age，`maxLength=3`；确认/拒绝/交还按钮                               | 年龄可为空；撤回/拒绝清掉 pending 年龄，确认不写空 age | age 与 hand-back IDs；副屏不启用 system IME          |
 
 ### 6.2 不可见 IA 观察
 
-| 维度 | 观察（未来授权后执行） |
-| --- | --- |
-| stateAndPermission | [静态/focused] input 只读 local registry；sample-only probe 的值在 command call 与 Member/PendingMember 写入点零命中 |
-| navigationAndRefresh | [focused] layout 重测只改 capacity/dock geometry；snapshot value/selection 与 sample业务 dirty 不被清空 |
-| collectionShapeAndScale | [focused] live registry 是当前 surface 的 bounded field map；注册/注销按 token，capture 不遍历服务端集合 |
-| dataSourceAndCascade | [静态] keyboard key data 只来自 `keyboardLayout.ts`；field value 只来自 `useInputField` registry；sample command 只从固定 field IDs 取值 |
-| forbiddenUI | [静态/浏览器] input 交互祖先不得有 transform；键盘不得出现候选栏、IME、业务快捷键；probe 不得出现在顾客确认层 |
+| 维度                    | 观察（未来授权后执行）                                                                                                                   |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| stateAndPermission      | [静态/focused] input 只读 local registry；sample-only probe 的值在 command call 与 Member/PendingMember 写入点零命中                     |
+| navigationAndRefresh    | [focused] layout 重测只改 capacity/dock geometry；snapshot value/selection 与 sample业务 dirty 不被清空                                  |
+| collectionShapeAndScale | [focused] live registry 是当前 surface 的 bounded field map；注册/注销按 token，capture 不遍历服务端集合                                 |
+| dataSourceAndCascade    | [静态] keyboard key data 只来自 `keyboardLayout.ts`；field value 只来自 `useInputField` registry；sample command 只从固定 field IDs 取值 |
+| forbiddenUI             | [静态/浏览器] input 内部不得拥有 transform 或第二套物理尺寸桥；host preview 只允许 `logicalStage` 一处缩放；键盘不得出现候选栏、IME、业务快捷键；probe 不得出现在顾客确认层 |
 
 ### 6.3 体验矩阵
 
-| 状态 | 内容区 | dock | 焦点 | 用户可继续路径 |
-| --- | --- | --- | --- | --- |
-| 首帧未测量 | 正常 | 不渲染 | 不承诺 virtual owner | 首次有效 layout 后再次点击 |
-| supported virtual | 收缩到 `surfaceHeight-dockHeight` | 渲染对应 layout，dock 精确包住当前行块 | virtual owner | 编辑、切字段、complete/close-only |
-| supported system | 按 `imeInset` 收缩 | 不渲染 virtual | system owner | 系统 IME 编辑；点击非输入区 dismiss |
-| unsupported width/height/axis | 内容仍可见 | 不渲染 dock，显示不可行提示 | 不登记 virtual owner | resize/re-layout 后重试；可选字段的业务决策仍可用 |
-| layer suspended | 内容由 layer owner 控制 | 隐藏 | owner none；保存焦点由 LayerStack | 关闭末层后 token 有效且收到 focus 才恢复 |
+| 状态                          | 内容区                            | dock                                   | 焦点                              | 用户可继续路径                                    |
+| ----------------------------- | --------------------------------- | -------------------------------------- | --------------------------------- | ------------------------------------------------- |
+| 首帧未测量                    | 正常                              | 不渲染                                 | 不承诺 virtual owner              | 首次有效 layout 后再次点击                        |
+| supported virtual             | 收缩到 `surfaceHeight-dockHeight` | 渲染对应 layout，dock 精确包住当前行块 | virtual owner                     | 编辑、切字段、complete/close-only                 |
+| supported system              | 按 `imeInset` 收缩                | 不渲染 virtual                         | system owner                      | 系统 IME 编辑；点击非输入区 dismiss               |
+| unsupported width/height/axis | 内容仍可见                        | 不渲染 dock，显示不可行提示            | 不登记 virtual owner              | resize/re-layout 后重试；可选字段的业务决策仍可用 |
+| layer suspended               | 内容由 layer owner 控制           | 隐藏                                   | owner none；保存焦点由 LayerStack | 关闭末层后 token 有效且收到 focus 才恢复          |
 
 ## 7. 声明—传递—消费矩阵
 
-| fact | declaration | transfer | consumption | proof |
-| --- | --- | --- | --- | --- |
-| surface local size | `InputSurfaceFrame` 根 View `onLayout` | `LocalFrameMetrics` 内部传给 `InputProvider` | `calculateVirtualKeyboardMetrics`、VirtualKeyboard 可见性 | focused geometry tests；不同 surface fixture |
-| ime inset | 既有 Android adapter/assembly 平台事实 | `imeInset` bridge → `InputSurfaceFrame` | system owner 的 content padding 与 scroll viewport | static/typecheck；Android 结果另档，不由 input 声称 |
-| keyboard owner | `InputProvider` state | onPressIn preflight → onFocus commit → onBlur guarded cleanup | dock/system IME/content shrink | real focus harness；非调用计数 |
-| keyboard geometry | `KeyboardLayoutDefinition` + constants | provider capacity → `VirtualKeyboard` props | rows, cell width, dock height | focused formula/layout/hit tests |
-| focus visibility | `InputScrollArea` ancestor | field geometry effect → scroll API | scroll offset in shrunk viewport | focused scroll tests；no ancestor no-op |
-| sample probe boundary | `MemberForm` field declarations | registry only; fixed submit field selection | UI only | static consumer search + focused submit test |
-| error/unsupported | capacity enum | frame/provider → visible notice | user resize/retry | focused state tests；required login no silent dead |
+| fact                  | declaration                            | transfer                                                      | consumption                                               | proof                                               |
+| --------------------- | -------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------- |
+| surface local size    | `InputSurfaceFrame` 根 View `onLayout` | `LocalFrameMetrics` 内部传给 `InputProvider`                  | `calculateVirtualKeyboardMetrics`、VirtualKeyboard 可见性 | focused geometry tests；不同 surface fixture        |
+| ime inset             | 既有 Android adapter/assembly 平台事实 | `imeInset` bridge → `InputSurfaceFrame`                       | system owner 的 content padding 与 scroll viewport        | static/typecheck；Android 结果另档，不由 input 声称 |
+| keyboard owner        | `InputProvider` state                  | onPressIn preflight → onFocus commit → onBlur guarded cleanup | dock/system IME/content shrink                            | real focus harness；非调用计数                      |
+| keyboard geometry     | `KeyboardLayoutDefinition` + constants | provider capacity → `VirtualKeyboard` props                   | rows, cell width, dock height                             | focused formula/layout/hit tests                    |
+| focus visibility      | `InputScrollArea` ancestor             | field geometry effect → scroll API                            | scroll offset in shrunk viewport                          | focused scroll tests；no ancestor no-op             |
+| sample probe boundary | `MemberForm` field declarations        | registry only; fixed submit field selection                   | UI only                                                   | static consumer search + focused submit test        |
+| error/unsupported     | capacity enum                          | frame/provider → visible notice                               | user resize/retry                                         | focused state tests；required login no silent dead  |
 
 ## 8. 业务规则 → owner 判定点
 
-| 规则 | owner 判定点 |
-| --- | --- |
-| FORM-1..FORM-5 | `InputSurfaceFrame` metrics/capacity 与既有 `imeInset` bridge；逐项不以单张截图替代 |
-| full/alpha/numeric/financial 行列 | `keyboardLayout.ts` definition 与 `VirtualKeyboard` region renderer |
-| 360 最小宽度/按轴可行性 | `calculateVirtualKeyboardMetrics` 与 geometry focused tests |
-| system/virtual 互斥和首击不丢 | `useInputField` preflight + `InputProvider` commit；真实 focus harness |
-| layer suspend/restore | `LayerStack` + `SurfaceFocusBoundaryContext` + `InputProvider.notifyFocusBoundary` |
-| 收缩后滚入可见区 | `InputScrollArea.ensureVisible` 与 `calculateScrollOffset` |
-| sample-only alpha/financial | `MemberForm` field declarations、固定 submit reads、unregister paths |
-| 年龄三位与可选 age | `CustomerMember` + `PrimitiveInput.maxLength` + confirm actor normalization |
-| App 方向与拓扑 | 本专题不设 owner；由既有 Android carrier 负责，input 只消费 frame onLayout 与 imeInset |
-| Web hit target | `SurfaceCanvas` no-transform tree + browser rect/elementFromPoint observation |
-| 性能 | `PF-1..PF-8` focused/static; PF-1..6 全绿不得单独宣称性能达标 |
+| 规则                              | owner 判定点                                                                           |
+| --------------------------------- | -------------------------------------------------------------------------------------- |
+| FORM-1..FORM-5                    | `InputSurfaceFrame` metrics/capacity 与既有 `imeInset` bridge；逐项不以单张截图替代    |
+| full/alpha/numeric/financial 行列 | `keyboardLayout.ts` definition 与 `VirtualKeyboard` region renderer                    |
+| 360 最小宽度/按轴可行性           | `calculateVirtualKeyboardMetrics` 与 geometry focused tests                            |
+| system/virtual 互斥和首击不丢     | `useInputField` preflight + `InputProvider` commit；真实 focus harness                 |
+| layer suspend/restore             | `LayerStack` + `SurfaceFocusBoundaryContext` + `InputProvider.notifyFocusBoundary`     |
+| 收缩后滚入可见区                  | `InputScrollArea.ensureVisible` 与 `calculateScrollOffset`                             |
+| sample-only alpha/financial       | `MemberForm` field declarations、固定 submit reads、unregister paths                   |
+| 年龄三位与可选 age                | `CustomerMember` + `PrimitiveInput.maxLength` + confirm actor normalization            |
+| App 方向与拓扑                    | 本专题不设 owner；由既有 Android carrier 负责，input 只消费 frame onLayout 与 imeInset |
+| Web preview scale/hit target     | `SurfaceCanvas` + `surfacePreview.ts` fixed logical stage/host scale + browser rect/elementFromPoint observation |
+| 性能                              | `PF-1..PF-8` focused/static; PF-1..6 全绿不得单独宣称性能达标                          |
 
 无其它业务规则被本批创建。业务 command、Member/PendingMember、customer actor 仍由既有 owner
 负责，本详设不把输入组件变成业务 owner。
 
 ## 9. owner API 与消费者清单
 
-| owner 方法/符号 | 消费者 |
-| --- | --- |
-| `InputSurfaceFrame` / `handleSurfaceLayout` | `sample-console` 的 `SurfaceRoot.renderContentFrame`；dev-host 各 surface |
-| `calculateVirtualKeyboardMetrics` | `InputProvider`；`keyboardHeight.test.ts` |
-| `KeyboardLayoutDefinition` / `getKeyboardLayout` | `VirtualKeyboard`；layout/region focused tests |
-| `InputProvider.handleFocus` / `handleBlur` / `dismissActiveField` | `useInputField`；surface content `Pressable` |
-| `InputProvider.notifyFocusBoundary` | `LayerStack` 通过 `SurfaceFocusBoundaryContext` |
-| `InputScrollArea.ensureVisible` | `useInputField` geometry effect；`ScrollArea` feature wrapper |
-| `captureSnapshot` | `StaffLogin`、`MemberForm`、`CustomerMember` submit actors |
-| `MemberForm` sample probe declarations | sample-only tests and renderer；不被业务 command 消费 |
+| owner 方法/符号                                                   | 消费者                                                                    |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `InputSurfaceFrame` / `handleSurfaceLayout`                       | `sample-console` 的 `SurfaceRoot.renderContentFrame`；dev-host 各 surface |
+| `calculateVirtualKeyboardMetrics`                                 | `InputProvider`；`keyboardHeight.test.ts`                                 |
+| `KeyboardLayoutDefinition` / `getKeyboardLayout`                  | `VirtualKeyboard`；layout/region focused tests                            |
+| `InputProvider.handleFocus` / `handleBlur` / `dismissActiveField` | `useInputField`；surface content `Pressable`                              |
+| `InputProvider.notifyFocusBoundary`                               | `LayerStack` 通过 `SurfaceFocusBoundaryContext`                           |
+| `InputScrollArea.ensureVisible`                                   | `useInputField` geometry effect；`ScrollArea` feature wrapper             |
+| `captureSnapshot`                                                 | `StaffLogin`、`MemberForm`、`CustomerMember` submit actors                |
+| `MemberForm` sample probe declarations                            | sample-only tests and renderer；不被业务 command 消费                     |
 
 ## 10. 实施前全链同步变更清单
 
-| 变更事实 | 契约/唯一源/生成物 | owner / edge / migration | 前端 model/surface/state | focused/static/runtime 测试 | fixture/seed | 结论 |
-| --- | --- | --- | --- | --- | --- | --- |
-| 静态尺寸改为 local metrics | `InputSurfaceFrame` onLayout；无生成物 | input owner；无 DB | Frame/provider/geometry/assembly | provider、keyboardHeight、FORM tests | N/A：无业务 seed | 同步修改 |
-| public `InputSurfaceSize` 删除 | `input/src/index.ts` 与 invariants | N/A | InputProvider/Frame props、README | public face/invariant/typecheck | N/A | 同步修改 |
-| 四布局行列与 testID | `keyboardLayout.ts` 唯一源 | N/A | VirtualKeyboard regions | virtualKeyboard/layout/hit tests | N/A | 同步修改 |
-| owner transition/focus | `InputProvider`/`useInputField` | N/A | focus state/dock visibility | real focus harness、KEY-R8 | N/A | 同步修改 |
-| ime inset platform fact | existing adapter/assembly bridge | N/A | InputSurfaceFrame system-owner padding/scroll | static/typecheck；平台运行另档 | N/A | 保持现状 |
-| Web no-transform input tree | `SurfaceCanvas` owning source | N/A | dev-host surface tree | static + browser when authorized | N/A | 同步修改 |
-| alpha/financial sample-only fields | `MemberForm` field declarations | command/Member/PendingMember explicitly unchanged | registry-only fields | submit, cleanup, consumer search | N/A | 同步修改 |
-| docs/invariants/readme | docs are source of design statement | N/A | public README/invariant | review and typecheck | N/A | 同步修改 |
+| 变更事实                           | 契约/唯一源/生成物                     | owner / edge / migration                          | 前端 model/surface/state                      | focused/static/runtime 测试          | fixture/seed     | 结论     |
+| ---------------------------------- | -------------------------------------- | ------------------------------------------------- | --------------------------------------------- | ------------------------------------ | ---------------- | -------- |
+| 静态尺寸改为 local metrics         | `InputSurfaceFrame` onLayout；无生成物 | input owner；无 DB                                | Frame/provider/geometry/assembly              | provider、keyboardHeight、FORM tests | N/A：无业务 seed | 同步修改 |
+| public `InputSurfaceSize` 删除     | `input/src/index.ts` 与 invariants     | N/A                                               | InputProvider/Frame props、README             | public face/invariant/typecheck      | N/A              | 同步修改 |
+| 四布局行列与 testID                | `keyboardLayout.ts` 唯一源             | N/A                                               | VirtualKeyboard regions                       | virtualKeyboard/layout/hit tests     | N/A              | 同步修改 |
+| owner transition/focus             | `InputProvider`/`useInputField`        | N/A                                               | focus state/dock visibility                   | real focus harness、KEY-R8           | N/A              | 同步修改 |
+| ime inset platform fact            | existing adapter/assembly bridge       | N/A                                               | InputSurfaceFrame system-owner padding/scroll | static/typecheck；平台运行另档       | N/A              | 保持现状 |
+| Web logical preview scale           | `SurfaceCanvas` + `surfacePreview.ts` | N/A                                               | fixed logical surface boxes; input local metrics do not consume scale | focused + browser when authorized | N/A | 同步修改 |
+| alpha/financial sample-only fields | `MemberForm` field declarations        | command/Member/PendingMember explicitly unchanged | registry-only fields                          | submit, cleanup, consumer search     | N/A              | 同步修改 |
+| docs/invariants/readme             | docs are source of design statement    | N/A                                               | public README/invariant                       | review and typecheck                 | N/A              | 同步修改 |
 
 ## 11. 验收场景与红向量
 
-| scenario | owner | identity/fixture | request | businessOracle / 判定 |
-| --- | --- | --- | --- | --- |
-| FORM-1 | InputSurfaceFrame + assembly | PRIMARY local measurement fixture | focus StaffLogin full on landscape single | dock geometry is from onLayout; login fields remain usable |
-| FORM-2 | two InputSurfaceFrame instances + host | primary/secondary baseline fixtures | focus phone/age and sample probes on correct surface | each surface has independent metrics; no cross-surface size; age only virtual on SECONDARY |
-| FORM-3 | InputSurfaceFrame + handheld-confirm | portrait-shaped local frame fixture | measure PRIMARY-shaped frame and focus age | input chooses geometry from local onLayout; age remains actionable; no topology claim |
-| FORM-4 | dev-host SurfaceCanvas + input | narrow/resize responsive fixture | resize frame across landscape/portrait/unsupported width | geometry, capacity, and actual pointer rect recompute; no transform ancestor |
-| FORM-5 | InputSurfaceFrame/provider | no initial layout callback | focus before first valid layout | no dock/default size/dead focus; remeasure and retry works |
-| KEY-R3 | MemberForm | real sample business tree | numeric→alpha→financial and back | probe fields render and edit; no command/member/dirty/confirmation effect |
-| KEY-R8 | InputProvider/useInputField | real focus harness, not hand-called callbacks | pointer focus and virtual complete focus-next across system/virtual fields | first click and programmatic focus-next both get target focus; at most one owner; mutation removing shared preflight must fail |
-| S-36/S-37 | geometry + scroll | target baselines and insufficient axes | focus field under dock | field complete visible after shrink/scroll; formula source local; no double subtract |
-| S-38 | sample-member-desk actor + customer-member | double-screen age-entry race fixture | customer is editing age on SECONDARY while staff selects 撤回 | three business oracles must all hold: SECONDARY leaves confirmation and returns to `customer-welcome`; a subsequent customer 确认 produces no registration; store contains no age residue |
-| S-39 | capacity notice + sample action | optional age and required login fixtures | force width/height infeasible | no silent keyboard; login has visible recovery; age decisions remain actionable |
+| scenario  | owner                                      | identity/fixture                              | request                                                                    | businessOracle / 判定                                                                                                                                                                     |
+| --------- | ------------------------------------------ | --------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FORM-1    | InputSurfaceFrame + assembly               | PRIMARY local measurement fixture             | focus StaffLogin full on landscape single                                  | dock geometry is from onLayout; login fields remain usable                                                                                                                                |
+| FORM-2    | two InputSurfaceFrame instances + host     | primary/secondary baseline fixtures           | focus phone/age and sample probes on correct surface                       | each surface has independent metrics; no cross-surface size; age only virtual on SECONDARY                                                                                                |
+| FORM-3    | InputSurfaceFrame + handheld-confirm       | portrait-shaped local frame fixture           | measure PRIMARY-shaped frame and focus age                                 | input chooses geometry from local onLayout; age remains actionable; no topology claim                                                                                                     |
+| FORM-4    | dev-host SurfaceCanvas + input             | narrow/resize responsive fixture              | resize frame across landscape/portrait/unsupported width                   | host geometry recomputes one shared scale; surface logical boxes stay fixed; browser observes actual pointer rect; input local metrics do not consume host scale |
+| FORM-5    | InputSurfaceFrame/provider                 | no initial layout callback                    | focus before first valid layout                                            | no dock/default size/dead focus; remeasure and retry works                                                                                                                                |
+| KEY-R3    | MemberForm                                 | real sample business tree                     | numeric→alpha→financial and back                                           | probe fields render and edit; no command/member/dirty/confirmation effect                                                                                                                 |
+| KEY-R8    | InputProvider/useInputField                | real focus harness, not hand-called callbacks | pointer focus and virtual complete focus-next across system/virtual fields | first click and programmatic focus-next both get target focus; at most one owner; mutation removing shared preflight must fail                                                            |
+| S-36/S-37 | geometry + scroll                          | target baselines and insufficient axes        | focus field under dock                                                     | field complete visible after shrink/scroll; formula source local; no double subtract                                                                                                      |
+| S-38      | sample-member-desk actor + customer-member | double-screen age-entry race fixture          | customer is editing age on SECONDARY while staff selects 撤回              | three business oracles must all hold: SECONDARY leaves confirmation and returns to `customer-welcome`; a subsequent customer 确认 produces no registration; store contains no age residue |
+| S-39      | capacity notice + sample action            | optional age and required login fixtures      | force width/height infeasible                                              | no silent keyboard; login has visible recovery; age decisions remain actionable                                                                                                           |
 
 模型红向量的 FAIL 只说明判据能识别错误实现；后续生产源码 typecheck、focused test、Android
 或浏览器结果必须分档记录。任何调用次数、prop 值、transform 前逻辑尺寸都不能作为行为类
@@ -574,12 +630,12 @@ probe 塞进会员 seed。
 
 ### 12.2 未决项
 
-| 项目 | 状态 | 本批处理 |
-| --- | --- | --- |
-| Presentation 副屏系统 IME | 已有产品决定：不开 | 不引入权限/device policy/adb；仅验证虚拟键盘路径 |
-| 真实 POS 物理屏/DPI/厂商 ROM | 未取证 | Android 模拟器结果不得写成真实 POS 已验 |
-| 浏览器实际 pointer rect | 需要浏览器档证据 | 设计给出 observation；本轮不运行 |
-| §9 比例静态门 | 未经 Dexter 裁定 | 不建比例机器门；用 focused geometry 与逐代码对账 |
+| 项目                         | 状态               | 本批处理                                         |
+| ---------------------------- | ------------------ | ------------------------------------------------ |
+| Presentation 副屏系统 IME    | 已有产品决定：不开 | 不引入权限/device policy/adb；仅验证虚拟键盘路径 |
+| 真实 POS 物理屏/DPI/厂商 ROM | 未取证             | Android 模拟器结果不得写成真实 POS 已验          |
+| 浏览器实际 pointer rect      | 需要浏览器档证据   | 设计给出 observation；本轮不运行                 |
+| §9 比例静态门                | 未经 Dexter 裁定   | 不建比例机器门；用 focused geometry 与逐代码对账 |
 
 ## 13. 停机条件
 
@@ -600,11 +656,11 @@ probe 塞进会员 seed。
 每个 CP 完成后、进入下一个 CP 前，主 agent 只负责提供前后双读留痕、focused proof
 和待核对清单；由 fresh 独立子 agent 按下表逐条作出阶段对账结论：
 
-| 维度 | 对账对象 |
-| --- | --- |
-| 一 | 两份需求：业务目标、S-1/S-2 修复、已裁定不做项 |
-| 二 | 本详设与 IA/交互矩阵：字段、owner、树、文案、失败/恢复、焦点、数据源 |
-| 三 | 项目 memory：deterministic-context、terminal architecture/stack rulings、implementation source reread、frontend/input performance/focus pitfalls |
+| 维度 | 对账对象                                                                                                                                         |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 一   | 两份需求：业务目标、S-1/S-2 修复、已裁定不做项                                                                                                   |
+| 二   | 本详设与 IA/交互矩阵：字段、owner、树、文案、失败/恢复、焦点、数据源                                                                             |
+| 三   | 项目 memory：deterministic-context、terminal architecture/stack rulings、implementation source reread、frontend/input performance/focus pitfalls |
 
 每一条只出 `MATCHED` 或 `OPEN`；fresh reviewer 给出 `OPEN` 后由主 agent 修根因，
 再由 fresh reviewer 只读复核；主 agent 不得把自己的预判写成阶段 `MATCHED`，也不能启动
@@ -632,7 +688,7 @@ GEOMETRY=exact constants, formula, dense full/alpha token, minimum width, axis s
 LAYOUT_DATA=four layouts, rows/columns, stable keyId, region/key testID
 FOCUS=preflight before native focus; commit on focus; LayerStack suspend/restore; real focus proof
 ANDROID_BOUNDARY=existing carrier and imeInset only; no input-owned orientation or topology changes
-WEB=untransformed interaction subtree; getBoundingClientRect + elementFromPoint observation
+WEB=host logical-stage scale only; fixed surface boxes; getBoundingClientRect + elementFromPoint observation
 SAMPLE=alpha/financial registry-only; command/member/pending/dirty/confirm unchanged
 IA=visible and invisible dimensions are both explicit; no new Journey
 RECONCILIATION=stage/whole three-dimensional and separate code/design gate specified

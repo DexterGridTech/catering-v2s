@@ -15,7 +15,7 @@
 
 结构：
 
-- `src/androidDevice.ts`：lazy native binding 与完整 `DevicePort` 组合；
+- `src/implementations/androidDevice.ts`：lazy native binding 与完整 `DevicePort` 组合；
 - `android/.../TerminalDeviceModule.kt`：Expo `AsyncFunction` 与 `DisplayManager`；
 - `test/androidDevice.test.ts`：成功、桥失败及五个 unavailable 能力的 typed proof。
 

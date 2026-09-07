@@ -8,6 +8,7 @@ import {
   Drawer,
   Form,
   Input,
+  type MenuProps,
   Popconfirm,
   Select,
   Skeleton,
@@ -16,6 +17,8 @@ import {
   Typography,
 } from 'antd';
 import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
   createContentIdempotencyKey,
   MOBILE_PATTERN,
   activeInvitationPageUrl,
@@ -34,6 +37,7 @@ import {
 import {useCallback, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {PLATFORM_ADMIN_OPERATION_IDS} from '../../../app/api/generated/platform-edge';
+import {platformDetailDrawerTestIds} from '../../../app/automation/platformDetailDrawerTestIds';
 import {
   platformClient,
   platformContentTabRefreshSignal,
@@ -522,13 +526,13 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
   );
 }
 
-function InvitationCommands({
+function useInvitationCommandItems({
   invitation,
   groupWorkspaceKey,
   onReadback,
   onChanged,
 }: {
-  invitation: PlatformWorkspaceInvitation;
+  invitation?: PlatformWorkspaceInvitation;
   groupWorkspaceKey: string;
   onReadback: (next: PlatformWorkspaceInvitation) => void;
   onChanged: () => void;
@@ -536,6 +540,7 @@ function InvitationCommands({
   const {message} = App.useApp();
   const [busy, setBusy] = useState(false);
   const command = async (kind: 'cancel' | 'reissue') => {
+    if (!invitation) return;
     setBusy(true);
     try {
       const latest = await platformClient.getWorkspaceInvitation({groupWorkspaceKey, invitationId: invitation.id}, {});
@@ -562,25 +567,36 @@ function InvitationCommands({
       setBusy(false);
     }
   };
-  if (invitation.status === 'COMPLETED') return null;
-  return (
-    <Space size={4}>
-      {invitation.status === 'ACTIVE' && (
-        <Popconfirm title="确认取消该邀请？" onConfirm={() => void command('cancel')}>
-          <Button type="link" danger loading={busy} {...testId(`platform-invitation-cancel-${invitation.id}`)}>
-            取消
-          </Button>
-        </Popconfirm>
-      )}
-      {invitation.status !== 'ACTIVE' && (
-        <Popconfirm title="确认重发该邀请？" onConfirm={() => void command('reissue')}>
-          <Button type="link" loading={busy} {...testId(`platform-invitation-reissue-${invitation.id}`)}>
-            重发
-          </Button>
-        </Popconfirm>
-      )}
-    </Space>
-  );
+  const items: MenuProps['items'] = [];
+  if (invitation && invitation.status !== 'COMPLETED') {
+    if (invitation.status === 'ACTIVE') {
+      items.push({
+        key: 'cancel',
+        danger: true,
+        disabled: busy,
+        label: (
+          <Popconfirm title="确认取消该邀请？" onConfirm={() => void command('cancel')}>
+            <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.invitation.cancel(invitation.id)}>
+              取消
+            </AdminDetailActionLabel>
+          </Popconfirm>
+        ),
+      });
+    } else {
+      items.push({
+        key: 'reissue',
+        disabled: busy,
+        label: (
+          <Popconfirm title="确认重发该邀请？" onConfirm={() => void command('reissue')}>
+            <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.invitation.reissue(invitation.id)}>
+              重发
+            </AdminDetailActionLabel>
+          </Popconfirm>
+        ),
+      });
+    }
+  }
+  return {items, busy};
 }
 
 function PlatformInvitationDetailDrawer({
@@ -604,6 +620,22 @@ function PlatformInvitationDetailDrawer({
   onChanged: () => void;
   onAudit: () => void;
 }) {
+  const invitationCommands = useInvitationCommandItems({
+    invitation,
+    groupWorkspaceKey,
+    onReadback,
+    onChanged,
+  });
+  const actionItems: MenuProps['items'] = invitation
+    ? [
+        {
+          key: 'audit',
+          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.invitation.audit}>操作历史</AdminDetailActionLabel>,
+          onClick: onAudit,
+        },
+        ...invitationCommands.items,
+      ]
+    : [];
   return (
     <Drawer
       title="邀请详情"
@@ -614,19 +646,14 @@ function PlatformInvitationDetailDrawer({
       onClose={onClose}
       {...adminDrawerSurfaceProps}
       extra={
-        invitation && (
-          <Space>
-            <Button onClick={onAudit} {...testId('platform-invitation-audit-open')}>
-              操作历史
-            </Button>
-            <InvitationCommands
-              invitation={invitation}
-              groupWorkspaceKey={groupWorkspaceKey}
-              onReadback={onReadback}
-              onChanged={onChanged}
-            />
-          </Space>
-        )
+        actionItems.length > 0 ? (
+          <AdminDetailActionMenu
+            items={actionItems}
+            triggerTestId={platformDetailDrawerTestIds.invitation.actionMenu}
+            disabled={invitationCommands.busy}
+            loading={invitationCommands.busy}
+          />
+        ) : undefined
       }
     >
       {loading && <Skeleton active />}

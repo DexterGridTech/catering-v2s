@@ -1,5 +1,6 @@
 import {expect, test} from '@playwright/test';
-import {requiredL2Env, signInPlatform, signOutPlatform} from './platformL2';
+import {platformDetailDrawerTestIds} from '../../app/automation/platformDetailDrawerTestIds';
+import {clickPlatformDetailAction, requiredL2Env, signInPlatform, signOutPlatform} from './platformL2';
 
 test('platform administrator reaches another administrator and proves profile write owner readback', async ({page}) => {
   const name = requiredL2Env('R5_L2_PLATFORM_ADMIN_NAME');
@@ -7,8 +8,11 @@ test('platform administrator reaches another administrator and proves profile wr
   await page.goto('/platform/admin-users');
   await page.getByRole('button', {name, exact: true}).click();
   await expect(page.getByTestId('platform-admin-detail-drawer').getByText('管理员详情', {exact: true})).toBeVisible();
-  await expect(page.getByTestId('platform-admin-detail-edit')).toBeVisible();
-  await page.getByTestId('platform-admin-detail-edit').click();
+  await clickPlatformDetailAction(
+    page,
+    platformDetailDrawerTestIds.administrator.actionMenu,
+    platformDetailDrawerTestIds.administrator.edit,
+  );
   const userName = page.getByTestId('platform-admin-edit-user-name');
   const mobile = page.getByTestId('platform-admin-edit-mobile');
   await expect(page.getByTestId('platform-admin-edit-submit')).toBeVisible();

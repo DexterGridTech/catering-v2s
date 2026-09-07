@@ -323,7 +323,8 @@ export const catalogTestIdControls = {
     root: catalogTestIds.surface.itemViewDrawer,
     close: 'catalog-item-view-close',
     edit: catalogTestIds.control.viewEdit,
-    more: 'catalog-item-view-more',
+    action: 'catalog-item-view-action-menu',
+    returnCurrent: 'catalog-item-view-return-current',
     section: (sectionKey: string) => `catalog-item-view-section-${utf8Hex(sectionKey)}`,
     skuIssue: (skuBusinessIdentity: string) => `catalog-item-sku-readonly-issues-${utf8Hex(skuBusinessIdentity)}`,
     skuIssueText: (skuBusinessIdentity: string) =>

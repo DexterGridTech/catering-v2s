@@ -20,7 +20,7 @@ export const createCleanupRequestLedgerActor = (
   onCommand(cleanupRequestLedgerCommand, context => {
     const mode = selectRuntimeInstanceMode(context.getState())
     const limits = getLimits()
-    const requestIds = findExpiredRequestLedgerIds(context.getState(), mode, limits)
+    const requestIds = findExpiredRequestLedgerIds({state: context.getState(), mode, limits})
 
     if (requestIds.length > 0) {
       context.dispatchAction(requestLedgerActionsForMode(mode).deleteRecords({requestIds}))

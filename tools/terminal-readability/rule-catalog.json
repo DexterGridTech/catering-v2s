@@ -1,0 +1,9 @@
+[
+  {"ruleId":"TR-R01","tier":"R"},
+  {"ruleId":"TR-R02","tier":"L"},
+  {"ruleId":"TR-R03","tier":"L"},
+  {"ruleId":"TR-R04","tier":"L"},
+  {"ruleId":"TR-R05","tier":"L"},
+  {"ruleId":"TR-R06","tier":"L"},
+  {"ruleId":"TR-R07","tier":"L"}
+]

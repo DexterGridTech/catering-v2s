@@ -9,7 +9,13 @@
 - 外部评审：`doc/review/platform/2026-09-01-v2s-sales-menu-design-review-claude.md`
 - 作者 intake：`doc/review/platform/2026-09-01-v2s-sales-menu-external-design-review-intake-codex.md`
 - 执行原则：contract/backend/API closure → frontend/IA/L2 closure → DEV reset/seed；不得并行跨越 owner/contract 未冻结边界。
-- 当前执行状态：`SM-06_TO_SM-12_FORMAL_DELIVERY_COMPLETE_CLAUDE_REVIEW_PENDING`；当前实现与本仓证据已收口，待 Dexter 转交 Claude 做外部 implementation review。
+- 当前执行状态：`SM-06_TO_SM-12_FORMAL_DELIVERY_COMPLETE_ROOT_FIX_VALIDATED_CLAUDE_REVIEW_PENDING`；门店 assignment 读取经营入口模板的权限根因已由 focused unit、真实 HTTP acceptance、Testcontainers cleanup 与 DEV 页面读回共同验证，之后由 Dexter 转交 Claude 做外部 implementation review。
+
+> **2026-09-07 当前有效 UI 修订**：按 Dexter 的页面反馈，经营入口与菜单工作台控制合并为一个“经营入口”区块：第一行是单行占满的 rich `Select` 与右侧“管理菜单”，第二行把模式、菜单选择和当前菜单状态/时段/更新到前台/刷新动作合并为单行；channel option 文案不拆成两行。菜单由页面级分页改为下拉弹层滚动加载，新建菜单按钮位于管理菜单抽屉标题右上角，点击后以 Modal 输入名称。管理抽屉、候选区、草稿表、前台表、操作记录表的真实数据分页保留。该修订只改变 UI 形态、可达路径和测试分母，不改变 owner、Journey、权限、数据模型或既有业务 operation。当前 blueprint 为 18 个 L2 case、32 个 operation coverage 行；第 32 行是复用的既有 `getOperationsBusinessChannelTemplates` 读 operation，不代表新增业务语义。
+
+> **2026-09-07 信息密度修订实施顺序**：先改 owning source 与共享展示 helper，再同步本原型、需求/IA/交互/详设和 static/unit proof；不改 generated contract、fixture、seed、blueprint 或 L2 case/action 分母。管理菜单时段、section 选中态、名称/编码分行、媒体来源状态、挂牌价第二列、价格比较与逐 SKU/规格一行都必须在 focused/static proof 中有可证伪断言，之后才执行已授权的 reset → DEV → seed。
+
+> **2026-09-07 权限根因修复实施记录**：门店 assignment 的模板元数据读取复用既有 `getOperationsBusinessChannelTemplates` operation，不新增 API。edge 仅把当前门店通过既有 owner 校验得到的上级 project 与 `operatorKind=STORE` 传给 business-channel owner；项目 assignment 的原有 project scope 路径保持不变。真实 HTTP 回归复用 `business-channel.store-template-scope`，必须证明 STORE 模板可读、PROJECT 模板不可读，并分别记录 CONTRACT、BUSINESS 与 cleanup。
 
 ## 0 · 本计划如何使用
 
@@ -399,7 +405,7 @@ scripts/test/backend-acceptance --operation all
 ### 8.3 state/cursor exact rules
 
 - 服务端 facts只在 RTK `currentData`；本地只留 scope/mode/ref/cursor/overlay/unsaved form；
-- 七套 cursor stack 互不共享：channel=`store|SALES_MENU`，selector=`store|channel|SELECTOR|query`，manager=`store|channel|MANAGER|query`，candidate=`store|menu|category|query`，draft=`store|channel|menu|DRAFT|section`，front=`...|PUBLISHED|section|publication`，log=`store|channel|LOG`；
+- 两套 dropdown candidate accumulator 与五套表格 cursor stack 互不共享：channel=`store|SALES_MENU`、selector=`store|channel|SELECTOR|query` 使用 `useCursorCandidates`；manager=`store|channel|MANAGER|query`、candidate=`store|menu|category|query`、draft=`store|channel|menu|DRAFT|section`、front=`...|PUBLISHED|section|publication`、log=`store|channel|LOG` 使用 `useCursorStack`；
 - pageSize hard UI value 20；owner nextCursor唯一前进；无 total、任意 jump、size picker/client slice；
 - 禁止 effect/loop 自动请求到 `nextCursor=null`；selector 的 selected menu 由 detail query 保留，不因选项页改变而清空；
 - SalesMenu image adapter 每次 generated stage/release显式传 groupWorkspaceKey/storeRef/menuRef/itemRef和version，不只依赖 ambient state；
@@ -411,12 +417,12 @@ scripts/test/backend-acceptance --operation all
 
 ### 9.1 composition 顺序
 
-1. channel cards + modes + menu selector/actions；
-   2.真实 section panel；
-2. draft/front/log 三种主 surface；
-3. candidate/editor/detail/manage/schedule/publish drawers；
-4. section/manual status/delete confirm overlays；
-5. empty/loading/failure/refresh/focus/dirty states。
+1. 单一“经营入口”区块：第一行 channel selector + 管理菜单，第二行 modes + menu selector/actions；第二行保持单行，channel option 保持单行；
+2. 真实 section panel；桌面 section 列收窄约四分之一，行文本左对齐，选中态复用商品数模块的浅色 token 样式；
+3. draft/front/log 三种主 surface；draft/front columns 以菜单商品、挂牌价开头，草稿媒体来源和名称/编码分行；
+4. candidate/editor/detail/manage/schedule/publish drawers；
+5. section/manual status/delete confirm overlays；
+6. empty/loading/failure/refresh/focus/dirty states。
 
 ### 9.2 UI 红线逐字执行
 
@@ -428,14 +434,16 @@ scripts/test/backend-acceptance --operation all
 - sold-out仅front status modal；库存只读且不可在 modal恢复；
 - multi-menu不互斥，copy exact，disabled menu仍 edit/publish；
 - publish/operation copy准确，无诊断台；
-- channel cards、menu selector、manager rows、candidate panel和三表共七处 shared CursorPagination；各自固定20、显式可达第21项、没有后台自动抽干。
+- channel selector 与 menu selector 使用下拉弹层候选增量加载，不显示页码；manager rows、candidate panel 和 draft/front/log 三表保留五处 shared `CursorPagination`，各自固定 20、显式可达第 21 项、没有后台自动抽干。页面只有一个“经营入口”区块，不再有独立“菜单工作区”区块；模式、菜单和菜单动作共用同一水平行。
+- 草稿挂牌价相等时只显示挂牌价，不等时显示菜单/默认两种价格；草稿与前台的 SKU/规格名称和价格均逐行渲染，不使用 `、`/`；` 拼接，前台只显示已发布挂牌价。
 
 ### 9.3 focused/static closure
 
 - 新 IA trace test 把 UI-01..31 每项映射到具体 source/test，禁止仅搜 mockup；
 - component/controller tests覆盖失败保留、focus return、dirty close、shell lock、authority readback；
-- columns/actions exact set；21 channel/menu/candidate reachability 与七套 resetKey/network-call exact；raw enum/SKU/API path/testId forbidden；
+- columns/actions exact set；21 channel/menu/candidate reachability 与两套 candidate resetKey、五套 table resetKey/network-call exact；raw enum/SKU/API path/testId forbidden；
 - typecheck/build/foundation+Catalog regression。
+- 管理菜单 `draftSchedule` 列、section 选中 token、媒体来源文字、名称/编码分行和两张销售项表的列序/价格行结构（含前台 SKU 逐行挂牌价）有静态红证明。
 
 **阶段对账重点**：按行为、形态、动作、关系、位置、文案、限制、状态、失败、a11y、source/invalidation 逐项审阅，不能只看 screenshot 或 typecheck。
 
@@ -458,7 +466,7 @@ role/label/placeholder/text/index/CSS/XPath 或外层 wrapper 不能替代 testI
 依据 `doc/review/platform/2026-09-03-v2s-sales-menu-ui-testid-preflight-cycle-c-round2-codex.md` 的 fresh independent
 Round 2 final review，前置门已关闭；该 PASS 仅解除 L2 脚本开发准入，不代表动态浏览器 L2、HTTP、business 或 cleanup 已通过。
 
-当前准入分母已按唯一 blueprint 复算为 18 个 case/action、236 个声明控件条目、68 个 case-used unique control key、78 个
+当前准入分母已按唯一 blueprint 复算为 18 个 case/action、231 个声明控件条目、65 个 case-used unique control key、75 个
 locator binding control key；共享 scope surface 的 trigger、selector、动态 option、confirm、cancel 均使用 `roleHomeTestIds`
 唯一源并逐控件建模；本固定 STORE/STORE-readonly Journey 的 setup 只实际记录 `STORE_SCOPE_TRIGGER`。逐
 case/action 的常量、实际节点、binding/touch、focused/static proof 与 fresh review 表在
@@ -474,7 +482,8 @@ case/action 的常量、实际节点、binding/touch、focused/static proof 与 
 - `sales-menu.spec.ts` 只读 generated profile；
 - `salesMenuTestIds.ts` 是唯一 locator source；
 - P1 red：duplicate/missing case、testId drift、route drift、network missing、fixture mismatch、activation subset、timing missing；fixture少于21 channel/menu/candidate 或network允许auto-drain时失败。
-- blueprint 中每个 action 的 generated operation/network 声明与详设 §11.1a 的 L2 列对账；31 个用户可见 operation 均至少被一个 case/action 消费，若未来出现真实 L2 不适用项则必须先在详设写 `L2_NA_WITH_REASON`，不能静默漏掉。
+- blueprint 中每个 action 的 generated operation/network 声明与详设 §11.1a 的 L2 列对账；31 个受影响 sales-menu operation 均至少被一个 case/action 消费，另有 1 个复用的 business-channel template read operation 支撑 rich channel option 展示；若未来出现真实 L2 不适用项则必须先在详设写 `L2_NA_WITH_REASON`，不能静默漏掉。
+- UI 修订静态约束由 `SalesMenuPage.static.test.ts` 与 `scripts/test/browser-l2-runtime.test.mjs` 共同守门：channel option 不得使用 vertical layout，经营入口区块不得出现“菜单工作区” Card，模式/菜单/动作必须来自同一不换行 Row；该修订不增加 L2 action 或 operation 分母。
 
 ### 10.2 runner 扩展
 
@@ -488,9 +497,9 @@ case/action 的常量、实际节点、binding/touch、focused/static proof 与 
 - P1 self-test、runner self-test、fixture validator、spec typecheck；
 - discovered/selected/generated exact-set一致；committed execution为 FRAMEWORK_ONLY（无当次 readiness 时 active=0），不得手写激活；
 - affected L2 registry 登记 sales-menu owning sources。
-- §11.1a 中每个 L2 case 引用都存在，且其 action 声明的 generated operation union 覆盖矩阵 31 行；case 数与 operation 数不要求相等。
+- §11.1a 中每个 L2 case 引用都存在，且其 action 声明的 generated operation union 覆盖 31 条受影响 sales-menu operation，并包含 1 条复用的 template read operation；case 数与 operation 数不要求相等。
 
-**阶段对账重点**：31 UI不是31 case；21st channel/menu/candidate/item/log均有明确用户动作与owner readback；每个写 action有失败不变事实；无 DEV seed输入。
+**阶段对账重点**：31 UI不是31 case；channel/menu 第 21 项经下拉弹层滚动到达，candidate/item/log 第 21 项经显式分页到达，均有明确用户动作与 owner readback；每个写 action 有失败不变事实；无 DEV seed 输入。
 
 ## 11 · SM-09 · managed browser L2（本轮已获动态授权）
 
@@ -558,6 +567,15 @@ R5_SEED_CONFIRMATION=EXPLICIT_R5_SEED scripts/dev/seed --profile r5-full
 
 ## 14 · SM-12 · 全批收口、整体三维对账与正式 review
 
+### 14.0 · 2026-09-07 当前 UI 图片投影与密度修订
+
+1. 先复核 Catalog 已有 `CatalogAssetPreview` 的真实请求、加载、失败和本地文件行为，再将其移动为 app 级 `AssetPreview`；Catalog 文件只保留兼容导出，SalesMenu 不反向依赖 Catalog feature。
+2. 在契约源和物化组件中为草稿 `SalesMenuDraftItemView` 增加 nullable `catalogPrimaryImageAssetRef`，由 SalesMenu owner 透传 Catalog 已有 `defaultImageAssetRef`，执行 edge-codegen 生成 Java/TypeScript，不手写 generated 文件。
+3. 草稿列表和编辑媒体区域按展示模式选择共享图片预览：自定义模式使用菜单媒体主图，沿用模式使用 Catalog 当前主图；没有资源时由共享组件显示“图片不可用/重试加载”状态。
+4. 页面移除重复标题，分区新增使用普通主按钮，分区 action node 显式左对齐，草稿挂牌价列固定 160px；不新增操作、迁移、seed 分母或产品语义。
+
+本步骤的交付分母：五项用户界面意见、Catalog→SalesMenu 图片引用链一条、两份契约源同步、两类 generated edge 同步、共享预览组件一个、后端 owner 单测一个、前端静态/单测与浏览器逐项验证各一组。
+
 ### 14.1 整体三维对账（整体测试前）
 
 重新打开，不复用各步结论：
@@ -596,3 +614,13 @@ business 与 cleanup分别报告。任何未授权/未执行项写 `NOT_RUN_NO_A
 - 所有阶段和整体三维对账OPEN=0；
 - 正式 implementation review按两轮上限收口；
 - 无把 terminal/TDP/UAT/营销/整单约束等后置项偷偷做进本批。
+
+### 14.5 2026-09-07 商品形态/销售规格专项修订执行项
+
+本专项以 `doc/plans/platform/2026-09-07-v2s-sales-menu-specification-display-amendment-codex.md` 为补充正本，按以下顺序执行：
+
+1. 前读 Catalog order-option owner facts、SalesMenu readback/wire、sales-menu schema、现有 Catalog order-option presenter 与测试；确认一次 set read 能覆盖普通商品点单选项。
+2. 先补 typed Catalog→SalesMenu facts 和 owner/readback/edge contract，再由 edge-codegen 重生成 generated Java/TypeScript；不得手改 generated。
+3. 修改共享 sales-menu specification presenter 与 draft/front 两张表：移除独立商品形态列，将中文商品形态放到首列编码下方，普通商品选项逐项展示。
+4. 更新 static/unit/backend owner tests 与当前详设/IA/requirements 文档；执行本步骤 `逐代码与详设对账`，逐项检查字段来源、列顺序、空值、SKU/选项优先级、无 N+1。
+5. 只运行最小静态/单元/编译 proof；动态 DEV/浏览器验证必须另按当前授权执行。验证必须保留 ordinary-with-options 的正例和 empty-options 的反例。

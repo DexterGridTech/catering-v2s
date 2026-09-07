@@ -6,7 +6,7 @@
 > SUPERSEDES: doc/plans/platform/2026-09-06-v2s-terminal-input-keyboard-visual-redesign-requirements-codex.md
 > FORM INPUT: doc/plans/platform/2026-09-06-v2s-terminal-input-surface-form-requirements-codex.md
 > SCOPE: full、alpha、numeric 与 financial 四种程序虚拟键盘；alpha/financial 由 sample 会员资料中的受控能力验证字段消费
-> USER_VISUAL_REVISION: 2026-09-07：按实际视觉复核，键盘外框按当前布局内容自适应；本条 supersede 本文原先的“四布局外框同高”表述
+> USER_VISUAL_REVISION: 2026-09-07：按实际视觉复核与 V1 POC 对照，键盘外框按当前布局内容自适应，功能键并入最后内容行；numeric/financial 的末端改为一行三列对齐网格，列内复合键水平分布；本条 supersede 本文原先的“四布局外框同高”“独立动作行”以及 numeric/financial 五等分末行表述
 
 ## 1. 需求关系与第一性目标
 
@@ -37,12 +37,12 @@ PrimitiveActions 平铺，字符、数字、删除和完成没有稳定的键区
 
 当前消费者证据：
 
-| 布局 | 真实消费者 | 证据 |
-| --- | --- | --- |
-| full | StaffLogin 的工号与密码，均为 virtual | apps/terminal/ui/feature/sample-staff-auth/src/components/StaffLogin.tsx 第 27 至 55 行 |
-| numeric | MemberForm 电话、CustomerMember 年龄，年龄 maxLength 为 3 | apps/terminal/ui/feature/sample-member-desk/src/components/MemberForm.tsx 第 30 至 45 行；apps/terminal/ui/feature/sample-member-desk/src/components/CustomerMember.tsx 第 39 至 45 行 |
-| alpha | MemberForm 内受控的 sample-only “英文字符测试”字段，virtual/alpha | 本需求新增的 sample 能力验证点；字段不进入 Member、PendingMember 或 submitMemberCommand |
-| financial | MemberForm 内受控的 sample-only “金额格式测试”字段，virtual/financial | 本需求新增的 sample 能力验证点；字段不进入 Member、PendingMember 或 submitMemberCommand |
+| 布局      | 真实消费者                                                            | 证据                                                                                                                                                                                   |
+| --------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| full      | StaffLogin 的工号与密码，均为 virtual                                 | apps/terminal/ui/feature/sample-staff-auth/src/components/StaffLogin.tsx 第 27 至 55 行                                                                                                |
+| numeric   | MemberForm 电话、CustomerMember 年龄，年龄 maxLength 为 3             | apps/terminal/ui/feature/sample-member-desk/src/components/MemberForm.tsx 第 30 至 45 行；apps/terminal/ui/feature/sample-member-desk/src/components/CustomerMember.tsx 第 39 至 45 行 |
+| alpha     | MemberForm 内受控的 sample-only “英文字符测试”字段，virtual/alpha     | 本需求新增的 sample 能力验证点；字段不进入 Member、PendingMember 或 submitMemberCommand                                                                                                |
+| financial | MemberForm 内受控的 sample-only “金额格式测试”字段，virtual/financial | 本需求新增的 sample 能力验证点；字段不进入 Member、PendingMember 或 submitMemberCommand                                                                                                |
 
 alpha 与 financial 当前源码没有既有非测试消费者；本轮不再把它们当成“未来占位”
 保留，而是明确新增两个 sample-only 能力验证点。它们放在 sample 会员资料
@@ -166,40 +166,45 @@ imeInset 继续由 adapter 提供，是系统 IME 的平台事实；不能被 in
 
 ### 5.1 full
 
-full 是同一套键语义的两种几何变体，不是两个 public KeyboardLayout：
+full 是同一套键语义的两种几何变体，不是两个 public KeyboardLayout。布局采用 V1 POC
+的软键盘心智：修饰键位于字母区边缘，删除与完成位于末端；功能键与内容键共用最后一行，
+不再单独占据一个动作行。为保留现有 caps 语义且让窄屏仍能容纳十列，caps 位于 home
+row 起始位置，shift 位于最后一行起始位置。
 
-wide 的空间顺序：
+空间顺序（wide 与 compact/portrait 的键顺序相同）：
 
     数字行： 1 2 3 4 5 6 7 8 9 0
     字符行： Q W E R T Y U I O P
-    字符行：   A S D F G H J K L
-    字符行：     Z X C V B N M
-    动作行： shift  caps  ……  backspace  完成
+    home 行： caps A S D F G H J K L
+    末行：    shift Z X C V B N M backspace 完成
 
 compact/portrait 仍必须显示全部数字、字母和现有功能键，允许按测得宽度压缩
-列宽与间距，但不得删除、折叠成不可达或横向滚动隐藏任何键。它可以采用与
-wide 不同的行内比例，只要保持数字与 QWERTY 的可辨识分组、动作键的独立层级和
-完整 key set。
+列宽与间距，但不得删除、折叠成不可达或横向滚动隐藏任何键。它保持数字、QWERTY、
+home row、末行的空间分组；动作键的视觉层级由 key-action 样式表达，而不是用独立
+动作行制造额外空白。full 的四行各有十个逻辑 cell，窄屏仍使用 dense token。
 
 full 的要求：
 
 - 数字与字母不能重新合并成一条平铺数组；
 - shift 与 caps 保留当前状态语义；
-- backspace 与 complete 位于动作区；
+- shift/caps 与 backspace/complete 都位于内容行内的动作 segment；
 - complete 的 focus-next/末字段 close-only 语义不变；
 - 不新增 space 或 enter。
 
 ### 5.2 numeric
 
-numeric 使用三列数字网格和底部动作区：
+numeric 使用三列数字网格，末端保持一行高度。`0` 横跨前两列，backspace 与 complete
+在右侧第三列内部左右分布：
 
     1 2 3
     4 5 6
     7 8 9
-      0
-    backspace       完成
+    0 0 | backspace 完成
 
-0 的位置可以由统一的数字键 token 对齐，但必须保持三列数字任务的空间直觉。
+`backspace` 与 `complete` 始终在最右侧动作列，且分别与上方 `9` 的列对齐；`0` 的横向
+跨度是两个标准 cell，动作键在该列内共享水平空间，但不复制 key 或产生第二个 testID。
+这样 numeric 仍是三列任务模型，
+同时保留标准数字键盘的“大零键 + 右侧编辑/完成动作”心智。
 numeric 不显示小数点、负号或金融快捷键。电话和年龄共享这一布局；年龄的
 maxLength=3 仍由输入字段与同一纯编辑边界共同保证。
 
@@ -209,8 +214,7 @@ alpha 是纯拉丁字母能力验证布局：
 
     Q W E R T Y U I O P
       A S D F G H J K L
-        Z X C V B N M
-    shift              backspace  完成
+    shift Z X C V B N M backspace 完成
 
 它只给 sample-only “英文字符测试”字段消费。它不承担中文姓名，不提供系统 IME
 替代，不新增 caps、space 或 enter。compact/portrait 下仍须保持全部 26 个字母
@@ -223,12 +227,14 @@ financial 是 sample-only 金额格式能力验证布局：
     1 2 3
     4 5 6
     7 8 9
-      - 0 .
-    backspace       完成
+    - . | 0 | backspace 完成
 
 它用于验证句点与负号字符键在窄宽布局中的位置、命中和编辑可达性；它不宣称
 sample 已经拥有余额、充值或金额业务。字段内容不会进入会员 command/state。
-本轮不在 input 包内做金额格式校验，负号和句点的纯编辑结果仍遵循当前
+financial 的前三行与底部复合区都使用同一组三列 standard cells：`-` 与 `.` 在第一列
+内部左右分布，`0` 独占第二列，backspace 与 complete 在第三列内部左右分布，分别对齐
+`7/8/9`。本轮不在 input
+包内做金额格式校验，负号和句点的纯编辑结果仍遵循当前
 KeyboardKey/editText 语义。
 
 ## 6. 按轴可行性与高度规则
@@ -245,7 +251,8 @@ KeyboardKey/editText 语义。
 - dock 不得超过 surface height 的 50%；
 - 低于键盘最低显示能力时不渲染 dock；
 - layout 变体不能申请超过当前 surface 可用高度的 dock，也不能用 overflow hidden 裁剪按键；
-- dock 高度等于当前布局的 `verticalRequired`，仅在 surface 可用高度不足时降至可用高度并
+- dock 高度等于当前布局的 `verticalRequired`，其中 numeric/financial 的复合列内水平间距
+  不增加视觉行数；仅在 surface 可用高度不足时降至可用高度并
   进入 `unsupported-height`，不得通过 `rowBlockOffset` 把短布局垂直塞进长布局。
 
 现有 1157 × 723 与 962 × 541 的高度结果只用于验收基线；不得把它们写成
@@ -320,8 +327,9 @@ token/主题接缝。左右边缘对称，不能使用负 margin、屏幕外 abs
 滚动把键塞进去。
 
 full、alpha、numeric 与 financial 在同一 surface 使用同一组 token，但 dock 外框按各自
-行数自适应；短行与动作区左右对称，内部行高、列宽和间距可按本地 width 做几何变体，
-但不能改变编辑语义或键的 testID。
+视觉行数自适应；短行与末行 compound/grid segment 左右对称，内部行高、列宽和间距可按
+本地 width 做几何变体，但不能改变编辑语义或键的 testID。numeric/financial 的复合区
+必须使用上方数字区的三列 shared cell width，不得再用五列 fit 破坏 `7/8/9` 的列对齐。
 
 ### 7.2 视觉目标
 
@@ -336,7 +344,9 @@ full、alpha、numeric 与 financial 在同一 surface 使用同一组 token，�
 
 每个可操作 key 仍使用稳定的 ui.base.input:virtual-keyboard:* testID 和已有
 accessibilityLabel 规则。视觉重构不得通过数组 index、随机 id、文本搜索或
-父容器宽 locator 替代键级 testID。
+父容器宽 locator 替代键级 testID。compound row 的 row-level `actions` region 允许
+同时承载中间内容 segment；各 segment 另有稳定的 `segment:${zone}:${index}` 挂点，
+最终操作仍以 key-level testID 为准。
 
 ## 8. 输入性能与共存边界
 
@@ -358,14 +368,14 @@ input 包仍不得 import feature、业务 command、screen topology 或 display
 这张表只描述 sample 真实业务树中会出现的消费者，不要求为了覆盖布局而把
 MemberForm 放到 SECONDARY，也不要求 CustomerMember 增加非业务字段：
 
-| 真实承载面与场景 | full | alpha | numeric | financial |
-| --- | --- | --- | --- | --- |
-| 横屏 PRIMARY / sample-staff-auth | 必验 | — | — | — |
-| 横屏 PRIMARY / sample.desk.member-form | — | 必验（英文字符测试） | 必验（电话） | 必验（金额格式测试） |
-| 横屏 SECONDARY / sample.desk.customer-member | — | — | 必验（年龄） | — |
-| 竖屏 PRIMARY / sample-staff-auth | 必验 | — | — | — |
-| 竖屏 PRIMARY / sample.desk.member-form | — | 必验（英文字符测试） | 必验（电话） | 必验（金额格式测试） |
-| 竖屏 PRIMARY / handheld-confirm 的 sample.desk.customer-member | — | — | 必验（年龄） | — |
+| 真实承载面与场景                                               | full | alpha                | numeric      | financial            |
+| -------------------------------------------------------------- | ---- | -------------------- | ------------ | -------------------- |
+| 横屏 PRIMARY / sample-staff-auth                               | 必验 | —                    | —            | —                    |
+| 横屏 PRIMARY / sample.desk.member-form                         | —    | 必验（英文字符测试） | 必验（电话） | 必验（金额格式测试） |
+| 横屏 SECONDARY / sample.desk.customer-member                   | —    | —                    | 必验（年龄） | —                    |
+| 竖屏 PRIMARY / sample-staff-auth                               | 必验 | —                    | —            | —                    |
+| 竖屏 PRIMARY / sample.desk.member-form                         | —    | 必验（英文字符测试） | 必验（电话） | 必验（金额格式测试） |
+| 竖屏 PRIMARY / handheld-confirm 的 sample.desk.customer-member | —    | —                    | 必验（年龄） | —                    |
 
 Web resize 复用当前实际激活的 PRIMARY/SECONDARY route；它改变 frame 尺寸，不
 新增 alpha/financial 的 SECONDARY 消费者。真实业务矩阵中的尺寸只来自对应
@@ -376,12 +386,12 @@ frame 的 onLayout，1157 × 723 与 962 × 541 仅是回归 fixture。
 这张表是 input 包的受控非业务 harness，用来覆盖布局几何，而不是给 sample
 新增业务 surface：
 
-| harness frame fixture | full | alpha | numeric | financial |
-| --- | --- | --- | --- | --- |
-| 横屏 PRIMARY 基线 1157 × 723 | 必验 | 必验 | 必验 | 必验 |
-| 横屏 SECONDARY 基线 962 × 541 | 必验 | 必验 | 必验 | 必验 |
-| 竖屏窄宽 fixture | 必验 compact | 必验 compact | 必验三列 | 必验 compact |
-| Web resize 后实际 frame | 必验 | 必验 | 必验 | 必验 |
+| harness frame fixture         | full         | alpha        | numeric  | financial    |
+| ----------------------------- | ------------ | ------------ | -------- | ------------ |
+| 横屏 PRIMARY 基线 1157 × 723  | 必验         | 必验         | 必验     | 必验         |
+| 横屏 SECONDARY 基线 962 × 541 | 必验         | 必验         | 必验     | 必验         |
+| 竖屏窄宽 fixture              | 必验 compact | 必验 compact | 必验三列 | 必验 compact |
+| Web resize 后实际 frame       | 必验         | 必验         | 必验     | 必验         |
 
 harness 必须使用与生产相同的 InputProvider/InputSurfaceFrame/VirtualKeyboard
 公共面和 key testID；它可以提供受控字段值，但不得伪造 Member、PendingMember、
@@ -392,31 +402,32 @@ harness 必须使用与生产相同的 InputProvider/InputSurfaceFrame/VirtualKe
 
 ### 9.3 红向量
 
-| ID | 变异 | 应失败的判据 |
-| --- | --- | --- |
-| KEY-R1 | 把 InputSurfaceFrame 的 onLayout 改回静态 surfaceSize | 运行时几何输入来源失败 |
-| KEY-R2 | 用 Dimensions/useWindowDimensions 决定方向 | Presentation 或多 surface 局部测量失败 |
-| KEY-R3 | 删除 alpha/financial，或删除 MemberForm 中任一 sample-only 能力验证字段，或把验证字段复制到 SECONDARY/业务 command | 真实消费者矩阵、harness 矩阵或 sample 业务边界失败 |
-| KEY-R4 | 对 full compact 横向也强制 48 | 竖屏十列布局可行性失败 |
-| KEY-R5 | 只判断 height>=250，不判断横轴 | 宽度不足仍显示溢出键盘，失败 |
-| KEY-R6 | 首帧给默认尺寸 | 未测量态不渲染键盘失败 |
-| KEY-R7 | 删除或重排 key testID | 可寻址性失败 |
-| KEY-R8 | 只 mock onFocus 并断言 dismiss 次数 | 行为测试无法观察首击焦点，必须被测试门拒绝 |
-| KEY-R9 | 把任一能力验证值写入业务 command、Member/PendingMember，或让它改变业务 dirty/顾客确认路径 | sample-only 字段边界失败 |
+| ID      | 变异                                                                                                               | 应失败的判据                                       |
+| ------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------- |
+| KEY-R1  | 把 InputSurfaceFrame 的 onLayout 改回静态 surfaceSize                                                              | 运行时几何输入来源失败                             |
+| KEY-R2  | 用 Dimensions/useWindowDimensions 决定方向                                                                         | Presentation 或多 surface 局部测量失败             |
+| KEY-R3  | 删除 alpha/financial，或删除 MemberForm 中任一 sample-only 能力验证字段，或把验证字段复制到 SECONDARY/业务 command | 真实消费者矩阵、harness 矩阵或 sample 业务边界失败 |
+| KEY-R4  | 对 full compact 横向也强制 48                                                                                      | 竖屏十列布局可行性失败                             |
+| KEY-R5  | 只判断 height>=250，不判断横轴                                                                                     | 宽度不足仍显示溢出键盘，失败                       |
+| KEY-R6  | 首帧给默认尺寸                                                                                                     | 未测量态不渲染键盘失败                             |
+| KEY-R7  | 删除或重排 key testID                                                                                              | 可寻址性失败                                       |
+| KEY-R8  | 只 mock onFocus 并断言 dismiss 次数                                                                                | 行为测试无法观察首击焦点，必须被测试门拒绝         |
+| KEY-R9  | 把任一能力验证值写入业务 command、Member/PendingMember，或让它改变业务 dirty/顾客确认路径                          | sample-only 字段边界失败                           |
+| KEY-R10 | 移除 `PrimitiveButton` 的 `Pressable` pressed style，或只用调用次数证明按下反馈                                    | 按键按下时没有可观察的局部视觉反馈，或行为证明无效 |
 
 模型红向量的 FAIL 只说明判据可证伪；生产树的静态/编译/运行结果必须分开报告，
 不得把模型 FAIL 伪装成生产源码 FAIL。
 
 ## 10. 替代方案取舍
 
-| 方案 | 结论 | 原因 |
-| --- | --- | --- |
-| 继续一张平铺按钮表，只换颜色和圆角 | 拒绝 | 没有解决键区扫描、动作层级与窄宽可用性 |
-| 精确复制某个系统键盘 | 拒绝 | 跨平台、双 surface 与现有业务 key set 不同，复制会引入未授权语义 |
-| 删除 alpha/financial | 拒绝 | 本轮明确在 sample 会员资料增加两个受控能力验证消费者，删除会让需求与场景脱节 |
-| 把 alpha/financial 扩成真实会员财务字段 | 拒绝 | 会无谓扩大 Member/PendingMember/command/state 与业务语义范围 |
-| 继续用 terminalSurfaces 静态尺寸 | 拒绝 | Presentation 与响应式 frame 会读错，且 Web transform 会掩盖真实 hit target |
-| 用设备型号区分 mobile/desktop | 拒绝 | 同一宽度的 Web 小窗与手机应得到同一布局，设备分类不是几何事实 |
+| 方案                                    | 结论 | 原因                                                                         |
+| --------------------------------------- | ---- | ---------------------------------------------------------------------------- |
+| 继续一张平铺按钮表，只换颜色和圆角      | 拒绝 | 没有解决键区扫描、动作层级与窄宽可用性                                       |
+| 精确复制某个系统键盘                    | 拒绝 | 跨平台、双 surface 与现有业务 key set 不同，复制会引入未授权语义             |
+| 删除 alpha/financial                    | 拒绝 | 本轮明确在 sample 会员资料增加两个受控能力验证消费者，删除会让需求与场景脱节 |
+| 把 alpha/financial 扩成真实会员财务字段 | 拒绝 | 会无谓扩大 Member/PendingMember/command/state 与业务语义范围                 |
+| 继续用 terminalSurfaces 静态尺寸        | 拒绝 | Presentation 与响应式 frame 会读错，且 Web transform 会掩盖真实 hit target   |
+| 用设备型号区分 mobile/desktop           | 拒绝 | 同一宽度的 Web 小窗与手机应得到同一布局，设备分类不是几何事实                |
 
 ## 11. 公共面与前置关系
 

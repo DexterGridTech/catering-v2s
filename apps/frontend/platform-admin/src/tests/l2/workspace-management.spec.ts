@@ -1,5 +1,6 @@
 import {expect, test} from '@playwright/test';
-import {requiredL2Env, signInPlatform, signOutPlatform} from './platformL2';
+import {platformDetailDrawerTestIds} from '../../app/automation/platformDetailDrawerTestIds';
+import {clickPlatformDetailAction, requiredL2Env, signInPlatform, signOutPlatform} from './platformL2';
 
 test('platform administrator locates a real workspace and proves display update owner readback', async ({page}) => {
   const workspaceName = requiredL2Env('R5_L2_PLATFORM_WORKSPACE_NAME');
@@ -19,7 +20,11 @@ test('platform administrator locates a real workspace and proves display update 
   await expect(
     page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceKey, {exact: true}),
   ).toBeVisible();
-  await page.getByTestId('platform-workspace-edit').click();
+  await clickPlatformDetailAction(
+    page,
+    platformDetailDrawerTestIds.workspace.actionMenu,
+    platformDetailDrawerTestIds.workspace.edit,
+  );
   await expect(page.getByTestId('platform-workspace-edit-submit')).toBeVisible();
   const name = page.getByTestId('platform-workspace-edit-name');
   const operationsTitle = page.getByTestId('platform-workspace-edit-operations-title');

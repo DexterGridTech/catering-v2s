@@ -22,8 +22,15 @@ runtime、command、store 或中文 IME 引擎。
 - `KeyboardKind` 与 `KeyboardLayout` 只描述输入呈现/承载能力；frame 尺寸由
   `InputSurfaceFrame` 自己的 `onLayout` 读取，不通过公共 `surfaceSize` prop 传入。
 - `full`、`alpha`、`numeric`、`financial` 的行列、稳定 keyId 与 region/key `testID` 由
-  `src/model/keyboardLayout.ts` 唯一维护；键本身仍通过 primitives 的 `PrimitiveButton` 呈现，
+  `src/foundations/keyboardLayout.ts` 唯一维护；键本身仍通过 primitives 的 `PrimitiveButton` 呈现，
   input/feature 不传 `className`。
+- 四种布局都把功能键放入连续的键区，不另起空的动作行：full 的 caps 在 home row 起始处，
+  shift 在末行起始处，backspace/complete 在末端；alpha 的 shift 在末行起始处。numeric
+  与 financial 的前三行都是 `123`、`456`、`789` 三列；numeric 的末端复合区仍是一行三列，
+  `0` 横跨前两列，右侧一列内部左右放 backspace/complete；financial 的末端复合区也是
+  一行三列，第一列内部左右放 `-/.`，第二列为 `0`，第三列内部左右放 backspace/complete。
+  这样每个末行按键保持一行高度，动作键始终在最右侧，且数字列与符号列按 `7/8/9` 对齐。该排列参考 V1 POC 的连续软键盘心智，
+  但只保留当前 input contract 已有的 key，不新增 space 或 enter。
 
 值只在字段局部状态和同步 registry 中维护；提交时由消费者调用 `useInputSnapshot()` 或 field result 的 `captureInputSnapshot()`，形成
 冻结对象后再交给业务 owner。编辑期不写 kernel slice、uiVariables 或 runtime command。
@@ -38,6 +45,9 @@ runtime、command、store 或中文 IME 引擎。
 - LayerStack 通过 render 提供的 `suspend`/`restore` 协议收起并恢复键盘，input 不反向 import render 以外的业务层；
 - surface content 的非输入点击会通过 input owner 主动清理当前 field 并收起键盘；虚拟键盘 dock 是 sibling，
   不把业务按钮或文案变成 input 特例；
+- `PrimitiveButton` 在 primitives 内用自身的 `onPressIn`/`onPressOut` 保存局部 pressed 状态并
+  提供反馈：普通键透明度变为 `0.78`、动作键变为 `0.72` 并轻微缩放到 `0.985`；它只影响
+  当前按键，不触发表单字段或整个键盘的额外状态更新。
 - Web 上 `TextInput` 不会把 RN 的 `onPressIn` 接缝转成可阻断父级 `Pressable` 的事件，因此
   `PrimitiveInput` 仅在存在 Web DOM 时把同一个边界处理器接到 `onClick`；Android/native 不传 Web 事件，
   仍由 `onPressIn` 保持相同的父级收键盘边界；
@@ -58,9 +68,9 @@ const field = useInputField({
   keyboardKind: 'virtual',
   layout: 'numeric',
   maxLength: 3,
-})
+});
 
-return <PrimitiveInput {...field.inputProps} />
+return <PrimitiveInput {...field.inputProps} />;
 ```
 
 业务层只把 `field.inputProps` 交给既有 `PrimitiveInput`，并用 `InputScrollArea` 包住唯一的

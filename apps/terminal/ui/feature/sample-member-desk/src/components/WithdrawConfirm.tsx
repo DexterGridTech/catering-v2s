@@ -4,20 +4,24 @@ import {
 } from '@catering-v2s/ui-base-primitives'
 import {dispatchWithRequestId, useDispatchCommand} from '@catering-v2s/ui-base-render'
 import {closeLayerCommand} from '@catering-v2s/kernel-base-ui-state'
-import {memberSubmissionWithdrawnCommand} from '../commands'
+import {memberSubmissionWithdrawnCommand} from '../features/commands/commands'
 import {DialogActions, DialogSurface} from './controls'
 
 export const WithdrawConfirm = () => {
   const dispatchCommand = useDispatchCommand()
-  const keepWaiting = () => dispatchWithRequestId(dispatchCommand, closeLayerCommand, {
-    displayMode: 'PRIMARY',
-    layerId: 'sample.desk.withdraw-confirm',
-  })
-  const withdraw = () => dispatchWithRequestId(
+  const keepWaiting = () => dispatchWithRequestId({
     dispatchCommand,
-    memberSubmissionWithdrawnCommand,
-    {},
-  )
+    definition: closeLayerCommand,
+    payload: {
+      displayMode: 'PRIMARY',
+      layerId: 'sample.desk.withdraw-confirm',
+    },
+  })
+  const withdraw = () => dispatchWithRequestId({
+    dispatchCommand,
+    definition: memberSubmissionWithdrawnCommand,
+    payload: {},
+  })
 
   return (
     <DialogSurface testID="sample.desk.withdraw-confirm" title="撤回登记">

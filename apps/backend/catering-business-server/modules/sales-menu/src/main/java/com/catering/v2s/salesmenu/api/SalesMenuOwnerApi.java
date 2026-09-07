@@ -11,6 +11,8 @@ import com.catering.v2s.salesmenu.domain.SalesMenuItemPageQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuItemQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuListQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuMoveDirection;
+import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTarget;
+import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTargetKind;
 import com.catering.v2s.salesmenu.domain.SalesMenuOperationQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuOrderingConstraints;
 import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentInput;
@@ -261,11 +263,28 @@ public interface SalesMenuOwnerApi {
     record PublishCommand(CommandContext context, long expectedVersion) {}
 
     record ManualSoldOutCommand(
-            CommandContext context, UUID channelRef, UUID salesItemRef, String reason, long expectedVersion) {
+            CommandContext context,
+            UUID channelRef,
+            UUID salesItemRef,
+            SalesMenuManualSaleTarget target,
+            String reason,
+            long expectedVersion) {
+        public ManualSoldOutCommand(
+                CommandContext context, UUID channelRef, UUID salesItemRef, String reason, long expectedVersion) {
+            this(
+                    context,
+                    channelRef,
+                    salesItemRef,
+                    new SalesMenuManualSaleTarget(SalesMenuManualSaleTargetKind.ITEM, salesItemRef),
+                    reason,
+                    expectedVersion);
+        }
+
         public ManualSoldOutCommand {
             Objects.requireNonNull(context, "context");
             Objects.requireNonNull(channelRef, "channelRef");
             Objects.requireNonNull(salesItemRef, "salesItemRef");
+            Objects.requireNonNull(target, "target");
             reason = requiredManualReason(reason);
         }
 
@@ -280,19 +299,47 @@ public interface SalesMenuOwnerApi {
     }
 
     record ManualRestoreCommand(
-            CommandContext context, UUID channelRef, UUID salesItemRef, boolean confirm, long expectedVersion) {
+            CommandContext context,
+            UUID channelRef,
+            UUID salesItemRef,
+            SalesMenuManualSaleTarget target,
+            boolean confirm,
+            long expectedVersion) {
+        public ManualRestoreCommand(
+                CommandContext context, UUID channelRef, UUID salesItemRef, boolean confirm, long expectedVersion) {
+            this(
+                    context,
+                    channelRef,
+                    salesItemRef,
+                    new SalesMenuManualSaleTarget(SalesMenuManualSaleTargetKind.ITEM, salesItemRef),
+                    confirm,
+                    expectedVersion);
+        }
+
         public ManualRestoreCommand {
             Objects.requireNonNull(context, "context");
             Objects.requireNonNull(channelRef, "channelRef");
             Objects.requireNonNull(salesItemRef, "salesItemRef");
+            Objects.requireNonNull(target, "target");
         }
     }
 
     record RejectedOperationCommand(
-            CommandContext context, String operationKind, UUID targetRef, String failureCode, UUID channelRef) {
+            CommandContext context,
+            String operationKind,
+            UUID targetRef,
+            String targetKind,
+            String targetDisplaySnapshot,
+            String failureCode,
+            UUID channelRef) {
         public RejectedOperationCommand(
                 CommandContext context, String operationKind, UUID targetRef, String failureCode) {
-            this(context, operationKind, targetRef, failureCode, null);
+            this(context, operationKind, targetRef, null, null, failureCode, null);
+        }
+
+        public RejectedOperationCommand(
+                CommandContext context, String operationKind, UUID targetRef, String failureCode, UUID channelRef) {
+            this(context, operationKind, targetRef, null, null, failureCode, channelRef);
         }
 
         public RejectedOperationCommand {

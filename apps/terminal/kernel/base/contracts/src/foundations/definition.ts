@@ -47,26 +47,26 @@ export const createModuleErrorFactory = (moduleName: string): ModuleErrorFactory
   moduleName,
 });
 
-const createParameterDefinition = <TValue>(
-  moduleName: string,
-  localKey: string,
-  valueType: ParameterValueType,
-  input: DefineParameterInput<TValue>,
-): ParameterDefinition<TValue> => ({
-  key: createDefinitionKey(moduleName, localKey),
-  name: input.name,
-  defaultValue: input.defaultValue,
-  valueType,
-  moduleName,
-  decode: input.decode,
-  validate: input.validate,
+const createParameterDefinition = <TValue>(input: Readonly<{
+  moduleName: string;
+  localKey: string;
+  valueType: ParameterValueType;
+  input: DefineParameterInput<TValue>;
+}>): ParameterDefinition<TValue> => ({
+  key: createDefinitionKey(input.moduleName, input.localKey),
+  name: input.input.name,
+  defaultValue: input.input.defaultValue,
+  valueType: input.valueType,
+  moduleName: input.moduleName,
+  decode: input.input.decode,
+  validate: input.input.validate,
 });
 
 export const createModuleParameterFactory = (moduleName: string): ModuleParameterFactory => ({
-  string: (localKey, input) => createParameterDefinition(moduleName, localKey, 'string', input),
-  number: (localKey, input) => createParameterDefinition(moduleName, localKey, 'number', input),
-  boolean: (localKey, input) => createParameterDefinition(moduleName, localKey, 'boolean', input),
-  json: (localKey, input) => createParameterDefinition(moduleName, localKey, 'json', input),
+  string: (localKey, input) => createParameterDefinition({moduleName, localKey, valueType: 'string', input}),
+  number: (localKey, input) => createParameterDefinition({moduleName, localKey, valueType: 'number', input}),
+  boolean: (localKey, input) => createParameterDefinition({moduleName, localKey, valueType: 'boolean', input}),
+  json: (localKey, input) => createParameterDefinition({moduleName, localKey, valueType: 'json', input}),
 });
 
 export const listDefinitions = <TDefinition extends object>(

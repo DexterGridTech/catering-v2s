@@ -1,6 +1,13 @@
 import {Alert, Button, Descriptions, Drawer, Space} from 'antd';
-import {adminDrawerSurfaceProps, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
+  adminDrawerSurfaceProps,
+  testId,
+  useOverlayLock,
+} from '@catering-v2s/admin-ui-foundation';
 import type {PlatformAdminDetail} from '../../../app/api/generated/platform-edge';
+import {platformDetailDrawerTestIds} from '../../../app/automation/platformDetailDrawerTestIds';
 
 export function AdministratorDetailDrawer({
   open,
@@ -26,6 +33,39 @@ export function AdministratorDetailDrawer({
   onAudit: () => void;
 }) {
   useOverlayLock(open);
+  const actionItems = admin
+    ? [
+        {
+          key: 'audit',
+          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.administrator.audit}>操作历史</AdminDetailActionLabel>,
+          onClick: onAudit,
+        },
+        {
+          key: 'edit',
+          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.administrator.edit}>编辑</AdminDetailActionLabel>,
+          onClick: onEdit,
+        },
+        {
+          key: 'credential',
+          label: (
+            <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.administrator.credential}>
+              重置登录凭据
+            </AdminDetailActionLabel>
+          ),
+          onClick: onCredential,
+        },
+        {
+          key: 'status',
+          danger: admin.status === 'ACTIVE',
+          label: (
+            <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.administrator.status}>
+              {admin.status === 'ACTIVE' ? '停用' : '启用'}
+            </AdminDetailActionLabel>
+          ),
+          onClick: onStatus,
+        },
+      ]
+    : [];
   return (
     <Drawer
       title="管理员详情"
@@ -38,22 +78,12 @@ export function AdministratorDetailDrawer({
       {...adminDrawerSurfaceProps}
       {...testId('platform-admin-detail-drawer')}
       extra={
-        admin && (
-          <Space>
-            <Button onClick={onAudit} {...testId('platform-admin-detail-audit-history')}>
-              操作历史
-            </Button>
-            <Button onClick={onEdit} {...testId('platform-admin-detail-edit')}>
-              编辑
-            </Button>
-            <Button onClick={onCredential} {...testId('platform-admin-detail-credential')}>
-              重置登录凭据
-            </Button>
-            <Button danger={admin.status === 'ACTIVE'} onClick={onStatus} {...testId('platform-admin-detail-status')}>
-              {admin.status === 'ACTIVE' ? '停用' : '启用'}
-            </Button>
-          </Space>
-        )
+        actionItems.length > 0 ? (
+          <AdminDetailActionMenu
+            items={actionItems}
+            triggerTestId={platformDetailDrawerTestIds.administrator.actionMenu}
+          />
+        ) : undefined
       }
     >
       {problem && !admin && (

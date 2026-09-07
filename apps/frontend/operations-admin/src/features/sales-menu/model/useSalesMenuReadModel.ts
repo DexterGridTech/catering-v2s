@@ -1,8 +1,9 @@
-import {useCursorStack, useRefreshVersion} from '@catering-v2s/admin-ui-foundation';
+import {useCursorCandidates, useCursorStack, useRefreshVersion} from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {operationsContentTabRefreshSignal, operationsLogger, operationsRtk} from '../../../app/api/OperationsTransport';
 import type {
   BusinessChannelPage,
+  BusinessChannelTemplatePage,
   SalesMenuCandidatePage,
   SalesMenuDetail,
   SalesMenuItemPage,
@@ -43,15 +44,24 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
   const channelSelectionScope = `${queryContext.groupWorkspaceKey}:${storeRef ?? ''}`;
   const previousChannelSelectionScope = useRef<string | undefined>(undefined);
 
-  const channelCursor = useCursorStack({resetKey: salesMenuQueryIdentity({scopeRef: storeRef, collection: 'CHANNEL'})});
-  const selectorCursor = useCursorStack({
+  const channelCandidates = useCursorCandidates<BusinessChannelPage['items'][number]>({
+    resetKey: salesMenuQueryIdentity({scopeRef: storeRef, collection: 'CHANNEL'}),
+    pageSize: SALES_MENU_PAGE_SIZE,
+    keyOf: channel => channel.channelRef,
+  });
+  const selectorCandidates = useCursorCandidates<SalesMenuPage['items'][number]>({
+    queryText: selectorQuery,
     resetKey: salesMenuQueryIdentity({
       scopeRef: storeRef,
       channelRef: selectedChannelRef,
       query: selectorQuery,
       collection: 'SELECTOR',
     }),
+    pageSize: SALES_MENU_PAGE_SIZE,
+    keyOf: menu => menu.salesMenuRef,
   });
+  const {acceptPage: acceptChannelPage} = channelCandidates;
+  const {acceptPage: acceptSelectorPage} = selectorCandidates;
   const managerCursor = useCursorStack({
     resetKey: salesMenuQueryIdentity({
       scopeRef: storeRef,
@@ -108,12 +118,12 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
         {
           query: {
             usage: 'SALES_MENU',
-            ...(channelCursor.cursor ? {cursor: channelCursor.cursor} : {}),
+            ...(channelCandidates.cursor ? {cursor: channelCandidates.cursor} : {}),
             pageSize: SALES_MENU_PAGE_SIZE,
           },
         },
       ),
-    [channelCursor.cursor, queryContext.groupWorkspaceKey, storeRef],
+    [channelCandidates.cursor, queryContext.groupWorkspaceKey, storeRef],
   );
   const channelsQuery = operationsRtk.useGetOperationsStoreBusinessChannelsQuery(channelRequest, {
     skip: !scopeReady,
@@ -129,17 +139,56 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
         {
           query: {
             channelRef: selectedChannelRef ?? emptyUuid,
-            ...(selectorQuery.trim() ? {query: selectorQuery.trim()} : {}),
-            ...(selectorCursor.cursor ? {cursor: selectorCursor.cursor} : {}),
+            ...(selectorCandidates.debouncedQueryText ? {query: selectorCandidates.debouncedQueryText} : {}),
+            ...(selectorCandidates.cursor ? {cursor: selectorCandidates.cursor} : {}),
             pageSize: SALES_MENU_PAGE_SIZE,
           },
         },
       ),
-    [queryContext.groupWorkspaceKey, selectedChannelRef, selectorCursor.cursor, selectorQuery, storeRef],
+    [
+      queryContext.groupWorkspaceKey,
+      selectedChannelRef,
+      selectorCandidates.cursor,
+      selectorCandidates.debouncedQueryText,
+      storeRef,
+    ],
   );
   const selectorQueryState = operationsRtk.useGetOperationsSalesMenusQuery(selectorRequest, {
     skip: !scopeReady || !selectedChannelRef,
   });
+
+  useEffect(() => {
+    const page = channelsQuery.currentData as BusinessChannelPage | undefined;
+    if (!page) return;
+    acceptChannelPage(page.items, {nextCursor: page.nextCursor});
+  }, [acceptChannelPage, channelsQuery.currentData]);
+
+  useEffect(() => {
+    const page = selectorQueryState.currentData as SalesMenuPage | undefined;
+    if (!page) return;
+    acceptSelectorPage(page.items, {nextCursor: page.nextCursor});
+  }, [acceptSelectorPage, selectorQueryState.currentData]);
+
+  const channelTemplateRequest = useMemo(
+    () =>
+      operationsAdminRtkRequest.getOperationsBusinessChannelTemplates(
+        {groupWorkspaceKey: queryContext.groupWorkspaceKey},
+        {query: {}},
+      ),
+    [queryContext.groupWorkspaceKey],
+  );
+  const channelTemplatesQuery = operationsRtk.useGetOperationsBusinessChannelTemplatesQuery(channelTemplateRequest, {
+    skip: !scopeReady,
+  });
+  const channelTemplateByRef = useMemo(
+    () =>
+      new Map(
+        ((channelTemplatesQuery.currentData as BusinessChannelTemplatePage | undefined)?.items ?? []).map(
+          template => [template.templateRef, template] as const,
+        ),
+      ),
+    [channelTemplatesQuery.currentData],
+  );
 
   const managerRequest = useMemo(
     () =>
@@ -344,6 +393,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
   const refetchOperationRecords = operationQuery.refetch;
   const refetchCandidates = candidateQueryState.refetch;
   const refetchPublicationPreview = publicationPreviewQuery.refetch;
+  const refetchChannelTemplates = channelTemplatesQuery.refetch;
 
   useEffect(() => {
     if (previousChannelSelectionScope.current === channelSelectionScope) return;
@@ -356,14 +406,14 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
   useEffect(() => {
     if (!scopeReady) return;
     // The SALES_MENU owner query already returns only maintainable STORE/INTERNAL/DINE_IN/TAKEAWAY channels.
-    // Keep the selected ref while the user pages through that owner-issued collection.
-    setSelectedChannelRef(current => current ?? channelsQuery.currentData?.items[0]?.channelRef);
-  }, [channelsQuery.currentData, scopeReady]);
+    // Keep the selected ref while the user incrementally accumulates the owner-issued dropdown collection.
+    setSelectedChannelRef(current => current ?? channelCandidates.items[0]?.channelRef);
+  }, [channelCandidates.items, scopeReady]);
 
   useEffect(() => {
-    if (!selectedChannelRef || selectedMenuRef || !selectorQueryState.currentData) return;
-    setSelectedMenuRef(selectorQueryState.currentData.items[0]?.salesMenuRef);
-  }, [selectedChannelRef, selectedMenuRef, selectorQueryState.currentData]);
+    if (!selectedChannelRef || selectedMenuRef || selectorCandidates.items.length === 0) return;
+    setSelectedMenuRef(selectorCandidates.items[0]?.salesMenuRef);
+  }, [selectedChannelRef, selectedMenuRef, selectorCandidates.items]);
 
   useEffect(() => {
     if (!selectedMenuRef) {
@@ -430,6 +480,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
   useEffect(() => {
     if (contentTabRefreshVersion === 0) return;
     void refetchChannels();
+    void refetchChannelTemplates();
     if (selectedChannelRef) {
       void refetchSelector();
       void refetchManager();
@@ -450,6 +501,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     candidateOpen,
     refetchCandidates,
     refetchChannels,
+    refetchChannelTemplates,
     refetchDraftItems,
     refetchDraftSections,
     refetchManager,
@@ -483,7 +535,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
       operationId: 'sales-menu-read-model',
     });
     try {
-      const refetches: Array<Promise<unknown>> = [refetchChannels()];
+      const refetches: Array<Promise<unknown>> = [refetchChannels(), refetchChannelTemplates()];
       if (selectedChannelRef) {
         refetches.push(refetchSelector(), refetchManager());
       }
@@ -522,6 +574,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     mode,
     refetchCandidates,
     refetchChannels,
+    refetchChannelTemplates,
     refetchDraftItems,
     refetchDraftSections,
     refetchManager,
@@ -563,12 +616,16 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     channels: {
       query: channelsQuery,
       page: channelsQuery.currentData as BusinessChannelPage | undefined,
-      cursor: channelCursor,
+      items: channelCandidates.items,
+      candidates: channelCandidates,
+      templateQuery: channelTemplatesQuery,
+      templateByRef: channelTemplateByRef,
     },
     selector: {
       query: selectorQueryState,
       page: selectorQueryState.currentData as SalesMenuPage | undefined,
-      cursor: selectorCursor,
+      items: selectorCandidates.items,
+      candidates: selectorCandidates,
     },
     manager: {
       query: managerQueryState,

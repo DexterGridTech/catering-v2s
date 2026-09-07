@@ -11,6 +11,8 @@ import type {
   StateStorageWriteInput,
 } from '../types/storage';
 
+const PORT_DESCRIPTOR_KEY = Symbol.for('catering-v2s.platform-ports.descriptor');
+
 const success = <TValue>(value: TValue): PortResult<TValue> => ({
   status: 'succeeded',
   value,
@@ -25,7 +27,7 @@ export const createProcessMemoryStateStoragePort = (): StateStoragePort => {
     return value === undefined ? {state: 'missing'} : {state: 'found', value};
   };
   const noOutput = (): PortResult<NoOutput> => success({completed: true});
-  return Object.freeze({
+  const port: StateStoragePort = {
     read: async (input: StateStorageReadInput): Promise<PortResult<StateStorageReadValue>> => success(readValue(input.key)),
     write: async (input: StateStorageWriteInput): Promise<PortResult<NoOutput>> => {
       values.set(input.key, input.value);
@@ -50,5 +52,19 @@ export const createProcessMemoryStateStoragePort = (): StateStoragePort => {
       values.clear();
       return noOutput();
     },
-  });
+  };
+  if (__DEV__) {
+    Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
+      value: Object.freeze({
+        port: 'persistKv',
+        capabilities: Object.freeze([
+          'read', 'write', 'remove', 'readMany', 'writeMany', 'removeMany', 'listKeys', 'clear',
+        ].map(capability => Object.freeze({capability, state: 'real' as const, source: 'default' as const}))),
+      }),
+      enumerable: false,
+      writable: false,
+      configurable: false,
+    });
+  }
+  return Object.freeze(port);
 };

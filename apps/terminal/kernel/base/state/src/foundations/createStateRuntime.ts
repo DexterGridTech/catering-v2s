@@ -15,11 +15,11 @@ import {
   createStateStore,
   resetToOwnerInitialStateActionType,
 } from './createStateStore'
-import {hydrateStateRuntime} from './persistenceEngine'
+import {hydrateStateRuntime} from './persistenceHydration'
 import {
   applySliceSyncDiff,
   createFullSliceSyncPayload,
-} from '../supports/sync'
+} from './sync'
 import {assertNonEmptyString} from './assertNonEmptyString'
 
 type AutoFlushSelection = 'all' | 'immediate'

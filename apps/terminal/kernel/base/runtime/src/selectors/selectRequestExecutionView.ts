@@ -98,16 +98,16 @@ const observationsByCommand = (
   return result
 }
 
-const buildView = (
-  requestId: RequestId,
-  mode: RuntimeInstanceMode,
-  localEnvelope: RequestEnvelope | undefined,
-  peerEnvelope: RequestEnvelope | undefined,
-): RequestExecutionView | null => {
-  if (localEnvelope === undefined && peerEnvelope === undefined) return null
-  void mode
-  const localRecord = localEnvelope?.value
-  const peerRecord = peerEnvelope?.value
+const buildView = (input: Readonly<{
+  requestId: RequestId
+  mode: RuntimeInstanceMode
+  localEnvelope: RequestEnvelope | undefined
+  peerEnvelope: RequestEnvelope | undefined
+}>): RequestExecutionView | null => {
+  if (input.localEnvelope === undefined && input.peerEnvelope === undefined) return null
+  void input.mode
+  const localRecord = input.localEnvelope?.value
+  const peerRecord = input.peerEnvelope?.value
   const localCommands = observationsByCommand(localRecord)
   const peerCommands = observationsByCommand(peerRecord)
   const commandKeys = new Set<string>([
@@ -128,13 +128,13 @@ const buildView = (
       }),
   )
   const chosenRecord = localRecord ?? peerRecord
-  const chosenEnvelope = localEnvelope ?? peerEnvelope
+  const chosenEnvelope = input.localEnvelope ?? input.peerEnvelope
   if (chosenRecord === undefined || chosenEnvelope === undefined) return null
   const rootCommandIds = freezeList(commandViews
     .filter(command => command.parentCommandId === null)
     .map(command => command.commandId))
   return Object.freeze({
-    requestId,
+    requestId: input.requestId,
     status: aggregateRequestStatus(commandViews.map(command => command.status)),
     rootCommandIds,
     workspace: chosenRecord.workspace,
@@ -174,12 +174,15 @@ const selectPeerRequestEnvelope = (
 
 const selectRequestExecutionViewMemoized = createSelector(
   [selectRequestId, selectRequestMode, selectLocalRequestEnvelope, selectPeerRequestEnvelope],
-  (
-    requestId,
-    mode,
-    localEnvelope,
-    peerEnvelope,
-  ): RequestExecutionView | null => buildView(requestId, mode, localEnvelope, peerEnvelope),
+  (...selectorArgs: [
+    RequestId,
+    RuntimeInstanceMode,
+    RequestEnvelope | undefined,
+    RequestEnvelope | undefined,
+  ]): RequestExecutionView | null => {
+    const [requestId, mode, localEnvelope, peerEnvelope] = selectorArgs
+    return buildView({requestId, mode, localEnvelope, peerEnvelope})
+  },
 )
 
 export const selectRequestExecutionView = (

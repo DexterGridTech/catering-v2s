@@ -19,7 +19,7 @@ import {
   memberRegistrationAbandonedCommand,
   memberRegistrationRetryRequestedCommand,
   memberSubmissionWithdrawnCommand,
-} from '../../../../ui/feature/sample-member-desk/src/commands'
+} from '../../../../ui/feature/sample-member-desk/src/features/commands/commands'
 import {createSampleAssembly, createSurfaceForDisplayIndex} from '../src'
 import {createTestPlatformPorts} from './support'
 

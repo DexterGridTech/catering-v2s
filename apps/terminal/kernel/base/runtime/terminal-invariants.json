@@ -31,7 +31,7 @@
   },
   "tr01Exceptions": [
     {"sourceFile": "src/foundations/createCommandDispatcher.ts", "declarationId": "writeLedgerTransition", "dispatchExpression": "input.stateRuntime.getStore().dispatch", "reasonCategory": "runtime-ledger-owner"},
-    {"sourceFile": "src/foundations/createCommandDispatcher.ts", "declarationId": "execution", "dispatchExpression": "input.stateRuntime.getStore().dispatch", "reasonCategory": "runtime-actor-context-bridge"},
+    {"sourceFile": "src/foundations/createCommandActorDispatcher.ts", "declarationId": "execution", "dispatchExpression": "input.stateRuntime.getStore().dispatch", "reasonCategory": "runtime-actor-context-bridge"},
     {"sourceFile": "src/application/createRuntime.ts", "declarationId": "createRuntime", "dispatchExpression": "stateRuntime.getStore().dispatch", "reasonCategory": "runtime-lifecycle-bridge"}
   ]
 }

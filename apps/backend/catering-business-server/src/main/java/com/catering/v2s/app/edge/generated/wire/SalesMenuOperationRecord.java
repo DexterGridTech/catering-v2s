@@ -7,6 +7,8 @@ public record SalesMenuOperationRecord(
     String operationKind,
     java.util.UUID salesMenuRef,
     java.util.UUID targetRef,
+    String targetKind,
+    String targetDisplaySnapshot,
     String result,
     String failureCode,
     String actorDisplayName

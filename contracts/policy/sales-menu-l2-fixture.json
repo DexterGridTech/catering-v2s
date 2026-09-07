@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "sales-menu-l2-fixture",
-  "revision": "SALES_MENU_L2_P1_20260902",
+  "revision": "SALES_MENU_L2_P1_20260907",
   "fixtureClass": "TEST",
   "setupChannel": "OWNER_HTTP_COMMANDS",
   "seedRuntimeInput": false,
@@ -14,7 +14,7 @@
       "projectName": "L2验证项目",
       "storeName": "L2验证门店"
     },
-    "channelPageSize": 20,
+    "channelCandidatePageSize": 20,
     "menuPageSize": 20,
     "candidatePageSize": 20,
     "draftItemPageSize": 20,

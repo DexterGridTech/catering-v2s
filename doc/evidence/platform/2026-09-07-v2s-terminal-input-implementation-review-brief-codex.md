@@ -1,11 +1,17 @@
-# TER terminal input v2 implementation review brief
+# TER terminal input v2 implementation review brief（含 2026-09-07 Web 预览缩放修复）
 
 ```text
 REVIEW_TARGET=IMPLEMENTATION
-REVIEW_CYCLE_ID=TERMINAL_INPUT_V2_IMPLEMENTATION_2026-09-07
+REVIEW_CYCLE_ID=TER_WEB_SURFACE_SCALE_2026-09-07
+PARENT_IMPLEMENTATION_CYCLE_ID=TERMINAL_INPUT_V2_IMPLEMENTATION_2026-09-07
+REVIEW_ROUND=2
+REVIEW_ROUND_LIMIT=2
+reviewerKind=INDEPENDENT_SUBAGENT
+ROUND_FINAL_DECISION=SELF_DECIDED
 IMPLEMENTATION_SELF_GATE=PASS_STATIC_FOCUSED
 CP5_RECONCILIATION=PASS_MATCHED_76_OPEN_0
 CODE_TO_DESIGN_RECONCILIATION=MATCHED_68_OPEN_0
+WEB_SURFACE_SCALE_RECONCILIATION=PASS
 DELIVERY_TO_DEXTER_AND_CLAUDE=ALLOWED
 ```
 
@@ -19,6 +25,11 @@ DELIVERY_TO_DEXTER_AND_CLAUDE=ALLOWED
 
 本批实现 TER `ui/base/input` 的本地 surface 测量、虚拟键盘四种布局、输入 owner 互斥、
 焦点滚入可见区、原子输入快照，以及 sample-only 的 alpha/financial 能力验证字段。
+
+本轮补入 Dexter 直接指派的 Web 宿主修复：`SurfaceCanvas` 按声明逻辑分辨率建立固定
+logical stage，由自身 `onLayout` 测得的预览宽度计算一个共同的 host scale；双屏与单屏
+均保持各自比例，不再让 flex/aspectRatio 挤压 surface。该修复只属于 dev-host 预览，
+不向 `ui/base/input` 引入 scale API、宿主尺寸桥或内部 transform。
 
 本批不改变 App 的 landscape 锁定策略；input 只从自己的 `InputSurfaceFrame` 根 View 读取
 `onLayout`，并消费既有 adapter 提供的 `imeInset` 平台事实。Android orientation、
@@ -73,8 +84,11 @@ Presentation 拓扑、host/VM/process、设备策略、Kiosk/Lock Task 与真实
   age 为可选 numeric、`maxLength=3`，确认时才进入业务命令，撤回/拒绝/迟到确认不留残值。
 - `apps/terminal/ui/integration/sample-console/src/assembly.tsx`：只保留 InputSurfaceFrame
   与既有 `imeInset` 传递，不传静态 surface 尺寸。
-- `apps/terminal/ui/base/dev-host/src/testExpoApp.tsx`：SurfaceCanvas 使用响应式、无
-  transform 的交互树。
+- `apps/terminal/ui/base/dev-host/src/testExpoApp.tsx`：SurfaceCanvas 测量自身 canvas，
+  以固定逻辑 stage 和唯一 host `logicalStage` transform 等比缩放；surface 本身固定
+  声明尺寸，不使用 flex/aspectRatio 挤压。
+- `apps/terminal/ui/base/dev-host/src/surfacePreview.ts`：按单/双屏 row/column 计算
+  stage 尺寸、scale 与 rendered 尺寸；首帧未测量返回空态，禁止猜尺寸先画。
 
 ## CP 证据与独立对账
 
@@ -87,6 +101,7 @@ Presentation 拓扑、host/VM/process、设备策略、Kiosk/Lock Task 与真实
 | CP-4 | fresh 独立对账 PASS，12 MATCHED / 0 OPEN | `...cp4-focused-and-static-codex.md` |
 | CP-5 | fresh whole-batch PASS，76 MATCHED / 0 OPEN | `...cp5-whole-batch-reconciliation-codex.md` |
 | CP-6 | fresh code↔design PASS，68 MATCHED / 0 OPEN | `...cp6-code-to-design-reconciliation-codex.md` |
+| Web host scale correction | fresh 独立复核 PASS；固定逻辑 stage、共同 host scale、真实 DOM hit 已对账 | `doc/evidence/platform/terminal-input/reconciliation-web-surface-scale-2026-09-07.md` |
 
 CP-6 是独立交付闸门，不是 CP-5 的别名；68 行逐代码 ledger 已全部由 fresh reviewer
 重新打开当前源码核对，结论只有 `MATCHED`，因此允许交 Dexter 与 Claude 做实施后 review。
@@ -117,9 +132,37 @@ Static gates：
 model red vector 的 FAIL 是沙箱变异的证据，不是生产源码 FAIL；真实树结果与模型红结果已
 分开记录。
 
+## Web 宿主缩放的真实证据
+
+本轮已在 local Web preview 运行真实 DOM 观察：窄到 `800×900` 时，canvas 为
+`744×818.046875`，双屏 logical stage 的 DOM rect 为 `720×794.05365`，唯一 host
+transform 为 `matrix(0.622299, 0, 0, 0.622299, 0, 0)`；PRIMARY rect 为
+`720×449.922242`（声明 `1157×723`），SECONDARY rect 为 `598.651733×336.663818`
+（声明 `962×541`）。两块 surface 保持各自比例并共享同一倍率，没有使用任何一块的
+声明尺寸冒充当前窗口尺寸。
+
+在真实 sample `MemberForm` 的电话字段上，点击后以实际 DOM rect 中心调用
+`elementFromPoint`，命中 `ui.base.input:virtual-keyboard:text-5` 的 button；证据只证明
+local Web DOM 命中，不升级为 Android 48dp、真实 POS 或系统 IME 证明。完整 run-scoped
+记录见 `doc/evidence/platform/terminal-input/web-surface-scale-2026-09-07.md`。
+
+## 独立盲审与 finding 处置
+
+本 review cycle 的 fresh 独立子 agent 已完成两轮只读盲审。第二轮返回
+`VERDICT=NO-GO / M=0 / S=1 / N=0`，唯一 finding 是本文仍残留旧的“响应式、无 transform
+交互树”与“Web DOM 未取证”表述；该 finding 已由主 agent 更新为当前 fixed logical stage、
+唯一 host `logicalStage` preview scale、local Web DOM 证据和明确的 Android/真实 POS 未取证
+边界，并重新与源码、详设、计划和当前证据逐项核对。第一轮的同类旧口径 finding 也已闭合；
+第一轮提到的当前 Web 记录路径经文件存在性核查为有效路径。
+
+review cycle 已达到两轮上限，不创建第三轮。`ROUND_FINAL_DECISION=SELF_DECIDED` 与
+`DELIVERY_TO_DEXTER_AND_CLAUDE=ALLOWED` 表示主 agent 已完成 finding 修复和交付前复核，
+不把独立 agent 的第二轮 `NO-GO` 改写成独立 `GO`。
+
 ## 未取证边界（不得在 review 中升级为已验）
 
-- 未运行 Web `getBoundingClientRect`、`elementFromPoint` 或真实 pointer hit-region 观察。
+- local Web `getBoundingClientRect`、`elementFromPoint` 与实际 pointer hit-region 已运行并
+  记录；该项只覆盖本地 Web preview，不覆盖 Android 或真实 POS。
 - 未运行 Android 模拟器/真实设备副屏虚拟输入、竖屏设备、物理 DPI、厂商 ROM、性能或
   Presentation 行为验证。
 - 未运行 PF-7 的 Expo Web/真实设备快速连打观察。因此 PF-1～PF-6 只能称为架构/聚焦保护，

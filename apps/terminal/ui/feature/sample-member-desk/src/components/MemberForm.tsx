@@ -19,7 +19,7 @@ import {
   PrimitiveLabel,
   PrimitiveStatus,
 } from '@catering-v2s/ui-base-primitives'
-import {deskSystemFailureObservedCommand, memberFormCancelledCommand} from '../commands'
+import {deskSystemFailureObservedCommand, memberFormCancelledCommand} from '../features/commands/commands'
 import {classifyRequestResult} from './requestOutcome'
 import {ScrollArea} from './controls'
 
@@ -61,11 +61,11 @@ export const MemberForm = () => {
 
   const observeSystemFailure = async (): Promise<void> => {
     try {
-      await dispatchWithRequestId(
+      await dispatchWithRequestId({
         dispatchCommand,
-        deskSystemFailureObservedCommand,
-        {operation: 'submit-member'},
-      )
+        definition: deskSystemFailureObservedCommand,
+        payload: {operation: 'submit-member'},
+      })
     } catch (_error) {
       // useDispatchCommand has already emitted the structured rejection diagnostic.
     }
@@ -78,7 +78,12 @@ export const MemberForm = () => {
     const phone = snapshot.fields['sample.desk.member-form:phone']?.value ?? ''
     const requestId = request.start()
     try {
-      const result = await dispatchWithRequestId(dispatchCommand, submitMemberCommand, {name, phone}, requestId)
+      const result = await dispatchWithRequestId({
+        dispatchCommand,
+        definition: submitMemberCommand,
+        payload: {name, phone},
+        requestId,
+      })
       const outcome = classifyRequestResult(result)
       if (outcome !== 'running') request.finish(requestId)
       if (outcome === 'system-failure') await observeSystemFailure()
@@ -94,11 +99,11 @@ export const MemberForm = () => {
     const snapshot = captureInputSnapshot()
     const name = snapshot.fields['sample.desk.member-form:name']?.value ?? ''
     const phone = snapshot.fields['sample.desk.member-form:phone']?.value ?? ''
-    return dispatchWithRequestId(
+    return dispatchWithRequestId({
       dispatchCommand,
-      memberFormCancelledCommand,
-      {dirty: name.trim().length > 0 || phone.trim().length > 0},
-    )
+      definition: memberFormCancelledCommand,
+      payload: {dirty: name.trim().length > 0 || phone.trim().length > 0},
+    })
   }
 
   return (

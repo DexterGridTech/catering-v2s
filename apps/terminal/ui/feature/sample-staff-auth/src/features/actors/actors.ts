@@ -22,9 +22,9 @@ import {
   authNoticeDismissedCommand,
   authSystemFailureDismissedCommand,
   authSystemFailureObservedCommand,
-} from '../../commands'
+} from '../commands/commands'
 import {moduleName} from '../../moduleName'
-import {operatorNameVariable} from '../../variables'
+import {operatorNameVariable} from '../variables/variables'
 
 const primary = 'PRIMARY' as const
 

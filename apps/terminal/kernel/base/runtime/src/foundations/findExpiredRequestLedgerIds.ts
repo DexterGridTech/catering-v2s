@@ -35,23 +35,25 @@ const isTerminalStatus = (status: RequestLifecycleStatus): boolean => {
  * partition is consulted only through the merged view that supplies lifecycle
  * status; it is never scanned or mutated here.
  */
-export const findExpiredRequestLedgerIds = (
-  state: StateRoot,
-  mode: RuntimeInstanceMode = selectRuntimeInstanceMode(state),
-  limits: Pick<RuntimeLimits, 'requestRetentionMs' | 'requestMaxResidenceMs'>,
-  now: number = nowTimestampMs(),
-): readonly RequestId[] => {
-  const ledger = readRequestLedgerState(state, requestLedgerSliceNameForMode(mode))
+export const findExpiredRequestLedgerIds = (input: Readonly<{
+  state: StateRoot
+  mode?: RuntimeInstanceMode
+  limits: Pick<RuntimeLimits, 'requestRetentionMs' | 'requestMaxResidenceMs'>
+  now?: number
+}>): readonly RequestId[] => {
+  const mode = input.mode ?? selectRuntimeInstanceMode(input.state)
+  const now = input.now ?? nowTimestampMs()
+  const ledger = readRequestLedgerState(input.state, requestLedgerSliceNameForMode(mode))
   const requestIds: RequestId[] = []
 
   for (const requestId of Object.keys(ledger ?? {})) {
     const envelope = readLiveRequestEnvelope(ledger, requestId as RequestId)
     if (envelope === undefined) continue
     const age = now - envelope.updatedAt
-    const view = selectRequestExecutionView(state, requestId as RequestId)
+    const view = selectRequestExecutionView(input.state, requestId as RequestId)
     const terminalByMergedView = view !== null && isTerminalStatus(view.status)
-    const expiredByRetention = terminalByMergedView && age > limits.requestRetentionMs
-    const expiredByResidence = age > limits.requestMaxResidenceMs
+    const expiredByRetention = terminalByMergedView && age > input.limits.requestRetentionMs
+    const expiredByResidence = age > input.limits.requestMaxResidenceMs
     if (expiredByRetention || expiredByResidence) requestIds.push(requestId as RequestId)
   }
 

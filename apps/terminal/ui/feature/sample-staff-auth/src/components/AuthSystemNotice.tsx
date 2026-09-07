@@ -3,7 +3,7 @@ import {
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
 import {dispatchWithRequestId, useDispatchCommand} from '@catering-v2s/ui-base-render'
-import {authSystemFailureDismissedCommand, type AuthSystemOperation} from '../commands'
+import {authSystemFailureDismissedCommand, type AuthSystemOperation} from '../features/commands/commands'
 import {DialogActions, DialogSurface} from './controls'
 
 export type AuthSystemNoticeProps = Readonly<{
@@ -14,11 +14,11 @@ const messageForOperation = (_operation: AuthSystemOperation): string => '操作
 
 export const AuthSystemNotice = ({operation}: AuthSystemNoticeProps) => {
   const dispatchCommand = useDispatchCommand()
-  const dismiss = () => dispatchWithRequestId(
+  const dismiss = () => dispatchWithRequestId({
     dispatchCommand,
-    authSystemFailureDismissedCommand,
-    {},
-  )
+    definition: authSystemFailureDismissedCommand,
+    payload: {},
+  })
 
   return (
     <DialogSurface testID="sample.auth.system-notice" title="系统提示">

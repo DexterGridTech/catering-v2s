@@ -3,6 +3,7 @@ import {
   Alert,
   Button,
   Card,
+  Checkbox,
   Descriptions,
   Divider,
   Drawer,
@@ -37,6 +38,14 @@ import {formatSalesMenuPrice, salesMenuProductShapeLabel} from '../model/salesMe
 import {salesMenuTestIds} from '../salesMenuTestIds';
 import {SalesMenuMediaEditor} from './SalesMenuItemMediaEditor';
 import {commandErrorMessage, type SalesMenuCommands} from './salesMenuUiShared';
+
+type SalesMenuSkuCandidate = SalesMenuDraftItemView['skuCandidates'][number];
+type SalesMenuOrderOption = SalesMenuDraftItemView['catalogOrderOptions'][number];
+type SalesMenuSkuEditorRow = SalesMenuSkuCandidate & {
+  listedPriceCents: number | null;
+  selected: boolean;
+  stale: boolean;
+};
 
 export function SalesMenuItemEditorDrawer({
   item: rowItem,
@@ -94,7 +103,9 @@ export function SalesMenuItemEditorDrawer({
   const item = detail ?? rowItem;
   const [displayName, setDisplayName] = useState('');
   const [listedPriceCents, setListedPriceCents] = useState<number | null>(null);
-  const [skuPrices, setSkuPrices] = useState<SalesMenuSkuPrice[]>([]);
+  const [selectedSkuRefs, setSelectedSkuRefs] = useState<Uuid[]>([]);
+  const [skuPriceByRef, setSkuPriceByRef] = useState<Record<string, SalesMenuSkuPrice>>({});
+  const [orderOptionSelections, setOrderOptionSelections] = useState<Record<string, Uuid[]>>({});
   const [constraints, setConstraints] = useState<SalesMenuOrderingConstraints>({
     minItemQuantity: null,
     quantityStep: null,
@@ -188,7 +199,34 @@ export function SalesMenuItemEditorDrawer({
     openedRef.current = true;
     setDisplayName(detail.displayName);
     setListedPriceCents(detail.saleContent.listedPriceCents);
-    setSkuPrices(detail.saleContent.skuPrices);
+    const savedSkuPrices = new Map(detail.saleContent.skuPrices.map(price => [String(price.skuRef), price]));
+    const nextSkuPriceByRef: Record<string, SalesMenuSkuPrice> = {};
+    for (const candidate of detail.skuCandidates) {
+      const saved = savedSkuPrices.get(String(candidate.skuRef));
+      nextSkuPriceByRef[String(candidate.skuRef)] = {
+        skuRef: candidate.skuRef,
+        skuName: candidate.skuName,
+        skuCode: candidate.skuCode,
+        standardPriceCents: candidate.standardPriceCents,
+        listedPriceCents: saved?.listedPriceCents ?? candidate.standardPriceCents,
+      };
+    }
+    for (const saved of detail.saleContent.skuPrices) {
+      if (!nextSkuPriceByRef[String(saved.skuRef)]) nextSkuPriceByRef[String(saved.skuRef)] = saved;
+    }
+    setSkuPriceByRef(nextSkuPriceByRef);
+    setSelectedSkuRefs(detail.saleContent.skuPrices.map(price => price.skuRef));
+    const selectedOptionsByDefinition = new Map(
+      detail.saleContent.selectedOrderOptions.map(option => [String(option.definitionRef), option]),
+    );
+    const nextOrderOptionSelections: Record<string, Uuid[]> = {};
+    for (const option of detail.catalogOrderOptions) {
+      const selected = selectedOptionsByDefinition.get(String(option.definitionRef));
+      nextOrderOptionSelections[String(option.definitionRef)] = selected
+        ? selected.values.map(value => value.definitionValueRef)
+        : option.values.map(value => value.definitionValueRef);
+    }
+    setOrderOptionSelections(nextOrderOptionSelections);
     setConstraints(detail.orderingConstraints);
     setDisplayMedia(detail.displayMedia);
     setAssetBindGrants({});
@@ -229,12 +267,116 @@ export function SalesMenuItemEditorDrawer({
     stagedReleaseRef.current = release ?? (() => Promise.resolve(true));
   }, []);
 
+  const skuRows = useMemo<SalesMenuSkuEditorRow[]>(() => {
+    const selected = new Set(selectedSkuRefs.map(ref => String(ref)));
+    const rows = item?.skuCandidates.map(candidate => ({
+      ...candidate,
+      listedPriceCents: skuPriceByRef[String(candidate.skuRef)]?.listedPriceCents ?? null,
+      selected: selected.has(String(candidate.skuRef)),
+      stale: false,
+    })) ?? [];
+    const candidateRefs = new Set(rows.map(row => String(row.skuRef)));
+    const staleRows = (item?.saleContent.skuPrices ?? [])
+      .filter(price => item?.staleSelectedSkuRefs.includes(price.skuRef) && !candidateRefs.has(String(price.skuRef)))
+      .map(price => ({
+        skuRef: price.skuRef,
+        skuName: price.skuName,
+        skuCode: price.skuCode,
+        standardPriceCents: price.standardPriceCents,
+        listedPriceCents: price.listedPriceCents,
+        selected: true,
+        stale: true,
+      }));
+    return [...rows, ...staleRows];
+  }, [item?.skuCandidates, item?.saleContent.skuPrices, item?.staleSelectedSkuRefs, selectedSkuRefs, skuPriceByRef]);
+
+  const enabledSkuRows = useMemo(() => skuRows.filter(row => !row.stale), [skuRows]);
+  const staleSkuRows = useMemo(() => skuRows.filter(row => row.stale), [skuRows]);
+  const selectedEnabledSkuCount = enabledSkuRows.filter(row => row.selected).length;
+  const staleSkuSelection = staleSkuRows.length > 0;
+
+  const setSkuSelected = useCallback(
+    (candidate: SalesMenuSkuEditorRow, checked: boolean) => {
+      if (candidate.stale) return;
+      setSelectedSkuRefs(current => {
+        const currentRefs = new Set(current.map(ref => String(ref)));
+        if (checked) currentRefs.add(String(candidate.skuRef));
+        else currentRefs.delete(String(candidate.skuRef));
+        return [...currentRefs] as Uuid[];
+      });
+      setSkuPriceByRef(current =>
+        current[String(candidate.skuRef)]
+          ? current
+          : {
+              ...current,
+              [String(candidate.skuRef)]: {
+                skuRef: candidate.skuRef,
+                skuName: candidate.skuName,
+                skuCode: candidate.skuCode,
+                standardPriceCents: candidate.standardPriceCents,
+                listedPriceCents: candidate.standardPriceCents,
+              },
+            },
+      );
+      markDirty();
+    },
+    [markDirty],
+  );
+
+  const selectAllSkus = useCallback(() => {
+    setSelectedSkuRefs(current => {
+      const refs = new Set(current.map(ref => String(ref)));
+      enabledSkuRows.forEach(row => refs.add(String(row.skuRef)));
+      return [...refs] as Uuid[];
+    });
+    setSkuPriceByRef(current => {
+      const next = {...current};
+      enabledSkuRows.forEach(row => {
+        if (!next[String(row.skuRef)]) {
+          next[String(row.skuRef)] = {
+            skuRef: row.skuRef,
+            skuName: row.skuName,
+            skuCode: row.skuCode,
+            standardPriceCents: row.standardPriceCents,
+            listedPriceCents: row.standardPriceCents,
+          };
+        }
+      });
+      return next;
+    });
+    markDirty();
+  }, [enabledSkuRows, markDirty]);
+
+  const clearSkus = useCallback(() => {
+    const staleRefs = staleSkuRows.map(row => row.skuRef);
+    setSelectedSkuRefs(staleRefs);
+    markDirty();
+  }, [markDirty, staleSkuRows]);
+
   const save = useCallback(async () => {
     if (!item || !menuRef || menuVersion === undefined || mediaPending) return;
+    const isSku = item.saleContent.kind === 'SKU_SELECTION';
+    if (isSku && (selectedEnabledSkuCount === 0 || staleSkuSelection)) {
+      setProblem(
+        staleSkuSelection
+          ? '当前已选规格已失效，请在 Catalog 恢复该 SKU；本 Drawer 不提供修复入口。'
+          : '按规格销售至少需要选择 1 个可用规格。',
+      );
+      return;
+    }
+    if (item.saleContent.kind === 'DIRECT') {
+      const missingRequired = item.catalogOrderOptions.find(option => {
+        const selectedCount = orderOptionSelections[String(option.definitionRef)]?.length ?? 0;
+        return option.required && selectedCount < (option.minSelectionCount ?? 1);
+      });
+      if (missingRequired) {
+        setProblem(`选项组“${missingRequired.name}”至少需要选择 ${missingRequired.minSelectionCount ?? 1} 个选项值。`);
+        return;
+      }
+    }
     setProblem(undefined);
     setSaving(true);
     lifecycle.setSubmitting(true);
-    const isSku = item.saleContent.kind === 'SKU_SELECTION';
     operationsLogger.info({
       event: 'sales-menu.item.editor',
       phase: 'COMMAND_INPUT',
@@ -255,7 +397,17 @@ export function SalesMenuItemEditorDrawer({
           saleContent: {
             kind: item.saleContent.kind,
             listedPriceCents: isSku ? null : listedPriceCents,
-            skuPrices: isSku ? skuPrices : [],
+            skuPrices: isSku
+              ? selectedSkuRefs
+                  .map(ref => skuPriceByRef[String(ref)])
+                  .filter((price): price is SalesMenuSkuPrice => Boolean(price))
+              : [],
+            orderOptionSelections: item.saleContent.kind === 'DIRECT'
+              ? item.catalogOrderOptions.map(option => ({
+                  definitionRef: option.definitionRef,
+                  selectedValueRefs: orderOptionSelections[String(option.definitionRef)] ?? [],
+                }))
+              : [],
           },
           orderingConstraints:
             item.saleContent.kind === 'WEIGHTED' ? {minItemQuantity: null, quantityStep: null} : constraints,
@@ -288,12 +440,17 @@ export function SalesMenuItemEditorDrawer({
     menuRef,
     menuVersion,
     onSave,
-    skuPrices,
+    orderOptionSelections,
+    selectedEnabledSkuCount,
+    selectedSkuRefs,
+    skuPriceByRef,
+    staleSkuSelection,
   ]);
 
   if (!item) return null;
   const isSku = item.saleContent.kind === 'SKU_SELECTION';
   const isWeighted = item.saleContent.kind === 'WEIGHTED';
+  const isDirect = item.saleContent.kind === 'DIRECT';
   return (
     <Drawer
       open={open}
@@ -378,12 +535,59 @@ export function SalesMenuItemEditorDrawer({
                       : '该商品无规格，直接销售该商品。'}
               </Typography.Text>
               {isSku ? (
-                <Table<SalesMenuSkuPrice>
+                <Space direction="vertical" size={8} style={{display: 'flex'}}>
+                  <Space wrap>
+                    <Button type="text" disabled {...testId(salesMenuTestIds.itemSkuSelection)}>
+                      已选择 {selectedEnabledSkuCount}/{enabledSkuRows.length} 个规格
+                    </Button>
+                    <Button
+                      onClick={selectAllSkus}
+                      disabled={enabledSkuRows.length === 0 || selectedEnabledSkuCount === enabledSkuRows.length}
+                      {...testId(salesMenuTestIds.itemSkuSelectAll)}
+                    >
+                      全选
+                    </Button>
+                    <Button
+                      onClick={clearSkus}
+                      disabled={selectedEnabledSkuCount === 0}
+                      {...testId(salesMenuTestIds.itemSkuClear)}
+                    >
+                      清空
+                    </Button>
+                  </Space>
+                  {staleSkuSelection && (
+                    <Alert
+                      type="warning"
+                      showIcon
+                      title={
+                        enabledSkuRows.length === 0
+                          ? '已选规格已失效，当前没有可用规格。请删除该销售项，或在 Catalog 恢复此 SKU。'
+                          : '已选规格中包含当前不可用的 SKU，请在 Catalog 恢复后再保存。'
+                      }
+                      {...testId(salesMenuTestIds.itemStaleSkuNotice)}
+                    />
+                  )}
+                  {enabledSkuRows.length === 0 && !staleSkuSelection && (
+                    <Typography.Text type="secondary">当前没有可选规格。</Typography.Text>
+                  )}
+                  <Table<SalesMenuSkuEditorRow>
                   size="small"
                   rowKey="skuRef"
                   pagination={false}
-                  dataSource={skuPrices}
+                  dataSource={skuRows}
                   columns={[
+                    {
+                      title: '选择',
+                      key: 'selection',
+                      render: (_, row) => (
+                        <Checkbox
+                          checked={row.selected}
+                          disabled={row.stale}
+                          onChange={event => setSkuSelected(row, event.target.checked)}
+                          {...testId(salesMenuTestIds.itemSkuOption(String(row.skuRef)))}
+                        />
+                      ),
+                    },
                     {title: '规格', dataIndex: 'skuName', key: 'skuName'},
                     {title: '规格编码', dataIndex: 'skuCode', key: 'skuCode'},
                     {
@@ -394,26 +598,33 @@ export function SalesMenuItemEditorDrawer({
                     {
                       title: '菜单挂牌价',
                       key: 'listedPrice',
-                      render: (_, row) => (
-                        <InputNumber
-                          min={0}
-                          precision={2}
-                          value={row.listedPriceCents / 100}
-                          addonBefore="¥"
-                          onChange={value => {
-                            const nextCents = value === null || value === undefined ? 0 : Math.round(value * 100);
-                            setSkuPrices(current =>
-                              current.map(price =>
-                                price.skuRef === row.skuRef ? {...price, listedPriceCents: nextCents} : price,
-                              ),
-                            );
-                            markDirty();
-                          }}
-                        />
-                      ),
+                      render: (_, row) => {
+                        if (!row.selected || row.stale || row.listedPriceCents === null) return '—';
+                        return (
+                          <InputNumber
+                            min={0}
+                            precision={2}
+                            value={row.listedPriceCents / 100}
+                            addonBefore="¥"
+                            onChange={value => {
+                              const nextCents = value === null || value === undefined ? 0 : Math.round(value * 100);
+                              setSkuPriceByRef(current => ({
+                                ...current,
+                                [String(row.skuRef)]: {
+                                  ...current[String(row.skuRef)],
+                                  listedPriceCents: nextCents,
+                                },
+                              }));
+                              markDirty();
+                            }}
+                            {...testId(salesMenuTestIds.itemSkuPrice(String(row.skuRef)))}
+                          />
+                        );
+                      },
                     },
                   ]}
-                />
+                  />
+                </Space>
               ) : (
                 <Space direction="vertical" size={4} style={{display: 'flex'}}>
                   <Descriptions bordered size="small" column={1}>
@@ -445,6 +656,59 @@ export function SalesMenuItemEditorDrawer({
               )}
             </Space>
           </Card>
+          {isDirect && (
+            <Card size="small" title="可售选项">
+              {item.catalogOrderOptions.length === 0 ? (
+                <Typography.Text type="secondary">该商品没有可配置销售选项。</Typography.Text>
+              ) : (
+                <Space direction="vertical" size={12} style={{display: 'flex'}}>
+                  {item.catalogOrderOptions.map((option: SalesMenuOrderOption) => {
+                    const selectedRefs = new Set(orderOptionSelections[String(option.definitionRef)] ?? []);
+                    const selectedCount = selectedRefs.size;
+                    return (
+                      <fieldset
+                        key={option.definitionRef}
+                        style={{border: '1px solid #d9d9d9', borderRadius: 6, padding: '8px 12px'}}
+                        {...testId(salesMenuTestIds.itemOrderOptionGroup(String(option.definitionRef)))}
+                      >
+                        <legend>
+                          {option.name}（{option.selectionMode === 'MULTIPLE' ? '多选' : '单选'}
+                          {option.required ? `，必选至少 ${option.minSelectionCount ?? 1} 项` : '，可不选'}）
+                          <Typography.Text type="secondary"> · 已选择 {selectedCount} 项</Typography.Text>
+                        </legend>
+                        <Space wrap>
+                          {option.values.map(value => (
+                            <Checkbox
+                              key={value.definitionValueRef}
+                              checked={selectedRefs.has(String(value.definitionValueRef))}
+                              onChange={event => {
+                                const valueRef = value.definitionValueRef;
+                                setOrderOptionSelections(current => {
+                                  const currentRefs = new Set(current[String(option.definitionRef)] ?? []);
+                                  if (event.target.checked) currentRefs.add(valueRef);
+                                  else currentRefs.delete(valueRef);
+                                  return {...current, [String(option.definitionRef)]: [...currentRefs]};
+                                });
+                                markDirty();
+                              }}
+                              {...testId(
+                                salesMenuTestIds.itemOrderOptionValue(
+                                  String(option.definitionRef),
+                                  String(value.definitionValueRef),
+                                ),
+                              )}
+                            >
+                              {value.name}（加价 {formatSalesMenuPrice(value.extraPrice)}）
+                            </Checkbox>
+                          ))}
+                        </Space>
+                      </fieldset>
+                    );
+                  })}
+                </Space>
+              )}
+            </Card>
+          )}
           <Card size="small" title="适用约束">
             {isWeighted ? (
               <Typography.Text type="secondary">称重销售商品不显示按份定义的起售量与订购倍数。</Typography.Text>

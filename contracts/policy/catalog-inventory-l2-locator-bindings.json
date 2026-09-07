@@ -406,7 +406,7 @@
       ]
     },
     "CATALOG_ITEM_STATUS_ACTION": {
-      "testId": "catalog-item-view-more",
+      "testId": "catalog-item-view-action-menu",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
@@ -560,28 +560,28 @@
       "testId": "inventory-action-count",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx",
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
+        "apps/frontend/operations-admin/src/app/automation/operationsDetailDrawerTestIds.ts"
       ]
     },
     "INVENTORY_ACTION_INCREASE": {
       "testId": "inventory-action-increase",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx",
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
+        "apps/frontend/operations-admin/src/app/automation/operationsDetailDrawerTestIds.ts"
       ]
     },
     "INVENTORY_ACTION_ADJUST": {
       "testId": "inventory-action-adjust",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx",
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
+        "apps/frontend/operations-admin/src/app/automation/operationsDetailDrawerTestIds.ts"
       ]
     },
     "INVENTORY_ACTION_CONFIGURE": {
       "testId": "inventory-action-configure",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx",
-        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"
+        "apps/frontend/operations-admin/src/app/automation/operationsDetailDrawerTestIds.ts"
       ]
     },
     "INVENTORY_ACTION_MODAL": {

@@ -2,6 +2,7 @@ import type {PortResult, NoOutput, PortActionResult} from '../types/result';
 import type {AppControlCall, AppControlPort, ApplicationToggleInput, ExitApplicationInput, NativeLoadingInput, RuntimeResetInput, SurfaceActionInput, SurfaceToggleInput, ToggleState, RuntimeTransitionObservation, ExitTransitionObservation} from '../types/appControl';
 import {createUnavailable} from './createUnavailable';
 
+const PORT_DESCRIPTOR_KEY = Symbol.for('catering-v2s.platform-ports.descriptor');
 export const unavailableAppControlPort: AppControlPort = {
   resetRuntime: async (_input: RuntimeResetInput): Promise<PortActionResult<NoOutput, RuntimeTransitionObservation>> => createUnavailable('appControl', 'resetRuntime'),
   exitApplication: async (_input: ExitApplicationInput): Promise<PortActionResult<NoOutput, ExitTransitionObservation>> => createUnavailable('appControl', 'exitApplication'),
@@ -13,3 +14,18 @@ export const unavailableAppControlPort: AppControlPort = {
   showNativeLoading: async (_input: NativeLoadingInput): Promise<PortResult<NoOutput>> => createUnavailable('appControl', 'showNativeLoading'),
   hideNativeLoading: async (_input: SurfaceActionInput): Promise<PortResult<NoOutput>> => createUnavailable('appControl', 'hideNativeLoading'),
 };
+
+if (__DEV__) {
+  Object.defineProperty(unavailableAppControlPort, PORT_DESCRIPTOR_KEY, {
+    value: Object.freeze({
+      port: 'appControl',
+      capabilities: Object.freeze([
+        'resetRuntime', 'exitApplication', 'clearHostDataCache', 'setFullscreen', 'getFullscreen',
+        'setKioskMode', 'getKioskMode', 'showNativeLoading', 'hideNativeLoading',
+      ].map(capability => Object.freeze({capability, state: 'unavailable' as const, source: 'default' as const}))),
+    }),
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  });
+}

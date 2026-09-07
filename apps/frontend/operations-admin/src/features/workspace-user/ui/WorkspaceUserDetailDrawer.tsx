@@ -1,5 +1,7 @@
 import {Alert, Button, Descriptions, Drawer, Space, Tag} from 'antd';
 import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
   NameCodePathText,
@@ -7,6 +9,7 @@ import {
   useOverlayLock,
 } from '@catering-v2s/admin-ui-foundation';
 import type {WorkspaceUser} from '../../../app/api/generated/operations-edge';
+import {operationsDetailDrawerTestIds} from '../../../app/automation/operationsDetailDrawerTestIds';
 
 type Props = {
   open: boolean;
@@ -73,6 +76,15 @@ export function WorkspaceUserDetailDrawer({
 }: Props) {
   useOverlayLock(open);
   const summary = assignmentSummary(user);
+  const actionItems = user
+    ? [
+        {
+          key: 'audit',
+          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.workspaceUser.audit}>操作历史</AdminDetailActionLabel>,
+          onClick: onOpenAudit,
+        },
+      ]
+    : [];
   return (
     <Drawer
       title={detailTitle(pageTitle)}
@@ -85,10 +97,11 @@ export function WorkspaceUserDetailDrawer({
       {...adminDrawerSurfaceProps}
       {...testId('operations-workspace-user-detail-drawer')}
       extra={
-        user ? (
-          <Button onClick={onOpenAudit} {...testId('operations-workspace-user-detail-audit')}>
-            操作历史
-          </Button>
+        actionItems.length > 0 ? (
+          <AdminDetailActionMenu
+            items={actionItems}
+            triggerTestId={operationsDetailDrawerTestIds.workspaceUser.actionMenu}
+          />
         ) : undefined
       }
     >

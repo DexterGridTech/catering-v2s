@@ -2,15 +2,15 @@ export {moduleName} from './moduleName';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
 export {
   PrimitiveActions,
-  PrimitiveButton,
-  PrimitiveContainer,
-  PrimitiveHeading,
-  PrimitiveInput,
-  PrimitiveLabel,
-  PrimitiveScrollView,
-  PrimitiveStatus,
-  PrimitiveText,
-} from './components';
+} from './components/PrimitiveActions';
+export {PrimitiveButton} from './components/PrimitiveButton';
+export {PrimitiveContainer} from './components/PrimitiveContainer';
+export {PrimitiveHeading} from './components/PrimitiveHeading';
+export {PrimitiveInput} from './components/PrimitiveInput';
+export {PrimitiveLabel} from './components/PrimitiveLabel';
+export {PrimitiveScrollView} from './components/PrimitiveScrollView';
+export {PrimitiveStatus} from './components/PrimitiveStatus';
+export {PrimitiveText} from './components/PrimitiveText';
 export type {
   PrimitiveActionsProps,
   PrimitiveAddressableProps,
@@ -27,4 +27,4 @@ export type {
   PrimitiveScrollViewHandle,
   PrimitiveStatusProps,
   PrimitiveTextProps,
-} from './components';
+} from './types/types';

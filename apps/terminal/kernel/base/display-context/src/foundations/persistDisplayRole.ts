@@ -14,23 +14,23 @@ export const persistDisplayRole = async (
     if (result.status === 'succeeded') {
       return Object.freeze({persistenceStatus: 'succeeded', persistenceFailureCount: 0})
     }
-    logDisplayError(
+    logDisplayError({
       context,
-      'display-role.persistence-failed',
-      'Display role changed in memory but persistence failed',
-      {failureCount: result.failures.length},
-    )
+      event: 'display-role.persistence-failed',
+      message: 'Display role changed in memory but persistence failed',
+      data: {failureCount: result.failures.length},
+    })
     return Object.freeze({
       persistenceStatus: 'failed' as const,
       persistenceFailureCount: result.failures.length,
     })
   } catch (error) {
-    logDisplayError(
+    logDisplayError({
       context,
-      'display-role.persistence-rejected',
-      'Display role changed in memory but persistence rejected',
-      {errorType: error instanceof Error ? error.name : typeof error},
-    )
+      event: 'display-role.persistence-rejected',
+      message: 'Display role changed in memory but persistence rejected',
+      data: {errorType: error instanceof Error ? error.name : typeof error},
+    })
     return Object.freeze({persistenceStatus: 'failed' as const, persistenceFailureCount: 1})
   }
 }

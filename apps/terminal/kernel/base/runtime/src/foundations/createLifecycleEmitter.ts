@@ -103,20 +103,20 @@ export type LifecycleLedgerWriter = (
   depthRecord: ActorExecutionRecord | undefined,
 ) => void
 
-const createActorExecutionRecord = (
-  actorKey: string,
-  status: ActorExecutionRecord['status'],
-  startedAt: number,
-  completedAt: number | null,
-  result: ActorExecutionRecord['result'],
-  error: ActorExecutionRecord['error'],
-): ActorExecutionRecord => Object.freeze({
-  actorKey,
-  status,
-  startedAt,
-  completedAt,
-  result,
-  error,
+const createActorExecutionRecord = (input: Readonly<{
+  actorKey: string
+  status: ActorExecutionRecord['status']
+  startedAt: number
+  completedAt: number | null
+  result: ActorExecutionRecord['result']
+  error: ActorExecutionRecord['error']
+}>): ActorExecutionRecord => Object.freeze({
+  actorKey: input.actorKey,
+  status: input.status,
+  startedAt: input.startedAt,
+  completedAt: input.completedAt,
+  result: input.result,
+  error: input.error,
 })
 
 const createCommandExecutionObservation = (
@@ -313,6 +313,54 @@ export const createLifecycleEmitter = (input: EmitterInput) => {
     }
   }
 
+  const recordTransition = (input: Readonly<{
+    transition: LifecycleTransition
+    commandKey: string
+    observation: CommandExecutionObservation | undefined
+    commandRecords: Map<string, ActorExecutionRecord> | undefined
+  }>): CommandExecutionObservation | undefined => {
+    const {transition, commandKey, observation, commandRecords} = input
+    if (transition.kind === 'actor.running' && commandRecords !== undefined) {
+      commandRecords.set(transition.actorKey, createActorExecutionRecord({
+        actorKey: transition.actorKey,
+        status: 'running',
+        startedAt: transition.startedAt,
+        completedAt: null,
+        result: null,
+        error: null,
+      }))
+      return observation
+    }
+    if (
+      (transition.kind === 'actor.completed'
+        || transition.kind === 'actor.error'
+        || transition.kind === 'actor.timed-out')
+      && commandRecords !== undefined
+    ) {
+      commandRecords.set(transition.actorKey, createActorExecutionRecord({
+        actorKey: transition.actorKey,
+        status: transition.kind === 'actor.completed'
+          ? 'completed'
+          : transition.kind === 'actor.error' ? 'error' : 'timed-out',
+        startedAt: transition.startedAt,
+        completedAt: transition.completedAt,
+        result: transition.kind === 'actor.completed' ? transition.result : null,
+        error: transition.kind === 'actor.error' ? transition.error : null,
+      }))
+      return observation
+    }
+    if (transition.kind !== 'command.completed' || observation === undefined || commandRecords === undefined) {
+      return observation
+    }
+    const completedObservation = replaceObservationActors(
+      observation,
+      [...commandRecords.values()],
+      transition.completedAt,
+    )
+    observations.set(commandKey, completedObservation)
+    return completedObservation
+  }
+
   const emitLifecycle = (
     transition: LifecycleTransition,
     observer?: RuntimeLifecycleObserver,
@@ -340,40 +388,7 @@ export const createLifecycleEmitter = (input: EmitterInput) => {
         return {ok: false, error: new Error('lifecycle transition arrived before command.started')}
       }
 
-      if (transition.kind === 'actor.running' && commandRecords !== undefined) {
-        commandRecords.set(transition.actorKey, createActorExecutionRecord(
-          transition.actorKey,
-          'running',
-          transition.startedAt,
-          null,
-          null,
-          null,
-        ))
-      } else if (
-        (transition.kind === 'actor.completed'
-          || transition.kind === 'actor.error'
-          || transition.kind === 'actor.timed-out')
-        && commandRecords !== undefined
-      ) {
-        commandRecords.set(transition.actorKey, createActorExecutionRecord(
-          transition.actorKey,
-          transition.kind === 'actor.completed'
-            ? 'completed'
-            : transition.kind === 'actor.error' ? 'error' : 'timed-out',
-          transition.startedAt,
-          transition.completedAt,
-          transition.kind === 'actor.completed' ? transition.result : null,
-          transition.kind === 'actor.error' ? transition.error : null,
-        ))
-      } else if (transition.kind === 'command.completed' && observation !== undefined && commandRecords !== undefined) {
-        const completedObservation = replaceObservationActors(
-          observation,
-          [...commandRecords.values()],
-          transition.completedAt,
-        )
-        observation = completedObservation
-        observations.set(commandKey, completedObservation)
-      }
+      observation = recordTransition({transition, commandKey, observation, commandRecords})
 
       const currentObservation = observation === undefined
         ? undefined
@@ -423,14 +438,14 @@ export const createLifecycleEmitter = (input: EmitterInput) => {
         || transition.kind === 'actor.timed-out'
       const actorKey = 'actorKey' in transition ? transition.actorKey : undefined
       const depthRecord = transition.kind === 'command.depth-rejected'
-        ? createActorExecutionRecord(
-            'kernel.base.runtime.depth-rejected',
-            'error',
-            transition.context.startedAt,
-            nowTimestampMs(),
-            null,
-            transition.error,
-          )
+        ? createActorExecutionRecord({
+            actorKey: 'kernel.base.runtime.depth-rejected',
+            status: 'error',
+            startedAt: transition.context.startedAt,
+            completedAt: nowTimestampMs(),
+            result: null,
+            error: transition.error,
+          })
         : undefined
       let ledgerObservation = currentObservation
       if (transition.kind === 'command.depth-rejected') {
@@ -452,17 +467,16 @@ export const createLifecycleEmitter = (input: EmitterInput) => {
         const failureRecord = actorRecordTransition
           && actorKey !== undefined
           && commandRecords !== undefined
-          ? createActorExecutionRecord(
+          ? createActorExecutionRecord({
               actorKey,
-              'error',
-              transition.startedAt,
-              nowTimestampMs(),
-              null,
-              projectError(error, transition.context),
-            )
+              status: 'error',
+              startedAt: transition.startedAt,
+              completedAt: nowTimestampMs(),
+              result: null,
+              error: projectError(error, transition.context),
+            })
           : undefined
-        if (failureRecord !== undefined && commandRecords !== undefined) {
-          if (actorKey === undefined) throw new Error('Actor ledger failure is missing actor key')
+        if (failureRecord !== undefined && actorKey !== undefined && commandRecords !== undefined) {
           commandRecords.set(actorKey, failureRecord)
           const failedObservation = replaceObservationActors(
             observation ?? createCommandExecutionObservation(transition.context, [], null),
@@ -503,14 +517,14 @@ export const createLifecycleEmitter = (input: EmitterInput) => {
         || transition.kind === 'actor.timed-out'
       if (terminalActor) {
         const commandKey = String(transition.context.commandId)
-        const fallbackRecord = createActorExecutionRecord(
-          transition.actorKey,
-          'error',
-          transition.startedAt,
-          nowTimestampMs(),
-          null,
-          projectError(error, transition.context),
-        )
+        const fallbackRecord = createActorExecutionRecord({
+          actorKey: transition.actorKey,
+          status: 'error',
+          startedAt: transition.startedAt,
+          completedAt: nowTimestampMs(),
+          result: null,
+          error: projectError(error, transition.context),
+        })
         const commandRecords = recordsByCommand.get(commandKey) ?? new Map<string, ActorExecutionRecord>()
         commandRecords.set(transition.actorKey, fallbackRecord)
         recordsByCommand.set(commandKey, commandRecords)

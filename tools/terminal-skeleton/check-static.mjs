@@ -174,10 +174,10 @@ function runAssemblyEntryReachability(context) {
   const assemblyDirectory = moduleNameToPath(assemblyModuleName, root);
   const entryPath = entryFile(assemblyDirectory, 'index.ts', 'index.ts');
   const appPath = entryFile(assemblyDirectory, 'App.tsx', 'App.tsx');
-  const platformPortsPath = entryFile(assemblyDirectory, 'src/platformPorts.ts', 'platformPorts.ts');
+  const platformPortsPath = entryFile(assemblyDirectory, 'src/assembly/platformPorts.ts', 'assembly/platformPorts.ts');
 
   assertRuntimeImport(entryPath, './App', 'assembly index.ts');
-  assertRuntimeImport(appPath, './src/platformPorts', 'assembly App.tsx');
+  assertRuntimeImport(appPath, './src/assembly/platformPorts', 'assembly App.tsx');
 
   const appSource = fs.readFileSync(appPath, 'utf8');
   if (/skeletonBootstrap|bootstrapSession|bootstrapRuntime/.test(appSource)) {

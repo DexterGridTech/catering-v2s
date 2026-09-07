@@ -37,6 +37,26 @@ export async function chooseAntOption(page: Page, label: string, optionLabel: st
   await expect(page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible')).toHaveCount(0);
 }
 
+/**
+ * Detail Drawer actions are rendered in an Ant Design popup portal. Keep the
+ * menu-opening step in the platform L2 helper so each journey binds the
+ * native trigger and the app-owned menu item by stable TestIds.
+ */
+export async function clickPlatformDetailAction(
+  page: Page,
+  actionMenuTestId: string,
+  actionTestId: string,
+): Promise<void> {
+  const trigger = page.getByTestId(actionMenuTestId);
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+  const dropdown = page.locator('.ant-dropdown:not(.ant-dropdown-hidden):visible').last();
+  await expect(dropdown).toBeVisible();
+  const action = dropdown.getByTestId(actionTestId);
+  await expect(action).toBeVisible();
+  await action.click();
+}
+
 export async function signOutPlatform(page: Page) {
   // Read-only L2 journeys intentionally leave their owner detail surface open.
   // Close it through the normal keyboard path before asserting that the shell

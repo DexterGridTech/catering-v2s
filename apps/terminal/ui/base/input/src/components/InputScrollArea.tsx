@@ -4,8 +4,8 @@ import {
   type PrimitiveInputHandle,
   type PrimitiveScrollViewHandle,
 } from '@catering-v2s/ui-base-primitives'
-import {InputScrollAncestorContext} from '../context'
-import {calculateScrollOffset, type LayoutRect} from '../model/scrollIntoView'
+import {InputScrollAncestorContext} from '../contexts/context'
+import {calculateScrollOffset, type LayoutRect} from '../foundations/scrollIntoView'
 
 export type InputScrollAreaProps = Readonly<{
   readonly testID: string
@@ -21,8 +21,10 @@ export const InputScrollArea = ({testID, children}: InputScrollAreaProps) => {
     const scroll = scrollRef.current
     if (input === null || scroll === null) return
 
-    input.measureInWindow((inputX, inputY, inputWidth, inputHeight) => {
-      scroll.measureInWindow((viewportX, viewportY, viewportWidth, viewportHeight) => {
+    input.measureInWindow((...inputLayout: [number, number, number, number]) => {
+      const [inputX, inputY, inputWidth, inputHeight] = inputLayout
+      scroll.measureInWindow((...viewportLayout: [number, number, number, number]) => {
+        const [viewportX, viewportY, viewportWidth, viewportHeight] = viewportLayout
         const nextOffset = calculateScrollOffset({
           inputRect: {x: inputX, y: inputY, width: inputWidth, height: inputHeight},
           viewportRect: {x: viewportX, y: viewportY, width: viewportWidth, height: viewportHeight},
@@ -57,5 +59,3 @@ export const InputScrollArea = ({testID, children}: InputScrollAreaProps) => {
     </InputScrollAncestorContext.Provider>
   )
 }
-
-export type {LayoutRect}

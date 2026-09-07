@@ -399,7 +399,7 @@ LIST tag 失效链回读。列表、详情和 Drawer 分别声明自己的读边
 需要结合生命周期和业务事实判断；可机械检查信号导出、调用点和 focused test，但不能用字符串命中替代
 刷新后的真实读回验证。
 
-### 3-K · 管理后台交互一致性七族(Dexter 2026-08-23 裁定)
+### 3-K · 管理后台交互一致性(Dexter 2026-08-23 裁定)
 
 **适用范围**:两个管理后台中所有管理列表、详情、编辑器、Drawer、Modal、确认面、空态、反馈和状态标识。
 本节是跨批唯一正本；业务 Journey 与交互稿只能逐字引用并逐 surface 应用，不得另建一份局部交互规范。
@@ -540,7 +540,7 @@ Tag 文案必须是业务中文；不得显示 `DRAFT`、`ENABLED`、`DISABLED` 
 
 #### 3-K-8 · 跨批防漂移与证据边界
 
-每份 UI-bearing Journey、交互稿和 implementation-facing design 都必须逐字引用本节，并按七族列出
+每份 UI-bearing Journey、交互稿和 implementation-facing design 都必须逐字引用本节，并按本节规则列出
 本批所有 surface 的适用情况；不得复制改写成本批第二正本。评审任取两个不同批次 surface 逐族对照，
 没有业务事实差异却出现交互差异即 finding。
 
@@ -571,6 +571,39 @@ CSS/XPath 或宽 locator 代替真实触点。
 
 **仓内正例**：`未验证`。当前规则建立后，首个通过逐控件分母、真实节点绑定和独立复核的 screen 才可登记为
 正例；在此之前不得把“有一个 testId”或“元素存在”当作完整正例。
+
+#### 3-K-10 · 详情抽屉动作入口
+
+**规则**：两个管理后台中所有承载已存在业务对象详情的 Drawer，右上角 header action 必须只保留一个
+“操作”按钮；点击后通过 Popup Menu 展示当前读模型和权限允许的动作。菜单项的顺序、业务文案、
+`disabled`、危险标识、确认面、loading/提交锁和失败反馈必须与原动作逐项保持一致，不能因为收进菜单而
+删除、合并或改写业务语义。统一展示机制必须复用
+`libraries/frontend/admin-ui-foundation` 的 `AdminDetailActionMenu`；业务 app 只提供本 surface 的
+动作项、回调和 `*TestIds.ts` testId，不得在两个 app 重复实现 Dropdown 包装。
+
+每个详情 Drawer 的触发器和每个可操作菜单项都必须从所在 app 的 `*TestIds.ts` 唯一源取得稳定 testId。
+触发器 testId 挂在真正的 Button；菜单项 testId 按 Ant Design 菜单的实际可标记节点或仓内既有
+`Dropdown` item 形态落点，并在 UI/testId 分母中记录实际触点。菜单项不得退化为 role、文本、数组下标、
+CSS/XPath 或宽 locator。无动作时不渲染空的“操作”按钮。
+
+本条**不适用于**新建、编辑、配置或资产暂存 Drawer；Modal；页面 Card 的详情 `extra`；列表行操作菜单；
+详情正文中针对某一集合行的动作；以及 Drawer 自带的关闭按钮。上述 surface 仍遵守各自的弹层、表单、
+确认和 testId 规则，整改分母必须以排除理由登记，不能因命中了 `extra=` 就纳入。
+
+**反例**：`platform-admin` 的 `RoleDetailDrawer` 直接在 `extra` 中平铺“操作历史、编辑业务角色、停用业务角色、
+标记删除业务角色”；`operations-admin` 的 `ContractDetailDrawer`、`InventoryDetailDrawer` 和
+`BusinessEntityDetailDrawer` 也在同一个 header 中平铺多个动作。另一个反例是只改截图中的角色 Drawer，
+却没有扫描两个 app 的其余详情 Drawer，导致同一任务在不同模块出现不同入口。
+
+**可证伪判据**：对两个 app 的详情 Drawer 建立完整成员清单后，任一适用 Drawer 的 header action 数量大于一个、
+触发器文案不是“操作”、菜单项丢失原动作条件/危险标识/回调/testId，或 app 自建同义 Dropdown wrapper，
+即 `DETAIL_DRAWER_ACTION_MENU=FAIL`。反例 surface 被误纳入或适用 Drawer 被漏列，同样失败。focused/static
+proof 可证明源码和渲染结构，真实打开菜单、点击菜单项、确认/失败/焦点行为仍需按授权的浏览器验证；
+静态存在不能代替用户行为证据。
+
+**仓内正例**：整改完成后登记 foundation `AdminDetailActionMenu` 与至少一个
+`platform-admin`、一个 `operations-admin` 详情 Drawer 的消费路径；在实现和 focused/static proof 之前保持
+`未验证`，不得把现有列表行 `Dropdown` 当作详情 Drawer 正例。
 
 ---
 

@@ -1,6 +1,13 @@
-import {Button, Descriptions, Drawer, Space} from 'antd';
-import {adminDrawerSurfaceProps, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {Descriptions, Drawer} from 'antd';
+import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
+  adminDrawerSurfaceProps,
+  testId,
+  useOverlayLock,
+} from '@catering-v2s/admin-ui-foundation';
 import type {WorkspaceRole, WorkspaceRolePage, WorkspaceRoleStatus} from '../../../app/api/generated/platform-edge';
+import {platformDetailDrawerTestIds} from '../../../app/automation/platformDetailDrawerTestIds';
 import {RolePermissionSummaryTrees, serviceNodeTypeLabel} from './RolePermissionFields';
 import {
   canManageWorkspaceIam,
@@ -34,6 +41,51 @@ export function RoleDetailDrawer({
   onAudit,
 }: Props) {
   useOverlayLock(open);
+  const actionItems = role
+    ? [
+        {
+          key: 'audit',
+          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.role.audit}>操作历史</AdminDetailActionLabel>,
+          onClick: onAudit,
+        },
+        ...(canManageWorkspaceIam(role.status)
+          ? [
+              {
+                key: 'edit',
+                label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.role.edit}>编辑业务角色</AdminDetailActionLabel>,
+                onClick: onEdit,
+              },
+              ...(toggleWorkspaceIamStatus(role.status)
+                ? [
+                    {
+                      key: 'status',
+                      label: (
+                        <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.role.status}>
+                          {role.status === 'ENABLED' ? '停用业务角色' : '启用业务角色'}
+                        </AdminDetailActionLabel>
+                      ),
+                      onClick: () => onChangeStatus(toggleWorkspaceIamStatus(role.status)!),
+                    },
+                  ]
+                : []),
+              ...(canVoidWorkspaceIam(role.status)
+                ? [
+                    {
+                      key: 'void',
+                      danger: true,
+                      label: (
+                        <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.role.void}>
+                          标记删除业务角色
+                        </AdminDetailActionLabel>
+                      ),
+                      onClick: () => onChangeStatus('VOIDED'),
+                    },
+                  ]
+                : []),
+            ]
+          : []),
+      ]
+    : [];
   return (
     <Drawer
       title="业务角色详情"
@@ -46,33 +98,12 @@ export function RoleDetailDrawer({
       {...adminDrawerSurfaceProps}
       {...testId('workspace-role-detail-drawer')}
       extra={
-        role && (
-          <Space>
-            <Button onClick={onAudit} {...testId('workspace-role-audit-history')}>
-              操作历史
-            </Button>
-            {canManageWorkspaceIam(role.status) && (
-              <>
-                <Button onClick={onEdit} {...testId('workspace-role-edit')}>
-                  编辑业务角色
-                </Button>
-                {toggleWorkspaceIamStatus(role.status) && (
-                  <Button
-                    onClick={() => onChangeStatus(toggleWorkspaceIamStatus(role.status)!)}
-                    {...testId('workspace-role-transition-status')}
-                  >
-                    {role.status === 'ENABLED' ? '停用业务角色' : '启用业务角色'}
-                  </Button>
-                )}
-                {canVoidWorkspaceIam(role.status) && (
-                  <Button danger onClick={() => onChangeStatus('VOIDED')} {...testId('workspace-role-void')}>
-                    标记删除业务角色
-                  </Button>
-                )}
-              </>
-            )}
-          </Space>
-        )
+        actionItems.length > 0 ? (
+          <AdminDetailActionMenu
+            items={actionItems}
+            triggerTestId={platformDetailDrawerTestIds.role.actionMenu}
+          />
+        ) : undefined
       }
     >
       {role && (

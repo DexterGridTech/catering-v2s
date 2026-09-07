@@ -1,5 +1,9 @@
 # TER terminal input 全批逐代码—详设对账
 
+> HISTORICAL_RECORD=true：本记录对应 2026-09-06 的 CP-0..CP-3 实施状态；2026-09-07
+> Web 宿主缩放修复后的当前对账见 `doc/evidence/platform/terminal-input/reconciliation-web-surface-scale-2026-09-07.md`。
+> 本文件的历史 PASS 不覆盖后续宿主代码变更，也不替代当前记录。
+
 ```text
 REVIEW_CYCLE_ID=TERMINAL_INPUT_CP0_CP3_IMPLEMENTATION_2026-09-06
 REVIEW_TARGET=IMPLEMENTATION

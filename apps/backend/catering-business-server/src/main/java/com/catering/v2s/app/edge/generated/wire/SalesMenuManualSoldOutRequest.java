@@ -2,6 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuManualSoldOutRequest(
+    SalesMenuManualSoldOutRequestTarget target,
     String reason,
     Long expectedVersion
 ) {}

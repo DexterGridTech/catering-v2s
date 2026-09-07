@@ -1,5 +1,6 @@
 import {expect, test, type Page} from '@playwright/test';
-import {selectOperationsDataScope, selectOperationsOption} from './operationsL2';
+import {operationsDetailDrawerTestIds} from '../../app/automation/operationsDetailDrawerTestIds';
+import {clickOperationsDetailAction, selectOperationsDataScope, selectOperationsOption} from './operationsL2';
 
 function requiredL2Env(name: string) {
   const value = process.env[name];
@@ -53,10 +54,15 @@ test(
       .locator('[data-testid^="operations-store-open-detail-"]')
       .filter({hasText: storeName})
       .click();
-    await expect(page.getByTestId('operations-store-detail-drawer')).toBeVisible();
-    await expect(page.getByText('所属项目')).toBeVisible();
+    const detailDrawer = page.getByTestId('operations-store-detail-drawer');
+    await expect(detailDrawer).toBeVisible();
+    await expect(detailDrawer.getByText('所属项目')).toBeVisible();
 
-    await page.getByTestId('operations-store-detail-status').click();
+    await clickOperationsDetailAction(
+      page,
+      operationsDetailDrawerTestIds.store.actionMenu,
+      operationsDetailDrawerTestIds.store.status,
+    );
     const firstStatusDialog = page.getByRole('dialog', {name: /确认停用/});
     await expect(firstStatusDialog).toBeVisible();
     const firstStatusResponse = page.waitForResponse(
@@ -72,9 +78,13 @@ test(
     expect(Number.isInteger(firstResponse.request().postDataJSON().expectedVersion)).toBe(true);
     expect(firstResponse.request().headers()['idempotency-key']).toBeTruthy();
     await expect(firstResponse.json()).resolves.toMatchObject({status: 'DISABLED'});
-    await expect(page.getByTestId('operations-store-detail-status')).toHaveText(/启\s*用/);
+    await expect(detailDrawer.getByText('启用', {exact: true})).toBeVisible();
 
-    await page.getByTestId('operations-store-detail-status').click();
+    await clickOperationsDetailAction(
+      page,
+      operationsDetailDrawerTestIds.store.actionMenu,
+      operationsDetailDrawerTestIds.store.status,
+    );
     const secondStatusDialog = page.getByRole('dialog', {name: /确认启用/});
     await expect(secondStatusDialog).toBeVisible();
     const secondStatusResponse = page.waitForResponse(
@@ -90,6 +100,6 @@ test(
     expect(Number.isInteger(secondResponse.request().postDataJSON().expectedVersion)).toBe(true);
     expect(secondResponse.request().headers()['idempotency-key']).toBeTruthy();
     await expect(secondResponse.json()).resolves.toMatchObject({status: 'ENABLED'});
-    await expect(page.getByTestId('operations-store-detail-status')).toHaveText(/停\s*用/);
+    await expect(detailDrawer.getByText('停用', {exact: true})).toBeVisible();
   },
 );

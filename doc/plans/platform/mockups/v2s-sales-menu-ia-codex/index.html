@@ -21,14 +21,17 @@
     h1 { margin:0; font-size:22px; }
     .hint { color:var(--muted); font-size:13px; }
     .panel { background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:0 2px 8px rgba(40,60,90,.03); }
-    .channels { display:flex; gap:10px; padding:12px; margin-bottom:12px; overflow:auto; }
-    .channel { min-width:210px; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:#fff; text-align:left; }
-    .channel.active { border-color:var(--blue); background:var(--blue-weak); box-shadow:0 0 0 1px var(--blue) inset; }
-    .channel-title { display:flex; justify-content:space-between; font-weight:700; }
+    .entry-panel { padding:12px; margin-bottom:12px; overflow:auto; }
+    .entry-row { display:flex; align-items:center; gap:10px; min-width:980px; white-space:nowrap; }
+    .entry-row + .entry-row { margin-top:10px; }
+    .entry-row select { min-width:220px; }
+    .entry-row select.channel-select { flex:1 1 auto; min-width:360px; }
+    .entry-row select.menu-select { flex:1 1 280px; }
+    .entry-row .segments { flex:none; }
+    .channel-meta { color:var(--muted); font-size:12px; white-space:nowrap; }
     .sub { color:var(--muted); font-size:12px; margin-top:2px; }
     .tag { display:inline-flex; align-items:center; padding:1px 7px; border-radius:10px; background:#f0f3f7; color:#5d6b7e; font-size:12px; white-space:nowrap; }
     .tag.green { color:var(--green); background:#edf8f0; }
-    .toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px; margin-bottom:12px; flex-wrap:wrap; }
     .toolbar-left,.toolbar-right,.inline { display:flex; align-items:center; gap:8px; }
     .segments { display:flex; background:#f0f3f7; border-radius:7px; padding:3px; }
     .segments button { border:0; background:transparent; color:#56657b; padding:6px 13px; border-radius:5px; }
@@ -39,7 +42,7 @@
     .btn.primary { border-color:var(--blue); background:var(--blue); color:#fff; }
     .btn.text { border-color:transparent; background:transparent; padding:4px 7px; color:var(--blue); }
     .btn.danger { color:var(--red); }
-    .workbench { display:grid; grid-template-columns:235px minmax(0,1fr); min-height:550px; overflow:hidden; }
+    .workbench { display:grid; grid-template-columns:176px minmax(0,1fr); min-height:550px; overflow:hidden; }
     .sections { border-right:1px solid var(--line); padding:14px 12px; }
     .panel-title { display:flex; align-items:center; justify-content:space-between; font-weight:700; margin-bottom:12px; gap:10px; }
     .section-row { display:flex; align-items:center; gap:6px; padding:9px 8px; margin-bottom:4px; border-radius:6px; cursor:pointer; }
@@ -57,7 +60,9 @@
     table { width:100%; border-collapse:collapse; min-width:920px; }
     th { background:#f7f9fc; color:#59687e; text-align:left; padding:9px 10px; font-weight:600; white-space:nowrap; }
     td { padding:10px; border-top:1px solid var(--line); vertical-align:middle; }
-    .product { display:flex; align-items:center; gap:9px; min-width:190px; }
+    .product { display:flex; align-items:flex-start; gap:9px; min-width:190px; }
+    .media-stack { width:42px; flex:none; text-align:center; }
+    .media-stack .sub { white-space:nowrap; }
     .photo { width:42px; height:42px; border-radius:7px; background:#fff4e7; display:grid; place-items:center; font-size:23px; flex:none; }
     .product-name { border:0; padding:0; color:var(--blue); background:transparent; font-weight:700; text-align:left; }
     .ok { color:var(--green); font-weight:600; }
@@ -91,6 +96,8 @@
     .surface-card { border:1px solid var(--line); border-radius:7px; padding:11px; margin-bottom:12px; }
     .shape-pill { display:inline-block; background:#eef4ff; color:var(--blue); border-radius:12px; padding:2px 8px; font-size:12px; }
     .spec-table { width:100%; min-width:0; }
+    .menu-table { min-width:760px; }
+    .stacked-line { display:block; }
     .spec-table td,.spec-table th { padding:8px; }
     .detail-summary { display:flex; align-items:center; gap:12px; padding:12px; margin-bottom:14px; border:1px solid #cfe0ff; background:#f4f8ff; border-radius:8px; }
     .detail-summary .photo { width:52px; height:52px; font-size:28px; }
@@ -144,35 +151,35 @@
   <div class="shell">
     <header class="appbar"><div class="brand">华润万象生活餐饮运营平台</div><div class="global">门店由全局工作区选择</div></header>
     <main class="workspace">
-      <div class="page-head"><h1>门店销售菜单</h1><span class="hint">一个页面完成菜单编排、发布与销售控制</span></div>
-
-      <section class="panel channels" aria-label="经营入口">
-        <button class="channel active" data-channel="dinein" onclick="selectChannel(this)"><div class="channel-title"><span>堂食点单</span><span class="tag green">启用</span></div><div class="sub">内部堂食 · 2 份菜单</div></button>
-        <button class="channel" data-channel="takeaway" onclick="selectChannel(this)"><div class="channel-title"><span>外带点单</span><span class="tag green">启用</span></div><div class="sub">内部外带 · 2 份菜单</div></button>
-      </section>
-
-      <section class="panel toolbar">
-        <div class="toolbar-left">
+      <section class="panel entry-panel" aria-label="经营入口">
+        <div class="entry-row">
+          <select id="channelSelect" class="channel-select" aria-label="经营入口" onchange="selectChannel(this.value)">
+            <option value="dinein">万象城内部堂食 · 已启用 · 渠道模板：门店内部堂食模板 · 接入：内部接入 · 订单：堂食 · 模板状态：已启用</option>
+            <option value="takeaway">万象城内部外卖 · 已启用 · 渠道模板：门店内部外卖模板 · 接入：内部接入 · 订单：外卖 · 模板状态：已启用</option>
+          </select>
+          <button class="btn" onclick="openDrawer('menus')">管理菜单</button>
+        </div>
+        <div class="entry-row">
           <div class="segments" aria-label="菜单模式">
             <button data-mode="front" onclick="setMode('front')">前台菜单</button>
             <button class="active" data-mode="draft" onclick="setMode('draft')">草稿菜单</button>
             <button data-mode="records" onclick="setMode('records')">操作记录</button>
           </div>
-          <select id="menuSelect" aria-label="当前菜单" onchange="selectMenu(this.value)">
+          <select id="menuSelect" class="menu-select" aria-label="当前菜单" onchange="selectMenu(this.value)">
             <option value="dine">堂食菜单 · 有未发布修改</option>
             <option value="lunch">午市套餐 · 与前台一致</option>
           </select>
-        </div>
-        <div class="toolbar-right" id="menuActions">
-          <button class="btn" onclick="openDrawer('schedule')">生效与时段</button>
-          <button class="btn" onclick="openDrawer('menus')">管理菜单</button>
-          <button class="btn primary" id="publishBtn" onclick="openDrawer('publish')">更新到前台</button>
+          <div class="toolbar-right" id="menuActions">
+            <button class="btn" onclick="openDrawer('schedule')">生效与时段</button>
+            <button class="btn primary" id="publishBtn" onclick="openDrawer('publish')">更新到前台</button>
+            <button class="btn" onclick="showToast('当前菜单已刷新')">刷新</button>
+          </div>
         </div>
       </section>
 
       <section class="panel workbench" id="workbench">
         <aside class="sections">
-          <div class="panel-title"><span>销售分区</span><button class="btn text" id="newSectionBtn" onclick="showToast('新建销售分区')">+ 新增</button></div>
+          <div class="panel-title"><span>销售分区</span><button class="btn" id="newSectionBtn" onclick="showToast('新建销售分区')">+ 新建分区</button></div>
           <div id="sectionRows"></div>
         </aside>
         <div class="table-panel">
@@ -196,7 +203,7 @@
   <div class="context-menu" id="contextMenu"></div>
   <div class="mask" id="mask" onclick="closeDrawer()"></div>
   <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
-    <div class="drawer-head"><h2 id="drawerTitle"></h2><div class="inline"><button class="btn text danger" id="deleteSaleItemBtn" onclick="openDeleteSaleItem()" hidden>删除销售项</button><button class="btn text" onclick="closeDrawer()">关闭</button></div></div>
+    <div class="drawer-head"><h2 id="drawerTitle"></h2><div class="inline"><button class="btn primary" id="createMenuBtn" onclick="showCreateMenu()" hidden>新建菜单</button><button class="btn text danger" id="deleteSaleItemBtn" onclick="openDeleteSaleItem()" hidden>删除销售项</button><button class="btn text" onclick="closeDrawer()">关闭</button></div></div>
     <div class="drawer-body" id="drawerBody"></div>
     <div class="drawer-foot" id="drawerFoot"></div>
   </aside>
@@ -220,7 +227,7 @@
       {name:'招牌推荐', count:21}, {name:'主食', count:21}, {name:'小吃', count:21}, {name:'饮品', count:21}
     ];
     const items = [
-      {icon:'🍗', name:'香辣鸡翅', code:'APP-CHICKEN-WINGS-001', shape:'按规格管理商品', shapeKey:'variant', spec:'原味、香辣', price:'¥46.00', defaultPrice:'商品默认 ¥48.00', constraint:'起售 1 份 · 按 1 份递增', inventory:'库存可售', manual:'正常销售', reason:''},
+      {icon:'🍗', name:'香辣鸡翅', code:'APP-CHICKEN-WINGS-001', media:'1 张菜单图片', shape:'按规格管理商品', shapeKey:'variant', spec:'原味、香辣', price:'¥46.00', priceLines:['原味：菜单 ¥46.00 / 默认 ¥48.00','香辣：¥50.00'], defaultPrice:'商品默认 ¥48.00', constraint:'起售 1 份 · 按 1 份递增', inventory:'库存可售', manual:'正常销售', reason:''},
       {icon:'🍚', name:'米饭 · 大份', code:'RICE-001', shape:'按规格管理商品', shapeKey:'variant', spec:'大份', price:'¥5.00', defaultPrice:'', constraint:'起售 1 份 · 按 1 份递增', inventory:'库存可售', manual:'正常销售', reason:''},
       {icon:'🍚', name:'米饭 · 小份', code:'RICE-001', shape:'按规格管理商品', shapeKey:'variant', spec:'小份', price:'¥3.00', defaultPrice:'', constraint:'起售 1 份 · 按 1 份递增', inventory:'库存可售', manual:'正常销售', reason:''},
       {icon:'🥩', name:'鲜切牛肉', code:'WEIGHED-BEEF-001', shape:'称重销售商品', shapeKey:'weighted', spec:'无规格', price:'¥68.00 / 千克', defaultPrice:'', constraint:'不适用', inventory:'自动不可售 · 库存不足', manual:'正常销售', reason:''},
@@ -241,7 +248,7 @@
       ...Array.from({length:18},(_,index)=>({time:`2026-08-${String(29-index).padStart(2,'0')} 12:00`,action:`菜单操作记录 ${index+4}`,result:'成功',actor:'门店商品专员'}))
     ];
 
-    function selectChannel(el){ document.querySelectorAll('.channel').forEach(x=>x.classList.remove('active')); el.classList.add('active'); state.channel=el.dataset.channel; state.salesPage=1; state.recordPage=1; state.mode==='records'?renderRecords():renderRows(); showToast('经营入口已更新，已回到第一页'); }
+    function selectChannel(value){ state.channel=value; state.salesPage=1; state.recordPage=1; state.mode==='records'?renderRecords():renderRows(); showToast('经营入口已更新，已回到第一页'); }
     function selectMenu(value){ state.menu=value; state.salesPage=1; state.recordPage=1; state.mode==='records'?renderRecords():renderRows(); showToast('已选择当前查看/编辑的菜单，已回到第一页'); }
     function currentMenu(){ return menus.find(menu=>menu.key===state.menu)||menus[0]; }
     function renderMenuOptions(){
@@ -277,21 +284,28 @@
       const start=(state.salesPage-1)*state.salesPageSize;
       const visibleItems=items.slice(start,start+state.salesPageSize);
       if(state.mode==='draft'){
-        head.innerHTML='<tr><th>菜单商品</th><th>商品形态</th><th>销售规格</th><th>挂牌价</th><th>销售约束</th><th>操作</th></tr>';
+        head.innerHTML='<tr><th>菜单商品</th><th>挂牌价</th><th>商品形态</th><th>销售规格</th><th>销售约束</th><th>操作</th></tr>';
         body.innerHTML=visibleItems.map((p,localIndex)=>{const i=start+localIndex;return `<tr>
-          <td>${productCell(p,i)}</td><td><span class="shape-pill">${p.shape}</span></td><td>${p.spec}</td>
-          <td>${p.price}${p.defaultPrice?`<div class="sub">${p.defaultPrice}</div>`:''}</td><td>${p.constraint}</td>
+          <td>${productCell(p,i)}</td><td>${priceCell(p)}</td><td><span class="shape-pill">${p.shape}</span></td><td>${stackedCell(p.spec)}</td>
+          <td>${p.constraint}</td>
           <td><button class="more-btn" aria-label="${p.name}操作" onclick="openContext(event,'item',${i})">…</button></td></tr>`}).join('');
       }else{
-        head.innerHTML='<tr><th>菜单商品</th><th>商品形态</th><th>销售规格</th><th>挂牌价</th><th>库存状态</th><th>销售状态</th></tr>';
+        head.innerHTML='<tr><th>菜单商品</th><th>挂牌价</th><th>商品形态</th><th>销售规格</th><th>库存状态</th><th>销售状态</th></tr>';
         body.innerHTML=visibleItems.map((p,localIndex)=>{const i=start+localIndex;return `<tr>
-          <td>${productCell(p,i)}</td><td><span class="shape-pill">${p.shape}</span></td><td>${p.spec}</td><td>${p.price}</td>
+          <td>${productCell(p,i)}</td><td>${priceCell(p)}</td><td><span class="shape-pill">${p.shape}</span></td><td>${stackedCell(p.spec)}</td>
           <td class="${p.inventory.startsWith('自动')?'bad':'ok'}">${p.inventory}</td>
           <td><button class="status-btn ${p.manual==='正常销售'?'ok':'warn'}" onclick="openSaleState(${i})">${p.manual}${p.reason?` · ${p.reason}`:''}</button></td></tr>`}).join('');
       }
       renderSalesPagination();
     }
-    function productCell(p,i){ return `<div class="product"><div class="photo">${p.icon}</div><div><button class="product-name" onclick="openDrawer('item',${i},${state.mode==='front'})">${p.name}</button><div class="sub">${p.code}</div></div></div>`; }
+    function stackedCell(value){ return String(value).split('、').map(line=>`<span class="stacked-line">${line}</span>`).join(''); }
+    function priceCell(p){
+      if(p.priceLines) return p.priceLines.map(line=>`<span class="stacked-line">${line}</span>`).join('');
+      const defaultPrice=p.defaultPrice?.replace('商品默认 ','');
+      if(!defaultPrice||defaultPrice===p.price) return p.price;
+      return `<span class="stacked-line">菜单 ${p.price}</span><span class="sub stacked-line">默认 ${defaultPrice}</span>`;
+    }
+    function productCell(p,i){ return `<div class="product"><div class="media-stack"><div class="photo">${p.icon}</div><div class="sub">${p.media||'沿用商品图片'}</div></div><div><button class="product-name" onclick="openDrawer('item',${i},${state.mode==='front'})">${p.name}</button><div class="sub">${p.code}</div></div></div>`; }
 
     function renderSalesPagination(){
       const totalPages=Math.max(1,Math.ceil(items.length/state.salesPageSize));
@@ -323,9 +337,9 @@
     document.addEventListener('click',e=>{ if(!e.target.closest('.context-menu')&&!e.target.closest('.more-btn')&&!e.target.closest('.section-more'))closeContext(); });
 
     function openDrawer(type,payload=0,readonly=false){
-      const drawer=document.getElementById('drawer'), title=document.getElementById('drawerTitle'), body=document.getElementById('drawerBody'), foot=document.getElementById('drawerFoot'), deleteButton=document.getElementById('deleteSaleItemBtn');
+      const drawer=document.getElementById('drawer'), title=document.getElementById('drawerTitle'), body=document.getElementById('drawerBody'), foot=document.getElementById('drawerFoot'), deleteButton=document.getElementById('deleteSaleItemBtn'), createMenuButton=document.getElementById('createMenuBtn');
       drawer.classList.toggle('wide',type==='add');
-      deleteButton.hidden=true; state.editIndex=null;
+      deleteButton.hidden=true; createMenuButton.hidden=type!=='menus'; state.editIndex=null;
       if(type==='menus'){
         title.textContent='管理菜单'; renderManageMenus();
         foot.innerHTML='<button class="btn primary" onclick="closeDrawer()">完成</button>';
@@ -417,8 +431,16 @@
     function finishPublish(){ closeDrawer(); setMode('front'); showToast('本系统已生成新的前台菜单'); }
 
     function renderManageMenus(){
-      document.getElementById('drawerBody').innerHTML=`<div class="notice">菜单选择器只选择当前查看/编辑对象，不代表启用或停用。停用菜单不影响继续编辑和更新到前台。</div><button class="btn primary">新建菜单</button>
-        ${menus.map(menu=>`<div class="menu-line"><div><b>${menu.name}</b><div class="sub">${menu.draft} · ${menu.enabled?'已启用':'已停用'} · ${menu.time}</div></div><div class="menu-line-actions"><label class="switch"><input type="checkbox" role="switch" aria-label="${menu.enabled?'停用':'启用'}${menu.name}" ${menu.enabled?'checked':''} onchange="toggleMenuEnabled('${menu.key}',this.checked)"/> ${menu.enabled?'启用':'停用'}</label><button class="btn text" onclick="copyMenu('${menu.key}')">复制</button><button class="btn text">改名</button><button class="btn text danger">归档</button></div></div>`).join('')}`;
+      document.getElementById('drawerBody').innerHTML=`<div class="notice">菜单选择器只选择当前查看/编辑对象，不代表启用或停用。停用菜单不影响继续编辑和更新到前台。</div>
+        <div class="table-wrap"><table class="menu-table"><thead><tr><th>菜单名称</th><th>菜单状态</th><th>经营入口</th><th>菜单时段</th><th>启停</th><th>操作</th></tr></thead><tbody>
+        ${menus.map(menu=>`<tr><td><b>${menu.name}</b></td><td>${menu.draft}</td><td>${menu.enabled?'已启用':'已停用'}</td><td>${menu.time}</td><td><label class="switch"><input type="checkbox" role="switch" aria-label="${menu.enabled?'停用':'启用'}${menu.name}" ${menu.enabled?'checked':''} onchange="toggleMenuEnabled('${menu.key}',this.checked)"/> ${menu.enabled?'启用':'停用'}</label></td><td><div class="menu-line-actions"><button class="btn text" onclick="copyMenu('${menu.key}')">复制</button><button class="btn text">改名</button><button class="btn text danger">归档</button></div></td></tr>`).join('')}
+        </tbody></table></div>`;
+    }
+    function showCreateMenu(){
+      state.modalKind='create-menu'; document.getElementById('saleTitle').textContent='新建菜单';
+      document.getElementById('saleBody').innerHTML='<div class="form-row"><label for="newMenuName">菜单名称</label><input id="newMenuName" name="newMenuName" type="text" placeholder="请输入菜单名称" autofocus/></div>';
+      const confirm=document.getElementById('modalConfirmBtn'); confirm.textContent='创建'; confirm.className='btn primary';
+      document.getElementById('saleModal').classList.add('open'); document.getElementById('newMenuName').focus();
     }
     function toggleMenuEnabled(key,enabled){
       const menu=menus.find(item=>item.key===key); if(!menu)return;
@@ -448,6 +470,11 @@
     function toggleReason(show){ document.getElementById('reasonRow').hidden=!show; }
     function closeSaleModal(){ document.getElementById('saleModal').classList.remove('open'); }
     function confirmModal(){
+      if(state.modalKind==='create-menu'){
+        const name=document.getElementById('newMenuName').value.trim(); if(!name){ showToast('请输入菜单名称'); return; }
+        const menu={key:`menu-${Date.now()}`,name,enabled:false,time:'全天',draft:'新副本 · 未发布'};
+        menus.push(menu); state.menu=menu.key; closeSaleModal(); renderMenuOptions(); renderManageMenus(); showToast(`已创建${name}并选中；默认停用`); return;
+      }
       if(state.modalKind==='delete'){
         const removed=items.splice(state.editIndex,1)[0];
         sections[state.section].count=Math.max(0,sections[state.section].count-1);

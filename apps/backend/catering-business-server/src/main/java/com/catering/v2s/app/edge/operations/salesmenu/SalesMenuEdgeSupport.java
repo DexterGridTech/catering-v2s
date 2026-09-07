@@ -1,6 +1,8 @@
 package com.catering.v2s.app.edge.operations.salesmenu;
 
 import com.catering.v2s.app.edge.generated.wire.SalesMenuDisplayMedia;
+import com.catering.v2s.app.edge.generated.wire.SalesMenuManualRestoreRequestTarget;
+import com.catering.v2s.app.edge.generated.wire.SalesMenuManualSoldOutRequestTarget;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
@@ -17,6 +19,9 @@ import com.catering.v2s.salesmenu.domain.SalesMenuAssetUsage;
 import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMediaMode;
 import com.catering.v2s.salesmenu.domain.SalesMenuItemTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuMoveDirection;
+import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTarget;
+import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTargetKind;
+import com.catering.v2s.salesmenu.domain.SalesMenuOrderOptionSelectionInput;
 import com.catering.v2s.salesmenu.domain.SalesMenuPageRequest;
 import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentKind;
 import com.catering.v2s.salesmenu.domain.SalesMenuScheduleKind;
@@ -223,7 +228,10 @@ final class SalesMenuEdgeSupport {
 
     com.catering.v2s.salesmenu.domain.SalesMenuSaleContentInput saleContent(
             com.catering.v2s.app.edge.generated.wire.SalesMenuItemUpdateRequestSaleContent value) {
-        if (value == null || value.kind() == null || value.skuPrices() == null) {
+        if (value == null
+                || value.kind() == null
+                || value.skuPrices() == null
+                || value.orderOptionSelections() == null) {
             throw new InvalidEdgeRequestException("saleContent is required");
         }
         List<SalesMenuSkuPrice> skuPrices = new ArrayList<>();
@@ -239,10 +247,42 @@ final class SalesMenuEdgeSupport {
             skuPrices.add(new SalesMenuSkuPrice(
                     sku.skuRef(), sku.skuName(), sku.skuCode(), sku.standardPriceCents(), sku.listedPriceCents()));
         }
+        List<SalesMenuOrderOptionSelectionInput> orderOptionSelections = new ArrayList<>();
+        for (var selection : value.orderOptionSelections()) {
+            if (selection == null || selection.definitionRef() == null || selection.selectedValueRefs() == null) {
+                throw new InvalidEdgeRequestException("saleContent.orderOptionSelections is invalid");
+            }
+            orderOptionSelections.add(new SalesMenuOrderOptionSelectionInput(
+                    selection.definitionRef(), optionalRefs(selection.selectedValueRefs(), "selectedValueRefs")));
+        }
         return new com.catering.v2s.salesmenu.domain.SalesMenuSaleContentInput(
                 enumValue(value.kind(), SalesMenuSaleContentKind.class, "saleContent.kind"),
                 value.listedPriceCents(),
-                skuPrices);
+                skuPrices,
+                orderOptionSelections);
+    }
+
+    SalesMenuManualSaleTarget manualTarget(SalesMenuManualSoldOutRequestTarget value) {
+        if (value == null) throw new InvalidEdgeRequestException("target is required");
+        return manualTarget(value.targetKind(), value.targetRef());
+    }
+
+    SalesMenuManualSaleTarget manualTarget(SalesMenuManualRestoreRequestTarget value) {
+        if (value == null) throw new InvalidEdgeRequestException("target is required");
+        return manualTarget(value.targetKind(), value.targetRef());
+    }
+
+    private SalesMenuManualSaleTarget manualTarget(String targetKind, UUID targetRef) {
+        if (targetKind == null || targetRef == null) throw new InvalidEdgeRequestException("target is invalid");
+        return new SalesMenuManualSaleTarget(
+                enumValue(targetKind, SalesMenuManualSaleTargetKind.class, "target.targetKind"), targetRef);
+    }
+
+    private List<UUID> optionalRefs(List<UUID> value, String field) {
+        if (value == null || value.stream().anyMatch(java.util.Objects::isNull)) {
+            throw new InvalidEdgeRequestException(field + " is invalid");
+        }
+        return List.copyOf(value);
     }
 
     com.catering.v2s.salesmenu.domain.SalesMenuOrderingConstraints ordering(

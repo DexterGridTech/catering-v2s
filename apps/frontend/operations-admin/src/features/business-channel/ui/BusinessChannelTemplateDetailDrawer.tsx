@@ -1,5 +1,7 @@
 import {Alert, Button, Descriptions, Drawer, Space, Tag} from 'antd';
 import {
+  AdminDetailActionLabel,
+  AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
   closedCodeLabel,
@@ -21,6 +23,7 @@ import {
   operatorKindLabels,
   orderKindLabels,
 } from '../model/businessChannelCodeLabels';
+import {operationsDetailDrawerTestIds} from '../../../app/automation/operationsDetailDrawerTestIds';
 
 export function BusinessChannelTemplateDetailDrawer({
   open,
@@ -86,6 +89,34 @@ export function BusinessChannelTemplateDetailDrawer({
       setStatusSubmitting(false);
     }
   };
+  const actionItems = target && targetStatusKnown && target.status !== 'VOIDED'
+    ? [
+        {
+          key: 'edit',
+          label: (
+            <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessChannelTemplate.edit}>
+              编辑
+            </AdminDetailActionLabel>
+          ),
+          onClick: () => {
+            closeDetail();
+            onClose();
+            onEdit(target);
+          },
+        },
+        {
+          key: 'status',
+          danger: target.status === 'ENABLED',
+          disabled: statusSubmitting,
+          label: (
+            <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessChannelTemplate.status}>
+              {target.status === 'ENABLED' ? '停用' : '启用'}
+            </AdminDetailActionLabel>
+          ),
+          onClick: () => void transitionStatus(),
+        },
+      ]
+    : [];
 
   return (
     <Drawer
@@ -101,32 +132,14 @@ export function BusinessChannelTemplateDetailDrawer({
       {...adminDrawerSurfaceProps}
       {...testId('business-channel-template-detail')}
       extra={
-        target && (
-          <Space>
-            {targetStatusKnown && target.status !== 'VOIDED' && (
-              <Button
-                onClick={() => {
-                  closeDetail();
-                  onClose();
-                  onEdit(target);
-                }}
-                {...testId('business-channel-template-detail-edit')}
-              >
-                编辑
-              </Button>
-            )}
-            {targetStatusKnown && target.status !== 'VOIDED' && (
-              <Button
-                danger={target.status === 'ENABLED'}
-                loading={statusSubmitting}
-                onClick={() => void transitionStatus()}
-                {...testId('business-channel-template-detail-status')}
-              >
-                {target.status === 'ENABLED' ? '停用' : '启用'}
-              </Button>
-            )}
-          </Space>
-        )
+        actionItems.length > 0 ? (
+          <AdminDetailActionMenu
+            items={actionItems}
+            triggerTestId={operationsDetailDrawerTestIds.businessChannelTemplate.actionMenu}
+            disabled={statusSubmitting}
+            loading={statusSubmitting}
+          />
+        ) : undefined
       }
     >
       {statusProblem && <Alert type="error" showIcon title="状态更新失败" description={statusProblem} />}

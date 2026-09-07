@@ -23,7 +23,10 @@ assembly、运行时状态读取器与 Web 平台端口接到一个可切换单�
 
 宿主只通过 `TestExpoAssembly.createSurface(displayMode)` 接收业务 surface，调用方不传入 store，
 本包也不向业务 UI 暴露 store、dispatch 或完整 runtime。surface 使用 `terminalSurfaces` 声明的
-固定逻辑尺寸；外层可用 flex 排布，不能让 surface 本身跟随视口伸缩。
+固定逻辑尺寸；Web 宿主在 `scaleToFit` 开启时先用自己的 canvas `onLayout` 测量预览宽度，再对
+包含一棵或两棵 surface 的逻辑 stage 整体等比缩放。surface 本身不使用 flex/aspectRatio 跟随视口
+变形；input 仍在 surface 的逻辑坐标系内自行测量，宿主不会把缩放倍率传回 input。Native 不读取
+这份 Web 预览配置。
 
 ## 用法
 

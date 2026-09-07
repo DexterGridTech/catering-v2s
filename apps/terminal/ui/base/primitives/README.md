@@ -40,7 +40,7 @@ mode 或领域字段；它仍必须提供非空 `testID`。这种区分避免把
 未来需要无障碍字号放大，必须另行裁定应用级策略，不能通过 feature 绕过 primitives。
 
 本包不保存业务状态、不读取 Runtime、不派发命令、不定义具体 partKey，也不导入 automation。
-`className` 只存在于 `src/rnr` 与 primitives 内部 recipe，不能出现在任何 ui/feature 生产源码；
+`className` 只存在于 `src/vendor` 与 primitives 内部 recipe，不能出现在任何 ui/feature 生产源码；
 业务组件继续只消费带强制 `testID` 的语义控件。本轮已授权的公共面加法包括
 `PrimitiveContainer` 的可选 `layout` 呈现字段、受控 `PrimitiveScrollView`、`PrimitiveButton` 的
 `default`/`key`/`key-action` 呈现 variant，以及 `PrimitiveInput` 的四个可选编辑/呈现 prop 与四个
@@ -54,8 +54,10 @@ planned edge 与实际 import/dependency 分开对账。
 
 ## 结构
 
-- `src/components.tsx`：九个最小语义控件及共同的非空 `testID` 校验。
-- `src/rnr/`：按 RNR NativeWind 手工安装形态裁剪的 slot、Text/Button context 与 class merge
+- `src/components/`：九个最小语义控件，一控件一文件；控件共用
+  `src/foundations/assertTestID.ts` 的非空 `testID` 校验。
+- `src/types/types.ts`：控件公共 props、handle 与事件类型，不含运行时值。
+- `src/vendor/`：按 RNR NativeWind 手工安装形态裁剪的 slot、Text/Button context 与 class merge
   copy-in，不形成 RNR workspace 或运行时依赖。
 - `src/theme/`：只含 base 展示 token，不含应用主题与业务文案。
 - `src/index.ts`：唯一公共面，导出控件与其 props 类型。
@@ -78,25 +80,27 @@ planned edge 与实际 import/dependency 分开对账。
 ## 用法
 
 ```tsx
-import {PrimitiveButton, PrimitiveContainer, PrimitiveText} from '@catering-v2s/ui-base-primitives'
+import {PrimitiveButton, PrimitiveContainer, PrimitiveText} from '@catering-v2s/ui-base-primitives';
 
 export const Example = () => (
   <PrimitiveContainer testID="example:root">
     <PrimitiveText testID="example:message">请确认</PrimitiveText>
-    <PrimitiveButton testID="example:confirm" onPress={() => undefined}>确认</PrimitiveButton>
+    <PrimitiveButton testID="example:confirm" onPress={() => undefined}>
+      确认
+    </PrimitiveButton>
   </PrimitiveContainer>
-)
+);
 ```
 
 列表或表单需要唯一滚动祖先时，feature 只消费这个公共 primitive，不直接导入 RN：
 
 ```tsx
-import type {ReactNode} from 'react'
-import {PrimitiveScrollView} from '@catering-v2s/ui-base-primitives'
+import type {ReactNode} from 'react';
+import {PrimitiveScrollView} from '@catering-v2s/ui-base-primitives';
 
 export const ScrollArea = ({testID, children}: {testID: string; children: ReactNode}) => (
   <PrimitiveScrollView testID={testID}>{children}</PrimitiveScrollView>
-)
+);
 ```
 
 `PrimitiveScrollView` 是受控的纵向 ScrollView wrapper：props 只接受强制 `testID`、children

@@ -1,9 +1,8 @@
-import {createElement} from 'react'
 import {StyleSheet, View} from 'react-native'
 import {selectScreen} from '@catering-v2s/kernel-base-ui-state'
 import {useRenderContext} from '../contexts/RenderContext'
 import {useSurfaceContext} from '../contexts/SurfaceContext'
-import {RenderFallback, resolvePart} from '../foundations/resolvePart'
+import {RenderFallback, resolvePart} from './resolvePart'
 import {useRenderSnapshot} from '../hooks/useRenderSnapshot'
 
 const SCREEN_CONTAINER_TEST_ID = 'ui-base-render:screen-container'
@@ -14,33 +13,33 @@ export const ScreenContainer = () => {
   const snapshot = useRenderSnapshot()
 
   if (snapshot.root === undefined) {
-    return createElement(
-      View,
-      {testID: SCREEN_CONTAINER_TEST_ID, style: styles.container},
-      createElement(RenderFallback, {reason: 'runtime-unavailable'}),
+    return (
+      <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
+        <RenderFallback reason="runtime-unavailable" />
+      </View>
     )
   }
 
   const placement = selectScreen(snapshot.root, displayMode, containerKey)
   if (placement === undefined) {
-    return createElement(
-      View,
-      {testID: SCREEN_CONTAINER_TEST_ID, style: styles.container},
-      createElement(RenderFallback, {reason: 'container-empty'}),
+    return (
+      <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
+        <RenderFallback reason="container-empty" />
+      </View>
     )
   }
 
-  return createElement(
-    View,
-    {testID: SCREEN_CONTAINER_TEST_ID, style: styles.container},
-    resolvePart({
+  return (
+    <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
+      {resolvePart({
       placement,
       displayMode,
       uiCatalog,
       rendererCatalog,
       reportPartDiagnostic,
       clearPartDiagnostic,
-    }),
+      })}
+    </View>
   )
 }
 

@@ -3,7 +3,7 @@ import {
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
 import {dispatchWithRequestId, useDispatchCommand} from '@catering-v2s/ui-base-render'
-import {deskSystemFailureDismissedCommand, type DeskSystemOperation} from '../commands'
+import {deskSystemFailureDismissedCommand, type DeskSystemOperation} from '../features/commands/commands'
 import {DialogActions, DialogSurface} from './controls'
 
 export type DeskSystemNoticeProps = Readonly<{
@@ -14,11 +14,11 @@ const messageForOperation = (_operation: DeskSystemOperation): string => '操作
 
 export const DeskSystemNotice = ({operation}: DeskSystemNoticeProps) => {
   const dispatchCommand = useDispatchCommand()
-  const dismiss = () => dispatchWithRequestId(
+  const dismiss = () => dispatchWithRequestId({
     dispatchCommand,
-    deskSystemFailureDismissedCommand,
-    {},
-  )
+    definition: deskSystemFailureDismissedCommand,
+    payload: {},
+  })
 
   return (
     <DialogSurface testID="sample.desk.system-notice" title="系统提示">

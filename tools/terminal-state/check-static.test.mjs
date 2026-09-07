@@ -95,8 +95,8 @@ try {
   withMutation(
     'src/foundations/persistenceEngine.ts',
     source => source.replace(
-      '    const result = await this.#storagePorts[storageKind].write({',
-      '    await this.#storagePorts[storageKind].write({key: storageKey, value: encoded, timeoutMs: this.#timeouts.writeMs});\n    const result = await this.#storagePorts[storageKind].write({',
+      '    const result = await this.#storagePorts[input.storageKind].write({',
+      '    await this.#storagePorts[input.storageKind].write({key: input.storageKey, value: input.encoded, timeoutMs: this.#timeouts.writeMs});\n    const result = await this.#storagePorts[input.storageKind].write({',
     ),
     report => {
       assertVector(report, ['storage-result-consumed']);
