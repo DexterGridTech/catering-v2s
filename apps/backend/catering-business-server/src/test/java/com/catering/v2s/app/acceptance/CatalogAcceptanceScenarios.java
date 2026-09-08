@@ -8998,6 +8998,196 @@ final class CatalogAcceptanceScenarios {
         return enableAcceptanceItem(context, fixture, session, code, readItem(context, fixture, session, code));
     }
 
+    /** Business-scenario bridge for one Catalog product with two independently selectable enabled SKUs. */
+    JsonNode acceptanceCreateSkuItemWithTwoEnabledSkus(
+            BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String code, String name)
+            throws Exception {
+        CreatedItem created = createSkuVariantItem(context, fixture, session, code, name);
+        JsonNode current = readItem(context, fixture, session, code);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        JsonNode attribute = createDictionaryEntry(
+                context, fixture, session, "SKU_ATTRIBUTE", "ACC-SALES-MENU-ATTRIBUTE-" + suffix, name + " variant");
+        JsonNode valueA = createDictionaryEntry(
+                context,
+                fixture,
+                session,
+                "SKU_ATTRIBUTE_VALUE",
+                "ACC-SALES-MENU-VALUE-A-" + suffix,
+                name + " A",
+                attribute.path("entryRef").asText());
+        JsonNode valueB = createDictionaryEntry(
+                context,
+                fixture,
+                session,
+                "SKU_ATTRIBUTE_VALUE",
+                "ACC-SALES-MENU-VALUE-B-" + suffix,
+                name + " B",
+                attribute.path("entryRef").asText());
+        Map<String, Object> first = acceptanceSkuFact(
+                current,
+                "ACCEPTANCE-SKU-A-" + UUID.randomUUID().toString().substring(0, 8),
+                List.of(),
+                inheritPreparationOverride());
+        first.put("skuName", name + " A");
+        first.put("displayOrder", 0);
+        first.put("attributeValueRefs", List.of(attributeValueRef(attribute, valueA, 0)));
+        first.put("standardSalePrice", 1299L);
+        first.put("isDefault", true);
+        Map<String, Object> second = acceptanceSkuFact(
+                current,
+                "ACCEPTANCE-SKU-B-" + UUID.randomUUID().toString().substring(0, 8),
+                List.of(),
+                inheritPreparationOverride());
+        second.put("skuName", name + " B");
+        second.put("displayOrder", 1);
+        second.put("attributeValueRefs", List.of(attributeValueRef(attribute, valueB, 0)));
+        second.put("standardSalePrice", 1499L);
+        second.put("isDefault", false);
+        saveInventoryNodes(
+                context,
+                fixture,
+                session,
+                code,
+                created.version(),
+                List.of(),
+                draft -> {
+                    draft.put("skuVariantDimensions", List.of(axis(attribute, List.of(valueA, valueB))));
+                    draft.put("skus", List.of(first, second));
+                },
+                Set.of(200));
+        return enableAcceptanceItem(context, fixture, session, code, readItem(context, fixture, session, code));
+    }
+
+    /** Business-scenario bridge for a real Catalog SKU lifecycle transition. */
+    JsonNode acceptanceSetSkuStatus(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String itemCode,
+            String skuCode,
+            String status)
+            throws Exception {
+        JsonNode current = readItem(context, fixture, session, itemCode);
+        if ("VOIDED".equals(status)) {
+            JsonNode target = StreamSupport.stream(current.path("skus").spliterator(), false)
+                    .filter(sku -> skuCode.equals(sku.path("skuCode").asText()))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("BUSINESS: Catalog SKU status fixture target is absent"));
+            Map<String, Object> sections = new LinkedHashMap<>();
+            sections.put("expectedCatalogVersion", current.path("version").asLong());
+            sections.put(
+                    "catalogDraft",
+                    Map.of("name", current.path("name").asText(), "shapeKey", current.path("shapeKey").asText()));
+            sections.put("inventoryRules", Map.of("nodes", List.of()));
+            Map<String, Object> transition = new LinkedHashMap<>();
+            transition.put("skuRef", target.path("productSkuRef").asText());
+            transition.put("targetStatus", "VOIDED");
+            transition.put("expectedVersion", target.path("version").asLong());
+            Response voided = context.patch(
+                    OPERATIONS_CATALOG_ITEM_SAVE,
+                    itemPath(itemCode),
+                    session.cookie(),
+                    Map.of(
+                            "dataNodeRef", fixture.storeId().toString(),
+                            "itemCode", itemCode,
+                            "sections", sections,
+                            "skuTransitions", List.of(transition)),
+                    idempotencyHeaders("sku-void-" + itemCode + "-" + skuCode),
+                    Set.of(200));
+            assertEquals(
+                    "VOIDED",
+                    voided.json().path("result").path("skuTransitions").get(0).path("targetStatus").asText(),
+                    "BUSINESS: Catalog SKU void transition is a real owner fact");
+            return readItem(context, fixture, session, itemCode);
+        }
+        saveInventoryNodes(
+                context,
+                fixture,
+                session,
+                itemCode,
+                current.path("version").asLong(),
+                List.of(),
+                draft -> {
+                    List<Map<String, Object>> skus = new ArrayList<>();
+                    Object rawSkus = draft.get("skus");
+                    if (rawSkus instanceof List<?> existingSkus) {
+                        for (Object rawSku : existingSkus) {
+                            if (!(rawSku instanceof Map<?, ?> existingSku)) continue;
+                            Map<String, Object> sku = new LinkedHashMap<>();
+                            existingSku.forEach((key, value) -> sku.put(String.valueOf(key), value));
+                            if (skuCode.equals(String.valueOf(sku.get("skuCode")))) sku.put("status", status);
+                            skus.add(sku);
+                        }
+                    }
+                    draft.put("skus", skus);
+                },
+                Set.of(200));
+        JsonNode readback = readItem(context, fixture, session, itemCode);
+        for (JsonNode sku : readback.path("skus")) {
+            if (skuCode.equals(sku.path("skuCode").asText())) {
+                assertEquals(status, sku.path("status").asText(), "BUSINESS: Catalog SKU status is read back");
+                return readback;
+            }
+        }
+        throw new AssertionError("BUSINESS: Catalog SKU status fixture target is absent");
+    }
+
+    /** Business-scenario bridge for an ordinary product with required and optional order-option groups. */
+    JsonNode acceptanceCreateOrderOptionItem(
+            BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String code, String name)
+            throws Exception {
+        CreatedItem created = createItemWithAttributes(context, fixture, session, code, name, Map.of());
+        JsonNode requiredDefinition = createOrderOptionDefinition(
+                context,
+                fixture,
+                session,
+                name + " required options",
+                "MULTIPLE",
+                List.of(
+                        Map.of("name", name + " required A", "displayOrder", 0, "materials", List.of()),
+                        Map.of("name", name + " required B", "displayOrder", 1, "materials", List.of()),
+                        Map.of("name", name + " required C", "displayOrder", 2, "materials", List.of())));
+        JsonNode optionalDefinition = createOrderOptionDefinition(
+                context,
+                fixture,
+                session,
+                name + " optional options",
+                "SINGLE",
+                List.of(
+                        Map.of("name", name + " optional A", "displayOrder", 0, "materials", List.of()),
+                        Map.of("name", name + " optional B", "displayOrder", 1, "materials", List.of())));
+        Map<String, Object> requiredConfig = orderOptionConfig(
+                requiredDefinition.path("definitionRef").asText(),
+                true,
+                1,
+                2,
+                optionOverrides(requiredDefinition));
+        Map<String, Object> optionalConfig = orderOptionConfig(
+                optionalDefinition.path("definitionRef").asText(),
+                false,
+                null,
+                null,
+                optionOverrides(optionalDefinition));
+        optionalConfig.put("displayOrder", 1);
+        saveTypedItemFacts(
+                context,
+                fixture,
+                session,
+                code,
+                created.version(),
+                List.of(),
+                List.of(requiredConfig, optionalConfig));
+        return enableAcceptanceItem(context, fixture, session, code, readItem(context, fixture, session, code));
+    }
+
+    private static List<Map<String, Object>> optionOverrides(JsonNode definition) {
+        List<Map<String, Object>> values = new ArrayList<>();
+        for (JsonNode value : definition.path("values")) {
+            values.add(optionOverride(value.path("valueRef").asText(), false, null, 0L, List.of()));
+        }
+        return values;
+    }
+
     /** Business-scenario fixture bridge for the catalog owner’s existing shape-specific create chain. */
     JsonNode acceptanceCreateItemWithShape(
             BackendAcceptanceTest.ScenarioContext context,

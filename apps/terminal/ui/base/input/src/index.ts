@@ -10,6 +10,9 @@ export type {InputScrollAreaProps} from './components/InputScrollArea';
 export type {
   InputFieldOptions,
   InputFieldResult,
+  InputDiagnostic,
+  InputDiagnosticReporter,
+  InputDiagnosticValue,
   InputSurfaceFrameProps,
   KeyboardKind,
 } from './types/types';

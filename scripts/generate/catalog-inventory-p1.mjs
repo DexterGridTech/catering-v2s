@@ -5649,9 +5649,10 @@ const seedDatasets = [
     entities: {
       catalogItems: [{code: 'LATTE-001', shapeKey: 'SKU_VARIANT_SALE_COUNTED', name: '拿铁'}],
       skus: [
-        {code: 'LATTE-SKU-S', attributeValues: {SIZE: 'SMALL'}, status: 'ENABLED'},
-        {code: 'LATTE-SKU-M', attributeValues: {SIZE: 'MEDIUM'}, status: 'DISABLED'},
-        {code: 'LATTE-SKU-L', attributeValues: {SIZE: 'LARGE'}, status: 'VOIDED'},
+        {code: 'LATTE-SKU-S', attributeValues: {SIZE: 'SMALL'}, standardSalePriceCents: 2800, status: 'ENABLED'},
+        {code: 'LATTE-SKU-M', attributeValues: {SIZE: 'MEDIUM'}, standardSalePriceCents: 3200, status: 'ENABLED'},
+        {code: 'LATTE-SKU-L', attributeValues: {SIZE: 'LARGE'}, standardSalePriceCents: 3600, status: 'VOIDED'},
+        {code: 'LATTE-SKU-XL', attributeValues: {SIZE: 'XL'}, standardSalePriceCents: 4000, status: 'DISABLED'},
       ],
       bomLines: [
         {skuCode: 'LATTE-SKU-S', componentCode: 'BEAN-001', quantity: 14},
@@ -6080,8 +6081,8 @@ const catalogDefinitionSeed = {
         },
         {
           definitionCode: 'CAESAR_TOPPINGS',
-          required: false,
-          minSelectionCount: 0,
+          required: true,
+          minSelectionCount: 1,
           maxSelectionCount: 2,
           values: [
             {valueCode: 'BACON', defaultValue: false, extraPrice: 200},
@@ -6157,6 +6158,7 @@ const catalogDefinitionSeed = {
         },
         {skuCode: 'LATTE-SKU-M', identifiers: [{identifierType: 'BARCODE', identifierValue: '690100000102'}]},
         {skuCode: 'LATTE-SKU-L', identifiers: [{identifierType: 'BARCODE', identifierValue: '690100000103'}]},
+        {skuCode: 'LATTE-SKU-XL', identifiers: [{identifierType: 'BARCODE', identifierValue: '690100000105'}]},
       ],
       salesUnitCode: 'CUP',
       baseMeasureUnitCode: 'MILLILITER',

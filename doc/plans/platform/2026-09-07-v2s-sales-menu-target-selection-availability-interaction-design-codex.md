@@ -72,11 +72,11 @@ AUTHOR_SELF_DECISION=IMPLEMENTATION_MAY_PROCEED_AFTER_ACCEPTANCE_REPAIR
 ┌──────────────────────────────────────────────────────────────┐
 │ 销售方式：普通销售商品                         菜单挂牌价 [¥] │
 │ 可售选项                                                     │
-│ 酱汁（单选，非必选）                         已选择 2 项       │
-│   ☑ 凯撒酱       +¥0.00        ☑ 少酱       +¥0.00           │
-│ 加料（多选，每单最多 2 项）                     已选择 3 项     │
-│   ☑ 培根         +¥2.00        ☑ 鸡蛋       +¥1.00           │
-│   ☑ 鸡胸肉       +¥3.00                                      │
+│ 酱汁（单选，非必选）                         已选择 0 项       │
+│   ☐ 凯撒酱       +¥0.00        ☐ 少酱       +¥0.00           │
+│ 加料（多选，每单最多 2 项）                     已选择 1 项     │
+│   ☑ 培根         +¥2.00        ☐ 鸡蛋       +¥1.00           │
+│   ☐ 鸡胸肉       +¥3.00                                      │
 │ 选项值加价由商品目录维护，本处不可编辑。                         │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -95,6 +95,14 @@ AUTHOR_SELF_DECISION=IMPLEMENTATION_MAY_PROCEED_AFTER_ACCEPTANCE_REPAIR
 - save conflict：提示“销售项已被其他操作更新，请刷新后重新编辑”，保留用户草稿但必须重新读权威版本。
 - save success：关闭 Drawer，刷新 draft item detail/list；不声称已发布。
 
+### 2.5 详情 Drawer 的多图查看
+
+- `SalesMenuItemDetailDrawer` 的“展示图片”区域是只读查看区，图片来源必须是当前 detail readback：草稿 `INHERIT_CATALOG` 使用 Catalog 当前有序集合，已发布项使用 immutable published snapshot，`CUSTOM` 使用菜单自己的有序 asset refs。
+- 查看区先显示当前主图、媒体来源和“共 N 张图片”；当图片数大于一时，在主图下方显示“缩略图（点击切换）”。缩略图按 owner 返回顺序排列，当前项用视觉边框和 `aria-pressed=true` 表达，用户点击真实原生 button 后切换主图。
+- 主图继续复用 operations-admin 现有 `AssetPreview`：成功显示真实图片，失败显示既有“图片不可用/重试加载”，点击主图进入原图预览。缩略图使用同一 asset resolver 但关闭二次预览，避免每张缩略图都抢占预览焦点。
+- 没有图片时只显示“暂无展示图片”空态；不显示一个无 asset ref 的错误占位，也不从当前 Catalog 重新猜已发布图片。
+- 每个缩略图 button 的 testId 都由 `salesMenuTestIds.itemDetailMediaChoice(itemRef, assetRef)` 生成并绑定在真实 button 上；不得用图片名称、数组 index、CSS 或 XPath 定位。
+
 ## 3. 屏幕 B：已发布目标状态 Modal
 
 ### 3.1 Surface contract
@@ -108,8 +116,8 @@ AUTHOR_SELF_DECISION=IMPLEMENTATION_MAY_PROCEED_AFTER_ACCEPTANCE_REPAIR
 | `BUSINESS_GOAL` | 只改变一个 target 的人工状态，并读回目标审计事实 |
 | `USER_VISIBLE_COPY` | “销售状态”“整个销售项”“规格”“销售选项”“库存状态是独立事实，本弹窗不能恢复库存自动不可售” |
 | `TECHNICAL_BOUNDARY` | target candidate 只能来自 published snapshot；command 保留 CAS/reason/confirm |
-| `FOUNDATION_PRIMITIVE` | `useSubmissionLifecycle`、`useOverlayLock`、`testId` |
-| `CONTAINER_LAYOUT` | Modal 内目标树可滚动；目标行状态操作；底部提交/取消固定 |
+| `FOUNDATION_PRIMITIVE` | `useOverlayLock`、`testId`（页面其他表单继续复用 `useSubmissionLifecycle`） |
+| `CONTAINER_LAYOUT` | Modal 内目标树可滚动；目标行提供唯一状态命令；底部仅固定关闭按钮 |
 
 ### 3.2 状态 Modal wireframe
 
@@ -128,14 +136,15 @@ AUTHOR_SELF_DECISION=IMPLEMENTATION_MAY_PROCEED_AFTER_ACCEPTANCE_REPAIR
   ○ 仙草                                人工沽清        [恢复销售]
 
 选中目标：销售选项 / 仙草
-销售状态   ● 人工沽清  ○ 正常销售
 沽清原因   [____________________________]
+提示：填写原因后，点击对应目标行的“设置沽清”完成操作。
 
-                              [取消] [保存]
+                                      [关闭]
 ```
 
-- 列表中的“设置沽清/恢复销售”是选择目标并预填状态，不在列表中直接发起多个隐式 command。
-- 每次保存只提交一个 `target`；成功后更新该行并保留 Modal 打开，便于连续处理多个 child target。
+- 目标 Radio 只用于选择目标并展示当前操作上下文；列表行中的“设置沽清/恢复销售”是该目标唯一的状态命令入口，不再通过 Modal footer 二次提交。
+- “设置沽清”先检查当前目标的原因：原因为空时只显示目标附近的内联错误并把焦点放回原因输入，不发起 command；原因填写后再次点击同一目标行按钮才提交一个 `target`。
+- “恢复销售”点击目标行按钮后进入既有二次确认；确认后只恢复人工销售状态。每次命令成功后更新该行并保留 Modal 打开，便于连续处理多个 child target。
 - item target、SKU target、option value target 使用不同动态 testId；禁止用文本、行序号或 CSS selector 定位。
 - 正常销售恢复只对人工状态做 command；如果库存是 `AUTO_UNAVAILABLE`，Modal 明确保持该事实，按钮文案不承诺库存恢复。
 - published snapshot 无 child target 时不显示空的 SKU/选项组；不展示未选候选。
@@ -173,9 +182,9 @@ itemOrderOptionGroup(definitionRef)
 itemOrderOptionValue(definitionRef, definitionValueRef)
 itemStaleSkuNotice
 statusTarget(kind, ref)
-statusTargetState(kind, ref, state)
 statusTargetReason
-statusTargetSubmit
+statusClose
+itemDetailMediaChoice(itemRef, assetRef)
 ```
 
 每个 testId 必须落在真实可操作节点：checkbox/radio/button/input；不得落在 table row、Card、文本 span 或 Drawer 容器上。
@@ -195,9 +204,9 @@ statusTargetSubmit
 | 单个选项值选入/取消 | `sales-menu-item-order-option-value-${slug(definitionRef)}-${slug(definitionValueRef)}` | 对应选项值的原生 `Checkbox` action node | `否` |
 | stale SKU 终态提示 | `sales-menu-item-stale-sku-notice` | Drawer 内 `Alert` 提示节点；非动作，明确引导删除销售项或恢复 Catalog SKU | `否` |
 | 状态目标定位 | `sales-menu-status-target-${slug(kind)}-${slug(ref)}` | 状态 Modal 目标树中对应目标的 `Radio` action node | `否` |
-| 状态选择 | `sales-menu-status-target-state-${slug(kind)}-${slug(ref)}-${slug(state)}` | 该目标状态的 `Radio` action node | `否` |
 | 沽清原因 | `sales-menu-status-target-reason` | 状态 Modal 的 `Input.TextArea` 原生输入节点 | `否` |
-| 状态提交 | `sales-menu-status-target-submit` | 状态 Modal 的“保存” `Button` action node | `否` |
+| 状态 Modal 关闭 | `sales-menu-status-close` | 状态 Modal footer 的“关闭” `Button` action node | `否` |
+| 详情图片切换 | `sales-menu-item-detail-media-choice-${slug(itemRef)}-${slug(assetRef)}` | 详情 Drawer 缩略图的原生 `button` action node | `否` |
 
 本批没有需要 `COMPOSITE_OPTION_ANCHOR` 例外的 Segmented/复合 option 控件；所有可执行动作都绑定直接可标记节点。`fieldset` 与 `Alert` 是语义/提示节点，不被当作可点击控件分母。
 

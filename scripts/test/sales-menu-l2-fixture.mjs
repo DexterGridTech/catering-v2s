@@ -142,6 +142,17 @@ function validatePolicy() {
   }
   const menuFixtureIds = new Set(fixture.menuFixtures.map(value => value.fixtureId));
   const candidateFixtureIds = new Set(fixture.candidateFixtures.map(value => value.fixtureId));
+  const skuCandidate = fixture.candidateFixtures.find(value => value.fixtureId === 'CANDIDATE-03');
+  assert(
+    skuCandidate?.shape === 'SKU' && Number(skuCandidate.skuCount) >= 2,
+    'SALES_MENU_L2_SKU_SUBSET_FIXTURE_INCOMPLETE',
+  );
+  const skuCaseFixture = fixture.caseFixtures?.['FIXTURE-SALES-MENU-SKU'];
+  assert(
+    JSON.stringify(skuCaseFixture?.baselineCandidateFixtureIds) ===
+      JSON.stringify(['CANDIDATE-03', 'CANDIDATE-03']),
+    'SALES_MENU_L2_REPEAT_SKU_ITEM_FIXTURE_INCOMPLETE',
+  );
   assert(
     Object.keys(fixture.caseFixtures ?? {}).length === expectedCaseIds.length,
     'SALES_MENU_L2_CASE_FIXTURE_COUNT_INVALID',

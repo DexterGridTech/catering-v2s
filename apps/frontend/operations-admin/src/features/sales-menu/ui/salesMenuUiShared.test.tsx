@@ -2,8 +2,11 @@ import {describe, expect, it} from 'vitest';
 import type {SalesMenuDraftItemView, SalesMenuPublishedItemView} from '../../../app/api/generated/operations-edge';
 import {
   salesMenuConstraintLabel,
+  salesMenuImageAssetRefs,
   salesMenuPriceLabel,
+  salesMenuPrimaryImageAssetRef,
   salesMenuPublishedPriceLabel,
+  salesMenuPublishedSaleStatusLabel,
   salesMenuSpecificationLabel,
 } from './salesMenuUiShared';
 
@@ -14,13 +17,15 @@ const draftItem = (overrides: Partial<SalesMenuDraftItemView> = {}): SalesMenuDr
     itemCode: 'ITEM-001',
     displayName: '测试商品',
     productShape: 'ORDINARY',
-    orderOptions: [],
+    catalogOrderOptions: [],
     defaultPriceCents: 2800,
     catalogPrimaryImageAssetRef: null,
+    catalogImageAssetRefs: [],
     saleContent: {
       kind: 'DIRECT',
       listedPriceCents: 2800,
       skuPrices: [],
+      selectedOrderOptions: [],
       salesUnit: {
         unitRef: 'unit-1' as never,
         code: 'PORTION',
@@ -31,6 +36,7 @@ const draftItem = (overrides: Partial<SalesMenuDraftItemView> = {}): SalesMenuDr
     },
     orderingConstraints: {minItemQuantity: 1, quantityStep: 1},
     displayMedia: {mode: 'INHERIT_CATALOG', assetRefs: [], primaryAssetRef: null},
+    publishedPrimaryImageAssetRef: null,
     displayOrder: 0,
     canMoveUp: false,
     canMoveDown: false,
@@ -45,11 +51,11 @@ const publishedItem = (overrides: Partial<SalesMenuPublishedItemView> = {}): Sal
     itemCode: 'ITEM-001',
     displayName: '测试商品',
     productShape: 'ORDINARY',
-    orderOptions: [],
     saleContent: {
       kind: 'DIRECT',
       listedPriceCents: 2800,
       skuPrices: [],
+      selectedOrderOptions: [],
       salesUnit: {
         unitRef: 'unit-1' as never,
         code: 'PORTION',
@@ -63,6 +69,8 @@ const publishedItem = (overrides: Partial<SalesMenuPublishedItemView> = {}): Sal
     displayOrder: 0,
     inventoryAvailability: {applicability: 'APPLICABLE', state: 'AVAILABLE', reason: null},
     manualSaleStatus: {state: 'NORMAL', reason: null, changedAt: null, changedByDisplayName: null},
+    manualSaleTargetStatuses: [],
+    publishedCatalogImageAssetRefs: [],
     version: 1,
     ...overrides,
   }) as SalesMenuPublishedItemView;
@@ -82,7 +90,7 @@ describe('sales menu shared table presentation', () => {
           },
         }),
       ),
-    ).toBe('菜单 ¥32.00 / 默认 ¥28.00');
+    ).toEqual(['菜单 ¥32.00', '默认 ¥28.00']);
   });
 
   it('renders SKU names and prices as separate lines with equality-aware labels', () => {
@@ -109,7 +117,7 @@ describe('sales menu shared table presentation', () => {
         ],
       },
     });
-    expect(salesMenuPriceLabel(item)).toEqual(['小杯拿铁：¥28.00', '中杯拿铁：菜单 ¥32.00 / 默认 ¥30.00']);
+    expect(salesMenuPriceLabel(item)).toEqual(['小杯拿铁：¥28.00', '中杯拿铁：菜单 ¥32.00', '中杯拿铁：默认 ¥30.00']);
     expect(salesMenuSpecificationLabel(item)).toEqual(['小杯拿铁', '中杯拿铁']);
   });
 
@@ -143,33 +151,36 @@ describe('sales menu shared table presentation', () => {
 
   it('renders point-order options for ordinary sales items', () => {
     const item = draftItem({
-      orderOptions: [
-        {
-          definitionRef: 'option-definition-1' as never,
-          name: '甜度',
-          selectionMode: 'SINGLE',
-          displayOrder: 0,
-          required: true,
-          minSelectionCount: 1,
-          maxSelectionCount: 1,
-          values: [
-            {
-              definitionValueRef: 'option-value-1' as never,
-              name: '少糖',
-              displayOrder: 0,
-              defaultValue: false,
-              extraPrice: 0,
-            },
-            {
-              definitionValueRef: 'option-value-2' as never,
-              name: '加糖',
-              displayOrder: 1,
-              defaultValue: false,
-              extraPrice: 200,
-            },
-          ],
-        },
-      ],
+      saleContent: {
+        ...draftItem().saleContent,
+        selectedOrderOptions: [
+          {
+            definitionRef: 'option-definition-1' as never,
+            name: '甜度',
+            selectionMode: 'SINGLE',
+            displayOrder: 0,
+            required: true,
+            minSelectionCount: 1,
+            maxSelectionCount: 1,
+            values: [
+              {
+                definitionValueRef: 'option-value-1' as never,
+                name: '少糖',
+                displayOrder: 0,
+                defaultValue: false,
+                extraPrice: 0,
+              },
+              {
+                definitionValueRef: 'option-value-2' as never,
+                name: '加糖',
+                displayOrder: 1,
+                defaultValue: false,
+                extraPrice: 200,
+              },
+            ],
+          },
+        ],
+      },
     });
     expect(salesMenuSpecificationLabel(item)).toBe('甜度：少糖、加糖（加价 ¥2.00）');
   });
@@ -189,5 +200,81 @@ describe('sales menu shared table presentation', () => {
         }),
       ),
     ).toBe('不适用');
+  });
+
+  it('resolves the primary image from the correct read-model boundary', () => {
+    expect(salesMenuPrimaryImageAssetRef(draftItem({catalogPrimaryImageAssetRef: 'catalog-image-1' as never}))).toBe(
+      'catalog-image-1',
+    );
+    expect(
+      salesMenuPrimaryImageAssetRef(
+        publishedItem({
+          displayMedia: {
+            mode: 'CUSTOM',
+            assetRefs: ['published-image-1' as never],
+            primaryAssetRef: 'published-image-1' as never,
+          },
+        }),
+      ),
+    ).toBe('published-image-1');
+    expect(
+      salesMenuPrimaryImageAssetRef(
+        publishedItem({publishedPrimaryImageAssetRef: 'published-inherited-image-1' as never}),
+      ),
+    ).toBe('published-inherited-image-1');
+    expect(salesMenuPrimaryImageAssetRef(publishedItem())).toBeUndefined();
+  });
+
+  it('returns the complete ordered image collection for each read-model boundary', () => {
+    expect(
+      salesMenuImageAssetRefs(
+        draftItem({
+          catalogPrimaryImageAssetRef: 'catalog-image-2' as never,
+          catalogImageAssetRefs: ['catalog-image-1', 'catalog-image-2', 'catalog-image-1'] as never,
+        }),
+      ),
+    ).toEqual(['catalog-image-2', 'catalog-image-1']);
+    expect(
+      salesMenuImageAssetRefs(
+        publishedItem({
+          publishedPrimaryImageAssetRef: 'published-image-1' as never,
+          publishedCatalogImageAssetRefs: ['published-image-1', 'published-image-2'] as never,
+        }),
+      ),
+    ).toEqual(['published-image-1', 'published-image-2']);
+    expect(
+      salesMenuImageAssetRefs(publishedItem({publishedPrimaryImageAssetRef: 'legacy-published-image' as never})),
+    ).toEqual(['legacy-published-image']);
+    expect(
+      salesMenuImageAssetRefs(
+        publishedItem({
+          displayMedia: {
+            mode: 'CUSTOM',
+            assetRefs: ['custom-image-1', 'custom-image-2'] as never,
+            primaryAssetRef: 'custom-image-1' as never,
+          },
+        }),
+      ),
+    ).toEqual(['custom-image-1', 'custom-image-2']);
+  });
+
+  it('keeps the item status visible while exposing sold-out child targets', () => {
+    expect(
+      salesMenuPublishedSaleStatusLabel(
+        publishedItem({
+          manualSaleTargetStatuses: [
+            {
+              targetKind: 'ORDER_OPTION_VALUE',
+              targetRef: 'option-value-1' as never,
+              resolvedTargetDisplayName: '凯撒酱',
+              state: 'MANUAL_SOLD_OUT',
+              reason: '暂时售罄',
+              changedAt: null,
+              changedByDisplayName: null,
+            },
+          ],
+        }),
+      ),
+    ).toEqual(['销售项：正常销售', '销售选项：凯撒酱 · 已沽清']);
   });
 });

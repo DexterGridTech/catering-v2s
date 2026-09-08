@@ -35,6 +35,7 @@ class CatalogSalesMenuTaskReadTest {
     private static final UUID OTHER_ITEM_REF = UUID.fromString("22222222-2222-4222-8222-222222222222");
     private static final UUID CATEGORY_REF = UUID.fromString("33333333-3333-4333-8333-333333333333");
     private static final UUID IMAGE_REF = UUID.fromString("44444444-4444-4444-8444-444444444444");
+    private static final UUID SECOND_IMAGE_REF = UUID.fromString("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaab");
     private static final UUID SKU_REF = UUID.fromString("55555555-5555-4555-8555-555555555555");
     private static final UUID UNIT_REF = UUID.fromString("99999999-9999-4999-8999-999999999999");
     private static final UUID ATTRIBUTE_REF = UUID.fromString("66666666-6666-4666-8666-666666666666");
@@ -176,7 +177,28 @@ class CatalogSalesMenuTaskReadTest {
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
-    void itemFactsReturnTypedDefaultPriceImageCategoryAndAuthoritativeSkuFacts() throws Exception {
+    void itemReferenceFactsAvoidHydratingDependentSalesMenuFacts() throws Exception {
+        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+        when(jdbc.query(anyString(), any(RowMapper.class), any(Object[].class))).thenAnswer(invocation -> {
+            RowMapper mapper = invocation.getArgument(1, RowMapper.class);
+            return List.of(mapper.mapRow(itemRow(ITEM_REF, "ITEM-1", "Item 1", null), 0));
+        });
+        CatalogOwnerService service = service(jdbc);
+
+        var facts = service.readSalesMenuItemReferenceFacts("scope", "brand", Set.of(ITEM_REF));
+
+        assertEquals(Set.of(ITEM_REF), facts.keySet());
+        assertEquals("ITEM-1", facts.get(ITEM_REF).itemCode());
+        assertEquals("Item 1", facts.get(ITEM_REF).itemName());
+        assertEquals("STANDARD_SALE_COUNTED", facts.get(ITEM_REF).shapeKey());
+        verify(jdbc, times(1)).query(anyString(), any(RowMapper.class), any(Object[].class));
+        verify(jdbc, times(0))
+                .query(anyString(), any(PreparedStatementSetter.class), any(ResultSetExtractor.class));
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void itemFactsReturnTypedImageCollectionDefaultPriceCategoryAndAuthoritativeSkuFacts() throws Exception {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         when(jdbc.query(anyString(), any(RowMapper.class), any(Object[].class))).thenAnswer(invocation -> {
             RowMapper mapper = invocation.getArgument(1, RowMapper.class);
@@ -207,6 +229,7 @@ class CatalogSalesMenuTaskReadTest {
         assertEquals("COUNT", facts.salesUnitSnapshot().unitDimension());
         assertEquals(0, facts.salesUnitSnapshot().precision());
         assertEquals(IMAGE_REF, facts.defaultImageAssetRef());
+        assertEquals(List.of(IMAGE_REF, SECOND_IMAGE_REF), facts.imageAssetRefs());
         assertEquals(1, facts.orderOptions().size());
         assertEquals("甜度", facts.orderOptions().getFirst().name());
         assertEquals("SINGLE", facts.orderOptions().getFirst().selectionMode());
@@ -312,9 +335,9 @@ class CatalogSalesMenuTaskReadTest {
     }
 
     private static void imageRow(ResultSet result) throws Exception {
-        when(result.next()).thenReturn(true, false);
+        when(result.next()).thenReturn(true, true, false);
         when(result.getObject(1, UUID.class)).thenReturn(ITEM_REF);
-        when(result.getObject(2, UUID.class)).thenReturn(IMAGE_REF);
+        when(result.getObject(2, UUID.class)).thenReturn(IMAGE_REF, SECOND_IMAGE_REF);
     }
 
     private static void orderOptionRow(ResultSet result) throws Exception {

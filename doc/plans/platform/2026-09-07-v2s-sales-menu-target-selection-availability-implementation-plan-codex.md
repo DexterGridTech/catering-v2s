@@ -1,7 +1,7 @@
 # v2s 门店销售菜单目标选择与细粒度沽清实施计划
 
 ```text
-PLAN_STATUS=READY_FOR_IMPLEMENTATION_AFTER_ROUND_2_REPAIR
+PLAN_STATUS=IMPLEMENTATION_EXECUTED_DYNAMIC_VALIDATION_BLOCKED
 DESIGN_REF=doc/plans/platform/2026-09-07-v2s-sales-menu-target-selection-availability-implementation-design-codex.md
 REQUIREMENTS_REF=doc/plans/platform/2026-09-07-v2s-sales-menu-target-selection-availability-requirements-amendment.md
 INTERACTION_REF=doc/plans/platform/2026-09-07-v2s-sales-menu-target-selection-availability-interaction-design-codex.md
@@ -9,14 +9,14 @@ IA_REF=doc/plans/platform/2026-09-07-v2s-sales-menu-target-selection-availabilit
 IMPLEMENTATION_AUTHORITY=true
 INDEPENDENT_SUBAGENT_REVIEW=ROUND_2_COMPLETE_NO_GO_AUTHOR_REPAIRED
 AUTHOR_SELF_DECISION=IMPLEMENTATION_MAY_PROCEED_AFTER_ACCEPTANCE_REPAIR
-DYNAMIC_EXECUTION=NOT_RUN
+DYNAMIC_EXECUTION=PARTIAL_MANAGED_RUN_BLOCKED_EXTERNAL_RUNTIME
 ```
 
 ## 1. 计划原则与顺序
 
 本计划按“唯一 source → generated → owner → HTTP/权限 → acceptance → frontend → L2 → seed → reset/reseed → overall reconciliation”推进。实现阶段主 agent 唯一写文件；每个 CP 结束先做步骤级三维对账，再进入下一 CP；全部 CP 后再做一次独立的整体三维对账。
 
-历史数据库行、旧 client 兼容和回填不纳入实现。最终数据由受管 reset/reseed 重新建立；这不授权本轮直接执行。
+历史数据库行、旧 client 兼容和回填不纳入实现。最终数据由受管 reset/reseed 重新建立；本轮已有授权但因 browser-L2 远端 runtime 首败尚未执行，不能用未执行替代 PASS。
 
 ## 2. CP-00：锁定需求与生成源
 
@@ -55,8 +55,9 @@ DYNAMIC_EXECUTION=NOT_RUN
   - publish copy/freeze；
   - target-level manual command/readback/cleanup。
 - `SalesMenuOwnerService.authoritativeOrderOptionRows(...)`：DIRECT 的提交 definitionRef 集合与 Catalog definition 集合 exact 相等；missing/extra/duplicate definition、陌生 value、required 空选择均 typed reject；optional 的显式空值仍写 group snapshot。
-- `SalesMenuReadback.java`：draft candidate 与 selected snapshot、published child target status；operation record 增加 `targetKind` 与 resolved target display snapshot。
-- 新 Flyway migration（使用当天顺序号）：option snapshot tables、manual current/event target columns/keys/check、published child immutability trigger。
+- `CatalogOwnerApi.SalesMenuItemFacts` 与 `SalesMenuReadback.java`：保留按 Catalog display order 的图片集合；published readback 增加不可变图片集合快照，primary 字段继续兼容紧凑列表。
+- `SalesMenuOwnerService.java`：draft 读回沿用 Catalog 集合，publish 在 owner transaction 内冻结/校验集合，并让 asset retention 同时保护集合内每个引用；operation record 增加 `targetKind` 与 resolved target display snapshot。
+- 新 Flyway migration（使用当天顺序号）：option snapshot tables、manual current/event target columns/keys/check、published child immutability trigger、published ordered Catalog image collection snapshot。
 
 ### 事务/失败
 
@@ -67,6 +68,7 @@ DYNAMIC_EXECUTION=NOT_RUN
 ### 验证
 
 - owner unit/integration：exact subset、duplicate、invalid ref、required empty、shape mismatch、target membership、CAS、publish detach、inventory independence。
+- 图片集合：Catalog readback 保留至少两张图片及顺序；`INHERIT_CATALOG` publish/readback 保留同一顺序；后续 Catalog 图片变化不改变 published snapshot。
 - migration integration：空库 reset 跑全迁移；生成 snapshot 与 target PK/trigger 可写/不可写边界。
 
 ## 4. CP-02：HTTP edge、权限、readback
@@ -113,6 +115,7 @@ DYNAMIC_EXECUTION=NOT_RUN
 
 - `SalesMenuItemEditorDrawer.tsx`：SKU checkbox 只渲染 `ENABLED` candidates；stale selected SKU 单独显示为不可选终态行；同时支持 option group/value selection、显式 save arrays、typed error/focus recovery。
 - `SalesMenuItemDetailDrawer.tsx`：selected snapshot 与 child status 展示，不把 current Catalog options当 published事实。
+- `SalesMenuItemImageGallery.tsx`：详情使用 readback 图片集合，显示计数、按顺序的缩略图和可点击原图预览；缩略图切换使用唯一动态 testId，空集合显示明确空态。
 - `SalesMenuPage.tsx`、状态 Modal：target tree、item/SKU/option value target command、inventory independent copy。
 - `useSalesMenuCommands.ts`、model/types：跟随 generated types，成功后权威 readback。
 - `salesMenuTestIds.ts`：稳定动态 testId；覆盖真实 action node。
@@ -122,6 +125,7 @@ DYNAMIC_EXECUTION=NOT_RUN
 
 - focused/static/unit/typecheck；验证 loading 不闪旧数据、失败保留表单、成功刷新而非乐观拼读回。
 - 截图/浏览器检查：SKU 选择、普通选项 selection、状态 target tree、库存/人工并列。
+- 图片验收：列表主图实际加载；详情显示多张缩略图，切换第二张后主图实际 `<img>` 加载且 alt/index 与所选图片一致；图片失败仍可重试。
 
 ## 7. CP-05：L2 与 testId
 
@@ -131,6 +135,7 @@ DYNAMIC_EXECUTION=NOT_RUN
 
 - 修改批准的 sales-menu P1/生成 scenario/locator/network/timing source；不新建第二 runner。
 - 覆盖 SKU 子集、重复 SalesItem、option subset、child target sold-out/restore、inventory independence。
+- 覆盖详情多图：至少两张真实资产按发布快照顺序出现，第二张缩略图 action 可由生成 locator 绑定并切换主图。
 - 只使用 `salesMenuTestIds.ts` 的真实 action node；不使用文本/index/CSS/XPath/等待。
 
 ### 验证边界
@@ -146,7 +151,7 @@ DYNAMIC_EXECUTION=NOT_RUN
 ### 修改
 
 - 当前 fixture 只有 `LATTE-001` 且仅有一个 `ENABLED` SKU，不能支撑两个互斥非空 SKU subset；实施 CP-06 必须在 Catalog fixture generator/source 中增加第二个 `ENABLED` SKU（并保留至少一个 `DISABLED` 与一个 `VOIDED` 反例），再由两个 SalesItem 各选一个。不得把 `DISABLED` 当作第二个可选 SKU，也不得继续引用不存在的 `BEV-LATTE-001`/`PASTA-BOLOGNESE-001`。
-- option fixture 必须同时有一个 `required=true`、`minSelectionCount=1` 的 `CAESAR_DRESSING` assignment，并保留 optional assignment 作为零选择对照；不能只靠现有 required=false 数据声称 required-negative 已覆盖。
+- option fixture 使用当前 Catalog owner 可真实物化的 `CAESAR_TOPPINGS` assignment（`required=true`、`selectionMode=MULTIPLE`、`minSelectionCount=1`、`maxSelectionCount=2`），并保留 `CAESAR_DRESSING` 作为 optional 零选择对照。当前 owner 对 `SINGLE` 明确拒绝 `min/max`，故不把 `CAESAR_DRESSING` 伪造成 required fixture；required-empty negative 仍由 `CAESAR_TOPPINGS` 覆盖。
 - `scripts/dev/sales-menu-seed-plan.mjs`：声明 SKU subset、option subset、child target manual matrix；把一个现有 DIRECT selector 替换为 `CAESAR-001`（或 review 后的 `MILK-TEA-001`），保持 21 项 denominator，并同步 exact selector/expected readback tests；不把 Catalog candidate/option定义复制成第二 owner denominator。
 - `scripts/dev/sales-menu-seed-executor.mjs`：用 Catalog HTTP readback 解析 refs；取消 `.slice(0, 2)` 全量语义；分别创建 distinct SalesItems；状态 target 使用 selected published refs。
 - `sales-menu-seed-plan.test.mjs` / `sales-menu-seed-executor.test.mjs`：加入 red mutation 和 cleanup/readback assertions。
@@ -177,4 +182,4 @@ DYNAMIC_EXECUTION=NOT_RUN
 
 ### 9.3 最终允许的状态
 
-只有满足以下条件才可向 Dexter 报实施完成：生成链 PASS、静态/类型/focused PASS、backend business/cleanup PASS、L2 business/cleanup PASS（如批准）、reset/reseed business/cleanup PASS、步骤级与整批三维对账全部 `MATCHED`，并完成 fresh independent implementation review/Claude review。当前本计划没有执行任何动态动作，也没有达到该状态。
+只有满足以下条件才可向 Dexter 报实施完成：生成链 PASS、静态/类型/focused PASS、backend business/cleanup PASS、L2 business/cleanup PASS（如批准）、reset/reseed business/cleanup PASS、步骤级与整批三维对账全部 `MATCHED`，并完成 fresh independent implementation review/Claude review。当前本计划已取得静态与 backend acceptance business/cleanup 证据，但 browser-L2 在受管远端 middleware/DB/tunnel 边界连续首败，reset/reseed 与 Claude implementation review 尚未闭合，因此不能报告实施完成；详见 `doc/review/platform/2026-09-08-v2s-sales-menu-target-selection-availability-implementation-reconciliation-codex.md`。

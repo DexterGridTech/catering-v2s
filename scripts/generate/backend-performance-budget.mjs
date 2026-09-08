@@ -55,24 +55,24 @@ const INVITATION_ASSIGNMENT_P3_MEASURED_MAX_BY_OPERATION = Object.freeze({
 // Sales Menu or P3 ceiling increase.
 const SALES_MENU_P3_DECISION_REF = 'DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3';
 const SALES_MENU_P3_MEASURED_MAX_BY_OPERATION = Object.freeze({
-  addOperationsSalesMenuItems: 35,
+  addOperationsSalesMenuItems: 31,
   archiveOperationsSalesMenu: 26,
-  copyOperationsSalesMenu: 39,
+  copyOperationsSalesMenu: 38,
   createOperationsSalesMenu: 32,
   createOperationsSalesMenuSection: 29,
-  deleteOperationsSalesMenuItem: 31,
+  deleteOperationsSalesMenuItem: 33,
   deleteOperationsSalesMenuSection: 30,
-  moveOperationsSalesMenuItem: 34,
-  moveOperationsSalesMenuSection: 34,
-  publishOperationsSalesMenu: 42,
+  moveOperationsSalesMenuItem: 33,
+  moveOperationsSalesMenuSection: 33,
+  publishOperationsSalesMenu: 47,
   releaseOperationsSalesMenuStagedAsset: 30,
   renameOperationsSalesMenu: 26,
   renameOperationsSalesMenuSection: 29,
-  restoreOperationsSalesMenuItemSale: 34,
+  restoreOperationsSalesMenuItemSale: 35,
   setOperationsSalesMenuActivation: 31,
-  setOperationsSalesMenuItemSoldOut: 34,
+  setOperationsSalesMenuItemSoldOut: 35,
   stageOperationsSalesMenuAsset: 32,
-  updateOperationsSalesMenuItem: 47,
+  updateOperationsSalesMenuItem: 50,
   updateOperationsSalesMenuSchedule: 28,
 });
 
@@ -182,7 +182,7 @@ const salesMenuBudgetExceptionRecords = Object.entries(SALES_MENU_P3_MEASURED_MA
         'business-facts:asset-target-claim-release-guards-for-applicable-asset-operations',
         `measurement:cp05-three-run-max:${operationId}:${measuredMax}`,
         'measurement:cp05-report:contracts/policy/backend-performance-cp05-calibration-report.json',
-        'measurement:cp05-source-runs:r5-tc-1788323919762-4962,r5-tc-1788324172119-5229,r5-tc-1788324435357-5472',
+        'measurement:cp05-source-runs:r5-tc-1788843287798-85864,r5-tc-1788843601526-91444,r5-tc-1788843892374-96469',
       ],
       sharedMechanismsReused: true,
       sharedMechanismsEvidence: [

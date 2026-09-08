@@ -14,6 +14,7 @@ import type {
   UiVariableDeclaration,
 } from '@catering-v2s/kernel-base-ui-state'
 import type {RendererCatalog} from './catalog'
+import type {SurfaceCanvasDeclaration, SurfaceHostSource} from '../foundations/surfaceHost'
 
 // Keep this toolkit boundary structural: render consumes a read-only root
 // snapshot and must not import or retain the complete Runtime handle.
@@ -44,6 +45,8 @@ export type SurfaceRootProps = Readonly<{
   readonly containerKey: ContainerKey
   readonly children?: ReactNode
   readonly renderContentFrame?: (frame: SurfaceRootContentFrame) => ReactNode
+  readonly canvas?: SurfaceCanvasDeclaration
+  readonly surfaceHostSource?: SurfaceHostSource
 }>
 
 export type SurfaceRootContentFrame = Readonly<{

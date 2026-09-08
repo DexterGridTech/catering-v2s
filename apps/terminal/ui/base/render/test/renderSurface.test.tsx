@@ -17,6 +17,11 @@ import {
   ScreenContainer,
   SurfaceFocusBoundaryContext,
   SurfaceRoot,
+  calculateSurfaceHostImeInset,
+  calculateSurfaceHostGeometry,
+  useSurfaceHostImeInset,
+  type SurfaceHostSnapshot,
+  type SurfaceHostSource,
   type RenderProviderProps,
 } from '../src/index'
 import {createUiCatalog} from '@catering-v2s/kernel-base-ui-state'
@@ -145,7 +150,157 @@ const part = <TProps extends object>(input: Readonly<{
   ...(input.layerGuard === undefined ? {} : {layerGuard: input.layerGuard}),
 })
 
+const hostSnapshot = (
+  width: number,
+  height: number,
+  ime?: SurfaceHostSnapshot['ime'],
+): SurfaceHostSnapshot => Object.freeze({
+  stableHostLogicalSize: Object.freeze({width, height}),
+  ...(ime === undefined ? {} : {ime}),
+})
+
+const createHostSource = (initial: SurfaceHostSnapshot | null) => {
+  let current = initial
+  const listeners = new Set<(snapshot: SurfaceHostSnapshot | null) => void>()
+  const source: SurfaceHostSource & Readonly<{
+    readonly emit: (snapshot: SurfaceHostSnapshot | null) => void
+  }> = {
+    getSnapshot: () => current,
+    subscribe: listener => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    emit: snapshot => {
+      current = snapshot
+      for (const listener of [...listeners]) listener(snapshot)
+    },
+  }
+  return source
+}
+
 describe('render surface hosts', () => {
+  it('converts the target-window IME inset through the vertical canvas scale only', () => {
+    expect(calculateSurfaceHostImeInset({
+      ime: {visible: true, bottomLogicalBeforeCanvasScale: 100},
+      scaleY: 2,
+    })).toBe(50)
+    expect(calculateSurfaceHostImeInset({
+      ime: {visible: false, bottomLogicalBeforeCanvasScale: 100},
+      scaleY: 2,
+    })).toBe(0)
+    expect(calculateSurfaceHostImeInset({
+      ime: {visible: true, bottomLogicalBeforeCanvasScale: 100},
+      scaleY: 0.5,
+    })).toBe(200)
+  })
+
+  it('provides only the final logical IME inset to the hosted content', () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const host = createHostSource(hostSnapshot(2560, 1600, {
+      visible: true,
+      bottomLogicalBeforeCanvasScale: 100,
+    }))
+    source.setRoot(rootWithContent(emptyContent()))
+    source.setStatus('started')
+    const ImeProbe = () => createElement('render-ime-probe', {
+      testID: 'sample:ime-probe',
+      value: useSurfaceHostImeInset(),
+    })
+
+    const renderer = mount(createElement(
+      RenderProvider,
+      {stateSource: source.stateSource, uiCatalog: createUiCatalog([]), rendererCatalog: createRendererCatalog([]), logger, ...unusedRenderProviderBindings},
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        canvas: {width: 1280, height: 800},
+        surfaceHostSource: host,
+      }, createElement(ImeProbe)),
+    ))
+
+    expect(findByTestID(renderer, 'sample:ime-probe').props.value).toBe(50)
+    renderer.unmount()
+  })
+
+  it('calculates independent scale axes from the stable host and canvas sizes', () => {
+    const geometry = calculateSurfaceHostGeometry({
+      canvas: {width: 960, height: 540},
+      snapshot: hostSnapshot(800, 600),
+    })
+
+    expect(geometry).not.toBeNull()
+    expect(geometry?.canvas).toEqual({width: 960, height: 540})
+    expect(geometry?.host).toEqual({width: 800, height: 600})
+    expect(geometry?.scaleX).toBeCloseTo(800 / 960)
+    expect(geometry?.scaleY).toBeCloseTo(600 / 540)
+    expect(geometry?.scaleX).not.toBe(geometry?.scaleY)
+  })
+
+  it('holds a fixed logical canvas inside the host viewport and does not pass host facts to children', () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const host = createHostSource(hostSnapshot(800, 600))
+    source.setRoot(rootWithContent(emptyContent()))
+    source.setStatus('started')
+
+    const renderer = mount(createElement(
+      RenderProvider,
+      {stateSource: source.stateSource, uiCatalog: createUiCatalog([]), rendererCatalog: createRendererCatalog([]), logger, ...unusedRenderProviderBindings},
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        canvas: {width: 960, height: 540},
+        surfaceHostSource: host,
+      }),
+    ))
+
+    const viewport = findByTestID(renderer, 'ui-base-render:surface-host-viewport')
+    const canvas = findByTestID(renderer, 'ui-base-render:surface-host-canvas')
+    expect(StyleSheet.flatten(viewport.props.style)).toMatchObject({flex: 1, overflow: 'hidden'})
+    expect(StyleSheet.flatten(canvas.props.style)).toMatchObject({
+      width: 960,
+      height: 540,
+      transformOrigin: 'top left',
+    })
+    expect((StyleSheet.flatten(canvas.props.style) as {readonly transform?: unknown}).transform).toEqual([
+      {scaleX: 800 / 960},
+      {scaleY: 600 / 540},
+    ])
+    expect(StyleSheet.flatten(canvas.props.style)).not.toHaveProperty('stableHostLogicalSize')
+    renderer.unmount()
+  })
+
+  it('renders no canvas while a platform host is unavailable and clears stale state on unavailability', () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const host = createHostSource(null)
+    source.setRoot(rootWithContent(emptyContent()))
+    source.setStatus('started')
+
+    const renderer = mount(createElement(
+      RenderProvider,
+      {stateSource: source.stateSource, uiCatalog: createUiCatalog([]), rendererCatalog: createRendererCatalog([]), logger, ...unusedRenderProviderBindings},
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        canvas: {width: 960, height: 540},
+        surfaceHostSource: host,
+      }),
+    ))
+
+    expect(findByTestID(renderer, 'ui-base-render:surface-host-pending')).toBeDefined()
+    expect(renderer.root.findAll(node => node.props.testID === 'ui-base-render:surface-host-canvas')).toHaveLength(0)
+
+    act(() => host.emit(hostSnapshot(800, 600)))
+    expect(findByTestID(renderer, 'ui-base-render:surface-host-canvas')).toBeDefined()
+
+    act(() => host.emit(null))
+    expect(findByTestID(renderer, 'ui-base-render:surface-host-pending')).toBeDefined()
+    expect(renderer.root.findAll(node => node.props.testID === 'ui-base-render:surface-host-canvas')).toHaveLength(0)
+    renderer.unmount()
+  })
+
   it('passes one shrinkable content subtree through the frame seam', () => {
     const source = createSource()
     const {logger} = createLogger()

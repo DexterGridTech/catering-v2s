@@ -6,6 +6,7 @@ import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationOwnerApi;
+import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
 import com.catering.v2s.platform.asset.api.SalesMenuAssetReadApi;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
@@ -46,6 +47,7 @@ import com.catering.v2s.salesmenu.domain.SalesMenuTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionKind;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionQuery;
 import com.catering.v2s.salesmenu.infrastructure.SalesMenuRepository;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -97,9 +99,10 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
     private final OrganizationOwnerApi organization;
     private final SalesMenuAssetReadApi assets;
     private final SalesMenuAssetCommandApi assetCommands;
+    private final CatalogAssetReferenceLock catalogAssetReferenceLock;
 
     public SalesMenuOwnerService(SalesMenuRepository repository, TimeProvider time, ObjectMapper json) {
-        this(repository, time, json, null, null, null, null, null, null);
+        this(repository, time, json, null, null, null, null, null, null, null);
     }
 
     @Autowired
@@ -112,7 +115,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             BusinessChannelOwnerApi channels,
             OrganizationOwnerApi organization,
             SalesMenuAssetReadApi assets,
-            SalesMenuAssetCommandApi assetCommands) {
+            SalesMenuAssetCommandApi assetCommands,
+            CatalogAssetReferenceLock catalogAssetReferenceLock) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.time = Objects.requireNonNull(time, "time");
         this.json = Objects.requireNonNull(json, "json");
@@ -122,6 +126,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         this.organization = organization;
         this.assets = assets;
         this.assetCommands = assetCommands;
+        this.catalogAssetReferenceLock = catalogAssetReferenceLock;
     }
 
     public SalesMenuOwnerService(
@@ -133,7 +138,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             BusinessChannelOwnerApi channels,
             OrganizationOwnerApi organization,
             SalesMenuAssetReadApi assets) {
-        this(repository, time, json, catalog, inventory, channels, organization, assets, null);
+        this(repository, time, json, catalog, inventory, channels, organization, assets, null, null);
     }
 
     @Override
@@ -280,7 +285,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                         .getOrDefault(itemRow.salesItemRef(), List.of())),
                 catalogSalesUnit(fact),
                 fact == null ? null : fact.defaultPriceCents(),
-                fact == null ? null : fact.defaultImageAssetRef());
+                fact == null ? null : fact.defaultImageAssetRef(),
+                fact == null ? List.of() : fact.imageAssetRefs());
     }
 
     @Override
@@ -703,7 +709,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 preflight -> {
                     var menu = preflight.menu();
                     UUID version = preflight.draftVersion();
-                    Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts = preflight.facts();
+                    Map<UUID, CatalogOwnerApi.SalesMenuItemReferenceFact> facts = preflight.facts();
                     requireCas(command.context().target(), command.expectedVersion());
                     UUID section = command.salesSectionRef();
                     List<UUID> itemRefs = command.catalogItemRefs().stream()
@@ -1051,8 +1057,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
     private AddItemsPreflight preflightAddItems(SalesMenuOwnerApi.ItemsAddCommand command, AddItemsLock locked) {
         MenuCommandLock menuLock = locked.menuLock();
         SalesMenuAggregate menu = menuLock.menu();
-        Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts = catalogFacts(
-                command.context().scope(), new LinkedHashSet<>(command.catalogItemRefs()), menuLock.store());
+        Map<UUID, CatalogOwnerApi.SalesMenuItemReferenceFact> facts = catalogReferenceFacts(
+                new LinkedHashSet<>(command.catalogItemRefs()), menuLock.store());
         if (catalog != null && organization != null) {
             command.catalogItemRefs().forEach(itemRef -> requireDraftCatalogItem(facts.get(itemRef)));
         }
@@ -1075,7 +1081,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             SalesMenuOwnerApi.PublishCommand command,
             SalesMenuAggregate menu,
             OrganizationOwnerApi.SalesMenuStoreJudgment store) {
-        PublicationValidation validation = publicationValidation(menu, null, store);
+        PublicationValidation validation = publicationValidation(menu, null, store, true);
         if (!validation.blockers().isEmpty()) throw publicationInvalid(validation.blockers());
         return new PublishPreflight(menu, validation);
     }
@@ -1574,7 +1580,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             UUID collectionRef,
             List<UUID> itemRefs,
             List<UUID> catalogItemRefs,
-            Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts) {
+            Map<UUID, CatalogOwnerApi.SalesMenuItemReferenceFact> facts) {
         if (itemRefs.isEmpty()) return;
         StringBuilder values = new StringBuilder();
         List<Object> arguments = new ArrayList<>(itemRefs.size() * 5 + 6);
@@ -1582,7 +1588,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             if (index > 0) values.append(',');
             values.append("(CAST(? AS uuid),CAST(? AS text),CAST(? AS text),CAST(? AS text),CAST(? AS bigint))");
             UUID catalogItemRef = catalogItemRefs.get(index);
-            CatalogOwnerApi.SalesMenuItemFacts fact = facts.get(catalogItemRef);
+            CatalogOwnerApi.SalesMenuItemReferenceFact fact = facts.get(catalogItemRef);
             arguments.add(itemRefs.get(index));
             arguments.add(fact == null ? null : fact.itemName());
             arguments.add(fact == null ? null : fact.itemCode());
@@ -1638,7 +1644,9 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                         + "v.resolved_product_shape,v.resolved_sales_unit_ref,v.resolved_sales_unit_code,"
                         + "v.resolved_sales_unit_name,v.resolved_sales_unit_dimension,v.resolved_sales_unit_precision,"
                         + "v.listed_price_cents,v.ordering_constraints_json,"
-                        + "v.display_media_mode,false AS can_move_up,false AS can_move_down "
+                        + "v.display_media_mode,v.published_primary_image_asset_ref,"
+                        + "v.published_catalog_image_asset_refs::text published_catalog_image_asset_refs,"
+                        + "false AS can_move_up,false AS can_move_down "
                         + "FROM sales_menu.sales_version_item v "
                         + "JOIN sales_menu.sales_item i ON i.sales_item_ref=v.sales_item_ref "
                         + "WHERE v.version_ref=? ORDER BY v.display_order",
@@ -1790,6 +1798,14 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             com.catering.v2s.salesmenu.domain.SalesMenuAggregate menu,
             UUID explicitChannelRef,
             OrganizationOwnerApi.SalesMenuStoreJudgment store) {
+        return publicationValidation(menu, explicitChannelRef, store, false);
+    }
+
+    private PublicationValidation publicationValidation(
+            com.catering.v2s.salesmenu.domain.SalesMenuAggregate menu,
+            UUID explicitChannelRef,
+            OrganizationOwnerApi.SalesMenuStoreJudgment store,
+            boolean lockCatalogImages) {
         List<SalesMenuReadback.PublicationBlocker> blockers = new ArrayList<>();
         if (store != null && !"ENABLED".equals(store.status())) {
             blockers.add(new SalesMenuReadback.PublicationBlocker(
@@ -1824,6 +1840,18 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 .map(ItemRow::catalogItemRef)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts = catalogFacts(menu.scope(), catalogRefs, store);
+        if (lockCatalogImages && catalogAssetReferenceLock != null && !facts.isEmpty()) {
+            Set<UUID> imageRefs = facts.values().stream()
+                    .flatMap(fact -> fact.imageAssetRefs().stream())
+                    .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+            if (!imageRefs.isEmpty()) {
+                catalogAssetReferenceLock.lockCatalogReferences(imageRefs);
+                // Re-read after taking the same assetRef-level lock used by Catalog
+                // mutations so the immutable published image snapshot cannot race
+                // with removal of the current Catalog image.
+                facts = catalogFacts(menu.scope(), catalogRefs, store);
+            }
+        }
         Map<UUID, List<SkuRow>> skuByItem = skuRowsByItem(rows);
         Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> orderOptionsByItem =
                 selectedOrderOptionsByItem(rows);
@@ -2095,7 +2123,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             if (index > 0) values.append(',');
             ItemRow row = rows.get(index);
             CatalogOwnerApi.SalesMenuItemFacts fact = facts.get(row.catalogItemRef());
-            values.append("(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?::jsonb,?,1)");
+            values.append("(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?::jsonb,?,?,?::jsonb,1)");
             arguments.add(publishedVersion);
             arguments.add(row.salesItemRef());
             arguments.add(row.sectionRef());
@@ -2128,13 +2156,22 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             arguments.add(row.listedPriceCents());
             arguments.add(row.orderingConstraintsJson());
             arguments.add(row.displayMediaMode());
+            arguments.add(
+                    "INHERIT_CATALOG".equals(row.displayMediaMode()) && fact != null
+                            ? fact.defaultImageAssetRef()
+                            : null);
+            arguments.add(
+                    "INHERIT_CATALOG".equals(row.displayMediaMode()) && fact != null
+                            ? writeJson(fact.imageAssetRefs())
+                            : writeJson(List.of()));
         }
         repository.update(
                 "INSERT INTO sales_menu.sales_version_item(version_ref,sales_item_ref,section_ref,"
                         + "collection_ref,display_order,display_name_override,resolved_item_name,resolved_item_code,"
                         + "resolved_product_shape,resolved_sales_unit_ref,resolved_sales_unit_code,"
                         + "resolved_sales_unit_name,resolved_sales_unit_dimension,resolved_sales_unit_precision,"
-                        + "listed_price_cents,ordering_constraints_json,display_media_mode,version) VALUES "
+                        + "listed_price_cents,ordering_constraints_json,display_media_mode,"
+                        + "published_primary_image_asset_ref,published_catalog_image_asset_refs,version) VALUES "
                         + values,
                 arguments.toArray());
     }
@@ -2360,6 +2397,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 + "v.resolved_sales_unit_name,v.resolved_sales_unit_dimension,v.resolved_sales_unit_precision,"
                 + "v.listed_price_cents,"
                 + "v.ordering_constraints_json::text ordering_constraints_json,v.display_media_mode,"
+                + "v.published_primary_image_asset_ref,"
+                + "v.published_catalog_image_asset_refs::text published_catalog_image_asset_refs,"
                 + "EXISTS (SELECT 1 FROM sales_menu.sales_version_item previous "
                 + "WHERE previous.version_ref=v.version_ref AND previous.section_ref=v.section_ref AND "
                 + "(previous.display_order < v.display_order OR "
@@ -2412,6 +2451,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 + "v.resolved_sales_unit_name,v.resolved_sales_unit_dimension,v.resolved_sales_unit_precision,"
                 + "v.listed_price_cents,"
                 + "v.ordering_constraints_json::text ordering_constraints_json,v.display_media_mode,"
+                + "v.published_primary_image_asset_ref,"
+                + "v.published_catalog_image_asset_refs::text published_catalog_image_asset_refs,"
                 + "EXISTS (SELECT 1 FROM sales_menu.sales_version_item previous "
                 + "WHERE previous.version_ref=v.version_ref AND previous.section_ref=v.section_ref AND "
                 + "(previous.display_order < v.display_order OR "
@@ -2454,7 +2495,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                             staleSelectedSkuRefs(fact, selectedSkus),
                             catalogSalesUnit(fact),
                             fact == null ? null : fact.defaultPriceCents(),
-                            fact == null ? null : fact.defaultImageAssetRef());
+                            fact == null ? null : fact.defaultImageAssetRef(),
+                            fact == null ? List.of() : fact.imageAssetRefs());
                 })
                 .toList();
     }
@@ -2478,7 +2520,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             List<UUID> staleSelectedSkuRefs,
             SalesMenuSalesUnit salesUnit,
             Long defaultPriceCents,
-            UUID catalogPrimaryImageAssetRef) {
+            UUID catalogPrimaryImageAssetRef,
+            List<UUID> catalogImageAssetRefs) {
         return new SalesMenuReadback.DraftItemView(
                 row.salesItemRef(),
                 row.catalogItemRef(),
@@ -2490,6 +2533,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 staleSelectedSkuRefs,
                 defaultPriceCents,
                 catalogPrimaryImageAssetRef,
+                catalogImageAssetRefs,
                 content(
                         row,
                         skuByItem.getOrDefault(row.salesItemRef(), List.of()),
@@ -2520,7 +2564,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 List.of(),
                 frozenSalesUnit(row),
                 null,
-                null);
+                null,
+                List.of());
         ManualSaleStatusRow status = manualStatusByTarget.get(
                 new ManualTargetKey(row.salesItemRef(), SalesMenuManualSaleTargetKind.ITEM, row.salesItemRef()));
         var manual = status == null
@@ -2539,6 +2584,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 draft.saleContent(),
                 draft.orderingConstraints(),
                 draft.displayMedia(),
+                row.publishedPrimaryImageAssetRef(),
+                publishedCatalogImageAssetRefs(row),
                 draft.displayOrder(),
                 inventoryByItem.getOrDefault(
                         row.salesItemRef(),
@@ -3119,14 +3166,37 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
     }
 
     private void requireDraftCatalogItem(CatalogOwnerApi.SalesMenuItemFacts fact) {
-        if (fact == null
-                || fact.itemRef() == null
-                || fact.itemCode() == null
-                || fact.itemName() == null
-                || fact.shapeKey() == null
-                || !supportedCatalogShape(fact.shapeKey())) {
+        requireDraftCatalogItem(
+                fact == null ? null : fact.itemRef(),
+                fact == null ? null : fact.itemCode(),
+                fact == null ? null : fact.itemName(),
+                fact == null ? null : fact.shapeKey());
+    }
+
+    private void requireDraftCatalogItem(CatalogOwnerApi.SalesMenuItemReferenceFact fact) {
+        requireDraftCatalogItem(
+                fact == null ? null : fact.itemRef(),
+                fact == null ? null : fact.itemCode(),
+                fact == null ? null : fact.itemName(),
+                fact == null ? null : fact.shapeKey());
+    }
+
+    private void requireDraftCatalogItem(UUID itemRef, String itemCode, String itemName, String shapeKey) {
+        if (itemRef == null
+                || itemCode == null
+                || itemName == null
+                || shapeKey == null
+                || !supportedCatalogShape(shapeKey)) {
             throw problem("SALES_MENU_ITEM_REFERENCE_INVALID", 422, "商品目录引用无效");
         }
+    }
+
+    private Map<UUID, CatalogOwnerApi.SalesMenuItemReferenceFact> catalogReferenceFacts(
+            Set<UUID> itemRefs, OrganizationOwnerApi.SalesMenuStoreJudgment store) {
+        if (catalog == null || organization == null || itemRefs.isEmpty()) return Map.of();
+        Map<UUID, CatalogOwnerApi.SalesMenuItemReferenceFact> facts =
+                catalog.readSalesMenuItemReferenceFacts(store.dataNodeRef(), store.brandRef(), itemRefs);
+        return facts == null ? Map.of() : facts;
     }
 
     private boolean supportedCatalogShape(String shape) {
@@ -3621,6 +3691,23 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         }
     }
 
+    private List<UUID> publishedCatalogImageAssetRefs(ItemRow row) {
+        String serialized = row.publishedCatalogImageAssetRefsJson();
+        if (serialized == null || serialized.isBlank()) return List.of();
+        try {
+            JsonNode values = json.readTree(serialized);
+            if (values == null || !values.isArray()) throw new IllegalArgumentException("snapshot is not an array");
+            LinkedHashSet<UUID> refs = new LinkedHashSet<>();
+            for (JsonNode value : values) {
+                if (!value.isTextual()) throw new IllegalArgumentException("snapshot item is not text");
+                refs.add(UUID.fromString(value.textValue()));
+            }
+            return List.copyOf(refs);
+        } catch (Exception failure) {
+            throw problem("SALES_MENU_PUBLISHED_IMAGE_SNAPSHOT_INVALID", 500, "已发布图片快照无效", failure);
+        }
+    }
+
     private String hash(Object value) {
         try {
             return Sha256Hex.digest(writeJson(value));
@@ -3746,6 +3833,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 result.getObject("listed_price_cents", Long.class),
                 result.getString("ordering_constraints_json"),
                 result.getString("display_media_mode"),
+                result.getObject("published_primary_image_asset_ref", UUID.class),
+                result.getString("published_catalog_image_asset_refs"),
                 result.getBoolean("can_move_up"),
                 result.getBoolean("can_move_down"));
     }
@@ -3876,7 +3965,9 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
     private record UpdateItemLock(MenuCommandLock menuLock, UUID draftVersion, ItemRow current) {}
 
     private record AddItemsPreflight(
-            SalesMenuAggregate menu, UUID draftVersion, Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts) {}
+            SalesMenuAggregate menu,
+            UUID draftVersion,
+            Map<UUID, CatalogOwnerApi.SalesMenuItemReferenceFact> facts) {}
 
     private record UpdateItemPreflight(
             SalesMenuAggregate menu,
@@ -3931,6 +4022,8 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             Long listedPriceCents,
             String orderingConstraintsJson,
             String displayMediaMode,
+            UUID publishedPrimaryImageAssetRef,
+            String publishedCatalogImageAssetRefsJson,
             boolean canMoveUp,
             boolean canMoveDown) {}
 

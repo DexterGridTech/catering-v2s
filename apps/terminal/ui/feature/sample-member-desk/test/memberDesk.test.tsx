@@ -83,7 +83,7 @@ const createStateSource = (root: RuntimeStateRoot) => ({
 
 const mount = (
   element: ReturnType<typeof createElement>,
-  frameLayout: FrameLayout = {width: 962, height: 541},
+  frameLayout: FrameLayout = {width: 960, height: 540},
 ): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined
   act(() => { renderer = create(element) })
@@ -232,7 +232,7 @@ describe('sample member desk UI feature', () => {
   })
 
   it.each([
-    ['landscape confirm', 'confirm', {width: 962, height: 541}],
+    ['landscape confirm', 'confirm', {width: 960, height: 540}],
     ['portrait handheld-confirm', 'handheld-confirm', {width: 360, height: 720}],
   ] as const)('keeps the customer numeric input actionable in the %s local frame', (_label, mode, frameLayout) => {
     const {logger} = createLogger()
@@ -613,7 +613,7 @@ describe('sample member desk UI feature', () => {
   })
 
   it.each([
-    ['landscape PRIMARY', {width: 1157, height: 723}],
+    ['landscape PRIMARY', {width: 1280, height: 800}],
     ['portrait PRIMARY', {width: 360, height: 720}],
   ] as const)('covers the member-form numeric, alpha, and financial consumers in the %s frame', (_label, frameLayout) => {
     const {logger} = createLogger()

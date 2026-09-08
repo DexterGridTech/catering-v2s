@@ -2,7 +2,19 @@ import {useImperativeHandle, useRef} from 'react';
 import {RnrTextInput, type RnrTextInputRef} from '../vendor/slots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
-import type {PrimitiveInputProps} from '../types/types';
+import type {
+  PrimitiveInputProps,
+  PrimitiveMeasureLayoutCallback,
+  PrimitiveNativeNode,
+} from '../types/types';
+
+type MeasurableTextInputRef = RnrTextInputRef & Readonly<{
+  readonly measureLayout?: (
+    relativeToNativeNode: PrimitiveNativeNode,
+    callback: PrimitiveMeasureLayoutCallback,
+    onFail?: () => void,
+  ) => void;
+}>;
 
 export const PrimitiveInput = ({
   testID,
@@ -26,6 +38,14 @@ export const PrimitiveInput = ({
     () => ({
       focus: () => nativeInputRef.current?.focus(),
       blur: () => nativeInputRef.current?.blur(),
+      measureLayout: (relativeToNativeNode, callback, onFail) => {
+        const nativeInput = nativeInputRef.current as MeasurableTextInputRef | null;
+        if (nativeInput === null || typeof nativeInput.measureLayout !== 'function') {
+          onFail?.();
+          return;
+        }
+        nativeInput.measureLayout(relativeToNativeNode, callback, onFail);
+      },
       measureInWindow: callback => nativeInputRef.current?.measureInWindow(callback),
     }),
     [],

@@ -11,6 +11,7 @@ const {withNativeWind} = require('nativewind/metro')
 const config = getDefaultConfig(__dirname)
 
 module.exports = withNativeWind(config, {
-  input: '../../../ui/integration/sample-console/theme/global.css',
+  input: require.resolve('@catering-v2s/ui-integration-sample-console/theme/global.css'),
   configPath: './tailwind.config.cjs',
+  inlineRem: 16,
 })

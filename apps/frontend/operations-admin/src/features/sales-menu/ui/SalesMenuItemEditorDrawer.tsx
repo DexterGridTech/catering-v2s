@@ -284,7 +284,7 @@ export function SalesMenuItemEditorDrawer({
         skuCode: price.skuCode,
         standardPriceCents: price.standardPriceCents,
         listedPriceCents: price.listedPriceCents,
-        selected: true,
+        selected: selected.has(String(price.skuRef)),
         stale: true,
       }));
     return [...rows, ...staleRows];
@@ -293,7 +293,8 @@ export function SalesMenuItemEditorDrawer({
   const enabledSkuRows = useMemo(() => skuRows.filter(row => !row.stale), [skuRows]);
   const staleSkuRows = useMemo(() => skuRows.filter(row => row.stale), [skuRows]);
   const selectedEnabledSkuCount = enabledSkuRows.filter(row => row.selected).length;
-  const staleSkuSelection = staleSkuRows.length > 0;
+  const staleSkuSelection = staleSkuRows.some(row => row.selected);
+  const staleSkuTerminal = enabledSkuRows.length === 0 && staleSkuRows.length > 0;
 
   const setSkuSelected = useCallback(
     (candidate: SalesMenuSkuEditorRow, checked: boolean) => {
@@ -348,18 +349,19 @@ export function SalesMenuItemEditorDrawer({
   }, [enabledSkuRows, markDirty]);
 
   const clearSkus = useCallback(() => {
-    const staleRefs = staleSkuRows.map(row => row.skuRef);
-    setSelectedSkuRefs(staleRefs);
+    setSelectedSkuRefs([]);
     markDirty();
-  }, [markDirty, staleSkuRows]);
+  }, [markDirty]);
 
   const save = useCallback(async () => {
     if (!item || !menuRef || menuVersion === undefined || mediaPending) return;
     const isSku = item.saleContent.kind === 'SKU_SELECTION';
-    if (isSku && (selectedEnabledSkuCount === 0 || staleSkuSelection)) {
+    if (isSku && (selectedEnabledSkuCount === 0 || staleSkuSelection || staleSkuTerminal)) {
       setProblem(
-        staleSkuSelection
-          ? '当前已选规格已失效，请在 Catalog 恢复该 SKU；本 Drawer 不提供修复入口。'
+        staleSkuTerminal || staleSkuSelection
+          ? staleSkuTerminal
+            ? '已选规格已失效，当前没有可用规格。请删除该销售项，或在 Catalog 恢复此 SKU。'
+            : '已选规格中包含当前不可用的 SKU，请点击“清空”移除后再选择可用规格。'
           : '按规格销售至少需要选择 1 个可用规格。',
       );
       return;
@@ -444,6 +446,7 @@ export function SalesMenuItemEditorDrawer({
     selectedEnabledSkuCount,
     selectedSkuRefs,
     skuPriceByRef,
+    staleSkuTerminal,
     staleSkuSelection,
   ]);
 
@@ -549,25 +552,27 @@ export function SalesMenuItemEditorDrawer({
                     </Button>
                     <Button
                       onClick={clearSkus}
-                      disabled={selectedEnabledSkuCount === 0}
+                      disabled={selectedEnabledSkuCount === 0 && !staleSkuSelection}
                       {...testId(salesMenuTestIds.itemSkuClear)}
                     >
                       清空
                     </Button>
                   </Space>
-                  {staleSkuSelection && (
+                  {staleSkuRows.length > 0 && (
                     <Alert
                       type="warning"
                       showIcon
                       title={
-                        enabledSkuRows.length === 0
+                        staleSkuTerminal
                           ? '已选规格已失效，当前没有可用规格。请删除该销售项，或在 Catalog 恢复此 SKU。'
-                          : '已选规格中包含当前不可用的 SKU，请在 Catalog 恢复后再保存。'
+                          : staleSkuSelection
+                            ? '已选规格中包含当前不可用的 SKU，请点击“清空”移除后再选择可用规格。'
+                            : '已保存的规格已失效，已从当前选择中移除；请选择仍可用的规格。'
                       }
                       {...testId(salesMenuTestIds.itemStaleSkuNotice)}
                     />
                   )}
-                  {enabledSkuRows.length === 0 && !staleSkuSelection && (
+                  {enabledSkuRows.length === 0 && staleSkuRows.length === 0 && (
                     <Typography.Text type="secondary">当前没有可选规格。</Typography.Text>
                   )}
                   <Table<SalesMenuSkuEditorRow>
@@ -663,7 +668,7 @@ export function SalesMenuItemEditorDrawer({
               ) : (
                 <Space direction="vertical" size={12} style={{display: 'flex'}}>
                   {item.catalogOrderOptions.map((option: SalesMenuOrderOption) => {
-                    const selectedRefs = new Set(orderOptionSelections[String(option.definitionRef)] ?? []);
+                    const selectedRefs = new Set<Uuid>(orderOptionSelections[String(option.definitionRef)] ?? []);
                     const selectedCount = selectedRefs.size;
                     return (
                       <fieldset
@@ -680,7 +685,7 @@ export function SalesMenuItemEditorDrawer({
                           {option.values.map(value => (
                             <Checkbox
                               key={value.definitionValueRef}
-                              checked={selectedRefs.has(String(value.definitionValueRef))}
+                              checked={selectedRefs.has(value.definitionValueRef)}
                               onChange={event => {
                                 const valueRef = value.definitionValueRef;
                                 setOrderOptionSelections(current => {

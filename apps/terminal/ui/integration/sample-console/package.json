@@ -5,19 +5,20 @@
   "main": "index.js",
   "react-native": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./theme/global.css": "./theme/global.css"
   },
   "terminalSurfaces": {
-    "layout": "column",
-    "scaleToFit": true,
-    "surfaces": {
-      "PRIMARY": {
-        "width": 1157,
-        "height": 723
-      },
-      "SECONDARY": {
-        "width": 962,
-        "height": 541
+    "orientations": {
+      "landscape": {
+        "PRIMARY": {
+          "width": 1280,
+          "height": 800
+        },
+        "SECONDARY": {
+          "width": 960,
+          "height": 540
+        }
       }
     }
   },

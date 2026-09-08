@@ -1497,22 +1497,22 @@
         {
           "assertionKey": "LOCAL_EXECUTION_REMOTE_MIDDLEWARE",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 的 Spring Boot 在受信远端非生产主机运行，与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite，并经受管 tunnel 转发远端 Java HTTP 与浏览器直连所需的资产端口，禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed。当前受管浏览器 L2 **不随 DEV L1 改造**：仍在本机执行 Spring Boot、两个 Web 与 Playwright，经受管 tunnel 使用每 run 隔离的远端非生产中间件命名空间，并分别证明本机进程/隧道及远端数据库/资产 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 DEV runner 尚未实现本段 AFTER 拓扑，DEV start/restart 必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP 与浏览器直连所需的资产端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java、HTTP/asset tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "CURRENT_L2_LOCAL_EXECUTION_ISOLATED_REMOTE_CLEANUP",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 的 Spring Boot 在受信远端非生产主机运行，与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite，并经受管 tunnel 转发远端 Java HTTP 与浏览器直连所需的资产端口，禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed。当前受管浏览器 L2 **不随 DEV L1 改造**：仍在本机执行 Spring Boot、两个 Web 与 Playwright，经受管 tunnel 使用每 run 隔离的远端非生产中间件命名空间，并分别证明本机进程/隧道及远端数据库/资产 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 DEV runner 尚未实现本段 AFTER 拓扑，DEV start/restart 必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP 与浏览器直连所需的资产端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java、HTTP/asset tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "UAT_ALL_REMOTE_EXECUTION",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 的 Spring Boot 在受信远端非生产主机运行，与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite，并经受管 tunnel 转发远端 Java HTTP 与浏览器直连所需的资产端口，禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed。当前受管浏览器 L2 **不随 DEV L1 改造**：仍在本机执行 Spring Boot、两个 Web 与 Playwright，经受管 tunnel 使用每 run 隔离的远端非生产中间件命名空间，并分别证明本机进程/隧道及远端数据库/资产 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 DEV runner 尚未实现本段 AFTER 拓扑，DEV start/restart 必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP 与浏览器直连所需的资产端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java、HTTP/asset tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "REMOTE_TESTCONTAINERS_NOT_BROWSER_L2",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 的 Spring Boot 在受信远端非生产主机运行，与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite，并经受管 tunnel 转发远端 Java HTTP 与浏览器直连所需的资产端口，禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed。当前受管浏览器 L2 **不随 DEV L1 改造**：仍在本机执行 Spring Boot、两个 Web 与 Playwright，经受管 tunnel 使用每 run 隔离的远端非生产中间件命名空间，并分别证明本机进程/隧道及远端数据库/资产 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 DEV runner 尚未实现本段 AFTER 拓扑，DEV start/restart 必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP 与浏览器直连所需的资产端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java、HTTP/asset tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION",
@@ -1751,7 +1751,7 @@
         {
           "assertionKey": "ENVIRONMENT_TOPOLOGY_MUST_COME_FROM_GOVERNING_SOURCE",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 的 Spring Boot 在受信远端非生产主机运行，与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite，并经受管 tunnel 转发远端 Java HTTP 与浏览器直连所需的资产端口，禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed。当前受管浏览器 L2 **不随 DEV L1 改造**：仍在本机执行 Spring Boot、两个 Web 与 Playwright，经受管 tunnel 使用每 run 隔离的远端非生产中间件命名空间，并分别证明本机进程/隧道及远端数据库/资产 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 DEV runner 尚未实现本段 AFTER 拓扑，DEV start/restart 必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP 与浏览器直连所需的资产端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java、HTTP/asset tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "RETIRED_CONSUMER_REQUIRES_RETAINED_CAPABILITY_DENOMINATOR",
@@ -2253,7 +2253,7 @@
         {
           "assertionKey": "FRONTEND_COMMAND_USES_OWNER_READ_VERSION",
           "path": "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx",
-          "anchor": "        expectedVersionSource: 'SALES_MENU_DETAIL',"
+          "anchor": "          expectedVersionSource: 'SALES_MENU_DETAIL',"
         },
         {
           "assertionKey": "VERSION_CONFLICT_IS_NOT_FIXED_BY_RETRY",
@@ -4868,6 +4868,75 @@
       "sourceRefs": [
         "doc/plans/platform/2026-08-29-v2s-terminal-skeleton-requirements-claude.md",
         "doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md"
+      ]
+    },
+    {
+      "id": "operations.terminal-android-display-screenshot-capture",
+      "path": "project-memory/operations/terminal-android-display-screenshot-capture.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "memory-recall",
+          "implementation",
+          "review",
+          "testing",
+          "diagnostics"
+        ],
+        "domains": [
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "frontend-platform"
+        ],
+        "impacts": [
+          "runtime",
+          "evidence",
+          "memory"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review",
+          "runtime",
+          "failure",
+          "status-question"
+        ]
+      },
+      "assertions": [
+        "TER_ANDROID_SCREENSHOT_SURFACEFLINGER_ID",
+        "TER_ANDROID_SCREENSHOT_LOGICAL_VS_SURFACE_ID",
+        "TER_ANDROID_SCREENSHOT_DIMENSION_CHECK",
+        "TER_ANDROID_SCREENSHOT_FAILURE_BOUNDARIES"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "TER_ANDROID_SCREENSHOT_SURFACEFLINGER_ID",
+          "path": "doc/review/platform/2026-09-08-ter-logical-canvas-stretch-implementation-evidence-codex.md",
+          "anchor": "#### secondary screenshot 能力边界"
+        },
+        {
+          "assertionKey": "TER_ANDROID_SCREENSHOT_LOGICAL_VS_SURFACE_ID",
+          "path": "doc/evidence/platform/terminal-input/runs/TERMINAL-INPUT-CP3-ANDROID-2026-09-06T05-00-00/README.md",
+          "anchor": "## 副屏截图边界"
+        },
+        {
+          "assertionKey": "TER_ANDROID_SCREENSHOT_DIMENSION_CHECK",
+          "path": "doc/review/platform/2026-09-08-ter-logical-canvas-stretch-implementation-evidence-codex.md",
+          "anchor": "#### secondary screenshot 能力边界"
+        },
+        {
+          "assertionKey": "TER_ANDROID_SCREENSHOT_FAILURE_BOUNDARIES",
+          "path": "doc/evidence/platform/terminal-input/runs/TERMINAL-INPUT-CP3-ANDROID-2026-09-06T05-00-00/README.md",
+          "anchor": "## 副屏截图边界"
+        }
+      ],
+      "sourceRefs": [
+        "doc/evidence/platform/terminal-input/runs/TERMINAL-INPUT-CP3-ANDROID-2026-09-06T05-00-00/README.md",
+        "doc/review/platform/2026-09-08-ter-logical-canvas-stretch-implementation-evidence-codex.md"
       ]
     }
   ]

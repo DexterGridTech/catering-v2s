@@ -98,6 +98,7 @@ public final class SalesMenuReadback {
             List<UUID> staleSelectedSkuRefs,
             Long defaultPriceCents,
             UUID catalogPrimaryImageAssetRef,
+            List<UUID> catalogImageAssetRefs,
             SalesMenuSaleContent saleContent,
             SalesMenuOrderingConstraints orderingConstraints,
             SalesMenuDisplayMedia displayMedia,
@@ -128,11 +129,12 @@ public final class SalesMenuReadback {
                     displayName,
                     productShape,
                     orderOptions,
-                    List.of(),
-                    List.of(),
-                    defaultPriceCents,
-                    catalogPrimaryImageAssetRef,
-                    saleContent,
+                List.of(),
+                List.of(),
+                defaultPriceCents,
+                catalogPrimaryImageAssetRef,
+                List.of(),
+                saleContent,
                     orderingConstraints,
                     displayMedia,
                     displayOrder,
@@ -145,6 +147,7 @@ public final class SalesMenuReadback {
             catalogOrderOptions = List.copyOf(Objects.requireNonNull(catalogOrderOptions, "catalogOrderOptions"));
             skuCandidates = List.copyOf(Objects.requireNonNull(skuCandidates, "skuCandidates"));
             staleSelectedSkuRefs = List.copyOf(Objects.requireNonNull(staleSelectedSkuRefs, "staleSelectedSkuRefs"));
+            catalogImageAssetRefs = List.copyOf(Objects.requireNonNull(catalogImageAssetRefs, "catalogImageAssetRefs"));
         }
     }
 
@@ -179,6 +182,8 @@ public final class SalesMenuReadback {
             SalesMenuSaleContent saleContent,
             SalesMenuOrderingConstraints orderingConstraints,
             SalesMenuDisplayMedia displayMedia,
+            UUID publishedPrimaryImageAssetRef,
+            List<UUID> publishedCatalogImageAssetRefs,
             long displayOrder,
             InventoryAvailabilityFact inventoryAvailability,
             ManualSaleStatusFact manualSaleStatus,
@@ -207,6 +212,8 @@ public final class SalesMenuReadback {
                     saleContent,
                     orderingConstraints,
                     displayMedia,
+                    null,
+                    List.of(),
                     displayOrder,
                     inventoryAvailability,
                     manualSaleStatus,
@@ -217,6 +224,8 @@ public final class SalesMenuReadback {
         public PublishedItemView {
             manualSaleTargetStatuses =
                     List.copyOf(Objects.requireNonNull(manualSaleTargetStatuses, "manualSaleTargetStatuses"));
+            publishedCatalogImageAssetRefs = List.copyOf(
+                    Objects.requireNonNull(publishedCatalogImageAssetRefs, "publishedCatalogImageAssetRefs"));
         }
     }
 

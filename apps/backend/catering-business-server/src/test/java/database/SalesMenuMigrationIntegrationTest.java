@@ -35,6 +35,8 @@ class SalesMenuMigrationIntegrationTest {
             "sales_item",
             "sales_version_item",
             "sales_version_item_sku",
+            "sales_version_item_order_option",
+            "sales_version_item_order_option_value",
             "sales_version_item_media",
             "sales_publication",
             "sales_manual_status_current",
@@ -46,6 +48,12 @@ class SalesMenuMigrationIntegrationTest {
             new TriggerFact("sales_version_section", "tr_sales_version_section_published_immutable"),
             new TriggerFact("sales_version_item", "tr_sales_version_item_published_immutable"),
             new TriggerFact("sales_version_item_sku", "tr_sales_version_item_sku_published_immutable"),
+            new TriggerFact(
+                    "sales_version_item_order_option",
+                    "tr_sales_version_item_order_option_published_immutable"),
+            new TriggerFact(
+                    "sales_version_item_order_option_value",
+                    "tr_sales_version_item_order_option_value_published_immutable"),
             new TriggerFact("sales_version_item_media", "tr_sales_version_item_media_published_immutable"));
 
     @Container
@@ -156,6 +164,41 @@ class SalesMenuMigrationIntegrationTest {
                 "REFERENCES sales_menu.sales_version_item(version_ref, sales_item_ref)");
         assertConstraint(
                 "sales_menu",
+                "sales_version_item_order_option",
+                "fk_sales_version_item_order_option_version_item",
+                "FOREIGN KEY (version_ref, sales_item_ref)",
+                "REFERENCES sales_menu.sales_version_item(version_ref, sales_item_ref)");
+        assertConstraint(
+                "sales_menu",
+                "sales_version_item_order_option_value",
+                "fk_sales_version_item_order_option_value_group",
+                "FOREIGN KEY (version_ref, sales_item_ref, definition_ref)",
+                "REFERENCES sales_menu.sales_version_item_order_option(version_ref, sales_item_ref, definition_ref)");
+        assertConstraint(
+                "sales_menu",
+                "sales_manual_status_current",
+                "pk_sales_manual_status_current_target",
+                "PRIMARY KEY (sales_item_ref, channel_ref, target_kind, target_ref)");
+        assertConstraint(
+                "sales_menu",
+                "sales_manual_status_current",
+                "ck_sales_manual_status_current_target_kind",
+                "CHECK (",
+                "TARGET_KIND",
+                "'ITEM'",
+                "'SKU'",
+                "'ORDER_OPTION_VALUE'");
+        assertConstraint(
+                "sales_menu",
+                "sales_manual_status_event",
+                "ck_sales_manual_status_event_target_kind",
+                "CHECK (",
+                "TARGET_KIND",
+                "'ITEM'",
+                "'SKU'",
+                "'ORDER_OPTION_VALUE'");
+        assertConstraint(
+                "sales_menu",
                 "sales_version_item_media",
                 "fk_sales_version_item_media_version_item",
                 "FOREIGN KEY (version_ref, sales_item_ref)",
@@ -194,9 +237,29 @@ class SalesMenuMigrationIntegrationTest {
                 true,
                 "workspace_uuid, group_workspace_key, store_ref, name",
                 "archived_at_epoch_millis IS NULL");
-        assertIndex("sales_menu", "uq_sales_collection_current_draft", true, "collection_ref", "kind = 'DRAFT'");
+        assertIndex("sales_menu", "uq_sales_collection_current_draft", true, "collection_ref", "DRAFT");
         assertIndex("sales_menu", "uq_sales_section_ref_collection", true, "section_ref, collection_ref");
         assertIndex("sales_menu", "uq_sales_item_ref_collection", true, "sales_item_ref, collection_ref");
+        assertIndex(
+                "sales_menu",
+                "uq_sales_version_item_order_option_order",
+                true,
+                "version_ref, sales_item_ref, display_order");
+        assertIndex(
+                "sales_menu",
+                "uq_sales_version_item_order_option_value_order",
+                true,
+                "version_ref, sales_item_ref, definition_ref, display_order");
+        assertIndex(
+                "sales_menu",
+                "idx_sales_manual_status_channel_target",
+                false,
+                "channel_ref, sales_item_ref, target_kind, target_ref");
+        assertIndex(
+                "sales_menu",
+                "idx_sales_manual_status_event_item_target",
+                false,
+                "sales_item_ref, channel_ref, target_kind, target_ref");
         assertIndex(
                 "sales_menu", "idx_sales_collection_activation_channel", false, "channel_ref, status, collection_ref");
         assertIndex(
@@ -221,21 +284,21 @@ class SalesMenuMigrationIntegrationTest {
                 "sales_collection_version",
                 "tr_sales_collection_version_published_immutable",
                 "reject_published_version_mutation",
-                "BEFORE UPDATE OR DELETE");
+                "BEFORE DELETE OR UPDATE");
         for (TriggerFact trigger : PUBLISHED_CHILD_TRIGGERS) {
             assertTrigger(
                     "sales_menu",
                     trigger.table(),
                     trigger.name(),
                     "reject_published_version_child_mutation",
-                    "BEFORE UPDATE OR DELETE");
+                    "BEFORE DELETE OR UPDATE");
         }
         assertTrigger(
                 "sales_menu",
                 "sales_publication",
                 "tr_sales_publication_append_only",
                 "reject_publication_mutation",
-                "BEFORE UPDATE OR DELETE");
+                "BEFORE DELETE OR UPDATE");
         assertTrigger(
                 "sales_menu",
                 "sales_item",
@@ -502,6 +565,83 @@ class SalesMenuMigrationIntegrationTest {
     }
 
     @Test
+    void keepsManualStatusFactsIndependentByTargetAndRejectsInvalidTargetIdentity() throws SQLException {
+        UUID collection = UUID.randomUUID();
+        UUID salesItem = UUID.randomUUID();
+        UUID channel = UUID.randomUUID();
+        UUID sku = UUID.randomUUID();
+        UUID optionValue = UUID.randomUUID();
+        insertCollection(collection, UUID.randomUUID(), UUID.randomUUID(), "Target identity menu");
+        insertSalesItem(salesItem, collection, UUID.randomUUID());
+
+        String insertCurrent =
+                "INSERT INTO sales_menu.sales_manual_status_current "
+                        + "(sales_item_ref, channel_ref, target_kind, target_ref, state, reason, "
+                        + "changed_at_epoch_millis, actor_type, actor_id, actor_display_snapshot, version) "
+                        + "VALUES (?, ?, ?, ?, 'MANUAL_SOLD_OUT', 'temporary', ?, 'SYSTEM', NULL, 'system', 1)";
+        execute(insertCurrent, salesItem, channel, "ITEM", salesItem, NOW);
+        execute(insertCurrent, salesItem, channel, "SKU", sku, NOW);
+        execute(insertCurrent, salesItem, channel, "ORDER_OPTION_VALUE", optionValue, NOW);
+        assertEquals(
+                3,
+                scalarInt(
+                        "SELECT count(*) FROM sales_menu.sales_manual_status_current "
+                                + "WHERE sales_item_ref = ? AND channel_ref = ?",
+                        salesItem,
+                        channel),
+                "ITEM, SKU and ORDER_OPTION_VALUE status facts must have independent current identities");
+
+        assertSqlFailure(
+                "a duplicate manual target must be rejected by the target primary key",
+                insertCurrent,
+                "23505",
+                "pk_sales_manual_status_current_target",
+                salesItem,
+                channel,
+                "SKU",
+                sku,
+                NOW);
+        assertSqlFailure(
+                "an unknown manual target kind must be rejected",
+                insertCurrent,
+                "23514",
+                "ck_sales_manual_status_current_target_kind",
+                salesItem,
+                channel,
+                "UNKNOWN",
+                UUID.randomUUID(),
+                NOW);
+        assertSqlFailure(
+                "an ITEM target must use its sales item reference",
+                insertCurrent,
+                "23514",
+                "ck_sales_manual_status_current_item_target",
+                salesItem,
+                channel,
+                "ITEM",
+                UUID.randomUUID(),
+                NOW);
+
+        String insertEvent =
+                "INSERT INTO sales_menu.sales_manual_status_event "
+                        + "(event_ref, sales_item_ref, channel_ref, target_kind, target_ref, event_kind, reason, "
+                        + "actor_type, actor_id, actor_display_snapshot, occurred_at_epoch_millis) "
+                        + "VALUES (?, ?, ?, ?, ?, 'SOLD_OUT', 'temporary', 'SYSTEM', NULL, 'system', ?)";
+        execute(insertEvent, UUID.randomUUID(), salesItem, channel, "SKU", sku, NOW);
+        assertSqlFailure(
+                "an unknown event target kind must be rejected",
+                insertEvent,
+                "23514",
+                "ck_sales_manual_status_event_target_kind",
+                UUID.randomUUID(),
+                salesItem,
+                channel,
+                "UNKNOWN",
+                UUID.randomUUID(),
+                NOW);
+    }
+
+    @Test
     void rejectsPublishedMutationsAndStableSalesItemRebinding() throws SQLException {
         PublishedFixture fixture = insertPublishedFixture();
         UUID otherCollection = UUID.randomUUID();
@@ -568,6 +708,46 @@ class SalesMenuMigrationIntegrationTest {
                 fixture.publishedVersion(),
                 fixture.salesItem(),
                 fixture.sku());
+        assertSqlFailure(
+                "published option group update must be rejected by its database trigger",
+                "UPDATE sales_menu.sales_version_item_order_option SET resolved_definition_name = 'Changed' "
+                        + "WHERE version_ref = ? AND sales_item_ref = ? AND definition_ref = ?",
+                "55000",
+                "SALES_MENU_PUBLISHED_VERSION_CHILD_IMMUTABLE",
+                fixture.publishedVersion(),
+                fixture.salesItem(),
+                fixture.definition());
+        assertSqlFailure(
+                "published option group delete must be rejected by its database trigger",
+                "DELETE FROM sales_menu.sales_version_item_order_option "
+                        + "WHERE version_ref = ? AND sales_item_ref = ? AND definition_ref = ?",
+                "55000",
+                "SALES_MENU_PUBLISHED_VERSION_CHILD_IMMUTABLE",
+                fixture.publishedVersion(),
+                fixture.salesItem(),
+                fixture.definition());
+        assertSqlFailure(
+                "published option value update must be rejected by its database trigger",
+                "UPDATE sales_menu.sales_version_item_order_option_value SET resolved_value_name = 'Changed' "
+                        + "WHERE version_ref = ? AND sales_item_ref = ? AND definition_ref = ? "
+                        + "AND definition_value_ref = ?",
+                "55000",
+                "SALES_MENU_PUBLISHED_VERSION_CHILD_IMMUTABLE",
+                fixture.publishedVersion(),
+                fixture.salesItem(),
+                fixture.definition(),
+                fixture.definitionValue());
+        assertSqlFailure(
+                "published option value delete must be rejected by its database trigger",
+                "DELETE FROM sales_menu.sales_version_item_order_option_value "
+                        + "WHERE version_ref = ? AND sales_item_ref = ? AND definition_ref = ? "
+                        + "AND definition_value_ref = ?",
+                "55000",
+                "SALES_MENU_PUBLISHED_VERSION_CHILD_IMMUTABLE",
+                fixture.publishedVersion(),
+                fixture.salesItem(),
+                fixture.definition(),
+                fixture.definitionValue());
         assertSqlFailure(
                 "published media update must be rejected by its database trigger",
                 "UPDATE sales_menu.sales_version_item_media SET display_order = display_order + 1 "
@@ -763,6 +943,24 @@ class SalesMenuMigrationIntegrationTest {
                 publishedVersion,
                 salesItem,
                 sku);
+        UUID definition = UUID.randomUUID();
+        UUID definitionValue = UUID.randomUUID();
+        execute(
+                "INSERT INTO sales_menu.sales_version_item_order_option "
+                        + "(version_ref, sales_item_ref, definition_ref, resolved_definition_name, selection_mode, "
+                        + "required, min_selection_count, max_selection_count, display_order) "
+                        + "VALUES (?, ?, ?, 'Milk', 'SINGLE', false, 0, 1, 0)",
+                publishedVersion,
+                salesItem,
+                definition);
+        execute(
+                "INSERT INTO sales_menu.sales_version_item_order_option_value "
+                        + "(version_ref, sales_item_ref, definition_ref, definition_value_ref, resolved_value_name, "
+                        + "display_order, default_value, extra_price) VALUES (?, ?, ?, ?, 'Oat', 0, false, 50)",
+                publishedVersion,
+                salesItem,
+                definition,
+                definitionValue);
         execute(
                 "INSERT INTO sales_menu.sales_version_item_media "
                         + "(version_ref, sales_item_ref, asset_ref, display_order) VALUES (?, ?, ?, 0)",
@@ -778,7 +976,16 @@ class SalesMenuMigrationIntegrationTest {
                 collection,
                 publishedVersion,
                 NOW);
-        return new PublishedFixture(publishedVersion, section, salesItem, catalogItem, sku, asset, publication);
+        return new PublishedFixture(
+                publishedVersion,
+                section,
+                salesItem,
+                catalogItem,
+                sku,
+                definition,
+                definitionValue,
+                asset,
+                publication);
     }
 
     private static void assertConstraint(String schema, String table, String name, String... fragments)
@@ -949,6 +1156,8 @@ class SalesMenuMigrationIntegrationTest {
             UUID salesItem,
             UUID catalogItem,
             UUID sku,
+            UUID definition,
+            UUID definitionValue,
             UUID asset,
             UUID publication) {}
 }

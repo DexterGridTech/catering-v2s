@@ -102,6 +102,8 @@ type OwnerCase = JsonObject & {
   createSectionName?: string;
   renameSectionName?: string;
   listedPriceCents?: number;
+  publishedPrimaryImageAssetRef?: string | null;
+  publishedCatalogImageAssetRefs?: string[];
 };
 type GeneratedOperation =
   | (typeof OPERATIONS_ADMIN_OPERATIONS)[number]
@@ -655,6 +657,32 @@ function visibleTestId(page: Page, testId: string): Locator {
   return page.getByTestId(testId);
 }
 
+async function assertLoadedAssetPreview(page: Page, testId: string, runtime: CaseRuntime): Promise<void> {
+  const preview = visibleTestId(page, testId);
+  await expect(preview).toBeVisible();
+  const image = preview.locator('img');
+  await expect(image).toHaveCount(1);
+  await expect
+    .poll(
+      () =>
+        image.evaluate(element => {
+          const current = element as HTMLImageElement;
+          return current.complete && current.naturalWidth > 0;
+        }),
+      {timeout: 20_000},
+    )
+    .toBe(true);
+  appendDebugEvent({
+    kind: 'TEST_CHECKPOINT',
+    caseId: runtime.row.caseId,
+    scenarioId: runtime.row.scenarioId,
+    checkpoint: 'SALES_MENU_ASSET_PREVIEW_LOADED',
+    testId,
+    imageNaturalWidth: await image.evaluate(element => (element as HTMLImageElement).naturalWidth),
+    imageNaturalHeight: await image.evaluate(element => (element as HTMLImageElement).naturalHeight),
+  });
+}
+
 async function waitForOperation(runtime: CaseRuntime, operationId: string, count = 1): Promise<OperationObservation> {
   await expect
     .poll(() => runtime.observations.filter(entry => entry.operationId === operationId).length, {timeout: 20_000})
@@ -921,6 +949,23 @@ async function assertPublishedItemDetailReadModel(page: Page, facts: OwnerCase, 
   const detail = await requireControl(page, 'SALES_MENU_ITEM_DETAIL', facts);
   await expect(detail).toContainText('菜单商品');
   await expect(detail).toContainText(itemCode);
+  const detailMediaTestId = salesMenuTestIds.itemMedia(salesItemRef, 'published-detail-primary');
+  if (typeof facts.publishedPrimaryImageAssetRef === 'string')
+    await assertLoadedAssetPreview(page, detailMediaTestId, runtime);
+  else await expect(visibleTestId(page, detailMediaTestId)).toBeVisible();
+  const publishedImageAssetRefs = Array.isArray(facts.publishedCatalogImageAssetRefs)
+    ? facts.publishedCatalogImageAssetRefs.filter((assetRef): assetRef is string => typeof assetRef === 'string')
+    : [];
+  if (publishedImageAssetRefs.length > 1) {
+    const secondAssetRef = publishedImageAssetRefs[1];
+    await clickBoundControl(page, 'SALES_MENU_ITEM_DETAIL_MEDIA_CHOICE', {
+      ...facts,
+      itemRef: salesItemRef,
+      assetRef: secondAssetRef,
+    });
+    await assertLoadedAssetPreview(page, detailMediaTestId, runtime);
+    await expect(visibleTestId(page, detailMediaTestId).locator('img')).toHaveAttribute('alt', /第 2 张/);
+  }
   appendDebugEvent({
     kind: 'TEST_CHECKPOINT',
     caseId: runtime.row.caseId,
@@ -1635,6 +1680,23 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
     case 'sales-menu-edit-direct-item-and-media': {
       await prepareDraft(page, facts, runtime);
       await openDraftEditor(page, facts, runtime);
+      const requiredOptionDefinitionRef = factText(facts, ['requiredOptionDefinitionRef']);
+      const requiredOptionValueRefs = factStringArray(facts, 'requiredOptionValueRefs');
+      if (requiredOptionValueRefs.length < 2) throw new Error('SALES_MENU_L2_REQUIRED_OPTION_VALUE_FIXTURE_INCOMPLETE');
+      await requireControl(page, 'SALES_MENU_ITEM_ORDER_OPTION_GROUP', {
+        ...facts,
+        definitionRef: requiredOptionDefinitionRef,
+      });
+      await checkBoundControl(page, 'SALES_MENU_ITEM_ORDER_OPTION_VALUE', {
+        ...facts,
+        definitionRef: requiredOptionDefinitionRef,
+        valueRef: requiredOptionValueRefs[1],
+      });
+      const optionalOptionDefinitionRef = factText(facts, ['optionalOptionDefinitionRef']);
+      await requireControl(page, 'SALES_MENU_ITEM_ORDER_OPTION_GROUP', {
+        ...facts,
+        definitionRef: optionalOptionDefinitionRef,
+      });
       await fillBoundControl(
         page,
         'SALES_MENU_ITEM_DISPLAY_NAME',
@@ -1731,20 +1793,59 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).toBeHidden();
       break;
     }
-    case 'sales-menu-edit-sku-prices':
-    case 'sales-menu-edit-weighted-item':
+    case 'sales-menu-edit-sku-prices': {
       await prepareDraft(page, facts, runtime);
       await openDraftEditor(page, facts, runtime);
       await requireControl(page, 'SALES_MENU_ITEM_EDITOR', facts);
-      if (runtime.row.caseId === 'sales-menu-edit-sku-prices') {
-        await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).toContainText('规格');
-        await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).not.toContainText('公共挂牌价');
-      } else {
-        await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).toContainText(/称重|单位/);
-        const weightedEditor = visibleTestId(page, salesMenuTestIds.itemEditor);
-        await expect(weightedEditor.getByText('起售量', {exact: true})).toHaveCount(0);
-        await expect(weightedEditor.getByText('订购倍数', {exact: true})).toHaveCount(0);
-      }
+      await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).toContainText('规格');
+      await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).not.toContainText('公共挂牌价');
+      const enabledSkuRefs = factStringArray(facts, 'enabledSkuRefs');
+      const salesItemRefs = factStringArray(facts, 'salesItemRefs');
+      if (enabledSkuRefs.length < 2 || salesItemRefs.length < 2)
+        throw new Error('SALES_MENU_L2_SKU_SUBSET_FIXTURE_INCOMPLETE');
+      await requireControl(page, 'SALES_MENU_ITEM_SKU_SELECTION', facts);
+      await clickBoundControl(page, 'SALES_MENU_ITEM_SKU_CLEAR', facts, '清空');
+      await clickBoundControl(page, 'SALES_MENU_ITEM_SKU_SELECT_ALL', facts, '全选');
+      await expect(visibleTestId(page, salesMenuTestIds.itemSkuOption(enabledSkuRefs[0]))).toBeChecked();
+      await clickBoundControl(page, 'SALES_MENU_ITEM_SKU_CLEAR', facts, '清空');
+      await checkBoundControl(page, 'SALES_MENU_ITEM_SKU_OPTION', {...facts, skuRef: enabledSkuRefs[0]});
+      await fillBoundControl(page, 'SALES_MENU_ITEM_SKU_PRICE', {...facts, skuRef: enabledSkuRefs[0]}, '17.77');
+      await clickBoundControl(page, 'SALES_MENU_ITEM_SAVE', facts, '保存');
+      await waitForOperation(runtime, 'updateOperationsSalesMenuItem');
+      const firstSavedRow = page
+        .getByRole('row')
+        .filter({has: visibleTestId(page, salesMenuTestIds.item(salesItemRefs[0]))});
+      const secondSavedRow = page
+        .getByRole('row')
+        .filter({has: visibleTestId(page, salesMenuTestIds.item(salesItemRefs[1]))});
+      await expect(firstSavedRow).toContainText('规格A');
+      await expect(firstSavedRow).not.toContainText('规格B');
+      await expect(firstSavedRow).toContainText('¥17.77');
+      const secondFacts = {...facts, itemRef: salesItemRefs[1]};
+      await openDraftEditor(page, secondFacts, runtime);
+      await clickBoundControl(page, 'SALES_MENU_ITEM_SKU_CLEAR', secondFacts, '清空');
+      await checkBoundControl(page, 'SALES_MENU_ITEM_SKU_OPTION', {...secondFacts, skuRef: enabledSkuRefs[1]});
+      await fillBoundControl(page, 'SALES_MENU_ITEM_SKU_PRICE', {...secondFacts, skuRef: enabledSkuRefs[1]}, '18.88');
+      await clickBoundControl(page, 'SALES_MENU_ITEM_SAVE', secondFacts, '保存');
+      await waitForOperation(runtime, 'updateOperationsSalesMenuItem', 2);
+      await expect(secondSavedRow).toContainText('规格B');
+      await expect(secondSavedRow).not.toContainText('规格A');
+      await expect(secondSavedRow).toContainText('¥18.88');
+      await expect(firstSavedRow).toContainText('规格A');
+      await expect(firstSavedRow).toContainText('¥17.77');
+      await openDraftEditor(page, facts, runtime);
+      await expect(visibleTestId(page, salesMenuTestIds.itemSkuOption(enabledSkuRefs[0]))).toBeChecked();
+      await expect(visibleTestId(page, salesMenuTestIds.itemSkuOption(enabledSkuRefs[1]))).not.toBeChecked();
+      await expect(visibleTestId(page, salesMenuTestIds.itemSkuPrice(enabledSkuRefs[0]))).toHaveValue('17.77');
+      break;
+    }
+    case 'sales-menu-edit-weighted-item':
+      await prepareDraft(page, facts, runtime);
+      await openDraftEditor(page, facts, runtime);
+      await expect(visibleTestId(page, salesMenuTestIds.itemEditor)).toContainText(/规格|称重|单位/);
+      const weightedEditor = visibleTestId(page, salesMenuTestIds.itemEditor);
+      await expect(weightedEditor.getByText('起售量', {exact: true})).toHaveCount(0);
+      await expect(weightedEditor.getByText('订购倍数', {exact: true})).toHaveCount(0);
       await clickBoundControl(page, 'SALES_MENU_ITEM_SAVE', facts, '保存');
       await waitForOperation(runtime, 'updateOperationsSalesMenuItem');
       break;
@@ -1776,6 +1877,10 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       const publishedTable = await requireControl(page, 'SALES_MENU_ITEM_TABLE', facts);
       await expect(publishedTable).toContainText('库存状态');
       await expect(publishedTable).toContainText('销售状态');
+      const publishedMediaTestId = salesMenuTestIds.itemMedia(factText(facts, ['itemRef']), 'published-primary');
+      if (typeof facts.publishedPrimaryImageAssetRef === 'string')
+        await assertLoadedAssetPreview(page, publishedMediaTestId, runtime);
+      else await expect(visibleTestId(page, publishedMediaTestId)).toBeVisible();
       const publishedHeaders = await publishedTable.getByRole('columnheader').allTextContents();
       if (publishedHeaders.some(header => /操作|查看/.test(header)))
         throw new Error(`SALES_MENU_L2_PUBLISHED_OPERATION_COLUMN_PRESENT:${publishedHeaders.join('|')}`);
@@ -1795,28 +1900,83 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await assertPublishedItemDetailReadModel(page, targetFacts, runtime);
       const itemDetail = visibleTestId(page, salesMenuTestIds.itemDetail);
       await expect(itemDetail).toContainText('库存状态');
-      await expect(itemDetail).toContainText('销售状态');
+      await expect(itemDetail).toContainText('销售项人工状态');
       break;
     case 'sales-menu-manual-sold-out-and-restore':
       await preparePublished(page, facts, runtime);
       await requireControl(page, 'SALES_MENU_ITEM_TABLE', facts);
       await clickRequiredControl(page, 'SALES_MENU_ITEM_STATUS_ACTION', facts);
-      await checkBoundControl(page, 'SALES_MENU_ITEM_STATUS_CHOICE', {...facts, status: 'SOLD_OUT'});
-      await clickBoundControl(page, 'SALES_MENU_ITEM_STATUS_SUBMIT', facts, '设置为沽清');
+      const requiredOptionValueRefs = factStringArray(facts, 'requiredOptionValueRefs');
+      if (requiredOptionValueRefs.length < 1) throw new Error('SALES_MENU_L2_STATUS_OPTION_TARGET_FIXTURE_INCOMPLETE');
+      const optionTargetFacts = {...facts, kind: 'ORDER_OPTION_VALUE', ref: requiredOptionValueRefs[0]};
+      await checkBoundControl(page, 'SALES_MENU_ITEM_STATUS_TARGET', optionTargetFacts);
+      await clickBoundControl(
+        page,
+        'SALES_MENU_ITEM_STATUS_TARGET_QUICK_ACTION',
+        {...optionTargetFacts, state: 'NORMAL'},
+        '设置沽清',
+      );
+      await expect(visibleTestId(page, salesMenuTestIds.feedback)).toContainText('设置人工沽清时必须填写原因');
+      await expect(visibleTestId(page, salesMenuTestIds.statusFeedback)).toContainText('设置人工沽清时必须填写原因');
+      await fillBoundControl(
+        page,
+        'SALES_MENU_ITEM_STATUS_TARGET_REASON',
+        optionTargetFacts,
+        factText(facts, ['soldOutReason'], 'L2人工沽清'),
+      );
+      await clickBoundControl(
+        page,
+        'SALES_MENU_ITEM_STATUS_TARGET_QUICK_ACTION',
+        {...optionTargetFacts, state: 'NORMAL'},
+        '设置沽清',
+      );
+      await waitForOperation(runtime, 'setOperationsSalesMenuItemSoldOut');
+      await clickBoundControl(page, 'SALES_MENU_ITEM_STATUS_CLOSE', facts, '关闭');
+      const publishedStatus = visibleTestId(page, salesMenuTestIds.statusAction(factText(facts, ['itemRef'])));
+      await expect(publishedStatus).toContainText('销售项：正常销售');
+      await expect(publishedStatus).toContainText('销售选项');
+      await expect(publishedStatus).toContainText('已沽清');
+      await clickRequiredControl(page, 'SALES_MENU_ITEM_STATUS_ACTION', facts);
+      await checkBoundControl(page, 'SALES_MENU_ITEM_STATUS_TARGET', optionTargetFacts);
+      await clickBoundControl(
+        page,
+        'SALES_MENU_ITEM_STATUS_TARGET_QUICK_ACTION',
+        {...optionTargetFacts, state: 'MANUAL_SOLD_OUT'},
+        '恢复销售',
+      );
+      await clickBoundControl(page, 'SALES_MENU_CONFIRMATION_SUBMIT', facts, '确认');
+      await waitForOperation(runtime, 'restoreOperationsSalesMenuItemSale');
+      const itemTargetFacts = {...facts, kind: 'ITEM', ref: factText(facts, ['itemRef'])};
+      await checkBoundControl(page, 'SALES_MENU_ITEM_STATUS_TARGET', itemTargetFacts);
+      await clickBoundControl(
+        page,
+        'SALES_MENU_ITEM_STATUS_TARGET_QUICK_ACTION',
+        {...itemTargetFacts, state: 'NORMAL'},
+        '设置沽清',
+      );
       await expect(visibleTestId(page, salesMenuTestIds.feedback)).toContainText('设置人工沽清时必须填写原因');
       await fillBoundControl(
         page,
-        'SALES_MENU_ITEM_STATUS_REASON',
-        facts,
-        factText(facts, ['soldOutReason'], 'L2人工沽清'),
+        'SALES_MENU_ITEM_STATUS_TARGET_REASON',
+        itemTargetFacts,
+        `${factText(facts, ['soldOutReason'], 'L2人工沽清')}-ITEM`,
       );
-      await clickBoundControl(page, 'SALES_MENU_ITEM_STATUS_SUBMIT', facts, '设置为沽清');
-      await waitForOperation(runtime, 'setOperationsSalesMenuItemSoldOut');
-      await clickRequiredControl(page, 'SALES_MENU_ITEM_STATUS_ACTION', facts);
-      await checkBoundControl(page, 'SALES_MENU_ITEM_STATUS_CHOICE', {...facts, status: 'NORMAL'});
-      await clickBoundControl(page, 'SALES_MENU_ITEM_STATUS_SUBMIT', facts, '恢复正常销售');
+      await clickBoundControl(
+        page,
+        'SALES_MENU_ITEM_STATUS_TARGET_QUICK_ACTION',
+        {...itemTargetFacts, state: 'NORMAL'},
+        '设置沽清',
+      );
+      await waitForOperation(runtime, 'setOperationsSalesMenuItemSoldOut', 2);
+      await clickBoundControl(
+        page,
+        'SALES_MENU_ITEM_STATUS_TARGET_QUICK_ACTION',
+        {...itemTargetFacts, state: 'MANUAL_SOLD_OUT'},
+        '恢复销售',
+      );
       await clickBoundControl(page, 'SALES_MENU_CONFIRMATION_SUBMIT', facts, '确认');
-      await waitForOperation(runtime, 'restoreOperationsSalesMenuItemSale');
+      await waitForOperation(runtime, 'restoreOperationsSalesMenuItemSale', 2);
+      await clickBoundControl(page, 'SALES_MENU_ITEM_STATUS_CLOSE', facts, '关闭');
       await switchMode(page, 'OPERATIONS', facts);
       await requireControl(page, 'SALES_MENU_OPERATION_LOG', facts);
       await expect(visibleTestId(page, salesMenuTestIds.operationLog)).toContainText('操作人');
@@ -2098,6 +2258,8 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await expect(targetToggle).toBeDisabled();
       const foreignProjectChannelRef = factText(facts, ['foreignProjectChannelRef']);
       const foreignStoreChannelRef = factText(facts, ['foreignStoreChannelRef']);
+      await page.keyboard.press('Escape');
+      await expect(page.getByTestId(salesMenuTestIds.menuManager)).toBeHidden();
       const channelSelector = await clickRequiredControl(page, 'SALES_MENU_CHANNEL_SELECTOR', facts);
       await expect(page.getByTestId(salesMenuTestIds.channelOption(foreignProjectChannelRef))).toHaveCount(0);
       await expect(page.getByTestId(salesMenuTestIds.channelOption(foreignStoreChannelRef))).toHaveCount(0);

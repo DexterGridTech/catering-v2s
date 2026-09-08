@@ -43,7 +43,11 @@ const assertDefinitionSeed = (seed) => {
   assert.equal(caesar.attributes.length, 3);
   assert.equal(caesar.orderOptions.length, 2);
   assert.equal(
-    caesar.orderOptions.some((option) => option.definitionCode === "CAESAR_TOPPINGS" && option.minSelectionCount === 0 && option.maxSelectionCount === 2),
+    caesar.orderOptions.some((option) => option.definitionCode === "CAESAR_TOPPINGS" && option.required === true && option.minSelectionCount === 1 && option.maxSelectionCount === 2),
+    true,
+  );
+  assert.equal(
+    caesar.orderOptions.some((option) => option.definitionCode === "CAESAR_DRESSING" && option.required === false && option.minSelectionCount === null && option.maxSelectionCount === null),
     true,
   );
   assert.equal(caesar.optionValueBoms.some((bom) => bom.valueCode === "CHICKEN" && bom.lines[0].quantity === 80), true);

@@ -107,18 +107,23 @@ public interface CatalogOwnerApi {
             Long defaultPriceCents,
             InventoryOwnerApi.UnitSnapshot salesUnitSnapshot,
             UUID defaultImageAssetRef,
+            List<UUID> imageAssetRefs,
             List<SalesMenuOrderOptionFact> orderOptions,
             SalesMenuSkuSummary skuSummary,
             List<SalesMenuSkuFact> skus,
             List<SalesMenuSkuVariantAxisFact> variantAxes) {
         public SalesMenuItemFacts {
             categoryRefs = List.copyOf(Objects.requireNonNull(categoryRefs, "categoryRefs"));
+            imageAssetRefs = List.copyOf(Objects.requireNonNull(imageAssetRefs, "imageAssetRefs"));
             orderOptions = List.copyOf(Objects.requireNonNull(orderOptions, "orderOptions"));
             Objects.requireNonNull(skuSummary, "skuSummary");
             skus = List.copyOf(Objects.requireNonNull(skus, "skus"));
             variantAxes = List.copyOf(Objects.requireNonNull(variantAxes, "variantAxes"));
         }
     }
+
+    /** The catalog-owned identity and shape facts needed before a sales-item membership row is created. */
+    record SalesMenuItemReferenceFact(UUID itemRef, String itemCode, String itemName, String shapeKey) {}
 
     /** Catalog-owned item-level point-order options needed by sales-menu list projections. */
     record SalesMenuOrderOptionFact(
@@ -205,6 +210,13 @@ public interface CatalogOwnerApi {
      * operation performs one scoped item set read followed by bounded owner-local fact set reads.
      */
     Map<UUID, SalesMenuItemFacts> readSalesMenuItemFacts(String dataNodeRef, String brandRef, Set<UUID> itemRefs);
+
+    /**
+     * Reads only the catalog facts needed to create sales-item membership rows; dependent SKU, option, unit, category,
+     * and media facts are intentionally not hydrated by this capability.
+     */
+    Map<UUID, SalesMenuItemReferenceFact> readSalesMenuItemReferenceFacts(
+            String dataNodeRef, String brandRef, Set<UUID> itemRefs);
 
     JsonNode readItem(String dataNodeRef, String brandRef, String itemCode, String requestId);
 

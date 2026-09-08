@@ -1,12 +1,18 @@
-import {useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {calculateVirtualKeyboardMetrics, type KeyboardCapacity, type LocalFrameMetrics} from '../foundations/keyboardHeight';
-import {InputControllerContext, InputFieldKeyboardStateContext, InputKeyboardStateContext} from '../contexts/context';
+import {
+  InputControllerContext,
+  InputDiagnosticContext,
+  InputFieldKeyboardStateContext,
+  InputKeyboardStateContext,
+} from '../contexts/context';
 import {FocusBoundaryBridge} from './FocusBoundaryBridge';
 import {useInputFieldRegistry} from '../hooks/useInputFieldRegistry';
 import {useInputFocusController} from '../hooks/useInputFocusController';
 import {useInputKeyboardController} from '../hooks/useInputKeyboardController';
 import type {
   InputController,
+  InputDiagnosticReporter,
   InputFieldKeyboardState,
   InputFieldController,
   InputKeyboardState,
@@ -17,10 +23,11 @@ import type {KeyboardStateBase} from '../hooks/inputProviderTypes';
 export type InputProviderProps = Readonly<{
   readonly frameMetrics: LocalFrameMetrics | null;
   readonly imeInset?: number;
+  readonly onDiagnostic?: InputDiagnosticReporter;
   readonly children?: ReactNode;
 }>;
 
-export const InputProvider = ({frameMetrics, imeInset = 0, children}: InputProviderProps) => {
+export const InputProvider = ({frameMetrics, imeInset = 0, onDiagnostic, children}: InputProviderProps) => {
   const frameMetricsRef = useRef<LocalFrameMetrics | null>(frameMetrics);
   frameMetricsRef.current = frameMetrics;
   const keyboardStateRef = useRef<KeyboardStateBase>({
@@ -191,14 +198,49 @@ export const InputProvider = ({frameMetrics, imeInset = 0, children}: InputProvi
     contentTooSmall: surfaceMetrics.contentTooSmall,
     imeInset: Math.max(0, imeInset),
   };
+  const diagnosticData = {
+    source: 'ui-base-input.InputProvider',
+    frameWidth: frameMetrics?.width ?? null,
+    frameHeight: frameMetrics?.height ?? null,
+    frameReady: frameMetrics?.ready ?? false,
+    frameOrientation: frameMetrics?.orientation ?? null,
+    layout: keyboardState.layout,
+    fieldCount: fieldsRef.current.size,
+    fieldIds: [...fieldsRef.current.keys()],
+    activeFieldId: keyboardState.activeFieldId,
+    owner: keyboardState.owner,
+    capacity: keyboardState.capacity,
+    blockedFieldId: keyboardState.blockedFieldId,
+    blockedCapacity: keyboardState.blockedCapacity,
+    height: keyboardState.height,
+    contentHeight: keyboardState.contentHeight,
+    frameWidthForKeyboard: keyboardState.frameWidth,
+    cellWidth: keyboardState.cellWidth,
+    rowCount: keyboardState.rowCount,
+    hasNextField: keyboardState.hasNextField,
+    visible: keyboardState.visible,
+    contentTooSmall: keyboardState.contentTooSmall,
+    imeInset: keyboardState.imeInset,
+    revision: keyboardState.revision,
+  } satisfies Parameters<NonNullable<InputDiagnosticReporter>>[0]['data'];
+  const diagnosticSignature = JSON.stringify(diagnosticData);
+  const previousDiagnosticSignature = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!__DEV__ || onDiagnostic === undefined || previousDiagnosticSignature.current === diagnosticSignature) return;
+    previousDiagnosticSignature.current = diagnosticSignature;
+    onDiagnostic({event: 'input.provider-metrics', data: diagnosticData});
+  }, [diagnosticData, diagnosticSignature, onDiagnostic]);
 
   return (
-    <InputControllerContext.Provider value={controllerValue}>
-      <InputFieldKeyboardStateContext.Provider value={fieldKeyboardState}>
-        <InputKeyboardStateContext.Provider value={keyboardState}>
-          <FocusBoundaryBridge notify={notifyFocusBoundary}>{children}</FocusBoundaryBridge>
-        </InputKeyboardStateContext.Provider>
-      </InputFieldKeyboardStateContext.Provider>
-    </InputControllerContext.Provider>
+    <InputDiagnosticContext.Provider value={onDiagnostic ?? null}>
+      <InputControllerContext.Provider value={controllerValue}>
+        <InputFieldKeyboardStateContext.Provider value={fieldKeyboardState}>
+          <InputKeyboardStateContext.Provider value={keyboardState}>
+            <FocusBoundaryBridge notify={notifyFocusBoundary}>{children}</FocusBoundaryBridge>
+          </InputKeyboardStateContext.Provider>
+        </InputFieldKeyboardStateContext.Provider>
+      </InputControllerContext.Provider>
+    </InputDiagnosticContext.Provider>
   );
 };

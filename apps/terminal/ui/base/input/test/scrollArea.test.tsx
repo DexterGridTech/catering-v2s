@@ -1,12 +1,18 @@
+import {useLayoutEffect, type RefObject} from 'react'
 import {act, create, type ReactTestInstance, type ReactTestRenderer} from 'react-test-renderer'
 import {describe, expect, it, vi} from 'vitest'
-import {PrimitiveInput} from '@catering-v2s/ui-base-primitives'
-import {ScrollView, TextInput} from 'react-native'
+import {PrimitiveInput, type PrimitiveInputHandle} from '@catering-v2s/ui-base-primitives'
+import {ScrollView, TextInput, View} from 'react-native'
 import {InputScrollArea} from '../src/components/InputScrollArea'
 import {InputSurfaceFrame} from '../src/components/InputSurfaceFrame'
 import {useInputField} from '../src/hooks/useInputField'
+import {useInputScrollAncestor} from '../src/contexts/context'
+import type {InputDiagnostic} from '../src/types/types'
 
-const Field = () => {
+type InputRef = RefObject<PrimitiveInputHandle | null>
+type ScrollRequest = (keyboardHeight: number) => void
+
+const Field = ({onScrollReady}: Readonly<{readonly onScrollReady?: (request: ScrollRequest) => void}>) => {
   const field = useInputField({
     fieldId: 'scroll-field',
     testID: 'sample:scroll-field',
@@ -14,6 +20,12 @@ const Field = () => {
     keyboardKind: 'virtual',
     layout: 'numeric',
   })
+  const scrollAncestor = useInputScrollAncestor()
+  const inputRef = field.inputProps.inputRef as InputRef
+  useLayoutEffect(() => {
+    if (scrollAncestor === null || onScrollReady === undefined) return
+    onScrollReady(keyboardHeight => scrollAncestor(inputRef, keyboardHeight))
+  }, [inputRef, onScrollReady, scrollAncestor])
   return <PrimitiveInput {...field.inputProps} />
 }
 
@@ -22,27 +34,46 @@ const createWithNodeMock = create as unknown as (
   options: Readonly<{readonly createNodeMock: (element: ReactTestInstance) => unknown}>,
 ) => ReactTestRenderer
 
-const mountWithNativeGeometry = (scrollTo: (options: Readonly<{readonly y: number; readonly animated?: boolean}>) => void): ReactTestRenderer => {
+const TEST_FRAME = {width: 960, height: 540} as const;
+
+const mountWithNativeGeometry = (
+  scrollTo: (options: Readonly<{readonly y: number; readonly animated?: boolean}>) => void,
+  diagnostics: InputDiagnostic[],
+): Readonly<{readonly renderer: ReactTestRenderer; readonly requestScroll: {readonly current: ScrollRequest | null}}> => {
   let renderer: ReactTestRenderer | undefined
+  const requestScroll = {current: null as ScrollRequest | null}
+  const onScrollReady = (request: ScrollRequest) => {
+    requestScroll.current = request
+  }
   act(() => {
     renderer = createWithNodeMock(
-      <InputSurfaceFrame>
-        <InputScrollArea testID="sample:scroll-area">
-          <Field />
-        </InputScrollArea>
-      </InputSurfaceFrame>,
+      <View
+        testID="sample:scaled-host"
+        style={{transform: [{scaleX: 1.25}, {scaleY: 0.5}]}}
+      >
+        <InputSurfaceFrame onDiagnostic={diagnostic => diagnostics.push(diagnostic)}>
+          <InputScrollArea testID="sample:scroll-area">
+            <Field onScrollReady={onScrollReady} />
+          </InputScrollArea>
+        </InputSurfaceFrame>
+      </View>,
       {
         createNodeMock: (element: ReactTestInstance) => {
           if (element.props.testID === 'sample:scroll-field') {
             return {
-              measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) => callback(0, 260, 100, 40),
+              measureInWindow: () => { throw new Error('window coordinates must not drive scroll delta') },
+              measureLayout: (
+                _relativeToNativeNode: unknown,
+                callback: (x: number, y: number, width: number, height: number) => void,
+              ) => callback(0, 530, 100, 40),
               focus: () => undefined,
               blur: () => undefined,
             }
           }
           if (element.props.testID === 'sample:scroll-area' && element.type === ScrollView) {
             return {
-              measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) => callback(0, 0, 300, 270),
+              measureInWindow: () => { throw new Error('window coordinates must not drive scroll delta') },
+              getInnerViewNode: () => 1,
               scrollTo,
             }
           }
@@ -53,19 +84,61 @@ const mountWithNativeGeometry = (scrollTo: (options: Readonly<{readonly y: numbe
   })
   act(() => {
     renderer!.root.findByProps({testID: 'ui.base.input:surface-frame'}).props.onLayout({
-      nativeEvent: {layout: {width: 962, height: 541}},
+      nativeEvent: {layout: TEST_FRAME},
     })
   })
-  return renderer!
+  const scrollView = renderer!.root.findAllByType(ScrollView).find(node => node.props.testID === 'sample:scroll-area')!
+  act(() => {
+    scrollView.props.onLayout({nativeEvent: {layout: {x: 0, y: 0, width: 300, height: 270}}})
+    scrollView.props.onScroll({nativeEvent: {contentOffset: {y: 100}}})
+  })
+  return {renderer: renderer!, requestScroll}
 }
 
 describe('InputScrollArea', () => {
-  it('measures a focused field and scrolls the real primitive ancestor into the shrunken viewport', () => {
+  it('uses content-local coordinates when a scaled host has a non-zero scroll offset', () => {
     const scrollTo = vi.fn()
-    const renderer = mountWithNativeGeometry(scrollTo)
-    const input = renderer.root.findAllByType(TextInput).find(node => node.props.testID === 'sample:scroll-field')!
-    act(() => { input.props.onFocus({nativeEvent: {}}) })
-    expect(scrollTo).toHaveBeenCalledWith({y: 30, animated: true})
+    const diagnostics: InputDiagnostic[] = []
+    const {renderer, requestScroll} = mountWithNativeGeometry(scrollTo, diagnostics)
+    expect(renderer.root.findByProps({testID: 'sample:scaled-host'}).props.style.transform).toEqual([
+      {scaleX: 1.25},
+      {scaleY: 0.5},
+    ])
+    const scrollView = renderer.root.findAllByType(ScrollView).find(node => node.props.testID === 'sample:scroll-area')!
+    expect(requestScroll.current).not.toBeNull()
+    act(() => { requestScroll.current!(100) })
+    act(() => { requestScroll.current!(100) })
+    expect(scrollTo).toHaveBeenCalledTimes(2)
+    if (__DEV__) {
+      const intoViewEvents = diagnostics.filter(diagnostic => diagnostic.event === 'input.scroll-into-view')
+      expect(intoViewEvents).toHaveLength(2)
+      expect(intoViewEvents[0]).toMatchObject({
+        data: {beforeOffset: 100, delta: 200, requestedOffset: 300, units: 'logical-layout-unit'},
+      })
+      expect(intoViewEvents[1]).toMatchObject({
+        data: {beforeOffset: 100, delta: 200, requestedOffset: 300, units: 'logical-layout-unit'},
+      })
+    }
+    act(() => {
+      scrollView.props.onScroll({nativeEvent: {contentOffset: {y: 240}}})
+    })
+    act(() => { requestScroll.current!(100) })
+    expect(scrollTo).toHaveBeenLastCalledWith({y: 300, animated: true})
+    if (__DEV__) {
+      const postScrollIntoViewEvents = diagnostics.filter(diagnostic => diagnostic.event === 'input.scroll-into-view')
+      expect(postScrollIntoViewEvents[postScrollIntoViewEvents.length - 1]).toMatchObject({
+        data: {beforeOffset: 240, delta: 60, requestedOffset: 300, units: 'logical-layout-unit'},
+      })
+    }
+    act(() => {
+      scrollView.props.onScroll({nativeEvent: {contentOffset: {y: 300}}})
+    })
+    if (__DEV__) {
+      const scrollOffsetEvents = diagnostics.filter(diagnostic => diagnostic.event === 'input.scroll-offset')
+      expect(scrollOffsetEvents[scrollOffsetEvents.length - 1]).toMatchObject({
+        data: {offsetY: 300, units: 'logical-layout-unit'},
+      })
+    }
     act(() => { renderer.unmount() })
   })
 
@@ -80,7 +153,7 @@ describe('InputScrollArea', () => {
     })
     act(() => {
       renderer!.root.findByProps({testID: 'ui.base.input:surface-frame'}).props.onLayout({
-        nativeEvent: {layout: {width: 962, height: 541}},
+        nativeEvent: {layout: TEST_FRAME},
       })
     })
     const input = renderer!.root.findAllByType(TextInput).find(node => node.props.testID === 'sample:scroll-field')!

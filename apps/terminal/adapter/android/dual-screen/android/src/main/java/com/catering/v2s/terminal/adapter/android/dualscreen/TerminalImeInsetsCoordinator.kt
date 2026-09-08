@@ -32,6 +32,20 @@ internal class TerminalImeInsetsCoordinator(
   private val rootView: View = window.decorView
   private var attached = false
 
+  private val layoutListener = View.OnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
+    val location = IntArray(2)
+    view.getLocationOnScreen(location)
+    val metrics = view.resources.displayMetrics
+    Log.i(
+      LOG_TAG,
+      "event=ime-root-layout window=$windowIdentity displayIndex=$displayIndex displayId=$displayId " +
+        "leftPx=${location[0]} topPx=${location[1]} widthPx=${view.width} heightPx=${view.height} " +
+        "measuredWidthPx=${view.measuredWidth} measuredHeightPx=${view.measuredHeight} " +
+        "densityDpi=${metrics.densityDpi} density=${metrics.density} logicalWidth=${view.width / metrics.density} " +
+        "logicalHeight=${view.height / metrics.density}",
+    )
+  }
+
   private val listener = OnApplyWindowInsetsListener { _, insets ->
     val imeType = WindowInsetsCompat.Type.ime()
     val imeInsets = insets.getInsets(imeType)
@@ -61,8 +75,10 @@ internal class TerminalImeInsetsCoordinator(
   fun attach() {
     if (attached) return
     attached = true
+    rootView.addOnLayoutChangeListener(layoutListener)
     ViewCompat.setOnApplyWindowInsetsListener(rootView, listener)
     ViewCompat.requestApplyInsets(rootView)
+    rootView.post { layoutListener.onLayoutChange(rootView, rootView.left, rootView.top, rootView.right, rootView.bottom, rootView.left, rootView.top, rootView.right, rootView.bottom) }
     Log.i(
       LOG_TAG,
       "event=ime-insets-listener-attached window=$windowIdentity displayIndex=$displayIndex displayId=$displayId",
@@ -72,6 +88,7 @@ internal class TerminalImeInsetsCoordinator(
   fun detach() {
     if (!attached) return
     attached = false
+    rootView.removeOnLayoutChangeListener(layoutListener)
     ViewCompat.setOnApplyWindowInsetsListener(rootView, null)
     Log.i(
       LOG_TAG,
@@ -85,27 +102,7 @@ internal class TerminalImeInsetsCoordinator(
 }
 
 internal object TerminalImeInsetsEventBus {
-  private val lock = Any()
-  private val snapshots = mutableMapOf<Int, TerminalImeInsetsSnapshot>()
-  private var publisher: ((TerminalImeInsetsSnapshot) -> Unit)? = null
-
-  fun registerPublisher(nextPublisher: (TerminalImeInsetsSnapshot) -> Unit) {
-    synchronized(lock) { publisher = nextPublisher }
-  }
-
-  fun clearPublisher() {
-    synchronized(lock) { publisher = null }
-  }
-
   fun publish(snapshot: TerminalImeInsetsSnapshot) {
-    val currentPublisher = synchronized(lock) {
-      snapshots[snapshot.displayIndex] = snapshot
-      publisher
-    }
-    currentPublisher?.invoke(snapshot)
-  }
-
-  fun snapshot(displayIndex: Int): TerminalImeInsetsSnapshot? = synchronized(lock) {
-    snapshots[displayIndex]
+    TerminalSurfaceHostRegistry.updateIme(snapshot)
   }
 }

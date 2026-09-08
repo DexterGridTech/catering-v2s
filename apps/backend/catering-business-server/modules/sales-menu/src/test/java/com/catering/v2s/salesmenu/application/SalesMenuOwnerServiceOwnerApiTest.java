@@ -11,6 +11,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.audit.contract.AuditActor;
@@ -105,6 +106,7 @@ class SalesMenuOwnerServiceOwnerApiTest {
                                 mapper.mapRow(itemResult(DRAFT, 1, "SKU_VARIANT_SALE_COUNTED", null, "CUSTOM"), 0));
                     if (sql.contains("sales_version_item_media")) return List.of(mapper.mapRow(mediaResult(), 0));
                     if (sql.contains("sales_version_item_sku")) return List.of(mapper.mapRow(skuResult(), 0));
+                    if (sql.contains("sales_version_item_order_option")) return List.of();
                     throw new AssertionError("unexpected query: " + sql);
                 });
 
@@ -120,8 +122,7 @@ class SalesMenuOwnerServiceOwnerApiTest {
         assertEquals(155L, result.saleContent().skuPrices().getFirst().listedPriceCents());
         assertEquals(120L, result.saleContent().skuPrices().getFirst().standardPriceCents());
         assertEquals(ASSET, result.catalogPrimaryImageAssetRef());
-        assertEquals("甜度", result.orderOptions().getFirst().name());
-        assertEquals("少糖", result.orderOptions().getFirst().values().getFirst().name());
+        assertTrue(result.catalogOrderOptions().isEmpty());
         verify(catalog).readSalesMenuItemFacts("node", "brand", Set.of(CATALOG_ITEM));
         verify(assets).readSalesMenuItemImages(Set.of(ASSET));
     }
@@ -162,6 +163,7 @@ class SalesMenuOwnerServiceOwnerApiTest {
                                 itemResult(PUBLISHED, 1, "STANDARD_SALE_COUNTED", 100L, "INHERIT_CATALOG"), 0));
                     if (sql.contains("sales_version_item_sku")) return List.of();
                     if (sql.contains("sales_version_item_media")) return List.of();
+                    if (sql.contains("sales_version_item_order_option")) return List.of();
                     if (sql.contains("sales_manual_status_current")) return List.of();
                     throw new AssertionError("unexpected query: " + sql);
                 });
@@ -184,7 +186,7 @@ class SalesMenuOwnerServiceOwnerApiTest {
                         ArgumentMatchers.contains("sales_manual_status_current"),
                         any(RowMapper.class),
                         any(Object[].class));
-        verify(catalog).readSalesMenuItemFacts("node", "brand", Set.of(CATALOG_ITEM));
+        verifyNoInteractions(catalog);
     }
 
     @Test
@@ -516,6 +518,7 @@ class SalesMenuOwnerServiceOwnerApiTest {
                     if (sql.contains("sales_version_section")) return List.of(mapper.mapRow(sectionResult(), 0));
                     if (sql.contains("sales_version_item_sku")) return List.of();
                     if (sql.contains("sales_version_item_media")) return List.of(mapper.mapRow(mediaResult(), 0));
+                    if (sql.contains("sales_version_item_order_option")) return List.of();
                     if (sql.contains("FROM sales_menu.sales_version_item v")) {
                         return List.of(
                                 mapper.mapRow(itemResult(DRAFT, 1, "SKU_VARIANT_SALE_COUNTED", null, "CUSTOM"), 0));
@@ -747,7 +750,8 @@ class SalesMenuOwnerServiceOwnerApiTest {
                         channels,
                         organization,
                         assets,
-                        assetCommands)
+                        assetCommands,
+                        null)
                 .updateItem(command);
 
         assertEquals(SalesMenuCommandReadbackStatus.APPLIED, result.readbackStatus());
@@ -897,16 +901,8 @@ class SalesMenuOwnerServiceOwnerApiTest {
                 120L,
                 null,
                 ASSET,
-                List.of(new CatalogOwnerApi.SalesMenuOrderOptionFact(
-                        ORDER_OPTION_DEFINITION,
-                        "甜度",
-                        "SINGLE",
-                        0,
-                        true,
-                        1,
-                        1,
-                        List.of(new CatalogOwnerApi.SalesMenuOrderOptionValueFact(
-                                ORDER_OPTION_VALUE, "少糖", 0, false, null)))),
+                List.of(ASSET),
+                List.of(),
                 new CatalogOwnerApi.SalesMenuSkuSummary("SKU", 1, 1, 1, List.of("size"), 120L, 120L),
                 List.of(new CatalogOwnerApi.SalesMenuSkuFact(
                         SKU, "SKU-1", "Small", 120L, true, "ENABLED", 4, 0, "digest", List.of(), List.of())),

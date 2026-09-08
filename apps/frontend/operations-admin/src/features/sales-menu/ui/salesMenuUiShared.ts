@@ -13,7 +13,7 @@ import type {
 } from '../../../app/api/generated/operations-edge';
 import {useSalesMenuCommands} from '../model/useSalesMenuCommands';
 import {useSalesMenuReadModel} from '../model/useSalesMenuReadModel';
-import {formatSalesMenuPrice, salesMenuDraftStateLabel} from '../model/salesMenuModel';
+import {formatSalesMenuPrice, salesMenuDraftStateLabel, salesMenuManualSaleStatusLabel} from '../model/salesMenuModel';
 
 export type DraftOrPublishedItem = SalesMenuDraftItemView | SalesMenuPublishedItemView;
 export type SalesMenuStackedLabel = string | readonly string[];
@@ -70,26 +70,23 @@ function salesMenuStackedLines(lines: readonly string[]): readonly string[] {
 
 function salesMenuOrderOptionLines(item: DraftOrPublishedItem): readonly string[] {
   return item.saleContent.selectedOrderOptions.map(option => {
-    const values = option.values.reduce(
-      (text, value, index) => {
-        const extraPrice = value.extraPrice !== null && value.extraPrice !== 0
-          ? `（加价 ${formatSalesMenuPrice(value.extraPrice)}）`
-          : '';
-        return `${text}${index === 0 ? '' : '、'}${value.name}${extraPrice}`;
-      },
-      '',
-    );
+    const values = option.values.reduce((text, value, index) => {
+      const extraPrice =
+        value.extraPrice !== null && value.extraPrice !== 0 ? `（加价 ${formatSalesMenuPrice(value.extraPrice)}）` : '';
+      return `${text}${index === 0 ? '' : '、'}${value.name}${extraPrice}`;
+    }, '');
     return `${option.name}：${values || '未配置'}`;
   });
 }
 
 export function salesMenuSpecificationLabel(item: DraftOrPublishedItem): SalesMenuStackedLabel {
   const content = item.saleContent;
-  const contentLines = content.kind === 'SKU_SELECTION'
-    ? content.skuPrices.map(price => price.skuName)
-    : content.kind === 'WEIGHTED'
-      ? ['按称重数量']
-      : [];
+  const contentLines =
+    content.kind === 'SKU_SELECTION'
+      ? content.skuPrices.map(price => price.skuName)
+      : content.kind === 'WEIGHTED'
+        ? ['按称重数量']
+        : [];
   const optionLines = salesMenuOrderOptionLines(item);
   const lines = [...contentLines, ...optionLines];
   if (lines.length > 0) return lines.length === 1 ? lines[0] : salesMenuStackedLines(lines);
@@ -104,21 +101,31 @@ export function salesMenuConstraintLabel(item: DraftOrPublishedItem): SalesMenuS
   ]);
 }
 
-function salesMenuPriceComparisonLabel(listedPriceCents: number | null, defaultPriceCents: number | null): string {
-  if (listedPriceCents === defaultPriceCents) return formatSalesMenuPrice(listedPriceCents);
-  return `菜单 ${formatSalesMenuPrice(listedPriceCents)} / 默认 ${formatSalesMenuPrice(defaultPriceCents)}`;
+function salesMenuPriceComparisonLines(
+  listedPriceCents: number | null,
+  defaultPriceCents: number | null,
+): readonly string[] {
+  if (listedPriceCents === defaultPriceCents) return [formatSalesMenuPrice(listedPriceCents)];
+  return [`菜单 ${formatSalesMenuPrice(listedPriceCents)}`, `默认 ${formatSalesMenuPrice(defaultPriceCents)}`];
+}
+
+function salesMenuPriceComparisonLabel(
+  listedPriceCents: number | null,
+  defaultPriceCents: number | null,
+): SalesMenuStackedLabel {
+  const lines = salesMenuPriceComparisonLines(listedPriceCents, defaultPriceCents);
+  return lines.length === 1 ? lines[0] : salesMenuStackedLines(lines);
 }
 
 export function salesMenuPriceLabel(item: SalesMenuDraftItemView): SalesMenuStackedLabel {
   if (item.saleContent.kind === 'SKU_SELECTION') {
-    return item.saleContent.skuPrices.length > 0
-      ? salesMenuStackedLines(
-          item.saleContent.skuPrices.map(
-            price =>
-              `${price.skuName}：${salesMenuPriceComparisonLabel(price.listedPriceCents, price.standardPriceCents)}`,
-          ),
-        )
-      : '未设置';
+    if (item.saleContent.skuPrices.length === 0) return '未设置';
+    const lines = item.saleContent.skuPrices.flatMap(price =>
+      salesMenuPriceComparisonLines(price.listedPriceCents, price.standardPriceCents).map(
+        line => `${price.skuName}：${line}`,
+      ),
+    );
+    return lines.length === 1 ? lines[0] : salesMenuStackedLines(lines);
   }
   return salesMenuPriceComparisonLabel(item.saleContent.listedPriceCents, item.defaultPriceCents);
 }
@@ -138,6 +145,46 @@ export function itemMediaLabel(item: DraftOrPublishedItem): string {
   return item.displayMedia.mode === 'INHERIT_CATALOG'
     ? '沿用商品图片'
     : `${item.displayMedia.assetRefs.length} 张菜单图片`;
+}
+
+export function salesMenuPrimaryImageAssetRef(item: DraftOrPublishedItem): string | undefined {
+  if (item.displayMedia.mode === 'CUSTOM') return item.displayMedia.primaryAssetRef ?? undefined;
+  if ('catalogPrimaryImageAssetRef' in item) return item.catalogPrimaryImageAssetRef ?? undefined;
+  return item.publishedPrimaryImageAssetRef ?? undefined;
+}
+
+export function salesMenuImageAssetRefs(item: DraftOrPublishedItem): readonly string[] {
+  const primary = salesMenuPrimaryImageAssetRef(item);
+  const assetRefs =
+    item.displayMedia.mode === 'CUSTOM'
+      ? item.displayMedia.assetRefs
+      : 'catalogImageAssetRefs' in item
+        ? item.catalogImageAssetRefs
+        : item.publishedCatalogImageAssetRefs;
+  const ordered = assetRefs.filter((assetRef, index, all) => Boolean(assetRef) && all.indexOf(assetRef) === index);
+  if (primary && ordered.some(assetRef => assetRef === primary)) {
+    return [primary, ...ordered.filter(assetRef => assetRef !== primary)];
+  }
+  return ordered.length > 0 ? ordered : primary ? [primary] : [];
+}
+
+export function salesMenuManualTargetKindLabel(kind: 'ITEM' | 'SKU' | 'ORDER_OPTION_VALUE'): string {
+  return kind === 'SKU' ? '规格' : kind === 'ORDER_OPTION_VALUE' ? '销售选项' : '整个销售项';
+}
+
+export function salesMenuManualSaleStatusTagColor(state: 'NORMAL' | 'MANUAL_SOLD_OUT'): 'success' | 'error' {
+  return state === 'MANUAL_SOLD_OUT' ? 'error' : 'success';
+}
+
+export function salesMenuPublishedSaleStatusLabel(item: SalesMenuPublishedItemView): SalesMenuStackedLabel {
+  const soldOutTargets = item.manualSaleTargetStatuses.filter(status => status.state === 'MANUAL_SOLD_OUT');
+  if (soldOutTargets.length === 0) return salesMenuManualSaleStatusLabel(item.manualSaleStatus);
+  return salesMenuStackedLines([
+    `销售项：${salesMenuManualSaleStatusLabel(item.manualSaleStatus)}`,
+    ...soldOutTargets.map(
+      status => `${salesMenuManualTargetKindLabel(status.targetKind)}：${status.resolvedTargetDisplayName} · 已沽清`,
+    ),
+  ]);
 }
 
 export function blockerLabel(kind: string): string {

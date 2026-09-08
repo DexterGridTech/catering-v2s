@@ -140,7 +140,9 @@ shift、capsLock、pressed、disabled、backspace 和 complete 必须有稳定�
 - direction 由 width/height 比较得出，不从设备、Platform.OS 或浏览器环境判断；
 - full 的 wide/compact 变体由可用宽度和列数可行性决定；
 - numeric 在横屏、竖屏、PRIMARY、SECONDARY 都使用同一键语义和三列任务模型；
-- target 1157 × 723 与 962 × 541 只是验收基线，不是运行时输入。
+- host 的横屏固定逻辑画布是 PRIMARY 1280 × 800、SECONDARY 960 × 540；sample Android
+  副屏的 1280 × 720 physical px / 213 dpi 只是硬件显示配置。逻辑画布是 host 承载层的
+  画布输入，不是 input 的直接运行时尺寸；input 运行时仍只读取自己的 onLayout。
 
 input 不读取 Dimensions.get('window')、useWindowDimensions、window 全局值、
 terminalSurfaces、assembly 的 surfaceSize 或另一块 surface 的尺寸。
@@ -255,8 +257,9 @@ KeyboardKey/editText 语义。
   不增加视觉行数；仅在 surface 可用高度不足时降至可用高度并
   进入 `unsupported-height`，不得通过 `rowBlockOffset` 把短布局垂直塞进长布局。
 
-现有 1157 × 723 与 962 × 541 的高度结果只用于验收基线；不得把它们写成
-运行时常量。详设必须把当前公式改成消费本地测量的纯计算函数。
+旧的 1157 × 723 与 962 × 541 高度结果已退役，不是验收基线或运行时常量；详设必须
+把当前公式改成消费 InputSurfaceFrame 本地测量的纯计算函数。host 画布声明与 input
+测量之间不得再建立静态 props 桥。
 
 ### 6.2 按轴计算
 
@@ -379,7 +382,9 @@ MemberForm 放到 SECONDARY，也不要求 CustomerMember 增加非业务字段�
 
 Web resize 复用当前实际激活的 PRIMARY/SECONDARY route；它改变 frame 尺寸，不
 新增 alpha/financial 的 SECONDARY 消费者。真实业务矩阵中的尺寸只来自对应
-frame 的 onLayout，1157 × 723 与 962 × 541 仅是回归 fixture。
+frame 的 onLayout；旧的 1157 × 723 与 962 × 541 不再作为回归 fixture。host 侧横屏
+画布声明使用 PRIMARY 1280 × 800 与 SECONDARY 960 × 540；副屏 1280 × 720 physical px /
+213 dpi 仅指硬件显示配置。
 
 ### 9.2 input base geometry harness 矩阵
 
@@ -388,8 +393,8 @@ frame 的 onLayout，1157 × 723 与 962 × 541 仅是回归 fixture。
 
 | harness frame fixture         | full         | alpha        | numeric  | financial    |
 | ----------------------------- | ------------ | ------------ | -------- | ------------ |
-| 横屏 PRIMARY 基线 1157 × 723  | 必验         | 必验         | 必验     | 必验         |
-| 横屏 SECONDARY 基线 962 × 541 | 必验         | 必验         | 必验     | 必验         |
+| 横屏 PRIMARY 逻辑画布 1280 × 800  | 必验         | 必验         | 必验     | 必验         |
+| 横屏 SECONDARY 逻辑画布 960 × 540   | 必验         | 必验         | 必验     | 必验         |
 | 竖屏窄宽 fixture              | 必验 compact | 必验 compact | 必验三列 | 必验 compact |
 | Web resize 后实际 frame       | 必验         | 必验         | 必验     | 必验         |
 
@@ -398,7 +403,8 @@ harness 必须使用与生产相同的 InputProvider/InputSurfaceFrame/VirtualKe
 业务 command 或 SECONDARY 业务路由。两张矩阵合起来才是本轮完整分母：第一张
 证明真实业务消费者没有漏，第二张证明四种布局没有因业务拓扑而失去几何覆盖。
 
-矩阵中的尺寸是 fixture/验收基线；所有运行时公式必须取 frame 的 onLayout。
+矩阵中的 1280 × 800 与 960 × 540 是 host 固定画布 fixture，不是 input 的静态尺寸基线；
+所有运行时公式必须取 InputSurfaceFrame 的 onLayout。
 
 ### 9.3 红向量
 

@@ -6,10 +6,12 @@ import android.app.Presentation
 import android.content.Context
 import android.content.res.Configuration
 import android.hardware.display.DisplayManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.util.DisplayMetrics
 import android.view.Display
 import android.view.View
 import android.view.Window
@@ -23,10 +25,396 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnable
 import com.facebook.react.defaults.DefaultReactActivityDelegate
 import com.facebook.react.interfaces.TaskInterface
 import com.facebook.react.interfaces.fabric.ReactSurface
+import com.facebook.react.uimanager.DisplayMetricsHolder
 import expo.modules.core.interfaces.ReactActivityHandler
 import java.util.concurrent.atomic.AtomicBoolean
 
 private const val LOG_TAG = "TerminalDualScreen"
+
+private fun logDisplayMetrics(event: String, display: Display, displayIndex: Int) {
+  val appMetrics = DisplayMetrics()
+  val realMetrics = DisplayMetrics()
+  display.getMetrics(appMetrics)
+  display.getRealMetrics(realMetrics)
+  val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) display.mode else null
+  val safeName = display.name.replace(Regex("[^A-Za-z0-9_.-]+"), "_")
+  Log.i(
+    LOG_TAG,
+    "event=$event displayIndex=$displayIndex displayId=${display.displayId} name=$safeName " +
+      "state=${display.state} flags=${display.flags} rotation=${display.rotation} " +
+      "refreshRate=${display.refreshRate} appWidthPx=${appMetrics.widthPixels} " +
+      "appHeightPx=${appMetrics.heightPixels} appDensityDpi=${appMetrics.densityDpi} " +
+      "appDensity=${appMetrics.density} appScaledDensity=${appMetrics.scaledDensity} " +
+      "appXdpi=${appMetrics.xdpi} appYdpi=${appMetrics.ydpi} " +
+      "realWidthPx=${realMetrics.widthPixels} realHeightPx=${realMetrics.heightPixels} " +
+      "modeWidthPx=${mode?.physicalWidth ?: -1} modeHeightPx=${mode?.physicalHeight ?: -1}",
+  )
+}
+
+private fun logConfiguration(event: String, configuration: Configuration, metrics: DisplayMetrics, displayIndex: Int) {
+  Log.i(
+    LOG_TAG,
+    "event=$event displayIndex=$displayIndex densityDpi=${configuration.densityDpi} " +
+      "density=${metrics.density} scaledDensity=${metrics.scaledDensity} fontScale=${configuration.fontScale} " +
+      "screenWidthDp=${configuration.screenWidthDp} screenHeightDp=${configuration.screenHeightDp} " +
+      "smallestWidthDp=${configuration.smallestScreenWidthDp} orientation=${configuration.orientation} " +
+      "resourceWidthPx=${metrics.widthPixels} resourceHeightPx=${metrics.heightPixels}",
+  )
+}
+
+private fun logViewBounds(event: String, view: View, displayIndex: Int) {
+  val location = IntArray(2)
+  view.getLocationOnScreen(location)
+  val metrics = view.resources.displayMetrics
+  val density = metrics.density
+  val logicalWidth = if (density > 0f) view.width / density else 0f
+  val logicalHeight = if (density > 0f) view.height / density else 0f
+  Log.i(
+    LOG_TAG,
+    "event=$event displayIndex=$displayIndex displayId=${view.display?.displayId ?: -1} " +
+      "leftPx=${location[0]} topPx=${location[1]} widthPx=${view.width} heightPx=${view.height} " +
+      "measuredWidthPx=${view.measuredWidth} measuredHeightPx=${view.measuredHeight} " +
+      "densityDpi=${metrics.densityDpi} density=$density logicalWidth=$logicalWidth logicalHeight=$logicalHeight",
+  )
+}
+
+internal data class TerminalSurfaceHostSnapshot(
+  val surfaceKey: String,
+  val generation: Long,
+  val displayId: Int?,
+  val windowIdentity: String,
+  val orientation: String,
+  val stableWidthLogical: Double,
+  val stableHeightLogical: Double,
+  val currentWidthLogical: Double,
+  val currentHeightLogical: Double,
+  val imeVisible: Boolean,
+  val imeBottomLogicalBeforeCanvasScale: Double,
+  val stableWidthPx: Int,
+  val stableHeightPx: Int,
+  val currentWidthPx: Int,
+  val currentHeightPx: Int,
+  val hardwareDensityDpi: Int,
+  val hardwareDensity: Float,
+  val hardwareScaledDensity: Float,
+  val surfaceDensityDpi: Int,
+  val surfaceDensity: Float,
+)
+
+internal fun areSurfaceDensitiesUsable(
+  hardwareDensityDpi: Int,
+  hardwareDensity: Float,
+  surfaceDensityDpi: Int,
+  surfaceDensity: Float,
+): Boolean =
+  hardwareDensityDpi > 0 && surfaceDensityDpi > 0 && hardwareDensity > 0f && surfaceDensity > 0f &&
+    hardwareDensity.isFinite() && surfaceDensity.isFinite()
+
+internal sealed class TerminalSurfaceHostEvent {
+  data class Ready(val snapshot: TerminalSurfaceHostSnapshot) : TerminalSurfaceHostEvent()
+
+  data class Unavailable(
+    val surfaceKey: String,
+    val generation: Long,
+    val displayId: Int?,
+    val windowIdentity: String,
+    val reason: String,
+  ) : TerminalSurfaceHostEvent()
+}
+
+internal fun shouldReuseStableHostContext(
+  previousSnapshot: TerminalSurfaceHostSnapshot?,
+  sameOwner: Boolean,
+  orientation: String,
+  widthPx: Int,
+  heightPx: Int,
+  hardwareDensityDpi: Int,
+  hardwareDensity: Float,
+  surfaceDensityDpi: Int,
+  surfaceDensity: Float,
+  imeVisible: Boolean,
+): Boolean {
+  if (!sameOwner || previousSnapshot == null) return false
+  if (previousSnapshot.orientation != orientation) return false
+  if (previousSnapshot.hardwareDensityDpi != hardwareDensityDpi || previousSnapshot.hardwareDensity != hardwareDensity) return false
+  if (previousSnapshot.surfaceDensityDpi != surfaceDensityDpi || previousSnapshot.surfaceDensity != surfaceDensity) return false
+  return imeVisible || (previousSnapshot.stableWidthPx == widthPx && previousSnapshot.stableHeightPx == heightPx)
+}
+
+internal data class TerminalSurfaceHostRemovalResult(
+  val shouldClear: Boolean,
+  val snapshotToKeep: TerminalSurfaceHostSnapshot?,
+  val unavailable: TerminalSurfaceHostEvent.Unavailable?,
+)
+
+internal fun resolveSurfaceHostRemoval(
+  currentSnapshot: TerminalSurfaceHostSnapshot?,
+  ownerMatches: Boolean,
+  nextGeneration: Long,
+  reason: String,
+): TerminalSurfaceHostRemovalResult {
+  if (currentSnapshot == null || !ownerMatches) {
+    return TerminalSurfaceHostRemovalResult(
+      shouldClear = false,
+      snapshotToKeep = currentSnapshot,
+      unavailable = null,
+    )
+  }
+  return TerminalSurfaceHostRemovalResult(
+    shouldClear = true,
+    snapshotToKeep = null,
+    unavailable = TerminalSurfaceHostEvent.Unavailable(
+      surfaceKey = currentSnapshot.surfaceKey,
+      generation = nextGeneration,
+      displayId = currentSnapshot.displayId,
+      windowIdentity = currentSnapshot.windowIdentity,
+      reason = reason,
+    ),
+  )
+}
+
+/**
+ * Owns the per-window geometry facts used by the JS render host. The registry
+ * deliberately stores one entry per surface instead of a process-global
+ * "current display": PRIMARY and SECONDARY are alive at the same time.
+ */
+internal object TerminalSurfaceHostRegistry {
+  private const val PRIMARY_INDEX = 0
+  private const val SECONDARY_INDEX = 1
+  private const val PRIMARY_KEY = "PRIMARY"
+  private const val SECONDARY_KEY = "SECONDARY"
+
+  private val lock = Any()
+  private val entries = mutableMapOf<Int, Entry>()
+  private val generationCounters = mutableMapOf<Int, Long>()
+  private val imeSnapshots = mutableMapOf<Int, TerminalImeInsetsSnapshot>()
+  private var publisher: ((TerminalSurfaceHostEvent) -> Unit)? = null
+
+  fun registerPublisher(nextPublisher: (TerminalSurfaceHostEvent) -> Unit) {
+    synchronized(lock) { publisher = nextPublisher }
+  }
+
+  fun clearPublisher() {
+    synchronized(lock) { publisher = null }
+  }
+
+  fun snapshot(surfaceKey: String): TerminalSurfaceHostSnapshot? {
+    val surfaceIndex = surfaceIndexForKey(surfaceKey) ?: return null
+    return synchronized(lock) { entries[surfaceIndex]?.snapshot }
+  }
+
+  fun captureWindow(
+    surfaceIndex: Int,
+    window: Window,
+    windowIdentity: String,
+    surfaceView: View? = null,
+  ) {
+    val surfaceKey = surfaceKeyForIndex(surfaceIndex) ?: return
+    val ownerView = window.decorView
+    val surfaceMetrics = (surfaceView ?: ownerView).resources.displayMetrics
+    val hardwareMetrics = DisplayMetrics()
+    ownerView.display?.getMetrics(hardwareMetrics)
+    val widthPx = ownerView.width
+    val heightPx = ownerView.height
+    val hardwareDensity = hardwareMetrics.density
+    val surfaceDensity = surfaceMetrics.density
+    val displayId = ownerView.display?.displayId
+
+    if (
+      widthPx <= 0 || heightPx <= 0 || hardwareDensity <= 0f || surfaceDensity <= 0f ||
+        displayId == null
+    ) {
+      Log.i(
+        LOG_TAG,
+        "event=surface-host-snapshot-unavailable surfaceKey=$surfaceKey " +
+          "windowIdentity=$windowIdentity displayId=${displayId ?: -1} " +
+          "widthPx=$widthPx heightPx=$heightPx hardwareDensity=$hardwareDensity " +
+            "surfaceDensity=$surfaceDensity reason=invalid-owner-layout",
+      )
+      remove(surfaceIndex, window, "invalid-owner-layout")
+      return
+    }
+    if (!areSurfaceDensitiesUsable(
+        hardwareDensityDpi = hardwareMetrics.densityDpi,
+        hardwareDensity = hardwareDensity,
+        surfaceDensityDpi = surfaceMetrics.densityDpi,
+        surfaceDensity = surfaceDensity,
+      )) {
+      Log.i(
+        LOG_TAG,
+        "event=surface-host-snapshot-unavailable surfaceKey=$surfaceKey " +
+          "windowIdentity=$windowIdentity displayId=$displayId " +
+          "hardwareDensityDpi=${hardwareMetrics.densityDpi} hardwareDensity=$hardwareDensity " +
+          "surfaceDensityDpi=${surfaceMetrics.densityDpi} surfaceDensity=$surfaceDensity " +
+          "reason=invalid-density",
+      )
+      remove(surfaceIndex, window, "invalid-density")
+      return
+    }
+
+    val orientation = if (widthPx >= heightPx) "landscape" else "portrait"
+    val event = synchronized(lock) {
+      val previous = entries[surfaceIndex]
+      val previousSnapshot = previous?.snapshot
+      val sameOwner = previous != null && previous.ownerWindow === window &&
+        previousSnapshot?.displayId == displayId &&
+        previousSnapshot.windowIdentity == windowIdentity
+      val ime = imeSnapshots[surfaceIndex]
+      if (ime?.visible == true && !sameOwner) {
+        Log.i(
+          LOG_TAG,
+          "event=surface-host-snapshot-unavailable surfaceKey=$surfaceKey " +
+            "windowIdentity=$windowIdentity displayId=$displayId reason=ime-before-stable-owner",
+        )
+        return@synchronized null
+      }
+
+      val currentWidthLogical = widthPx.toDouble() / surfaceDensity.toDouble()
+      val currentHeightLogical = heightPx.toDouble() / surfaceDensity.toDouble()
+      val sameStableContext = shouldReuseStableHostContext(
+        previousSnapshot = previousSnapshot,
+        sameOwner = sameOwner,
+        orientation = orientation,
+        widthPx = widthPx,
+        heightPx = heightPx,
+        hardwareDensityDpi = hardwareMetrics.densityDpi,
+        hardwareDensity = hardwareDensity,
+        surfaceDensityDpi = surfaceMetrics.densityDpi,
+        surfaceDensity = surfaceDensity,
+        imeVisible = ime?.visible == true,
+      )
+      val stableWidthLogical = if (sameStableContext) previousSnapshot!!.stableWidthLogical else currentWidthLogical
+      val stableHeightLogical = if (sameStableContext) previousSnapshot!!.stableHeightLogical else currentHeightLogical
+      val stableWidthPx = if (sameStableContext) previousSnapshot!!.stableWidthPx else widthPx
+      val stableHeightPx = if (sameStableContext) previousSnapshot!!.stableHeightPx else heightPx
+      val stableChanged = previousSnapshot == null || !sameStableContext
+      val generation = if (stableChanged) nextGenerationLocked(surfaceIndex) else previousSnapshot!!.generation
+      val next = TerminalSurfaceHostSnapshot(
+        surfaceKey = surfaceKey,
+        generation = generation,
+        displayId = displayId,
+        windowIdentity = windowIdentity,
+        orientation = orientation,
+        stableWidthLogical = stableWidthLogical,
+        stableHeightLogical = stableHeightLogical,
+        currentWidthLogical = currentWidthLogical,
+        currentHeightLogical = currentHeightLogical,
+        imeVisible = ime?.visible == true,
+        imeBottomLogicalBeforeCanvasScale = ime?.bottomLogical ?: 0.0,
+        stableWidthPx = stableWidthPx,
+        stableHeightPx = stableHeightPx,
+        currentWidthPx = widthPx,
+        currentHeightPx = heightPx,
+        hardwareDensityDpi = hardwareMetrics.densityDpi,
+        hardwareDensity = hardwareDensity,
+        hardwareScaledDensity = hardwareMetrics.scaledDensity,
+        surfaceDensityDpi = surfaceMetrics.densityDpi,
+        surfaceDensity = surfaceDensity,
+      )
+      if (previousSnapshot == next) {
+        null
+      } else {
+        entries[surfaceIndex] = Entry(window, next)
+        TerminalSurfaceHostEvent.Ready(next)
+      }
+    }
+    publish(event)
+  }
+
+  fun updateIme(snapshot: TerminalImeInsetsSnapshot) {
+    val event = synchronized(lock) {
+      imeSnapshots[snapshot.displayIndex] = snapshot
+      val current = entries[snapshot.displayIndex] ?: return@synchronized null
+      val next = current.snapshot.copy(
+        imeVisible = snapshot.visible,
+        imeBottomLogicalBeforeCanvasScale = snapshot.bottomLogical,
+      )
+      if (next == current.snapshot) null else {
+        entries[snapshot.displayIndex] = current.copy(snapshot = next)
+        TerminalSurfaceHostEvent.Ready(next)
+      }
+    }
+    publish(event)
+  }
+
+  fun remove(surfaceIndex: Int, window: Window?, reason: String) {
+    val surfaceKey = surfaceKeyForIndex(surfaceIndex) ?: return
+    val event = synchronized(lock) {
+      val current = entries[surfaceIndex] ?: return@synchronized null
+      val ownerMatches = window == null || current.ownerWindow === window
+      if (!ownerMatches) return@synchronized null
+      val removal = resolveSurfaceHostRemoval(
+        currentSnapshot = current.snapshot,
+        ownerMatches = true,
+        nextGeneration = nextGenerationLocked(surfaceIndex),
+        reason = reason,
+      )
+      if (!removal.shouldClear) return@synchronized null
+      entries.remove(surfaceIndex)
+      imeSnapshots.remove(surfaceIndex)
+      removal.unavailable
+    }
+    publish(event)
+  }
+
+  private fun publish(event: TerminalSurfaceHostEvent?) {
+    if (event == null) return
+    when (event) {
+      is TerminalSurfaceHostEvent.Ready -> {
+        val snapshot = event.snapshot
+        Log.i(
+          LOG_TAG,
+          "event=surface-host-snapshot-ready surfaceKey=${snapshot.surfaceKey} " +
+            "generation=${snapshot.generation} displayId=${snapshot.displayId ?: -1} " +
+            "windowIdentity=${snapshot.windowIdentity} orientation=${snapshot.orientation} " +
+            "stableWidthPx=${snapshot.stableWidthPx} stableHeightPx=${snapshot.stableHeightPx} " +
+            "currentWidthPx=${snapshot.currentWidthPx} currentHeightPx=${snapshot.currentHeightPx} " +
+            "stableWidthLogical=${snapshot.stableWidthLogical} " +
+            "stableHeightLogical=${snapshot.stableHeightLogical} " +
+            "currentWidthLogical=${snapshot.currentWidthLogical} " +
+            "currentHeightLogical=${snapshot.currentHeightLogical} " +
+            "hardwareDensityDpi=${snapshot.hardwareDensityDpi} hardwareDensity=${snapshot.hardwareDensity} " +
+            "hardwareScaledDensity=${snapshot.hardwareScaledDensity} " +
+            "surfaceDensityDpi=${snapshot.surfaceDensityDpi} surfaceDensity=${snapshot.surfaceDensity} " +
+            "imeVisible=${snapshot.imeVisible} " +
+            "imeBottomLogicalBeforeCanvasScale=${snapshot.imeBottomLogicalBeforeCanvasScale} " +
+            "source=android-display-context measurementContext=owner-decorView-layout",
+        )
+      }
+      is TerminalSurfaceHostEvent.Unavailable -> Log.i(
+        LOG_TAG,
+        "event=surface-host-snapshot-unavailable surfaceKey=${event.surfaceKey} " +
+          "generation=${event.generation} displayId=${event.displayId ?: -1} " +
+          "windowIdentity=${event.windowIdentity} reason=${event.reason}",
+      )
+    }
+    val currentPublisher = synchronized(lock) { publisher }
+    currentPublisher?.invoke(event)
+  }
+
+  private fun nextGenerationLocked(surfaceIndex: Int): Long {
+    val next = (generationCounters[surfaceIndex] ?: 0L) + 1L
+    generationCounters[surfaceIndex] = next
+    return next
+  }
+
+  private fun surfaceIndexForKey(surfaceKey: String): Int? = when (surfaceKey) {
+    PRIMARY_KEY -> PRIMARY_INDEX
+    SECONDARY_KEY -> SECONDARY_INDEX
+    else -> null
+  }
+
+  private fun surfaceKeyForIndex(surfaceIndex: Int): String? = when (surfaceIndex) {
+    PRIMARY_INDEX -> PRIMARY_KEY
+    SECONDARY_INDEX -> SECONDARY_KEY
+    else -> null
+  }
+
+  private data class Entry(
+    val ownerWindow: Window,
+    val snapshot: TerminalSurfaceHostSnapshot,
+  )
+}
 
 /**
  * Adds the primary surface's initial props and owns the secondary Presentation
@@ -60,6 +448,23 @@ internal class TerminalDualScreenActivityHandler :
 
     primaryActivity = activity
     ensureLifecycleCallbacks(activity.application)
+    activity.window.decorView.display?.let { display ->
+      logDisplayMetrics("primary-activity-display", display, 0)
+    }
+    logConfiguration(
+      "primary-activity-configuration",
+      activity.resources.configuration,
+      activity.resources.displayMetrics,
+      0,
+    )
+    activity.window.decorView.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
+      logViewBounds("primary-window-layout", view, 0)
+      TerminalSurfaceHostRegistry.captureWindow(0, activity.window, "primary")
+    }
+    activity.window.decorView.post {
+      logViewBounds("primary-window-post-layout", activity.window.decorView, 0)
+      TerminalSurfaceHostRegistry.captureWindow(0, activity.window, "primary")
+    }
     applyImmersiveWindow(activity.window)
     attachPrimaryImeInsets(activity)
     if (snapshot.secondaryDisplay != null) {
@@ -82,6 +487,9 @@ internal class TerminalDualScreenActivityHandler :
       }
     return try {
       val displays = displayManager.displays.toList()
+      displays.forEachIndexed { index, display ->
+        logDisplayMetrics("display-snapshot-entry", display, index)
+      }
       val snapshot = DisplaySnapshot(
         displayCount = displays.size,
         secondaryDisplay = displays.firstOrNull { it.displayId != Display.DEFAULT_DISPLAY },
@@ -105,6 +513,23 @@ internal class TerminalDualScreenActivityHandler :
     snapshot: DisplaySnapshot,
   ) {
     val targetDisplay = snapshot.secondaryDisplay ?: return
+    logDisplayMetrics("secondary-target-display", targetDisplay, 1)
+    val targetMetrics = DisplayMetrics().also(targetDisplay::getMetrics)
+    val renderMetrics = sharedReactRenderMetrics(activity)
+    log(
+      "secondary-target-metrics",
+      "displayId=${targetDisplay.displayId}",
+      "widthPx=${targetMetrics.widthPixels}",
+      "heightPx=${targetMetrics.heightPixels}",
+      "densityDpi=${targetMetrics.densityDpi}",
+      "density=${targetMetrics.density}",
+      "scaledDensity=${targetMetrics.scaledDensity}",
+      "hardwareDensityDpi=${targetMetrics.densityDpi}",
+      "hardwareDensity=${targetMetrics.density}",
+      "renderDensityDpi=${renderMetrics.densityDpi}",
+      "renderDensity=${renderMetrics.density}",
+      "renderDensitySource=react-native.DisplayMetricsHolder.screen",
+    )
     synchronized(stateLock) {
       if (launchRequested || secondaryState != null) {
         log("secondary-launch-idempotent-return")
@@ -123,9 +548,17 @@ internal class TerminalDualScreenActivityHandler :
         display = targetDisplay,
         onRemoved = { requestCleanupForCurrentSecondary("display-removed") },
       )
-      val surfaceContext = createSurfaceContext(activity, presentation.context)
+      logConfiguration(
+        "presentation-context-before-surface",
+        presentation.context.resources.configuration,
+        presentation.context.resources.displayMetrics,
+        1,
+      )
       surface = host.createSurface(
-        surfaceContext,
+        createSurfaceContext(
+          presentation.context,
+          renderMetrics.densityDpi,
+        ),
         mainComponentName,
         Bundle().apply {
           putInt("displayIndex", 1)
@@ -133,6 +566,24 @@ internal class TerminalDualScreenActivityHandler :
         },
       )
       val view = surface.view ?: throw IllegalStateException("secondary ReactSurface view unavailable")
+      view.addOnLayoutChangeListener { changedView, _, _, _, _, _, _, _, _ ->
+        logViewBounds("secondary-react-surface-layout", changedView, 1)
+      }
+      logConfiguration(
+        "secondary-react-surface-context",
+        view.resources.configuration,
+        view.resources.displayMetrics,
+        1,
+      )
+      log(
+        "secondary-react-surface-created",
+        "displayId=${targetDisplay.displayId}",
+        "surfaceDensityDpi=${view.resources.displayMetrics.densityDpi}",
+        "surfaceDensity=${view.resources.displayMetrics.density}",
+        "surfaceWidthPx=${view.width}",
+        "surfaceHeightPx=${view.height}",
+      )
+      view.post { logViewBounds("secondary-react-surface-post-layout", view, 1) }
       val state = SecondaryState(
         presentation = presentation,
         surface = surface,
@@ -140,8 +591,15 @@ internal class TerminalDualScreenActivityHandler :
       synchronized(stateLock) {
         secondaryState = state
       }
+      presentation.attachSurfaceView(view)
       presentation.setContentView(view)
       presentation.show()
+      presentation.window?.let { window ->
+        window.decorView.post {
+          logViewBounds("secondary-presentation-window-post-layout", window.decorView, 1)
+          TerminalSurfaceHostRegistry.captureWindow(1, window, "secondary", surfaceView = view)
+        }
+      }
       observeStart(state, surface.start())
       log(
         "secondary-start-requested",
@@ -157,28 +615,6 @@ internal class TerminalDualScreenActivityHandler :
       }
       log("secondary-create-failed")
     }
-  }
-
-  /**
-   * React Native 0.86 keeps dp/sp conversion in a process-global PixelUtil while
-   * ReactSurface uses the Context metrics for its initial constraints. Give the
-   * secondary surface the same density contract as the primary React activity so
-   * both halves of that conversion use one App-owned scale. The Presentation
-   * still owns the actual secondary display/window; only the React view context's
-   * density contract is normalized.
-   */
-  private fun createSurfaceContext(primaryActivity: ReactActivity, presentationContext: Context): Context {
-    val primaryDensityDpi = primaryActivity.resources.displayMetrics.densityDpi
-    val configuration = Configuration(presentationContext.resources.configuration).apply {
-      densityDpi = primaryDensityDpi
-    }
-    val surfaceContext = presentationContext.createConfigurationContext(configuration)
-    log(
-      "secondary-surface-context-normalized",
-      "primaryDensityDpi=$primaryDensityDpi",
-      "surfaceDensityDpi=${surfaceContext.resources.displayMetrics.densityDpi}",
-    )
-    return surfaceContext
   }
 
   private fun observeStart(state: SecondaryState, task: TaskInterface<Void>) {
@@ -234,6 +670,7 @@ internal class TerminalDualScreenActivityHandler :
       state.surface.clear()
       log("secondary-cleared")
     }.onFailure { log("secondary-clear-failed") }
+    state.presentation.window?.let { TerminalSurfaceHostRegistry.remove(1, it, "secondary-cleanup") }
     runCatching { state.presentation.dismiss() }.onFailure { log("secondary-dismiss-failed") }
     synchronized(stateLock) {
       if (secondaryState === state) secondaryState = null
@@ -252,6 +689,7 @@ internal class TerminalDualScreenActivityHandler :
       runCatching { surface.detach() }.onFailure { log("secondary-detach-failed") }
       runCatching { surface.clear() }.onFailure { log("secondary-clear-failed") }
     }
+    presentation?.window?.let { TerminalSurfaceHostRegistry.remove(1, it, "secondary-release-before-start") }
     runCatching { presentation?.dismiss() }.onFailure { log("secondary-dismiss-failed") }
     synchronized(stateLock) { launchRequested = false }
     unregisterLifecycleCallbacksIfIdle()
@@ -274,6 +712,36 @@ internal class TerminalDualScreenActivityHandler :
     }
   }
 
+  private fun sharedReactRenderMetrics(context: Context): DisplayMetrics {
+    DisplayMetricsHolder.initDisplayMetricsIfNotInitialized(context.applicationContext)
+    return DisplayMetrics().also { it.setTo(DisplayMetricsHolder.getScreenDisplayMetrics()) }
+  }
+
+  private fun createSurfaceContext(base: Context, renderDensityDpi: Int): Context {
+    logConfiguration(
+      "secondary-surface-context-input",
+      base.resources.configuration,
+      base.resources.displayMetrics,
+      1,
+    )
+    val configuration = Configuration(base.resources.configuration)
+    configuration.densityDpi = renderDensityDpi
+    log(
+      "secondary-surface-context-normalized",
+      "hardwareTargetDensityDpi=${base.resources.displayMetrics.densityDpi}",
+      "renderDensityDpi=${configuration.densityDpi}",
+      "renderDensitySource=react-native.DisplayMetricsHolder.screen",
+    )
+    val context = base.createConfigurationContext(configuration)
+    logConfiguration(
+      "secondary-surface-context-output",
+      context.resources.configuration,
+      context.resources.displayMetrics,
+      1,
+    )
+    return context
+  }
+
   private fun unregisterLifecycleCallbacksIfIdle() {
     val application = synchronized(stateLock) {
       if (primaryActivity != null || secondaryState != null || launchRequested) null else registeredApplication
@@ -284,6 +752,7 @@ internal class TerminalDualScreenActivityHandler :
 
   override fun onActivityDestroyed(activity: Activity) {
     if (activity === primaryActivity) {
+      TerminalSurfaceHostRegistry.remove(0, activity.window, "primary-destroyed")
       primaryImeInsetsCoordinator?.detach()
       primaryImeInsetsCoordinator = null
       primaryActivity = null
@@ -367,16 +836,38 @@ private class TerminalPresentation(
   display,
   androidx.appcompat.R.style.Theme_AppCompat_DayNight_NoActionBar,
 ) {
+  private var surfaceView: View? = null
+
+  fun attachSurfaceView(view: View) {
+    surfaceView = view
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    window?.let {
-      applyImmersiveWindow(it)
-      it.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+    logDisplayMetrics("presentation-display", display, 1)
+    window?.let { presentationWindow ->
+      applyImmersiveWindow(presentationWindow)
+      presentationWindow.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+      logConfiguration(
+        "presentation-window-configuration",
+        presentationWindow.context.resources.configuration,
+        presentationWindow.context.resources.displayMetrics,
+        1,
+      )
+      presentationWindow.decorView.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
+        logViewBounds("secondary-presentation-window-layout", view, 1)
+        TerminalSurfaceHostRegistry.captureWindow(1, presentationWindow, "secondary", surfaceView = surfaceView)
+      }
+      presentationWindow.decorView.post {
+        logViewBounds("secondary-presentation-window-post-create", presentationWindow.decorView, 1)
+        TerminalSurfaceHostRegistry.captureWindow(1, presentationWindow, "secondary", surfaceView = surfaceView)
+      }
     }
   }
 
   override fun onWindowFocusChanged(hasFocus: Boolean) {
     super.onWindowFocusChanged(hasFocus)
+    Log.i(LOG_TAG, "event=secondary-presentation-focus displayIndex=1 displayId=${display.displayId} hasFocus=$hasFocus")
     if (hasFocus) window?.let(::applyImmersiveWindow)
   }
 
@@ -384,6 +875,7 @@ private class TerminalPresentation(
     onRemoved()
     super.onDisplayRemoved()
   }
+
 }
 
 private fun applyImmersiveWindow(window: Window) {

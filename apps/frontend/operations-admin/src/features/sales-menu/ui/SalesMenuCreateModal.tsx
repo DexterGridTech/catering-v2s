@@ -36,19 +36,20 @@ export function SalesMenuCreateModal({
       okButtonProps={{disabled: !name.trim() || submitting, ...testId(salesMenuTestIds.menuCreateSubmit)}}
       cancelButtonProps={{disabled: submitting}}
       destroyOnHidden
-      {...testId(salesMenuTestIds.menuCreateModal)}
     >
-      <Input
-        value={name}
-        onChange={event => {
-          onNameChange(event.target.value);
-          lifecycle.setDirty(true);
-          lifecycle.markBusinessIntentChanged();
-        }}
-        placeholder="请输入菜单名称"
-        autoFocus
-        {...testId(salesMenuTestIds.menuCreateName)}
-      />
+      <div {...testId(salesMenuTestIds.menuCreateModal)}>
+        <Input
+          value={name}
+          onChange={event => {
+            onNameChange(event.target.value);
+            lifecycle.setDirty(true);
+            lifecycle.markBusinessIntentChanged();
+          }}
+          placeholder="请输入菜单名称"
+          autoFocus
+          {...testId(salesMenuTestIds.menuCreateName)}
+        />
+      </div>
     </Modal>
   );
 }

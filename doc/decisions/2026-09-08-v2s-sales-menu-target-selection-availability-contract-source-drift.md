@@ -18,8 +18,14 @@ HERITAGE_RUNTIME_FALLBACK=false
 
 | source | 演进前 hash | 当前 hash | 允许的原因 |
 |---|---|---|---|
-| `contracts/openapi-source/sales-menu.schemas.json` | `8e5736fa84d8a13c58fdba035578d6d52b364fbb79e9e9ffa9805e6ca106f39c` | `7c6df8f47b5913b579733cc07141f7545696f8d0eb1b734bfd7995e2feac594f` | 本 Journey 已授权的契约字段/枚举/请求/readback 演进 |
+| `contracts/openapi-source/sales-menu.schemas.json` | `8e5736fa84d8a13c58fdba035578d6d52b364fbb79e9e9ffa9805e6ca106f39c` | `12d9232526ff1ebdc9579ee01fd30b38c2d892e14bae8f4b98f5b14c033ff6fe` | 本 Journey 已授权的契约字段/枚举/请求/readback 演进 |
 
-允许的修改仅限当前 Journey 已接受的 `orderOptionSelections`、selected/catalog option readback、SKU candidate/stale readback、manual target/status、operation target identity 与 publication blocker 字段。生成链仍必须由 `scripts/generate/r5-edge-materialize.mjs` 与 `scripts/generate/edge-codegen.mjs` 执行；不得手改 materialized/generated 文件，不得以旧契约或 runtime/build fallback 止血。
+允许的修改仅限当前 Journey 已接受的 `orderOptionSelections`、selected/catalog option readback、SKU candidate/stale readback、manual target/status、operation target identity、publication blocker 与 published immutable image snapshot 字段。此次图片补充把 `INHERIT_CATALOG` 的有序 Catalog 图片集合一并读回并冻结，主图字段继续保留为列表兼容字段；详情使用同一发布集合提供缩略图切换，不回读当前 Catalog。生成链仍必须由 `scripts/generate/r5-edge-materialize.mjs` 与 `scripts/generate/edge-codegen.mjs` 执行；不得手改 materialized/generated 文件，不得以旧契约或 runtime/build fallback 止血。
+
+本次图片集合演进的 source hash 对账如下：
+
+| source | 演进前 hash | 当前 hash | 允许的原因 |
+|---|---|---|---|
+| `contracts/openapi-source/sales-menu.schemas.json` | `12d9232526ff1ebdc9579ee01fd30b38c2d892e14bae8f4b98f5b14c033ff6fe` | `2769fd4b29de76452b9617b7b8d75eaf6e54cbd762a04517cbfca685d297591e` | 详情必须完整查看已发布时冻结的 Catalog 图片集合；不新增 operation、owner 或产品语义 |
 
 本记录不代表生成、编译、测试、DEV、reset/reseed、backend acceptance、browser L2 或 UAT 已完成；这些仍按 implementation plan 的 CP 顺序分别取得证据。

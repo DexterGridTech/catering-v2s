@@ -114,6 +114,14 @@ targetRef  = selected published valueRef   when ORDER_OPTION_VALUE
 - 操作记录同时保存 `targetKind` 与脱敏的 resolved target display snapshot；历史记录不得依赖当前 published snapshot 反查 child target 的业务含义。
 - `inventoryAvailability` 和 `manualSaleStatus`/`manualSaleTargetStatuses` 独立展示。库存 `AUTO_UNAVAILABLE` 不能通过“恢复正常销售”被清除。
 
+### 3.5 展示图片集合
+
+- Catalog 商品图片是按 `display_order` 排序的有序集合；第一张仍是兼容现有列表/主图语义的 primary image，但不能把其余图片从销售项详情中丢弃。
+- `INHERIT_CATALOG` 的草稿读回沿用 Catalog 当前有序图片集合；发布时由 SalesMenu owner 在同一发布事务中冻结有序 published image snapshot。发布后的列表与详情只消费该 snapshot，不因 Catalog 后续增删或排序而回读变化。
+- `CUSTOM` 继续消费销售项自己的有序 `displayMedia.assetRefs`；本次只补足详情读取与展示，不改变既有 stage、claim、release 或资产 owner 边界。
+- 销售菜单表格保持使用第一张图片作为紧凑主图；销售项详情 Drawer 显示图片总数、按发布/菜单顺序排列的缩略图和当前大图。点击缩略图切换当前大图，点击当前大图可打开原图预览。
+- 没有图片时显示明确的“暂无展示图片”空态，不伪造 broken image；任一图片加载失败仍沿用现有 `AssetPreview` 的错误与重试语义。
+
 ## 4. 失败与一致性要求
 
 | 场景 | 结果 | 不得发生 |

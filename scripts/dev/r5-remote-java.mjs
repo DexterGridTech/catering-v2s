@@ -34,6 +34,9 @@ export function validateRemoteJavaControl(value) {
     throw new Error('R5_REMOTE_JAVA_CONTROL_KERNEL_IDENTITY_INVALID');
   }
   if (!sha256Pattern.test(value.commandSha256)) throw new Error('R5_REMOTE_JAVA_CONTROL_COMMAND_DIGEST_INVALID');
+  if (value.httpPort !== undefined && (!Number.isInteger(value.httpPort) || value.httpPort < 1024 || value.httpPort > 65535)) {
+    throw new Error('R5_REMOTE_JAVA_CONTROL_HTTP_PORT_INVALID');
+  }
   for (const field of ['logPath', 'phasePath']) {
     if (typeof value[field] !== 'string' || !value[field].startsWith(`${value.remoteRoot}/`)) {
       throw new Error(`R5_REMOTE_JAVA_CONTROL_${field.toUpperCase()}_INVALID`);

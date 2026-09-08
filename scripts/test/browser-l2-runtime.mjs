@@ -2,11 +2,12 @@
 /**
  * Managed browser-L2 runner for the catalog library workbench.
  *
- * This is the only browser-L2 execution boundary.  It deliberately keeps the
- * application JVM local (Playwright and both Vite apps are local too) while
- * the database and object storage remain on the trusted remote host.  The
- * remote database and asset prefix are created per run and are never read
- * from DEV manifests, DEV seed reports, or the long-running DEV namespace.
+ * This is the only browser-L2 execution boundary.  The application JVM,
+ * database, and object storage run on the trusted remote host; Playwright and
+ * both Vite apps remain local.  The local tunnel exposes only remote HTTP and
+ * asset ingress.  The remote database and asset prefix are created per run
+ * and are never read from DEV manifests, DEV seed reports, or the long-running
+ * DEV namespace.
  */
 import {createHash, randomBytes, randomUUID} from 'node:crypto';
 import {spawn, spawnSync} from 'node:child_process';
@@ -27,6 +28,18 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import {resolveTrustedRemoteHost} from '../dev/r5-remote-host-trust.mjs';
+import {remoteDevRootFor, remoteIdentityMatches, validateRemoteJavaControl} from '../dev/r5-remote-java.mjs';
+import {
+  cleanupRemoteJavaRoot,
+  collectRemoteLog,
+  remoteHttpPortPreflight,
+  remoteJavaReadiness,
+  remoteResourcePreflight as remoteJavaResourcePreflight,
+  startRemoteJava,
+  stopRemoteJava,
+  syncRemoteSource,
+  waitForRemoteBusinessReady,
+} from '../dev/r5-remote-java-runtime.mjs';
 import {
   CHILD_PROCESS_ENV_ALLOWLISTS,
   DEFAULT_RUNTIME_ROOT as DEFAULT_CREDENTIAL_RUNTIME,
@@ -75,6 +88,7 @@ const viteCliPath = path.join(root, 'node_modules/vite/bin/vite.js');
 const playwrightCliPath = path.join(root, 'node_modules/playwright/cli.js');
 const now = () => new Date().toISOString();
 const L2_FRONTEND_MODES = new Set(['dev', 'preview']);
+const L2_RUNTIME_TOPOLOGY = 'REMOTE_SPRING_REMOTE_DB_REMOTE_ASSET_LOCAL_VITE_LOCAL_PLAYWRIGHT_HTTP_ASSET_TUNNEL';
 
 const L2_SUITE_CONFIGS = Object.freeze({
   'catalog-inventory': Object.freeze({
@@ -185,7 +199,10 @@ const compact = (value, limit = 240) =>
     .replace(/\s+/g, '_')
     .replace(/[^A-Za-z0-9_.:-]/g, '')
     .slice(0, limit);
-const sha256 = value => createHash('sha256').update(String(value)).digest('hex');
+export const sha256 = value =>
+  createHash('sha256')
+    .update(Buffer.isBuffer(value) ? value : String(value))
+    .digest('hex');
 const quote = value => `'${String(value).replaceAll("'", "'\\''")}'`;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -1150,7 +1167,7 @@ export function materializeL2TimingBudget(
     schemaVersion: 1,
     kind: 'browser-l2-timing-budget-report',
     source: path.relative(root, sourcePath),
-    topology: 'LOCAL_SPRING_REMOTE_DB_ASSET_TUNNEL',
+    topology: L2_RUNTIME_TOPOLOGY,
     databaseOperationMillisBaseline: Number(timing.dbOperationBaselineMs ?? 42.7),
     activeCaseCount: rows.length,
     fullRunTimeoutMs: rows.reduce((sum, row) => sum + row.timeoutMs, 0),
@@ -1220,6 +1237,49 @@ function safePublicManifest(manifest, secretValues = []) {
   return manifest;
 }
 
+function publicRemoteJavaControl(control) {
+  if (!control) return null;
+  validateRemoteJavaControl(control);
+  return {
+    schemaVersion: control.schemaVersion,
+    kind: control.kind,
+    runId: control.runId,
+    remoteRoot: control.remoteRoot,
+    pid: control.pid,
+    pgid: control.pgid,
+    bootId: control.bootId,
+    processStartTicks: control.processStartTicks,
+    commandSha256: control.commandSha256,
+    httpPort: control.httpPort ?? null,
+    phase: control.phase,
+    logPath: control.logPath,
+    phasePath: control.phasePath,
+  };
+}
+
+function publicRemoteBackend({
+  remote,
+  remoteJava,
+  remoteRoot,
+  remoteResources,
+  remoteHttpPort,
+  remoteDiagnostics,
+  remoteLogPath,
+} = {}) {
+  return {
+    topology: L2_RUNTIME_TOPOLOGY,
+    host: remote?.host ?? null,
+    fingerprint: remote?.fingerprint ?? null,
+    allowlistVersion: remote?.allowlistVersion ?? null,
+    remoteRoot: remoteRoot ?? remoteJava?.remoteRoot ?? null,
+    remoteHttpPort: remoteHttpPort ?? remoteJava?.httpPort ?? null,
+    remoteResources: remoteResources ?? null,
+    remoteJava: publicRemoteJavaControl(remoteJava),
+    remoteDiagnostics: remoteDiagnostics ?? null,
+    localLogPath: typeof remoteLogPath === 'string' ? repositoryRelativePath(remoteLogPath) : null,
+  };
+}
+
 export function buildIncompleteExecutionManifest({
   suite = 'catalog-inventory',
   state,
@@ -1231,20 +1291,21 @@ export function buildIncompleteExecutionManifest({
   business = 'FAIL',
   cleanup = 'FAIL',
   cleanupErrors = [],
+  artifactErrors = [],
   cleanupManifestPath = null,
 } = {}) {
   const config = suiteConfig(suite);
   if (!state?.identity?.runId || typeof state.runDirectory !== 'string') {
     fail('L2_RUNTIME_EXECUTION_STATE_REQUIRED');
   }
-  if (!Array.isArray(activeCaseIds) || !Array.isArray(cleanupErrors)) {
+  if (!Array.isArray(activeCaseIds) || !Array.isArray(cleanupErrors) || !Array.isArray(artifactErrors)) {
     fail('L2_RUNTIME_EXECUTION_MANIFEST_INPUT_INVALID');
   }
   const manifest = {
     schemaVersion: 1,
     kind: config.executionManifestKind,
     runId: state.identity.runId,
-    topology: 'LOCAL_SPRING_LOCAL_VITE_LOCAL_PLAYWRIGHT_REMOTE_DB_ASSET_TUNNEL',
+    topology: L2_RUNTIME_TOPOLOGY,
     frontendMode: state.frontendMode ?? null,
     discovered: 0,
     selected: activeCaseIds.length,
@@ -1258,12 +1319,22 @@ export function buildIncompleteExecutionManifest({
     retainedEvidence: {
       playwrightArtifactDirectory: repositoryRelativePath(playwrightArtifactDirectoryForRun(state.runDirectory)),
     },
+    remoteBackend: publicRemoteBackend({
+      remote: state.remote,
+      remoteJava: state.remoteJava,
+      remoteRoot: state.remoteRoot,
+      remoteResources: state.remoteResources,
+      remoteHttpPort: state.remoteHttpPort,
+      remoteDiagnostics: state.remoteDiagnostics,
+      remoteLogPath: state.remoteLogPath,
+    }),
     firstFailure,
     lastKnownGood,
     brokenBoundary,
     business,
     cleanup,
     cleanupErrors: [...cleanupErrors],
+    artifactErrors: [...artifactErrors],
     finishedAt: now(),
   };
   return safePublicManifest(manifest);
@@ -1354,6 +1425,15 @@ export function buildReadinessFailureCleanupState({suite = 'catalog-inventory', 
     workspaceKey: null,
     ports: manifest.ports,
     remote: {...manifest.remote},
+    remoteBackend: manifest.remoteBackend ? {...manifest.remoteBackend} : null,
+    remoteJava: manifest.remoteBackend?.remoteJava ? {...manifest.remoteBackend.remoteJava} : null,
+    remoteRoot: manifest.remoteBackend?.remoteRoot ?? null,
+    remoteHttpPort: manifest.remoteBackend?.remoteHttpPort ?? null,
+    remoteResources: manifest.remoteBackend?.remoteResources ? {...manifest.remoteBackend.remoteResources} : null,
+    remoteDiagnostics: manifest.remoteBackend?.remoteDiagnostics ? {...manifest.remoteBackend.remoteDiagnostics} : null,
+    remoteLogPath: manifest.remoteBackend?.localLogPath
+      ? path.resolve(root, manifest.remoteBackend.localLogPath)
+      : null,
     frontendMode: manifest.frontendMode,
     diagnostics: {
       events: path.join(runDirectory, 'http-request-events.jsonl'),
@@ -1363,6 +1443,7 @@ export function buildReadinessFailureCleanupState({suite = 'catalog-inventory', 
     },
     processes,
     activeCaseIds: [...(manifest.activeCaseIds ?? [])],
+    artifactErrors: Array.isArray(manifest.artifactErrors) ? [...manifest.artifactErrors] : [],
     timingReportPath: path.join(runDirectory, 'l2-timing-budget-report.json'),
     playwrightArtifactDirectory: playwrightArtifactDirectoryForRun(runDirectory),
     createdAt: manifest.createdAt,
@@ -1456,12 +1537,11 @@ COMMIT;`;
 }
 
 function choosePorts() {
-  const spring = availablePort(28080);
-  const db = availablePort(25433, [spring]);
-  const asset = availablePort(29000, [spring, db]);
-  const platform = availablePort(5174, [spring, db, asset]);
-  const operations = availablePort(5175, [spring, db, asset, platform]);
-  return {spring, db, asset, platform, operations};
+  const http = availablePort(28080);
+  const asset = availablePort(29000, [http]);
+  const platform = availablePort(5174, [http, asset]);
+  const operations = availablePort(5175, [http, asset, platform]);
+  return {http, asset, platform, operations};
 }
 
 function createDiagnostics(runDirectory, identity, credentials) {
@@ -1496,36 +1576,6 @@ async function waitForLog(identity, marker, timeoutMs = 180_000) {
   fail('L2_PROCESS_READINESS_TIMEOUT', identity.name);
 }
 
-function tunnelEnvironment(identity, ports, credentials, diagnostics) {
-  const appEnv = {
-    V2S_RUNTIME_ENVIRONMENT: 'non-production',
-    V2S_DEV_PROFILE: 'browser-l2',
-    V2S_DEV_NAMESPACE: identity.namespace,
-    V2S_L2_RUN_ID: identity.runId,
-    V2S_L2_SECRET: diagnostics.secret,
-    V2S_L2_EVENTS: diagnostics.events,
-    V2S_DB_OPERATIONS_EVENTS: diagnostics.dbEvents,
-    V2S_DB_OPERATIONS_HMAC_KEY: diagnostics.hmac,
-    V2S_DB_STATEMENT_DICTIONARY: diagnostics.dictionary,
-    CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true',
-    CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: credentials.values.CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET,
-    CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: credentials.values.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET,
-    CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: `http://127.0.0.1:${ports.asset}`,
-    CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: credentials.values.CATERING_ASSET_S3_ACCESS_KEY,
-    CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: credentials.values.CATERING_ASSET_S3_SECRET_KEY,
-    CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets',
-    CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/l2/${identity.runId}/`,
-    CATERING_ASSET_PUBLIC_BASE_URL: `http://127.0.0.1:${ports.asset}`,
-  };
-  return {
-    ...process.env,
-    ...appEnv,
-    CATERING_BUSINESS_DB_URL: `jdbc:postgresql://127.0.0.1:${ports.db}/${identity.database}`,
-    CATERING_BUSINESS_DB_USERNAME: credentials.values.CATERING_BUSINESS_DB_USERNAME,
-    CATERING_BUSINESS_DB_PASSWORD: credentials.values.CATERING_BUSINESS_DB_PASSWORD,
-  };
-}
-
 function writeTimingReport(runDirectory, activeIds, suite = 'catalog-inventory') {
   const config = suiteConfig(suite);
   return materializeL2TimingBudget(
@@ -1544,6 +1594,12 @@ export function buildReadinessManifest({
   denominators,
   timingReport,
   remote,
+  remoteJava = null,
+  remoteRoot = null,
+  remoteResources = null,
+  remoteHttpPort = null,
+  remoteDiagnostics = null,
+  remoteLogPath = null,
   processes,
   diagnostics,
   credentialsPath,
@@ -1557,9 +1613,22 @@ export function buildReadinessManifest({
   business = 'PASS',
   setupCleanup = 'NOT_RUN',
   cleanup = 'PENDING',
+  artifactErrors = [],
 } = {}) {
   const config = suiteConfig(suite);
+  if (!Array.isArray(artifactErrors)) fail('L2_READINESS_ARTIFACT_ERRORS_INVALID');
   if (status === 'PASS') {
+    if (
+      !remoteJava ||
+      !remoteRoot ||
+      !remoteResources ||
+      !Number.isInteger(remoteHttpPort) ||
+      !remoteDiagnostics ||
+      !remoteLogPath
+    ) {
+      fail('L2_READINESS_REMOTE_BACKEND_BINDING_REQUIRED');
+    }
+    publicRemoteJavaControl(remoteJava);
     const activeIds = denominators?.activeCaseIds;
     if (
       !candidate ||
@@ -1603,7 +1672,7 @@ export function buildReadinessManifest({
     schemaVersion: 1,
     kind: config.readinessKind,
     runId: identity.runId,
-    topology: 'LOCAL_SPRING_LOCAL_VITE_LOCAL_PLAYWRIGHT_REMOTE_DB_ASSET_TUNNEL',
+    topology: L2_RUNTIME_TOPOLOGY,
     namespace: identity.namespace,
     database: identity.database,
     assetPrefix: identity.assetPrefix,
@@ -1620,6 +1689,15 @@ export function buildReadinessManifest({
       statementDictionaryPath: publicPath(diagnostics?.dictionary),
       debugEventsPath: publicPath(diagnostics?.debugEvents),
     },
+    remoteBackend: publicRemoteBackend({
+      remote,
+      remoteJava,
+      remoteRoot,
+      remoteResources,
+      remoteHttpPort,
+      remoteDiagnostics,
+      remoteLogPath,
+    }),
     credentialsFile: publicPath(credentialsPath),
     ownerFixturePath: publicPath(ownerFixturePath),
     repositoryByteBinding: publicSourceByteBinding,
@@ -1630,6 +1708,7 @@ export function buildReadinessManifest({
     businessStatus: business,
     setupCleanupStatus: setupCleanup,
     cleanupStatus: cleanup,
+    artifactErrors: [...artifactErrors],
     activeCaseIds: [...(denominators.activeCaseIds ?? [])],
     activationCandidatePath: repositoryRelativePath(config.activationCandidatePath),
     activationCandidateDigest: candidate?.candidateDigest ?? null,
@@ -1646,7 +1725,10 @@ export function buildReadinessManifest({
   return manifest;
 }
 
-async function openTunnel(host, ports, logPath) {
+async function openTunnel(host, ports, logPath, remoteHttpPort) {
+  if (!Number.isInteger(remoteHttpPort) || remoteHttpPort < 1024 || remoteHttpPort > 65535) {
+    fail('L2_REMOTE_HTTP_PORT_INVALID');
+  }
   const fd = openSync(logPath, 'w', 0o600);
   const child = spawn(
     'ssh',
@@ -1661,7 +1743,7 @@ async function openTunnel(host, ports, logPath) {
       '-o',
       'ServerAliveCountMax=3',
       '-L',
-      `${ports.db}:127.0.0.1:5432`,
+      `${ports.http}:127.0.0.1:${remoteHttpPort}`,
       '-L',
       `${ports.asset}:127.0.0.1:19000`,
       host,
@@ -1672,7 +1754,7 @@ async function openTunnel(host, ports, logPath) {
   if (!child.pid) fail('L2_TUNNEL_START_FAILED');
   child.unref();
   const identity = {
-    name: 'l2-remote-tunnel',
+    name: 'l2-remote-http-asset-tunnel',
     pid: child.pid,
     pgid: processGroup(child.pid),
     startToken: processStartToken(child.pid),
@@ -1682,7 +1764,7 @@ async function openTunnel(host, ports, logPath) {
   const deadline = Date.now() + 20_000;
   while (Date.now() < deadline) {
     assertOwned(identity);
-    if (listenerPids(ports.db).includes(identity.pid) && listenerPids(ports.asset).includes(identity.pid))
+    if (listenerPids(ports.http).includes(identity.pid) && listenerPids(ports.asset).includes(identity.pid))
       return identity;
     await sleep(200);
   }
@@ -1819,7 +1901,7 @@ async function startLocalFrontendProcesses({ports, runDirectory, refreshIndex = 
       name: 'platform-admin-vite',
       port: ports.platform,
       appRoot: path.join(root, 'apps/frontend/platform-admin'),
-      gatewayProxyTarget: `http://127.0.0.1:${ports.spring}`,
+      gatewayProxyTarget: `http://127.0.0.1:${ports.http}`,
       runDirectory,
       refreshIndex,
       frontendMode: mode,
@@ -1830,7 +1912,7 @@ async function startLocalFrontendProcesses({ports, runDirectory, refreshIndex = 
       name: 'operations-admin-vite',
       port: ports.operations,
       appRoot: operationsSpec,
-      gatewayProxyTarget: `http://127.0.0.1:${ports.spring}`,
+      gatewayProxyTarget: `http://127.0.0.1:${ports.http}`,
       runDirectory,
       refreshIndex,
       frontendMode: mode,
@@ -1849,39 +1931,164 @@ async function startLocalFrontendProcesses({ports, runDirectory, refreshIndex = 
   }
 }
 
-async function startLocalRuntime({identity, ports, host, credentials, runDirectory, diagnostics, frontendMode}) {
-  const occupied = [ports.spring, ports.db, ports.asset, ports.platform, ports.operations].flatMap(port =>
+function remoteRunIdFor(identity) {
+  return `r5-dev-${Date.now()}-${process.pid}-${randomUUID()}`;
+}
+
+function remoteJavaCredentialAdapter(credentials, diagnostics) {
+  return {
+    values: {
+      V2S_DEV_DATABASE_USERNAME: credentials.values.CATERING_BUSINESS_DB_USERNAME,
+      V2S_DEV_DATABASE_PASSWORD: credentials.values.CATERING_BUSINESS_DB_PASSWORD,
+      V2S_SEED_OTP_FIXED_VALUE: credentials.values.V2S_L2_TEST_OTP,
+      V2S_SEED_REPORT_SECRET: diagnostics.secret,
+      CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: credentials.values.CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET,
+      CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: credentials.values.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET,
+      CATERING_ASSET_S3_ACCESS_KEY: credentials.values.CATERING_ASSET_S3_ACCESS_KEY,
+      CATERING_ASSET_S3_SECRET_KEY: credentials.values.CATERING_ASSET_S3_SECRET_KEY,
+      V2S_DB_OPERATIONS_HMAC_KEY: credentials.values.V2S_DB_OPERATIONS_HMAC_KEY,
+    },
+  };
+}
+
+function remoteApplicationEnvironment(identity, remoteRoot, diagnostics) {
+  const remoteResults = `${remoteRoot}/results`;
+  return {
+    V2S_L2_RUN_ID: identity.runId,
+    V2S_L2_SECRET: diagnostics.secret,
+    V2S_L2_EVENTS: `${remoteResults}/http-request-events.jsonl`,
+    V2S_DB_OPERATIONS_EVENTS: `${remoteResults}/db-operation-events.jsonl`,
+    V2S_DB_OPERATIONS_HMAC_KEY: diagnostics.hmac,
+    V2S_DB_STATEMENT_DICTIONARY: `${remoteResults}/statement-dictionary.json`,
+    CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true',
+  };
+}
+
+function collectRemoteRuntimeArtifacts(runtime, diagnostics, {requireDiagnostics = true} = {}) {
+  if (!runtime?.remoteJava || !runtime.remoteDiagnostics) fail('L2_REMOTE_RUNTIME_ARTIFACT_BINDING_INVALID');
+  validateRemoteJavaControl(runtime.remoteJava);
+  const remoteHost = runtime.remote?.host;
+  if (typeof remoteHost !== 'string' || remoteHost.length === 0) fail('L2_REMOTE_RUNTIME_ARTIFACT_HOST_INVALID');
+  collectRemoteLog(remoteHost, runtime.remoteJava, runtime.remoteLogPath);
+  for (const [name, remotePath] of Object.entries(runtime.remoteDiagnostics)) {
+    const localPath = diagnostics[name];
+    if (typeof localPath !== 'string') fail('L2_REMOTE_RUNTIME_DIAGNOSTIC_TARGET_INVALID', name);
+    collectRemoteFile(remoteHost, remotePath, localPath, {allowMissing: !requireDiagnostics});
+  }
+}
+
+function collectRemoteFile(host, remotePath, localPath, {allowMissing = false} = {}) {
+  mkdirSync(path.dirname(localPath), {recursive: true, mode: 0o700});
+  const result = spawnSync(
+    'scp',
+    ['-q', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', `${host}:${remotePath}`, localPath],
+    {cwd: root, encoding: 'utf8'},
+  );
+  if (result.status !== 0) {
+    if (allowMissing && !existsSync(localPath)) return false;
+    fail('L2_REMOTE_ARTIFACT_COLLECTION_FAILED', compact(result.stderr || result.stdout || remotePath));
+  }
+  chmodSync(localPath, 0o600);
+  return true;
+}
+
+async function startRemoteRuntime({identity, ports, host, credentials, runDirectory, diagnostics, frontendMode}) {
+  const occupied = [ports.http, ports.asset, ports.platform, ports.operations].flatMap(port =>
     listenerPids(port).map(pid => ({port, pid})),
   );
   if (occupied.length)
     fail('L2_LOCAL_PORT_ALREADY_OWNED', occupied.map(entry => `${entry.port}:${entry.pid}`).join(','));
   const started = [];
+  let remoteJava = null;
+  let remoteRoot = null;
+  let remoteResources = null;
+  let remoteHttpPort = null;
   try {
-    const tunnel = await openTunnel(host, ports, path.join(runDirectory, 'remote-tunnel.log'));
-    started.push(tunnel);
-    const appEnv = tunnelEnvironment(identity, ports, credentials, diagnostics);
-    appEnv.V2S_SEED_OTP_FIXED_VALUE = credentials.values.V2S_L2_TEST_OTP;
-    const spring = spawnManaged(
-      'spring-boot',
-      './gradlew',
-      ['--no-daemon', ':apps:backend:catering-business-server:bootRun'],
-      {...appEnv, SERVER_PORT: String(ports.spring)},
-      path.join(runDirectory, 'spring-boot.log'),
+    const remoteRunId = remoteRunIdFor(identity);
+    remoteRoot = remoteDevRootFor(remoteRunId);
+    remoteResources = remoteJavaResourcePreflight(host, remoteRoot);
+    remoteHttpPort = remoteHttpPortPreflight(host, remoteRoot);
+    await syncRemoteSource(host, remoteRoot);
+    const tunnel = await openTunnel(
+      host,
+      ports,
+      path.join(runDirectory, 'remote-http-asset-tunnel.log'),
+      remoteHttpPort,
     );
-    started.push(spring);
-    await waitForLog(spring, 'Started CateringV2sApplication');
+    started.push(tunnel);
+    const remoteEnv = {
+      namespace: identity.namespace,
+      environment: {
+        V2S_RUNTIME_ENVIRONMENT: 'non-production',
+        V2S_DEV_PROFILE: 'browser-l2',
+        V2S_DEV_DATABASE_URL: `jdbc:postgresql://127.0.0.1:5432/${identity.database}`,
+        V2S_DEV_REMOTE_ASSET_PORT: '19000',
+      },
+    };
+    remoteJava = await startRemoteJava(host, {
+      runId: remoteRunId,
+      remoteRoot,
+      env: remoteEnv,
+      credential: remoteJavaCredentialAdapter(credentials, diagnostics),
+      catalogTestFaultsAdmitted: false,
+      httpPort: remoteHttpPort,
+      assetPublicBaseUrl: `http://127.0.0.1:${ports.asset}`,
+      assetObjectPrefix: `catering-v2s/l2/${identity.runId}/`,
+      extraEnvironment: remoteApplicationEnvironment(identity, remoteRoot, diagnostics),
+    });
+    if (remoteJava.bootId !== remoteResources.bootId) fail('L2_REMOTE_HOST_REBOOTED_DURING_START');
+    const remoteReadiness = await waitForRemoteBusinessReady(
+      host,
+      remoteJava,
+      path.join(runDirectory, 'remote-readiness.jsonl'),
+    );
     const frontend = await startLocalFrontendProcesses({
       ports,
       runDirectory,
       frontendMode,
       runId: identity.runId,
     });
-    return {tunnel, spring, ...frontend, appEnv};
+    return {
+      tunnel,
+      ...frontend,
+      remoteHost: host,
+      remoteRoot,
+      remoteResources,
+      remoteHttpPort,
+      remoteJava,
+      remoteReadiness,
+      remoteDiagnostics: {
+        events: `${remoteRoot}/results/http-request-events.jsonl`,
+        dbEvents: `${remoteRoot}/results/db-operation-events.jsonl`,
+        dictionary: `${remoteRoot}/results/statement-dictionary.json`,
+      },
+      remoteLogPath: path.join(runDirectory, 'remote-business-server.log'),
+    };
   } catch (error) {
     error.cleanupErrors = [
       ...(Array.isArray(error.cleanupErrors) ? error.cleanupErrors : []),
       ...(await stopOwnedProcesses(started)),
     ];
+    error.artifactErrors = Array.isArray(error.artifactErrors) ? [...error.artifactErrors] : [];
+    if (remoteJava) {
+      try {
+        collectRemoteLog(host, remoteJava, path.join(runDirectory, 'remote-business-server.log'));
+      } catch (collectionError) {
+        error.artifactErrors.push(`REMOTE_LOG:${errorCode(collectionError)}`);
+      }
+      try {
+        await stopRemoteJava(host, remoteJava);
+      } catch (stopError) {
+        error.cleanupErrors.push(`REMOTE_JAVA:${errorCode(stopError)}`);
+      }
+    }
+    if (remoteRoot) {
+      try {
+        cleanupRemoteJavaRoot(host, remoteRoot);
+      } catch (cleanupError) {
+        error.cleanupErrors.push(`REMOTE_ROOT:${errorCode(cleanupError)}`);
+      }
+    }
     throw error;
   }
 }
@@ -2234,7 +2441,7 @@ function tinyPng() {
 
 async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, diagnostics, activeIds}) {
   const registry = combinedRegistry();
-  const baseUrl = `http://127.0.0.1:${ports.spring}`;
+  const baseUrl = `http://127.0.0.1:${ports.http}`;
   const client = makeOwnerClient({baseUrl, registry, identity, credentials, diagnostics, runDirectory});
   const request = client.request;
   const stage = name => `bootstrap-${name}`;
@@ -4341,22 +4548,30 @@ export function salesMenuSaleContentKind(shape) {
 
 function salesMenuSaleDefinition(candidate) {
   const saleContentKind = salesMenuSaleContentKind(candidate.shape);
+  const orderOptionSelections = (candidate.orderOptions ?? []).map(option => ({
+    definitionRef: option.definitionRef,
+    selectedValueRefs: option.required && option.values.length > 0 ? [option.values[0].definitionValueRef] : [],
+  }));
   return candidate.shape === 'SKU'
     ? {
         kind: saleContentKind,
         listedPriceCents: null,
-        skuPrices: candidate.skus.map(sku => ({
-          skuRef: sku.skuRef,
-          skuName: sku.skuName,
-          skuCode: sku.skuCode,
-          standardPriceCents: sku.standardPriceCents,
-          listedPriceCents: sku.standardPriceCents + 100,
-        })),
+        skuPrices: candidate.skus
+          .filter(sku => sku.status === 'ENABLED')
+          .map(sku => ({
+            skuRef: sku.skuRef,
+            skuName: sku.skuName,
+            skuCode: sku.skuCode,
+            standardPriceCents: sku.standardPriceCents,
+            listedPriceCents: sku.standardPriceCents + 100,
+          })),
+        orderOptionSelections: [],
       }
     : {
         kind: saleContentKind,
         listedPriceCents: Number(candidate.defaultPriceCents),
         skuPrices: [],
+        orderOptionSelections,
       };
 }
 
@@ -4444,12 +4659,208 @@ async function bootstrapSalesMenuFacts({identity, base}) {
   const countUnitRef = await createUnit(`SM-${suffix}-EA`, '个', 'COUNT', 0);
   const weightUnitRef = await createUnit(`SM-${suffix}-KG`, '千克', 'WEIGHT', 3);
 
+  const catalogOrderOptionsByFixtureId = new Map();
+  for (const candidate of fixture.candidateFixtures) {
+    for (const option of candidate.orderOptions ?? []) {
+      const created = await request(
+        stage(`order-option-definition-${candidate.fixtureId}-${option.code}`),
+        'createOperationsCatalogOrderOptionDefinition',
+        {},
+        {
+          cookie: operationsCookie,
+          brandRef,
+          expected: [200],
+          body: {
+            dataNodeRef,
+            code: `${option.code}-${suffix}`,
+            name: `${option.name}-${suffix}`,
+            selectionMode: option.selectionMode,
+            values: option.values.map(value => ({
+              valueRef: null,
+              code: `${value.code}-${suffix}`,
+              name: `${value.name}-${suffix}`,
+              displayOrder: value.displayOrder,
+              materials: [],
+            })),
+          },
+        },
+      );
+      const definition = itemResult(created.json)?.definition ?? itemResult(created.json);
+      const definitionRef = String(
+        requiredObjectValue(
+          created.json,
+          ['definitionRef', 'id', 'ref'],
+          'SALES_MENU_CATALOG_ORDER_OPTION_DEFINITION_REF_MISSING',
+        ),
+      );
+      const actualValues = Array.isArray(definition?.values) ? definition.values : [];
+      if (actualValues.length !== option.values.length)
+        fail('SALES_MENU_CATALOG_ORDER_OPTION_VALUE_DENOMINATOR_INVALID', `${candidate.fixtureId}:${option.code}`);
+      const values = option.values.map(value => {
+        const actual = actualValues.find(row => row?.code === `${value.code}-${suffix}`);
+        const definitionValueRef = objectValue(actual, ['valueRef', 'definitionValueRef', 'id', 'ref']);
+        if (!definitionValueRef)
+          fail('SALES_MENU_CATALOG_ORDER_OPTION_VALUE_REF_MISSING', `${candidate.fixtureId}:${value.code}`);
+        return {
+          definitionValueRef: String(definitionValueRef),
+          code: String(actual.code),
+          name: String(actual.name),
+          displayOrder: Number(actual.displayOrder ?? value.displayOrder),
+          defaultValue: Boolean(value.defaultValue),
+          extraPrice: value.extraPrice ?? null,
+        };
+      });
+      const options = catalogOrderOptionsByFixtureId.get(candidate.fixtureId) ?? [];
+      options.push({
+        definitionRef,
+        code: String(definition.code ?? `${option.code}-${suffix}`),
+        name: String(definition.name ?? `${option.name}-${suffix}`),
+        selectionMode: option.selectionMode,
+        required: Boolean(option.required),
+        minSelectionCount: option.minSelectionCount ?? null,
+        maxSelectionCount: option.maxSelectionCount ?? null,
+        values,
+      });
+      catalogOrderOptionsByFixtureId.set(candidate.fixtureId, options);
+    }
+  }
+
+  const catalogSkuVariantsByFixtureId = new Map();
+  for (const candidate of fixture.candidateFixtures.filter(row => row.shape === 'SKU')) {
+    const attributeCode = `SM-${suffix}-${candidate.fixtureId}-VARIANT`;
+    const attributeName = `${candidate.name}规格`;
+    const attributeCreated = await request(
+      stage(`sku-attribute-${candidate.fixtureId}`),
+      'createOperationsCatalogDictionaryEntry',
+      {dictionaryKind: 'SKU_ATTRIBUTE'},
+      {
+        cookie: operationsCookie,
+        brandRef,
+        expected: [200],
+        body: {
+          dataNodeRef,
+          dictionaryKind: 'SKU_ATTRIBUTE',
+          code: attributeCode,
+          name: attributeName,
+          parentEntryRef: null,
+        },
+      },
+    );
+    const attributeRef = String(
+      requiredObjectValue(attributeCreated.json, ['entryRef', 'id', 'ref'], 'SALES_MENU_SKU_ATTRIBUTE_REF_MISSING'),
+    );
+    const valueCount = Math.max(2, Number(candidate.skuCount ?? 1));
+    const values = [];
+    for (let index = 0; index < valueCount; index++) {
+      const valueCode = `SM-${suffix}-${candidate.fixtureId}-VALUE-${String.fromCharCode(65 + index)}`;
+      const valueName = `${candidate.name}规格${String.fromCharCode(65 + index)}`;
+      const valueCreated = await request(
+        stage(`sku-attribute-value-${candidate.fixtureId}-${index}`),
+        'createOperationsCatalogDictionaryEntry',
+        {dictionaryKind: 'SKU_ATTRIBUTE_VALUE'},
+        {
+          cookie: operationsCookie,
+          brandRef,
+          expected: [200],
+          body: {
+            dataNodeRef,
+            dictionaryKind: 'SKU_ATTRIBUTE_VALUE',
+            code: valueCode,
+            name: valueName,
+            parentEntryRef: attributeRef,
+          },
+        },
+      );
+      const valueRef = String(
+        requiredObjectValue(valueCreated.json, ['entryRef', 'id', 'ref'], 'SALES_MENU_SKU_ATTRIBUTE_VALUE_REF_MISSING'),
+      );
+      values.push({valueRef, valueCode, valueLabel: valueName, displayOrder: index, status: 'ENABLED'});
+    }
+    catalogSkuVariantsByFixtureId.set(candidate.fixtureId, {
+      attributeRef,
+      attributeCode,
+      attributeName,
+      values,
+    });
+  }
+
+  const catalogImageBytes = tinyPng();
+  const catalogImageDigest = sha256(catalogImageBytes);
+  const catalogImageForm = new FormData();
+  catalogImageForm.set('dataNodeRef', dataNodeRef);
+  catalogImageForm.set('fileName', 'sales-menu-inherited-image.png');
+  catalogImageForm.set('mediaType', 'image/png');
+  catalogImageForm.set('contentDigest', catalogImageDigest);
+  catalogImageForm.set('content', new Blob([catalogImageBytes], {type: 'image/png'}), 'sales-menu-inherited-image.png');
+  const stagedCatalogImage = await request(
+    stage('catalog-inherited-image'),
+    'stageOperationsCatalogAsset',
+    {},
+    {
+      cookie: operationsCookie,
+      brandRef,
+      expected: [200],
+      form: catalogImageForm,
+    },
+  );
+  const stagedCatalogImageResult = itemResult(stagedCatalogImage.json);
+  const catalogImageAssetRef = String(
+    requiredObjectValue(stagedCatalogImageResult, ['assetRef'], 'SALES_MENU_CATALOG_IMAGE_REF_MISSING'),
+  );
+  const catalogImageBindGrant = String(
+    requiredObjectValue(stagedCatalogImageResult, ['bindGrant'], 'SALES_MENU_CATALOG_IMAGE_BIND_GRANT_MISSING'),
+  );
+  const catalogSecondaryImageBytes = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    'base64',
+  );
+  const catalogSecondaryImageDigest = sha256(catalogSecondaryImageBytes);
+  const catalogSecondaryImageForm = new FormData();
+  catalogSecondaryImageForm.set('dataNodeRef', dataNodeRef);
+  catalogSecondaryImageForm.set('fileName', 'sales-menu-inherited-image-secondary.png');
+  catalogSecondaryImageForm.set('mediaType', 'image/png');
+  catalogSecondaryImageForm.set('contentDigest', catalogSecondaryImageDigest);
+  catalogSecondaryImageForm.set(
+    'content',
+    new Blob([catalogSecondaryImageBytes], {type: 'image/png'}),
+    'sales-menu-inherited-image-secondary.png',
+  );
+  const stagedCatalogSecondaryImage = await request(
+    stage('catalog-inherited-image-secondary'),
+    'stageOperationsCatalogAsset',
+    {},
+    {
+      cookie: operationsCookie,
+      brandRef,
+      expected: [200],
+      form: catalogSecondaryImageForm,
+    },
+  );
+  const stagedCatalogSecondaryImageResult = itemResult(stagedCatalogSecondaryImage.json);
+  const catalogSecondaryImageAssetRef = String(
+    requiredObjectValue(
+      stagedCatalogSecondaryImageResult,
+      ['assetRef'],
+      'SALES_MENU_CATALOG_SECONDARY_IMAGE_REF_MISSING',
+    ),
+  );
+  const catalogSecondaryImageBindGrant = String(
+    requiredObjectValue(
+      stagedCatalogSecondaryImageResult,
+      ['bindGrant'],
+      'SALES_MENU_CATALOG_SECONDARY_IMAGE_BIND_GRANT_MISSING',
+    ),
+  );
+  const catalogImageAssetRefs = [catalogImageAssetRef, catalogSecondaryImageAssetRef];
+  let catalogImageBindHeaderPending = true;
+
   const candidateRecords = [];
   for (const candidate of fixture.candidateFixtures) {
     const shapeKey = salesMenuCatalogShapeKey(candidate.shape);
     if (!shapeKey) fail('SALES_MENU_CATALOG_SHAPE_UNSUPPORTED', candidate.shape);
     const itemCode = `${candidate.code}-${suffix}`;
     const itemName = `${candidate.name}-${suffix}`;
+    const candidateImageAssetRefs = [...catalogImageAssetRefs];
     const categoryRef = candidate.categoryPath?.length ? categoryRefs.get(candidate.categoryPath.join('/')) : null;
     if (candidate.categoryPath?.length && !categoryRef)
       fail('SALES_MENU_CATEGORY_BINDING_MISSING', candidate.fixtureId);
@@ -4471,29 +4882,53 @@ async function bootstrapSalesMenuFacts({identity, base}) {
     const weighted = candidate.shape === 'WEIGHTED';
     const sku = candidate.shape === 'SKU';
     const inventoryless = candidate.shape === 'COMPOSITE' || candidate.shape === 'SERVICE';
+    const skuVariant = sku ? catalogSkuVariantsByFixtureId.get(candidate.fixtureId) : null;
     const skuDraft = sku
-      ? [
-          {
-            skuCode: `${itemCode}-DEFAULT`,
-            skuName: `${itemName}默认规格`,
-            displayOrder: 0,
-            attributeValueRefs: [],
-            standardSalePrice: 1299,
-            isDefault: true,
-            status: 'ENABLED',
-            mediaRefs: [],
-            salesUnitOverrideRef: null,
-            baseMeasureUnitOverrideRef: null,
-            identifiers: [],
-            preparationOverride: {mode: 'INHERIT_ITEM', profile: null},
-          },
-        ]
+      ? Array.from({length: Math.max(1, Number(candidate.skuCount ?? 1))}, (_, index) => ({
+          skuCode: `${itemCode}-${String.fromCharCode(65 + index)}`,
+          skuName: `${itemName}${index === 0 ? '规格A' : `规格${String.fromCharCode(65 + index)}`}`,
+          displayOrder: index,
+          attributeValueRefs: [
+            {
+              attributeRef: skuVariant.attributeRef,
+              attributeCode: skuVariant.attributeCode,
+              attributeName: skuVariant.attributeName,
+              attributeValueRef: skuVariant.values[index].valueRef,
+              valueCode: skuVariant.values[index].valueCode,
+              valueLabel: skuVariant.values[index].valueLabel,
+              displayOrder: 0,
+              status: skuVariant.values[index].status,
+            },
+          ],
+          standardSalePrice: 1299 + index * 200,
+          isDefault: index === 0,
+          status: 'ENABLED',
+          mediaRefs: [],
+          salesUnitOverrideRef: null,
+          baseMeasureUnitOverrideRef: null,
+          identifiers: [],
+          preparationOverride: {mode: 'INHERIT_ITEM', profile: null},
+        }))
       : [];
+    const orderOptionConfigs = (catalogOrderOptionsByFixtureId.get(candidate.fixtureId) ?? []).map((option, index) => ({
+      definitionRef: option.definitionRef,
+      displayOrder: index,
+      required: option.required,
+      minSelectionCount: option.minSelectionCount,
+      maxSelectionCount: option.maxSelectionCount,
+      values: option.values.map(value => ({
+        definitionValueRef: value.definitionValueRef,
+        defaultValue: value.defaultValue,
+        extraPrice: value.extraPrice,
+        expectedBomVersion: 0,
+        preparationEffect: null,
+      })),
+    }));
     const catalogDraft = {
       name: itemName,
       shapeKey,
       shortName: itemName,
-      images: [],
+      images: candidateImageAssetRefs,
       tagRefs: [],
       identifiers: [],
       categoryRef,
@@ -4501,9 +4936,18 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       salesUnitRef: weighted ? weightUnitRef : countUnitRef,
       baseMeasureUnitRef: inventoryless ? null : weighted ? weightUnitRef : countUnitRef,
       skus: skuDraft,
-      skuVariantDimensions: [],
+      skuVariantDimensions: skuVariant
+        ? [
+            {
+              attributeRef: skuVariant.attributeRef,
+              attributeCode: skuVariant.attributeCode,
+              attributeName: skuVariant.attributeName,
+              values: skuVariant.values,
+            },
+          ]
+        : [],
       attributeAssignments: [],
-      orderOptionConfigs: [],
+      orderOptionConfigs,
       compositeGroups: [],
       preparationProfile: null,
       priceGranularity: sku ? 'SKU' : 'ITEM',
@@ -4517,6 +4961,16 @@ async function bootstrapSalesMenuFacts({identity, base}) {
         cookie: operationsCookie,
         brandRef,
         expected: [200],
+        ...(catalogImageBindHeaderPending
+          ? {
+              headers: {
+                'X-Catalog-Asset-Bind-Grants': JSON.stringify({
+                  [catalogImageAssetRef]: catalogImageBindGrant,
+                  [catalogSecondaryImageAssetRef]: catalogSecondaryImageBindGrant,
+                }),
+              },
+            }
+          : {}),
         body: {
           dataNodeRef,
           itemCode,
@@ -4524,6 +4978,7 @@ async function bootstrapSalesMenuFacts({identity, base}) {
         },
       },
     );
+    catalogImageBindHeaderPending = false;
     version = itemVersion(saved.json);
     const enabled = await request(
       stage(`candidate-enable-${candidate.fixtureId}`),
@@ -4550,8 +5005,18 @@ async function bootstrapSalesMenuFacts({identity, base}) {
     );
     const detailRoot = unwrapResponse(detail.json);
     const detailItem = detailRoot?.item ?? detailRoot;
+    const actualImageRefs = Array.isArray(detailItem?.images) ? detailItem.images.map(value => String(value)) : [];
+    if (
+      actualImageRefs.length !== candidateImageAssetRefs.length ||
+      actualImageRefs.some((assetRef, index) => assetRef !== candidateImageAssetRefs[index])
+    ) {
+      fail('SALES_MENU_CATALOG_IMAGE_COLLECTION_READBACK_INVALID', candidate.fixtureId);
+    }
     const actualSkus = Array.isArray(detailItem?.skus) ? detailItem.skus : [];
     if (sku && actualSkus.length === 0) fail('SALES_MENU_CATALOG_SKU_READBACK_MISSING', candidate.fixtureId);
+    const actualOrderOptions = Array.isArray(detailItem?.orderOptionConfigs) ? detailItem.orderOptionConfigs : [];
+    if (actualOrderOptions.length !== orderOptionConfigs.length)
+      fail('SALES_MENU_CATALOG_ORDER_OPTION_READBACK_INVALID', candidate.fixtureId);
     candidateRecords.push({
       fixtureId: candidate.fixtureId,
       itemRef: catalogItemRef,
@@ -4562,12 +5027,35 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       categoryRef,
       categoryNames: [...(candidate.categoryPath ?? [])],
       defaultPriceCents: candidate.defaultPriceCents,
+      catalogPrimaryImageAssetRef: candidateImageAssetRefs[0],
+      catalogImageAssetRefs: candidateImageAssetRefs,
       version,
       skus: actualSkus.map((row, index) => ({
         skuRef: String(row.productSkuRef ?? row.skuRef ?? ''),
         skuCode: String(row.skuCode ?? `${itemCode}-SKU-${index + 1}`),
         skuName: String(row.skuName ?? `${itemName}规格${index + 1}`),
         standardPriceCents: Number(row.standardSalePrice ?? 1299),
+        status: String(row.status ?? 'ENABLED'),
+      })),
+      enabledSkuRefs: actualSkus
+        .filter(row => String(row.status ?? 'ENABLED') === 'ENABLED')
+        .map(row => String(row.productSkuRef ?? row.skuRef ?? '')),
+      orderOptions: actualOrderOptions.map((option, optionIndex) => ({
+        definitionRef: String(option.definitionRef),
+        code: String(option.code ?? option.definitionCode ?? ''),
+        name: String(option.name ?? option.code ?? `选项组${optionIndex + 1}`),
+        selectionMode: String(option.selectionMode),
+        required: Boolean(option.required),
+        minSelectionCount: option.minSelectionCount ?? null,
+        maxSelectionCount: option.maxSelectionCount ?? null,
+        values: (Array.isArray(option.values) ? option.values : []).map((value, valueIndex) => ({
+          definitionValueRef: String(value.definitionValueRef ?? value.valueRef),
+          code: String(value.code ?? ''),
+          name: String(value.name ?? value.code ?? `选项值${valueIndex + 1}`),
+          displayOrder: Number(value.displayOrder ?? valueIndex),
+          defaultValue: Boolean(value.defaultValue),
+          extraPrice: value.extraPrice ?? null,
+        })),
       })),
     });
   }
@@ -5062,15 +5550,24 @@ async function bootstrapSalesMenuFacts({identity, base}) {
   const menuRecordByFixture = new Map(menuRecords.map(menu => [menu.fixtureId, menu]));
   const menuFactsByFixture = new Map([[primaryMenu.fixtureId, {sectionRecords, salesItems}]]);
   const isolatedSetups = new Map();
-  for (const fixtureDefinition of Object.values(fixture.caseFixtures ?? {})) {
+  for (const [fixtureDefinitionId, fixtureDefinition] of Object.entries(fixture.caseFixtures ?? {})) {
     const menuFixtureId = fixtureDefinition.menuFixtureId;
     const sectionCount = Number(fixtureDefinition.sectionCount ?? 0);
     if (!menuFixtureId || !sectionCount || menuFixtureId === primaryMenu.fixtureId) continue;
-    const setup = isolatedSetups.get(menuFixtureId) ?? {sectionCount: 0, baselineCandidateFixtureIds: []};
+    const setup = isolatedSetups.get(menuFixtureId) ?? {
+      sectionCount: 0,
+      baselineCandidateFixtureIds: [],
+      baselineSources: new Set(),
+    };
     setup.sectionCount = Math.max(setup.sectionCount, sectionCount);
-    for (const candidateFixtureId of fixtureDefinition.baselineCandidateFixtureIds ?? []) {
-      if (!setup.baselineCandidateFixtureIds.includes(candidateFixtureId))
-        setup.baselineCandidateFixtureIds.push(candidateFixtureId);
+    // Preserve deliberate duplicate entries within one fixture definition: the
+    // SKU L2 case needs two SalesItems for the same Catalog item.  Deduplicate
+    // only when the same case fixture is encountered again while aggregating a
+    // menu's independent setup.
+    const baselineSource = fixtureDefinitionId;
+    if (!setup.baselineSources.has(baselineSource)) {
+      setup.baselineSources.add(baselineSource);
+      setup.baselineCandidateFixtureIds.push(...(fixtureDefinition.baselineCandidateFixtureIds ?? []));
     }
     isolatedSetups.set(menuFixtureId, setup);
   }
@@ -5300,7 +5797,16 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       candidateCode: candidate.itemCode,
       candidateName: candidate.itemName,
       defaultPriceCents: candidate.defaultPriceCents,
+      publishedPrimaryImageAssetRef: candidate.catalogPrimaryImageAssetRef,
+      publishedCatalogImageAssetRefs: candidate.catalogImageAssetRefs,
       skuRefs: candidate.skus.map(sku => sku.skuRef),
+      enabledSkuRefs: candidate.enabledSkuRefs,
+      optionDefinitionRefs: candidate.orderOptions.map(option => option.definitionRef),
+      optionValueRefs: candidate.orderOptions.flatMap(option => option.values.map(value => value.definitionValueRef)),
+      requiredOptionDefinitionRef: candidate.orderOptions.find(option => option.required)?.definitionRef ?? null,
+      requiredOptionValueRefs:
+        candidate.orderOptions.find(option => option.required)?.values.map(value => value.definitionValueRef) ?? [],
+      optionalOptionDefinitionRef: candidate.orderOptions.find(option => !option.required)?.definitionRef ?? null,
       ...(row.fixtureRef === 'FIXTURE-SALES-MENU-AUTH' ? scopeIsolationChannels : {}),
       channelRefs: ownerChannelRefs,
       menuRefs: menuRecords.map(menuRow => menuRow.ref),
@@ -5364,6 +5870,7 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       primaryChannelRef: primaryChannel.ref,
       secondaryChannelRef: secondaryChannel.ref,
       primarySectionRef: primarySection.ref,
+      publishedPrimaryImageAssetRef: catalogImageAssetRef,
       publicationExcludedFacts: [
         'publication',
         'operationRecords',
@@ -5476,9 +5983,35 @@ async function stopOwnedProcesses(processes = []) {
 }
 
 async function cleanupOwnedL2Resources(state, credentials) {
-  const processErrors = await stopOwnedProcesses(state.processes);
-  const remoteErrors = await cleanupRemote(state.remote.host, state.identity, credentials);
-  return [...processErrors, ...remoteErrors];
+  const errors = [];
+  const artifactErrors = [];
+  if (state.remoteJava) {
+    try {
+      collectRemoteRuntimeArtifacts(state, state.diagnostics, {requireDiagnostics: false});
+    } catch (error) {
+      artifactErrors.push(`REMOTE_ARTIFACTS:${errorCode(error)}`);
+    }
+    try {
+      validateRemoteJavaControl(state.remoteJava);
+      await stopRemoteJava(state.remote.host, state.remoteJava);
+    } catch (error) {
+      errors.push(`REMOTE_JAVA:${errorCode(error)}`);
+    }
+  }
+  if (state.remoteRoot) {
+    try {
+      cleanupRemoteJavaRoot(state.remote.host, state.remoteRoot);
+    } catch (error) {
+      errors.push(`REMOTE_ROOT:${errorCode(error)}`);
+    }
+  }
+  errors.push(...(await stopOwnedProcesses(state.processes)));
+  try {
+    errors.push(...(await cleanupRemote(state.remote.host, state.identity, credentials)));
+  } catch (error) {
+    errors.push(`REMOTE_NAMESPACE:${errorCode(error)}`);
+  }
+  return {cleanupErrors: errors, artifactErrors};
 }
 
 function completeCleanupEvidence(
@@ -5491,22 +6024,36 @@ function completeCleanupEvidence(
     lastKnownGood = 'OWNER_HTTP_FIXTURE_READY',
     brokenBoundary = null,
     cleanupErrors = [],
+    artifactErrors = [],
   } = {},
 ) {
   const config = suiteConfig(suite);
   let finalCleanupErrors = [...cleanupErrors];
+  const finalArtifactErrors = [
+    ...new Set([...(Array.isArray(state.artifactErrors) ? state.artifactErrors : []), ...artifactErrors]),
+  ];
   const cleanupManifestPath = path.join(state.runDirectory, 'l2-cleanup-manifest.json');
   const cleanupManifest = {
     schemaVersion: 1,
     kind: config.cleanupKind,
     runId: state.identity.runId,
-    topology: 'LOCAL_SPRING_LOCAL_VITE_LOCAL_PLAYWRIGHT_REMOTE_DB_ASSET_TUNNEL',
+    topology: L2_RUNTIME_TOPOLOGY,
     firstFailure: reason,
     lastKnownGood,
     brokenBoundary,
     business,
     cleanup: finalCleanupErrors.length ? 'FAIL' : 'PASS',
     cleanupErrors: finalCleanupErrors,
+    artifactErrors: finalArtifactErrors,
+    remoteBackend: publicRemoteBackend({
+      remote: state.remote,
+      remoteJava: state.remoteJava,
+      remoteRoot: state.remoteRoot,
+      remoteResources: state.remoteResources,
+      remoteHttpPort: state.remoteHttpPort,
+      remoteDiagnostics: state.remoteDiagnostics,
+      remoteLogPath: state.remoteLogPath,
+    }),
     retainedEvidence: {
       playwrightArtifactDirectory: repositoryRelativePath(playwrightArtifactDirectoryForRun(state.runDirectory)),
     },
@@ -5524,6 +6071,7 @@ function completeCleanupEvidence(
     business,
     cleanup: cleanupManifest.cleanup,
     cleanupErrors: finalCleanupErrors,
+    artifactErrors: finalArtifactErrors,
     finishedAt: now(),
   };
   writeRunRuntimeState(finishedState);
@@ -5542,7 +6090,7 @@ function completeCleanupEvidence(
       cleanupErrors: finalCleanupErrors,
     });
   }
-  return {cleanupManifestPath, cleanupErrors: finalCleanupErrors};
+  return {cleanupManifestPath, cleanupErrors: finalCleanupErrors, artifactErrors: finalArtifactErrors};
 }
 
 async function cleanupRuntimeState(
@@ -5554,6 +6102,7 @@ async function cleanupRuntimeState(
     lastKnownGood = 'OWNER_HTTP_FIXTURE_READY',
     brokenBoundary = 'L2_RUNTIME_INTERRUPTED_BEFORE_NORMAL_CLEANUP',
     initialCleanupErrors = [],
+    initialArtifactErrors = [],
   } = {},
 ) {
   const config = suiteConfig(suite);
@@ -5587,7 +6136,9 @@ async function cleanupRuntimeState(
       },
     },
   };
-  const cleanupErrors = [...initialCleanupErrors, ...(await cleanupOwnedL2Resources(state, credentials))];
+  const ownedCleanup = await cleanupOwnedL2Resources(state, credentials);
+  const cleanupErrors = [...initialCleanupErrors, ...ownedCleanup.cleanupErrors];
+  const artifactErrors = [...initialArtifactErrors, ...ownedCleanup.artifactErrors];
   return completeCleanupEvidence(state, credentials, {
     suite,
     reason,
@@ -5595,6 +6146,7 @@ async function cleanupRuntimeState(
     lastKnownGood,
     brokenBoundary,
     cleanupErrors,
+    artifactErrors,
   });
 }
 
@@ -6484,7 +7036,7 @@ async function readiness(suite = 'catalog-inventory') {
       username: credentials.values.CATERING_BUSINESS_DB_USERNAME,
       password: credentials.values.CATERING_BUSINESS_DB_PASSWORD,
     });
-    runtime = await startLocalRuntime({
+    runtime = await startRemoteRuntime({
       identity,
       ports,
       host: trust.host,
@@ -6534,7 +7086,7 @@ async function readiness(suite = 'catalog-inventory') {
       activeCaseIds: [...activeExecutionCaseIds],
     };
     const timingReport = writeTimingReport(runDirectory, activeExecutionCaseIds, suite);
-    const processes = [runtime.tunnel, runtime.spring, runtime.platform, runtime.operations];
+    const processes = [runtime.tunnel, runtime.platform, runtime.operations];
     const manifest = buildReadinessManifest({
       suite,
       identity,
@@ -6543,6 +7095,12 @@ async function readiness(suite = 'catalog-inventory') {
       denominators,
       timingReport,
       remote: {host: trust.host, fingerprint: trust.fingerprint, allowlistVersion: trust.allowlistVersion},
+      remoteJava: runtime.remoteJava,
+      remoteRoot: runtime.remoteRoot,
+      remoteResources: runtime.remoteResources,
+      remoteHttpPort: runtime.remoteHttpPort,
+      remoteDiagnostics: runtime.remoteDiagnostics,
+      remoteLogPath: runtime.remoteLogPath,
       processes,
       diagnostics,
       credentialsPath: created.paths.credentialsPath,
@@ -6576,6 +7134,21 @@ async function readiness(suite = 'catalog-inventory') {
       workspaceKey: bootstrap.workspaceKey,
       ports,
       remote: {host: trust.host, fingerprint: trust.fingerprint, allowlistVersion: trust.allowlistVersion},
+      remoteBackend: publicRemoteBackend({
+        remote: {host: trust.host, fingerprint: trust.fingerprint, allowlistVersion: trust.allowlistVersion},
+        remoteJava: runtime.remoteJava,
+        remoteRoot: runtime.remoteRoot,
+        remoteResources: runtime.remoteResources,
+        remoteHttpPort: runtime.remoteHttpPort,
+        remoteDiagnostics: runtime.remoteDiagnostics,
+        remoteLogPath: runtime.remoteLogPath,
+      }),
+      remoteJava: runtime.remoteJava,
+      remoteRoot: runtime.remoteRoot,
+      remoteResources: runtime.remoteResources,
+      remoteHttpPort: runtime.remoteHttpPort,
+      remoteDiagnostics: runtime.remoteDiagnostics,
+      remoteLogPath: runtime.remoteLogPath,
       frontendMode,
       diagnostics,
       processes,
@@ -6591,8 +7164,9 @@ async function readiness(suite = 'catalog-inventory') {
   } catch (error) {
     firstFailure = errorCode(error);
     const initialCleanupErrors = Array.isArray(error.cleanupErrors) ? [...error.cleanupErrors] : [];
-    const processes = runtime ? [runtime.tunnel, runtime.spring, runtime.platform, runtime.operations] : [];
-    const lastKnownGood = runtime ? 'LOCAL_RUNTIME_STARTED' : 'REMOTE_NAMESPACE_PROVISIONED';
+    const initialArtifactErrors = Array.isArray(error.artifactErrors) ? [...error.artifactErrors] : [];
+    const processes = runtime ? [runtime.tunnel, runtime.platform, runtime.operations] : [];
+    const lastKnownGood = runtime ? 'REMOTE_RUNTIME_STARTED' : 'REMOTE_NAMESPACE_PROVISIONED';
     const failurePath = path.join(runDirectory, 'readiness-manifest.json');
     const provisionalManifest = buildReadinessManifest({
       suite,
@@ -6602,6 +7176,12 @@ async function readiness(suite = 'catalog-inventory') {
       candidate: activationCandidate,
       timingReport: {activeCaseCount: activeExecutionCaseIds.length, fullRunTimeoutMs: 0},
       remote: {host: trust.host, fingerprint: trust.fingerprint, allowlistVersion: trust.allowlistVersion},
+      remoteJava: runtime?.remoteJava ?? null,
+      remoteRoot: runtime?.remoteRoot ?? null,
+      remoteResources: runtime?.remoteResources ?? null,
+      remoteHttpPort: runtime?.remoteHttpPort ?? null,
+      remoteDiagnostics: runtime?.remoteDiagnostics ?? null,
+      remoteLogPath: runtime?.remoteLogPath ?? null,
       processes,
       diagnostics,
       credentialsPath: created.paths.credentialsPath,
@@ -6615,6 +7195,7 @@ async function readiness(suite = 'catalog-inventory') {
       business: 'FAIL',
       setupCleanup: 'FAIL',
       cleanup: 'FAIL',
+      artifactErrors: initialArtifactErrors,
     });
     privateWrite(failurePath, provisionalManifest);
     const recoveryState = buildReadinessFailureCleanupState({
@@ -6632,11 +7213,13 @@ async function readiness(suite = 'catalog-inventory') {
         lastKnownGood,
         brokenBoundary: firstFailure,
         initialCleanupErrors,
+        initialArtifactErrors,
       });
     } catch (cleanupError) {
       cleanupResult = {
         cleanupManifestPath: null,
         cleanupErrors: [`CLEANUP:${errorCode(cleanupError)}`],
+        artifactErrors: initialArtifactErrors,
       };
     }
     const cleanup = cleanupResult.cleanupErrors.length ? 'FAIL' : 'PASS';
@@ -6648,6 +7231,12 @@ async function readiness(suite = 'catalog-inventory') {
       candidate: activationCandidate,
       timingReport: {activeCaseCount: activeExecutionCaseIds.length, fullRunTimeoutMs: 0},
       remote: {host: trust.host, fingerprint: trust.fingerprint, allowlistVersion: trust.allowlistVersion},
+      remoteJava: runtime?.remoteJava ?? null,
+      remoteRoot: runtime?.remoteRoot ?? null,
+      remoteResources: runtime?.remoteResources ?? null,
+      remoteHttpPort: runtime?.remoteHttpPort ?? null,
+      remoteDiagnostics: runtime?.remoteDiagnostics ?? null,
+      remoteLogPath: runtime?.remoteLogPath ?? null,
       processes,
       diagnostics,
       credentialsPath: created.paths.credentialsPath,
@@ -6661,6 +7250,7 @@ async function readiness(suite = 'catalog-inventory') {
       business: 'FAIL',
       setupCleanup: cleanup,
       cleanup,
+      artifactErrors: cleanupResult.artifactErrors,
     });
     privateWrite(failurePath, manifest);
     process.stderr.write(
@@ -6742,6 +7332,7 @@ async function finalizeRepositoryByteBinding(suite = 'catalog-inventory') {
       result = {
         cleanupManifestPath: null,
         cleanupErrors: [`CLEANUP:${errorCode(cleanupError)}`],
+        artifactErrors: [],
       };
     }
     const manifest = buildIncompleteExecutionManifest({
@@ -6754,6 +7345,7 @@ async function finalizeRepositoryByteBinding(suite = 'catalog-inventory') {
       business: 'FAIL',
       cleanup: result.cleanupErrors.length ? 'FAIL' : 'PASS',
       cleanupErrors: result.cleanupErrors,
+      artifactErrors: result.artifactErrors,
       cleanupManifestPath: result.cleanupManifestPath,
     });
     const manifestPath = path.join(state.runDirectory, 'l2-execution-manifest.json');
@@ -6766,6 +7358,7 @@ async function finalizeRepositoryByteBinding(suite = 'catalog-inventory') {
       cleanup: manifest.cleanup,
       cleanupManifestPath: result.cleanupManifestPath,
       cleanupErrors: result.cleanupErrors,
+      artifactErrors: result.artifactErrors,
       finishedAt: manifest.finishedAt,
     });
     process.stderr.write(
@@ -6828,6 +7421,15 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
     focusedCaseId = parseFocusedCaseId(args, active);
     const executedCaseIds = focusedCaseId ? [focusedCaseId] : [...active];
     preflightLastKnownGood = focusedCaseId ? 'FOCUSED_CASE_VALIDATED' : preflightLastKnownGood;
+    if (!state.remoteJava || !state.remoteRoot || !state.remoteResources || !state.remoteDiagnostics) {
+      fail('L2_REMOTE_BACKEND_STATE_REQUIRED');
+    }
+    validateRemoteJavaControl(state.remoteJava);
+    const remoteReadiness = remoteJavaReadiness(state.remote.host, state.remoteJava);
+    if (!remoteIdentityMatches(state.remoteJava, remoteReadiness) || remoteReadiness.readyMarkerSeen !== true) {
+      fail('L2_REMOTE_BACKEND_READINESS_INVALID');
+    }
+    preflightLastKnownGood = 'REMOTE_BACKEND_IDENTITY_AND_READINESS_VALIDATED';
     for (const process of state.processes) assertOwned(process);
     preflightLastKnownGood = 'OWNED_PROCESS_IDENTITIES_VALIDATED';
     preflightComplete = true;
@@ -6880,12 +7482,19 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
     }
     const resultRows = terminalResults.rows;
     const firstCaseFailure = deriveL2CaseFailure({joinEvents, resultRows});
+    let remoteArtifactFailure = null;
+    try {
+      collectRemoteRuntimeArtifacts(state, state.diagnostics);
+    } catch (error) {
+      remoteArtifactFailure = errorCode(error);
+    }
     let firstFailure = selectL2FirstFailure({
       watchdogFailure: child.watchdogFailure,
       caseFailure: firstCaseFailure,
       sourceByteBindingAfterRunFailure,
       accountingFailure,
     });
+    firstFailure ??= remoteArtifactFailure;
     firstFailure ??= child.code === 0 ? null : `PLAYWRIGHT_EXIT_${child.code ?? child.signal ?? 'UNKNOWN'}`;
     const progressEvents = readJsonLines(child.progressPath);
     const httpEvents = readJsonLines(state.diagnostics.events);
@@ -6991,16 +7600,22 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
           ? `L2_CASES_${passedCount}_PASS`
           : 'OWNER_FIXTURE_READY'
         : `L2_${active.length}_CASES_PASS`;
-    const cleanupErrorsBeforePrivateCleanup = await cleanupOwnedL2Resources(state, credentials);
+    const ownedCleanup = await cleanupOwnedL2Resources(state, credentials);
+    const artifactErrorsBeforePrivateCleanup = [
+      ...(remoteArtifactFailure ? [`REMOTE_ARTIFACTS:${remoteArtifactFailure}`] : []),
+      ...ownedCleanup.artifactErrors,
+    ];
     const cleanupResult = completeCleanupEvidence(state, credentials, {
       suite,
       reason: firstFailure,
       business,
       lastKnownGood,
       brokenBoundary: firstFailure,
-      cleanupErrors: cleanupErrorsBeforePrivateCleanup,
+      cleanupErrors: ownedCleanup.cleanupErrors,
+      artifactErrors: artifactErrorsBeforePrivateCleanup,
     });
     const cleanupErrors = cleanupResult.cleanupErrors;
+    const artifactErrors = cleanupResult.artifactErrors;
     const cleanup = cleanupErrors.length ? 'FAIL' : 'PASS';
     const manifest = {
       schemaVersion: 1,
@@ -7009,7 +7624,7 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
       phase: 'BROWSER_L2_EXECUTION',
       status: focusedDiagnostic ? diagnosticStatus : business,
       startedAt: child.startedAt,
-      topology: 'LOCAL_SPRING_LOCAL_VITE_LOCAL_PLAYWRIGHT_REMOTE_DB_ASSET_TUNNEL',
+      topology: L2_RUNTIME_TOPOLOGY,
       discovered,
       selected,
       results,
@@ -7052,7 +7667,17 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
       diagnosticEventsPath: repositoryRelativePath(state.diagnostics.events),
       databaseOperationsPath: repositoryRelativePath(state.diagnostics.dbEvents),
       debugEventsPath: state.diagnostics?.debugEvents ? repositoryRelativePath(state.diagnostics.debugEvents) : null,
+      remoteBackend: publicRemoteBackend({
+        remote: state.remote,
+        remoteJava: state.remoteJava,
+        remoteRoot: state.remoteRoot,
+        remoteResources: state.remoteResources,
+        remoteHttpPort: state.remoteHttpPort,
+        remoteDiagnostics: state.remoteDiagnostics,
+        remoteLogPath: state.remoteLogPath,
+      }),
       firstFailure,
+      remoteArtifactFailure,
       sourceByteBindingAfterRunFailure,
       firstFailedCaseId: firstCaseFailure?.caseId ?? null,
       failureCategory: firstCaseFailure?.failureCategory ?? (child.watchdogFailure ? 'L2_CASE_WATCHDOG' : null),
@@ -7064,6 +7689,7 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
       business,
       cleanup,
       cleanupErrors,
+      artifactErrors,
       cleanupManifestPath: repositoryRelativePath(cleanupResult.cleanupManifestPath),
       retainedEvidence: {
         playwrightArtifactDirectory: repositoryRelativePath(playwrightArtifactDirectoryForRun(state.runDirectory)),
@@ -7083,6 +7709,7 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
       cleanup,
       cleanupManifestPath: cleanupResult.cleanupManifestPath,
       cleanupErrors,
+      artifactErrors,
       finishedAt: now(),
     });
     if (focusedDiagnostic) {
@@ -7128,6 +7755,7 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
       result = {
         cleanupManifestPath: null,
         cleanupErrors: [`CLEANUP:${errorCode(cleanupError)}`],
+        artifactErrors: [],
       };
     }
     const manifest = buildIncompleteExecutionManifest({
@@ -7141,6 +7769,7 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
       business: 'FAIL',
       cleanup: result.cleanupErrors.length ? 'FAIL' : 'PASS',
       cleanupErrors: result.cleanupErrors,
+      artifactErrors: result.artifactErrors,
       cleanupManifestPath: result.cleanupManifestPath,
     });
     const manifestPath = path.join(state.runDirectory, 'l2-execution-manifest.json');
@@ -7153,6 +7782,7 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
       cleanup: manifest.cleanup,
       cleanupManifestPath: result.cleanupManifestPath,
       cleanupErrors: result.cleanupErrors,
+      artifactErrors: result.artifactErrors,
       finishedAt: manifest.finishedAt,
     });
     process.stderr.write(
@@ -7240,10 +7870,14 @@ function salesMenuSelfTest() {
   if (
     execution.kind !== 'sales-menu-l2-execution-profile' ||
     execution.noSeedRuntimeInput !== true ||
-    execution.mode !== 'FRAMEWORK_ONLY' ||
-    execution.enabledCaseIds?.length !== 0
+    !['FRAMEWORK_ONLY', 'INCREMENTAL'].includes(execution.mode) ||
+    (execution.mode === 'FRAMEWORK_ONLY' && execution.enabledCaseIds?.length !== 0) ||
+    (execution.mode === 'INCREMENTAL' && execution.enabledCaseIds?.length !== salesMenuCaseCount)
   ) {
     fail('SALES_MENU_L2_EXECUTION_FRAMEWORK_INVALID');
+  }
+  if (execution.mode === 'INCREMENTAL') {
+    requireActivatedSuiteExecution(execution, candidate, 'sales-menu');
   }
   if (
     timing.kind !== 'sales-menu-l2-timing-budget' ||

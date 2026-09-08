@@ -23,13 +23,19 @@ import {
 import {createSampleAssembly, createSurfaceForDisplayIndex} from '../src'
 import {createTestPlatformPorts} from './support'
 
-const mount = (element: Parameters<typeof create>[0]): ReactTestRenderer => {
+const LANDSCAPE_PRIMARY_FRAME = {width: 1280, height: 800} as const
+const LANDSCAPE_SECONDARY_FRAME = {width: 960, height: 540} as const
+
+const mount = (
+  element: Parameters<typeof create>[0],
+  frameLayout: Readonly<{readonly width: number; readonly height: number}> = LANDSCAPE_SECONDARY_FRAME,
+): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined
   act(() => { renderer = create(element) })
   const frames = renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'})
   act(() => {
     for (const frame of frames) {
-      ;(frame.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: {width: 962, height: 541}}})
+      ;(frame.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: frameLayout}})
     }
   })
   return renderer!
@@ -91,7 +97,7 @@ describe('sample-console real assembly', () => {
     })
     let renderer: ReactTestRenderer | undefined
     try {
-      renderer = mount(createSurfaceForDisplayIndex(assembly, 0))
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME)
       expect(renderer.root.findByProps({testID: 'sample.auth.login'})).toBeDefined()
       expect(renderer.root.findByProps({testID: 'sample.auth.login:submit'})).toBeDefined()
     } finally {
@@ -116,7 +122,7 @@ describe('sample-console real assembly', () => {
         routeContext: {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'},
       })
       expect(result.status).toBe('completed')
-      renderer = mount(createSurfaceForDisplayIndex(assembly, 1))
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 1), LANDSCAPE_SECONDARY_FRAME)
       expect(renderer.root.findByProps({testID: 'sample.desk.customer-welcome'})).toBeDefined()
     } finally {
       if (renderer !== undefined) act(() => { renderer!.unmount() })
@@ -138,8 +144,8 @@ describe('sample-console real assembly', () => {
           phone: '010-1234-5678',
         }, {requestId: createRequestId()})
       })
-      primaryRenderer = mount(createSurfaceForDisplayIndex(assembly, 0))
-      secondaryRenderer = mount(createSurfaceForDisplayIndex(assembly, 1))
+      primaryRenderer = mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME)
+      secondaryRenderer = mount(createSurfaceForDisplayIndex(assembly, 1), LANDSCAPE_SECONDARY_FRAME)
 
       const ageInput = findTextInput(secondaryRenderer, 'sample.desk.customer-member:age')
       act(() => { ageInput.props.onFocus({nativeEvent: {}}) })

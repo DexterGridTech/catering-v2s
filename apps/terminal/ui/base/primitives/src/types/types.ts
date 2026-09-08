@@ -1,4 +1,5 @@
 import type {ReactNode, Ref} from 'react';
+import type {HostInstance, LayoutChangeEvent, TextLayoutEvent} from 'react-native';
 
 export type PrimitiveAddressableProps = Readonly<{
   readonly testID: string;
@@ -14,6 +15,7 @@ export type PrimitiveContainerProps = PrimitiveAddressableProps &
 export type PrimitiveScrollViewProps = PrimitiveAddressableProps &
   Readonly<{
     readonly children?: ReactNode;
+    readonly onLayout?: (event: LayoutChangeEvent) => void;
     readonly onScrollOffsetChange?: (offsetY: number) => void;
   }>;
 
@@ -63,13 +65,24 @@ type PrimitiveInputPressEvent = Readonly<{
 export type PrimitiveInputHandle = Readonly<{
   readonly focus: () => void;
   readonly blur: () => void;
+  readonly measureLayout: (
+    relativeToNativeNode: PrimitiveNativeNode,
+    callback: PrimitiveMeasureLayoutCallback,
+    onFail?: () => void,
+  ) => void;
   readonly measureInWindow: (callback: PrimitiveMeasureInWindowCallback) => void;
 }>;
 
 export type PrimitiveScrollViewHandle = Readonly<{
+  /** The native content node is the coordinate-system anchor for scroll measurements. */
+  readonly getContentNativeNode: () => PrimitiveNativeNode | null;
   readonly measureInWindow: (callback: PrimitiveMeasureInWindowCallback) => void;
   readonly scrollTo: (options: Readonly<{readonly y: number; readonly animated?: boolean}>) => void;
 }>;
+
+export type PrimitiveNativeNode = number | HostInstance;
+
+export type PrimitiveMeasureLayoutCallback = (left: number, top: number, width: number, height: number) => void;
 
 export type PrimitiveMeasureInWindowCallback = (x: number, y: number, width: number, height: number) => void;
 
@@ -93,6 +106,7 @@ export type PrimitiveButtonProps = PrimitiveAddressableProps &
     readonly children?: ReactNode;
     readonly disabled?: boolean;
     readonly onPress?: () => void;
+    readonly onLayout?: (event: LayoutChangeEvent) => void;
     /** Presentation-only cell sizing for composite controls such as a keyboard. */
     readonly variant?: 'default' | 'key' | 'key-action';
   }>;
@@ -100,6 +114,8 @@ export type PrimitiveButtonProps = PrimitiveAddressableProps &
 export type PrimitiveStatusProps = PrimitiveAddressableProps &
   Readonly<{
     readonly children?: ReactNode;
+    readonly onLayout?: (event: LayoutChangeEvent) => void;
+    readonly onTextLayout?: (event: TextLayoutEvent) => void;
   }>;
 
 export type PrimitiveActionsProps = PrimitiveAddressableProps &

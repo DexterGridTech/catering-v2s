@@ -68,7 +68,7 @@ const createStateSource = (root: RuntimeStateRoot) => ({
 
 const mount = (
   element: ReturnType<typeof createElement>,
-  frameLayout: FrameLayout = {width: 1157, height: 723},
+  frameLayout: FrameLayout = {width: 1280, height: 800},
 ): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined
   act(() => { renderer = create(element) })
@@ -230,7 +230,7 @@ describe('sample staff auth UI feature', () => {
   })
 
   it.each([
-    ['landscape PRIMARY', {width: 1157, height: 723}],
+    ['landscape PRIMARY', {width: 1280, height: 800}],
     ['portrait PRIMARY', {width: 360, height: 720}],
   ] as const)('keeps the full credential keyboard available in the %s frame', (_label, frameLayout) => {
     const renderer = mount(createElement(

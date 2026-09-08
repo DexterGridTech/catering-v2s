@@ -22,6 +22,7 @@ export const PrimitiveButton = ({
   accessibilityLabel,
   children,
   disabled,
+  onLayout,
   onPress,
   variant = 'default',
 }: PrimitiveButtonProps) => {
@@ -41,6 +42,7 @@ export const PrimitiveButton = ({
         disabled && 'opacity-50',
       )}
       disabled={disabled}
+      onLayout={onLayout}
       onPress={onPress}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}

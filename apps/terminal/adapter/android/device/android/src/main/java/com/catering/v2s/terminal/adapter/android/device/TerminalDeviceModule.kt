@@ -2,6 +2,9 @@ package com.catering.v2s.terminal.adapter.android.device
 
 import android.content.Context
 import android.hardware.display.DisplayManager
+import android.os.Build
+import android.view.Display
+import android.util.DisplayMetrics
 import android.util.Log
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -17,7 +20,9 @@ class TerminalDeviceModule : Module() {
         ?: return@AsyncFunction unavailableResult("PLATFORM_UNSUPPORTED", "DisplayManager is unavailable")
 
       try {
-        val displayCount = displayManager.displays.size
+        val displays = displayManager.displays.toList()
+        val displayCount = displays.size
+        displays.forEachIndexed { index, display -> logDisplay(index, display) }
         Log.i(LOG_TAG, "event=display-info-read status=succeeded displayCount=$displayCount")
         mapOf(
           "status" to "succeeded",
@@ -52,6 +57,24 @@ class TerminalDeviceModule : Module() {
       "retryable" to true,
     ),
   )
+
+  private fun logDisplay(index: Int, display: Display) {
+    val metrics = DisplayMetrics()
+    val realMetrics = DisplayMetrics()
+    display.getMetrics(metrics)
+    display.getRealMetrics(realMetrics)
+    val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) display.mode else null
+    val safeName = display.name.replace(Regex("[^A-Za-z0-9_.-]+"), "_")
+    Log.i(
+      LOG_TAG,
+      "event=display-info-entry displayIndex=$index displayId=${display.displayId} name=$safeName " +
+        "state=${display.state} flags=${display.flags} rotation=${display.rotation} " +
+        "appWidthPx=${metrics.widthPixels} appHeightPx=${metrics.heightPixels} " +
+        "densityDpi=${metrics.densityDpi} density=${metrics.density} scaledDensity=${metrics.scaledDensity} " +
+        "realWidthPx=${realMetrics.widthPixels} realHeightPx=${realMetrics.heightPixels} " +
+        "modeWidthPx=${mode?.physicalWidth ?: -1} modeHeightPx=${mode?.physicalHeight ?: -1}",
+    )
+  }
 
   private companion object {
     const val LOG_TAG = "TerminalDevice"

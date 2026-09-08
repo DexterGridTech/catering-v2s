@@ -34,7 +34,7 @@ const requiredOperationIds = Object.freeze([
   'getOperationsSalesMenuPublishedSections', 'getOperationsSalesMenuPublishedItems', 'getOperationsSalesMenuPublishedItem',
   'setOperationsSalesMenuItemSoldOut', 'restoreOperationsSalesMenuItemSale', 'archiveOperationsSalesMenu',
   'copyOperationsSalesMenu', 'getOperationsSalesMenuOperationRecords', 'stageOperationsSalesMenuAsset',
-  'getOperationsCatalogItem', 'getOperationsCatalogItemSkus',
+  'getOperationsCatalogItem', 'getOperationsCatalogItemSkus', 'listOperationsCatalogOrderOptionDefinitions',
 ]);
 
 export class SalesMenuSeedFailure extends Error {
@@ -81,6 +81,22 @@ const arrayOf = value => Array.isArray(value) ? value : [];
 const pageOf = json => dataOf(json) ?? {};
 const problemCodeOf = json => json?.errorCode ?? json?.code ?? json?.error?.code ?? null;
 
+// Keep publication subset failures actionable without persisting or printing a
+// raw HTTP payload. SKU codes and prices are the business facts needed to
+// distinguish a seed assertion drift from an owner publication defect; refs,
+// cookies and diagnostic credentials must never enter this failure string.
+export function publishedSkuSubsetMismatch({item, subset}) {
+  const prices = arrayOf(item?.saleContent?.skuPrices);
+  return compact(JSON.stringify({
+    actualProductShape: item?.productShape ?? null,
+    expectedProductShape: 'SKU',
+    actualSkuCodes: prices.map(price => price?.skuCode ?? null),
+    expectedSkuCodes: arrayOf(subset?.skuCodes),
+    actualListedPriceCentsBySkuCode: Object.fromEntries(prices.map(price => [price?.skuCode ?? 'UNKNOWN', price?.listedPriceCents ?? null])),
+    expectedListedPriceCentsBySkuCode: subset?.listedPriceCentsBySkuCode ?? null,
+  }));
+}
+
 // Command readbacks identify the mutated collection through targetRef. A
 // section identity is a read-model fact, so resolve it only from the draft
 // section projection, matching the backend acceptance helper.
@@ -90,6 +106,29 @@ export function sectionRefFromDraftRows(rows, name, code) {
   const sectionRef = matches[0]?.salesSectionRef;
   if (typeof sectionRef !== 'string' || !sectionRef) fail(code);
   return sectionRef;
+}
+
+// The declarative plan names each SalesItem, while the owner read model's
+// itemCode is the Catalog product code. A Catalog product can intentionally
+// back multiple SalesItems, so map the published rows by the stable
+// SalesItem identity already obtained from the draft readback.
+export function publishedRowsBySeedItemCode({primaryItems, draftRows, publishedRows}) {
+  if (!Array.isArray(primaryItems) || !Array.isArray(draftRows) || !Array.isArray(publishedRows)
+    || primaryItems.length !== draftRows.length || new Set(primaryItems.map(item => item?.code)).size !== primaryItems.length) {
+    fail('SALES_MENU_SEED_PUBLISHED_ITEM_MAPPING_INVALID');
+  }
+  const publishedBySalesItemRef = new Map(publishedRows.map(row => [row?.salesItemRef, row]));
+  const result = new Map();
+  for (let index = 0; index < primaryItems.length; index += 1) {
+    const seedItemCode = primaryItems[index]?.code;
+    const salesItemRef = draftRows[index]?.salesItemRef;
+    const row = publishedBySalesItemRef.get(salesItemRef);
+    if (typeof seedItemCode !== 'string' || !salesItemRef || !row || result.has(seedItemCode)) {
+      fail(`SALES_MENU_SEED_PUBLISHED_ITEM_MAPPING_INVALID:${seedItemCode ?? 'UNKNOWN'}`);
+    }
+    result.set(seedItemCode, row);
+  }
+  return result;
 }
 
 function mergeGeneratedRegistry(generalRegistry, catalogRegistry) {
@@ -387,6 +426,13 @@ async function executeManagedSeed() {
       return value;
     };
     const primary = await createMenu(inputs.staticPlan.menuDefinitions[0]);
+    const optionDefinitionPage = pageOf((await request('catalog-order-option-definitions', 'listOperationsCatalogOrderOptionDefinitions', {}, {cookie, queryParameters: {dataNodeRef: storeRef}})).json);
+    const optionDefinitions = new Map();
+    for (const definition of arrayOf(optionDefinitionPage.definitions)) {
+      if (typeof definition?.definitionRef !== 'string' || typeof definition?.code !== 'string' || optionDefinitions.has(definition.code))
+        fail('SALES_MENU_SEED_CATALOG_OPTION_DEFINITION_READBACK_INVALID');
+      optionDefinitions.set(definition.code, definition);
+    }
     const candidates = new Map();
     let cursor = null; let candidatePage = 0;
     do {
@@ -446,21 +492,114 @@ async function executeManagedSeed() {
       customAssets.push({assetRef: required(value.assetRef, `SALES_MENU_SEED_ASSET_REF_MISSING:${index + 1}`), bindGrant: required(value.bindGrant, `SALES_MENU_SEED_ASSET_GRANT_MISSING:${index + 1}`), version: Number(value.version)});
     }
     const currentDraft = async (menu, row) => pageOf((await request(`item-read-${menu.definition.code}-${row.salesItemRef}`, 'getOperationsSalesMenuDraftItem', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: menu.ref, salesItemRef: row.salesItemRef}, {cookie})).json);
+    const catalogSkuPages = new Map();
+    const catalogSkuRowsFor = async itemCode => {
+      if (catalogSkuPages.has(itemCode)) return catalogSkuPages.get(itemCode);
+      const rows = [];
+      let skuCursor = null;
+      let skuPage = 0;
+      do {
+        const response = await request(`catalog-skus-${itemCode}-${skuPage + 1}`, 'getOperationsCatalogItemSkus', {itemCode}, {cookie, queryParameters: {dataNodeRef: storeRef, pageSize: 20, ...(skuCursor ? {cursor: skuCursor} : {})}});
+        const page = pageOf(response.json);
+        rows.push(...arrayOf(page.items));
+        skuCursor = page.nextCursor ?? null;
+        skuPage += 1;
+        if (skuPage > 32) fail(`SALES_MENU_SEED_CATALOG_SKU_CURSOR_UNBOUNDED:${itemCode}`);
+      } while (skuCursor);
+      if (new Set(rows.map(sku => sku?.skuCode)).size !== rows.length) fail(`SALES_MENU_SEED_CATALOG_SKU_READBACK_DUPLICATE:${itemCode}`);
+      catalogSkuPages.set(itemCode, rows);
+      return rows;
+    };
+    const skuPricesFor = async (itemCode, itemCodeDeclaration, draft) => {
+      const catalogSkus = await catalogSkuRowsFor(itemCode);
+      const byCode = new Map(catalogSkus.map(sku => [sku.skuCode, sku]));
+      const candidateByCode = new Map(arrayOf(draft.skuCandidates).map(sku => [sku.skuCode, sku]));
+      const skuCodes = arrayOf(itemCodeDeclaration?.skuCodes);
+      const listedByCode = itemCodeDeclaration?.listedPriceCentsBySkuCode;
+      if (skuCodes.length === 0 || new Set(skuCodes).size !== skuCodes.length
+        || !listedByCode || typeof listedByCode !== 'object'
+        || JSON.stringify(Object.keys(listedByCode).sort()) !== JSON.stringify([...skuCodes].sort()))
+        fail(`SALES_MENU_SEED_SKU_SUBSET_DECLARATION_INVALID:${itemCode}`);
+      const prices = skuCodes.map(skuCode => {
+        const catalogSku = byCode.get(skuCode);
+        const candidate = candidateByCode.get(skuCode);
+        if (!catalogSku || catalogSku.status !== 'ENABLED' || !candidate
+          || candidate.skuRef !== catalogSku.productSkuRef
+          || !Number.isInteger(catalogSku.standardSalePrice)
+          || !Number.isInteger(candidate.standardPriceCents)
+          || candidate.standardPriceCents !== catalogSku.standardSalePrice
+          || !Number.isInteger(listedByCode[skuCode]) || listedByCode[skuCode] < 0)
+          fail(`SALES_MENU_SEED_SKU_SUBSET_READBACK_INVALID:${itemCode}:${skuCode}`);
+        return {
+          skuRef: catalogSku.productSkuRef,
+          skuName: catalogSku.skuName,
+          skuCode: catalogSku.skuCode,
+          standardPriceCents: catalogSku.standardSalePrice,
+          listedPriceCents: listedByCode[skuCode],
+        };
+      });
+      if (new Set(prices.map(price => price.skuRef)).size !== prices.length) fail(`SALES_MENU_SEED_SKU_SUBSET_READBACK_DUPLICATE:${itemCode}`);
+      return prices;
+    };
+    const optionSelectionsFor = (itemCode, declaration, draft) => {
+      const declarations = arrayOf(declaration?.definitions);
+      const catalogOptions = arrayOf(draft.catalogOrderOptions);
+      const declarationByCode = new Map(declarations.map(entry => [entry.definitionCode, entry]));
+      const optionByRef = new Map();
+      for (const definition of optionDefinitions.values()) optionByRef.set(definition.definitionRef, definition);
+      if (declarations.length === 0 || catalogOptions.length !== declarations.length || new Set(declarations.map(entry => entry.definitionCode)).size !== declarations.length)
+        fail(`SALES_MENU_SEED_OPTION_SUBSET_DECLARATION_INVALID:${itemCode}`);
+      const resolved = catalogOptions.map(option => {
+        const definition = optionByRef.get(option.definitionRef);
+        const selected = definition ? declarationByCode.get(definition.code) : null;
+        if (!definition || definition.status !== 'ENABLED' || !selected) fail(`SALES_MENU_SEED_OPTION_SUBSET_DEFINITION_READBACK_INVALID:${itemCode}`);
+        const valueByCode = new Map(arrayOf(definition.values).map(value => [value.code, value]));
+        const selectedCodes = arrayOf(selected.selectedValueCodes);
+        if (new Set(selectedCodes).size !== selectedCodes.length) fail(`SALES_MENU_SEED_OPTION_SUBSET_VALUE_DUPLICATE:${itemCode}:${definition.code}`);
+        const selectedValueRefs = selectedCodes.map(valueCode => {
+          const definitionValue = valueByCode.get(valueCode);
+          const currentValue = arrayOf(option.values).find(value => value.definitionValueRef === definitionValue?.valueRef);
+          if (!definitionValue || !currentValue) fail(`SALES_MENU_SEED_OPTION_SUBSET_VALUE_READBACK_INVALID:${itemCode}:${definition.code}:${valueCode}`);
+          return currentValue.definitionValueRef;
+        });
+        const minimum = option.minSelectionCount ?? (option.required ? 1 : 0);
+        if (selectedValueRefs.length < minimum) fail(`SALES_MENU_SEED_OPTION_SUBSET_REQUIRED_EMPTY:${itemCode}:${definition.code}`);
+        return {definitionRef: option.definitionRef, selectedValueRefs};
+      });
+      if (new Set(resolved.map(selection => selection.definitionRef)).size !== resolved.length
+        || new Set(resolved.map(selection => optionByRef.get(selection.definitionRef)?.code)).size !== declarations.length)
+        fail(`SALES_MENU_SEED_OPTION_SUBSET_READBACK_INVALID:${itemCode}`);
+      return resolved;
+    };
+    const saleContentInputFromReadback = content => ({
+      kind: content.kind,
+      listedPriceCents: content.listedPriceCents,
+      skuPrices: arrayOf(content.skuPrices),
+      orderOptionSelections: arrayOf(content.selectedOrderOptions).map(option => ({
+        definitionRef: option.definitionRef,
+        selectedValueRefs: arrayOf(option.values).map(value => value.definitionValueRef),
+      })),
+    });
+    const targetSelection = inputs.staticPlan.targetSelection;
+    const skuSubsetByItemCode = new Map(targetSelection.skuSubsets.map(entry => [entry.itemCode, entry]));
+    const optionSubsetByItemCode = new Map(targetSelection.optionSubsets.map(entry => [entry.itemCode, entry]));
     for (let index = 0; index < draftRows.length; index += 1) {
       const row = await currentDraft(primary, draftRows[index]); const selector = inputs.itemSelectors[primaryItems[index].catalogSelectorIndex];
-      let skuPrices = [];
-      if (selector.shape === 'SKU') {
-        const skus = pageOf((await request(`catalog-skus-${selector.itemCode}`, 'getOperationsCatalogItemSkus', {itemCode: selector.itemCode}, {cookie, queryParameters: {dataNodeRef: storeRef, pageSize: 20}})).json).items;
-        skuPrices = arrayOf(skus).filter(sku => sku.status === 'ENABLED').slice(0, 2).map(sku => ({skuRef: sku.productSkuRef, skuName: sku.skuName, skuCode: sku.skuCode, standardPriceCents: sku.standardSalePrice, listedPriceCents: sku.standardSalePrice}));
-        if (skuPrices.length !== 2 || skuPrices.some(sku => !Number.isInteger(sku.standardPriceCents))) fail(`SALES_MENU_SEED_SKU_READBACK_INVALID:${selector.itemCode}`);
-      }
+      const skuPrices = selector.shape === 'SKU'
+        ? await skuPricesFor(selector.itemCode, skuSubsetByItemCode.get(primaryItems[index].code), row)
+        : [];
+      const orderOptionSelections = selector.shape === 'DIRECT'
+        ? (optionSubsetByItemCode.has(primaryItems[index].code)
+          ? optionSelectionsFor(selector.itemCode, optionSubsetByItemCode.get(primaryItems[index].code), row)
+          : [])
+        : [];
       const custom = index === customItemIndex;
       const listedPriceCents = selector.shape === 'SKU'
         ? null
         : primaryItems[index].listedPriceCents ?? row.defaultPriceCents;
       if (selector.shape !== 'SKU' && !Number.isInteger(listedPriceCents))
         fail(`SALES_MENU_SEED_LISTED_PRICE_MISSING:${primaryItems[index].code}`);
-      const saleContent = {kind: saleKindFor(selector.shape), listedPriceCents, skuPrices};
+      const saleContent = {kind: saleKindFor(selector.shape), listedPriceCents, skuPrices, orderOptionSelections};
       const orderingConstraints = selector.shape === 'WEIGHTED' ? {minItemQuantity: null, quantityStep: null} : index % 2 === 0 ? {minItemQuantity: 1, quantityStep: 1} : {minItemQuantity: 2, quantityStep: 2};
       const displayMedia = custom ? {mode: 'CUSTOM', assetRefs: customAssets.map(asset => asset.assetRef), primaryAssetRef: customAssets[0].assetRef} : {mode: 'INHERIT_CATALOG', assetRefs: [], primaryAssetRef: null};
       await request(`item-update-${primaryItems[index].code}`, 'updateOperationsSalesMenuItem', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primary.ref, salesItemRef: row.salesItemRef}, {cookie, headers: custom ? {'X-Sales-Menu-Asset-Bind-Grants': JSON.stringify(Object.fromEntries(customAssets.map(asset => [asset.assetRef, asset.bindGrant])))} : {}, body: {displayNameOverride: null, saleContent, orderingConstraints, displayMedia, expectedVersion: menuExpectedVersion(await menuDetail(primary), `SALES_MENU_SEED_ITEM_UPDATE_VERSION_INVALID:${primaryItems[index].code}`)}});
@@ -480,14 +619,73 @@ async function executeManagedSeed() {
     const draftItemRefs = new Set(draftRows.map(row => row.salesItemRef));
     if (new Set(publishedRows.map(row => row.salesItemRef)).size !== 21 || publishedRows.some(row => !draftItemRefs.has(row.salesItemRef)))
       fail('SALES_MENU_SEED_PUBLICATION_READBACK_INVALID');
-    const manualItem = publishedRows[0];
-    await request('manual-sold-out-recorded-rejection', 'setOperationsSalesMenuItemSoldOut', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primary.ref, salesItemRef: manualItem.salesItemRef, channelRef: primary.channelRef}, {cookie, expected: [422], expectedProblemCode: 'SALES_MENU_MANUAL_REASON_REQUIRED', body: {reason: '', expectedVersion: menuExpectedVersion(await menuDetail(primary), 'SALES_MENU_SEED_MANUAL_REJECTION_VERSION_INVALID')}});
-    await request('manual-sold-out', 'setOperationsSalesMenuItemSoldOut', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primary.ref, salesItemRef: manualItem.salesItemRef, channelRef: primary.channelRef}, {cookie, body: {reason: '销售菜单 seed 人工沽清验证', expectedVersion: menuExpectedVersion(await menuDetail(primary), 'SALES_MENU_SEED_MANUAL_SOLD_OUT_VERSION_INVALID')}});
-    const manualRead = pageOf((await request('manual-readback', 'getOperationsSalesMenuPublishedItem', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primary.ref, salesItemRef: manualItem.salesItemRef}, {cookie, queryParameters: {channelRef: primary.channelRef}})).json);
+    const publishedBySeedItemCode = publishedRowsBySeedItemCode({primaryItems, draftRows, publishedRows});
+    for (const subset of inputs.staticPlan.targetSelection.skuSubsets) {
+      const item = publishedBySeedItemCode.get(subset.itemCode);
+      const prices = arrayOf(item?.saleContent?.skuPrices);
+      if (!item || item.productShape !== 'SKU' || prices.length !== subset.skuCodes.length
+        || new Set(prices.map(price => price.skuCode)).size !== prices.length
+        || JSON.stringify(prices.map(price => price.skuCode).sort()) !== JSON.stringify([...subset.skuCodes].sort())
+        || prices.some(price => price.listedPriceCents !== subset.listedPriceCentsBySkuCode[price.skuCode]))
+        fail(`SALES_MENU_SEED_PUBLISHED_SKU_SUBSET_INVALID:${subset.itemCode}:${publishedSkuSubsetMismatch({item, subset})}`);
+    }
+    const optionSubsetReadback = inputs.staticPlan.targetSelection.optionSubsets[0];
+    const optionItemReadback = publishedBySeedItemCode.get(optionSubsetReadback.itemCode);
+    const publishedOptionsByCode = new Map(arrayOf(optionItemReadback?.saleContent?.selectedOrderOptions).map(option => {
+      const definition = [...optionDefinitions.values()].find(entry => entry.definitionRef === option.definitionRef);
+      return [definition?.code, option];
+    }));
+    if (!optionItemReadback || optionItemReadback.productShape !== 'ORDINARY' || publishedOptionsByCode.size !== optionSubsetReadback.definitions.length)
+      fail('SALES_MENU_SEED_PUBLISHED_OPTION_SUBSET_INVALID');
+    for (const declaration of optionSubsetReadback.definitions) {
+      const option = publishedOptionsByCode.get(declaration.definitionCode);
+      const definition = optionDefinitions.get(declaration.definitionCode);
+      const selectedCodes = arrayOf(option?.values).map(value => arrayOf(definition?.values).find(entry => entry.valueRef === value.definitionValueRef)?.code);
+      if (!option || JSON.stringify(selectedCodes) !== JSON.stringify(declaration.selectedValueCodes))
+        fail(`SALES_MENU_SEED_PUBLISHED_OPTION_SUBSET_INVALID:${declaration.definitionCode}`);
+    }
+    const targetRefFor = target => {
+      const item = publishedBySeedItemCode.get(target.itemCode);
+      if (!item) fail(`SALES_MENU_SEED_MANUAL_TARGET_ITEM_MISSING:${target.itemCode}`);
+      if (target.targetKind === 'ITEM') return item.salesItemRef;
+      if (target.targetKind === 'SKU') {
+        const price = arrayOf(item.saleContent?.skuPrices).find(entry => entry.skuCode === target.skuCode);
+        if (!price?.skuRef) fail(`SALES_MENU_SEED_MANUAL_SKU_TARGET_MISSING:${target.itemCode}:${target.skuCode}`);
+        return price.skuRef;
+      }
+      const definition = optionDefinitions.get(target.definitionCode);
+      const value = arrayOf(definition?.values).find(entry => entry.code === target.valueCode);
+      const option = arrayOf(item.saleContent?.selectedOrderOptions).find(entry => entry.definitionRef === definition?.definitionRef);
+      const selectedValue = arrayOf(option?.values).find(entry => entry.definitionValueRef === value?.valueRef);
+      if (!definition || !value || !selectedValue) fail(`SALES_MENU_SEED_MANUAL_OPTION_TARGET_MISSING:${target.itemCode}:${target.definitionCode}:${target.valueCode}`);
+      return selectedValue.definitionValueRef;
+    };
+    const publishedItemReadback = async (name, item) => pageOf((await request(name, 'getOperationsSalesMenuPublishedItem', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primary.ref, salesItemRef: item.salesItemRef}, {cookie, queryParameters: {channelRef: primary.channelRef}})).json);
+    const manualTarget = inputs.staticPlan.targetSelection.manualTargets[0];
+    const manualItem = publishedBySeedItemCode.get(manualTarget.itemCode);
+    const manualTargetRef = targetRefFor(manualTarget);
+    const manualTargetBody = {target: {targetKind: manualTarget.targetKind, targetRef: manualTargetRef}};
+    await request('manual-sold-out-recorded-rejection', 'setOperationsSalesMenuItemSoldOut', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primary.ref, salesItemRef: manualItem.salesItemRef, channelRef: primary.channelRef}, {cookie, expected: [422], expectedProblemCode: 'SALES_MENU_MANUAL_REASON_REQUIRED', body: {...manualTargetBody, reason: '', expectedVersion: menuExpectedVersion(await menuDetail(primary), 'SALES_MENU_SEED_MANUAL_REJECTION_VERSION_INVALID')}});
+    const inventoryBeforeManual = manualItem.inventoryAvailability;
+    await request('manual-sold-out', 'setOperationsSalesMenuItemSoldOut', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primary.ref, salesItemRef: manualItem.salesItemRef, channelRef: primary.channelRef}, {cookie, body: {...manualTargetBody, reason: '销售菜单 seed 人工沽清验证', expectedVersion: menuExpectedVersion(await menuDetail(primary), 'SALES_MENU_SEED_MANUAL_SOLD_OUT_VERSION_INVALID')}});
+    const manualRead = await publishedItemReadback('manual-readback', manualItem);
     if (manualRead?.manualSaleStatus?.state !== 'MANUAL_SOLD_OUT') fail('SALES_MENU_SEED_MANUAL_SOLD_OUT_READBACK_INVALID');
-    await request('manual-restore', 'restoreOperationsSalesMenuItemSale', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primary.ref, salesItemRef: manualItem.salesItemRef, channelRef: primary.channelRef}, {cookie, body: {confirm: true, expectedVersion: menuExpectedVersion(await menuDetail(primary), 'SALES_MENU_SEED_MANUAL_RESTORE_VERSION_INVALID')}});
-    const postRestore = pageOf((await request('manual-restore-readback', 'getOperationsSalesMenuPublishedItem', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primary.ref, salesItemRef: manualItem.salesItemRef}, {cookie, queryParameters: {channelRef: primary.channelRef}})).json);
-    if (postRestore?.manualSaleStatus?.state !== 'NORMAL') fail('SALES_MENU_SEED_MANUAL_RESTORE_READBACK_INVALID');
+    await request('manual-restore', 'restoreOperationsSalesMenuItemSale', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primary.ref, salesItemRef: manualItem.salesItemRef, channelRef: primary.channelRef}, {cookie, body: {...manualTargetBody, confirm: true, expectedVersion: menuExpectedVersion(await menuDetail(primary), 'SALES_MENU_SEED_MANUAL_RESTORE_VERSION_INVALID')}});
+    const postRestore = await publishedItemReadback('manual-restore-readback', manualItem);
+    if (postRestore?.manualSaleStatus?.state !== 'NORMAL' || JSON.stringify(postRestore.inventoryAvailability) !== JSON.stringify(inventoryBeforeManual)) fail('SALES_MENU_SEED_MANUAL_RESTORE_READBACK_INVALID');
+    for (const target of inputs.staticPlan.targetSelection.manualTargets.slice(1)) {
+      const targetItem = publishedBySeedItemCode.get(target.itemCode);
+      const targetRef = targetRefFor(target);
+      const bodyTarget = {target: {targetKind: target.targetKind, targetRef}};
+      await request(`manual-child-sold-out-${target.targetKind}`, 'setOperationsSalesMenuItemSoldOut', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primary.ref, salesItemRef: targetItem.salesItemRef, channelRef: primary.channelRef}, {cookie, body: {...bodyTarget, reason: `销售菜单 seed ${target.targetKind} 沽清验证`, expectedVersion: menuExpectedVersion(await menuDetail(primary), `SALES_MENU_SEED_MANUAL_CHILD_SOLD_OUT_VERSION_INVALID:${target.targetKind}`)}});
+      const childSoldOut = await publishedItemReadback(`manual-child-readback-${target.targetKind}`, targetItem);
+      const childStatus = arrayOf(childSoldOut.manualSaleTargetStatuses).find(status => status.targetKind === target.targetKind && status.targetRef === targetRef);
+      if (childStatus?.state !== 'MANUAL_SOLD_OUT') fail(`SALES_MENU_SEED_MANUAL_CHILD_SOLD_OUT_READBACK_INVALID:${target.targetKind}`);
+      await request(`manual-child-restore-${target.targetKind}`, 'restoreOperationsSalesMenuItemSale', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primary.ref, salesItemRef: targetItem.salesItemRef, channelRef: primary.channelRef}, {cookie, body: {...bodyTarget, confirm: true, expectedVersion: menuExpectedVersion(await menuDetail(primary), `SALES_MENU_SEED_MANUAL_CHILD_RESTORE_VERSION_INVALID:${target.targetKind}`)}});
+      const childRestored = await publishedItemReadback(`manual-child-restore-readback-${target.targetKind}`, targetItem);
+      const childNormal = arrayOf(childRestored.manualSaleTargetStatuses).find(status => status.targetKind === target.targetKind && status.targetRef === targetRef);
+      if (childNormal?.state !== 'NORMAL') fail(`SALES_MENU_SEED_MANUAL_CHILD_RESTORE_READBACK_INVALID:${target.targetKind}`);
+    }
     const secondaryDefinition = inputs.staticPlan.secondaryDefinition;
     const secondary = await createMenu(inputs.staticPlan.menuDefinitions[1]);
     if (secondary.definition.code !== secondaryDefinition.menuCode) fail('SALES_MENU_SEED_SECONDARY_MENU_BINDING_INVALID');
@@ -499,7 +697,7 @@ async function executeManagedSeed() {
     const secondaryRows = arrayOf(pageOf((await request('secondary-draft-items', 'getOperationsSalesMenuDraftItems', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: secondary.ref, salesSectionRef: secondarySection}, {cookie, queryParameters: {pageSize: 20}})).json).items);
     if (secondaryRows.length !== 1) fail('SALES_MENU_SEED_SECONDARY_ITEM_READBACK_INVALID');
     const secondaryItem = await currentDraft(secondary, secondaryRows[0]);
-    await request('secondary-item-update', 'updateOperationsSalesMenuItem', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: secondary.ref, salesItemRef: secondaryItem.salesItemRef}, {cookie, body: {displayNameOverride: null, saleContent: {kind: 'DIRECT', listedPriceCents: secondaryItem.defaultPriceCents, skuPrices: []}, orderingConstraints: {minItemQuantity: 1, quantityStep: 1}, displayMedia: {mode: 'INHERIT_CATALOG', assetRefs: [], primaryAssetRef: null}, expectedVersion: menuExpectedVersion(await menuDetail(secondary), 'SALES_MENU_SEED_SECONDARY_ITEM_UPDATE_VERSION_INVALID')}});
+    await request('secondary-item-update', 'updateOperationsSalesMenuItem', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: secondary.ref, salesItemRef: secondaryItem.salesItemRef}, {cookie, body: {displayNameOverride: null, saleContent: {kind: 'DIRECT', listedPriceCents: secondaryItem.defaultPriceCents, skuPrices: [], orderOptionSelections: []}, orderingConstraints: {minItemQuantity: 1, quantityStep: 1}, displayMedia: {mode: 'INHERIT_CATALOG', assetRefs: [], primaryAssetRef: null}, expectedVersion: menuExpectedVersion(await menuDetail(secondary), 'SALES_MENU_SEED_SECONDARY_ITEM_UPDATE_VERSION_INVALID')}});
     await request('secondary-schedule', 'updateOperationsSalesMenuSchedule', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: secondary.ref}, {cookie, body: {schedule: secondaryDefinition.schedule, expectedVersion: menuExpectedVersion(await menuDetail(secondary), 'SALES_MENU_SEED_SECONDARY_SCHEDULE_VERSION_INVALID')}});
     await request('secondary-publish', 'publishOperationsSalesMenu', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: secondary.ref}, {cookie, expected: [201], body: {expectedVersion: menuExpectedVersion(await menuDetail(secondary), 'SALES_MENU_SEED_SECONDARY_PUBLISH_VERSION_INVALID')}});
     const secondaryMenuForActivation = await menuDetail(secondary);
@@ -524,7 +722,7 @@ async function executeManagedSeed() {
       const binding = availabilityCandidates.get(row.catalogItemRef);
       if (!binding) fail(`SALES_MENU_SEED_AVAILABILITY_DRAFT_ITEM_UNKNOWN:${row.catalogItemRef ?? 'UNKNOWN'}`);
       const current = await currentDraft(availabilityMenu, row);
-      await request(`availability-item-update-${binding.receipt.itemCode}`, 'updateOperationsSalesMenuItem', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: availabilityMenu.ref, salesItemRef: current.salesItemRef}, {cookie, body: {displayNameOverride: null, saleContent: {kind: 'DIRECT', listedPriceCents: binding.candidate.defaultPriceCents, skuPrices: []}, orderingConstraints: {minItemQuantity: 1, quantityStep: 1}, displayMedia: {mode: 'INHERIT_CATALOG', assetRefs: [], primaryAssetRef: null}, expectedVersion: menuExpectedVersion(await menuDetail(availabilityMenu), `SALES_MENU_SEED_AVAILABILITY_ITEM_UPDATE_VERSION_INVALID:${binding.receipt.itemCode}`)}});
+      await request(`availability-item-update-${binding.receipt.itemCode}`, 'updateOperationsSalesMenuItem', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: availabilityMenu.ref, salesItemRef: current.salesItemRef}, {cookie, body: {displayNameOverride: null, saleContent: {kind: 'DIRECT', listedPriceCents: binding.candidate.defaultPriceCents, skuPrices: [], orderOptionSelections: []}, orderingConstraints: {minItemQuantity: 1, quantityStep: 1}, displayMedia: {mode: 'INHERIT_CATALOG', assetRefs: [], primaryAssetRef: null}, expectedVersion: menuExpectedVersion(await menuDetail(availabilityMenu), `SALES_MENU_SEED_AVAILABILITY_ITEM_UPDATE_VERSION_INVALID:${binding.receipt.itemCode}`)}});
     }
     await request('availability-publish', 'publishOperationsSalesMenu', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: availabilityMenu.ref}, {cookie, expected: [201], body: {expectedVersion: menuExpectedVersion(await menuDetail(availabilityMenu), 'SALES_MENU_SEED_AVAILABILITY_PUBLISH_VERSION_INVALID')}});
     const availabilityPublishedSections = arrayOf(pageOf((await request('availability-published-sections', 'getOperationsSalesMenuPublishedSections', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: availabilityMenu.ref}, {cookie})).json).items);
@@ -547,7 +745,7 @@ async function executeManagedSeed() {
       catalogReceiptPath: catalogAvailabilityReceipt.reportPath,
     });
     const dirty = await currentDraft(primary, draftRows[0]);
-    await request('primary-draft-dirty', 'updateOperationsSalesMenuItem', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primary.ref, salesItemRef: dirty.salesItemRef}, {cookie, body: {displayNameOverride: '销售项目01草稿调整', saleContent: dirty.saleContent, orderingConstraints: dirty.orderingConstraints, displayMedia: dirty.displayMedia, expectedVersion: menuExpectedVersion(await menuDetail(primary), 'SALES_MENU_SEED_PRIMARY_DIRTY_VERSION_INVALID')}});
+    await request('primary-draft-dirty', 'updateOperationsSalesMenuItem', {groupWorkspaceKey: workspaceKey, storeRef, salesMenuRef: primary.ref, salesItemRef: dirty.salesItemRef}, {cookie, body: {displayNameOverride: '销售项目01草稿调整', saleContent: saleContentInputFromReadback(dirty.saleContent), orderingConstraints: dirty.orderingConstraints, displayMedia: dirty.displayMedia, expectedVersion: menuExpectedVersion(await menuDetail(primary), 'SALES_MENU_SEED_PRIMARY_DIRTY_VERSION_INVALID')}});
     const remaining = inputs.staticPlan.menuDefinitions.slice(2, 20)
       .filter(definition => definition.code !== availabilityDefinition.menuCode);
     for (const definition of remaining) {
@@ -635,7 +833,10 @@ async function executeManagedSeed() {
       recordsPage += 1;
       if (recordsPage > 32) fail('SALES_MENU_SEED_OPERATION_RECORD_CURSOR_UNBOUNDED');
     } while (recordsCursor);
-    if (arrayOf(records).length <= 20 || !arrayOf(records).some(row => row.result === 'SUCCESS') || !arrayOf(records).some(row => row.result === 'FAILED' && row.failureCode === 'SALES_MENU_MANUAL_REASON_REQUIRED')) fail('SALES_MENU_SEED_OPERATION_RECORD_DENOMINATOR_INVALID');
+    if (arrayOf(records).length <= 20 || !arrayOf(records).some(row => row.result === 'SUCCESS') || !arrayOf(records).some(row => row.result === 'FAILED' && row.failureCode === 'SALES_MENU_MANUAL_REASON_REQUIRED')
+      || !arrayOf(records).some(row => row.result === 'SUCCESS' && row.targetKind === 'SKU')
+      || !arrayOf(records).some(row => row.result === 'SUCCESS' && row.targetKind === 'ORDER_OPTION_VALUE')
+      || !arrayOf(records).some(row => row.result === 'FAILED' && row.failureCode === 'SALES_MENU_MANUAL_REASON_REQUIRED' && row.targetKind === 'ITEM')) fail('SALES_MENU_SEED_OPERATION_RECORD_DENOMINATOR_INVALID');
     business = 'PASS'; cleanup = 'PASS_PRESERVED_DEV_STATE';
     phase('SEED_BUSINESS_READBACK', 'PASS', {menus: menus.size, primaryItems: draftRows.length, stagedCustomAssets: customAssets.length, operationRecords: arrayOf(records).length});
     phase('SEED_CLEANUP', 'PASS', {policy: 'PRESERVE_DEV_EXPERIENCE_STATE', persistentSeedProcess: false, destructiveCleanupOwner: 'r5-reset'});

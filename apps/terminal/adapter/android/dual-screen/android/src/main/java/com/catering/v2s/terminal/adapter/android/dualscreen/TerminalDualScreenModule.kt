@@ -6,33 +6,70 @@ import expo.modules.kotlin.modules.ModuleDefinition
 class TerminalDualScreenModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("TerminalDualScreen")
-    Events(IME_INSETS_CHANGED)
+    Events(SURFACE_HOST_CHANGED)
 
-    AsyncFunction("getImeInsetsSnapshot") { displayIndex: Double ->
-      TerminalImeInsetsEventBus.snapshot(displayIndex.toInt())?.toMap()
+    AsyncFunction("getSurfaceHostSnapshot") { surfaceKey: String ->
+      TerminalSurfaceHostRegistry.snapshot(surfaceKey)?.toMap()
     }
 
     OnCreate {
-      TerminalImeInsetsEventBus.registerPublisher { snapshot ->
-        sendEvent(IME_INSETS_CHANGED, snapshot.toMap())
+      TerminalSurfaceHostRegistry.registerPublisher { event ->
+        sendEvent(SURFACE_HOST_CHANGED, event.toMap())
       }
     }
 
     OnDestroy {
-      TerminalImeInsetsEventBus.clearPublisher()
+      TerminalSurfaceHostRegistry.clearPublisher()
     }
   }
 
   private companion object {
-    const val IME_INSETS_CHANGED = "onImeInsetsChanged"
+    const val SURFACE_HOST_CHANGED = "onSurfaceHostChanged"
   }
 }
 
-private fun TerminalImeInsetsSnapshot.toMap(): Map<String, Any?> = mapOf(
-  "displayIndex" to displayIndex,
+private fun TerminalSurfaceHostEvent.toMap(): Map<String, Any?> = when (this) {
+  is TerminalSurfaceHostEvent.Ready -> snapshot.toMap()
+  is TerminalSurfaceHostEvent.Unavailable -> mapOf(
+    "available" to false,
+    "surfaceKey" to surfaceKey,
+    "generation" to generation,
+    "displayId" to displayId,
+    "windowIdentity" to windowIdentity,
+    "reason" to reason,
+  )
+}
+
+private fun TerminalSurfaceHostSnapshot.toMap(): Map<String, Any?> = mapOf(
+  "available" to true,
+  "surfaceKey" to surfaceKey,
+  "generation" to generation,
   "displayId" to displayId,
   "windowIdentity" to windowIdentity,
-  "visible" to visible,
-  "bottomPx" to bottomPx,
-  "bottomLogical" to bottomLogical,
+  "orientation" to orientation,
+  "stableHostLogicalSize" to mapOf(
+    "width" to stableWidthLogical,
+    "height" to stableHeightLogical,
+  ),
+  "currentHostLogicalSize" to mapOf(
+    "width" to currentWidthLogical,
+    "height" to currentHeightLogical,
+  ),
+  "ime" to mapOf(
+    "visible" to imeVisible,
+    "bottomLogicalBeforeCanvasScale" to imeBottomLogicalBeforeCanvasScale,
+  ),
+  "diagnostics" to mapOf(
+    "stableWidthPx" to stableWidthPx,
+    "stableHeightPx" to stableHeightPx,
+    "currentWidthPx" to currentWidthPx,
+    "currentHeightPx" to currentHeightPx,
+    "hardwareDensityDpi" to hardwareDensityDpi,
+    "hardwareDensity" to hardwareDensity,
+    "hardwareScaledDensity" to hardwareScaledDensity,
+    "surfaceDensityDpi" to surfaceDensityDpi,
+    "surfaceDensity" to surfaceDensity,
+    "source" to "android-display-context",
+    "stableMeasurementContext" to "owner-decorView-layout",
+  ),
 )

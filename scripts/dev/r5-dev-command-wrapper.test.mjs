@@ -33,6 +33,12 @@ test("DEV start gives Java the selected local asset ingress for browser public U
   assert.doesNotMatch(runnerSource, /CATERING_ASSET_PUBLIC_BASE_URL: `http:\/\/127\.0\.0\.1:\$\{env\.environment\.V2S_DEV_REMOTE_ASSET_PORT\}`/);
 });
 
+test("remote Java binds the selected HTTP port instead of assuming one shared listener", () => {
+  assert.match(runnerSource, /httpPort = env\.environment\.V2S_DEV_REMOTE_HTTP_PORT/);
+  assert.match(runnerSource, /SERVER_PORT: String\(httpPort\)/);
+  assert.match(runnerSource, /httpPort.*\$http_port/);
+});
+
 test("DEV start forwards only an explicit backend verification mode to remote Java", () => {
   assert.match(runnerSource, /const backendAcceptanceVerificationMode = env\.environment\.V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE/);
   assert.match(runnerSource, /V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE: backendAcceptanceVerificationMode/);

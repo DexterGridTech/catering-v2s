@@ -7,7 +7,7 @@
   },
   "scripts": {
     "typecheck": "tsc --project tsconfig.json --noEmit",
-    "test": "node internal/module_scripts/test.js"
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
   },
   "dependencies": {
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
@@ -30,7 +30,8 @@
     "jest-expo": "~57.0.5",
     "prettier": "^3.0.0",
     "react-native": "0.86.3",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "4.1.10"
   },
   "jest": {
     "preset": "jest-expo",

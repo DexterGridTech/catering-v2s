@@ -78,9 +78,10 @@ visible       = keyboard >= 250
 这组边界在 `keyboardHeight.ts` 第 15 至 32 行实现，并由
 `apps/terminal/ui/base/input/test/keyboardHeight.test.ts` 第 5 至 42 行覆盖。
 视觉重构不得用每种布局不同的高度规避空间问题；同一 surface 的四种布局继续使用
-同一高度结果。目标尺寸 PRIMARY `1157 × 723`、SECONDARY `962 × 541` 已在
-`apps/terminal/ui/integration/sample-console/package.json` 第 10 至 21 行声明，且在
-输入包测试中有对应基线。
+同一高度结果。当前固定逻辑画布由 host 声明为 PRIMARY `1280 × 800`、SECONDARY
+`960 × 540`；sample Android 副屏的 `1280 × 720 physical px / 213 dpi` 只是硬件显示配置。
+逻辑画布属于 host 的画布输入，不是 InputSurfaceFrame 的直接输入，input 仍以自己的
+onLayout 为唯一运行时尺寸事实。
 
 ### 3.2 当前业务接线
 
@@ -222,10 +223,13 @@ visible       = keyboard >= 250
 
 ### 6.2 尺寸、间距和容量
 
-- 键盘高度继续由 surface 声明尺寸和现有公式决定：最大 320、最大 surface 高度
-  的 50%、内容区至少 208；任何布局不能单独申请更高高度。
-- 目标基线为 PRIMARY `1157 × 723` 和 SECONDARY `962 × 541`；必须分别检查四种
-  布局，而不是只在较宽主屏截图上验收。
+- 键盘高度继续由所属 `InputSurfaceFrame` 的本地测量尺寸和现有公式决定：最大 320、最大
+  surface 高度的 50%、内容区至少 208；任何布局不能单独申请更高高度。host 的固定画布声明
+  不直接进入 input 的高度计算。
+- 当前 host 画布为 PRIMARY `1280 × 800` 和 SECONDARY `960 × 540`；sample Android 副屏的
+  `1280 × 720 physical px / 213 dpi` 仅是硬件显示配置；必须分别检查四种
+  布局，而不是只在较宽主屏截图上验收。旧的 1157 × 723 与 962 × 541 已退役，不是
+  回归或容量基线。
 - 每个可操作 keycap 的可触控区域至少 48 × 48 个逻辑像素；键帽视觉填充可以
   小于 hit target，但相邻 hit target 不得重叠。详设须说明 Android dp 与 Web
   逻辑像素的换算边界。

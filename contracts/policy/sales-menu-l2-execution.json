@@ -1,14 +1,42 @@
 {
   "schemaVersion": 1,
   "kind": "sales-menu-l2-execution-profile",
-  "revision": "SALES_MENU_L2_P1_20260907",
-  "mode": "FRAMEWORK_ONLY",
-  "enabledCaseIds": [],
+  "revision": "SALES_MENU_L2_P1_20260908",
+  "mode": "INCREMENTAL",
+  "enabledCaseIds": [
+    "sales-menu-entry-and-channels",
+    "sales-menu-section-actions",
+    "sales-menu-section-move-and-delete",
+    "sales-menu-section-delete-non-empty",
+    "sales-menu-add-candidates",
+    "sales-menu-edit-direct-item-and-media",
+    "sales-menu-edit-sku-prices",
+    "sales-menu-edit-weighted-item",
+    "sales-menu-draft-order-and-pagination",
+    "sales-menu-publish-and-front-structure",
+    "sales-menu-front-status-and-pagination",
+    "sales-menu-manual-sold-out-and-restore",
+    "sales-menu-menu-management-and-multi-active",
+    "sales-menu-copy-boundary",
+    "sales-menu-publish-blockers",
+    "sales-menu-operation-records",
+    "sales-menu-failure-recovery-and-focus",
+    "sales-menu-auth-and-scope-isolation"
+  ],
   "sourceOfTruth": "contracts/policy/sales-menu-l2-case-blueprint.json",
   "noSeedRuntimeInput": true,
   "activationCandidate": {
     "path": "contracts/policy/sales-menu-l2-activation-candidate.json",
-    "digest": "35d3beb5fb82f23a9cbf39da130a08a3c00c42ca7a787b536ddb2fc1fe806e23"
+    "digest": "d02a9c959b920d19061321aa0a1f038d6be6cfee008aed01dde55a67611d298b"
   },
-  "enablementRule": "P1 enables only the candidate exact set after a matching PASS held readiness manifest; generated output is never hand-edited."
+  "enablementRule": "P1 enables only the candidate exact set after a matching PASS held readiness manifest; generated output is never hand-edited.",
+  "readiness": {
+    "manifestPath": ".runtime/browser-l2/l2-1788872801644-59570-58b02252-3fdd-4399-aa92-27cf54bd4d70/readiness-manifest.json",
+    "runBinding": {
+      "runId": "l2-1788872801644-59570-58b02252-3fdd-4399-aa92-27cf54bd4d70",
+      "namespace": "v2s_l2_ac2c73832d1c3b73",
+      "database": "catering_v2s_l2_ac2c73832d1c3b73",
+      "assetPrefix": "s3://catering-v2s-r5-assets/catering-v2s/l2/l2-1788872801644-59570-58b02252-3fdd-4399-aa92-27cf54bd4d70/"
+    }
+  }
 }

@@ -361,6 +361,7 @@ final class AssetAcceptanceScenarios {
         saleContent.put("kind", "DIRECT");
         saleContent.put("listedPriceCents", 4600);
         saleContent.put("skuPrices", List.of());
+        saleContent.put("orderOptionSelections", List.of());
         customUpdate.put("saleContent", saleContent);
         customUpdate.put("orderingConstraints", Map.of("minItemQuantity", 1, "quantityStep", 1));
         customUpdate.put(
@@ -507,7 +508,12 @@ final class AssetAcceptanceScenarios {
         Map<String, Object> replacementUpdate = new LinkedHashMap<>();
         replacementUpdate.put("displayNameOverride", null);
         replacementUpdate.put(
-                "saleContent", Map.of("kind", "DIRECT", "listedPriceCents", 4700, "skuPrices", List.of()));
+                "saleContent",
+                Map.of(
+                        "kind", "DIRECT",
+                        "listedPriceCents", 4700,
+                        "skuPrices", List.of(),
+                        "orderOptionSelections", List.of()));
         replacementUpdate.put("orderingConstraints", Map.of("minItemQuantity", 1, "quantityStep", 1));
         replacementUpdate.put(
                 "displayMedia",

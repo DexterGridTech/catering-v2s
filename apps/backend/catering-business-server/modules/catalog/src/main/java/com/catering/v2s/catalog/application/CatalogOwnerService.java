@@ -323,8 +323,38 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
     @Override
     public Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> readSalesMenuItemFacts(
             String dataNodeRef, String brandRef, Set<UUID> itemRefs) {
+        List<SalesMenuItemRow> rows = readSalesMenuItemRows(dataNodeRef, brandRef, itemRefs);
+        if (rows.isEmpty()) return Map.of();
+
+        SalesMenuFactSnapshot facts = readSalesMenuFactSnapshot(
+                dataNodeRef,
+                brandRef,
+                rows.stream().map(SalesMenuItemRow::itemRef).toList(),
+                true,
+                false,
+                true);
+        Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> result = new LinkedHashMap<>();
+        rows.forEach(row -> result.put(row.itemRef(), salesMenuItemFacts(row, facts)));
+        return Map.copyOf(result);
+    }
+
+    @Override
+    public Map<UUID, CatalogOwnerApi.SalesMenuItemReferenceFact> readSalesMenuItemReferenceFacts(
+            String dataNodeRef, String brandRef, Set<UUID> itemRefs) {
+        List<SalesMenuItemRow> rows = readSalesMenuItemRows(dataNodeRef, brandRef, itemRefs);
+        if (rows.isEmpty()) return Map.of();
+        Map<UUID, CatalogOwnerApi.SalesMenuItemReferenceFact> result = new LinkedHashMap<>();
+        rows.forEach(row -> result.put(
+                row.itemRef(),
+                new CatalogOwnerApi.SalesMenuItemReferenceFact(
+                        row.itemRef(), row.itemCode(), row.itemName(), row.shapeKey())));
+        return Map.copyOf(result);
+    }
+
+    private List<SalesMenuItemRow> readSalesMenuItemRows(
+            String dataNodeRef, String brandRef, Set<UUID> itemRefs) {
         requireScope(dataNodeRef, brandRef);
-        if (itemRefs == null || itemRefs.isEmpty()) return Map.of();
+        if (itemRefs == null || itemRefs.isEmpty()) return List.of();
         for (UUID itemRef : itemRefs)
             if (itemRef == null)
                 throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "itemRefs must contain UUID values");
@@ -333,7 +363,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         String placeholders = String.join(",", Collections.nCopies(requestedRefs.size(), "?"));
         List<Object> arguments = new ArrayList<>(List.of(dataNodeRef, brandRef));
         arguments.addAll(requestedRefs);
-        List<SalesMenuItemRow> rows = jdbc.query(
+        return jdbc.query(
                 "SELECT i.item_ref,i.code,i.name,i.shape_key,i.status,"
                         + "NULLIF(i.sections->>'standardSalePrice','')::bigint AS default_price,i.version "
                         + "FROM catalog.catalog_item i WHERE i.data_node_ref=? AND i.brand_ref=? "
@@ -349,18 +379,6 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                         result.getObject(6, Long.class),
                         result.getLong(7)),
                 arguments.toArray());
-        if (rows.isEmpty()) return Map.of();
-
-        SalesMenuFactSnapshot facts = readSalesMenuFactSnapshot(
-                dataNodeRef,
-                brandRef,
-                rows.stream().map(SalesMenuItemRow::itemRef).toList(),
-                true,
-                false,
-                true);
-        Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> result = new LinkedHashMap<>();
-        rows.forEach(row -> result.put(row.itemRef(), salesMenuItemFacts(row, facts)));
-        return Map.copyOf(result);
     }
 
     private CatalogOwnerApi.SalesMenuCandidate salesMenuCandidate(SalesMenuItemRow row, SalesMenuFactSnapshot facts) {
@@ -396,6 +414,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                 row.defaultPriceCents(),
                 facts.salesUnitsByItem().get(row.itemRef()),
                 salesMenuPrimaryImage(facts.imagesByItem().get(row.itemRef())),
+                salesMenuUuidFacts(facts.imagesByItem().get(row.itemRef()), "imageAssetRefs"),
                 salesMenuOrderOptionFacts(facts.orderOptionsByItem().get(row.itemRef())),
                 salesMenuSkuSummary(row.shapeKey(), skus, axes),
                 skus,
@@ -3791,13 +3810,17 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         if (refs.isEmpty()) return Set.of();
         // Asset references are intentionally shared across catalog scopes.  Keep
         // that global lifecycle judgment, but evaluate the whole candidate set
-        // across both owner-local media tables in one set query.  The previous
-        // two-table implementation had already removed the 2N EXISTS pattern;
-        // this UNION removes the remaining fixed two-round-trip tax without
-        // changing the owner, status filter, or candidate-set semantics.
+        // across catalog media and published sales-menu snapshot references in
+        // one set query.  The previous two-table implementation had already
+        // removed the 2N EXISTS pattern; these owner unions preserve the
+        // candidate-set semantics while protecting immutable published images.
         String placeholders = String.join(",", Collections.nCopies(refs.size(), "?"));
         List<Object> arguments = new ArrayList<>(refs);
         arguments.addAll(refs);
+        arguments.addAll(refs);
+        // jsonb_array_elements_text returns text.  Bind the fourth owner set
+        // as text so PostgreSQL does not compare text with UUID parameters.
+        arguments.addAll(refs.stream().map(UUID::toString).toList());
         java.util.Set<UUID> referencedRefs = new java.util.LinkedHashSet<>(jdbc.query(
                 "SELECT DISTINCT asset_ref FROM ("
                         + "SELECT image.asset_ref FROM catalog.catalog_item_image image "
@@ -3808,8 +3831,26 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
                         + "JOIN catalog.catalog_sku sku ON sku.product_sku_ref=media.product_sku_ref "
                         + "JOIN catalog.catalog_item item ON item.item_ref=sku.item_ref "
                         + "WHERE media.asset_ref IN (" + placeholders + ") AND item.status <> 'VOIDED'"
+                        + " UNION "
+                        + "SELECT published.published_primary_image_asset_ref "
+                        + "FROM sales_menu.sales_version_item published "
+                        + "JOIN sales_menu.sales_collection_version published_version "
+                        + "ON published_version.version_ref=published.version_ref "
+                        + "WHERE published.published_primary_image_asset_ref IN (" + placeholders + ") "
+                        + "AND published_version.kind='PUBLISHED'"
+                        + " UNION "
+                        + "SELECT CASE WHEN snapshot.asset_ref ~* "
+                        + "'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' "
+                        + "THEN snapshot.asset_ref::uuid END "
+                        + "FROM sales_menu.sales_version_item published "
+                        + "JOIN sales_menu.sales_collection_version published_version "
+                        + "ON published_version.version_ref=published.version_ref "
+                        + "CROSS JOIN LATERAL jsonb_array_elements_text("
+                        + "published.published_catalog_image_asset_refs) snapshot(asset_ref) "
+                        + "WHERE snapshot.asset_ref IN (" + placeholders + ") "
+                        + "AND published_version.kind='PUBLISHED'"
                         + ") referenced_assets",
-                (result, row) -> result.getObject(1, UUID.class),
+                (result, row) -> UUID.fromString(result.getString(1)),
                 arguments.toArray()));
         java.util.Set<String> referenced = new java.util.LinkedHashSet<>();
         for (String candidate : candidates)

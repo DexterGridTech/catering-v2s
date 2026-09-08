@@ -1,5 +1,9 @@
 import {describe, expect, it} from 'vitest';
-import {calculateSurfacePreviewGeometry, SURFACE_PREVIEW_CONSTANTS} from '../src/foundations/surfacePreview';
+import {
+  calculateSurfacePreviewGeometry,
+  mapLogicalPointToPreviewClientPoint,
+  SURFACE_PREVIEW_CONSTANTS,
+} from '../src/foundations/surfacePreview';
 
 const primary = {width: 1920, height: 1080};
 const secondary = {width: 1024, height: 600};
@@ -8,30 +12,27 @@ describe('surface preview geometry', () => {
   it('fits one column surface by available viewport width without changing logical dimensions', () => {
     const geometry = calculateSurfacePreviewGeometry({
       layout: 'column',
-      scaleToFit: true,
       showSecondary: false,
-      viewportWidth: 1300,
+      viewport: {width: 1276, height: 900},
       primary,
       secondary,
     });
 
-    const availableWidth =
-      1300 - 2 * SURFACE_PREVIEW_CONSTANTS.canvasBorder - 2 * SURFACE_PREVIEW_CONSTANTS.stagePadding;
     expect(geometry).toMatchObject({
       stageWidth: 1920,
       stageHeight: 1080,
-      scale: availableWidth / 1920,
-      renderedWidth: availableWidth,
-      renderedHeight: 1080 * (availableWidth / 1920),
+      scaleX: 1276 / 1920,
+      scaleY: 1276 / 1920,
+      renderedWidth: 1276,
+      renderedHeight: 1080 * (1276 / 1920),
     });
   });
 
   it('uses one shared scale for two column surfaces', () => {
     const geometry = calculateSurfacePreviewGeometry({
       layout: 'column',
-      scaleToFit: true,
       showSecondary: true,
-      viewportWidth: 1300,
+      viewport: {width: 1276, height: 900},
       primary,
       secondary,
     });
@@ -40,15 +41,14 @@ describe('surface preview geometry', () => {
       stageWidth: 1920,
       stageHeight: 1080 + SURFACE_PREVIEW_CONSTANTS.surfaceGap + 600,
     });
-    expect(geometry?.renderedWidth).toBeLessThanOrEqual(1300 - 2 * SURFACE_PREVIEW_CONSTANTS.canvasBorder);
+    expect(geometry?.renderedWidth).toBeLessThanOrEqual(1276);
   });
 
   it('uses combined logical width for two row surfaces', () => {
     const geometry = calculateSurfacePreviewGeometry({
       layout: 'row',
-      scaleToFit: true,
       showSecondary: true,
-      viewportWidth: 1200,
+      viewport: {width: 1200, height: 800},
       primary,
       secondary,
     });
@@ -58,41 +58,41 @@ describe('surface preview geometry', () => {
       stageHeight: 1080,
     });
     expect(geometry?.renderedWidth).toBe(
-      1200 - 2 * SURFACE_PREVIEW_CONSTANTS.canvasBorder - 2 * SURFACE_PREVIEW_CONSTANTS.stagePadding,
+      1200,
     );
   });
 
-  it('keeps scale at one when scaleToFit is disabled', () => {
+  it('fills width instead of retaining an obsolete unscaled preview mode', () => {
     expect(
       calculateSurfacePreviewGeometry({
         layout: 'row',
-        scaleToFit: false,
         showSecondary: true,
-        viewportWidth: 1200,
+      viewport: {width: 1200, height: 800},
         primary,
         secondary,
       }),
     ).toMatchObject({
-      scale: 1,
-      renderedWidth: 1920 + SURFACE_PREVIEW_CONSTANTS.surfaceGap + 1024,
-      renderedHeight: 1080,
+      scaleX: 1200 / (1920 + SURFACE_PREVIEW_CONSTANTS.surfaceGap + 1024),
+      scaleY: 1200 / (1920 + SURFACE_PREVIEW_CONSTANTS.surfaceGap + 1024),
+      renderedWidth: 1200,
+      renderedHeight: 1080 * (1200 / (1920 + SURFACE_PREVIEW_CONSTANTS.surfaceGap + 1024)),
     });
   });
 
-  it('does not upscale a logical surface when the viewport is wider than the target', () => {
+  it('fills a wider viewport while preserving the logical stage ratio', () => {
     expect(
       calculateSurfacePreviewGeometry({
         layout: 'column',
-        scaleToFit: true,
         showSecondary: false,
-        viewportWidth: 2400,
+        viewport: {width: 2400, height: 1200},
         primary,
         secondary,
       }),
     ).toMatchObject({
-      scale: 1,
-      renderedWidth: 1920,
-      renderedHeight: 1080,
+      scaleX: 2400 / 1920,
+      scaleY: 2400 / 1920,
+      renderedWidth: 2400,
+      renderedHeight: 1080 * (2400 / 1920),
     });
   });
 
@@ -100,11 +100,29 @@ describe('surface preview geometry', () => {
     expect(
       calculateSurfacePreviewGeometry({
         layout: 'column',
-        scaleToFit: true,
         showSecondary: false,
-        viewportWidth: 0,
+        viewport: {width: 0, height: 1},
         primary,
         secondary,
+      }),
+    ).toBeNull();
+  });
+
+  it('maps a logical point into the current preview client coordinate system', () => {
+    expect(
+      mapLogicalPointToPreviewClientPoint({
+        logicalPoint: {x: 100, y: 200},
+        previewRect: {left: 40, top: 30},
+        scaleX: 0.75,
+        scaleY: 0.5,
+      }),
+    ).toEqual({x: 115, y: 130});
+    expect(
+      mapLogicalPointToPreviewClientPoint({
+        logicalPoint: {x: 100, y: 200},
+        previewRect: {left: 40, top: 30},
+        scaleX: 0,
+        scaleY: 0.5,
       }),
     ).toBeNull();
   });

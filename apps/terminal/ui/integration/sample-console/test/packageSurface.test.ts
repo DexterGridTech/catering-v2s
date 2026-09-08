@@ -19,11 +19,11 @@ describe('sample-console package surface', () => {
     ]);
     expect([...devDependencyModuleNames]).toEqual(['ui.base.dev-host']);
     expect(terminalSurfaces).toEqual({
-      layout: 'column',
-      scaleToFit: true,
-      surfaces: {
-        PRIMARY: {width: 1157, height: 723},
-        SECONDARY: {width: 962, height: 541},
+      orientations: {
+        landscape: {
+          PRIMARY: {width: 1280, height: 800},
+          SECONDARY: {width: 960, height: 540},
+        },
       },
     });
     expect(typeof createSampleAssembly).toBe('function');

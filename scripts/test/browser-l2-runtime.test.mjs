@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
@@ -26,6 +27,7 @@ import {
   requireActivatedCatalogLibraryExecution,
   resolveL2TerminalResults,
   salesMenuSaleContentKind,
+  sha256,
   sanitizeRuntimeState,
   selectL2FirstFailure,
   materializeFixtureVoidedSkuLifecycle,
@@ -78,6 +80,13 @@ const salesMenuFixture = readJson('contracts/policy/sales-menu-l2-fixture.json')
 const salesMenuBlueprint = readJson('contracts/policy/sales-menu-l2-case-blueprint.json');
 const salesMenuGeneratedScenarios = readJson('contracts/policy/sales-menu-l2-scenarios.json');
 
+test('browser L2 digest preserves uploaded asset bytes', () => {
+  const bytes = Buffer.from([0, 255, 16, 128, 65]);
+  const expected = createHash('sha256').update(bytes).digest('hex');
+  assert.equal(sha256(bytes), expected);
+  assert.equal(sha256('catalog-image'), createHash('sha256').update('catalog-image').digest('hex'));
+});
+
 test('sales-menu fixture shapes use the owner-aligned sale-content kind mapping', () => {
   assert.equal(salesMenuSaleContentKind('ORDINARY'), 'DIRECT');
   assert.equal(salesMenuSaleContentKind('SERVICE'), 'DIRECT');
@@ -85,6 +94,75 @@ test('sales-menu fixture shapes use the owner-aligned sale-content kind mapping'
   assert.equal(salesMenuSaleContentKind('WEIGHTED'), 'WEIGHTED');
   assert.equal(salesMenuSaleContentKind('COMPOSITE'), 'COMPOSITE');
   assert.match(runtimeSource, /const saleContentKind = salesMenuSaleContentKind\(candidate\.shape\)/);
+});
+
+test('sales-menu L2 SKU bootstrap materializes distinct Catalog variant values', () => {
+  const salesMenuBootstrapSource = runtimeSource.slice(runtimeSource.indexOf('async function bootstrapSalesMenuFacts'));
+  assert.match(salesMenuBootstrapSource, /const catalogSkuVariantsByFixtureId = new Map\(\)/);
+  assert.match(salesMenuBootstrapSource, /createOperationsCatalogDictionaryEntry/);
+  assert.match(salesMenuBootstrapSource, /attributeValueRef: skuVariant\.values\[index\]\.valueRef/);
+  assert.match(salesMenuBootstrapSource, /skuVariantDimensions: skuVariant/);
+  assert.match(salesMenuBootstrapSource, /values: skuVariant\.values/);
+});
+
+test('sales-menu SKU price journey budgets every independent SalesItem detail readback', () => {
+  const skuCase = salesMenuBlueprint.scenarios
+    .flatMap(scenario => scenario.cases ?? [])
+    .find(row => row.caseId === 'sales-menu-edit-sku-prices');
+  assert.ok(skuCase);
+  assert.equal(
+    skuCase.parameter.network.requests.find(row => row.operationId === 'getOperationsSalesMenuDraftItem')
+      ?.maxRequestCount,
+    5,
+  );
+  assert.equal(
+    skuCase.parameter.network.requests.find(row => row.operationId === 'getOperationsSalesMenu')?.maxRequestCount,
+    4,
+  );
+  assert.equal(
+    skuCase.parameter.network.requests.find(row => row.operationId === 'getOperationsSalesMenuDraftItems')
+      ?.maxRequestCount,
+    4,
+  );
+  assert.equal(
+    skuCase.parameter.network.requests.find(row => row.operationId === 'getOperationsSalesMenuPublicationPreview')
+      ?.maxRequestCount,
+    4,
+  );
+  const skuJourneySource = salesMenuL2Source.slice(
+    salesMenuL2Source.indexOf("case 'sales-menu-edit-sku-prices':"),
+    salesMenuL2Source.indexOf("case 'sales-menu-edit-weighted-item':"),
+  );
+  assert.equal((skuJourneySource.match(/openDraftEditor\(page, facts, runtime\)/g) ?? []).length, 2);
+  assert.match(skuJourneySource, /openDraftEditor\(page, secondFacts, runtime\)/);
+  assert.match(
+    skuJourneySource,
+    /const firstSavedRow = page\s+\.getByRole\('row'\)\s+\.filter\(\{has: visibleTestId\(page, salesMenuTestIds\.item\(salesItemRefs\[0\]\)\)\}\)/,
+  );
+  assert.match(
+    skuJourneySource,
+    /const secondSavedRow = page\s+\.getByRole\('row'\)\s+\.filter\(\{has: visibleTestId\(page, salesMenuTestIds\.item\(salesItemRefs\[1\]\)\)\}\)/,
+  );
+  assert.match(skuJourneySource, /await expect\(firstSavedRow\)\.toContainText\('\¥17\.77'\)/);
+  assert.match(skuJourneySource, /await expect\(secondSavedRow\)\.toContainText\('\¥18\.88'\)/);
+  assert.match(skuJourneySource, /toHaveValue\('17\.77'\)/);
+});
+
+test('sales-menu manual status journey budgets every read-model refresh', () => {
+  const manualStatusCase = salesMenuBlueprint.scenarios
+    .flatMap(scenario => scenario.cases ?? [])
+    .find(row => row.caseId === 'sales-menu-manual-sold-out-and-restore');
+  assert.ok(manualStatusCase);
+  assert.equal(
+    manualStatusCase.parameter.network.requests.find(row => row.operationId === 'getOperationsStoreBusinessChannels')
+      ?.maxRequestCount,
+    5,
+  );
+  assert.equal(
+    manualStatusCase.parameter.network.requests.find(row => row.operationId === 'getOperationsBusinessChannelTemplates')
+      ?.maxRequestCount,
+    4,
+  );
 });
 
 test('sales-menu fixture activation identities cannot overlap its disabled-channel blocker', () => {
@@ -364,8 +442,8 @@ test('sales-menu table presentation keeps the approved columns and density rules
   const draftSource = salesMenuPageSource.slice(draftStart, publishedStart);
   const publishedSource = salesMenuPageSource.slice(publishedStart, operationStart);
   for (const [tableSource, columns] of [
-    [draftSource, ['菜单商品', '挂牌价', '商品形态', '销售规格', '销售约束']],
-    [publishedSource, ['菜单商品', '挂牌价', '商品形态', '销售规格', '库存状态', '销售状态']],
+    [draftSource, ['菜单商品', '挂牌价', '销售规格', '销售约束']],
+    [publishedSource, ['菜单商品', '挂牌价', '销售规格', '库存状态', '销售状态']],
   ]) {
     let previous = -1;
     for (const title of columns) {
@@ -376,8 +454,10 @@ test('sales-menu table presentation keeps the approved columns and density rules
   }
   assert.match(draftSource, /itemMediaLabel\(row\)/);
   assert.match(draftSource, /\{row\.displayName\}[\s\S]*?\{row\.itemCode\}/);
+  assert.match(draftSource, /salesMenuProductShapeLabel\(row\.productShape\)/);
   assert.match(publishedSource, /salesMenuPublishedPriceLabel\(row\)/);
   assert.match(publishedSource, /salesMenuSpecificationLabel\(row\)/);
+  assert.match(publishedSource, /salesMenuProductShapeLabel\(row\.productShape\)/);
   assert.match(salesMenuUiSharedSource, /listedPriceCents === defaultPriceCents/);
   assert.match(salesMenuUiSharedSource, /salesMenuStackedLines\(/);
   assert.match(salesMenuUiSharedSource, /salesMenuPublishedPriceLabel/);
@@ -678,7 +758,7 @@ test('browser L2 reports a completed case failure without hiding concurrent sour
   );
   assert.match(
     runtimeSource,
-    /firstFailure,\s+sourceByteBindingAfterRunFailure,\s+firstFailedCaseId:/,
+    /firstFailure,\s+remoteArtifactFailure,\s+sourceByteBindingAfterRunFailure,\s+firstFailedCaseId:/,
     'the public execution manifest must retain source drift beside the selected case failure',
   );
 });
@@ -917,9 +997,9 @@ test('browser L2 namespace binding is closed to the managed namespace grammar', 
 test('browser L2 failure cleanup awaits remote cleanup and owns partial startup processes', () => {
   assert.match(
     runtimeSource,
-    /async function cleanupOwnedL2Resources\(state, credentials\) \{[\s\S]*?await stopOwnedProcesses\(state\.processes\)[\s\S]*?await cleanupRemote\(state\.remote\.host, state\.identity, credentials\)/,
+    /async function cleanupOwnedL2Resources\(state, credentials\) \{[\s\S]*?await stopRemoteJava\(state\.remote\.host, state\.remoteJava\)[\s\S]*?await stopOwnedProcesses\(state\.processes\)[\s\S]*?await cleanupRemote\(state\.remote\.host, state\.identity, credentials\)/,
   );
-  assert.equal((runtimeSource.match(/const remoteErrors = await cleanupRemote\(/g) ?? []).length, 1);
+  assert.equal((runtimeSource.match(/errors\.push\(\.\.\.\(await cleanupRemote\(/g) ?? []).length, 1);
   assert.doesNotMatch(runtimeSource, /minio\/mc rm[^\n]*\|\| true/);
   assert.doesNotMatch(runtimeSource, /minio\/mc ls[^\n]*\|\| true/);
   assert.match(
@@ -927,6 +1007,27 @@ test('browser L2 failure cleanup awaits remote cleanup and owns partial startup 
     /const started = \[\];[\s\S]*?error\.cleanupErrors = \[[\s\S]*?await stopOwnedProcesses\(started\)/,
   );
   assert.match(runtimeSource, /cleanupPrivateRunFiles,/);
+});
+
+test('browser L2 keeps remote artifact failures separate from resource cleanup', () => {
+  const manifest = buildIncompleteExecutionManifest({
+    state: {
+      runDirectory: path.join(root, '.runtime/browser-l2/l2-artifact-separation'),
+      identity: {runId: 'l2-artifact-separation'},
+      activeCaseIds: ['catalog-view-success'],
+    },
+    cleanupErrors: [],
+    artifactErrors: ['REMOTE_ARTIFACTS:L2_REMOTE_ARTIFACT_COLLECTION_FAILED'],
+  });
+  assert.deepEqual(manifest.cleanupErrors, []);
+  assert.deepEqual(manifest.artifactErrors, ['REMOTE_ARTIFACTS:L2_REMOTE_ARTIFACT_COLLECTION_FAILED']);
+  assert.match(runtimeSource, /const artifactErrors = \[\];/);
+  assert.match(runtimeSource, /artifactErrors.push\(`REMOTE_ARTIFACTS:\$\{errorCode\(error\)\}`\)/);
+  assert.match(runtimeSource, /return \{cleanupErrors: errors, artifactErrors\}/);
+  assert.match(runtimeSource, /artifactErrors: finalArtifactErrors/);
+  assert.match(runtimeSource, /const remoteHost = runtime\.remote\?\.host/);
+  assert.match(runtimeSource, /collectRemoteLog\(remoteHost, runtime\.remoteJava, runtime\.remoteLogPath\)/);
+  assert.doesNotMatch(runtimeSource, /collectRemoteLog\(runtime\.remoteHost/);
 });
 
 test('browser L2 remote cleanup requires both a zero exit and its readback marker', () => {
@@ -1108,6 +1209,26 @@ test('browser L2 readiness consumes the generated candidate instead of an execut
   assert.doesNotMatch(runtimeSource, /CATALOG_LIBRARY_CASE_IDS/);
 });
 
+test('browser L2 owns a remote Spring backend and exposes only HTTP plus asset ingress', () => {
+  assert.match(
+    runtimeSource,
+    /const L2_RUNTIME_TOPOLOGY = 'REMOTE_SPRING_REMOTE_DB_REMOTE_ASSET_LOCAL_VITE_LOCAL_PLAYWRIGHT_HTTP_ASSET_TUNNEL'/,
+  );
+  assert.match(runtimeSource, /async function startRemoteRuntime\(/);
+  assert.match(runtimeSource, /startRemoteJava\(/);
+  assert.match(runtimeSource, /remoteHttpPortPreflight\(/);
+  assert.match(runtimeSource, /httpPort: remoteHttpPort/);
+  assert.match(runtimeSource, /remote-http-asset-tunnel/);
+  assert.match(runtimeSource, /V2S_DEV_DATABASE_URL: `jdbc:postgresql:\/\/127\.0\.0\.1:5432\/\$\{identity\.database\}`/);
+  assert.doesNotMatch(runtimeSource, /ports\.http\}:127\.0\.0\.1:8080/);
+  assert.doesNotMatch(runtimeSource, /async function startLocalRuntime\(/);
+  assert.doesNotMatch(runtimeSource, /ports\.spring/);
+  assert.doesNotMatch(runtimeSource, /ports\.db/);
+  assert.doesNotMatch(runtimeSource, /:apps:backend:catering-business-server:bootRun/);
+  assert.match(runtimeSource, /remoteBackend: publicRemoteBackend\(/);
+  assert.match(runtimeSource, /remoteArtifactFailure/);
+});
+
 test('browser L2 interrupted runs have a managed cleanup recovery path', () => {
   assert.match(runtimeSource, /async function cleanupRuntimeState\(\n  state,\n  \{/);
   assert.match(runtimeSource, /await cleanupOwnedL2Resources\(state, credentials\)/);
@@ -1142,8 +1263,8 @@ test('browser L2 failed readiness keeps an exact managed cleanup recovery state'
     runBinding: binding,
     remote: {host: 'trusted-test-host', fingerprint: 'test-fingerprint', allowlistVersion: 'test-allowlist'},
     credentialsFile: path.relative(root, path.join(runDirectory, 'credentials.env')).split(path.sep).join('/'),
-    processIdentities: [{name: 'l2-remote-tunnel', pid: 1234, pgid: 1234, startToken: 'test-start-token'}],
-    ports: {spring: 28080, db: 25433, asset: 29000, platform: 5174, operations: 5175},
+    processIdentities: [{name: 'l2-remote-http-asset-tunnel', pid: 1234, pgid: 1234, startToken: 'test-start-token'}],
+    ports: {http: 28080, asset: 29000, platform: 5174, operations: 5175},
     activeCaseIds: ['sales-menu-entry-and-channels'],
     frontendMode: 'preview',
     createdAt: '2026-09-03T00:00:00.000Z',
@@ -1527,13 +1648,52 @@ test('browser L2 readiness evidence binds current repository bytes and exposes o
   const activeCaseIds = [...candidate.approvedCaseIds];
   const credentialsPath = path.join(runDirectory, 'credentials.env');
   const ownerFixturePath = path.join(runDirectory, 'catalog-inventory-owner-fixture.json');
+  const remoteRunId = 'r5-dev-1234567890-12345-11111111-1111-4111-8111-111111111111';
+  const remoteRoot = `/tmp/${remoteRunId}`;
+  const remoteJava = {
+    schemaVersion: 1,
+    kind: 'r5-dev-remote-java-control',
+    runId: remoteRunId,
+    remoteRoot,
+    pid: 1,
+    pgid: 1,
+    bootId: '0123456789abcdef0123456789abcdef',
+    processStartTicks: 1,
+    commandSha256: 'a'.repeat(64),
+    httpPort: 18080,
+    phase: 'READY',
+    logPath: `${remoteRoot}/results/business-server.log`,
+    phasePath: `${remoteRoot}/results/phase.jsonl`,
+  };
   const manifest = buildReadinessManifest({
     identity,
-    ports: {db: 15432, asset: 19000, spring: 18080, platform: 15173, operations: 15174},
+    ports: {http: 18080, asset: 19000, platform: 15173, operations: 15174},
     candidate,
     denominators: {activeCases: activeCaseIds.length, activeCaseIds},
     timingReport: {activeCaseCount: activeCaseIds.length, fullRunTimeoutMs: 120000},
     remote: {host: 'trusted-test-host', fingerprint: 'test-fingerprint', allowlistVersion: 'test-allowlist'},
+    remoteJava,
+    remoteRoot,
+    remoteResources: {
+      schemaVersion: 1,
+      kind: 'r5-dev-remote-resource-snapshot',
+      host: 'trusted-test-host',
+      bootId: remoteJava.bootId,
+      remoteRoot,
+      javaMajor: 21,
+      cpuCount: 4,
+      memoryAvailableMiB: 1024,
+      tmpAvailableMiB: 4096,
+      remoteRootAbsent: false,
+      observedAt: new Date().toISOString(),
+    },
+    remoteHttpPort: 18080,
+    remoteDiagnostics: {
+      events: `${remoteRoot}/results/http-request-events.jsonl`,
+      dbEvents: `${remoteRoot}/results/db-operation-events.jsonl`,
+      dictionary: `${remoteRoot}/results/statement-dictionary.json`,
+    },
+    remoteLogPath: path.join(runDirectory, 'remote-business-server.log'),
     processes: [{name: 'test-process', pid: 1, pgid: 1, startToken: 'test-start-token'}],
     diagnostics: {
       events: path.join(runDirectory, 'events.jsonl'),

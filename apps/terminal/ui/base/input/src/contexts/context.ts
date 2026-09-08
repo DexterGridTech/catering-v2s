@@ -1,10 +1,16 @@
 import {createContext, useContext, type RefObject} from 'react'
 import type {PrimitiveInputHandle} from '@catering-v2s/ui-base-primitives'
-import type {InputController, InputFieldKeyboardState, InputKeyboardState} from '../types/types'
+import type {
+  InputController,
+  InputDiagnosticReporter,
+  InputFieldKeyboardState,
+  InputKeyboardState,
+} from '../types/types'
 
 export const InputControllerContext = createContext<InputController | null>(null)
 export const InputKeyboardStateContext = createContext<InputKeyboardState | null>(null)
 export const InputFieldKeyboardStateContext = createContext<InputFieldKeyboardState | null>(null)
+export const InputDiagnosticContext = createContext<InputDiagnosticReporter | null>(null)
 export type InputScrollAncestor = (
   inputRef: RefObject<PrimitiveInputHandle | null>,
   keyboardHeight: number,
@@ -28,5 +34,7 @@ export const useInputFieldKeyboardState = (): InputFieldKeyboardState => {
   if (state === null) throw new Error('[ui-base-input] InputProvider is required')
   return state
 }
+
+export const useInputDiagnostic = (): InputDiagnosticReporter | null => useContext(InputDiagnosticContext)
 
 export const useInputScrollAncestor = (): InputScrollAncestor | null => useContext(InputScrollAncestorContext)

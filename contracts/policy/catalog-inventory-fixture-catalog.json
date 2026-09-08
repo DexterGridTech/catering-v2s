@@ -38,6 +38,7 @@
             "attributeValues": {
               "SIZE": "SMALL"
             },
+            "standardSalePriceCents": 2800,
             "status": "ENABLED",
             "mediaAssetKey": "coffee"
           },
@@ -46,7 +47,8 @@
             "attributeValues": {
               "SIZE": "MEDIUM"
             },
-            "status": "DISABLED",
+            "standardSalePriceCents": 3200,
+            "status": "ENABLED",
             "mediaAssetKey": "coffee"
           },
           {
@@ -54,7 +56,17 @@
             "attributeValues": {
               "SIZE": "LARGE"
             },
+            "standardSalePriceCents": 3600,
             "status": "VOIDED",
+            "mediaAssetKey": "coffee"
+          },
+          {
+            "code": "LATTE-SKU-XL",
+            "attributeValues": {
+              "SIZE": "XL"
+            },
+            "standardSalePriceCents": 4000,
+            "status": "DISABLED",
             "mediaAssetKey": "coffee"
           }
         ],
@@ -870,7 +882,8 @@
         "PORTION_SIZE-REGULAR": "标准份",
         "SIZE-LARGE": "大杯",
         "SIZE-MEDIUM": "中杯",
-        "SIZE-SMALL": "小杯"
+        "SIZE-SMALL": "小杯",
+        "SIZE-XL": "超大杯"
       },
       "ORDER_OPTION_VALUE": {
         "BURRATA_SAUCE_BALSAMIC": "黑醋汁",
@@ -1376,8 +1389,8 @@
           },
           {
             "definitionCode": "CAESAR_TOPPINGS",
-            "required": false,
-            "minSelectionCount": 0,
+            "required": true,
+            "minSelectionCount": 1,
             "maxSelectionCount": 2,
             "values": [
               {
@@ -1558,6 +1571,15 @@
               {
                 "identifierType": "BARCODE",
                 "identifierValue": "690100000103"
+              }
+            ]
+          },
+          {
+            "skuCode": "LATTE-SKU-XL",
+            "identifiers": [
+              {
+                "identifierType": "BARCODE",
+                "identifierValue": "690100000105"
               }
             ]
           }
@@ -7633,5 +7655,5 @@
     ],
     "seedExecutionNotAuthorized": true
   },
-  "fixtureDigest": "674dff9587ae498cf20b1236a8265f262a8354e40e04ba81ef96356d8cc9eee4"
+  "fixtureDigest": "12252bf3e8369d6796f6e175f781f3411bd4d6d634a18d51066a9cd97b297245"
 }

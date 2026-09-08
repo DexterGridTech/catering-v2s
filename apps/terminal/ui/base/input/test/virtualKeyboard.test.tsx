@@ -3,6 +3,8 @@ import {useCallback, useState} from 'react';
 import {describe, expect, it, vi} from 'vitest';
 import {VirtualKeyboard} from '../src/components/VirtualKeyboard';
 
+const TEST_FRAME_WIDTH = 960;
+
 const KeyboardHarness = () => {
   const [, setParentRevision] = useState(0);
   const onKey = useCallback(() => {
@@ -12,7 +14,7 @@ const KeyboardHarness = () => {
     <VirtualKeyboard
       layout="numeric"
       height={250}
-      frameWidth={962}
+      frameWidth={TEST_FRAME_WIDTH}
       cellWidth={310}
       shift={false}
       capsLock={false}
@@ -77,7 +79,7 @@ describe('VirtualKeyboard render boundary', () => {
         <VirtualKeyboard
           layout={layout}
           height={320}
-          frameWidth={962}
+          frameWidth={TEST_FRAME_WIDTH}
           cellWidth={100}
           shift={false}
           capsLock={false}
@@ -111,7 +113,7 @@ describe('VirtualKeyboard render boundary', () => {
         <VirtualKeyboard
           layout="numeric"
           height={250}
-          frameWidth={962}
+          frameWidth={TEST_FRAME_WIDTH}
           cellWidth={310}
           shift={false}
           capsLock={false}
@@ -135,7 +137,7 @@ describe('VirtualKeyboard render boundary', () => {
           <VirtualKeyboard
             layout={layout}
             height={219}
-            frameWidth={962}
+            frameWidth={TEST_FRAME_WIDTH}
             cellWidth={310}
             shift={false}
             capsLock={false}

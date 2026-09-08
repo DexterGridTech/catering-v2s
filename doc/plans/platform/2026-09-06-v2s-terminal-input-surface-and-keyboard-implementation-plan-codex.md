@@ -1,11 +1,18 @@
 # TER Terminal 输入承载形态与虚拟键盘 v2 实施计划
 
-> STATUS: IMPLEMENTATION_COMPLETE_PENDING_EXTERNAL_REVIEW
+> STATUS: HISTORICAL_SUPERSEDED
+> SUPERSEDED_BY: doc/plans/platform/2026-09-08-v2s-terminal-android-web-preview-alignment-implementation-plan-codex.md
 > IMPLEMENTATION_AUTHORITY: true
 > REVIEW_TARGET: IMPLEMENTATION
 > DESIGN_REF: doc/plans/platform/2026-09-06-v2s-terminal-input-surface-and-keyboard-implementation-design-codex.md
 > REQUIREMENT_REFS: doc/plans/platform/2026-09-06-v2s-terminal-input-surface-form-requirements-codex.md; doc/plans/platform/2026-09-06-v2s-terminal-input-keyboard-visual-redesign-requirements-v2-codex.md; doc/plans/platform/2026-09-03-v2s-terminal-sample-verification-slice-requirements-claude.md; doc/plans/platform/2026-09-05-v2s-terminal-input-requirements-claude.md
 > IMPLEMENTATION_ADMISSION: ADMITTED_BY_DEXTER
+
+> Historical notice: this plan's 2026-09-07 Web preview supplement and §6.2 are retained only as
+> implementation history. They are superseded by the 2026-09-08 alignment design and plan. In
+> particular, `scaleToFit=true`, uniform contain, and the old `terminalSurfaces.layout` shape are
+> not current policy and must not be implemented or used as acceptance criteria. The Web preview
+> mapping policy remains OPEN pending Dexter's decision.
 
 ## 0. 任务边界
 
@@ -20,11 +27,21 @@
 挤压。故本计划 §6.2 原先关于响应式 surface box 的表述由本增补替代；host preview 的唯一
 缩放接缝与 input 内部的禁止边界均以本增补及 §6.2 正文为准。
 
-实现范围只在 `apps/terminal/ui/base/dev-host`：`SurfaceCanvas` 以自己的 canvas `onLayout`
+实现范围包括 `apps/terminal/ui/base/dev-host` 与既有 Android carrier 的密度接缝：`SurfaceCanvas` 以自己的 canvas `onLayout`
 作为预览宽度输入，`surfacePreview.ts` 计算当前已挂载 surface 的逻辑 stage 与共同倍率；
 logical stage 和每棵 surface box 保留固定声明 width/height，Web host 只在 logical stage
 这一处施加 preview transform。`ui/base/input` 仍不读取宿主尺寸/scale，`InputSurfaceFrame`
-仍使用自己的 local `onLayout` metrics；不会新增物理尺寸桥，也不改 Android/native。
+仍使用自己的 local `onLayout` metrics；Android carrier 只从目标 display 读取 densityDpi，
+为副屏 ReactSurface 创建目标 density 的 configuration context，不改拓扑、方向或业务层。
+
+### 0.2 Android 目标 display density 接缝（Dexter 直接指派）
+
+`TerminalDualScreenActivityHandler` 是 Android density 的唯一 owner：创建副屏
+`ReactSurface` 前从目标 `Display` 读取 `DisplayMetrics.densityDpi`，再由
+`createSurfaceContext` 设置 configuration context 的 render density。不得把 density 或物理尺寸传入
+input/assembly。目标 `1280×720 physical px、213dpi` 的 owner-window focused 结果应为约
+`961.5×540.8` hardware-density logical frame；React surface 使用 canonical render density，
+其固定逻辑画布为 `960×540`。这两类证据与 Web stage 的逻辑尺寸证据分开记录。
 
 Web 真实验收必须观察 `getBoundingClientRect()` 与 `elementFromPoint()`，用于证明视觉命中
 来自实际 DOM；缩放后的 Web rect 不作为 Android 48dp 证据。`scaleToFit=false` 保持倍率 1
@@ -90,15 +107,17 @@ focused proof 和待核对清单；fresh 独立子 agent 在进入下一 CP 前�
 
 ## 3. CP-0：input 与既有 Android carrier 的边界核对
 
-本专题解决的是 input 在实际 surface frame 中的测量、几何、焦点与交互，不解决 App 是否
-锁定 landscape，也不改变 AndroidManifest、Expo app.json、Presentation 拓扑或设备策略。
-因此 CP-0 不新增 Android lifecycle listener，不调整 `TerminalDualScreenActivityHandler`、
-`TerminalDeviceModule` 或方向声明；既有 adapter 只作为 `imeInset` 平台事实的提供者。
+本专题解决的是 input 在实际 surface frame 中的测量、几何、焦点与交互，以及 Android
+carrier 让副屏 ReactSurface 使用目标 display density；不解决 App 是否锁定 landscape，
+也不改变 AndroidManifest、Expo app.json、Presentation 拓扑或设备策略。CP-0 不新增
+Android lifecycle listener；`TerminalDualScreenActivityHandler` 只在既有副屏创建接缝中
+归一化目标 density，`TerminalDeviceModule`、方向声明与 `imeInset` 产品边界保持不变。
 
 ### 3.1 精确核对集合
 
 1. 静态确认 `TerminalDualScreenActivityHandler` 仍提供既有 primary/secondary carrier，且
-   `TerminalImeInsetsCoordinator`/`imeInsetsSource` 是 input 唯一消费的 Android 平台事实。
+   副屏 `ReactSurface` 使用目标 display 的 density context；`TerminalImeInsetsCoordinator`/
+   `imeInsetsSource` 是 input 唯一消费的 Android 平台事实。
 2. 静态确认 `InputSurfaceFrame` 不读取 DisplayManager、Dimensions、window、Platform、
    terminalSurfaces 或其它 surface 的尺寸；实际 frame 尺寸只来自自身 `onLayout`。
 3. 静态确认 CP-0 不修改 `MainActivity`、`MainApplication`、AndroidManifest、`app.json`，
@@ -230,7 +249,11 @@ keyboard-financial-probe:
 customer-member。重扫 `MemberForm` 的显式 fieldId 读取、success/cancel/failure retry/
 re-enter/unmount 清理点。
 
-### 6.2 Web 变更
+### 6.2 Web 变更（历史条款，已被 2026-09-08 alignment plan 取代）
+
+> The following section records the superseded 2026-09-07 Web supplement. It is not an active
+> implementation instruction. Its `scaleToFit=true`/uniform preview scale language and old shape
+> references are historical only; current Web policy is OPEN in the superseding plan.
 
 只改 `apps/terminal/ui/base/dev-host/src/testExpoApp.tsx#SurfaceCanvas` 与同包内部的
 `src/surfacePreview.ts`：canvas 的 `onLayout` 只记录宿主预览可用宽度；几何函数按

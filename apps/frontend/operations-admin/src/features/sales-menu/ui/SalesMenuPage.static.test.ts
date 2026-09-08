@@ -5,6 +5,7 @@ const pageFileSource = readFileSync(new URL('./SalesMenuPage.tsx', import.meta.u
 const readModelFileSource = readFileSync(new URL('../model/useSalesMenuReadModel.ts', import.meta.url), 'utf8');
 const mediaFileSource = readFileSync(new URL('./SalesMenuItemMediaEditor.tsx', import.meta.url), 'utf8');
 const detailFileSource = readFileSync(new URL('./SalesMenuItemDetailDrawer.tsx', import.meta.url), 'utf8');
+const detailGalleryFileSource = readFileSync(new URL('./SalesMenuItemImageGallery.tsx', import.meta.url), 'utf8');
 const editorFileSource = readFileSync(new URL('./SalesMenuItemEditorDrawer.tsx', import.meta.url), 'utf8');
 const candidateFileSource = readFileSync(new URL('./SalesMenuCandidateDrawer.tsx', import.meta.url), 'utf8');
 const managerFileSource = readFileSync(new URL('./SalesMenuManagerDrawer.tsx', import.meta.url), 'utf8');
@@ -17,6 +18,7 @@ const source = [
   readModelFileSource,
   mediaFileSource,
   detailFileSource,
+  detailGalleryFileSource,
   editorFileSource,
   candidateFileSource,
   managerFileSource,
@@ -56,6 +58,7 @@ const traceSources = {
   page: pageSource,
   readModel: readModelFileSource,
   detail: detailSource,
+  detailGallery: detailGalleryFileSource,
   editor: editorSource,
   media: mediaSource,
   candidate: candidateSource,
@@ -134,7 +137,7 @@ const uiTrace: Array<[string, keyof typeof traceSources, string[]]> = [
   [
     'UI-19',
     'published',
-    ["title: '销售状态'", 'salesMenuManualSaleStatusLabel(row.manualSaleStatus)', 'onStatus(row)'],
+    ["title: '销售状态'", 'salesMenuPublishedSaleStatusLabel(row)', 'onStatus(row, event.currentTarget)'],
   ],
   [
     'UI-20',
@@ -171,6 +174,7 @@ const uiTrace: Array<[string, keyof typeof traceSources, string[]]> = [
   ['UI-29', 'page', ["salesMenuTestIds.mode('PUBLISHED')", "value: 'PUBLISHED'", '<PublishedSalesItemTable']],
   ['UI-30', 'detail', ['title="销售项详情"', '<Descriptions', '适用约束']],
   ['UI-31', 'all', ['testIdPrefix={salesMenuTestIds.draftCursor}', 'testIdPrefix={salesMenuTestIds.logCursor}']],
+  ['UI-32', 'detailGallery', ['<button', 'aria-pressed={active}', 'itemDetailMediaChoice(itemRef, assetRef)']],
 ];
 
 describe('sales menu IA static trace', () => {
@@ -191,7 +195,7 @@ describe('sales menu IA static trace', () => {
     expect(source).toContain("title: '库存状态'");
     expect(source).toContain("title: '销售状态'");
     expect(source).toContain('salesMenuInventoryAvailabilityLabel(row.inventoryAvailability)');
-    expect(source).toContain('salesMenuManualSaleStatusLabel(row.manualSaleStatus)');
+    expect(source).toContain('salesMenuPublishedSaleStatusLabel(row)');
     expect(source).not.toContain("dataIndex: 'operationKind'");
   });
 
@@ -226,7 +230,7 @@ describe('sales menu IA static trace', () => {
     expect(draftTableSource).toContain('salesMenuProductShapeLabel(row.productShape)');
     expect(draftTableSource).toContain('itemMediaLabel(row)');
     expect(draftTableSource).toContain('<AssetPreview');
-    expect(draftTableSource).toContain('row.catalogPrimaryImageAssetRef');
+    expect(draftTableSource).toContain('salesMenuPrimaryImageAssetRef(row)');
     expect(draftTableSource).toContain('width: 108');
     expect(draftTableSource).toContain('width: 120');
     expect(draftTableSource).toContain('width: 110');
@@ -243,11 +247,14 @@ describe('sales menu IA static trace', () => {
     const publishedColumnPositions = publishedColumns.map(title => publishedSource.indexOf(`title: '${title}'`));
     expect(publishedColumnPositions.every(position => position >= 0)).toBe(true);
     expect(publishedColumnPositions).toEqual([...publishedColumnPositions].sort((left, right) => left - right));
-    expect(publishedSource).toContain('width: 165');
+    expect(publishedSource).toContain('width: 210');
     expect(publishedSource).toContain('width: 80');
     expect(publishedSource).toContain('width: 147');
     expect(publishedSource).toContain('tableLayout="fixed"');
-    expect(publishedSource).toContain('scroll={{x: 652}}');
+    expect(publishedSource).toContain('scroll={{x: 697}}');
+    expect(publishedSource).toContain('<AssetPreview');
+    expect(publishedSource).toContain('salesMenuPrimaryImageAssetRef(row)');
+    expect(publishedSource).toContain('itemMediaLabel(row)');
     expect(publishedSource).toContain('salesMenuPublishedPriceLabel(row)');
     expect(publishedSource).toContain('salesMenuSpecificationLabel(row)');
     expect(publishedSource).toContain('salesMenuProductShapeLabel(row.productShape)');
@@ -403,13 +410,74 @@ describe('sales menu IA static trace', () => {
     expect(detailSource).toContain('前台销售项详情暂时无法获取');
     expect(detailSource).not.toContain('onStatus');
     expect(pageSource).toContain('channelRef: selectedChannelRef');
+    expect(detailSource).toContain('<SalesMenuItemImageGallery');
+    expect(detailSource).toContain('salesMenuImageAssetRefs(displayedItem)');
+    expect(detailGalleryFileSource).toContain('<AssetPreview');
+    expect(detailGalleryFileSource).toContain(
+      "testId={salesMenuTestIds.itemMedia(itemRef, 'published-detail-primary')}",
+    );
+  });
+
+  it('keeps business-channel status separate from menu activation status', () => {
+    expect(pageSource).toContain('const selectedChannel = channelItems.find');
+    expect(pageSource).toContain('channelStatus={selectedChannel?.status}');
+    expect(sectionSource).toContain("channelStatus ? salesMenuChannelStatusLabel(channelStatus) : '未读取'");
+    expect(sectionSource).toContain('label="菜单启停"');
+    expect(sectionSource).toContain("menu.activation?.status ?? 'DISABLED'");
+  });
+
+  it('keeps sales-menu target selection and target-status controls on the approved facts', () => {
+    expect(editorSource).toContain('selectedSkuRefs');
+    expect(editorSource).toContain('skuPrices: isSku');
+    expect(editorSource).toContain("orderOptionSelections: item.saleContent.kind === 'DIRECT'");
+    expect(editorSource).toContain('catalogOrderOptions.map(option => ({');
+    expect(editorSource).toContain('testId(salesMenuTestIds.itemSkuOption(String(row.skuRef)))');
+    expect(editorSource).toContain('testId(salesMenuTestIds.itemSkuPrice(String(row.skuRef)))');
+    expect(editorSource).toContain('salesMenuTestIds.itemOrderOptionValue(');
+    expect(editorSource).toContain('testId(salesMenuTestIds.itemStaleSkuNotice)');
+    expect(editorSource).not.toMatch(/\borderOptions\b/);
+
+    expect(pageSource).toContain('statusItem.saleContent.selectedOrderOptions');
+    expect(pageSource).toContain('target: {targetKind: target.targetKind, targetRef: target.targetRef}');
+    expect(pageSource).toContain('testId(salesMenuTestIds.statusTarget(');
+    expect(pageSource).toContain('salesMenuTestIds.statusTargetQuickAction(');
+    expect(pageSource).toContain('testId(salesMenuTestIds.statusTargetReason)');
+    expect(pageSource).toContain('testId(salesMenuTestIds.statusFeedback)');
+    expect(pageSource).toContain('testId(salesMenuTestIds.statusClose)');
+    expect(pageSource).toContain('onClick={() => handleStatusTargetAction(target)}');
+    expect(pageSource).toContain('footer={');
+    expect(testIdsSource).toContain("statusClose: 'sales-menu-status-close'");
+    expect(testIdsSource).not.toContain('statusTargetState');
+    expect(testIdsSource).not.toContain('statusTargetSubmit');
+    expect(pageSource).not.toContain('statusTargetState(');
+    expect(pageSource).not.toContain('statusTargetSubmit');
+    expect(pageSource).not.toContain('onOk={submitStatus}');
+    expect(pageSource).toContain('库存状态是独立事实；本弹窗不能恢复库存自动不可售。');
+    expect(detailSource).toContain('displayedItem.saleContent.selectedOrderOptions');
+    expect(detailSource).toContain('manualSaleTargetStatuses');
+  });
+
+  it('keeps status and detail surfaces scannable without changing their owner facts', () => {
+    expect(pageSource).toContain('1. 选择要变更的目标');
+    expect(pageSource).toContain('当前状态');
+    expect(pageSource).toContain('操作');
+    expect(pageSource).toContain('2. 当前操作目标');
+    expect(pageSource).toContain('当前选中目标');
+    expect(pageSource).toContain('填写原因后，点击上方目标行的“设置沽清”完成操作。');
+    expect(pageSource).toContain('恢复销售请点击上方目标行的“恢复销售”；只恢复人工销售状态。');
+    expect(pageSource).toContain('afterOpenChange={statusAfterOpenChange}');
+    expect(detailSource).toContain('title="菜单商品"');
+    expect(detailSource).toContain('title="可售状态"');
+    expect(detailSource).toContain('xs={24} sm={12}');
+    expect(detailSource).toContain('salesMenuManualSaleStatusTagColor');
+    expect(detailSource).toContain('salesMenuPublishedTargetGroupLabel(displayedItem, status)');
   });
 
   it('centralizes sales-menu locators and records every approved UI trace item', () => {
     expect(source).not.toMatch(/testId\('sales-menu-/);
-    expect(uiTrace).toHaveLength(31);
+    expect(uiTrace).toHaveLength(32);
     for (const [requirement, segment, anchors] of uiTrace) {
-      expect(requirement).toMatch(/^UI-(0[1-9]|[12][0-9]|3[01])$/);
+      expect(requirement).toMatch(/^UI-(0[1-9]|[12][0-9]|3[0-2])$/);
       for (const anchor of anchors)
         expect(traceSources[segment], `${requirement} missing ${anchor} in ${segment}`).toContain(anchor);
     }
@@ -434,6 +502,7 @@ describe('sales menu IA static trace', () => {
       'testId(salesMenuTestIds.itemDiscardCancel)',
       "testId(salesMenuTestIds.itemMediaChoice('CUSTOM'))",
       'testId(salesMenuTestIds.statusAction(row.salesItemRef))',
+      'testId(salesMenuTestIds.itemDetailMediaChoice(itemRef, assetRef))',
     ]) {
       expect(source, `missing interactive control testId: ${anchor}`).toContain(anchor);
     }

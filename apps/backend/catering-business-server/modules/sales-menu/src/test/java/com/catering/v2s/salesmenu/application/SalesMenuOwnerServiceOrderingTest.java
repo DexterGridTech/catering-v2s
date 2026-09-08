@@ -16,6 +16,7 @@ import com.catering.v2s.salesmenu.api.SalesMenuOwnerApi;
 import com.catering.v2s.salesmenu.domain.SalesMenuMoveDirection;
 import com.catering.v2s.salesmenu.infrastructure.SalesMenuRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.ResultSet;
@@ -42,12 +43,12 @@ class SalesMenuOwnerServiceOrderingTest {
         invokeMove(service, SECTION_TABLE, "section_ref", null, SalesMenuMoveDirection.UP);
 
         List<String> queries = capturedQueries(repository);
-        assertEquals(3, queries.size());
-        assertTrue(queries.get(1).contains("WHERE version_ref=? AND (display_order < ?"));
-        assertFalse(queries.get(1).contains("AND section_ref=? AND (display_order"));
-        assertTrue(queries.get(1).contains("ORDER BY display_order DESC,section_ref DESC"));
-        assertTrue(queries.get(2).contains("WHERE version_ref=?"));
-        assertFalse(queries.get(2).contains("section_ref=?"));
+        assertEquals(2, queries.size());
+        assertTrue(queries.get(0).contains("WHERE version_ref=? AND (display_order < ?"));
+        assertFalse(queries.get(0).contains("AND section_ref=? AND (display_order"));
+        assertTrue(queries.get(0).contains("ORDER BY display_order DESC,section_ref DESC"));
+        assertTrue(queries.get(1).contains("WHERE version_ref=?"));
+        assertFalse(queries.get(1).contains("section_ref=?"));
 
         ArgumentCaptor<String> updates = ArgumentCaptor.forClass(String.class);
         verify(repository, times(3)).update(updates.capture(), any(Object[].class));
@@ -63,8 +64,9 @@ class SalesMenuOwnerServiceOrderingTest {
         invokeMove(service, ITEM_TABLE, "sales_item_ref", SECTION, SalesMenuMoveDirection.UP);
 
         List<String> queries = capturedQueries(repository);
-        assertTrue(queries.get(1).contains("WHERE version_ref=? AND section_ref=? AND (display_order < ?"));
-        assertTrue(queries.get(2).contains("WHERE version_ref=? AND section_ref=?"));
+        assertEquals(2, queries.size());
+        assertTrue(queries.get(0).contains("WHERE version_ref=? AND section_ref=? AND (display_order < ?"));
+        assertTrue(queries.get(1).contains("WHERE version_ref=? AND section_ref=?"));
     }
 
     @Test
@@ -119,7 +121,7 @@ class SalesMenuOwnerServiceOrderingTest {
 
     private static List<String> capturedQueries(SalesMenuRepository repository) {
         ArgumentCaptor<String> queries = ArgumentCaptor.forClass(String.class);
-        verify(repository, times(3)).query(queries.capture(), any(RowMapper.class), any(Object[].class));
+        verify(repository, times(2)).query(queries.capture(), any(RowMapper.class), any(Object[].class));
         return queries.getAllValues();
     }
 
@@ -130,11 +132,29 @@ class SalesMenuOwnerServiceOrderingTest {
             UUID section,
             SalesMenuMoveDirection direction)
             throws Exception {
+        Class<?> currentType = Class.forName(SalesMenuOwnerService.class.getName() + "$MoveCurrentRow");
+        Constructor<?> currentConstructor = currentType.getDeclaredConstructor(UUID.class, long.class);
+        currentConstructor.setAccessible(true);
         Method move = SalesMenuOwnerService.class.getDeclaredMethod(
-                "move", String.class, String.class, UUID.class, UUID.class, SalesMenuMoveDirection.class, UUID.class);
+                "move",
+                String.class,
+                String.class,
+                UUID.class,
+                UUID.class,
+                SalesMenuMoveDirection.class,
+                UUID.class,
+                currentType);
         move.setAccessible(true);
         try {
-            move.invoke(service, table, refColumn, VERSION, CURRENT, direction, section);
+            move.invoke(
+                    service,
+                    table,
+                    refColumn,
+                    VERSION,
+                    CURRENT,
+                    direction,
+                    section,
+                    currentConstructor.newInstance(CURRENT, 10L));
         } catch (InvocationTargetException failure) {
             if (failure.getCause() instanceof RuntimeException runtimeFailure) throw runtimeFailure;
             throw failure;

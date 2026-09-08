@@ -10,6 +10,8 @@ public record SalesMenuPublishedItemView(
     SalesMenuSaleContent saleContent,
     SalesMenuOrderingConstraints orderingConstraints,
     SalesMenuDisplayMedia displayMedia,
+    java.util.UUID publishedPrimaryImageAssetRef,
+    java.util.List<java.util.UUID> publishedCatalogImageAssetRefs,
     Long displayOrder,
     InventoryAvailabilityFact inventoryAvailability,
     ManualSaleStatusFact manualSaleStatus,

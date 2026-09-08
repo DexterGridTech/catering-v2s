@@ -122,7 +122,7 @@ endpoint 分组、API 调用数、HTTP/数据库 average/min/max、关联缺口�
 Markdown，不会重新执行 seed。
 
 - **DEV**：受信远端非生产主机启动 Spring Boot，与 PostgreSQL/对象存储同侧；本机只启动 `platform-admin` 与 `operations-admin` Vite，经受管 tunnel 转发 Java HTTP 与资产端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite/浏览器。start/restart 可 additive Flyway，绝不 seed。
-- **当前受管浏览器 L2**：不随 DEV L1 改造，仍在本机启动 Spring Boot、两个 Web 和 Playwright；远端只承载每 run 隔离的中间件命名空间。runner 必须保留本机 PID/日志、tunnel identity、远端数据库/资产 namespace readback，并分别证明业务结果与两侧 cleanup。
+- **当前受管浏览器 L2**：Spring Boot 在受信远端非生产主机运行；远端先为本 run 预检独立 HTTP 端口；本机只启动两个 Web Vite 与 Playwright，tunnel 仅转发该远端 Java HTTP 端口和资产端口。每 run 使用隔离的远端数据库/资产 namespace；runner 必须保留远端 Java HTTP port、PID/PGID/boot id/start ticks/command digest、远端日志与 readiness，以及本机 Vite/Playwright/tunnel identity，并分别证明业务结果与两侧 cleanup。不得启动本地 Spring、不得建立 PostgreSQL tunnel。
 - **后续 UAT**：仅在 Dexter 单独授权后，应用与浏览器执行面均部署并运行在远端；本机 runtime、DEV 数据库或静态检查不能替代 UAT。
 
 远端 Testcontainers 保持其 JVM/Docker 同平面的技术验证边界，不能被解释为上述浏览器 L2 或 UAT。

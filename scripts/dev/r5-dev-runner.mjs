@@ -3,6 +3,7 @@ import {spawn, spawnSync} from 'node:child_process';
 import {appendFileSync, chmodSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, statSync, writeFileSync} from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {canonicalStartToken, evaluateCleanupReadback, snapshotProcessTree, terminateOwnedProcessTree, readProcessTable} from './managed-process-tree.mjs';
 import {refreshManagedDiagnosticFiles} from './managed-diagnostic-protocol.mjs';
 import {isOwnedRemoteDevRoot, remoteDevRootFor, remoteIdentityMatches, remoteJavaSelfTest, REMOTE_JAVA_CONTROL_KIND, validateRemoteJavaControl, validateRemoteResourceSnapshot} from './r5-remote-java.mjs';
@@ -43,7 +44,7 @@ const remoteRootGuard = (rootValue) => {
   if (!isOwnedRemoteDevRoot(rootValue)) fail('REMOTE_ROOT_IDENTITY_INVALID');
   return rootValue;
 };
-function remoteResourcePreflight(host, remoteRoot) {
+export function remoteResourcePreflight(host, remoteRoot) {
   remoteRootGuard(remoteRoot);
   const output = remoteExec(host, [
     'set -euo pipefail',
@@ -68,13 +69,35 @@ function remoteResourcePreflight(host, remoteRoot) {
   if (snapshot.host !== 'REMOTE_HOST' || snapshot.remoteRoot !== remoteRoot) fail('REMOTE_RESOURCE_SNAPSHOT_BINDING_INVALID');
   return {...snapshot, host};
 }
+
+export function remoteHttpPortPreflight(host, remoteRoot, candidates = ['18080', '18081', '18082', '18083']) {
+  remoteRootGuard(remoteRoot);
+  if (
+    !Array.isArray(candidates) ||
+    candidates.length === 0 ||
+    candidates.some(port => !/^\d{4,5}$/.test(String(port)) || Number(port) < 1024 || Number(port) > 65535)
+  ) {
+    fail('REMOTE_JAVA_HTTP_PORT_CANDIDATES_INVALID');
+  }
+  const candidateLines = candidates.map(port => `port=${quote(String(port))}; if ! ss -ltnH "sport = :$port" | grep -q .; then printf '%s\\n' "$port"; exit 0; fi`).join('\n');
+  const output = remoteExec(host, [
+    'set -euo pipefail',
+    'command -v ss >/dev/null',
+    `root=${quote(remoteRoot)}`,
+    'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
+    candidateLines,
+    'exit 73',
+  ].join('\n')).trim();
+  if (!/^\d{4,5}$/.test(output)) fail('REMOTE_JAVA_HTTP_PORT_PREFLIGHT_INVALID');
+  return Number(output);
+}
 const waitForChild = (child) => new Promise((resolve) => {
   let settled = false;
   const finish = (status) => { if (!settled) { settled = true; resolve(status); } };
   child.once('error', () => finish(-1));
   child.once('close', (status) => finish(status));
 });
-async function syncRemoteSource(host, remoteRoot) {
+export async function syncRemoteSource(host, remoteRoot) {
   remoteRootGuard(remoteRoot);
   remoteExec(host, [
     'set -euo pipefail',
@@ -94,8 +117,24 @@ async function syncRemoteSource(host, remoteRoot) {
   return {remoteRoot, workspace: `${remoteRoot}/workspace`};
 }
 const remoteEnvLine = (name, value) => `${name}=${String(value ?? '')}`;
-async function startRemoteJava(host, {runId, remoteRoot, env, credential, catalogTestFaultsAdmitted, assetPublicBaseUrl}) {
+export async function startRemoteJava(
+  host,
+  {
+    runId,
+    remoteRoot,
+    env,
+    credential,
+    catalogTestFaultsAdmitted,
+    assetPublicBaseUrl,
+    httpPort = env.environment.V2S_DEV_REMOTE_HTTP_PORT ?? '8080',
+    assetObjectPrefix = `catering-v2s/dev/${env.namespace}/`,
+    extraEnvironment = {},
+  },
+) {
   remoteRootGuard(remoteRoot);
+  if (!/^\d{4,5}$/.test(String(httpPort)) || Number(httpPort) < 1024 || Number(httpPort) > 65535) {
+    fail('REMOTE_JAVA_HTTP_PORT_INVALID');
+  }
   const remoteWorkspace = `${remoteRoot}/workspace`;
   const remoteResults = `${remoteRoot}/results`;
   const remoteEnvFile = `${remoteRoot}/business-server.env`;
@@ -112,8 +151,10 @@ async function startRemoteJava(host, {runId, remoteRoot, env, credential, catalo
   const databaseUrl = env.environment.V2S_DEV_DATABASE_URL;
   const values = {
     CATERING_BUSINESS_DB_URL: databaseUrl,
-    CATERING_BUSINESS_DB_USERNAME: credential.values.V2S_DEV_DATABASE_USERNAME,
-    CATERING_BUSINESS_DB_PASSWORD: credential.values.V2S_DEV_DATABASE_PASSWORD,
+    CATERING_BUSINESS_DB_USERNAME:
+      credential.values.V2S_DEV_DATABASE_USERNAME ?? credential.values.CATERING_BUSINESS_DB_USERNAME,
+    CATERING_BUSINESS_DB_PASSWORD:
+      credential.values.V2S_DEV_DATABASE_PASSWORD ?? credential.values.CATERING_BUSINESS_DB_PASSWORD,
     CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET,
     CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET,
     CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true',
@@ -124,9 +165,9 @@ async function startRemoteJava(host, {runId, remoteRoot, env, credential, catalo
       : {V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE: backendAcceptanceVerificationMode}),
     V2S_DEV_NAMESPACE: env.namespace,
     V2S_CATALOG_TEST_FAULTS: catalogTestFaultsAdmitted ? 'true' : 'false',
-    V2S_SEED_OTP_FIXED_VALUE: credential.values.V2S_SEED_OTP_FIXED_VALUE,
+    V2S_SEED_OTP_FIXED_VALUE: credential.values.V2S_SEED_OTP_FIXED_VALUE ?? credential.values.V2S_L2_TEST_OTP,
     V2S_SEED_REPORT_RUN_ID: runId,
-    V2S_SEED_REPORT_SECRET: credential.values.V2S_SEED_REPORT_SECRET,
+    V2S_SEED_REPORT_SECRET: credential.values.V2S_SEED_REPORT_SECRET ?? credential.values.V2S_L2_DIAGNOSTIC_SECRET,
     V2S_SEED_REPORT_EVENTS: remoteSeedEventsPath,
     V2S_DB_OPERATIONS_EVENTS: remoteDbOperationsPath,
     V2S_DB_OPERATIONS_HMAC_KEY: credential.values.V2S_DB_OPERATIONS_HMAC_KEY,
@@ -139,8 +180,16 @@ async function startRemoteJava(host, {runId, remoteRoot, env, credential, catalo
     // It must therefore be the selected local asset ingress, not the remote
     // MinIO port which is intentionally unreachable from the developer host.
     CATERING_ASSET_PUBLIC_BASE_URL: assetPublicBaseUrl,
-    CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/dev/${env.namespace}/`,
+    CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: assetObjectPrefix,
+    SERVER_PORT: String(httpPort),
+    V2S_DEV_REMOTE_HTTP_PORT: String(httpPort),
+    ...extraEnvironment,
   };
+  for (const [name, value] of Object.entries(values)) {
+    if (!/^[A-Z][A-Z0-9_]{1,127}$/.test(name) || typeof value !== 'string' || !value || /[\u0000\r\n]/.test(value)) {
+      fail('REMOTE_JAVA_ENVIRONMENT_INVALID');
+    }
+  }
   const envLines = Object.entries(values).map(([name, value]) => quote(remoteEnvLine(name, value))).join(' ');
   const commandText = './gradlew --no-daemon :apps:backend:catering-business-server:bootRun';
   const output = remoteExec(host, [
@@ -153,6 +202,7 @@ async function startRemoteJava(host, {runId, remoteRoot, env, credential, catalo
     `phase_file=${quote(remotePhase)}`,
     `run_id=${quote(runId)}`,
     `command_text=${quote(commandText)}`,
+    `http_port=${quote(String(httpPort))}`,
     'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
     'test -d "$workspace"',
     `printf '%s\\n' ${envLines} > "$env_file"`,
@@ -170,7 +220,7 @@ async function startRemoteJava(host, {runId, remoteRoot, env, credential, catalo
     'command_sha256=$(printf "%s" "$command_line" | sha256sum | awk \'{print $1}\')',
     'test -n "$pgid" -a -n "$process_start_ticks" -a -n "$command_sha256"',
     'tmp="$results/control.json.$$.tmp"',
-    'printf \'%s\\n\' "{\\"schemaVersion\\":1,\\"kind\\":\\"r5-dev-remote-java-control\\",\\"runId\\":\\"$run_id\\",\\"remoteRoot\\":\\"$root\\",\\"pid\\":$pid,\\"pgid\\":$pgid,\\"bootId\\":\\"$boot_id\\",\\"processStartTicks\\":$process_start_ticks,\\"commandSha256\\":\\"$command_sha256\\",\\"phase\\":\\"STARTING\\",\\"logPath\\":\\"$log_file\\",\\"phasePath\\":\\"$phase_file\\"}" > "$tmp"',
+    'printf \'%s\\n\' "{\\"schemaVersion\\":1,\\"kind\\":\\"r5-dev-remote-java-control\\",\\"runId\\":\\"$run_id\\",\\"remoteRoot\\":\\"$root\\",\\"pid\\":$pid,\\"pgid\\":$pgid,\\"bootId\\":\\"$boot_id\\",\\"processStartTicks\\":$process_start_ticks,\\"commandSha256\\":\\"$command_sha256\\",\\"httpPort\\":$http_port,\\"phase\\":\\"STARTING\\",\\"logPath\\":\\"$log_file\\",\\"phasePath\\":\\"$phase_file\\"}" > "$tmp"',
     'chmod 600 "$tmp"; mv "$tmp" "$results/control.json"',
     'printf \'%s\\n\' \'{"phase":"STARTING","status":"PASS"}\' >> "$phase_file"',
     'cat "$results/control.json"',
@@ -193,7 +243,7 @@ function readRemoteJavaControl(host, remoteRoot) {
   const output = remoteExec(host, ['set -euo pipefail', `root=${quote(remoteRoot)}`, 'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac', 'cat "$root/results/control.json"'].join('\n'));
   return validateRemoteJavaControl(JSON.parse(output.trim()));
 }
-function remoteJavaReadiness(host, control) {
+export function remoteJavaReadiness(host, control) {
   validateRemoteJavaControl(control);
   const output = remoteExec(host, [
     'set -euo pipefail',
@@ -215,7 +265,7 @@ function remoteJavaReadiness(host, control) {
   ].join('\n'));
   return JSON.parse(output.trim());
 }
-async function stopRemoteJava(host, control) {
+export async function stopRemoteJava(host, control) {
   validateRemoteJavaControl(control);
   const output = remoteExec(host, [
     'set -euo pipefail',
@@ -259,7 +309,7 @@ async function stopRemoteJava(host, control) {
   if (!output.includes('R5_REMOTE_JAVA_STOP=PASS')) fail('REMOTE_JAVA_STOP_PROTOCOL_INVALID');
   return output.includes('R5_REMOTE_JAVA_STOP=PASS STATUS=ALREADY_STOPPED') ? 'ALREADY_STOPPED' : 'STOPPED';
 }
-function collectRemoteLog(host, control, target) {
+export function collectRemoteLog(host, control, target) {
   validateRemoteJavaControl(control);
   mkdirSync(path.dirname(target), {recursive: true, mode: 0o700});
   const result = spawnSync('scp', ['-q', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', `${host}:${control.logPath}`, target], {cwd: root, encoding: 'utf8'});
@@ -267,7 +317,7 @@ function collectRemoteLog(host, control, target) {
   chmodSync(target, 0o600);
   return target;
 }
-function cleanupRemoteJavaRoot(host, remoteRoot) {
+export function cleanupRemoteJavaRoot(host, remoteRoot) {
   remoteRootGuard(remoteRoot);
   remoteExec(host, ['set -euo pipefail', `root=${quote(remoteRoot)}`, 'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac', 'rm -rf -- "$root"', 'test ! -e "$root"'].join('\n'));
 }
@@ -447,7 +497,7 @@ async function openTunnel(env, ports) {
   }
 }
 
-async function waitForRemoteBusinessReady(host, control, progressPath) {
+export async function waitForRemoteBusinessReady(host, control, progressPath) {
   const deadline = Date.now() + 120_000;
   let attempts = 0;
   while (Date.now() < deadline) {
@@ -656,7 +706,8 @@ async function stop() {
   releasePortLock(lockPath); rmSync(manifestPath); process.stdout.write(`R5_DEV_STOP=PASS; TERMINAL_MANIFEST=${terminal}\n`);
 }
 const mode = process.argv[2];
-if (mode === '--self-test') {
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+if (isMain && mode === '--self-test') {
   const alternate = selectFirstAvailableTunnelPortPair([{http: '28080', asset: '29000'}, {http: '28081', asset: '29002'}], (port) => port === '28080' || port === '29000');
   if (alternate?.http !== '28081' || alternate.asset !== '29002') fail('R5_DEV_TUNNEL_PORT_ALLOCATION_RED_NOT_DETECTED');
   if (selectFirstAvailableTunnelPortPair([{http: '28080', asset: '29000'}], () => true) !== null) fail('R5_DEV_TUNNEL_PORT_EXHAUSTION_RED_NOT_DETECTED');
@@ -676,8 +727,8 @@ if (mode === '--self-test') {
   syntheticManifest.firstFailure = 'R5_DEV_PROCESS_TREE_REMAINS:synthetic'; syntheticManifest.brokenBoundary = 'LOCAL_CLEANUP'; syntheticManifest.cleanup = 'FAIL';
   if (syntheticManifest.business !== 'PASS' || syntheticManifest.cleanup !== 'FAIL' || !syntheticManifest.firstFailure || !syntheticManifest.lastKnownGood || !syntheticManifest.brokenBoundary) fail('R5_DEV_RUNNER_CLEANUP_EVIDENCE_RED_NOT_RETAINED');
   process.stdout.write('R5_DEV_RUNNER_SELF_TEST=PASS\nRED=LEADER_DEAD_CHILD_ALIVE_CLEANUP_FAIL\nEVIDENCE=FIRST_FAILURE,LAST_KNOWN_GOOD,BROKEN_BOUNDARY\n');
-} else if (mode === 'start') start().catch((error) => { process.stderr.write(`${error?.message ?? 'START_FAILED'}\n`); process.exitCode = 2; }); else if (mode === 'stop') {
+} else if (isMain && mode === 'start') start().catch((error) => { process.stderr.write(`${error?.message ?? 'START_FAILED'}\n`); process.exitCode = 2; }); else if (isMain && mode === 'stop') {
   stop().catch((error) => { process.stderr.write(`${error?.message ?? 'STOP_FAILED'}\n`); process.exitCode = 2; });
-} else {
+} else if (isMain) {
   try { fail('USAGE_START_OR_STOP_OR_SELF_TEST'); } catch (error) { process.stderr.write(`${error.message}\n`); process.exitCode = 2; }
 }

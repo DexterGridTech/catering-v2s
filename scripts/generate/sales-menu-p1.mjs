@@ -330,14 +330,15 @@ function validateBlueprint(blueprint, fixture, {readiness = null} = {}) {
       fail('SALES_MENU_P1_NETWORK_REQUEST_DECLARATION_INVALID', row.caseId);
     if (row.parameter.network.autoDrain === true || row.parameter.network.allowAutoDrain === true)
       fail('SALES_MENU_P1_NETWORK_AUTO_DRAIN_FORBIDDEN', row.caseId);
-    // Every sales-menu page mounts the shared scope/read-model surfaces. Their
-    // late responses may land inside a user-action window, so they must be
-    // explicit in each case's network denominator rather than treated as
-    // unexplained noise by the action gate.
+    // Every sales-menu page mounts the shared scope/read-model surfaces and may
+    // render the shared asset preview. Their late responses may land inside a
+    // user-action window, so they must be explicit in each case's network
+    // denominator rather than treated as unexplained noise by the action gate.
     for (const sharedOperationId of [
       'getOperationsStoreBusinessChannels',
       'getOperationsBusinessChannelTemplates',
       'getOperationsWorkspaceSessionEntry',
+      'getPublicAssetContent',
     ]) {
       const declared = new Set([...operationIds, ...(network?.backgroundAllowed ?? [])]);
       if (!declared.has(sharedOperationId))

@@ -31,7 +31,7 @@ condition 命中时停在当前 CP，保留 first failure、last known good、br
 - PRIMARY 上的中文字段走系统 IME，数字/金额/拉丁字段走 virtual keyboard；SECONDARY 当前不承载系统 IME，顾客年龄走 virtual keyboard；
 - selection-aware 编辑、backspace、shift/caps、complete/next；
 - 同一 surface 内 Provider、字段注册、原子提交快照和底部键盘 sibling；
-- 主 Activity 的 edge-to-edge IME inset 消费；Presentation 不作为当前系统 IME 承载面，副屏虚拟键盘使用 surface 声明尺寸；
+- 主 Activity 的 edge-to-edge IME inset 消费；Presentation 不作为当前系统 IME 承载面，副屏虚拟键盘使用其 `InputSurfaceFrame` 的本地测量尺寸；host 的 surface 声明只作为固定逻辑画布输入，不直接传入 input；
 - sample 年龄场景从本地草稿到 `confirmMemberCommand` 的可复核闭环。
 
 ### 1.2 不可变边界
@@ -219,8 +219,8 @@ height    = max(0, candidate)
 visible   = height >= 250
 ```
 
-必须锁定 sample 的 `PRIMARY 1157×723 → 320` 与 `SECONDARY 962×541 → 270`；同一 surface
-四种 layout 都返回同一 height。不能调用 `Dimensions.get`/window measurement，不能按
+必须锁定 host 画布的 `PRIMARY 1280×800 → 320` 与 `SECONDARY 960×540 → 213`；同一
+surface 四种 layout 都返回同一 height。不能调用 `Dimensions.get`/window measurement，不能按
 `displayMode` 在部件内分支。
 
 键盘 frame 只在 `visible` 时出现；若内容不足，保留 field 语义、保留决策动作、报告
@@ -373,7 +373,7 @@ CP-0 至 CP-3 的实施与各自 focused proof 完成后，主 agent 必须按�
 | input package | `apps/terminal/ui/base/input/src/**`、`package.json`、`src/dependencies.ts`、`terminal-invariants.json`、`README.md`、`test/**` | 本详设 §5、§6、§7.2、§7.3、§7.4、§12 |
 | render seam | `apps/terminal/ui/base/render/src/components/SurfaceRoot.tsx`、`src/contexts/SurfaceFocusBoundaryContext.tsx`、`src/types/props.ts`、`src/index.ts`、`test/**`、README/invariants | 本详设 §4.1、§4.3、计划 CP-1 |
 | primitive contract | `apps/terminal/ui/base/primitives/src/components.tsx`、`src/index.ts`、test、README/invariants | 本详设 §5.1、计划 CP-1 |
-| integration assembly | `apps/terminal/ui/integration/sample-console/src/assembly.tsx`、`src/terminalSurfaces.ts`、package/config、focused test | 本详设 §4.2、§7、计划 CP-3 |
+| integration assembly | `apps/terminal/ui/integration/sample-console/src/assembly/assembly.tsx`、`src/application/terminalSurfaces.ts`、package/config、focused test | 本详设 §4.2、§7、计划 CP-3 |
 | Android IME owner | `apps/terminal/adapter/android/dual-screen/android/src/**` 中 ActivityHandler、Primary IME coordinator 及其 test/readme；Presentation 只保留 surface 生命周期 | 本详设 §8、计划 CP-0 |
 | member feature | `apps/terminal/ui/feature/sample-member-desk/src/**`、test、README/invariants/dependencies | 本详设 §10、计划 CP-3 |
 | registry owner | `apps/terminal/kernel/feature/sample-member-registry/src/**`、test、README/invariants | 本详设 §10、sample requirements §4.5.3 |

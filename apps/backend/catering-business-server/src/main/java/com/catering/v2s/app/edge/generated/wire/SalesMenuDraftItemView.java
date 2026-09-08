@@ -12,6 +12,7 @@ public record SalesMenuDraftItemView(
     java.util.List<java.util.UUID> staleSelectedSkuRefs,
     Long defaultPriceCents,
     java.util.UUID catalogPrimaryImageAssetRef,
+    java.util.List<java.util.UUID> catalogImageAssetRefs,
     SalesMenuSaleContent saleContent,
     SalesMenuOrderingConstraints orderingConstraints,
     SalesMenuDisplayMedia displayMedia,

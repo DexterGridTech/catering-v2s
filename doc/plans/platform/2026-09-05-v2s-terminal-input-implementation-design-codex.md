@@ -164,26 +164,20 @@ InputSurfaceFrame
 高度策略和 testID 归属；也不把 `children` 改成函数，因为那会破坏当前 `SurfaceRoot` 的普通
 children 用法，并让 render 组件承担输入形态知识。
 
-### 4.2 surface 尺寸传递
+### 4.2 surface 尺寸与固定逻辑画布边界
 
-`InputSurfaceFrame` 接收装配方从 `sample-console/src/terminalSurfaces.ts` 选出的当前
-surface 逻辑尺寸：
+`InputSurfaceFrame` 不再接收装配方传入的 `surfaceSize`。它在自己的根 View 上通过
+`onLayout` 记录当前实际逻辑 frame；`InputProvider` 与键盘高度计算只消费这份本地测量。
+这条边界同时适用于 PRIMARY、SECONDARY、Web resize 与未来的 portrait surface。
 
-```ts
-type InputSurfaceSize = Readonly<{
-  readonly width: number
-  readonly height: number
-}>
-type InputSurfaceFrameProps = Readonly<{
-  readonly surfaceSize: InputSurfaceSize
-  readonly children?: ReactNode
-}>
-```
+`sample-console/src/application/terminalSurfaces.ts` 解析出的 `terminalSurfaces` 只由 host
+选择当前 `displayMode` 的固定逻辑 canvas，并交给 `SurfaceRoot`/host controller；assembly
+不得把 canvas declaration 作为 `InputSurfaceFrame` 的 prop。Android carrier/host 负责将
+canvas 映射到目标 window，Web dev-host 负责自己的 preview policy；input 不读取
+`displayMode`、`Dimensions`、window width、宿主 scale 或物理尺寸。
 
-业务 part 不读取 `displayMode`、`Dimensions` 或 window width；只有 assembly 根据已有
-`displayMode` 选 `terminalSurfaces.surfaces[displayMode]`，并把尺寸交给 input frame。Web
-画布仍按 terminal surface 的固定逻辑尺寸，Android 部件按比例适配实际 surface；两者不是
-“全部固定”或“全部跟随窗口”。
+因此，跨端统一的是 host 的固定逻辑画布与 input 的本地逻辑坐标，不是把 Android density
+或 Web viewport 尺寸伪装成 input 的第二个 surface-size 来源。
 
 ### 4.3 LayerStack 与 input 的焦点边界
 
@@ -485,7 +479,7 @@ InputSnapshot = {
 
 ### 7.2 虚拟键盘公式
 
-对当前 active surface 的声明高度 `H`：
+对当前 active surface 的 `InputSurfaceFrame` 本地测量高度 `H`：
 
 ```text
 availableByContent = H - MIN_CONTENT_HEIGHT
@@ -499,23 +493,24 @@ showVirtual        = virtualKeyboardH >= MIN_KEYBOARD_HEIGHT
 
 | surface | 声明尺寸 | `ratioBound` | `availableByContent` | 键盘高度 | 内容剩余 |
 |---|---:|---:|---:|---:|---:|
-| PRIMARY | 1157 × 723 | 361 | 515 | **320** | 403 |
-| SECONDARY | 962 × 541 | 270 | 333 | **270** | 271 |
+| PRIMARY | 1280 × 800 | 400 | 592 | **320** | 480 |
+| SECONDARY | 960 × 540 | 270 | 332 | **219** | 321 |
 
 同一 surface 的 `full`、`financial`、`numeric`、`alpha` 四种 layout 共用同一个高度；layout
 只改变按键网格，不改变 frame height。这样不会出现“同一屏切换 layout 导致确认按钮跳动”。
 
 当 `candidate < MIN_KEYBOARD_HEIGHT` 时不弹 virtual keyboard，并保持字段原有 optional/required
 语义；不会把输入改成隐藏、不会让决策动作失效，也不会制造“已获得焦点但无法输入也无法
-继续”的死状态。`CAPACITY-DESIGN` 验证声明尺寸、有上限和同一 surface 一致高度；S-36
+继续”的死状态。`CAPACITY-DESIGN` 验证本地 frame 尺寸、有上限和同一 surface 一致高度；S-36
 另按 §7.3 的真实布局与焦点可见性验证，S-37 验证确认/拒绝动作仍可见可操作。
 
-实施期比例接缝修正（2026-09-06）：公式仍以声明 surface 高度产出 logical `virtualKeyboardH`，
-但 dock 在 RN layout 边界按 `virtualKeyboardH / declaredSurfaceHeight` 的百分比渲染，而不是把
-声明像素直接当作 Android density-normalized 的 dp 数值。这样 Web 仍得到声明尺寸下的 270/541
-与 320/723，Android 的实际 window 只按同一比例缩放，避免密度归一化把副屏键盘放大到遮住
-年龄字段。滚动祖先同时保持 `w-full`，保证收缩后的 content subtree 仍是可测量、可滚动的完整
-surface 宽度；这两项是布局单位接缝修正，不是新增产品尺寸或屏幕分支。
+实施期比例接缝修正（2026-09-06）：公式以 `InputSurfaceFrame` 本地测量的逻辑高度产出
+`virtualKeyboardH`，dock 在 RN layout 边界按 `virtualKeyboardH / measuredSurfaceHeight`
+的百分比渲染，而不是把 host 声明像素直接当作 Android density-normalized 的 dp 数值。
+这样 Web/Android 都在各自固定逻辑 canvas 内得到同一套 keyboard height，承载层再按各自的
+scaleX/scaleY 映射到实际窗口，避免密度归一化把副屏键盘放大到遮住年龄字段。滚动祖先同时
+保持 `w-full`，保证收缩后的 content subtree 仍是可测量、可滚动的完整 surface 宽度；这两项
+是布局单位接缝修正，不是新增产品尺寸或屏幕分支。
 
 ### 7.3 焦点滚入收缩后的可见区
 
@@ -683,7 +678,7 @@ form 与 customer age 的焦点滚动共享同一个 input owner；业务组件�
 | S-37 | 年龄键盘升起时，`customer-member` 的**确认与拒绝仍可见可点**（单屏三个按钮同样成立） | 内容区收缩后按钮溢出可见区，或必须先收键盘才能点，必红 | 删除最小内容高度 guard 或让 dock 覆盖 action | 双屏真实副屏 + Web |
 | S-38 | 【双屏】顾客正在输年龄时店员点「撤回」⇒ ① 副屏离开确认态回 `customer-welcome`；② 顾客随后点「确认」不产生任何登记；③ store 中无年龄残留 | 撤回后副屏停在无反应的确认态，或顾客那一下仍登记成功，必红 | 去掉撤回的 pending 清理/副屏回 welcome/先到者胜者规则 | 双屏 Android focused interaction + store |
 | S-39 | 内容区不足以容纳键盘的窄 surface 上点年龄框 ⇒ **不出现「已获得焦点但无法输入、也无法继续」的死状态**；年龄仍可不填，确认／拒绝／交还仍可点 | 出现焦点已给、键盘没有、又无出路的状态，必红 | 让 focus 后直接隐藏键盘且禁用动作 | 窄 surface focused state |
-| CAPACITY-DESIGN | 键盘高度由声明 surface 高度计算，受 320 上限、0.5 比例与 208 内容下限约束；同一 surface 的四种 layout 高度一致 | 使用 window measurement、无上限、按 layout 分支或内容区低于 208，必红 | 改纯公式/输入尺寸或 layout 分支 | formula table + layout tree |
+| CAPACITY-DESIGN | 键盘高度由 `InputSurfaceFrame` 本地测量的 logical frame 高度计算，受 320 上限、0.5 比例与 208 内容下限约束；同一 surface 的四种 layout 高度一致 | 使用 window measurement、无上限、按 layout 分支或内容区低于 208，必红 | 改纯公式/输入尺寸或 layout 分支 | formula table + layout tree |
 | INPUT-EDIT-MODEL | selection、backspace、shift/caps、complete 等编辑语义正确；complete 在非末字段推进焦点、末字段 close-only | pure edit model + focused field transition test | 只 append、忽略 selection 或把非末字段也 close-only | input focused |
 | LAYER-FOCUS-BOUNDARY | layer 打开先清 active field/键盘，layer 关闭后仅随仍挂载且实际恢复的 field focus 重开 | layer transition focused test | 省略 suspend，或 restore 后继续抑制 focus | Web/Android layer transition |
 | KEYBOARD-OWNER-EXCLUSION | system 与 virtual 在同一 surface 任一时刻最多一个 owner 可见 | 双向 transition focused test | 去掉任一方向经过 `none` 的清理 | Web/Android focused transition |

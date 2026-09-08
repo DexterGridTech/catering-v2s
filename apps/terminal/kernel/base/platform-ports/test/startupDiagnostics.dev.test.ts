@@ -47,12 +47,12 @@ describe('platform-ports startup diagnostics', () => {
       ports.logger.info({
         category: 'startup.surfaces',
         event: 'startup.surfaces.declared',
-        data: {kind: 'declared', displayMode: 'PRIMARY', width: 1157, height: 723},
+        data: {kind: 'declared', displayMode: 'PRIMARY', width: 1280, height: 800},
       })
       ports.logger.info({
         category: 'startup.surfaces',
         event: 'startup.surfaces.measured',
-        data: {kind: 'measured', displayMode: 'PRIMARY', width: 962, height: 541, ready: true, orientation: 'landscape'},
+        data: {kind: 'measured', displayMode: 'PRIMARY', width: 1280, height: 800, ready: true, orientation: 'landscape'},
       })
 
       const events = startupEventsFrom(info.mock.calls)

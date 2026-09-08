@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "sales-menu-l2-locator-bindings",
-  "revision": "SALES_MENU_L2_P1_20260907",
+  "revision": "SALES_MENU_L2_P1_20260908",
   "bindingMode": "CASE_PARAMETER_CONTROL_KEYS",
   "sourceOfTruth": "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
   "caseBlueprint": "contracts/policy/sales-menu-l2-case-blueprint.json",
@@ -301,22 +301,29 @@
         "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
       ]
     },
-    "SALES_MENU_ITEM_STATUS_CHOICE": {
-      "testIdTemplate": "sales-menu-status-choice-${status}",
+    "SALES_MENU_ITEM_STATUS_TARGET": {
+      "testIdTemplate": "sales-menu-status-target-${kind}-${ref}",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
         "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
       ]
     },
-    "SALES_MENU_ITEM_STATUS_REASON": {
-      "testId": "sales-menu-status-reason",
+    "SALES_MENU_ITEM_STATUS_TARGET_QUICK_ACTION": {
+      "testIdTemplate": "sales-menu-status-target-quick-action-${kind}-${ref}-${state}",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
         "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
       ]
     },
-    "SALES_MENU_ITEM_STATUS_SUBMIT": {
-      "testId": "sales-menu-status-submit",
+    "SALES_MENU_ITEM_STATUS_TARGET_REASON": {
+      "testId": "sales-menu-status-target-reason",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
+      ]
+    },
+    "SALES_MENU_ITEM_STATUS_CLOSE": {
+      "testId": "sales-menu-status-close",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
         "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
@@ -409,6 +416,62 @@
         "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
       ]
     },
+    "SALES_MENU_ITEM_SKU_SELECTION": {
+      "testId": "sales-menu-item-sku-selection",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+      ]
+    },
+    "SALES_MENU_ITEM_SKU_SELECT_ALL": {
+      "testId": "sales-menu-item-sku-select-all",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+      ]
+    },
+    "SALES_MENU_ITEM_SKU_CLEAR": {
+      "testId": "sales-menu-item-sku-clear",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+      ]
+    },
+    "SALES_MENU_ITEM_SKU_OPTION": {
+      "testIdTemplate": "sales-menu-item-sku-option-${skuRef}",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+      ]
+    },
+    "SALES_MENU_ITEM_SKU_PRICE": {
+      "testIdTemplate": "sales-menu-item-sku-price-${skuRef}",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+      ]
+    },
+    "SALES_MENU_ITEM_ORDER_OPTION_GROUP": {
+      "testIdTemplate": "sales-menu-item-order-option-group-${definitionRef}",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+      ]
+    },
+    "SALES_MENU_ITEM_ORDER_OPTION_VALUE": {
+      "testIdTemplate": "sales-menu-item-order-option-value-${definitionRef}-${valueRef}",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+      ]
+    },
+    "SALES_MENU_ITEM_STALE_SKU_NOTICE": {
+      "testId": "sales-menu-item-stale-sku-notice",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+      ]
+    },
     "SALES_MENU_ITEM_MEDIA_EDITOR": {
       "testId": "sales-menu-item-media-editor",
       "sourceFiles": [
@@ -446,6 +509,16 @@
       "testId": "sales-menu-item-detail",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "SALES_MENU_ITEM_DETAIL_MEDIA_CHOICE": {
+      "testIdTemplate": "sales-menu-item-detail-media-choice-${itemRef}-${assetRef}",
+      "interaction": "DETAIL_IMAGE_THUMBNAIL_SELECTION",
+      "actualActionNode": "NATIVE_BUTTON",
+      "focusedStaticProof": "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.static.test.ts",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+        "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemImageGallery.tsx"
       ]
     },
     "SALES_MENU_PUBLISH_DRAWER": {

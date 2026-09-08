@@ -3,14 +3,21 @@ import {act, create, type ReactTestRenderer} from 'react-test-renderer';
 import {Text} from 'react-native';
 import {describe, expect, it, vi} from 'vitest';
 import {createTestExpoApp, type TestExpoAssembly} from '../src';
-import {SURFACE_PREVIEW_CONSTANTS} from '../src/foundations/surfacePreview';
 
 type Lifecycle = Record<'PRIMARY' | 'SECONDARY', {mounts: number; unmounts: number}>;
 type LayoutHandler = (event: {nativeEvent: {layout: {width: number; height: number}}}) => void;
 type StyleRecord = Readonly<{
   aspectRatio?: number;
+  borderColor?: string;
+  borderWidth?: number;
+  bottom?: number;
   flexShrink?: number;
   height?: number;
+  left?: number;
+  margin?: number;
+  position?: string;
+  right?: number;
+  top?: number;
   transform?: ReadonlyArray<Readonly<{scale?: number}>>;
   width?: number;
 }>;
@@ -56,11 +63,11 @@ describe('ui.base.dev-host surface lifecycle', () => {
       appName: 'dev-host-test',
       title: '宿主测试',
       terminalSurfaces: {
-        layout: 'column',
-        scaleToFit: true,
-        surfaces: {
-          PRIMARY: {width: 1920, height: 1080},
-          SECONDARY: {width: 1024, height: 600},
+        orientations: {
+          landscape: {
+            PRIMARY: {width: 1920, height: 1080},
+            SECONDARY: {width: 1024, height: 600},
+          },
         },
       },
       createAssembly,
@@ -77,12 +84,20 @@ describe('ui.base.dev-host surface lifecycle', () => {
       () => mountedRenderer.root.findAllByProps({testID: 'dev-host-test:test-expo:canvas'}).length > 0,
     );
     const canvas = mountedRenderer.root.findByProps({testID: 'dev-host-test:test-expo:canvas'});
+    const previewViewport = mountedRenderer.root.findByProps({
+      testID: 'dev-host-test:test-expo:canvas:preview-viewport',
+    });
+    const previewViewportStyles = (
+      Array.isArray(previewViewport.props.style) ? previewViewport.props.style : [previewViewport.props.style]
+    ).filter((value): value is StyleRecord => typeof value === 'object' && value !== null);
+    expect(previewViewportStyles.some(style => style.margin === 10 && style.borderWidth === undefined)).toBe(true);
     expect(
       mountedRenderer.root.findAllByProps({testID: 'dev-host-test:test-expo:canvas:measure-pending'}),
     ).toHaveLength(1);
     expect(mountedRenderer.root.findAllByProps({testID: 'dev-host-test:test-expo:surface:PRIMARY'})).toHaveLength(0);
     act(() => {
       (canvas.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 1300, height: 96}}});
+      (previewViewport.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 1276, height: 76}}});
     });
     await waitFor(
       mountedRenderer,
@@ -100,7 +115,7 @@ describe('ui.base.dev-host surface lifecycle', () => {
       Array.isArray(logicalStage.props.style) ? logicalStage.props.style : [logicalStage.props.style]
     ).filter((value): value is StyleRecord => typeof value === 'object' && value !== null);
     const scale =
-      (1300 - 2 * SURFACE_PREVIEW_CONSTANTS.canvasBorder - 2 * SURFACE_PREVIEW_CONSTANTS.stagePadding) / 1920;
+      1276 / 1920;
     expect(
       logicalStyles.some(
         style => style.width === 1920 && style.height === 1080 + 0 && style.transform?.[0]?.scale === scale,
@@ -110,7 +125,16 @@ describe('ui.base.dev-host surface lifecycle', () => {
     const scaledStyles = (
       Array.isArray(scaledStage.props.style) ? scaledStage.props.style : [scaledStage.props.style]
     ).filter((value): value is StyleRecord => typeof value === 'object' && value !== null);
-    expect(scaledStyles.some(style => style.width === 1300 - 2 * SURFACE_PREVIEW_CONSTANTS.canvasBorder)).toBe(true);
+    expect(scaledStyles.some(style => style.width === 1276 && style.height === 1276 * (1080 / 1920))).toBe(true);
+    const primaryDecoration = mountedRenderer.root.findByProps({
+      testID: 'dev-host-test:test-expo:surface:PRIMARY:decoration',
+    });
+    const primaryDecorationStyles = (
+      Array.isArray(primaryDecoration.props.style) ? primaryDecoration.props.style : [primaryDecoration.props.style]
+    ).filter((value): value is StyleRecord => typeof value === 'object' && value !== null);
+    expect(primaryDecorationStyles.some(style => style.position === 'absolute' && style.borderWidth === 1)).toBe(true);
+    expect(primaryStyles.some(style => style.borderWidth !== undefined)).toBe(false);
+    expect(primaryStyles.some(style => style.position === 'relative')).toBe(true);
     const toggle = mountedRenderer.root.findByProps({testID: 'dev-host-test:test-expo:surface-toggle'});
     await act(async () => {
       (toggle.props.onPress as () => void)();
@@ -129,7 +153,7 @@ describe('ui.base.dev-host surface lifecycle', () => {
     );
 
     act(() => {
-      (canvas.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 960, height: 96}}});
+      (previewViewport.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 936, height: 76}}});
     });
     const resizedLogicalStage = mountedRenderer.root.findByProps({
       testID: 'dev-host-test:test-expo:canvas:logical-stage',
@@ -140,7 +164,7 @@ describe('ui.base.dev-host surface lifecycle', () => {
         : [resizedLogicalStage.props.style]
     ).filter((value): value is StyleRecord => typeof value === 'object' && value !== null);
     const resizedScale =
-      (960 - 2 * SURFACE_PREVIEW_CONSTANTS.canvasBorder - 2 * SURFACE_PREVIEW_CONSTANTS.stagePadding) / 1920;
+      936 / 1920;
     expect(resizedStyles.some(style => style.transform?.[0]?.scale === resizedScale)).toBe(true);
 
     expect(lifecycle.PRIMARY).toEqual({mounts: 1, unmounts: 0});

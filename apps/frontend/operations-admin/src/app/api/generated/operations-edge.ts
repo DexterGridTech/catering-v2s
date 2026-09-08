@@ -979,14 +979,14 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "addOperationsSalesMenuItems": {
     "kind": "FIXED",
-    "max": 35,
+    "max": 31,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": 20,
-        "to": 35,
+        "to": 31,
         "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
         "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
@@ -1093,14 +1093,14 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "copyOperationsSalesMenu": {
     "kind": "FIXED",
-    "max": 39,
+    "max": 38,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": 20,
-        "to": 39,
+        "to": 38,
         "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
         "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
@@ -1362,14 +1362,14 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "deleteOperationsSalesMenuItem": {
     "kind": "FIXED",
-    "max": 31,
+    "max": 33,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": 20,
-        "to": 31,
+        "to": 33,
         "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
         "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
@@ -1406,42 +1406,42 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "getOperationsBusinessChannelTemplates": {
     "kind": "FIXED",
-    "max": 11,
+    "max": 12,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 11,
+        "to": 12,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
   "getOperationsContract": {
     "kind": "FIXED",
-    "max": 9,
+    "max": 8,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 9,
+        "to": 8,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
   "getOperationsContractCandidates": {
     "kind": "FIXED",
-    "max": 9,
+    "max": 8,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 9,
+        "to": 8,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -1462,14 +1462,14 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "getOperationsContracts": {
     "kind": "FIXED",
-    "max": 9,
+    "max": 8,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 9,
+        "to": 8,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -1644,14 +1644,14 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "getOperationsOrganizationStore": {
     "kind": "FIXED",
-    "max": 13,
+    "max": 12,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 13,
+        "to": 12,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -1672,14 +1672,14 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "getOperationsOrganizationStores": {
     "kind": "FIXED",
-    "max": 14,
+    "max": 13,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 14,
+        "to": 13,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -1728,14 +1728,14 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "getOperationsProjectBusinessChannels": {
     "kind": "FIXED",
-    "max": 11,
+    "max": 10,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 11,
+        "to": 10,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -1756,28 +1756,28 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "getOperationsSalesMenuDraftItem": {
     "kind": "FIXED",
-    "max": 22,
+    "max": 24,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 22,
+        "to": 24,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
   "getOperationsSalesMenuDraftItems": {
     "kind": "FIXED",
-    "max": 22,
+    "max": 24,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 22,
+        "to": 24,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -1826,6 +1826,20 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "getOperationsSalesMenuPublicationPreview": {
     "kind": "FIXED",
+    "max": 24,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 24,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsSalesMenuPublishedItem": {
+    "kind": "FIXED",
     "max": 22,
     "measurementScenarioIds": [
       "performance.normal-path"
@@ -1838,7 +1852,7 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
       }
     ]
   },
-  "getOperationsSalesMenuPublishedItem": {
+  "getOperationsSalesMenuPublishedItems": {
     "kind": "FIXED",
     "max": 21,
     "measurementScenarioIds": [
@@ -1848,20 +1862,6 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 21,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsSalesMenuPublishedItems": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -1938,62 +1938,6 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "getOperationsWorkspaceGroupInvitationCandidates": {
     "kind": "FIXED",
-    "max": 14,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 14,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupInvitations": {
-    "kind": "FIXED",
-    "max": 15,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 15,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupUser": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupUserAccount": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceHeadCompanyInvitationCandidates": {
-    "kind": "FIXED",
     "max": 13,
     "measurementScenarioIds": [
       "performance.normal-path"
@@ -2006,35 +1950,21 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
       }
     ]
   },
-  "getOperationsWorkspaceHeadCompanyInvitations": {
+  "getOperationsWorkspaceGroupInvitations": {
     "kind": "FIXED",
-    "max": 15,
+    "max": 14,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 15,
+        "to": 14,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
-  "getOperationsWorkspaceHeadCompanyUser": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceHeadCompanyUserAccount": {
+  "getOperationsWorkspaceGroupUser": {
     "kind": "FIXED",
     "max": 18,
     "measurementScenarioIds": [
@@ -2044,6 +1974,76 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 18,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceGroupUserAccount": {
+    "kind": "FIXED",
+    "max": 17,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 17,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceHeadCompanyInvitationCandidates": {
+    "kind": "FIXED",
+    "max": 12,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 12,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceHeadCompanyInvitations": {
+    "kind": "FIXED",
+    "max": 14,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 14,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceHeadCompanyUser": {
+    "kind": "FIXED",
+    "max": 18,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 18,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceHeadCompanyUserAccount": {
+    "kind": "FIXED",
+    "max": 17,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 17,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -2064,61 +2064,19 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "getOperationsWorkspaceProjectInvitationCandidates": {
     "kind": "FIXED",
-    "max": 11,
+    "max": 10,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 11,
+        "to": 10,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
   "getOperationsWorkspaceProjectInvitations": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceProjectUser": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceProjectUserAccount": {
-    "kind": "FIXED",
-    "max": 16,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 16,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceRegionInvitationCandidates": {
     "kind": "FIXED",
     "max": 12,
     "measurementScenarioIds": [
@@ -2132,35 +2090,63 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
       }
     ]
   },
-  "getOperationsWorkspaceRegionInvitations": {
+  "getOperationsWorkspaceProjectUser": {
     "kind": "FIXED",
-    "max": 14,
+    "max": 16,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 14,
+        "to": 16,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceProjectUserAccount": {
+    "kind": "FIXED",
+    "max": 15,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 15,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceRegionInvitationCandidates": {
+    "kind": "FIXED",
+    "max": 11,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 11,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceRegionInvitations": {
+    "kind": "FIXED",
+    "max": 13,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 13,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
   "getOperationsWorkspaceRegionUser": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceRegionUserAccount": {
     "kind": "FIXED",
     "max": 17,
     "measurementScenarioIds": [
@@ -2170,6 +2156,20 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 17,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceRegionUserAccount": {
+    "kind": "FIXED",
+    "max": 16,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 16,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -2190,6 +2190,20 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "getOperationsWorkspaceStoreInvitationCandidates": {
     "kind": "FIXED",
+    "max": 11,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 11,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getOperationsWorkspaceStoreInvitations": {
+    "kind": "FIXED",
     "max": 12,
     "measurementScenarioIds": [
       "performance.normal-path"
@@ -2202,44 +2216,30 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
       }
     ]
   },
-  "getOperationsWorkspaceStoreInvitations": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
   "getOperationsWorkspaceStoreUser": {
     "kind": "FIXED",
-    "max": 18,
+    "max": 17,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 18,
+        "to": 17,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
   "getOperationsWorkspaceStoreUserAccount": {
     "kind": "FIXED",
-    "max": 16,
+    "max": 15,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 16,
+        "to": 15,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -2260,14 +2260,14 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "moveOperationsSalesMenuItem": {
     "kind": "FIXED",
-    "max": 34,
+    "max": 33,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": 20,
-        "to": 34,
+        "to": 33,
         "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
         "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
@@ -2275,14 +2275,14 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "moveOperationsSalesMenuSection": {
     "kind": "FIXED",
-    "max": 34,
+    "max": 33,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": 20,
-        "to": 34,
+        "to": 33,
         "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
         "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
@@ -2318,14 +2318,14 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "publishOperationsSalesMenu": {
     "kind": "FIXED",
-    "max": 42,
+    "max": 47,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": 20,
-        "to": 42,
+        "to": 47,
         "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
         "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
@@ -2467,14 +2467,14 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "restoreOperationsSalesMenuItemSale": {
     "kind": "FIXED",
-    "max": 34,
+    "max": 35,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": 20,
-        "to": 34,
+        "to": 35,
         "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
         "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
@@ -2614,14 +2614,14 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "setOperationsSalesMenuItemSoldOut": {
     "kind": "FIXED",
-    "max": 34,
+    "max": 35,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": 20,
-        "to": 34,
+        "to": 35,
         "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
         "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
@@ -2868,14 +2868,14 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "updateOperationsSalesMenuItem": {
     "kind": "FIXED",
-    "max": 47,
+    "max": 50,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": 20,
-        "to": 47,
+        "to": 50,
         "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
         "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
       }
@@ -3853,6 +3853,7 @@ export type SalesMenuDraftItemView = {
   staleSelectedSkuRefs: Array<string & { readonly __uuid: "Uuid" }>;
   defaultPriceCents: (number) | null;
   catalogPrimaryImageAssetRef: (string & { readonly __uuid: "Uuid" }) | null;
+  catalogImageAssetRefs: Array<string & { readonly __uuid: "Uuid" }>;
   saleContent: SalesMenuSaleContent;
   orderingConstraints: SalesMenuOrderingConstraints;
   displayMedia: SalesMenuDisplayMedia;
@@ -3986,6 +3987,8 @@ export type SalesMenuPublishedItemView = {
   saleContent: SalesMenuSaleContent;
   orderingConstraints: SalesMenuOrderingConstraints;
   displayMedia: SalesMenuDisplayMedia;
+  publishedPrimaryImageAssetRef: (string & { readonly __uuid: "Uuid" }) | null;
+  publishedCatalogImageAssetRefs: Array<string & { readonly __uuid: "Uuid" }>;
   displayOrder: number;
   inventoryAvailability: InventoryAvailabilityFact;
   manualSaleStatus: ManualSaleStatusFact;

@@ -283,7 +283,7 @@ const runSelfTest = () => {
   ];
   const cases = [
     ["MISSING_RELATION_EDGE", () => assertPlan({...fixture, seedDatasets: fixture.seedDatasets.map((d) => ({...d, entities: {...d.entities, relations: d.fixtureId === "SEED-DINNER-SET" ? [{from: "DINNER-SET-001", to: "MISSING-001", refKind: "SKU", refCode: "LATTE-SKU-M"}] : d.entities.relations}}))})],
-    ["SKU_RELATION_TARGET_NOT_ENABLED", () => assertPlan({...fixture, seedDatasets: fixture.seedDatasets.map((d) => d.fixtureId === "SEED-DINNER-SET" ? {...d, entities: {...d.entities, relations: [{from: "DINNER-SET-001", to: "LATTE-001", refKind: "SKU", refCode: "LATTE-SKU-M"}]}} : d)})],
+    ["SKU_RELATION_TARGET_NOT_ENABLED", () => assertPlan({...fixture, seedDatasets: fixture.seedDatasets.map((d) => d.fixtureId === "SEED-DINNER-SET" ? {...d, entities: {...d.entities, relations: [{from: "DINNER-SET-001", to: "LATTE-001", refKind: "SKU", refCode: "LATTE-SKU-L"}]}} : d)})],
     ["RELATION_CYCLE", () => assertPlan({...fixture, seedDatasets: fixture.seedDatasets.map((d) => ({...d, entities: {...d.entities, relations: d.fixtureId === "SEED-DINNER-SET" ? [{from: "DINNER-SET-001", to: "LATTE-001"}, {from: "LATTE-001", to: "DINNER-SET-001"}] : d.entities.relations}}))})],
     ["MEDIA_DIGEST", () => { const original = mediaCatalog.assets.coffee.sha256; mediaCatalog.assets.coffee.sha256 = "0".repeat(64); try { assertPlan(fixture); } finally { mediaCatalog.assets.coffee.sha256 = original; } }],
     ["SAVE_OPERATION", () => { const old = fixture.seedExecutionPlan.catalogSave.operationId; fixture.seedExecutionPlan.catalogSave.operationId = "missingSave"; try { assertPlan(fixture); } finally { fixture.seedExecutionPlan.catalogSave.operationId = old; } }],

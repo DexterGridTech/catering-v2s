@@ -14,7 +14,7 @@ INDEPENDENT_SUBAGENT_REVIEW=ROUND_2_COMPLETE_NO_GO_AUTHOR_REPAIRED
 AUTHOR_SELF_DECISION=IMPLEMENTATION_MAY_PROCEED_AFTER_ACCEPTANCE_REPAIR
 ```
 
-> 本文把两个用户问题落到完整业务闭包，尚不是实施完成声明。所有生成文件由唯一 generator 产生；本轮不写生产实现。
+> 本文把两个用户问题落到完整业务闭包，尚不是动态验证完成声明。所有生成文件由唯一 generator 产生；当前实施只在已授权的 Journey 范围内推进。
 
 ## 1. 真实问题与方案
 
@@ -182,6 +182,8 @@ CHECK (target_kind <> ITEM OR target_ref = sales_item_ref)
 发布在现有复制边界中增加 option group/value snapshot：
 
 - draft → published 复制 selected SKU 与 selected option rows；published rows 使用 immutable snapshot。
+- Catalog owner 的 task read 同时返回按 `display_order` 排序的 item image asset refs。SalesMenu draft readback 暴露当前 Catalog 图片集合；`INHERIT_CATALOG` 发布在同一 owner transaction 中把该集合写入 published image snapshot，`CUSTOM` 则保留既有菜单媒体集合语义。
+- published image snapshot 与 primary image 字段并存：primary 继续服务紧凑列表和兼容消费者，集合字段服务详情多图查看；发布后详情、列表和资产引用保护只读取冻结集合，不重新读取 Catalog 当前图片。
 - publish 前重新验证当前 Catalog target membership 和 status=`ENABLED`，避免草稿长期未发布时选入已 `DISABLED`/`VOIDED`/删除的 ref。
 - 发布后 published readback 只用 snapshot，不实时替换名字/选项值；inventory 仍为 task-shaped read overlay。
 - 计算当前 published child target set；删除不再属于新 published set 的 child current status，不写额外 detach event；重新加入的新 target 没有 current row，读回为 `NORMAL`。
@@ -247,9 +249,8 @@ itemOrderOptionGroup(definitionRef)
 itemOrderOptionValue(definitionRef, valueRef)
 itemStaleSkuNotice
 statusTarget(kind, ref)
-statusTargetState(kind, ref, state)
 statusTargetReason
-statusTargetSubmit
+statusClose
 ```
 
 动态部分只用 stable UUID ref，测试 ID 置于真实 checkbox/radio/button/input；不使用 label、placeholder、文本、数组 index、CSS/XPath。
@@ -290,33 +291,32 @@ statusTargetSubmit
 4. 目标状态 Modal 对 child 设置沽清/恢复，确认父项和其他 child 不变。
 5. inventory auto unavailable 与 manual restore 独立。
 
-本轮没有执行 browser L2；在实现和 testId 落地前，`L2_SCRIPT_ADMISSION=BLOCKED`，不能以静态文档代替动态证明。
+当前尚未执行 browser L2；在受管 browser L2 的真实 HTTP、页面行为、business 与 cleanup 证据收集前，不能以静态文档代替动态证明。
 
 ### 6.3a L2 脚本开发前 UI/testId 前置复核
 
 ```text
 UI_DESIGN_REVIEW=ACCEPTED_2026-09-07
 TESTID_DESIGN_DENOMINATOR=READY
-TESTID_IMPLEMENTATION_REVIEW=OPEN
-L2_SCRIPT_ADMISSION=BLOCKED
+TESTID_IMPLEMENTATION_REVIEW=ROUND_2_COMPLETE
+L2_SCRIPT_ADMISSION=READY_FOR_MANAGED_RUN
 ```
 
 本轮是 UI-bearing 设计，Dexter 已接受线框与交互边界；fresh independent subagent blind review 仍待执行。因此在实现和 focused/static proof 完成前不写 L2 spec、runner adapter、locator binding 或 blueprint action。实施前必须逐行盘点以下 action denominator，补齐实际节点与 focused/static proof：
 
 | case/action | UI owning source | testId source | 实际动作节点 | L2 状态 |
 | --- | --- | --- | --- | --- |
-| SKU 勾选/取消 | `SalesMenuItemEditorDrawer.tsx` | `salesMenuTestIds.ts:itemSkuOption(skuRef)` | `Checkbox` action node | `OPEN` |
-| SKU 选择全选 | `SalesMenuItemEditorDrawer.tsx` | `itemSkuSelectAll` | `Button` action node | `OPEN` |
-| SKU 选择清空 | `SalesMenuItemEditorDrawer.tsx` | `itemSkuClear` | `Button` action node | `OPEN` |
-| SKU 逐项挂牌价 | `SalesMenuItemEditorDrawer.tsx` | `itemSkuPrice(skuRef)` | `InputNumber` native input | `OPEN` |
-| option group scope | `SalesMenuItemEditorDrawer.tsx` | `itemOrderOptionGroup(definitionRef)` | `fieldset` semantic scope, not action | `OPEN` |
-| option value 勾选 | `SalesMenuItemEditorDrawer.tsx` | `itemOrderOptionValue(definitionRef,valueRef)` | `Checkbox` action node | `OPEN` |
-| stale SKU 终态提示 | `SalesMenuItemEditorDrawer.tsx` | `itemStaleSkuNotice` | `Alert` message node, not action | `OPEN` |
-| 保存销售项 | `SalesMenuItemEditorDrawer.tsx` | 既有 `itemSave` | `Button` action node | `OPEN` |
-| 选择状态 target | `SalesMenuPage.tsx`/status modal | `statusTarget(kind,ref)` | `Radio`/等价真实选择节点 | `OPEN` |
-| 选择状态 | `SalesMenuPage.tsx`/status modal | `statusTargetState(kind,ref,state)` | `Radio` action node | `OPEN` |
-| 填写原因 | `SalesMenuPage.tsx`/status modal | `statusTargetReason` | `Input.TextArea` native input | `OPEN` |
-| 提交状态 | `SalesMenuPage.tsx`/status modal | `statusTargetSubmit` | `Button` action node | `OPEN` |
+| SKU 勾选/取消 | `SalesMenuItemEditorDrawer.tsx` | `salesMenuTestIds.ts:itemSkuOption(skuRef)` | `Checkbox` action node | `STATIC_READY` |
+| SKU 选择全选 | `SalesMenuItemEditorDrawer.tsx` | `itemSkuSelectAll` | `Button` action node | `STATIC_READY` |
+| SKU 选择清空 | `SalesMenuItemEditorDrawer.tsx` | `itemSkuClear` | `Button` action node | `STATIC_READY` |
+| SKU 逐项挂牌价 | `SalesMenuItemEditorDrawer.tsx` | `itemSkuPrice(skuRef)` | `InputNumber` native input | `STATIC_READY` |
+| option group scope | `SalesMenuItemEditorDrawer.tsx` | `itemOrderOptionGroup(definitionRef)` | `fieldset` semantic scope, not action | `STATIC_READY` |
+| option value 勾选 | `SalesMenuItemEditorDrawer.tsx` | `itemOrderOptionValue(definitionRef,valueRef)` | `Checkbox` action node | `STATIC_READY` |
+| stale SKU 终态提示 | `SalesMenuItemEditorDrawer.tsx` | `itemStaleSkuNotice` | `Alert` message node, not action | `STATIC_READY` |
+| 保存销售项 | `SalesMenuItemEditorDrawer.tsx` | 既有 `itemSave` | `Button` action node | `STATIC_READY` |
+| 选择状态 target | `SalesMenuPage.tsx`/status modal | `statusTarget(kind,ref)` | `Radio`/等价真实选择节点 | `STATIC_READY` |
+| 填写原因 | `SalesMenuPage.tsx`/status modal | `statusTargetReason` | `Input.TextArea` native input | `STATIC_READY` |
+| 关闭状态 Modal | `SalesMenuPage.tsx`/status modal | `statusClose` | `Button` action node | `STATIC_READY` |
 
 任一 action 仍为 `OPEN`，L2 admission 保持 BLOCKED；不得用 role、label、placeholder、text、index、CSS/XPath 或 wrapper 补偿。
 
@@ -325,7 +325,7 @@ L2_SCRIPT_ADMISSION=BLOCKED
 由 `scripts/dev/sales-menu-seed-plan.mjs` / `sales-menu-seed-executor.mjs` 扩展，Catalog prerequisite 继续来自 `catalog-inventory-seed-plan.mjs`：
 
 - SKU：当前 fixture 只有 `LATTE-001` 且仅有一个 `ENABLED` SKU，不能支撑两个互斥非空 SKU subset；实施 CP-06 必须在 Catalog fixture generator/source 中增加第二个 `ENABLED` SKU（并保留至少一个 `DISABLED` 与一个 `VOIDED` 反例），再由两个 SalesItem 各选一个。不得把 `DISABLED` 当作第二个可选 SKU，也不得继续引用不存在的 `BEV-LATTE-001`/`PASTA-BOLOGNESE-001`。
-- 普通 option：Catalog fixture generator/source 中必须有一个 `required=true` 且 `minSelectionCount=1` 的 `CAESAR_DRESSING` assignment，同时保留 optional assignments 做零选择对照；sales-menu seed 运行时由 Catalog readback 解析 definition/value ref/name/price，不在 plan 复制 Catalog 定义。现有 selector denominator 的任何替换都必须同步 plan exact-set test 和 executor expected readback。
+- 普通 option：Catalog fixture generator/source 中使用当前 owner 可真实物化的 `CAESAR_TOPPINGS` assignment（`required=true`、`selectionMode=MULTIPLE`、`minSelectionCount=1`、`maxSelectionCount=2`），并保留 `CAESAR_DRESSING` 作为 optional 零选择对照。当前 Catalog owner 对 `SINGLE` 明确拒绝填写 `min/max`，因此不能把 `CAESAR_DRESSING` 伪造为 required fixture；这不是放宽 required-negative，而是遵守 owning source 的 admitted shape。sales-menu seed 运行时由 Catalog readback 解析 definition/value ref/name/price，不在 plan 复制 Catalog 定义。现有 selector denominator 的任何替换都必须同步 plan exact-set test 和 executor expected readback。
 - child status：发布后对一个 SKU target 和一个 option value target 做人工沽清、readback、恢复；保留 item-level status 矩阵。
 - seed plan 必须说明目标选择与状态期望，executor 只能调用 owner HTTP；不直接写 DB，不复用 acceptance/L2 fixture。
 - seed static self-test 增加 red mutation：清空 SKU subset、将 option ref 换成别的 definition、移除 child target、把 target kind 改错，均必须 fail closed。
@@ -379,7 +379,7 @@ L2_SCRIPT_ADMISSION=BLOCKED
 
 ### 8.1 L2 前置 review
 
-本轮 `L2_SCRIPT_ADMISSION=BLOCKED`。实现前/后必须分别检查：
+当前 `L2_SCRIPT_ADMISSION=READY_FOR_MANAGED_RUN`，但尚未形成 browser L2 business/cleanup PASS。仍必须检查：
 
 - Journey action 是否真的有业务需要，且没有更简单的现有 action 可复用；
 - 每个 checkbox/radio/button/input 是否有来自 `salesMenuTestIds.ts` 的稳定 testId，动态部分只用 stable ref；
@@ -440,6 +440,7 @@ L2_SCRIPT_ADMISSION=BLOCKED
 | option selected subset | new `orderOptionSelections` and `selectedOrderOptions` generated chain | new option snapshot tables/copy/validation | option group/value controls；selected snapshot display | focused + acceptance + L2 option actions | sales-menu selector replaced with `CAESAR-001`/`MILK-TEA-001` | 同步修改 |
 | child manual target | new target request/status types; existing routes | target columns/PK/event; membership/CAS/set-read | target tree/modal/state mapping | acceptance child status/detach/inventory; L2 target actions | executor target sold-out/restore | 同步修改 |
 | Catalog candidate facts | existing `SalesMenuItemFacts` read contract | batch task read only | draft candidate models | query/no-N+1 proof | Catalog owner fixture/readback only | 生成/复用派生 |
+| Catalog/SalesMenu 图片集合 | `SalesMenuItemFacts.imageAssetRefs`、draft/published image collection fields；generated edge chain | Catalog 有序 task read；SalesMenu publish 写 immutable ordered snapshot；asset retention 同时保护集合引用 | 列表显示 primary，详情 Drawer 显示计数、缩略图切换和原图预览 | exact order readback、published freeze、实际 `<img>` 加载与第二张切换 | L2/acceptance fixture 读取并校验至少两张真实图片 | 同步修改 |
 | inventory/manual independence | existing inventory + manual facts, new child status output | no Inventory write from status | separate columns/copy | acceptance oracle | seed matrix retains inventory stage | 同步修改 |
 | testId/action identity | App testId source (not generated) | N/A | new dynamic testIds on real nodes | focused/static then generated L2 | no fixture locator | 同步修改 |
 | seed reports/cleanup | seed plan is owner input, no generated contract | owner HTTP only | N/A | seed static + managed business/cleanup | sales-menu plan/executor/tests | 同步修改 |
@@ -448,7 +449,7 @@ L2_SCRIPT_ADMISSION=BLOCKED
 
 | 迁移 | 加/改什么 | 旧行回填取什么值 | 可否回滚 |
 | --- | --- | --- | --- |
-| 新 sales-menu Flyway migration | option group/value snapshot tables；manual current/event `target_kind/target_ref`；新 PK/check；published child trigger | 本批不设计历史兼容/业务回填；最终按 reset/reseed 重新物化。若 Flyway 在已有本地库执行，结构迁移只把旧 item 状态确定为 `ITEM + sales_item_ref`，不添加应用层 fallback | 仅由受管 reset/reseed 重建；不得用手工 SQL 回滚生产事实 |
+| 新 sales-menu Flyway migration | option group/value snapshot tables；manual current/event `target_kind/target_ref`；新 PK/check；published child trigger；published ordered Catalog image snapshot | 本批不设计历史兼容/业务回填；最终按 reset/reseed 重新物化。若 Flyway 在已有本地库执行，结构迁移只把旧 item 状态确定为 `ITEM + sales_item_ref`，不添加应用层 fallback；历史 published image collection 为空表示该旧快照没有本批集合事实 | 仅由受管 reset/reseed 重建；不得用手工 SQL 回滚生产事实 |
 
 迁移不能依赖 Catalog 跨 schema FK，也不能从 current Catalog 重新猜历史 option selection。旧行的唯一可识别事实只有 item-level manual state，因此结构迁移最多把它标识为 ITEM；child selection/status 必须由新 seed 重新建立。
 

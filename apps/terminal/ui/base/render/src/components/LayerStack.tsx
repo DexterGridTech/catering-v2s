@@ -96,6 +96,7 @@ export const LayerStack = () => {
   const {displayMode} = useSurfaceContext()
   const notifyFocusBoundary = useSurfaceFocusBoundary()
   const {
+    logger,
     uiCatalog,
     rendererCatalog,
     reportPartDiagnostic,
@@ -114,6 +115,23 @@ export const LayerStack = () => {
   const previousTopLayerId = useRef<string | null>(null)
   const focusedBeforeLayer = useRef<{readonly focus: () => void} | null>(null)
   const topLayerFocusTarget = useRef<FocusTarget | null>(null)
+
+  useEffect(() => {
+    if (!__DEV__) return
+    logger.info({
+      category: 'display-diagnostics',
+      event: 'render.layer-selection',
+      message: 'Layer selection observed',
+      data: {
+        source: 'ui-base-render.LayerStack',
+        displayMode,
+        runtimeStatus: snapshot.status,
+        layerCount: orderedLayers.length,
+        layerIds: orderedLayers.map(layer => layer.layerId),
+        topLayerId,
+      },
+    })
+  }, [displayMode, logger, orderedLayers, snapshot.status, topLayerId])
 
   useEffect(() => {
     const hadLayers = previousLayerSignature.current.length > 0

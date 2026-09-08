@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "sales-menu-l2-activation-candidate",
-  "revision": "SALES_MENU_L2_P1_20260907",
+  "revision": "SALES_MENU_L2_P1_20260908",
   "sourceRevision": "SALES_MENU_L2_P1_20260907",
   "approvedCaseIds": [
     "sales-menu-entry-and-channels",
@@ -46,5 +46,5 @@
   "testIdSource": "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
   "locatorBinding": "contracts/policy/sales-menu-l2-locator-bindings.json",
   "noSeedRuntimeInput": true,
-  "candidateDigest": "35d3beb5fb82f23a9cbf39da130a08a3c00c42ca7a787b536ddb2fc1fe806e23"
+  "candidateDigest": "d02a9c959b920d19061321aa0a1f038d6be6cfee008aed01dde55a67611d298b"
 }

@@ -1,5 +1,5 @@
-import {memo, useMemo} from 'react';
-import {StyleSheet, View} from 'react-native';
+import {memo, useCallback, useEffect, useMemo, useRef} from 'react';
+import {StyleSheet, View, type LayoutChangeEvent} from 'react-native';
 import {PrimitiveButton} from '@catering-v2s/ui-base-primitives';
 import type {KeyboardKey} from '../foundations/editText';
 import {
@@ -10,6 +10,7 @@ import {
   type KeyboardRegion,
 } from '../foundations/keyboardLayout';
 import {INPUT_LAYOUT_CONSTANTS} from '../foundations/keyboardHeight';
+import type {InputDiagnosticReporter} from '../types/types';
 
 export type VirtualKeyboardProps = Readonly<{
   readonly layout: KeyboardLayout;
@@ -20,6 +21,7 @@ export type VirtualKeyboardProps = Readonly<{
   readonly capsLock: boolean;
   readonly hasNextField: boolean;
   readonly onKey: (key: KeyboardKey) => void;
+  readonly onDiagnostic?: InputDiagnosticReporter;
 }>;
 
 const keyIdOf = (definition: KeyboardKeyDefinition): string => definition.keyId;
@@ -97,10 +99,71 @@ const groupRowsByRegion = (rows: readonly KeyboardRow[]): KeyboardRegionRows[] =
 };
 
 export const VirtualKeyboard = memo(
-  ({layout, height, frameWidth, cellWidth, shift, capsLock, hasNextField, onKey}: VirtualKeyboardProps) => {
+  ({layout, height, frameWidth, cellWidth, shift, capsLock, hasNextField, onKey, onDiagnostic}: VirtualKeyboardProps) => {
     const definition = getKeyboardLayout(layout);
     const columnGap = definition.horizontalMode === 'dense' ? 2 : 8;
     const regions = useMemo(() => groupRowsByRegion(definition.rows), [definition]);
+    const reportLayout = useCallback((node: string, event: LayoutChangeEvent) => {
+      if (!__DEV__ || onDiagnostic === undefined) return;
+      const {x, y, width, height: layoutHeight} = event.nativeEvent.layout;
+      onDiagnostic({
+        event: 'input.keyboard-layout',
+        data: {
+          source: 'ui-base-input.VirtualKeyboard.onLayout',
+          node,
+          units: 'logical-layout-unit',
+          x,
+          y,
+          width,
+          height: layoutHeight,
+          layout,
+          frameWidth,
+          keyboardHeight: height,
+          cellWidth,
+          columnGap,
+        },
+      });
+    }, [cellWidth, columnGap, frameWidth, height, layout, onDiagnostic]);
+    const modelData = useMemo(() => ({
+      source: 'ui-base-input.VirtualKeyboard',
+      layout,
+      horizontalMode: definition.horizontalMode,
+      visualRowCount: definition.visualRowCount,
+      maxColumns: definition.maxColumns,
+      frameWidth,
+      keyboardHeight: height,
+      cellWidth,
+      columnGap,
+      shift,
+      capsLock,
+      hasNextField,
+      rows: definition.rows.map((row, rowIndex) => ({
+        rowIndex,
+        region: row.region,
+        align: row.align,
+        sizing: row.sizing,
+        keyIds: row.keys.map(key => key.keyId),
+        height: rowHeightOf(row),
+        grid: row.grid === undefined
+          ? null
+          : {
+            rowCount: row.grid.rowCount,
+            columns: row.grid.columns.map((column, columnIndex) => ({
+              columnIndex,
+              span: column.span,
+              direction: column.direction,
+              keyIds: column.keys.map(key => key.keyId),
+            })),
+          },
+      })),
+    }), [capsLock, cellWidth, columnGap, definition, frameWidth, hasNextField, height, layout, shift]);
+    const modelSignature = JSON.stringify(modelData);
+    const previousModelSignature = useRef<string | null>(null);
+    useEffect(() => {
+      if (!__DEV__ || onDiagnostic === undefined || previousModelSignature.current === modelSignature) return;
+      previousModelSignature.current = modelSignature;
+      onDiagnostic({event: 'input.keyboard-model', data: modelData});
+    }, [modelData, modelSignature, onDiagnostic]);
     const handlers = useMemo(
       () =>
         new Map(
@@ -112,13 +175,22 @@ export const VirtualKeyboard = memo(
     );
 
     return (
-      <View testID="ui.base.input:virtual-keyboard" style={[styles.dock, {height, width: frameWidth}]}>
-        <View testID="ui.base.input:virtual-keyboard:content" style={styles.content}>
+      <View
+        testID="ui.base.input:virtual-keyboard"
+        style={[styles.dock, {height, width: frameWidth}]}
+        onLayout={event => reportLayout('dock', event)}
+      >
+        <View
+          testID="ui.base.input:virtual-keyboard:content"
+          style={styles.content}
+          onLayout={event => reportLayout('content', event)}
+        >
           {regions.map(region => (
             <View
               key={`region-${region.region}`}
               testID={`ui.base.input:virtual-keyboard:region:${region.region}`}
               style={styles.region}
+              onLayout={event => reportLayout(`region:${region.region}`, event)}
             >
               {region.rows.map((row, rowIndex) => (
                 <View
@@ -131,6 +203,7 @@ export const VirtualKeyboard = memo(
                       justifyContent: row.align === 'center' ? 'center' : 'flex-start',
                     },
                   ]}
+                  onLayout={event => reportLayout(`row:${region.region}:${rowIndex}`, event)}
                 >
                   {row.grid === undefined
                     ? keyGroups(row.keys).map((group, groupIndex) => {
@@ -149,6 +222,7 @@ export const VirtualKeyboard = memo(
                               styles.keyGroup,
                               {width: groupWidth(group.length, rowCellWidth, columnGap), gap: columnGap},
                             ]}
+                            onLayout={event => reportLayout(`segment:${zone}:${groupIndex}`, event)}
                           >
                             {group.map(key => {
                               const keyId = keyIdOf(key);
@@ -160,6 +234,7 @@ export const VirtualKeyboard = memo(
                                   accessibilityLabel={label}
                                   variant={key.zone === 'actions' ? 'key-action' : 'key'}
                                   onPress={handlers.get(keyId)}
+                                  onLayout={event => reportLayout(`key:${keyId}`, event)}
                                 >
                                   {label}
                                 </PrimitiveButton>
@@ -180,6 +255,7 @@ export const VirtualKeyboard = memo(
                               gap: column.direction === 'row' ? columnGap : INPUT_LAYOUT_CONSTANTS.ROW_GAP,
                             },
                           ]}
+                          onLayout={event => reportLayout(`segment:grid:${columnIndex}`, event)}
                         >
                           {column.keys.map(key => {
                             const keyId = keyIdOf(key);
@@ -191,6 +267,7 @@ export const VirtualKeyboard = memo(
                                 accessibilityLabel={label}
                                 variant={key.zone === 'actions' ? 'key-action' : 'key'}
                                 onPress={handlers.get(keyId)}
+                                onLayout={event => reportLayout(`key:${keyId}`, event)}
                               >
                                 {label}
                               </PrimitiveButton>

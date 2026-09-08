@@ -1,16 +1,20 @@
 import packageJson from '../../package.json'
+import type {DisplayMode} from '@catering-v2s/kernel-base-display-context'
 
 export type SurfaceSize = Readonly<{
   readonly width: number
   readonly height: number
 }>
 
+export type SurfaceOrientation = 'landscape' | 'portrait'
+
+export type SurfaceDeclarations = Readonly<Record<DisplayMode, SurfaceSize>>
+export type PortraitSurfaceDeclarations = Readonly<Pick<SurfaceDeclarations, 'PRIMARY'>>
+
 export type TerminalSurfaces = Readonly<{
-  readonly layout: 'row' | 'column'
-  readonly scaleToFit: boolean
-  readonly surfaces: Readonly<{
-    readonly PRIMARY: SurfaceSize
-    readonly SECONDARY: SurfaceSize
+  readonly orientations: Readonly<{
+    readonly landscape: SurfaceDeclarations
+    readonly portrait?: PortraitSurfaceDeclarations
   }>
 }>
 
@@ -27,17 +31,33 @@ const readSurfaceSize = (value: unknown, label: string): SurfaceSize => {
   return Object.freeze({width: value.width, height: value.height})
 }
 
-const readTerminalSurfaces = (value: unknown): TerminalSurfaces => {
-  if (!isRecord(value) || (value.layout !== 'row' && value.layout !== 'column') || typeof value.scaleToFit !== 'boolean') {
+const readSurfaceDeclarations = (value: unknown, label: string): SurfaceDeclarations => {
+  if (!isRecord(value)) throw new Error(`[sample-console] ${label} surfaces are required`)
+  return Object.freeze({
+    PRIMARY: readSurfaceSize(value.PRIMARY, `${label}.PRIMARY surface`),
+    SECONDARY: readSurfaceSize(value.SECONDARY, `${label}.SECONDARY surface`),
+  })
+}
+
+const readPortraitSurfaceDeclarations = (value: unknown, label: string): PortraitSurfaceDeclarations => {
+  if (!isRecord(value)) throw new Error(`[sample-console] ${label} surfaces are required`)
+  if (Object.prototype.hasOwnProperty.call(value, 'SECONDARY')) {
+    throw new Error(`[sample-console] ${label}.SECONDARY is not allowed in portrait`)
+  }
+  return Object.freeze({
+    PRIMARY: readSurfaceSize(value.PRIMARY, `${label}.PRIMARY surface`),
+  })
+}
+
+export const readTerminalSurfaces = (value: unknown): TerminalSurfaces => {
+  if (!isRecord(value) || !isRecord(value.orientations)) {
     throw new Error('[sample-console] terminalSurfaces has an invalid shape')
   }
-  if (!isRecord(value.surfaces)) throw new Error('[sample-console] terminalSurfaces.surfaces is required')
+  const portrait = value.orientations.portrait
   return Object.freeze({
-    layout: value.layout,
-    scaleToFit: value.scaleToFit,
-    surfaces: Object.freeze({
-      PRIMARY: readSurfaceSize(value.surfaces.PRIMARY, 'PRIMARY surface'),
-      SECONDARY: readSurfaceSize(value.surfaces.SECONDARY, 'SECONDARY surface'),
+    orientations: Object.freeze({
+      landscape: readSurfaceDeclarations(value.orientations.landscape, 'landscape'),
+      ...(portrait === undefined ? {} : {portrait: readPortraitSurfaceDeclarations(portrait, 'portrait')}),
     }),
   })
 }

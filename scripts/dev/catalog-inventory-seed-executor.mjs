@@ -649,7 +649,7 @@ const canonicalDraft = (dataset, item, assetRefs, refs, assignmentOverride = nul
     }),
     identifiers: seedSkuIdentifiers(assignment, sku.code),
     preparationOverride: seedSkuPreparationOverride(assignment, sku.code, refs),
-    standardSalePrice: null,
+    standardSalePrice: sku.standardSalePriceCents ?? null,
     isDefault: sku.code.endsWith("-S"),
     status: sku.status || "ENABLED",
     version: 1,

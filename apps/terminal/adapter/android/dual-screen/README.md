@@ -18,19 +18,42 @@ RN 当前 `fabricEnabled` 为基础、只覆盖 `getLaunchOptions()` 的 delegat
 调用 `createSurface`，送入 `displayIndex=1` 与相同 `displayCount`。两个入口不重新读取、不共享
 后续缓存，也不要求 MainActivity 或 assembly 增加 bootstrap。
 
-## ReactSurface 的密度基线
+## ReactSurface 的逻辑分辨率基线
 
-副屏的 Presentation 仍使用目标 display 的 `Context` 与窗口主题，但交给 React Native
-`ReactSurface` 的 context 会复制主 Activity 的 `densityDpi`。原因是 RN 0.86.3 的部分全局
-`PixelUtil` 计算以主 React host 的 density 为基线；若直接把副屏 display context 交给
-surface，副屏文字与控件会按另一套 density 解释，出现字号放大、内容截断或两屏比例不一致。
-因此 carrier 在 `createSurface` 前只规范化 `densityDpi`，不改 Presentation 的真实 display
-上下文、窗口边界、业务 props 或 assembly；主屏与副屏随后共享同一套 RN 尺寸基线。
+副屏的 `Presentation` 使用目标 display 的 `Context` 与窗口主题；交给 React Native
+`ReactSurface` 的 context 则对齐同一 RN runtime 已建立的共享 render `densityDpi`，不能把
+目标 display 的 hardware `densityDpi` 当成第二套 RN Text/layout density。carrier 在
+`createSurface` 前分别读取目标 `Display` 的硬件 metrics 与 RN 的
+`DisplayMetricsHolder.screen`，并只在 surface context 的 `Configuration` 中设置共享 render
+density；不复制主 Activity 的窗口边界、业务 props 或 assembly，也不改写 RN 全局 metrics。
+
+本包使用 RN runtime 级共享 render density，但它不是画布声明的第二个真相源，也不是逐值
+scaler。`hardwareDensity*` 表示目标 display 的硬件事实，`surfaceDensity*` 表示 React
+surface 与 host logical conversion 实际使用的共享 RN render density；两者可以不同，必须
+分别记录，不能互相替代，也不能按 surface 改写 `DisplayMetricsHolder`。当前模拟器预期为
+PRIMARY `320/320`、SECONDARY `213/320`（hardware/surface）。
+
+因此，目标 display 的 raw 分辨率与 density 只用于 carrier 的 context/资源配置和承载事实
+诊断；它不再推导业务画布声明。横屏 sample 的固定逻辑画布由 host 声明为 PRIMARY
+`1280×800`、SECONDARY `960×540`；当前模拟器副屏的 `1280×720 physical px / 213 dpi`
+只是硬件显示配置，承载层再把各自画布映射到实际窗口。主屏与副屏共享
+同一个 React host/store，但各自的 surface 必须使用自己的 display/window snapshot；目标
+display hardware density diagnostics、共享 RN render density 与固定画布 scale 是独立步骤。
+
+carrier 同时通过 `TerminalDualScreenModule` 暴露 `getSurfaceHostSnapshot(surfaceKey)` 与
+`onSurfaceHostChanged`。snapshot 的 `surfaceKey` 只使用既有 `PRIMARY`/`SECONDARY` 值，
+并绑定 display id、window identity 与 generation；它不是 `DevicePort`、`DisplayInfo` 或
+`PlatformPortBindings` 的扩展。当前经 CP-0 选定的 host measurement policy 是
+`owner-decorView-layout`：stable/current raw bounds 从实际 Activity 或 Presentation 的
+`decorView` layout snapshot 读取，surface render density 从该 surface view 的资源与共享 RN
+runtime 关联记录；hardware density 另从 owner display 读取。IME 只更新独立的 inset 字段，
+不重算 stable host size。尚未获得有效 bounds 或 density 时 adapter 不发送可用 snapshot，也不以
+声明画布或另一块屏幕的尺寸补值。
 
 这条是当前 Expo SDK 57 + React Native 0.86.3 carrier 的运行时契约，不是业务包的视觉逻辑。
 其他 assembly 只要复用本 adapter 的 host/surface 接线即可继承它，不应在 assembly、integration
 或 feature 中自行设置字体缩放、density 或平台判断。若未来替换 Expo/RN carrier 或使用不同
-的 host 实现，必须重新验证主副屏的 density 基线，不能把本段当成所有版本的通用保证。
+的 host 实现，必须重新验证主副屏的逻辑 frame 与 density 基线，不能把本段当成所有版本的通用保证。
 
 ## 生命周期与失败
 
@@ -55,10 +78,11 @@ runtime/store。`TerminalPresentation` 不安装 system-IME listener：SECONDARY
 是只使用虚拟键盘。若将来副屏需要 system IME，必须另开 scoped keyboard/IME 设计，不能把主屏
 snapshot 推断为副屏能力。
 
-结构：`TerminalDualScreenModule.kt` 是 Expo module 声明，`TerminalDualScreenPackage.kt`
+结构：`TerminalDualScreenModule.kt` 是 Expo module 声明与 JS bridge，`TerminalDualScreenPackage.kt`
 是 Expo package 注册，`TerminalDualScreenActivityHandler.kt` 负责主屏 launch options、
-Presentation、ReactSurface 生命周期与 carrier 诊断；`TerminalImeInsetsCoordinator.kt`
-负责主屏 system-IME inset 监听与 event bus 发布。
+Presentation、ReactSurface 生命周期、per-surface host registry 与 carrier 诊断；
+`TerminalImeInsetsCoordinator.kt` 负责主屏 system-IME inset 监听与 event bus 发布，host
+registry 只在 adapter 内部合并该 inset 事实。
 
 迭代指引：任何 carrier 改动先用当前 Expo/RN 的公开 API 和同一 host/store 反证，保留真实
 生命周期失败证据；禁止反射 RN 私有字段、增加第二实例后备路径，或借修改业务层绕过 Android

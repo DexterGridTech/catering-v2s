@@ -223,6 +223,22 @@ LOGIN_FORM_PAGE_OFFICIAL_COMPOSITION=logo:<...>; title:<...>; subTitle:<...>; me
 focused/static proof。该例外不适用于可直接标记的 Button、MenuItem、Checkbox、Radio、输入框或 file input，
 也不允许以外层 wrapper、文本或宽 locator 替代真实动作节点。
 
+#### Implementation-facing 控件 roster（强制）
+
+每个进入 implementation-facing design 的 UI-bearing screen，除上表的逐动作证据外，必须提供一张可直接
+对账的最小控件 roster。该表用于在 UI 设计、`*TestIds.ts` 唯一源、真实挂载节点与 L2 binding 之间建立闭环；
+不能只列 foundation 原语名，也不能把未来控件名称当作当前实现证据。
+
+| 控件键 | testId | 所在真实动作节点 | 是否 `COMPOSITE_OPTION_ANCHOR` |
+| --- | --- | --- | --- |
+| `<业务动作或观察键>` | `<来自 app *TestIds.ts 的稳定值/构造器>` | `<真实 Button/Input/Radio/Select/Table/分页/native 节点>` | `是/否；是必须说明 option 点击节点与例外理由` |
+
+要求：每个新增用户动作和需要被 L2 观察的动态状态都必须逐行列出；动态行必须使用稳定业务身份，不使用
+label、placeholder、row index、CSS/XPath、Modal/Drawer wrapper 或页面文本。`COMPOSITE_OPTION_ANCHOR` 只
+能标注已证明无法在 option-level 挂载的复合控件宿主；Radio、Button、MenuItem、Checkbox 和输入框必须标注
+实际动作节点。实现前应将该 roster 与 owning source、唯一 `*TestIds.ts`、binding 和 focused/static proof
+逐项对账，缺行、重名、挂错节点或仅有 wrapper 均为 `REVISE`。
+
 ### 1.2 表单控件依赖图（每个输入-bearing wireframe 强制）
 
 每个包含输入控件的线框，在其线框后必须逐控件写出下表；包括登录字段、选择器、搜索框、单选/多选、

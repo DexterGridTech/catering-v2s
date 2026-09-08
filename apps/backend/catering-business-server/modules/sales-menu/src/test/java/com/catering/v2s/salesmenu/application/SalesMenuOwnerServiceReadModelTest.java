@@ -68,6 +68,8 @@ class SalesMenuOwnerServiceReadModelTest {
                                 mapper.mapRow(mediaResult(ITEM_ONE, ASSET_ONE, 0), 0),
                                 mapper.mapRow(mediaResult(ITEM_TWO, ASSET_TWO, 0), 1));
                     }
+                    if (sql.contains("sales_version_item_sku")) return List.of();
+                    if (sql.contains("sales_version_item_order_option")) return List.of();
                     throw new AssertionError("unexpected query: " + sql);
                 });
 
@@ -107,6 +109,8 @@ class SalesMenuOwnerServiceReadModelTest {
                         mediaQueries.incrementAndGet();
                         return List.of(mapper.mapRow(mediaResult(ITEM_ONE, ASSET_ONE, 0), 0));
                     }
+                    if (sql.contains("sales_version_item_sku")) return List.of();
+                    if (sql.contains("sales_version_item_order_option")) return List.of();
                     if (sql.contains("sales_manual_status_current")) {
                         manualQueries.incrementAndGet();
                         return List.of(mapper.mapRow(manualResult(ITEM_ONE), 0));
@@ -141,6 +145,8 @@ class SalesMenuOwnerServiceReadModelTest {
                     if (sql.contains("FROM sales_menu.sales_version_item v"))
                         return List.of(mapper.mapRow(itemResult(DRAFT, ITEM_TWO, 1), 0));
                     if (sql.contains("sales_version_item_media")) return List.of();
+                    if (sql.contains("sales_version_item_sku")) return List.of();
+                    if (sql.contains("sales_version_item_order_option")) return List.of();
                     throw new AssertionError("unexpected query: " + sql);
                 });
 
@@ -152,7 +158,7 @@ class SalesMenuOwnerServiceReadModelTest {
 
         ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Object[]> arguments = ArgumentCaptor.forClass(Object[].class);
-        verify(repository, times(3)).query(sql.capture(), any(RowMapper.class), arguments.capture());
+        verify(repository, times(4)).query(sql.capture(), any(RowMapper.class), arguments.capture());
         int itemQuery = sql.getAllValues().stream()
                 .mapToInt(value -> value.contains("FROM sales_menu.sales_version_item v") ? 1 : 0)
                 .sum();
@@ -180,6 +186,8 @@ class SalesMenuOwnerServiceReadModelTest {
                     if (sql.contains("FROM sales_menu.sales_version_item v"))
                         return List.of(mapper.mapRow(itemResult(PUBLISHED, ITEM_TWO, 1), 0));
                     if (sql.contains("sales_version_item_media")) return List.of();
+                    if (sql.contains("sales_version_item_sku")) return List.of();
+                    if (sql.contains("sales_version_item_order_option")) return List.of();
                     if (sql.contains("sales_manual_status_current")) return List.of();
                     throw new AssertionError("unexpected query: " + sql);
                 });
@@ -192,7 +200,7 @@ class SalesMenuOwnerServiceReadModelTest {
 
         ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Object[]> arguments = ArgumentCaptor.forClass(Object[].class);
-        verify(repository, times(4)).query(sql.capture(), any(RowMapper.class), arguments.capture());
+        verify(repository, times(5)).query(sql.capture(), any(RowMapper.class), arguments.capture());
         int itemQueryIndex = 0;
         while (!sql.getAllValues().get(itemQueryIndex).contains("FROM sales_menu.sales_version_item v"))
             itemQueryIndex++;
@@ -214,6 +222,8 @@ class SalesMenuOwnerServiceReadModelTest {
                     if (sql.contains("sales_command_receipt")) return List.of();
                     if (sql.contains("latest_published_version_ref"))
                         return List.of(mapper.mapRow(uuidResult(PUBLISHED), 0));
+                    if (sql.contains("FROM sales_menu.sales_version_item v"))
+                        return List.of(mapper.mapRow(itemResult(PUBLISHED, ITEM_TWO, 1), 0));
                     if (sql.contains("WHERE version_ref=? AND sales_item_ref=?")) {
                         ResultSet result = mock(ResultSet.class);
                         when(result.getBoolean(1)).thenReturn(true);
@@ -238,7 +248,7 @@ class SalesMenuOwnerServiceReadModelTest {
         for (int index = 0; index < sql.getAllValues().size(); index++) {
             String statement = sql.getAllValues().get(index);
             if (statement.contains("latest_published_version_ref")) publishedVersionQuery++;
-            if (statement.contains("WHERE version_ref=? AND sales_item_ref=?")) itemQueryIndex = index;
+            if (statement.contains("FROM sales_menu.sales_version_item v")) itemQueryIndex = index;
             if (statement.contains("sales_command_receipt")) receiptQuery++;
         }
         assertEquals(1, publishedVersionQuery);
@@ -327,6 +337,8 @@ class SalesMenuOwnerServiceReadModelTest {
     private static ResultSet manualResult(UUID item) throws Exception {
         ResultSet result = mock(ResultSet.class);
         when(result.getObject("sales_item_ref", UUID.class)).thenReturn(item);
+        when(result.getString("target_kind")).thenReturn("ITEM");
+        when(result.getObject("target_ref", UUID.class)).thenReturn(item);
         when(result.getString("state")).thenReturn("MANUAL_SOLD_OUT");
         when(result.getString("reason")).thenReturn("temporary");
         when(result.getObject("changed_at_epoch_millis", Long.class)).thenReturn(1_788_000_000_000L);

@@ -13,6 +13,21 @@ import type {InputRegistrationToken, InputSnapshot} from '../foundations/snapsho
 export type {KeyboardLayout} from '../foundations/keyboardLayout';
 export type {InputSnapshot, InputRegistrationToken} from '../foundations/snapshot';
 
+export type InputDiagnosticValue =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly InputDiagnosticValue[]
+  | Readonly<{readonly [key: string]: InputDiagnosticValue}>;
+
+export type InputDiagnostic = Readonly<{
+  readonly event: string;
+  readonly data: Readonly<Record<string, InputDiagnosticValue>>;
+}>;
+
+export type InputDiagnosticReporter = (diagnostic: InputDiagnostic) => void;
+
 export type KeyboardKind = 'system' | 'virtual';
 
 type InputFieldOptionsBase = Readonly<{
@@ -50,12 +65,14 @@ export type InputSurfaceFrameProps = Readonly<{
   readonly children?: ReactNode;
   readonly imeInset?: number;
   readonly onMeasuredFrame?: (frame: LocalFrameMetrics) => void;
+  readonly onDiagnostic?: InputDiagnosticReporter;
 }>;
 
 export type InputProviderProps = Readonly<{
   readonly frameMetrics: LocalFrameMetrics | null;
   readonly children?: ReactNode;
   readonly imeInset?: number;
+  readonly onDiagnostic?: InputDiagnosticReporter;
 }>;
 
 export type InputFieldController = Readonly<{

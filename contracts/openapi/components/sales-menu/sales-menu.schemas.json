@@ -534,6 +534,7 @@
           "staleSelectedSkuRefs",
           "defaultPriceCents",
           "catalogPrimaryImageAssetRef",
+          "catalogImageAssetRefs",
           "saleContent",
           "orderingConstraints",
           "displayMedia",
@@ -712,6 +713,15 @@
             "nullable": true,
             "description": "Current Catalog primary display asset for INHERIT_CATALOG; null when no active Catalog image."
           },
+          "catalogImageAssetRefs": {
+            "type": "array",
+            "maxItems": 6,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Current Catalog display assets in display order for INHERIT_CATALOG; empty when the Catalog item has no active images."
+          },
           "saleContent": {
             "$ref": "#/components/schemas/SalesMenuSaleContent"
           },
@@ -849,6 +859,8 @@
           "saleContent",
           "orderingConstraints",
           "displayMedia",
+          "publishedPrimaryImageAssetRef",
+          "publishedCatalogImageAssetRefs",
           "displayOrder",
           "inventoryAvailability",
           "manualSaleStatus",
@@ -892,6 +904,21 @@
           },
           "displayMedia": {
             "$ref": "#/components/schemas/SalesMenuDisplayMedia"
+          },
+          "publishedPrimaryImageAssetRef": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Published immutable effective primary image reference for INHERIT_CATALOG; null means no published primary image."
+          },
+          "publishedCatalogImageAssetRefs": {
+            "type": "array",
+            "maxItems": 6,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Published immutable Catalog display assets in display order captured at publication for INHERIT_CATALOG; empty for CUSTOM or when no Catalog images existed."
           },
           "displayOrder": {
             "type": "integer",

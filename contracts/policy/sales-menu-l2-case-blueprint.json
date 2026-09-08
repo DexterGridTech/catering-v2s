@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "sales-menu-l2-case-blueprint",
-  "revision": "SALES_MENU_L2_P1_20260907",
+  "revision": "SALES_MENU_L2_P1_20260908",
   "sourceBindings": {
     "requirements": "doc/plans/platform/2026-08-31-v2s-sales-menu-requirements.md",
     "requirementsAnalysis": "doc/plans/platform/2026-08-31-v2s-sales-menu-requirements-analysis-claude.md",
@@ -298,22 +298,29 @@
           "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
         ]
       },
-      "SALES_MENU_ITEM_STATUS_CHOICE": {
-        "testIdTemplate": "sales-menu-status-choice-${status}",
+      "SALES_MENU_ITEM_STATUS_TARGET": {
+        "testIdTemplate": "sales-menu-status-target-${kind}-${ref}",
         "sourceFiles": [
           "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
           "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
         ]
       },
-      "SALES_MENU_ITEM_STATUS_REASON": {
-        "testId": "sales-menu-status-reason",
+      "SALES_MENU_ITEM_STATUS_TARGET_QUICK_ACTION": {
+        "testIdTemplate": "sales-menu-status-target-quick-action-${kind}-${ref}-${state}",
         "sourceFiles": [
           "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
           "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
         ]
       },
-      "SALES_MENU_ITEM_STATUS_SUBMIT": {
-        "testId": "sales-menu-status-submit",
+      "SALES_MENU_ITEM_STATUS_TARGET_REASON": {
+        "testId": "sales-menu-status-target-reason",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+          "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
+        ]
+      },
+      "SALES_MENU_ITEM_STATUS_CLOSE": {
+        "testId": "sales-menu-status-close",
         "sourceFiles": [
           "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
           "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx"
@@ -394,6 +401,62 @@
         "testId": "sales-menu-item-listed-price",
         "sourceFiles": ["apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"]
       },
+      "SALES_MENU_ITEM_SKU_SELECTION": {
+        "testId": "sales-menu-item-sku-selection",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+          "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+        ]
+      },
+      "SALES_MENU_ITEM_SKU_SELECT_ALL": {
+        "testId": "sales-menu-item-sku-select-all",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+          "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+        ]
+      },
+      "SALES_MENU_ITEM_SKU_CLEAR": {
+        "testId": "sales-menu-item-sku-clear",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+          "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+        ]
+      },
+      "SALES_MENU_ITEM_SKU_OPTION": {
+        "testIdTemplate": "sales-menu-item-sku-option-${skuRef}",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+          "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+        ]
+      },
+      "SALES_MENU_ITEM_SKU_PRICE": {
+        "testIdTemplate": "sales-menu-item-sku-price-${skuRef}",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+          "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+        ]
+      },
+      "SALES_MENU_ITEM_ORDER_OPTION_GROUP": {
+        "testIdTemplate": "sales-menu-item-order-option-group-${definitionRef}",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+          "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+        ]
+      },
+      "SALES_MENU_ITEM_ORDER_OPTION_VALUE": {
+        "testIdTemplate": "sales-menu-item-order-option-value-${definitionRef}-${valueRef}",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+          "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+        ]
+      },
+      "SALES_MENU_ITEM_STALE_SKU_NOTICE": {
+        "testId": "sales-menu-item-stale-sku-notice",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+          "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+        ]
+      },
       "SALES_MENU_ITEM_MEDIA_EDITOR": {
         "testId": "sales-menu-item-media-editor",
         "sourceFiles": ["apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"]
@@ -424,6 +487,16 @@
       "SALES_MENU_ITEM_DETAIL": {
         "testId": "sales-menu-item-detail",
         "sourceFiles": ["apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"]
+      },
+      "SALES_MENU_ITEM_DETAIL_MEDIA_CHOICE": {
+        "testIdTemplate": "sales-menu-item-detail-media-choice-${itemRef}-${assetRef}",
+        "interaction": "DETAIL_IMAGE_THUMBNAIL_SELECTION",
+        "actualActionNode": "NATIVE_BUTTON",
+        "focusedStaticProof": "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.static.test.ts",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+          "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemImageGallery.tsx"
+        ]
       },
       "SALES_MENU_PUBLISH_DRAWER": {
         "testId": "sales-menu-publish-drawer",
@@ -782,6 +855,7 @@
                 "getOperationsSalesMenuDraftItems",
                 "getOperationsSalesMenuPublicationPreview",
                 "getOperationsBusinessChannelTemplates",
+                "getPublicAssetContent",
                 "getOperationsWorkspaceSessionEntry"
               ],
               "requests": [
@@ -792,6 +866,7 @@
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 2},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 2},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 4},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
               ]
             },
@@ -847,6 +922,7 @@
                 "getOperationsSalesMenu",
                 "getOperationsSalesMenuDraftItems",
                 "getOperationsSalesMenuPublicationPreview",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsBusinessChannelTemplates",
                 "getOperationsWorkspaceSessionEntry"
@@ -859,6 +935,7 @@
                 {"operationId": "getOperationsSalesMenu", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 4},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
@@ -909,6 +986,7 @@
                 "getOperationsSalesMenu",
                 "getOperationsSalesMenuDraftItems",
                 "getOperationsSalesMenuPublicationPreview",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsBusinessChannelTemplates",
                 "getOperationsWorkspaceSessionEntry"
@@ -921,6 +999,7 @@
                 {"operationId": "getOperationsSalesMenu", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 4},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
@@ -959,6 +1038,7 @@
                 "getOperationsSalesMenu",
                 "getOperationsSalesMenuDraftItems",
                 "getOperationsSalesMenuPublicationPreview",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsBusinessChannelTemplates",
                 "getOperationsWorkspaceSessionEntry"
@@ -967,9 +1047,10 @@
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 8},
                 {"operationId": "deleteOperationsSalesMenuSection", "maxRequestCount": 1},
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 4},
-                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 2},
-                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 4},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
@@ -1032,6 +1113,7 @@
                 "getOperationsSalesMenuDraftSections",
                 "getOperationsSalesMenuDraftItems",
                 "getOperationsSalesMenuPublicationPreview",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsBusinessChannelTemplates",
                 "getOperationsWorkspaceSessionEntry"
@@ -1045,6 +1127,7 @@
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 3},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 3},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 2},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 1}
@@ -1076,6 +1159,8 @@
             "SALES_MENU_ITEM_EDITOR",
             "SALES_MENU_ITEM_DISPLAY_NAME",
             "SALES_MENU_ITEM_LISTED_PRICE",
+            "SALES_MENU_ITEM_ORDER_OPTION_GROUP",
+            "SALES_MENU_ITEM_ORDER_OPTION_VALUE",
             "SALES_MENU_ITEM_MEDIA_EDITOR",
             "SALES_MENU_ITEM_MEDIA_UPLOAD",
             "SALES_MENU_ITEM_MEDIA_LIST",
@@ -1150,7 +1235,7 @@
     },
     {
       "scenarioId": "SM-L2-005",
-      "businessRequirement": "按SKU逐项设置销售菜单价格。",
+            "businessRequirement": "按SKU逐项设置销售菜单价格。",
       "cases": [
         {
           "caseId": "sales-menu-edit-sku-prices",
@@ -1167,6 +1252,11 @@
             "SALES_MENU_ITEM_TABLE",
             "SALES_MENU_ITEM",
             "SALES_MENU_ITEM_EDITOR",
+            "SALES_MENU_ITEM_SKU_SELECTION",
+            "SALES_MENU_ITEM_SKU_SELECT_ALL",
+            "SALES_MENU_ITEM_SKU_CLEAR",
+            "SALES_MENU_ITEM_SKU_OPTION",
+            "SALES_MENU_ITEM_SKU_PRICE",
             "SALES_MENU_ITEM_SAVE"
           ],
           "steps": ["打开SKU销售项", "逐SKU设置菜单价", "保存并读取SKU销售定义"],
@@ -1183,18 +1273,20 @@
                 "getOperationsSalesMenuDraftSections",
                 "getOperationsSalesMenuDraftItems",
                 "getOperationsSalesMenuPublicationPreview",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsBusinessChannelTemplates",
                 "getOperationsWorkspaceSessionEntry"
               ],
               "requests": [
-                {"operationId": "getOperationsSalesMenuDraftItem", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenuDraftItem", "maxRequestCount": 5},
                 {"operationId": "updateOperationsSalesMenuItem", "maxRequestCount": 2},
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 4},
-                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 3},
-                {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 3},
-                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 4},
+                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 4},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 3},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
@@ -1240,6 +1332,7 @@
                 "getOperationsSalesMenuDraftSections",
                 "getOperationsSalesMenuDraftItems",
                 "getOperationsSalesMenuPublicationPreview",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsBusinessChannelTemplates",
                 "getOperationsWorkspaceSessionEntry"
@@ -1252,6 +1345,7 @@
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 3},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 3},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
@@ -1302,6 +1396,7 @@
                 "getOperationsSalesMenu",
                 "getOperationsSalesMenuDraftSections",
                 "getOperationsSalesMenuPublicationPreview",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsBusinessChannelTemplates",
                 "getOperationsWorkspaceSessionEntry"
@@ -1313,6 +1408,7 @@
                 {"operationId": "getOperationsSalesMenu", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 4},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
@@ -1344,7 +1440,8 @@
             "SALES_MENU_PUBLISH_SUBMIT",
             "SALES_MENU_ITEM_TABLE",
             "SALES_MENU_ITEM",
-            "SALES_MENU_ITEM_DETAIL"
+            "SALES_MENU_ITEM_DETAIL",
+            "SALES_MENU_ITEM_DETAIL_MEDIA_CHOICE"
           ],
           "steps": ["打开发布预览", "确认结构化阻断为空", "发布菜单", "查看前台只读结构", "确认旧publication保持冻结"],
           "businessOracle": ["前台没有操作列", "发布产生不可变publication", "发布不声称终端ACK"],
@@ -1371,6 +1468,7 @@
                 "getOperationsSalesMenu",
                 "getOperationsSalesMenuDraftSections",
                 "getOperationsSalesMenuDraftItems",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsBusinessChannelTemplates",
                 "getOperationsWorkspaceSessionEntry"
@@ -1385,6 +1483,7 @@
                 {"operationId": "getOperationsSalesMenu", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 4},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
@@ -1414,10 +1513,11 @@
             "SALES_MENU_ITEM_TABLE",
             "SALES_MENU_ITEM",
             "SALES_MENU_PUBLISHED_PAGINATION",
-            "SALES_MENU_ITEM_DETAIL"
+            "SALES_MENU_ITEM_DETAIL",
+            "SALES_MENU_ITEM_DETAIL_MEDIA_CHOICE"
           ],
-          "steps": ["进入前台菜单", "逐页查看21条销售项", "分别读取库存状态和销售状态", "打开只读详情"],
-          "businessOracle": ["inventoryAvailability和manualSaleStatus独立", "第21项可达", "状态详情不能改变Inventory"],
+          "steps": ["进入前台菜单", "逐页查看21条销售项", "分别读取库存状态和销售状态", "打开只读详情", "切换第二张展示图片并查看大图"],
+          "businessOracle": ["inventoryAvailability和manualSaleStatus独立", "第21项可达", "状态详情不能改变Inventory", "多张图片按发布快照顺序可切换"],
           "parameter": {
             "declaredActions": [{"actionId": "inspect-front-status", "kind": "USER_JOURNEY"}],
             "operationIds": ["getOperationsSalesMenuPublishedItems", "getOperationsSalesMenuPublishedItem"],
@@ -1431,6 +1531,7 @@
                 "getOperationsSalesMenuDraftItems",
                 "getOperationsSalesMenuPublishedSections",
                 "getOperationsSalesMenuPublicationPreview",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsBusinessChannelTemplates",
                 "getOperationsWorkspaceSessionEntry"
@@ -1444,6 +1545,7 @@
                 {"operationId": "getOperationsSalesMenuPublishedSections", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 4},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
@@ -1472,13 +1574,14 @@
             "SALES_MENU_SECTION",
             "SALES_MENU_ITEM_TABLE",
             "SALES_MENU_ITEM_STATUS_ACTION",
-            "SALES_MENU_ITEM_STATUS_CHOICE",
-            "SALES_MENU_ITEM_STATUS_REASON",
-            "SALES_MENU_ITEM_STATUS_SUBMIT",
+            "SALES_MENU_ITEM_STATUS_TARGET",
+            "SALES_MENU_ITEM_STATUS_TARGET_QUICK_ACTION",
+            "SALES_MENU_ITEM_STATUS_TARGET_REASON",
+            "SALES_MENU_ITEM_STATUS_CLOSE",
             "SALES_MENU_CONFIRMATION_SUBMIT",
             "SALES_MENU_OPERATION_LOG"
           ],
-          "steps": ["打开销售状态", "填写沽清原因", "确认目标channel变化", "二次确认恢复", "读取操作记录"],
+          "steps": ["打开销售状态", "点击目标行设置沽清", "填写原因并再次点击目标行", "确认目标channel变化", "点击目标行恢复并二次确认", "读取操作记录"],
           "businessOracle": ["原因必填", "其他channel不变", "恢复事件保留且不自动改变库存"],
           "parameter": {
             "declaredActions": [{"actionId": "toggle-manual-sale-status", "kind": "USER_JOURNEY"}],
@@ -1502,6 +1605,7 @@
                 "getOperationsSalesMenuPublishedSections",
                 "getOperationsSalesMenuPublishedItems",
                 "getOperationsSalesMenuPublicationPreview",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsBusinessChannelTemplates",
                 "getOperationsWorkspaceSessionEntry"
@@ -1517,8 +1621,9 @@
                 {"operationId": "getOperationsSalesMenuPublishedSections", "maxRequestCount": 6},
                 {"operationId": "getOperationsSalesMenuPublishedItems", "maxRequestCount": 6},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 6},
-                {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
-                {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 6},
+                {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 5},
+                {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 4},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
               ]
             },
@@ -1593,6 +1698,7 @@
                 "getOperationsSalesMenuDraftSections",
                 "getOperationsSalesMenuDraftItems",
                 "getOperationsSalesMenuPublicationPreview",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsBusinessChannelTemplates",
                 "getOperationsWorkspaceSessionEntry"
@@ -1608,6 +1714,7 @@
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 8},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 8},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 8},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 8},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 8},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 8}
@@ -1656,6 +1763,7 @@
                 "getOperationsSalesMenuDraftSections",
                 "getOperationsSalesMenuDraftItems",
                 "getOperationsSalesMenuPublicationPreview",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsBusinessChannelTemplates",
                 "getOperationsWorkspaceSessionEntry"
@@ -1667,6 +1775,7 @@
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 4},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
@@ -1719,6 +1828,7 @@
                 "getOperationsSalesMenu",
                 "getOperationsSalesMenuDraftSections",
                 "getOperationsSalesMenuDraftItems",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsBusinessChannelTemplates",
                 "getOperationsWorkspaceSessionEntry"
@@ -1730,6 +1840,7 @@
                 {"operationId": "getOperationsSalesMenu", "maxRequestCount": 6},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 6},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 6},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 6},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
@@ -1771,6 +1882,7 @@
                 "getOperationsSalesMenuDraftSections",
                 "getOperationsSalesMenuDraftItems",
                 "getOperationsSalesMenuPublicationPreview",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsBusinessChannelTemplates",
                 "getOperationsWorkspaceSessionEntry"
@@ -1782,6 +1894,7 @@
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 2},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 2},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 3},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
@@ -1922,6 +2035,7 @@
               "forbidden": [],
               "backgroundAllowed": [
                 "getOperationsSalesMenus",
+                "getPublicAssetContent",
                 "getOperationsStoreBusinessChannels",
                 "getOperationsSalesMenuDraftItems",
                 "getOperationsSalesMenuPublicationPreview",
@@ -1929,6 +2043,7 @@
                 "getOperationsWorkspaceSessionEntry"
               ],
               "requests": [
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 2},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 5},
                 {"operationId": "getOperationsSalesMenu", "maxRequestCount": 2},

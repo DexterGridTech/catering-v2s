@@ -14,29 +14,28 @@ JOURNEY_REFS=sample-staff-auth; sample-member-desk; customer-member; FORM-1..FOR
 IA_REF=本文件 §10 IA/交互矩阵；ia-design-template.md 的可见/不可见维度
 INTERACTION_REF=doc/plans/platform/2026-09-06-v2s-terminal-input-keyboard-visual-redesign-requirements-v2-codex.md
 AUTHORIZED=Dexter 已授权按本详设与实施计划完成 CP-0..CP-6；交付前必须完成两类对账
-NOT_AUTHORIZED=不改 App 方向锁/拓扑/设备策略，不运行真实 POS/DEV/seed/UAT/部署，不执行 Git；Web/Android 动态证据仍按计划授权边界分档
+NOT_AUTHORIZED=不改 App 方向锁/拓扑/设备策略，不运行真实 POS/DEV/seed/UAT/部署，不执行 Git；Web/Android 动态证据仍按计划授权边界分档；Android carrier 可按目标 display density 配置 ReactSurface context，并由 host 承载层按固定画布计算 scaleX/scaleY，不把 scale 下发给 input
 IMPLEMENTATION_AUTHORITY=true
 IMPLEMENTATION_ADMISSION=ADMITTED_BY_DEXTER
 ```
 
-### 0.1 2026-09-07 Web 预览缩放修复（Dexter 直接指派）
+### 0.1 2026-09-08 固定逻辑画布与承载层裁定
 
-本次修复明确区分两个尺寸事实：`terminalSurfaces.surfaces.*` 是 Web 预览的目标逻辑分辨率，
-`SurfaceCanvas` 自己的 `onLayout` 是当前页面可用的预览宽度。`apps/terminal/ui/base/dev-host/src/surfacePreview.ts`
-负责用前者建立固定逻辑 stage，并由 `SurfaceCanvas` 在 `scaleToFit=true` 时对包含已挂载
-surface 的整组 stage 统一等比缩放；`PRIMARY` 与 `SECONDARY` 不再用 flex/aspectRatio 各自
-挤压。首帧尚未收到 canvas layout 时不渲染 stage；`scaleToFit=false` 保持倍率 1 并允许外层滚动。
+`terminalSurfaces` 的横屏声明是固定逻辑画布输入：PRIMARY 为 1280 × 800，SECONDARY
+为 960 × 540。sample Android 副屏的 1280 × 720 是 physical display 配置，不是逻辑画布。
+host 承载层负责把各自画布映射到实际 content rect；Android 允许
+scaleX/scaleY 非等比铺满，继续保留目标 display density 的 ReactSurface context 修正。
+input 不读取 scale、页面尺寸或物理 display 事实，仍只在所属 InputSurfaceFrame 的逻辑
+onLayout 中计算键盘与滚动。
 
-这是 Web 开发宿主的用户指向性修复：`ui/base/input` 不读取页面尺寸、不读取 `scale`，也不把宿主
-倍率写入 `InputSurfaceFrame` 的 local metrics。Web 预览中 input 子树会随所属 surface 一起
-显示缩放，这是为了让体验者看到与声明分辨率同形的整块屏幕；该行为不声称缩放后的 Web 物理
-hit target 已满足 Android 48dp，Web 验证必须读取实际 `getBoundingClientRect()` 并用
-`elementFromPoint()` 观察命中。Native/Android 不读取此 Web 配置，也不改方向锁、拓扑或 imeInset。
+Web dev-host 的具体缩放 policy 仍待 Dexter 裁决；本文件不把 uniform contain 或 browser
+非等比 stretch 写成已定契约。Web 真实命中必须读取变换后 DOM rect 并用 elementFromPoint
+观察；Android 必须用真实 tap 观察。transform 只能由 host layout owner 管理，不能由 input
+包引入、下发或建立第二套物理尺寸桥接。
 
 本节 supersede 本文原先“宿主不得以 ancestor transform 包裹 `InputSurfaceFrame`”的 Web
-宿主表述；仍保留的约束是：transform 只能由 dev-host 的 stage layout owner 管理，input
-包不得引入 transform、不得从 transform 前逻辑尺寸冒充物理 hit target、不得建立第二套
-物理尺寸桥接。原因已记录在本节，避免把用户要求的预览缩放误写成 input 几何真相。
+宿主表述；仍保留的约束是：transform 只能由 host layout owner 管理，input 包不得引入
+transform、不得从 transform 前逻辑尺寸冒充物理 hit target、不得建立第二套物理尺寸桥接。
 
 本详设的实施输入是两份已收口需求。本文规定将来实施时每一条代码如何与设计逐条比较，
 但不把“设计已写完”表述成“实现已完成”。副屏系统 IME 仍按产品决定关闭；副屏虚拟键盘
@@ -67,7 +66,7 @@ hit target 已满足 Android 48dp，Web 验证必须读取实际 `getBoundingCli
 | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ----------------------------------- |
 | A. 继续把 `terminalSurfaces` 静态尺寸传入 input，按固定逻辑画布缩放                                                                        | Presentation 和 Web 都会把别的尺寸当成本地尺寸；transform 前的命中尺寸不能证明触控面积        | 拒绝：不能解决根因                  |
 | B. 在 input 中读取 `Dimensions`、`useWindowDimensions`、设备类型或 `Platform.OS`                                                           | 这些是应用/宿主级事实，Presentation 中不能保证代表当前 surface；设备分类也不能表达窄 Web 窗口 | 拒绝：跨 surface 错位且反向依赖环境 |
-| C. `InputSurfaceFrame` 自己在真实交互根 View 上 `onLayout`，既有 Android 宿主只提供 `imeInset`，Web 宿主以固定逻辑 stage 等比缩放预览，键盘布局数据化 | 每个 surface 有本地宽高；input 不拥有宿主拓扑或预览倍率；Web 视觉仍保持声明形状 | **采用**                            |
+| C. `InputSurfaceFrame` 自己在真实交互根 View 上 `onLayout`，Android carrier 使用目标 display density，host 以固定逻辑 stage 承载，Web policy 待裁决，键盘布局数据化 | 每个 surface 有本地宽高；input 不拥有宿主拓扑或预览倍率；两端共享逻辑画布与键盘语义 | **采用** |
 
 我选了 C 而不是 A/B，因为 C 直接读取造成错误的事实边界，同时不把屏数、设备类别或
 业务字段引入 `ui/base/input`。
@@ -76,7 +75,7 @@ hit target 已满足 Android 48dp，Web 验证必须读取实际 `getBoundingCli
 
 | CP   | 主题                                | owner                                                                 | 主要输出                                                                                    | 依赖                                          |
 | ---- | ----------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| CP-0 | input 与既有 Android carrier 的边界 | `InputSurfaceFrame`、assembly 的 `imeInset` bridge                    | 不改方向锁、拓扑或设备策略；input 只消费既有 `imeInset`                                     | 既有 Android carrier、input local onLayout    |
+| CP-0 | input 与既有 Android carrier 的边界 | `InputSurfaceFrame`、assembly 的 `imeInset` bridge、目标 display density | 不改方向锁、拓扑或设备策略；density 归一化只在 Android carrier；input 只消费既有 `imeInset` | 既有 Android carrier、input local onLayout    |
 | CP-1 | 本地测量与容量状态                  | `InputSurfaceFrame`、`InputProvider`、`keyboardHeight`                | 去掉静态 `surfaceSize` 公共入口；onLayout 驱动尺寸、首帧安全、按轴可行性                    | `SurfaceRoot.renderContentFrame`、`imeInset`  |
 | CP-2 | 四种虚拟键盘与交互                  | `keyboardLayout`、`VirtualKeyboard`、`InputProvider`、`useInputField` | full/alpha/numeric/financial 数据形态、dense token、region/key testID、互斥焦点、滚入可见区 | CP-1 capacity、既有 edit/snapshot/scroll 模型 |
 | CP-3 | sample 消费者与 Web 交互盒          | `MemberForm`、`testExpoApp.SurfaceCanvas`、`sample-console assembly`  | 两个 sample-only 探针、竖屏真实业务矩阵、固定逻辑 stage 与唯一 host preview scale、assembly 不穿静态尺寸 | CP-1、CP-2、形态需求                          |
@@ -266,14 +265,15 @@ StaffLogin 的必填路径通过该提示和 resize recovery 继续，MemberForm
 提示按容量状态说明具体恢复动作；所有已测量的不可行状态都明确要求输入区域宽度至少
 为 `360` 个逻辑单位，`unsupported-height` 另明确要求增加高度。
 
-验收基线只用于 fixture：
+固定逻辑画布的受控 fixture（不构成 input 静态尺寸输入）：
 
 | frame fixture | candidate / dockHeight | 内容区剩余 |
 | ------------- | ---------------------: | ---------: |
-| 1157 × 723    |              320 / 219 |        504 |
-| 962 × 541     |              270 / 219 |        322 |
+| PRIMARY 1280 × 800  |              320 / 219 |        581 |
+| SECONDARY 960 × 540   |              270 / 219 |        321 |
 
-上述数字不得回流为运行时输入。
+上述数字只用于 host/keyboard 的受控 fixture；运行时仍取 InputSurfaceFrame 的 onLayout，
+不得由 assembly 直接传入 input。
 
 ### 4.4 键盘布局数据、行列与稳定 ID
 
@@ -431,7 +431,7 @@ input 显示，立即按计划停止并报告；不得把宿主问题伪装成 i
 
 ### 4.8 Web 交互子树与真实 pointer hit 区域
 
-`apps/terminal/ui/base/dev-host/src/testExpoApp.tsx` 的 `SurfaceCanvas` 使用
+`apps/terminal/ui/base/dev-host/src/components/testExpoApp.tsx` 的 `SurfaceCanvas` 使用
 `terminalSurfaces` 提供每棵 surface 的目标逻辑尺寸，并在自己的 canvas `onLayout` 后
 通过 `calculateSurfacePreviewGeometry` 计算整体倍率。`styles.logicalStage` 固定为
 当前已挂载 surface 的逻辑组合尺寸；scale 只由 dev-host 的 stage layout owner 管理，
@@ -475,8 +475,8 @@ Web 视觉上位于 host stage transform 内；这不改变 input 包的几何 o
 
 将来 CP-1 必须从 `InputProvider`、`InputSurfaceFrame` 和公共 index 中删除
 `surfaceSize`/`InputSurfaceSize`；`imeInset` 保留。内部 `LocalFrameMetrics` 只存在
-input 包内。`sample-console/src/assembly.tsx` 的 `SurfaceInputFrame` 只把 imeInset
-传入，不从 `terminalSurfaces.surfaces[displayMode]` 读取尺寸。
+input 包内。`sample-console/src/assembly/assembly.tsx` 的 `SurfaceInputFrame` 只把
+imeInset 传入，不读取 `terminalSurfaces.orientations.landscape` 的 host canvas 尺寸。
 
 `PrimitiveInput` 的四个新增/现有可选关系保持：`maxLength` 是唯一为年龄三位上限
 增加的能力；不新增 `inputMode`。其余公共 props 继续由 primitives 的既有契约提供，

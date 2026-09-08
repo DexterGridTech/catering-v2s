@@ -43,8 +43,9 @@
 `theme/`，不要建立共享 theme 包或 `ui/theme` 层。
 
 Expo Web 的入口是根 `index.js`，它注册 `test-expo/App`；通用宿主读取传入的 `terminalSurfaces`，
-不在第二处解析 `package.json`。surface 保持声明的固定逻辑尺寸；`scaleToFit` 开启时由通用宿主
-测量自己的预览 canvas，并对整组逻辑 stage 等比缩放，业务部件仍只使用 primitives 的相对布局。
+不在第二处解析 `package.json`。surface 保持声明的固定逻辑尺寸；承载层负责把画布映射到
+实际 content rect，业务部件仍只使用 primitives 的相对布局。Web dev-host 的具体缩放
+policy 当前待 Dexter 裁决，本文不把 `scaleToFit` 或任何 contain/stretch 方式写成有效契约。
 Native 不读取这份 Web 预览配置。
 
 ## 迭代指引

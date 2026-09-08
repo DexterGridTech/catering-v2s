@@ -52,6 +52,8 @@ export const salesMenuTestIds = {
   itemMediaUpload: 'sales-menu-item-media-upload',
   itemMediaList: 'sales-menu-item-media-list',
   itemMedia: (identity: string, action: string) => `sales-menu-item-media-${slug(identity)}-${slug(action)}`,
+  itemDetailMediaChoice: (itemRef: string, assetRef: string) =>
+    `sales-menu-item-detail-media-choice-${slug(itemRef)}-${slug(assetRef)}`,
   modes: 'sales-menu-modes',
   itemDetail: 'sales-menu-item-detail',
   publishDrawer: 'sales-menu-publish-drawer',
@@ -72,14 +74,12 @@ export const salesMenuTestIds = {
   sectionSave: 'sales-menu-section-save',
   confirmationSubmit: 'sales-menu-confirmation-submit',
   statusAction: (identity: string) => `sales-menu-status-action-${slug(identity)}`,
-  statusChoice: (status: string) => `sales-menu-status-choice-${slug(status)}`,
-  statusReason: 'sales-menu-status-reason',
-  statusSubmit: 'sales-menu-status-submit',
   statusTarget: (kind: string, ref: string) => `sales-menu-status-target-${slug(kind)}-${slug(ref)}`,
-  statusTargetState: (kind: string, ref: string, state: string) =>
-    `sales-menu-status-target-state-${slug(kind)}-${slug(ref)}-${slug(state)}`,
+  statusTargetQuickAction: (kind: string, ref: string, state: string) =>
+    `sales-menu-status-target-quick-action-${slug(kind)}-${slug(ref)}-${slug(state)}`,
   statusTargetReason: 'sales-menu-status-target-reason',
-  statusTargetSubmit: 'sales-menu-status-target-submit',
+  statusFeedback: 'sales-menu-status-feedback',
+  statusClose: 'sales-menu-status-close',
   managerCursor: 'sales-menu-manager-pagination',
   candidateCursor: 'sales-menu-candidate-pagination',
   draftCursor: 'sales-menu-draft-pagination',

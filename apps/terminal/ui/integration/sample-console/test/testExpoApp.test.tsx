@@ -63,8 +63,12 @@ describe('test-expo host shell', () => {
       () => renderer!.root.findAllByProps({testID: 'sample-console:test-expo:canvas'}).length > 0,
     );
     const canvas = renderer!.root.findByProps({testID: 'sample-console:test-expo:canvas'});
+    const previewViewport = renderer!.root.findByProps({
+      testID: 'sample-console:test-expo:canvas:preview-viewport',
+    });
     act(() => {
-      (canvas.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 1300, height: 96}}});
+      (canvas.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 1304, height: 96}}});
+      (previewViewport.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 1280, height: 800}}});
     });
     await waitFor(
       renderer!,
@@ -95,19 +99,21 @@ describe('test-expo host shell', () => {
         readonly width?: unknown;
         readonly height?: unknown;
         readonly flexShrink?: unknown;
+        readonly borderWidth?: unknown;
       };
       expect(style.width).toBe(width);
       expect(style.height).toBe(height);
       expect(style.flexShrink).toBe(0);
+      expect(style.borderWidth).toBeUndefined();
     };
     for (const [index, frame] of renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'}).entries()) {
       act(() => {
         (frame.props.onLayout as (event: unknown) => void)({
-          nativeEvent: {layout: index === 0 ? {width: 1157, height: 723} : {width: 962, height: 541}},
+          nativeEvent: {layout: index === 0 ? {width: 1280, height: 800} : {width: 960, height: 540}},
         });
       });
     }
-    assertFixedSurface('sample-console:test-expo:surface:PRIMARY', 1157, 723);
+    assertFixedSurface('sample-console:test-expo:surface:PRIMARY', 1280, 800);
     const canvasStyle = StyleSheet.flatten(canvas.props.style) as {
       readonly width?: unknown;
       readonly transform?: unknown;
@@ -120,8 +126,8 @@ describe('test-expo host shell', () => {
       readonly transform?: ReadonlyArray<{readonly scale?: unknown}>;
       readonly width?: unknown;
     };
-    expect(logicalStageStyle.width).toBe(1157);
-    expect(logicalStageStyle.height).toBe(723 + 0);
+    expect(logicalStageStyle.width).toBe(1280);
+    expect(logicalStageStyle.height).toBe(800 + 0);
     expect(logicalStageStyle.transform?.[0]?.scale).toBe(1);
 
     const toggle = renderer!.root.findByProps({testID: 'sample-console:test-expo:surface-toggle'});
@@ -141,12 +147,12 @@ describe('test-expo host shell', () => {
     for (const [index, frame] of renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'}).entries()) {
       act(() => {
         (frame.props.onLayout as (event: unknown) => void)({
-          nativeEvent: {layout: index === 0 ? {width: 1157, height: 723} : {width: 962, height: 541}},
+          nativeEvent: {layout: index === 0 ? {width: 1280, height: 800} : {width: 960, height: 540}},
         });
       });
     }
-    assertFixedSurface('sample-console:test-expo:surface:PRIMARY', 1157, 723);
-    assertFixedSurface('sample-console:test-expo:surface:SECONDARY', 962, 541);
+    assertFixedSurface('sample-console:test-expo:surface:PRIMARY', 1280, 800);
+    assertFixedSurface('sample-console:test-expo:surface:SECONDARY', 960, 540);
     expect(createAssembly).toHaveBeenCalledTimes(1);
   });
 });

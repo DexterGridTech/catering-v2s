@@ -415,7 +415,34 @@
       "name": "菜单候选02",
       "shape": "ORDINARY",
       "categoryPath": ["饮品", "茶饮"],
-      "defaultPriceCents": 1300
+      "defaultPriceCents": 1300,
+      "orderOptions": [
+        {
+          "code": "SM-L2-REQUIRED-OPTIONS",
+          "name": "菜单必选配料",
+          "selectionMode": "MULTIPLE",
+          "required": true,
+          "minSelectionCount": 1,
+          "maxSelectionCount": 2,
+          "values": [
+            {"code": "SM-L2-REQUIRED-A", "name": "菜单配料A", "displayOrder": 0, "defaultValue": false, "extraPrice": 100},
+            {"code": "SM-L2-REQUIRED-B", "name": "菜单配料B", "displayOrder": 1, "defaultValue": false, "extraPrice": 200},
+            {"code": "SM-L2-REQUIRED-C", "name": "菜单配料C", "displayOrder": 2, "defaultValue": false, "extraPrice": 300}
+          ]
+        },
+        {
+          "code": "SM-L2-OPTIONAL-OPTIONS",
+          "name": "菜单可选配料",
+          "selectionMode": "SINGLE",
+          "required": false,
+          "minSelectionCount": null,
+          "maxSelectionCount": null,
+          "values": [
+            {"code": "SM-L2-OPTIONAL-A", "name": "菜单可选A", "displayOrder": 0, "defaultValue": false, "extraPrice": 50},
+            {"code": "SM-L2-OPTIONAL-B", "name": "菜单可选B", "displayOrder": 1, "defaultValue": false, "extraPrice": 80}
+          ]
+        }
+      ]
     },
     {
       "fixtureId": "CANDIDATE-03",
@@ -423,7 +450,8 @@
       "name": "菜单候选03",
       "shape": "SKU",
       "categoryPath": ["主食", "面食"],
-      "defaultPriceCents": null
+      "defaultPriceCents": null,
+      "skuCount": 2
     },
     {
       "fixtureId": "CANDIDATE-04",
@@ -596,14 +624,14 @@
     "FIXTURE-SALES-MENU-DIRECT": {
       "menuFixtureId": "MENU-04",
       "sectionCount": 1,
-      "baselineCandidateFixtureIds": ["CANDIDATE-01"],
-      "candidateFixtureId": "CANDIDATE-01",
+      "baselineCandidateFixtureIds": ["CANDIDATE-02"],
+      "candidateFixtureId": "CANDIDATE-02",
       "shape": "ORDINARY"
     },
     "FIXTURE-SALES-MENU-SKU": {
       "menuFixtureId": "MENU-05",
       "sectionCount": 1,
-      "baselineCandidateFixtureIds": ["CANDIDATE-03"],
+      "baselineCandidateFixtureIds": ["CANDIDATE-03", "CANDIDATE-03"],
       "candidateFixtureId": "CANDIDATE-03",
       "shape": "SKU"
     },
@@ -648,7 +676,8 @@
     "FIXTURE-SALES-MENU-MANUAL-STATUS": {
       "menuFixtureId": "MENU-01",
       "targetChannelFixtureId": "CHANNEL-01",
-      "unchangedChannelFixtureId": "CHANNEL-21"
+      "unchangedChannelFixtureId": "CHANNEL-21",
+      "candidateFixtureId": "CANDIDATE-02"
     },
     "FIXTURE-SALES-MENU-MANAGER": {"menuFixtureIds": ["MENU-01", "MENU-02", "MENU-21"]},
     "FIXTURE-SALES-MENU-COPY": {

@@ -84,3 +84,4 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 - [operations.terminal-coding-standard](../project-memory/operations/terminal-coding-standard.md)
 - [decisions.terminal-architecture-and-stack-rulings](../project-memory/decisions/terminal-architecture-and-stack-rulings.md)
 - [decisions.terminal-build-order-and-batches](../project-memory/decisions/terminal-build-order-and-batches.md)
+- [operations.terminal-android-display-screenshot-capture](../project-memory/operations/terminal-android-display-screenshot-capture.md)

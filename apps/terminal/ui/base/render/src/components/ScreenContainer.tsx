@@ -1,3 +1,4 @@
+import {useEffect} from 'react'
 import {StyleSheet, View} from 'react-native'
 import {selectScreen} from '@catering-v2s/kernel-base-ui-state'
 import {useRenderContext} from '../contexts/RenderContext'
@@ -9,9 +10,29 @@ const SCREEN_CONTAINER_TEST_ID = 'ui-base-render:screen-container'
 
 export const ScreenContainer = () => {
   const {displayMode, containerKey} = useSurfaceContext()
-  const {uiCatalog, rendererCatalog, reportPartDiagnostic, clearPartDiagnostic} = useRenderContext()
+  const {logger, uiCatalog, rendererCatalog, reportPartDiagnostic, clearPartDiagnostic} = useRenderContext()
   const snapshot = useRenderSnapshot()
 
+  const placement = snapshot.root === undefined
+    ? undefined
+    : selectScreen(snapshot.root, displayMode, containerKey)
+  useEffect(() => {
+    if (!__DEV__) return
+    logger.info({
+      category: 'display-diagnostics',
+      event: 'render.screen-selection',
+      message: 'Screen selection observed',
+      data: {
+        source: 'ui-base-render.ScreenContainer',
+        displayMode,
+        containerKey,
+        runtimeStatus: snapshot.status,
+        screenPartKey: placement?.partKey ?? null,
+        screenInstanceId: placement?.instanceId ?? null,
+        fallback: placement === undefined ? 'container-empty' : null,
+      },
+    })
+  }, [containerKey, displayMode, logger, placement, snapshot.status])
   if (snapshot.root === undefined) {
     return (
       <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
@@ -19,8 +40,6 @@ export const ScreenContainer = () => {
       </View>
     )
   }
-
-  const placement = selectScreen(snapshot.root, displayMode, containerKey)
   if (placement === undefined) {
     return (
       <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
@@ -32,12 +51,12 @@ export const ScreenContainer = () => {
   return (
     <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
       {resolvePart({
-      placement,
-      displayMode,
-      uiCatalog,
-      rendererCatalog,
-      reportPartDiagnostic,
-      clearPartDiagnostic,
+        placement,
+        displayMode,
+        uiCatalog,
+        rendererCatalog,
+        reportPartDiagnostic,
+        clearPartDiagnostic,
       })}
     </View>
   )

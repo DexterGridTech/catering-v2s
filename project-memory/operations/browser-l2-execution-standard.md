@@ -23,8 +23,8 @@ agent 路由到该正本，不复制正文。
 
 - `BROWSER_L2_STANDARD_SINGLE_SOURCE`：不得新建第二个 runner、fixture catalogue、locator/case registry
   或测试专用 API；扩展现有声明与生成链。
-- `BROWSER_L2_MANAGED_ISOLATED_TOPOLOGY`：当前 L2 是本机 Spring/Vite/Playwright 加每 run 隔离远端
-  namespace，不用 DEV seed、不等同 DEV/Testcontainers/UAT，动态执行须单独授权。
+- `BROWSER_L2_MANAGED_ISOLATED_TOPOLOGY`：当前 L2 是远端 Spring/数据库/asset 加本机 Vite/Playwright
+  和 HTTP/asset ingress，每 run 绑定隔离远端 namespace，不用 DEV seed、不等同 DEV/Testcontainers/UAT，动态执行须单独授权。
 - `BROWSER_L2_SOURCE_OF_TRUTH_CHAIN`：blueprint/P1 candidate/readiness binding/testId/operation registry/
   fixture descriptor 各自只有一个住址；不得手写 active list、selector、endpoint、fixture 或 timeout。
 - `BROWSER_L2_CASE_PROGRESS_AND_JOIN`：每 case 必须可见 START/COMPLETE 与剩余量，且有 case/action/testId

@@ -10,7 +10,9 @@ import type {InputFieldResult} from '../src/types/types'
 import {Keyboard, TextInput} from 'react-native'
 import {useRef} from 'react'
 
-const applyLayout = (renderer: ReactTestRenderer, width = 962, height = 541): void => {
+const TEST_FRAME = {width: 960, height: 540} as const
+
+const applyLayout = (renderer: ReactTestRenderer, width: number = TEST_FRAME.width, height: number = TEST_FRAME.height): void => {
   act(() => {
     renderer.root.findByProps({testID: 'ui.base.input:surface-frame'}).props.onLayout({
       nativeEvent: {layout: {width, height}},
@@ -20,7 +22,7 @@ const applyLayout = (renderer: ReactTestRenderer, width = 962, height = 541): vo
 
 const mount = (
   element: Parameters<typeof create>[0],
-  size: Readonly<{readonly width: number; readonly height: number}> = {width: 962, height: 541},
+  size: Readonly<{readonly width: number; readonly height: number}> = TEST_FRAME,
 ): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined
   act(() => { renderer = create(element) })
@@ -226,7 +228,7 @@ describe('input provider', () => {
         </InputSurfaceFrame>,
       )
     })
-    applyLayout(renderer!, 962, 541)
+    applyLayout(renderer!, TEST_FRAME.width, TEST_FRAME.height)
     const input = renderer!.root.findAllByType(TextInput).find(node => node.props.testID === 'sample:resized')!
     act(() => { input.props.onFocus({nativeEvent: {}}) })
     expect(renderer!.root.findByProps({testID: 'ui.base.input:virtual-keyboard'})).toBeDefined()

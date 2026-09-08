@@ -16,17 +16,19 @@ assembly、运行时状态读取器与 Web 平台端口接到一个可切换单�
 
 ## 公共面与结构
 
-公共面只包含宿主工厂、平台适配工厂、宿主配置类型和 TER 模块图元数据。`src/testExpoApp.tsx`
-持有宿主生命周期、状态摘要、surface canvas 与切换；`src/webPlatform.ts` 绑定 Web 端口；
-`src/webStorage.ts` 负责真实 Web Storage 的 namespace 与失败诊断；`test/` 由本包拥有宿主自身
+公共面只包含宿主工厂、平台适配工厂、宿主配置类型和 TER 模块图元数据。`src/components/testExpoApp.tsx`
+持有宿主生命周期、状态摘要、surface canvas 与切换；`src/implementations/webPlatform.ts` 绑定 Web 端口；
+`src/implementations/webStorage.ts` 负责真实 Web Storage 的 namespace 与失败诊断；`test/` 由本包拥有宿主自身
 的 focused tests。
 
 宿主只通过 `TestExpoAssembly.createSurface(displayMode)` 接收业务 surface，调用方不传入 store，
 本包也不向业务 UI 暴露 store、dispatch 或完整 runtime。surface 使用 `terminalSurfaces` 声明的
-固定逻辑尺寸；Web 宿主在 `scaleToFit` 开启时先用自己的 canvas `onLayout` 测量预览宽度，再对
-包含一棵或两棵 surface 的逻辑 stage 整体等比缩放。surface 本身不使用 flex/aspectRatio 跟随视口
-变形；input 仍在 surface 的逻辑坐标系内自行测量，宿主不会把缩放倍率传回 input。Native 不读取
-这份 Web 预览配置。
+固定逻辑尺寸；Web 宿主由自己的承载层决定如何把一棵或两棵固定画布呈现到 preview content
+rect。Web 预览固定采用 `width-fill-preserve-ratio`：以 preview content rect 的宽度除以 logical
+stage 宽度作为唯一 uniform scale，宽度铺满、比例保持；可视高度不参与缩放，超高由宿主可滚动
+内容区承载。不得使用 uniform contain 或 browser 非等比 stretch。surface 本身不使用
+flex/aspectRatio 偷换画布声明；input 仍在 surface 的逻辑坐标系内自行测量，宿主不会把缩放倍率
+传回 input。Native 不读取这份 Web 预览配置。
 
 ## 用法
 

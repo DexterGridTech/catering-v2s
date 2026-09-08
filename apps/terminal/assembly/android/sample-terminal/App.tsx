@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react'
 import {StyleSheet, Text, View} from 'react-native'
-import '../../../ui/integration/sample-console/theme/global.css'
+import '@catering-v2s/ui-integration-sample-console/theme/global.css'
 import {createSurfaceForDisplayIndex, type SampleAssembly} from '@catering-v2s/ui-integration-sample-console'
 import {createSampleTerminalAssembly} from './src/assembly/platformPorts'
 

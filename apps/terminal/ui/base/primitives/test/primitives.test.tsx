@@ -1,5 +1,5 @@
 import {createRef} from 'react';
-import {act, create, type ReactTestRenderer} from 'react-test-renderer';
+import {act, create, type TestInstance, type ReactTestRenderer} from 'react-test-renderer';
 import {Pressable, ScrollView, Text, TextInput, View} from 'react-native';
 import {describe, expect, it, vi} from 'vitest';
 import {
@@ -15,7 +15,7 @@ import {
   PrimitiveStatus,
   PrimitiveText,
 } from '../src/index';
-import {baseTokens} from '../src/theme/tokens';
+import {baseLayout, baseTokens} from '../src/theme/tokens';
 
 const mount = (element: Parameters<typeof create>[0]): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined;
@@ -24,6 +24,11 @@ const mount = (element: Parameters<typeof create>[0]): ReactTestRenderer => {
   });
   return renderer!;
 };
+
+const createWithNodeMock = create as unknown as (
+  element: Parameters<typeof create>[0],
+  options: Readonly<{readonly createNodeMock: (element: TestInstance) => unknown}>,
+) => ReactTestRenderer;
 
 describe('ui primitives', () => {
   it('renders addressable native controls with required testIDs', () => {
@@ -43,6 +48,10 @@ describe('ui primitives', () => {
     );
 
     expect(baseTokens.container).toContain('bg-canvas');
+    expect(baseTokens.text).toContain('leading-6');
+    expect(baseTokens.heading).toContain('leading-7');
+    expect(baseTokens.label).toContain('leading-5');
+    expect(baseTokens.status).toContain('leading-6');
     const container = renderer.root.findAllByProps({testID: 'sample:root'}).find(node => node.type === View)!;
     expect(container.props.className).toBe('flex-1 bg-canvas p-6 gap-4');
     expect(renderer.root.findByProps({testID: 'sample:root'})).toBeDefined();
@@ -54,7 +63,8 @@ describe('ui primitives', () => {
     expect(renderer.root.findByProps({testID: 'sample:status'})).toBeDefined();
     expect(renderer.root.findByProps({testID: 'sample:actions'})).toBeDefined();
     const scrollView = renderer.root.findAllByProps({testID: 'sample:scroll'}).find(node => node.type === ScrollView)!;
-    expect(scrollView.props.className).toBe('w-full flex-1 bg-canvas gap-3');
+    expect(scrollView.props.className).toBe('w-full flex-1 bg-canvas');
+    expect(scrollView.props.contentContainerStyle).toEqual({gap: baseLayout.scrollContentGap});
     expect(scrollView.props.scrollEventThrottle).toBe(16);
     expect(renderer.root.findByProps({testID: 'sample:scroll'})).toBeDefined();
     expect(baseTokens.button).toContain('bg-action');
@@ -147,6 +157,7 @@ describe('ui primitives', () => {
       expect.objectContaining({
         focus: expect.any(Function),
         blur: expect.any(Function),
+        measureLayout: expect.any(Function),
         measureInWindow: expect.any(Function),
       }),
     );
@@ -171,6 +182,45 @@ describe('ui primitives', () => {
     });
   });
 
+  it('reports a measurement failure when the native input lacks measureLayout', () => {
+    const inputRef = createRef<PrimitiveInputHandle>();
+    const onFail = vi.fn();
+    const callback = vi.fn();
+    const measureInWindow = vi.fn();
+    let renderer: ReactTestRenderer | undefined;
+    act(() => {
+      renderer = createWithNodeMock(
+        <PrimitiveInput testID="sample:missing-measure-layout" inputRef={inputRef} />,
+        {createNodeMock: () => ({measureInWindow})},
+      );
+    });
+
+    inputRef.current!.measureLayout(1, callback, onFail);
+
+    expect(callback).not.toHaveBeenCalled();
+    expect(onFail).toHaveBeenCalledTimes(1);
+    expect(measureInWindow).not.toHaveBeenCalled();
+    act(() => {
+      renderer!.unmount();
+    });
+  });
+
+  it('reports a measurement failure when the native input ref is unavailable', () => {
+    const inputRef = createRef<PrimitiveInputHandle>();
+    const onFail = vi.fn();
+    let renderer: ReactTestRenderer | undefined;
+    act(() => {
+      renderer = mount(<PrimitiveInput testID="sample:missing-native-input" inputRef={inputRef} />);
+    });
+
+    inputRef.current!.measureLayout(1, vi.fn(), onFail);
+
+    expect(onFail).toHaveBeenCalledTimes(1);
+    act(() => {
+      renderer!.unmount();
+    });
+  });
+
   it('forwards generic scroll measurement and offset observation without business props', () => {
     const scrollRef = createRef<PrimitiveScrollViewHandle>();
     const onScrollOffsetChange = vi.fn();
@@ -184,6 +234,7 @@ describe('ui primitives', () => {
       .find(node => node.props.testID === 'sample:scroll-contract')!;
     expect(scrollRef.current).toEqual(
       expect.objectContaining({
+        getContentNativeNode: expect.any(Function),
         measureInWindow: expect.any(Function),
         scrollTo: expect.any(Function),
       }),

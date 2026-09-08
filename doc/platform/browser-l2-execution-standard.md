@@ -11,7 +11,8 @@ implementationAuthority: true
 ## 1. 目的、边界与唯一正本
 
 浏览器 L2 是在真实 Chromium、真实前端、真实 HTTP、真实 owner 与每 run 隔离的远端
-数据库/资产命名空间上，验证批准 Journey 的用户可见结果的受管执行能力。它不等于静态、focused、
+数据库/资产命名空间上，验证批准 Journey 的用户可见结果的受管执行能力。其 Spring/Java 后端、数据库与
+对象存储均在受信远端非生产主机；本机只运行两个管理端 Vite、Playwright 及 HTTP/asset ingress。它不等于静态、focused、
 Testcontainers、DEV 或 UAT；任何一种证据都不得替代另一种。
 
 本文件是后续 **浏览器 L2 框架、数据、执行、证据与失败处置** 的唯一项目级正本。
@@ -32,9 +33,11 @@ Testcontainers、DEV 或 UAT；任何一种证据都不得替代另一种。
 
 ## 2. 执行面与授权
 
-当前受管浏览器 L2 固定为：本机 Spring Boot、platform-admin、operations-admin 与 Playwright；
-受管 tunnel 只接通远端非生产 PostgreSQL/对象存储的 **本 run 隔离命名空间**。它不继承远端 Java
-DEV 拓扑，不读取 DEV seed、不修改 DEV 数据、不使用远端浏览器，也不得描述为 UAT。
+当前受管浏览器 L2 固定为：远端 Spring Boot、远端 PostgreSQL/对象存储，以及本机
+platform-admin、operations-admin 与 Playwright；本机 tunnel 只接通远端 Java HTTP 和 asset ingress，
+不转发 PostgreSQL。远端后端通过本 run 隔离的数据库、asset object prefix、diagnostic run id、remote HTTP
+port 和 remote control root 绑定到同一 run；manifest 必须记录 host/fingerprint、远端 PID/PGID/boot id/start ticks/
+command digest、remote readiness、日志路径与 cleanup readback。它不读取 DEV seed、不修改 DEV 数据、不使用远端浏览器，也不得描述为 UAT。
 
 L2 的真实启动、远端 namespace 创建/清理、凭据与 session 创建都需要 Dexter 的明确动态授权。静态
 检查、readiness 建设、P1 生成或 focused proof 不构成该授权，也不得以“已实现 runner”为由自行运行。

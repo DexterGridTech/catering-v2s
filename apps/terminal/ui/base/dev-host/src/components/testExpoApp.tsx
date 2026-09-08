@@ -7,7 +7,12 @@ import {
 } from '@catering-v2s/kernel-base-display-context';
 import type {PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
 import {createWebPlatformPorts, type SurfaceMode} from '../implementations/webPlatform';
-import {calculateSurfacePreviewGeometry, SURFACE_PREVIEW_CONSTANTS} from '../foundations/surfacePreview';
+import {
+  calculateSurfacePreviewGeometry,
+  SURFACE_PREVIEW_CONSTANTS,
+  type SurfacePreviewLayout,
+  type SurfacePreviewPolicy,
+} from '../foundations/surfacePreview';
 
 export type SurfaceSize = Readonly<{
   readonly width: number;
@@ -15,11 +20,9 @@ export type SurfaceSize = Readonly<{
 }>;
 
 export type TerminalSurfaces = Readonly<{
-  readonly layout: 'row' | 'column';
-  readonly scaleToFit: boolean;
-  readonly surfaces: Readonly<{
-    readonly PRIMARY: SurfaceSize;
-    readonly SECONDARY: SurfaceSize;
+  readonly orientations: Readonly<{
+    readonly landscape: Readonly<Record<DisplayMode, SurfaceSize>>;
+    readonly portrait?: Readonly<Pick<Record<DisplayMode, SurfaceSize>, 'PRIMARY'>>;
   }>;
 }>;
 
@@ -45,6 +48,13 @@ export type TestExpoAppOptions<TAssembly extends TestExpoAssembly> = Readonly<{
 
 const CONTENT_MAX_WIDTH = 1600;
 const CONTENT_HORIZONTAL_PADDING = 28;
+const DEV_HOST_PREVIEW_LAYOUT: SurfacePreviewLayout = 'column';
+const DEV_HOST_PREVIEW_POLICY: SurfacePreviewPolicy = 'width-fill-preserve-ratio';
+
+const resolvePreviewLayoutStyles = (layout: SurfacePreviewLayout) => ({
+  flexDirection: layout === 'row' ? ('row' as const) : ('column' as const),
+  alignItems: layout === 'column' ? ('center' as const) : ('flex-start' as const),
+});
 
 const COLORS = {
   ink: '#EAF6FF',
@@ -68,33 +78,184 @@ const COLORS = {
 
 type SurfaceCanvasProps = Readonly<{
   readonly assembly: TestExpoAssembly;
+  readonly logger: PlatformPorts['logger'];
   readonly showSecondary: boolean;
   readonly terminalSurfaces: TerminalSurfaces;
   readonly testIdPrefix: string;
 }>;
 
-const SurfaceCanvas = ({assembly, showSecondary, terminalSurfaces, testIdPrefix}: SurfaceCanvasProps) => {
-  const primary = terminalSurfaces.surfaces.PRIMARY;
-  const secondary = terminalSurfaces.surfaces.SECONDARY;
-  const [viewportWidth, setViewportWidth] = useState<number | null>(null);
+type WebRect = Readonly<{
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+  readonly width: number;
+  readonly height: number;
+}>;
+
+type WebViewport = Readonly<{
+  readonly width: number | null;
+  readonly height: number | null;
+  readonly devicePixelRatio: number | null;
+  readonly visualViewportWidth: number | null;
+  readonly visualViewportHeight: number | null;
+  readonly visualViewportScale: number | null;
+}>;
+
+type PreviewViewportSize = Readonly<{
+  readonly width: number;
+  readonly height: number;
+}>;
+
+const isFiniteNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+
+const readWebRect = (node: unknown): WebRect | null => {
+  if (typeof node !== 'object' || node === null) return null;
+  const candidate = node as {readonly getBoundingClientRect?: unknown};
+  if (typeof candidate.getBoundingClientRect !== 'function') return null;
+  try {
+    const rect = candidate.getBoundingClientRect() as Partial<WebRect>;
+    if (
+      !isFiniteNumber(rect.left) ||
+      !isFiniteNumber(rect.top) ||
+      !isFiniteNumber(rect.right) ||
+      !isFiniteNumber(rect.bottom) ||
+      !isFiniteNumber(rect.width) ||
+      !isFiniteNumber(rect.height)
+    ) return null;
+    return {
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      width: rect.width,
+      height: rect.height,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const readWebViewport = (): WebViewport => {
+  if (typeof window === 'undefined') {
+    return {
+      width: null,
+      height: null,
+      devicePixelRatio: null,
+      visualViewportWidth: null,
+      visualViewportHeight: null,
+      visualViewportScale: null,
+    };
+  }
+  const visualViewport = window.visualViewport;
+  return {
+    width: isFiniteNumber(window.innerWidth) ? window.innerWidth : null,
+    height: isFiniteNumber(window.innerHeight) ? window.innerHeight : null,
+    devicePixelRatio: isFiniteNumber(window.devicePixelRatio) ? window.devicePixelRatio : null,
+    visualViewportWidth: visualViewport !== null && visualViewport !== undefined && isFiniteNumber(visualViewport.width)
+      ? visualViewport.width
+      : null,
+    visualViewportHeight: visualViewport !== null && visualViewport !== undefined && isFiniteNumber(visualViewport.height)
+      ? visualViewport.height
+      : null,
+    visualViewportScale: visualViewport !== null && visualViewport !== undefined && isFiniteNumber(visualViewport.scale)
+      ? visualViewport.scale
+      : null,
+  };
+};
+
+const SurfaceCanvas = ({assembly, logger, showSecondary, terminalSurfaces, testIdPrefix}: SurfaceCanvasProps) => {
+  const landscape = terminalSurfaces.orientations.landscape;
+  const primary = landscape.PRIMARY;
+  const secondary = landscape.SECONDARY;
+  const [previewViewportSize, setPreviewViewportSize] = useState<PreviewViewportSize | null>(null);
+  const canvasNodeRef = useRef<unknown>(null);
+  const previewViewportNodeRef = useRef<unknown>(null);
+  const scaledStageNodeRef = useRef<unknown>(null);
+  const logicalStageNodeRef = useRef<unknown>(null);
+  const surfaceNodeRefs = useRef<Partial<Record<DisplayMode, unknown>>>({});
+  const reportReactLayout = useCallback((node: string, event: LayoutChangeEvent) => {
+    if (!__DEV__) return;
+    const {x, y, width, height} = event.nativeEvent.layout;
+    logger.info({
+      category: 'display-diagnostics',
+      event: 'web.react-layout',
+      message: 'Web display-chain React layout observed',
+      data: {
+        source: 'ui-base-dev-host.SurfaceCanvas',
+        node,
+        units: 'css-layout-unit',
+        x,
+        y,
+        width,
+        height,
+        previewViewportWidth: previewViewportSize?.width ?? null,
+        previewViewportHeight: previewViewportSize?.height ?? null,
+        showSecondary,
+      },
+    });
+  }, [logger, previewViewportSize, showSecondary]);
   const handleCanvasLayout = useCallback((event: LayoutChangeEvent) => {
-    const width = event.nativeEvent.layout.width;
-    setViewportWidth(current => (current === width ? current : width));
-  }, []);
+    reportReactLayout('canvas', event);
+  }, [reportReactLayout]);
+  const handlePreviewViewportLayout = useCallback((event: LayoutChangeEvent) => {
+    const {width, height} = event.nativeEvent.layout;
+    reportReactLayout('preview-viewport', event);
+    if (!isFiniteNumber(width) || width <= 0 || !isFiniteNumber(height) || height <= 0) {
+      setPreviewViewportSize(null);
+      return;
+    }
+    setPreviewViewportSize(current =>
+      current?.width === width && current.height === height ? current : {width, height},
+    );
+  }, [reportReactLayout]);
   const geometry = useMemo(
     () =>
-      viewportWidth === null
+      previewViewportSize === null
         ? null
-        : calculateSurfacePreviewGeometry({
-            layout: terminalSurfaces.layout,
-            scaleToFit: terminalSurfaces.scaleToFit,
+          : calculateSurfacePreviewGeometry({
+            layout: DEV_HOST_PREVIEW_LAYOUT,
             showSecondary,
-            viewportWidth,
+            viewport: previewViewportSize,
             primary,
             secondary,
           }),
-    [primary, secondary, showSecondary, terminalSurfaces.layout, terminalSurfaces.scaleToFit, viewportWidth],
+    [primary, secondary, previewViewportSize, showSecondary],
   );
+  useEffect(() => {
+    if (!__DEV__ || geometry === null) return;
+    logger.info({
+      category: 'display-diagnostics',
+      event: 'web.surface-geometry',
+      message: 'Web display-chain geometry observed',
+      data: {
+        source: 'ui-base-dev-host.SurfaceCanvas',
+        units: 'logical-stage-and-css-rect',
+        viewport: readWebViewport(),
+        layout: DEV_HOST_PREVIEW_LAYOUT,
+        previewPolicy: DEV_HOST_PREVIEW_POLICY,
+        showSecondary,
+        previewViewportWidth: previewViewportSize?.width ?? null,
+        previewViewportHeight: previewViewportSize?.height ?? null,
+        primaryWidth: primary.width,
+        primaryHeight: primary.height,
+        secondaryWidth: secondary.width,
+        secondaryHeight: secondary.height,
+        stageWidth: geometry.stageWidth,
+        stageHeight: geometry.stageHeight,
+        scaleX: geometry.scaleX,
+        scaleY: geometry.scaleY,
+        renderedWidth: geometry.renderedWidth,
+        renderedHeight: geometry.renderedHeight,
+        canvasRect: readWebRect(canvasNodeRef.current),
+        previewViewportRect: readWebRect(previewViewportNodeRef.current),
+        scaledStageRect: readWebRect(scaledStageNodeRef.current),
+        logicalStageRect: readWebRect(logicalStageNodeRef.current),
+        primaryRect: readWebRect(surfaceNodeRefs.current.PRIMARY),
+        secondaryRect: showSecondary ? readWebRect(surfaceNodeRefs.current.SECONDARY) : null,
+      },
+    });
+  }, [geometry, logger, previewViewportSize, primary.height, primary.width, secondary.height, secondary.width, showSecondary]);
   const surfaceStyle = (size: SurfaceSize) => ({
     width: size.width,
     height: size.height,
@@ -103,56 +264,93 @@ const SurfaceCanvas = ({assembly, showSecondary, terminalSurfaces, testIdPrefix}
   return (
     <View
       testID={`${testIdPrefix}:canvas`}
-      style={[styles.canvas, {overflow: terminalSurfaces.scaleToFit ? 'hidden' : 'scroll'}]}
+      style={[styles.canvas, {overflow: 'scroll'}]}
       onLayout={handleCanvasLayout}
+      ref={node => {
+        canvasNodeRef.current = node;
+      }}
     >
-      {geometry === null ? (
-        <View testID={`${testIdPrefix}:canvas:measure-pending`} style={styles.measurePending} />
-      ) : (
-        <View
-          testID={`${testIdPrefix}:canvas:scaled-stage`}
-          style={[
-            styles.scaledStage,
-            {
-              width: geometry.renderedWidth + 2 * SURFACE_PREVIEW_CONSTANTS.stagePadding,
-              height: geometry.renderedHeight + 2 * SURFACE_PREVIEW_CONSTANTS.stagePadding,
-            },
-          ]}
-        >
+      <View
+        testID={`${testIdPrefix}:canvas:preview-viewport`}
+        style={styles.previewViewport}
+        onLayout={handlePreviewViewportLayout}
+        ref={node => {
+          previewViewportNodeRef.current = node;
+        }}
+      >
+        {geometry === null ? (
+          <View testID={`${testIdPrefix}:canvas:measure-pending`} style={styles.measurePending} />
+        ) : (
           <View
-            testID={`${testIdPrefix}:canvas:logical-stage`}
+            testID={`${testIdPrefix}:canvas:scaled-stage`}
+            onLayout={event => reportReactLayout('scaled-stage', event)}
+            ref={node => {
+              scaledStageNodeRef.current = node;
+            }}
             style={[
-              styles.logicalStage,
+              styles.scaledStage,
               {
-                left: SURFACE_PREVIEW_CONSTANTS.stagePadding,
-                top: SURFACE_PREVIEW_CONSTANTS.stagePadding,
-                width: geometry.stageWidth,
-                height: geometry.stageHeight,
-                flexDirection: terminalSurfaces.layout === 'row' ? 'row' : 'column',
-                alignItems: terminalSurfaces.layout === 'column' ? 'center' : 'flex-start',
-                gap: SURFACE_PREVIEW_CONSTANTS.surfaceGap,
-                transform: [{scale: geometry.scale}],
-                transformOrigin: 'top left',
+                width: geometry.renderedWidth,
+                height: geometry.renderedHeight,
               },
             ]}
           >
             <View
-              style={[styles.surface, styles.primarySurface, surfaceStyle(primary)]}
-              testID={`${testIdPrefix}:surface:PRIMARY`}
+              testID={`${testIdPrefix}:canvas:logical-stage`}
+              onLayout={event => reportReactLayout('logical-stage', event)}
+              ref={node => {
+                logicalStageNodeRef.current = node;
+              }}
+              style={[
+                styles.logicalStage,
+                {
+                  left: 0,
+                  top: 0,
+                  width: geometry.stageWidth,
+                  height: geometry.stageHeight,
+                  ...resolvePreviewLayoutStyles(DEV_HOST_PREVIEW_LAYOUT),
+                  gap: SURFACE_PREVIEW_CONSTANTS.surfaceGap,
+                  transform: [{scale: geometry.scaleX}],
+                  transformOrigin: 'top left',
+                },
+              ]}
             >
-              {assembly.createSurface('PRIMARY')}
-            </View>
-            {showSecondary ? (
               <View
-                style={[styles.surface, styles.secondarySurface, surfaceStyle(secondary)]}
-                testID={`${testIdPrefix}:surface:SECONDARY`}
+                style={[styles.surface, styles.primarySurface, surfaceStyle(primary)]}
+                testID={`${testIdPrefix}:surface:PRIMARY`}
+                onLayout={event => reportReactLayout('surface-PRIMARY', event)}
+                ref={node => {
+                  surfaceNodeRefs.current.PRIMARY = node;
+                }}
               >
-                {assembly.createSurface('SECONDARY')}
+                {assembly.createSurface('PRIMARY')}
+                <View
+                  pointerEvents="none"
+                  testID={`${testIdPrefix}:surface:PRIMARY:decoration`}
+                  style={[styles.surfaceDecoration, styles.primarySurfaceDecoration]}
+                />
               </View>
-            ) : null}
+              {showSecondary ? (
+                <View
+                  style={[styles.surface, styles.secondarySurface, surfaceStyle(secondary)]}
+                  testID={`${testIdPrefix}:surface:SECONDARY`}
+                  onLayout={event => reportReactLayout('surface-SECONDARY', event)}
+                  ref={node => {
+                    surfaceNodeRefs.current.SECONDARY = node;
+                  }}
+                >
+                  {assembly.createSurface('SECONDARY')}
+                  <View
+                    pointerEvents="none"
+                    testID={`${testIdPrefix}:surface:SECONDARY:decoration`}
+                    style={[styles.surfaceDecoration, styles.secondarySurfaceDecoration]}
+                  />
+                </View>
+              ) : null}
+            </View>
           </View>
-        </View>
-      )}
+        )}
+      </View>
     </View>
   );
 };
@@ -164,7 +362,9 @@ type HeaderStatusProps = Readonly<{
   readonly testIdPrefix: string;
 }>;
 
-const HeaderStatus = ({runtimeStatus, showSecondary, terminalSurfaces, testIdPrefix}: HeaderStatusProps) => (
+const HeaderStatus = ({runtimeStatus, showSecondary, terminalSurfaces, testIdPrefix}: HeaderStatusProps) => {
+  const landscape = terminalSurfaces.orientations.landscape;
+  return (
   <View style={styles.headerInfo} testID={`${testIdPrefix}:header-status`}>
     <View style={styles.headerMetricRow}>
       <View style={styles.headerMetric}>
@@ -203,7 +403,7 @@ const HeaderStatus = ({runtimeStatus, showSecondary, terminalSurfaces, testIdPre
       >
         <View style={[styles.surfaceDot, styles.primaryDot]} />
         <Text style={styles.headerSurfaceText}>
-          主屏 · {terminalSurfaces.surfaces.PRIMARY.width} × {terminalSurfaces.surfaces.PRIMARY.height}
+          主屏 · {landscape.PRIMARY.width} × {landscape.PRIMARY.height}
         </Text>
         <Text style={styles.headerSurfaceState}>已挂载</Text>
       </View>
@@ -213,7 +413,7 @@ const HeaderStatus = ({runtimeStatus, showSecondary, terminalSurfaces, testIdPre
       >
         <View style={[styles.surfaceDot, showSecondary ? styles.secondaryDot : styles.inactiveDot]} />
         <Text style={styles.headerSurfaceText}>
-          客显 · {terminalSurfaces.surfaces.SECONDARY.width} × {terminalSurfaces.surfaces.SECONDARY.height}
+          客显 · {landscape.SECONDARY.width} × {landscape.SECONDARY.height}
         </Text>
         <Text style={[styles.headerSurfaceState, !showSecondary && styles.inactiveText]}>
           {showSecondary ? '已挂载' : showSecondary === false ? '未启用' : '读取中'}
@@ -221,7 +421,8 @@ const HeaderStatus = ({runtimeStatus, showSecondary, terminalSurfaces, testIdPre
       </View>
     </View>
   </View>
-);
+  );
+};
 
 const HostStateCard = ({
   kind,
@@ -383,6 +584,7 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
               <>
                 <SurfaceCanvas
                   assembly={assembly}
+                  logger={platformPorts.logger}
                   showSecondary={showSecondary}
                   terminalSurfaces={options.terminalSurfaces}
                   testIdPrefix={testIdPrefix}
@@ -624,6 +826,10 @@ const styles = StyleSheet.create({
     width: '100%',
     opacity: 0,
   },
+  previewViewport: {
+    alignSelf: 'stretch',
+    margin: SURFACE_PREVIEW_CONSTANTS.stagePadding,
+  },
   scaledStage: {
     position: 'relative',
     alignSelf: 'center',
@@ -632,16 +838,29 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   surface: {
-    borderWidth: 1,
+    position: 'relative',
     borderRadius: 2,
     overflow: 'hidden',
   },
   primarySurface: {
     backgroundColor: '#F7FBFF',
-    borderColor: '#3792F4',
   },
   secondarySurface: {
     backgroundColor: '#E9FFFF',
+  },
+  surfaceDecoration: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    borderWidth: 1,
+    borderRadius: 2,
+  },
+  primarySurfaceDecoration: {
+    borderColor: '#3792F4',
+  },
+  secondarySurfaceDecoration: {
     borderColor: '#24B9AE',
   },
   stageFooter: {

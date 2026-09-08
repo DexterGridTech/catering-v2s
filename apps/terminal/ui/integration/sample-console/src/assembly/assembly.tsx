@@ -13,9 +13,16 @@ import {
   type RuntimeModule,
 } from '@catering-v2s/kernel-base-runtime'
 import {createUiCatalog, createUiStateModule} from '@catering-v2s/kernel-base-ui-state'
-import {createRendererCatalog, RenderProvider, SurfaceRoot, type RenderProviderProps} from '@catering-v2s/ui-base-render'
-import {InputSurfaceFrame} from '@catering-v2s/ui-base-input'
-import {useEffect, useRef, useState, type ReactElement, type ReactNode} from 'react'
+import {
+  createRendererCatalog,
+  RenderProvider,
+  SurfaceRoot,
+  useSurfaceHostImeInset,
+  type RenderProviderProps,
+  type SurfaceHostSource,
+} from '@catering-v2s/ui-base-render'
+import {InputSurfaceFrame, type InputDiagnostic} from '@catering-v2s/ui-base-input'
+import {useCallback, useRef, type ReactElement, type ReactNode} from 'react'
 import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk'
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth'
 import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry'
@@ -25,47 +32,47 @@ import {terminalSurfaces} from '../application/terminalSurfaces'
 
 const defaultPersistenceKey = 'sample-console'
 const mainContainerKey = 'main' as const
+const landscapeSurfaces = terminalSurfaces.orientations.landscape
 
 export type SampleAssembly = Readonly<{
   readonly runtime: Runtime
   readonly createSurface: (displayMode: DisplayMode) => ReactElement
 }>
 
-type SurfaceImeInsetsSnapshot = Readonly<{
-  readonly visible: boolean
-  readonly bottomLogical: number
-}>
-
-type SurfaceImeInsetsSource = Readonly<{
-  readonly getSnapshot: () => SurfaceImeInsetsSnapshot | null
-  readonly subscribe: (listener: (snapshot: SurfaceImeInsetsSnapshot) => void) => () => void
-}>
-
 const SurfaceInputFrame = ({
-  imeInsetsSource,
   displayMode,
   logger,
+  hostSourceAttached,
   children,
 }: Readonly<{
-  readonly imeInsetsSource?: SurfaceImeInsetsSource
   readonly displayMode: DisplayMode
   readonly logger: LoggerPort
+  readonly hostSourceAttached: boolean
   readonly children?: ReactNode
 }>) => {
   const declaredRef = useRef(false)
-  const [snapshot, setSnapshot] = useState<SurfaceImeInsetsSnapshot | null>(
-    () => imeInsetsSource?.getSnapshot() ?? null,
-  )
+  const declaredSize = landscapeSurfaces[displayMode]
+  const imeInset = useSurfaceHostImeInset()
 
-  useEffect(() => {
-    if (imeInsetsSource === undefined) return undefined
-    setSnapshot(imeInsetsSource.getSnapshot())
-    return imeInsetsSource.subscribe(setSnapshot)
-  }, [imeInsetsSource])
+  const reportInputDiagnostic = useCallback((diagnostic: InputDiagnostic) => {
+    if (!__DEV__) return
+    logger.info({
+      category: 'display-diagnostics',
+      event: diagnostic.event,
+      message: 'Input display-chain diagnostic',
+      data: {
+        ...diagnostic.data,
+        sampleSource: 'sample-console.SurfaceInputFrame',
+        displayMode,
+        hostSourceAttached,
+        declaredWidth: declaredSize.width,
+        declaredHeight: declaredSize.height,
+      },
+    })
+  }, [declaredSize.height, declaredSize.width, displayMode, hostSourceAttached, logger])
 
   if (__DEV__ && !declaredRef.current) {
     declaredRef.current = true
-    const declaredSize = terminalSurfaces.surfaces[displayMode]
     logger.info({
       category: 'startup.surfaces',
       event: 'startup.surfaces.declared',
@@ -82,7 +89,8 @@ const SurfaceInputFrame = ({
 
   return (
     <InputSurfaceFrame
-      imeInset={snapshot?.visible === true ? Math.max(0, snapshot.bottomLogical) : 0}
+      imeInset={imeInset}
+      onDiagnostic={reportInputDiagnostic}
       onMeasuredFrame={frame => {
         if (!__DEV__) return
         logger.info({
@@ -94,6 +102,8 @@ const SurfaceInputFrame = ({
             displayMode,
             width: frame.width,
             height: frame.height,
+            deltaWidth: frame.width - declaredSize.width,
+            deltaHeight: frame.height - declaredSize.height,
             ready: frame.ready,
             orientation: frame.orientation,
             source: 'ui-base-input.InputSurfaceFrame.onLayout',
@@ -133,7 +143,7 @@ const createDispatchCommand = (runtime: Runtime): RenderProviderProps['dispatchC
 export const createSampleAssembly = async (input: Readonly<{
   readonly platformPorts: PlatformPorts
   readonly persistenceKey?: string
-  readonly imeInsetsSources?: Readonly<Partial<Record<DisplayMode, SurfaceImeInsetsSource>>>
+  readonly surfaceHostSources?: Readonly<Partial<Record<DisplayMode, SurfaceHostSource>>>
 }>): Promise<SampleAssembly> => {
   const definedParts = [
     ...sampleStaffAuthAssembly.parts,
@@ -176,30 +186,71 @@ export const createSampleAssembly = async (input: Readonly<{
   const selectUiVariable: RenderProviderProps['selectUiVariable'] = (root, declaration) =>
     uiStateModule.selectUiVariable(root, declaration)
 
-  const createSurface = (displayMode: DisplayMode): ReactElement => (
-    <RenderProvider
-      stateSource={stateSource}
-      uiCatalog={uiCatalog}
-      rendererCatalog={rendererCatalog}
-      logger={input.platformPorts.logger}
-      dispatchCommand={dispatchCommand}
-      selectUiVariable={selectUiVariable}
-    >
-      <SurfaceRoot
-        displayMode={displayMode}
-        containerKey={mainContainerKey}
-        renderContentFrame={({content}) => (
-          <SurfaceInputFrame
-            displayMode={displayMode}
-            logger={input.platformPorts.logger}
-            imeInsetsSource={input.imeInsetsSources?.[displayMode]}
-          >
-            {content}
-          </SurfaceInputFrame>
-        )}
-      />
-    </RenderProvider>
-  )
+  if (__DEV__) {
+    input.platformPorts.logger.info({
+      category: 'display-diagnostics',
+      event: 'sample.assembly-created',
+      message: 'Sample display-chain inputs registered',
+      data: {
+        source: 'sample-console.createSampleAssembly',
+        orientation: 'landscape',
+        primaryWidth: landscapeSurfaces.PRIMARY.width,
+        primaryHeight: landscapeSurfaces.PRIMARY.height,
+        secondaryWidth: landscapeSurfaces.SECONDARY.width,
+        secondaryHeight: landscapeSurfaces.SECONDARY.height,
+        primaryHostSourceAttached: input.surfaceHostSources?.PRIMARY !== undefined,
+        secondaryHostSourceAttached: input.surfaceHostSources?.SECONDARY !== undefined,
+      },
+    })
+  }
+
+  const reportedSurfaceModes = new Set<DisplayMode>()
+  const createSurface = (displayMode: DisplayMode): ReactElement => {
+    if (__DEV__ && !reportedSurfaceModes.has(displayMode)) {
+      reportedSurfaceModes.add(displayMode)
+      const declaredSize = landscapeSurfaces[displayMode]
+      input.platformPorts.logger.info({
+        category: 'display-diagnostics',
+        event: 'sample.surface-created',
+        message: 'Sample display surface created',
+        data: {
+          source: 'sample-console.createSurface',
+          displayMode,
+          containerKey: mainContainerKey,
+          orientation: 'landscape',
+          declaredWidth: declaredSize.width,
+          declaredHeight: declaredSize.height,
+          hostSourceAttached: input.surfaceHostSources?.[displayMode] !== undefined,
+        },
+      })
+    }
+    return (
+      <RenderProvider
+        stateSource={stateSource}
+        uiCatalog={uiCatalog}
+        rendererCatalog={rendererCatalog}
+        logger={input.platformPorts.logger}
+        dispatchCommand={dispatchCommand}
+        selectUiVariable={selectUiVariable}
+      >
+        <SurfaceRoot
+          displayMode={displayMode}
+          containerKey={mainContainerKey}
+          canvas={landscapeSurfaces[displayMode]}
+          surfaceHostSource={input.surfaceHostSources?.[displayMode]}
+          renderContentFrame={({content}) => (
+            <SurfaceInputFrame
+              displayMode={displayMode}
+              logger={input.platformPorts.logger}
+              hostSourceAttached={input.surfaceHostSources?.[displayMode] !== undefined}
+            >
+              {content}
+            </SurfaceInputFrame>
+          )}
+        />
+      </RenderProvider>
+    )
+  }
 
   return Object.freeze({runtime, createSurface})
 }

@@ -4,7 +4,7 @@
   "status": "PASS",
   "authority": "STATIC_PLAN_ONLY",
   "revision": "CATALOG_INVENTORY_P1_20260806",
-  "fixtureDigest": "674dff9587ae498cf20b1236a8265f262a8354e40e04ba81ef96356d8cc9eee4",
+  "fixtureDigest": "12252bf3e8369d6796f6e175f781f3411bd4d6d634a18d51066a9cd97b297245",
   "profile": "catalog-inventory",
   "mediaPlan": [
     {
@@ -7049,6 +7049,7 @@
             "attributeValues": {
               "SIZE": "SMALL"
             },
+            "standardSalePriceCents": 2800,
             "status": "ENABLED",
             "mediaAssetKey": "coffee"
           },
@@ -7057,7 +7058,8 @@
             "attributeValues": {
               "SIZE": "MEDIUM"
             },
-            "status": "DISABLED",
+            "standardSalePriceCents": 3200,
+            "status": "ENABLED",
             "mediaAssetKey": "coffee"
           },
           {
@@ -7065,7 +7067,17 @@
             "attributeValues": {
               "SIZE": "LARGE"
             },
+            "standardSalePriceCents": 3600,
             "status": "VOIDED",
+            "mediaAssetKey": "coffee"
+          },
+          {
+            "code": "LATTE-SKU-XL",
+            "attributeValues": {
+              "SIZE": "XL"
+            },
+            "standardSalePriceCents": 4000,
+            "status": "DISABLED",
             "mediaAssetKey": "coffee"
           }
         ],
@@ -7968,5 +7980,5 @@
     "compositeRelationSequence": "after-target-item-activation",
     "compositeRelationRequirement": "ENABLED_TARGET_ITEM_AND_SKU"
   },
-  "planDigest": "1f34edc1eccc9938177377c85f0b902abb56ae303a1a0085caf16d04c0c319f4"
+  "planDigest": "416b9972791e3d4c5fb187e5c47f6c3308b0bd7a7de109f22a015f09dab76f44"
 }

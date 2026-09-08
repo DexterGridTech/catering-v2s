@@ -13,6 +13,8 @@ import {
   validateRuntimeSeedStaticInputs,
   validateStaticSeedPlan,
   sectionRefFromDraftRows,
+  publishedSkuSubsetMismatch,
+  publishedRowsBySeedItemCode,
 } from './sales-menu-seed-executor.mjs';
 import {availabilityContractDigest, availabilityReceiptFacts} from './catalog-availability-receipt.mjs';
 import {loadGeneratedOperationRegistry} from '../test/seed-report.mjs';
@@ -56,6 +58,7 @@ test('sales-menu child admits the exact generated operation and cross-owner deno
   assert.equal(validated.requiredOperationIds.includes('stageOperationsSalesMenuAsset'), true);
   assert.equal(validated.requiredOperationIds.includes('getOperationsSalesMenuItemCandidates'), true);
   assert.equal(validated.requiredOperationIds.includes('getOperationsCatalogItemSkus'), true);
+  assert.equal(validated.requiredOperationIds.includes('listOperationsCatalogOrderOptionDefinitions'), true);
   assert.equal(validated.requiredOperationIds.includes('getOperationsInventoryTarget'), false);
   assert.equal(validated.availabilityDefinition.sourceReceiptStage, 'catalog-inventory');
   assert.equal(validated.planDigest.length, 64);
@@ -155,6 +158,14 @@ test('sales-menu child keeps generated multipart transport and bind grants at th
   assert.match(source, /new FormData\(\)/);
   assert.match(source, /X-Sales-Menu-Asset-Bind-Grants/);
   assert.match(source, /expectedProblemCode: 'SALES_MENU_MANUAL_REASON_REQUIRED'/);
+  assert.match(source, /orderOptionSelections/);
+  assert.match(source, /targetKind: target.targetKind/);
+  assert.match(source, /manualSaleTargetStatuses/);
+  assert.match(source, /listOperationsCatalogOrderOptionDefinitions/);
+  assert.match(source, /SALES_MENU_SEED_PUBLISHED_SKU_SUBSET_INVALID/);
+  assert.match(source, /candidate\.skuRef !== catalogSku\.productSkuRef/);
+  assert.doesNotMatch(source, /candidate\.productSkuRef/);
+  assert.doesNotMatch(source, /\.slice\(0, 2\)/);
   assert.match(source, /secondaryReadback\.draftDirty !== false/);
   assert.match(source, /copiedReadback\.activation !== null/);
   assert.match(source, /const menuExpectedVersion = \(menu, code\) => versionOf\(menu, code\)/);
@@ -195,4 +206,37 @@ test('sales-menu child resolves section identity from draft readback, never comm
   assert.throws(() => sectionRefFromDraftRows(rows, '不存在', 'SECTION_REF_MISSING'), code('SECTION_REF_MISSING'));
   assert.throws(() => sectionRefFromDraftRows([{name: '堂食', salesSectionRef: 'a'}, {name: '堂食', salesSectionRef: 'b'}], '堂食', 'SECTION_REF_AMBIGUOUS'), code('SECTION_REF_AMBIGUOUS'));
   assert.throws(() => sectionRefFromDraftRows([{name: '堂食', salesSectionRef: null}], '堂食', 'SECTION_REF_MISSING'), code('SECTION_REF_MISSING'));
+});
+
+test('published SKU subset mismatch exposes only safe business facts', () => {
+  const code = publishedSkuSubsetMismatch({
+    item: {productShape: 'SKU', saleContent: {skuPrices: [{skuCode: 'LATTE-SKU-S', listedPriceCents: 3000}]}},
+    subset: {skuCodes: ['LATTE-SKU-S'], listedPriceCentsBySkuCode: {'LATTE-SKU-S': 3400}},
+  });
+  assert.match(code, /actualProductShape/);
+  assert.match(code, /LATTE-SKU-S/);
+  assert.match(code, /3000/);
+  assert.match(code, /3400/);
+  assert.doesNotMatch(code, /skuRef|cookie|token|password|payload/i);
+});
+
+test('published rows map by SalesItem ref when two SalesItems reuse one Catalog product', () => {
+  const mapped = publishedRowsBySeedItemCode({
+    primaryItems: [{code: 'R5-SALES-ITEM-15'}, {code: 'R5-SALES-ITEM-21'}],
+    draftRows: [{salesItemRef: 'sales-item-15'}, {salesItemRef: 'sales-item-21'}],
+    publishedRows: [
+      {salesItemRef: 'sales-item-15', itemCode: 'LATTE-001'},
+      {salesItemRef: 'sales-item-21', itemCode: 'LATTE-001'},
+    ],
+  });
+  assert.equal(mapped.get('R5-SALES-ITEM-15').salesItemRef, 'sales-item-15');
+  assert.equal(mapped.get('R5-SALES-ITEM-21').salesItemRef, 'sales-item-21');
+  assert.throws(
+    () => publishedRowsBySeedItemCode({
+      primaryItems: [{code: 'R5-SALES-ITEM-15'}, {code: 'R5-SALES-ITEM-21'}],
+      draftRows: [{salesItemRef: 'sales-item-15'}, {salesItemRef: 'sales-item-21'}],
+      publishedRows: [{salesItemRef: 'sales-item-15', itemCode: 'LATTE-001'}],
+    }),
+    /SALES_MENU_SEED_PUBLISHED_ITEM_MAPPING_INVALID:R5-SALES-ITEM-21/,
+  );
 });

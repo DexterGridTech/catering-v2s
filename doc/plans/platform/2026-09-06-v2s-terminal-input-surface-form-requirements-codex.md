@@ -6,23 +6,40 @@
 > SCOPE: 横屏与竖屏的产品形态、surface 拓扑、输入 surface 自测量边界
 > DEPENDENCY: 本文通过后，才能冻结键盘视觉重构需求 v2；本文不授权详设或实施
 
-## 0.1 2026-09-07 Web 预览宿主缩放增补（Dexter 直接指派）
+## 0.1 2026-09-07 Web 预览宿主缩放增补（已被 2026-09-08 裁定 supersede）
 
-本增补只修正 Web 开发预览的呈现边界，不改变 input 的几何 owner：Web host 可以把按声明
-逻辑尺寸组成的整组 logical stage 统一等比缩放，以适应页面可用宽度；`InputSurfaceFrame`
-与 `InputProvider` 不读取 host scale、不建立物理尺寸桥，local `onLayout` 仍由 input 自己
-负责。Web 缩放后的真实命中必须用 DOM `getBoundingClientRect()` 与 `elementFromPoint()`
-观察，不能用 transform 前逻辑尺寸声称 Web 物理 hit target 或 Android 48dp 已满足。
+本节只保留为历史变更记录。其“Web 统一等比缩放、Android 产品承载不使用 transform、
+声明只是验收基线”的解释，已被 2026-09-08 Dexter 裁定的固定逻辑画布方案取代；当前有效
+语义见下方 0.2 与 §5.1-§5.3。
 
-因此，本文件 §5.2 中“任何 ancestor transform 都不得包裹 `InputSurfaceFrame`”仅保留为
-input 包自身不得引入 transform/桥接的约束；对 `testExpoApp.SurfaceCanvas` 的唯一
-`logicalStage` host preview transform 由本增补 supersede。Android/native 不读取 Web
-预览配置，也不因本增补改变方向锁、Presentation、IME 或拓扑。
+## 0.2 2026-09-08 固定逻辑画布裁定（当前有效）
+
+每个横屏 surface 的声明是承载层的固定逻辑画布输入：PRIMARY 为 1280 × 800，SECONDARY
+为 960 × 540；两者比例不同，不互相转置或强行统一。sample Android 副屏的 1280 × 720
+是 physical display 配置，不是逻辑画布声明。承载层把固定画布映射到各自实际
+显示区域，input 只在画布逻辑坐标中工作，不能读取 scale、Dimensions、Platform 或物理
+屏幕事实。
+
+Android 由 carrier/host 使用稳定的 display/window 承载事实计算 scaleX 与 scaleY，并以
+非等比缩放铺满实际 content rect；不得以 transform 替代目标 display density 修正。Web
+dev-host 采用 `width-fill-preserve-ratio`：以 preview content rect 的宽度除以 logical stage
+宽度得到唯一 uniform scale，宽度铺满、比例保持；高度不参与 scale，超高由可滚动内容区承载，
+不得使用 uniform contain 或 browser 非等比拉伸。`InputSurfaceFrame` 不得自行引入 transform
+或建立第二套物理尺寸桥；Web 真实命中必须在 transform 后用 DOM rect 与 elementFromPoint
+观察，Android 必须用真实 tap 观察。
+
+## 0.3 2026-09-08 横屏范围 supersede（当前有效）
+
+本轮只交付横屏固定画布。竖屏 target hardware profile、解除方向锁定、PRIMARY-only 真机拓扑
+与竖屏键盘验收全部保持 OPEN：不得新增或修改 portrait declaration，不得修改 sample-terminal 的
+`AndroidManifest.xml` landscape 锁定或 `app.json` landscape 默认，也不得用横屏证据声称竖屏
+已支持。本节 supersede 本文 §3.3 与 FORM-R1 中“本轮必须撤销 landscape 锁定”的旧要求；未来
+竖屏支持必须以真实硬件 profile 与 Dexter 的单独范围授权重新开启。
 
 ## 1. 目的与裁定范围
 
 本文件解决的是输入组件所处的产品形态问题，不是键帽视觉问题。
-当前输入链路把固定横屏的静态 terminalSurfaces 尺寸一路传进 input 包，导致
+需求冻结时的输入链路把固定横屏的静态 terminalSurfaces 尺寸一路传进 input 包，导致
 input 看到的是编译期声明而不是它实际占据的 View。这个前提在双屏
 Presentation、Web 缩放、窗口变窄和竖屏手持形态下都不成立。
 
@@ -41,23 +58,25 @@ Presentation、Web 缩放、窗口变窄和竖屏手持形态下都不成立。
 
 ### 2.1 已核实的仓内事实
 
-以下事实来自当前源码与配置，不是模型测试推断：
+以下是需求冻结时的初始源码/配置事实，不是模型测试推断；其中标为实施前的条目不再描述
+当前实现：
 
 | 事实 | 当前证据 |
 | --- | --- |
 | Expo app 配置固定横屏 | apps/terminal/assembly/android/sample-terminal/app.json 第 2 至 7 行，orientation 为 landscape |
 | Android activity 固定横屏 | apps/terminal/assembly/android/sample-terminal/android/app/src/main/AndroidManifest.xml 第 18 至 20 行，含 screenOrientation=landscape |
-| Web surface 只有横屏静态基线 | apps/terminal/ui/integration/sample-console/package.json 第 10 至 21 行，PRIMARY 为 1157 × 723，SECONDARY 为 962 × 541 |
-| assembly 把静态尺寸送入 input | apps/terminal/ui/integration/sample-console/src/assembly.tsx 第 44 至 70 行与第 153 至 163 行 |
-| input frame 当前没有自己测量 | apps/terminal/ui/base/input/src/components/InputSurfaceFrame.tsx 第 7 至 18 行只接收 surfaceSize，并把其 height 传给键盘 |
-| Web host 使用静态逻辑画布与 transform 缩放 | apps/terminal/ui/base/dev-host/src/testExpoApp.tsx 第 84 至 163 行 |
+| Web surface 在 CP-1 前含旧 shape | apps/terminal/ui/integration/sample-console/package.json 第 10 至 21 行；1157 × 723、962 × 541 是实施前待退役源码事实，不是当前有效基线；当前 shape 由 `src/application/terminalSurfaces.ts` 解析 |
+| assembly 在 CP-1 前把静态尺寸送入 input | `apps/terminal/ui/integration/sample-console/src/assembly/assembly.tsx` 第 42 至 115 行记录当前 host declaration 与本地 frame seam；实施前的旧静态 props 桥已删除 |
+| input frame 在 CP-1/CP-2 前没有自己测量 | `apps/terminal/ui/base/input/src/components/InputSurfaceFrame.tsx` 第 23 至 65 行现在由自己的 `onLayout` 产生 local frame metrics，并将其交给 keyboard 计算 |
+| Web host 在 CP-5 前使用静态逻辑画布与预览几何 | `apps/terminal/ui/base/dev-host/src/components/testExpoApp.tsx` 第 1 至 339 行；当前仍保留固定 canvas 与待裁决的 preview policy，但 preview viewport 已由内部无 border 节点测量 |
 | 当前 Presentation 会施加沉浸式窗口标志 | apps/terminal/adapter/android/dual-screen/android/src/main/java/com/catering/v2s/terminal/adapter/android/dualscreen/TerminalDualScreenActivityHandler.kt 第 389 至 405 行 |
 
 ### 2.2 这些事实不应继续被解释成产品要求
 
-1157 × 723 与 962 × 541 是当前验收基线，不是 input 的运行时布局输入。
-它们可以继续用于 Web 目标尺寸的回归截图与容量测试，但不能继续由
-sample-console assembly 作为 surfaceSize 传给 input。
+1157 × 723 与 962 × 541 已退役，不是验收基线、硬件 profile 或运行时布局输入；它们只作为
+CP-0A 要清除的旧材料证据出现。当前横屏固定逻辑画布是 PRIMARY 1280 × 800、SECONDARY
+960 × 540；sample Android 副屏的 1280 × 720 只作为 physical display 配置记录，声明进入 host 承载层作为画布输入，但不能由 sample-console assembly 直接
+作为 `surfaceSize` 传给 input。
 
 AndroidManifest 的 adjustResize 也是声明事实，不足以证明沉浸式 edge-to-edge
 窗口已经提供了可依赖的收缩行为。输入组件的收缩、IME inset 和自绘键盘尺寸必须
@@ -98,15 +117,14 @@ AndroidManifest 的 adjustResize 也是声明事实，不足以证明沉浸式 e
 自己所在 frame 的本地测量结果，不知道 PRIMARY、SECONDARY 或 handheld-confirm
 这些业务概念。
 
-### 3.3 方向与窗口行为
+### 3.3 方向与窗口行为（本轮横屏范围）
 
-产品必须撤销对横屏的硬锁：
+本轮保留横屏硬锁：
 
-- Expo app 配置不得继续把 orientation 固定为 landscape；
-- Android activity manifest 不得继续把 screenOrientation 固定为 landscape；
-- 具体采用平台默认方向、允许配置或等价配置由详设核对，但结果必须允许真实
-  竖屏运行；
-- 不能通过额外的 runtime 方向嗅探把 input 组件重新绑定到设备型号。
+- Expo app 配置继续保持 orientation=landscape；
+- Android activity manifest 继续保持 screenOrientation=landscape；
+- 不增加 runtime 方向嗅探，不把 input 组件重新绑定到设备型号；
+- 竖屏运行不属于本轮验收，见 §0.3 的 OPEN 边界。
 
 沉浸式全屏在横屏和竖屏都保留。本文采用既有 A 档沉浸式边界：应用隐藏系统
 状态栏/导航栏并占据自己的窗口，不引入 true Kiosk、Lock Task、设备策略或
@@ -219,22 +237,23 @@ input 几何与可见性不得由以下来源决定：
 
 ### 5.1 静态基线的保留范围
 
-sample-console 的 PRIMARY 1157 × 723 与 SECONDARY 962 × 541 继续保留为：
-
-- Web 视觉回归与截图的目标基线；
-- 横屏双屏容量验收的 fixture；
-- 说明当前产品目标硬件比例的文档数据。
-
-它们不再是 InputProvider、InputSurfaceFrame 或 VirtualKeyboard 的运行时输入。
-键盘需求文档必须把“验收基线”和“布局输入”分开写。
+旧的 1157 × 723 与 962 × 541 不再保留为任何基线；它们只能在 CP-0A 记录为已 supersede
+的历史材料。当前横屏固定逻辑画布为：PRIMARY 1280 × 800（目标 16:10），SECONDARY
+960 × 540（目标 16:9）；sample Android 副屏的 1280 × 720 是 physical display 配置，不是画布声明。画布声明是 host 承载层的运行时输入，host 负责把画布映射到
+实际 content rect；`InputSurfaceFrame` 仍只接受自己的 onLayout，不接收静态声明尺寸。
 
 ### 5.2 Web 缩放边界
 
 input frame 的 `onLayout` 仍必须来自它自己实际占据的逻辑 frame；input 不读取 host
-scale，也不把 transform 前逻辑 width/height 作为 Web 物理 hit target 证明。Web host
-可保留固定逻辑画布，并由 `SurfaceCanvas` 的未缩放 canvas `onLayout` 测量可用宽度，
-在固定 logical stage 上施加唯一 preview transform；该 transform 不是 input 包的几何
-机制，也不得新增“把缩放后的有效盒子反映回来”的第二套物理尺寸桥接契约。
+scale，也不把 transform 前逻辑 width/height 作为 Web 物理 hit target 证明。固定逻辑
+画布由 host 承载层创建并映射到实际 content rect；任何 transform 只属于 host，不是
+input 包的几何机制，也不得新增“把缩放后的有效盒子反映回来”的第二套物理尺寸桥接契约。
+
+Android 允许在 surface host 上使用 scaleX/scaleY 非等比铺满实际 content rect，同时继续
+使用目标 `Presentation` display 的 metrics/density 修正 ReactSurface context；transform
+不能替代 density。Web 的缩放 policy 固定为 `width-fill-preserve-ratio`：以 preview content rect
+宽度除以 logical stage 宽度得到唯一 uniform scale，宽度铺满、比例保持；高度不参与缩放，超高
+由可滚动内容区承载。两端统一的是固定逻辑画布与逻辑坐标，不是把 Android density 伪装成 Web 单位。
 
 具体 DOM/View 树调整属于详设；Web 验收必须同时看 input frame 的 local layout、真实
 DOM rect 和 `elementFromPoint` 命中。可证伪红向量：在 `SurfaceCanvas` 删除唯一 host
@@ -247,6 +266,12 @@ FORM-R5 必须失败。
 横屏双屏继续由现有 single ReactHost/multiple ReactSurface carrier 提供两个
 surface。竖屏不创建第二 surface。input 包不读取 display index，不判断是否为
 Presentation，也不承担 DisplayManager、IME policy 或沉浸式 window flags。
+
+Android carrier 负责按目标 display 的 metrics/density 配置副屏 `ReactSurface` context，
+同时由承载层把固定逻辑画布映射到 owner window 的实际 content rect；不得复制主 Activity
+的 density，也不得把 raw display pixels 直接当作画布声明。目标 display 的 density 修正与
+画布的 scaleX/scaleY 是两个独立步骤，均属于 carrier/host，不进入 input、assembly 或业务
+组件，也不改变 Presentation 拓扑、方向策略或 IME 策略。
 
 副屏系统 IME 的既有产品决定保持不变：副屏只支持虚拟键盘；本文件不新增 adb、
 权限或设备配置步骤。
@@ -261,8 +286,8 @@ Presentation，也不承担 DisplayManager、IME policy 或沉浸式 window flag
    契约；
 4. sample-console assembly 不再从 terminalSurfaces 取尺寸并穿给 InputSurfaceFrame；
 5. input 的公共面保留 imeInset，因为它来自 adapter 能知道的平台事实；
-6. terminalSurfaces 的 package.json 声明如继续存在，只能作为宿主/验收基线，不能
-   通过公共 input props 形成第二个尺寸真相源。
+6. terminalSurfaces 的 package.json 声明是 host 固定逻辑画布的输入；它不能通过公共
+   input props 形成第二个尺寸真相源，InputSurfaceFrame 仍只使用自己的 onLayout。
 
 实现前必须重新搜索 InputSurfaceSize、surfaceSize 与 terminalSurfaces 的消费者；
 若发现本文未列出的真实消费者，先按影响面修订详设，不得用兼容 prop 偷渡旧模型。
@@ -286,11 +311,11 @@ FORM-1 至 FORM-5 必须分别检查 input 的几何输入、surface 拓扑和�
 
 | 红向量 | 变异 | 必须失败的结果 |
 | --- | --- | --- |
-| FORM-R1 | 把 landscape orientation 与 screenOrientation 恢复 | 竖屏产品形态无法启动，FORM-3 失败 |
-| FORM-R2 | 让 assembly 把 package.json 尺寸重新传给 InputSurfaceFrame | 静态尺寸输入门失败 |
+| FORM-R1（本轮 superseded） | 删除 landscape orientation 或 screenOrientation 锁定以伪造竖屏支持 | 本轮范围漂移；不得以此替代未来竖屏 profile、拓扑与真机验收 |
+| FORM-R2 | 让 assembly 把 package.json 画布声明直接传给 InputSurfaceFrame，绕过 host 承载层 | 静态尺寸输入门失败 |
 | FORM-R3 | 用 Dimensions.get('window') 替代 frame onLayout | Presentation/不同 surface 的局部尺寸判据失败 |
-| FORM-R4 | 在首帧用 1157 × 723 作为默认尺寸 | 首帧不渲染键盘判据失败 |
-| FORM-R5 | 让 Web transform 前的尺寸通过验收 | 实际命中区域与 hit target 分离，Web 边界失败 |
+| FORM-R4 | 在首帧用固定画布声明或任意静态尺寸作为 InputSurfaceFrame 默认尺寸 | 首帧不渲染键盘判据失败 |
+| FORM-R5 | 把 host transform 前尺寸当作物理命中证据，或让 input 自己引入 transform/宿主 scale，或用 transform 替代 Android 目标 display density | 实际 DOM/Android 命中区域与逻辑坐标分离，或目标 display 的 density 修正丢失，边界判据失败 |
 | FORM-R6 | 在竖屏保留 SECONDARY 但只把它设为 hidden | 竖屏单 surface 拓扑判据失败 |
 
 模型红向量只证明门能识别错误；真实树结果必须另行记录，不能把模型 FAIL
