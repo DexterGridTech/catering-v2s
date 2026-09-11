@@ -1,4 +1,4 @@
-import {Alert, Button, Descriptions, Drawer, Skeleton, Space} from 'antd';
+import {Alert, Descriptions, Drawer, Skeleton, Space} from 'antd';
 import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
@@ -84,38 +84,47 @@ export function ContractDetailDrawer({
     onClose();
     next(current);
   };
-  const actionItems = detailReady && selected
-    ? [
-        {
-          key: 'audit',
-          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.contract.audit}>操作历史</AdminDetailActionLabel>,
-          onClick: () => setAuditOpen(true),
-        },
-        ...(canEdit && selected.status === 'VALID'
-          ? [
-              {
-                key: 'edit',
-                label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.contract.edit}>编辑</AdminDetailActionLabel>,
-                onClick: () => closeThen(onEdit),
-              },
-            ]
-          : []),
-        ...(canInvalidate && selected.status === 'VALID'
-          ? [
-              {
-                key: 'invalidate',
-                danger: true,
-                label: (
-                  <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.contract.invalidate}>
-                    作废
-                  </AdminDetailActionLabel>
-                ),
-                onClick: () => closeThen(onInvalidate),
-              },
-            ]
-          : []),
-      ]
-    : [];
+  const actionItems =
+    detailReady && selected
+      ? [
+          {
+            key: 'audit',
+            label: (
+              <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.contract.audit}>
+                操作历史
+              </AdminDetailActionLabel>
+            ),
+            onClick: () => setAuditOpen(true),
+          },
+          ...(canEdit && selected.status === 'VALID'
+            ? [
+                {
+                  key: 'edit',
+                  label: (
+                    <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.contract.edit}>
+                      编辑
+                    </AdminDetailActionLabel>
+                  ),
+                  onClick: () => closeThen(onEdit),
+                },
+              ]
+            : []),
+          ...(canInvalidate && selected.status === 'VALID'
+            ? [
+                {
+                  key: 'invalidate',
+                  danger: true,
+                  label: (
+                    <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.contract.invalidate}>
+                      作废
+                    </AdminDetailActionLabel>
+                  ),
+                  onClick: () => closeThen(onInvalidate),
+                },
+              ]
+            : []),
+        ]
+      : [];
   return (
     <>
       <Drawer

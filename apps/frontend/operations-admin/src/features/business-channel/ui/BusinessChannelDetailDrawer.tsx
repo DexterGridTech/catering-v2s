@@ -1,4 +1,4 @@
-import {Alert, Button, Descriptions, Drawer, Space, Tag, Typography} from 'antd';
+import {Alert, Descriptions, Drawer, Space, Tag, Typography} from 'antd';
 import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
@@ -14,6 +14,7 @@ import {
 import type {
   BusinessChannelTemplateView,
   BusinessChannelView,
+  ExternalCapability,
   OwnerBindingView,
   ProviderProfileView,
 } from '../../../app/api/generated/operations-edge';
@@ -39,12 +40,19 @@ import {
   canTransitionBusinessChannelStatus,
 } from '../model/businessChannelActionPolicy';
 import {operationsDetailDrawerTestIds} from '../../../app/automation/operationsDetailDrawerTestIds';
+import {businessChannelTemplateTestIds} from '../../../app/automation/businessChannelTemplateTestIds';
 
 function dimensionStatusLabel(status: string) {
   if (status === 'ENABLED') return lifecycleStatusLabels.ENABLED;
   if (status === 'DISABLED') return lifecycleStatusLabels.DISABLED;
   if (status === 'VOIDED') return lifecycleStatusLabels.VOIDED;
   return '当前状态无法识别';
+}
+
+function providerCapabilityForOrderKind(
+  orderKind: BusinessChannelTemplateView['orderKind'],
+): ExternalCapability['capabilityClass'] {
+  return orderKind;
 }
 
 export function BusinessChannelDetailDrawer({
@@ -90,12 +98,19 @@ export function BusinessChannelDetailDrawer({
         {},
       ),
       readBusinessChannelTemplates(queryContext),
-      readExternalProviderCandidates(queryContext),
       bindingRequest,
     ])
-      .then(([channel, templates, providers, nextBinding]) => {
+      .then(async ([channel, templates, nextBinding]) => {
         openDetail(channel);
         const nextTemplate = templates.items.find(item => item.templateRef === channel.templateRef);
+        const providers =
+          nextTemplate?.accessKind === 'EXTERNAL'
+            ? await readExternalProviderCandidates(
+                queryContext,
+                providerCapabilityForOrderKind(nextTemplate.orderKind),
+                channel.ownerNodeType,
+              )
+            : [];
         setTemplate(nextTemplate);
         setProvider(providers.find(item => item.providerCode === nextTemplate?.providerCode));
         setBinding(nextBinding);
@@ -117,6 +132,7 @@ export function BusinessChannelDetailDrawer({
   ]);
 
   const channel = target;
+  const isExternalDineIn = template?.accessKind === 'EXTERNAL' && template.orderKind === 'DINE_IN';
   const channelActions = channel ? businessChannelActionAvailability(channel.status) : undefined;
   const closeThen = (next: () => void) => {
     if (!channel) return;
@@ -151,7 +167,11 @@ export function BusinessChannelDetailDrawer({
           ? [
               {
                 key: 'edit',
-                label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessChannel.edit}>编辑</AdminDetailActionLabel>,
+                label: (
+                  <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessChannel.edit}>
+                    编辑
+                  </AdminDetailActionLabel>
+                ),
                 onClick: () => closeThen(() => onEdit(channel)),
               },
             ]
@@ -160,7 +180,11 @@ export function BusinessChannelDetailDrawer({
           ? [
               {
                 key: 'binding',
-                label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessChannel.binding}>维护绑定</AdminDetailActionLabel>,
+                label: (
+                  <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessChannel.binding}>
+                    维护绑定
+                  </AdminDetailActionLabel>
+                ),
                 onClick: () => setBindingOpen(true),
               },
             ]
@@ -170,7 +194,11 @@ export function BusinessChannelDetailDrawer({
               {
                 key: 'disable',
                 danger: true,
-                label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessChannel.status}>停用</AdminDetailActionLabel>,
+                label: (
+                  <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessChannel.status}>
+                    停用
+                  </AdminDetailActionLabel>
+                ),
                 onClick: () => void transition('DISABLED'),
               },
             ]
@@ -179,7 +207,11 @@ export function BusinessChannelDetailDrawer({
           ? [
               {
                 key: 'enable',
-                label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessChannel.status}>恢复启用</AdminDetailActionLabel>,
+                label: (
+                  <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessChannel.status}>
+                    恢复启用
+                  </AdminDetailActionLabel>
+                ),
                 onClick: () => void transition('ENABLED'),
               },
             ]
@@ -212,102 +244,113 @@ export function BusinessChannelDetailDrawer({
         {problem && <Alert type="error" showIcon title="读取失败" description={problem} />}
         {channel && (
           <>
-            <Descriptions
-              {...adminDetailDescriptionsProps}
-              items={[
-                {key: 'code', label: '渠道编码', children: channel.channelCode || '—'},
-                {key: 'name', label: '渠道名称', children: channel.channelName},
-                {key: 'template', label: '来源模板', children: template?.templateName || '—'},
-                {
-                  key: 'operator',
-                  label: '经营主体',
-                  children: closedCodeLabel(ownerNodeTypeLabels, channel.ownerNodeType),
-                },
-                {
-                  key: 'order',
-                  label: '订单类型',
-                  children: template ? closedCodeLabel(orderKindLabels, template.orderKind) : '—',
-                },
-                {
-                  key: 'access',
-                  label: '接入类型',
-                  children: template ? closedCodeLabel(accessKindLabels, template.accessKind) : '—',
-                },
-                {
-                  key: 'dineInForm',
-                  label: '到店点餐形式',
-                  children: template?.dineInForm ? closedCodeLabel(dineInFormLabels, template.dineInForm) : '未配置',
-                },
-                {
-                  key: 'business',
-                  label: '绑定业务',
-                  children: ownerBindingBusinessDisplay(binding),
-                },
-                {
-                  key: 'externalOwner',
-                  label: '外部主体编号',
-                  children:
-                    template?.accessKind !== 'EXTERNAL'
-                      ? '—'
-                      : ownerBindingExternalOwnerDisplay(binding, provider?.authenticationKind),
-                },
-                {
-                  key: 'status',
-                  label: '状态',
-                  children: <Tag>{closedCodeLabel(lifecycleStatusLabels, channel.status)}</Tag>,
-                },
-                {
-                  key: 'statusDimensions',
-                  label: '状态维度',
-                  children: (
-                    <Space direction="vertical" size={4} {...testId('business-channel-status-dimensions')}>
-                      {channel.statusDimensions.length > 0 ? (
-                        channel.statusDimensions.map(dimension => (
-                          <Typography.Text
-                            key={`${dimension.type}-${dimension.ref}`}
-                            {...testId(`business-channel-status-dimension-${dimension.type}-${dimension.ref}`)}
-                          >
-                            {closedCodeLabel(statusDimensionTypeLabels, dimension.type)}：
-                            {dimensionStatusLabel(dimension.status)}
-                          </Typography.Text>
-                        ))
-                      ) : (
-                        <Typography.Text>暂无上游状态维度</Typography.Text>
-                      )}
-                    </Space>
-                  ),
-                },
-                {
-                  key: 'blockers',
-                  label: '上游阻断',
-                  children: (
-                    <Space direction="vertical" size={4} {...testId('business-channel-blockers')}>
-                      {channel.blockers.length > 0 ? (
-                        channel.blockers.map(blocker => (
-                          <Typography.Text
-                            key={`${blocker.type}-${blocker.ref}`}
-                            {...testId(`business-channel-blocker-${blocker.type}-${blocker.ref}`)}
-                          >
-                            {closedCodeLabel(statusDimensionTypeLabels, blocker.type)}：
-                            {dimensionStatusLabel(blocker.status)}
-                          </Typography.Text>
-                        ))
-                      ) : (
-                        <Typography.Text>当前没有上游阻断</Typography.Text>
-                      )}
-                    </Space>
-                  ),
-                },
-                {
-                  key: 'binding',
-                  label: '绑定状态',
-                  children:
-                    channel.bindingStatus === 'NOT_REQUIRED'
-                      ? '—'
-                      : closedCodeLabel(bindingStatusLabels, channel.bindingStatus),
-                },
-              ]}
-            />
+            <div {...(isExternalDineIn ? testId(businessChannelTemplateTestIds.externalDineInDetail) : {})}>
+              <Descriptions
+                {...adminDetailDescriptionsProps}
+                items={[
+                  {key: 'code', label: '渠道编码', children: channel.channelCode || '—'},
+                  {key: 'name', label: '渠道名称', children: channel.channelName},
+                  {key: 'template', label: '来源模板', children: template?.templateName || '—'},
+                  {
+                    key: 'operator',
+                    label: '经营主体',
+                    children: closedCodeLabel(ownerNodeTypeLabels, channel.ownerNodeType),
+                  },
+                  {
+                    key: 'order',
+                    label: '订单类型',
+                    children: template ? closedCodeLabel(orderKindLabels, template.orderKind) : '—',
+                  },
+                  {
+                    key: 'access',
+                    label: '接入类型',
+                    children: template ? closedCodeLabel(accessKindLabels, template.accessKind) : '—',
+                  },
+                  {
+                    key: 'dineInForm',
+                    label: '到店点餐形式',
+                    children: isExternalDineIn
+                      ? '外部系统不使用 POS、扫码或自助机点餐形式'
+                      : template?.dineInForm
+                        ? closedCodeLabel(dineInFormLabels, template.dineInForm)
+                        : '未配置',
+                  },
+                  {
+                    key: 'salesMenu',
+                    label: '销售菜单',
+                    children: isExternalDineIn ? '外部渠道不在本平台销售菜单范围内' : '—',
+                  },
+                  {
+                    key: 'business',
+                    label: '绑定业务',
+                    children: ownerBindingBusinessDisplay(binding),
+                  },
+                  {
+                    key: 'externalOwner',
+                    label: '外部主体编号',
+                    children:
+                      template?.accessKind !== 'EXTERNAL'
+                        ? '—'
+                        : ownerBindingExternalOwnerDisplay(binding, provider?.authenticationKind),
+                  },
+                  {
+                    key: 'status',
+                    label: '状态',
+                    children: <Tag>{closedCodeLabel(lifecycleStatusLabels, channel.status)}</Tag>,
+                  },
+                  {
+                    key: 'statusDimensions',
+                    label: '状态维度',
+                    children: (
+                      <Space direction="vertical" size={4} {...testId('business-channel-status-dimensions')}>
+                        {channel.statusDimensions.length > 0 ? (
+                          channel.statusDimensions.map(dimension => (
+                            <Typography.Text
+                              key={`${dimension.type}-${dimension.ref}`}
+                              {...testId(`business-channel-status-dimension-${dimension.type}-${dimension.ref}`)}
+                            >
+                              {closedCodeLabel(statusDimensionTypeLabels, dimension.type)}：
+                              {dimensionStatusLabel(dimension.status)}
+                            </Typography.Text>
+                          ))
+                        ) : (
+                          <Typography.Text>暂无上游状态维度</Typography.Text>
+                        )}
+                      </Space>
+                    ),
+                  },
+                  {
+                    key: 'blockers',
+                    label: '上游阻断',
+                    children: (
+                      <Space direction="vertical" size={4} {...testId('business-channel-blockers')}>
+                        {channel.blockers.length > 0 ? (
+                          channel.blockers.map(blocker => (
+                            <Typography.Text
+                              key={`${blocker.type}-${blocker.ref}`}
+                              {...testId(`business-channel-blocker-${blocker.type}-${blocker.ref}`)}
+                            >
+                              {closedCodeLabel(statusDimensionTypeLabels, blocker.type)}：
+                              {dimensionStatusLabel(blocker.status)}
+                            </Typography.Text>
+                          ))
+                        ) : (
+                          <Typography.Text>当前没有上游阻断</Typography.Text>
+                        )}
+                      </Space>
+                    ),
+                  },
+                  {
+                    key: 'binding',
+                    label: '绑定状态',
+                    children:
+                      channel.bindingStatus === 'NOT_REQUIRED'
+                        ? '—'
+                        : closedCodeLabel(bindingStatusLabels, channel.bindingStatus),
+                  },
+                ]}
+              />
+            </div>
           </>
         )}
       </Drawer>

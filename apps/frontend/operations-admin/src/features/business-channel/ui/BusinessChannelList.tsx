@@ -18,6 +18,7 @@ import {operationsContentTabRefreshSignal, operationsProblemOf} from '../../../a
 import {useEffect, useMemo, useState} from 'react';
 import {readProjectBusinessChannels, readStoreBusinessChannels} from '../application/queries';
 import {bindingStatusLabels, lifecycleStatusLabels} from '../model/businessChannelCodeLabels';
+import {businessChannelTemplateTestIds} from '../../../app/automation/businessChannelTemplateTestIds';
 
 type ProSortOrder = 'ascend' | 'descend';
 
@@ -98,7 +99,7 @@ export function BusinessChannelList({
       });
   }, [contentTabRefreshVersion, generation, ownerNodeRef, ownerNodeType, readQueryContext, refreshVersion, sort]);
 
-  const listKey = ownerNodeType.toLocaleLowerCase();
+  const listKey: 'project' | 'store' = ownerNodeType === 'PROJECT' ? 'project' : 'store';
   const listTitle = sectionTitle ?? '经营渠道';
   const columns = useMemo<ProColumns<BusinessChannelView>[]>(
     () => [
@@ -113,7 +114,7 @@ export function BusinessChannelList({
             type="link"
             onClick={() => onOpenDetail(row)}
             aria-label={`查看${row.channelName}详情`}
-            {...testId(`${listKey}-business-channel-open-detail-${row.channelRef}`)}
+            {...testId(businessChannelTemplateTestIds.businessChannelOpenDetail(listKey, row.channelRef))}
           >
             {row.channelName}
           </Button>
@@ -167,13 +168,25 @@ export function BusinessChannelList({
   return (
     <section
       aria-labelledby={`${ownerNodeType.toLocaleLowerCase()}-business-channel-list-title`}
-      {...testId(`${ownerNodeType.toLocaleLowerCase()}-business-channel-list`)}
+      {...testId(
+        ownerNodeType === 'STORE'
+          ? businessChannelTemplateTestIds.storeBusinessChannelList
+          : `${ownerNodeType.toLocaleLowerCase()}-business-channel-list`,
+      )}
     >
       <Card
         title={<span id={`${listKey}-business-channel-list-title`}>{listTitle}</span>}
         extra={
-          <Button type="primary" onClick={onCreate} {...testId(`${listKey}-business-channel-create`)}>
-            新建渠道
+          <Button
+            type="primary"
+            onClick={onCreate}
+            {...testId(
+              ownerNodeType === 'STORE'
+                ? businessChannelTemplateTestIds.storeTemplateCandidateCreate
+                : `${listKey}-business-channel-create`,
+            )}
+          >
+            {ownerNodeType === 'STORE' ? '新建经营渠道' : '新建渠道'}
           </Button>
         }
       >

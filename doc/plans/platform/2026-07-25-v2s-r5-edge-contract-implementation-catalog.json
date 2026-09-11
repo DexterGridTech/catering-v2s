@@ -85,11 +85,11 @@
     },
     {
       "path": "contracts/openapi-source/collaboration.schemas.json",
-      "sha256": "4aa65fae752a906941bce967d51b383b16595b7d95b5f0be87aba2ee2aee809c"
+      "sha256": "87cadf3daaa047d7c4803c5558d60c4edbc7a4dbbb0c447260853133eeee19ff"
     },
     {
       "path": "contracts/openapi-source/business-channel.schemas.json",
-      "sha256": "ec1feea08f6b30ffe5063cf3b78158286fac8ec83417fbaac2dee7259271aa5a"
+      "sha256": "5a3629077611a688bea5916ebbea0c046fcfd5831f3b0567451cce524f38a8b9"
     },
     {
       "path": "contracts/openapi-source/sales-menu.schemas.json",
@@ -98,10 +98,10 @@
   ],
   "denominator": {
     "scenarios": 34,
-    "operations": 210,
+    "operations": 211,
     "faces": {
       "platform-admin": 61,
-      "operations-admin": 137,
+      "operations-admin": 138,
       "public": 12
     },
     "owners": [
@@ -212,6 +212,10 @@
   },
   "addedOperations": [
     {
+      "operationId": "getOperationsBusinessChannelTemplateVisibleStores",
+      "reason": "Dexter-authorized STORE template visibility read for project template management"
+    },
+    {
       "operationId": "getOperationsOrganizationHierarchyExtensionDefinition",
       "reason": "Dexter-authorized dynamic extension definition read for commercial group, region and project"
     },
@@ -281,9 +285,9 @@
     "heritageCandidates": 105,
     "deleted": 5,
     "renamed": 3,
-    "added": 2,
-    "target": 102,
-    "equation": "105 - 5 + 2 = 102; rename preserves cardinality"
+    "added": 3,
+    "target": 103,
+    "equation": "105 - 5 + 3 = 103; rename preserves cardinality"
   },
   "errorSets": {
     "AUTHZ_READ": [
@@ -384,6 +388,9 @@
     ]
   },
   "operationErrorAugmentations": {
+    "getOperationsBusinessChannelTemplateVisibleStores": [
+      "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT"
+    ],
     "changeCurrentWorkspacePassword": [
       "WORKSPACE_IAM_PASSWORD_POLICY_FAILED"
     ],
@@ -562,14 +569,22 @@
     ],
     "createOperationsBusinessChannelTemplate": [
       "BUSINESS_SCOPE_EXCEEDED",
+      "BUSINESS_CHANNEL_STORE_VISIBILITY_SCOPE_REQUIRED",
+      "BUSINESS_CHANNEL_STORE_VISIBILITY_NOT_APPLICABLE",
+      "BUSINESS_CHANNEL_STORE_VISIBILITY_DUPLICATE",
+      "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT",
       "DINE_IN_FORM_MISMATCH",
-      "DINE_IN_MUST_BE_INTERNAL",
+      "PROJECT_DINE_IN_EXTERNAL_NOT_ALLOWED",
       "DUPLICATE_CODE",
       "PROVIDER_NOT_ENABLED",
       "VERSION_CONFLICT"
     ],
     "updateOperationsBusinessChannelTemplate": [
       "IMMUTABLE_FIELD",
+      "BUSINESS_CHANNEL_STORE_VISIBILITY_SCOPE_REQUIRED",
+      "BUSINESS_CHANNEL_STORE_VISIBILITY_NOT_APPLICABLE",
+      "BUSINESS_CHANNEL_STORE_VISIBILITY_DUPLICATE",
+      "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT",
       "VERSION_CONFLICT",
       "VOIDED_RECORD_IMMUTABLE"
     ],
@@ -579,8 +594,9 @@
     ],
     "createOperationsBusinessChannel": [
       "BINDING_NOT_EFFECTIVE",
+      "BUSINESS_CHANNEL_STORE_VISIBILITY_STALE",
       "DINE_IN_FORM_MISMATCH",
-      "DINE_IN_MUST_BE_INTERNAL",
+      "PROJECT_DINE_IN_EXTERNAL_NOT_ALLOWED",
       "DUPLICATE_CODE",
       "ORDER_KIND_MISMATCH",
       "PROVIDER_NOT_ENABLED",
@@ -8388,9 +8404,22 @@
               "MEMBER_BENEFIT",
               "GROUP_BUY",
               "TAKEAWAY",
+              "DINE_IN",
               "INVENTORY_SYNC",
               "TAKEAWAY_DELIVERY",
               "ORDER_SYNC"
+            ]
+          }
+        },
+        {
+          "name": "nodeType",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "PROJECT",
+              "STORE"
             ]
           }
         },
@@ -8561,6 +8590,66 @@
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
       "focusedTestId": "edge.getOperationsBusinessChannelTemplates"
+    },
+    {
+      "operationId": "getOperationsBusinessChannelTemplateVisibleStores",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/visible-stores",
+      "face": "operations-admin",
+      "owner": "business-channel",
+      "scenarioIds": [
+        "R5-EXTERNAL-COLLABORATION"
+      ],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "templateRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "storeStatusFilter",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "NON_VOIDED",
+              "ALL"
+            ]
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "BusinessChannelTemplateVisibleStorePage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsBusinessChannelTemplateVisibleStores"
     },
     {
       "operationId": "createOperationsBusinessChannelTemplate",
@@ -8795,6 +8884,7 @@
           "schema": {
             "type": "string",
             "enum": [
+              "BUSINESS_CHANNEL",
               "SALES_MENU"
             ]
           }
@@ -10920,6 +11010,16 @@
           "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
           "positiveProofRef": "edge.getOperationsBusinessChannelTemplates.positive",
           "negativeProofRef": "edge.getOperationsBusinessChannelTemplates.negative"
+        },
+        {
+          "stepId": "R5-EXTERNAL-COLLABORATION-OP-18A",
+          "operationId": "getOperationsBusinessChannelTemplateVisibleStores",
+          "face": "operations-admin",
+          "owner": "business-channel",
+          "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+          "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+          "positiveProofRef": "edge.getOperationsBusinessChannelTemplateVisibleStores.positive",
+          "negativeProofRef": "edge.getOperationsBusinessChannelTemplateVisibleStores.negative"
         },
         {
           "stepId": "R5-EXTERNAL-COLLABORATION-OP-19",
@@ -13281,6 +13381,15 @@
     "BusinessChannelTemplateCreateRequest": {
       "ref": "BusinessChannelTemplateCreateRequest"
     },
+    "BusinessChannelTemplateStoreVisibilityScope": {
+      "ref": "BusinessChannelTemplateStoreVisibilityScope"
+    },
+    "BusinessChannelTemplateVisibleStore": {
+      "ref": "BusinessChannelTemplateVisibleStore"
+    },
+    "BusinessChannelTemplateVisibleStorePage": {
+      "ref": "BusinessChannelTemplateVisibleStorePage"
+    },
     "BusinessChannelTemplateUpdateRequest": {
       "ref": "BusinessChannelTemplateUpdateRequest"
     },
@@ -14747,10 +14856,10 @@
     "status": "MATERIALIZED",
     "pipeline": "R24_P3C",
     "sourceOperationCount": 148,
-    "operationCount": 210,
+    "operationCount": 211,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 137,
+      "operations-admin": 138,
       "public": 12
     }
   }

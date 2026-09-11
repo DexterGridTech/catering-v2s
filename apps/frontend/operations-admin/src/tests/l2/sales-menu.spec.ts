@@ -112,6 +112,7 @@ type GeneratedOperation =
 type OperationObservation = {
   operationId: string;
   method: string;
+  url: string;
   pathname: string;
   status: number;
   requestId: string | null;
@@ -126,6 +127,12 @@ type SignInProfile = {
   loginNameEnv: string;
   passwordEnv: string;
   roleLabelEnv: string;
+};
+
+const projectBusinessChannelProfile: SignInProfile = {
+  loginNameEnv: 'R5_L2_PROJECT_OPERATIONS_LOGIN_NAME',
+  passwordEnv: 'R5_L2_PROJECT_OPERATIONS_PASSWORD',
+  roleLabelEnv: 'R5_L2_PROJECT_OPERATIONS_ROLE_LABEL',
 };
 
 function requiredEnvironment(name: string): string {
@@ -386,6 +393,7 @@ function observeGeneratedResponses(page: Page): {drain: () => Promise<void>} {
         actionContext.runtime.observations.push({
           operationId: operation.operationId,
           method: response.request().method(),
+          url: response.url(),
           pathname,
           status: response.status(),
           requestId,
@@ -512,10 +520,14 @@ async function runDeclaredAction<T>(runtime: CaseRuntime, execute: () => Promise
 function routeFromStoreProfile(): string {
   const explicit = process.env.R5_L2_SALES_MENU_ROUTE;
   if (explicit) return explicit;
+  return routeFromOperations('catalog/sales-menus');
+}
+
+function routeFromOperations(segment: string): string {
   const profile = requiredEnvironment('R5_L2_STORE_PROFILE_ROUTE');
   const prefix = profile.replace(/\/store\/profile\/?$/, '');
   if (prefix === profile) throw new Error('R5_L2_STORE_PROFILE_ROUTE_SHAPE_INVALID');
-  return `${prefix}/catalog/sales-menus`;
+  return `${prefix}/${segment.replace(/^\/+/, '')}`;
 }
 
 async function signIn(
@@ -873,6 +885,17 @@ function responseItems(payload: unknown): JsonObject[] {
     : [];
 }
 
+function assertOperationQuery(observation: OperationObservation, expected: Record<string, string>, code: string): void {
+  const url = new URL(observation.url);
+  for (const [key, value] of Object.entries(expected)) {
+    if (url.searchParams.get(key) !== value) throw new Error(`${code}:${key}:${url.search}`);
+  }
+}
+
+function observationsFor(runtime: CaseRuntime, operationId: string): OperationObservation[] {
+  return runtime.observations.filter(entry => entry.operationId === operationId);
+}
+
 function latestSelectedMenuItems(runtime: CaseRuntime, facts: OwnerCase, operationId: string): JsonObject[] {
   return responseItems(latestSelectedMenuOperation(runtime, facts, operationId)?.payload);
 }
@@ -1024,6 +1047,21 @@ async function selectStoreScope(page: Page, facts: OwnerCase): Promise<void> {
   );
 }
 
+async function selectProjectScope(page: Page, facts: OwnerCase): Promise<void> {
+  const scope = (facts.scope ?? ownerFixture?.ownerFacts.scope ?? {}) as NonNullable<OwnerCase['scope']>;
+  await selectOperationsDataScope(
+    page,
+    'PROJECT',
+    {
+      regionName: scope.regionName,
+      regionRef: scope.regionRef,
+      projectName: scope.projectName,
+      projectRef: scope.projectRef,
+    },
+    touch => recordControlTouch(storeScopeControlKey(touch), touch.testId),
+  );
+}
+
 function storeScopeControlKey(touch: OperationsDataScopeTouch): string {
   if (touch.phase === 'TRIGGER') return 'STORE_SCOPE_TRIGGER';
   if (touch.phase === 'SELECTOR' || touch.phase === 'OPTION') {
@@ -1042,6 +1080,23 @@ async function openSalesMenu(page: Page, facts: OwnerCase, verifyChannelSelector
   if (!verifyChannelSelector) return;
   const selector = await requireControl(page, 'SALES_MENU_CHANNEL_SELECTOR', facts);
   await expect(selector).toBeEnabled();
+}
+
+async function openProjectBusinessChannels(page: Page, facts: OwnerCase): Promise<void> {
+  await page.goto(routeFromOperations('business-channels/project'));
+  await expect(page.getByTestId('operations-shell-menu')).toBeVisible();
+  await selectProjectScope(page, facts);
+  await requireControl(page, 'BUSINESS_CHANNEL_PROJECT_PAGE', facts);
+  await requireControl(page, 'BUSINESS_CHANNEL_PROJECT_TEMPLATE_LIST', facts);
+}
+
+async function openStoreBusinessChannels(page: Page, facts: OwnerCase): Promise<void> {
+  await page.goto(routeFromOperations('business-channels/store'));
+  await expect(page.getByTestId('operations-shell-menu')).toBeVisible();
+  await selectStoreScope(page, facts);
+  await requireControl(page, 'BUSINESS_CHANNEL_STORE_PAGE', facts);
+  await requireControl(page, 'BUSINESS_CHANNEL_STORE_TEMPLATE_CANDIDATE_TABLE', facts);
+  await requireControl(page, 'BUSINESS_CHANNEL_STORE_LIST', facts);
 }
 
 async function waitForChannelOption(page: Page, channelRef: string): Promise<Locator> {
@@ -1494,6 +1549,89 @@ async function installOneShotFailure(
 async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
   const facts = runtime.facts;
   switch (runtime.row.caseId) {
+    case 'business-channel-external-dine-in-template': {
+      const templateFacts = {...facts, templateRef: factText(facts, ['externalDineInTemplateRef'])};
+      await clickBoundControl(page, 'BUSINESS_CHANNEL_PROJECT_TEMPLATE_DETAIL', templateFacts);
+      const detail = await requireControl(page, 'BUSINESS_CHANNEL_TEMPLATE_DETAIL', facts);
+      await expect(detail).toContainText(factText(facts, ['externalDineInTemplateCode']));
+      await expect(detail).toContainText('到店点餐');
+      await expect(detail).toContainText('外部接入');
+      await expect(detail).toContainText('外部系统不使用 POS、扫码或自助机点餐形式');
+      await expect(page.getByTestId('business-channel-template-dine-in-form')).toHaveCount(0);
+
+      await expect
+        .poll(() => observationsFor(runtime, 'getOperationsExternalProviderCandidates').length, {timeout: 20_000})
+        .toBeGreaterThan(0);
+      const providerReads = observationsFor(runtime, 'getOperationsExternalProviderCandidates');
+      for (const observation of providerReads)
+        assertOperationQuery(
+          observation,
+          {capabilityClass: 'DINE_IN', nodeType: 'STORE'},
+          'BUSINESS_CHANNEL_EXTERNAL_DINE_IN_PROVIDER_QUERY_INVALID',
+        );
+      const providerItems = responseItems(providerReads.at(-1)?.payload);
+      if (providerItems.length !== 1)
+        throw new Error(`BUSINESS_CHANNEL_EXTERNAL_DINE_IN_PROVIDER_DENOMINATOR_INVALID:${providerItems.length}`);
+      const provider = providerItems[0];
+      if (provider.providerCode !== factText(facts, ['externalDineInProviderCode']))
+        throw new Error('BUSINESS_CHANNEL_EXTERNAL_DINE_IN_PROVIDER_CODE_READBACK_INVALID');
+      const businessScope = Array.isArray(provider.businessScope) ? provider.businessScope.map(String) : [];
+      const bindableNodeTypes = Array.isArray(provider.bindableNodeTypes) ? provider.bindableNodeTypes.map(String) : [];
+      if (JSON.stringify(businessScope) !== JSON.stringify(['DINE_IN']))
+        throw new Error('BUSINESS_CHANNEL_EXTERNAL_DINE_IN_PROVIDER_SCOPE_INVALID');
+      if (JSON.stringify(bindableNodeTypes) !== JSON.stringify(['STORE']))
+        throw new Error('BUSINESS_CHANNEL_EXTERNAL_DINE_IN_PROVIDER_NODE_TYPE_INVALID');
+      break;
+    }
+    case 'business-channel-store-all-and-sales-menu-exclusion': {
+      await openStoreBusinessChannels(page, facts);
+      const candidateTable = await requireControl(page, 'BUSINESS_CHANNEL_STORE_TEMPLATE_CANDIDATE_TABLE', facts);
+      await expect(candidateTable).toContainText(factText(facts, ['externalDineInTemplateName']));
+      await expect(candidateTable).toContainText(factText(facts, ['externalDineInTemplateCode']));
+      const channelList = await requireControl(page, 'BUSINESS_CHANNEL_STORE_LIST', facts);
+      await expect(channelList).toContainText(factText(facts, ['externalDineInChannelName']));
+      await expect(channelList).toContainText(factText(facts, ['externalDineInChannelCode']));
+
+      await expect
+        .poll(
+          () =>
+            observationsFor(runtime, 'getOperationsStoreBusinessChannels').some(
+              observation => new URL(observation.url).searchParams.get('usage') === 'BUSINESS_CHANNEL',
+            ),
+          {timeout: 20_000},
+        )
+        .toBe(true);
+
+      await openSalesMenu(page, facts, true);
+      const selector = await requireControl(page, 'SALES_MENU_CHANNEL_SELECTOR', facts);
+      await selector.click();
+      recordActionForLocator(selector, 'click');
+      await loadChannelOption(page, factText(facts, ['channelRef']));
+      await expect(
+        page.getByTestId(salesMenuTestIds.channelOption(factText(facts, ['externalDineInChannelRef']))),
+      ).toHaveCount(0);
+      await page.keyboard.press('Escape');
+      await expect
+        .poll(
+          () =>
+            observationsFor(runtime, 'getOperationsStoreBusinessChannels').some(
+              observation => new URL(observation.url).searchParams.get('usage') === 'SALES_MENU',
+            ),
+          {timeout: 20_000},
+        )
+        .toBe(true);
+      appendDebugEvent({
+        kind: 'TEST_CHECKPOINT',
+        caseId: runtime.row.caseId,
+        scenarioId: runtime.row.scenarioId,
+        checkpoint: 'EXTERNAL_DINE_IN_STORE_MANAGEMENT_AND_SALES_MENU_SEPARATION_PROVED',
+        externalDineInTemplateRef: factText(facts, ['externalDineInTemplateRef']),
+        externalDineInChannelRef: factText(facts, ['externalDineInChannelRef']),
+        businessChannelReadUsage: 'BUSINESS_CHANNEL',
+        salesMenuReadUsage: 'SALES_MENU',
+      });
+      break;
+    }
     case 'sales-menu-entry-and-channels':
       await verifyChannelDropdownCoverage(page, facts);
       await chooseChannel(page, facts, runtime);
@@ -2236,12 +2374,23 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await clickBoundControl(page, 'SALES_MENU_MENU_PUBLISH', facts, '更新到前台');
       await requireControl(page, 'SALES_MENU_PUBLISH_DRAWER', facts);
       const publishFailure = await installOneShotFailure(page, 'publishOperationsSalesMenu');
+      const publicationPreviewCountBeforeSuccessfulPublish = selectedMenuOperationObservations(
+        runtime,
+        facts,
+        'getOperationsSalesMenuPublicationPreview',
+      ).length;
       await clickBoundControl(page, 'SALES_MENU_PUBLISH_SUBMIT', facts, '更新到前台');
       await publishFailure.waitForIntercept();
       await waitForFailedOperation(runtime, 'publishOperationsSalesMenu');
       await clickBoundControl(page, 'SALES_MENU_PUBLISH_SUBMIT', facts, '更新到前台');
       await waitForOperation(runtime, 'publishOperationsSalesMenu', 2);
       await expect(visibleTestId(page, salesMenuTestIds.feedback)).toContainText('本系统已生成新的前台菜单');
+      await waitForSelectedMenuOperation(
+        runtime,
+        facts,
+        'getOperationsSalesMenuPublicationPreview',
+        publicationPreviewCountBeforeSuccessfulPublish + 1,
+      );
       break;
     }
     case 'sales-menu-auth-and-scope-isolation': {
@@ -2338,10 +2487,17 @@ test.describe('销售菜单 · generated browser-L2 contract', () => {
                 passwordEnv: 'R5_L2_OPERATIONS_READONLY_LOGIN_PASSWORD',
                 roleLabelEnv: 'R5_L2_OPERATIONS_READONLY_ROLE_LABEL',
               }
-            : undefined,
+            : row.caseId === 'business-channel-external-dine-in-template'
+              ? projectBusinessChannelProfile
+              : undefined,
         );
-        await openSalesMenu(page, facts, row.parameter.controlKeys.includes('SALES_MENU_CHANNEL_SELECTOR'));
         await runDeclaredAction(runtime, async () => {
+          // Authentication is setup. The first owner page read is part of the
+          // declared Journey boundary so its generated responses cannot finish
+          // outside the action and disappear from the observation/join proof.
+          if (row.caseId === 'business-channel-external-dine-in-template')
+            await openProjectBusinessChannels(page, facts);
+          else await openSalesMenu(page, facts, row.parameter.controlKeys.includes('SALES_MENU_CHANNEL_SELECTOR'));
           await runCaseJourney(page, runtime);
           await responseObserver.drain();
           await assertExpectedOperations(runtime);

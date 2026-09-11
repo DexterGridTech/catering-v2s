@@ -630,7 +630,11 @@ function PlatformInvitationDetailDrawer({
     ? [
         {
           key: 'audit',
-          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.invitation.audit}>操作历史</AdminDetailActionLabel>,
+          label: (
+            <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.invitation.audit}>
+              操作历史
+            </AdminDetailActionLabel>
+          ),
           onClick: onAudit,
         },
         ...invitationCommands.items,

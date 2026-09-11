@@ -141,11 +141,7 @@ public interface CatalogOwnerApi {
     }
 
     record SalesMenuOrderOptionValueFact(
-            UUID definitionValueRef,
-            String name,
-            int displayOrder,
-            boolean defaultValue,
-            Long extraPrice) {}
+            UUID definitionValueRef, String name, int displayOrder, boolean defaultValue, Long extraPrice) {}
 
     /** Structured SKU summary; display text is deliberately left to the consumer. */
     record SalesMenuSkuSummary(

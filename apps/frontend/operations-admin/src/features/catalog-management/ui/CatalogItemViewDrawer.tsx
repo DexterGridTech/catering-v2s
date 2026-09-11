@@ -164,7 +164,9 @@ export function CatalogItemViewDrawer({
             ? {
                 key: 'enable',
                 label: (
-                  <AdminDetailActionLabel testIdValue={catalogTestIds.control.statusEnable}>启用</AdminDetailActionLabel>
+                  <AdminDetailActionLabel testIdValue={catalogTestIds.control.statusEnable}>
+                    启用
+                  </AdminDetailActionLabel>
                 ),
                 onClick: () => confirmStatusChange('ENABLED'),
               }
@@ -173,7 +175,9 @@ export function CatalogItemViewDrawer({
             ? {
                 key: 'disable',
                 label: (
-                  <AdminDetailActionLabel testIdValue={catalogTestIds.control.statusDisable}>停用</AdminDetailActionLabel>
+                  <AdminDetailActionLabel testIdValue={catalogTestIds.control.statusDisable}>
+                    停用
+                  </AdminDetailActionLabel>
                 ),
                 onClick: () => confirmStatusChange('DISABLED'),
               }
@@ -207,7 +211,9 @@ export function CatalogItemViewDrawer({
           ? [
               {
                 key: 'edit',
-                label: <AdminDetailActionLabel testIdValue={catalogTestIds.static.itemEdit}>编辑</AdminDetailActionLabel>,
+                label: (
+                  <AdminDetailActionLabel testIdValue={catalogTestIds.static.itemEdit}>编辑</AdminDetailActionLabel>
+                ),
                 onClick: onEdit,
               },
             ]
@@ -258,10 +264,7 @@ export function CatalogItemViewDrawer({
       }
       extra={
         actionItems.length > 0 ? (
-          <AdminDetailActionMenu
-            items={actionItems}
-            triggerTestId={catalogTestIdControls.view.action}
-          />
+          <AdminDetailActionMenu items={actionItems} triggerTestId={catalogTestIdControls.view.action} />
         ) : undefined
       }
       {...adminWideDrawerSurfaceProps}

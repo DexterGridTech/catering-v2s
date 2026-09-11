@@ -8,6 +8,10 @@ CLAUDE_REVIEW_REPORT=doc/review/platform/2026-09-09-v2s-business-channel-store-v
 CLAUDE_REVIEW_VERDICT=NO-GO;M/S/N=1/2/1;SOURCE=USER_PROVIDED_CLAUDE_REVIEW
 CLAUDE_REVIEW_STATUS=AUTHOR_REMEDIATION_APPLIED;FOLLOW_UP_REQUIRED
 CLAUDE_REVIEW=COMPLETED_NO_GO;FOLLOW_UP_ON_CURRENT_BYTES_REQUIRED
+CLAUDE_FOLLOW_UP_REPORT=doc/review/platform/2026-09-09-v2s-business-channel-store-visibility-design-review-followup-claude.md
+CLAUDE_FOLLOW_UP_VERDICT=GO;M/S/N=0/0/2;SOURCE=USER_PROVIDED_CLAUDE_FOLLOW_UP_REVIEW
+CLAUDE_FOLLOW_UP_STATUS=COMPLETED_GO
+IMPLEMENTATION_AUTHORITY=DEXTER_AUTHORIZED_IN_CURRENT_TASK
 
 # Claude 评审交接：经营渠道模板门店可见范围
 
@@ -73,6 +77,10 @@ Codex 已完成当前仓库入口、六维 project-memory recall、既有 busine
 ## 授权边界
 
 本次 review 只裁定设计是否完整、合理、可实施；它不授权生产代码、契约生成、迁移、测试、seed、reset、DEV、backend acceptance、browser L2、UAT、部署、切流或任何 Git 操作。即使 Claude 给出 GO，也必须等待 Dexter 明确的实施授权；本批当前 IMPLEMENTATION_AUTHORITY=false。
+
+## 当前 follow-up 结果与实施授权（2026-09-09）
+
+Claude follow-up DESIGN review 已对修订后的当前设计字节给出 `GO`（`M/S/N=0/0/2`），详见 `doc/review/platform/2026-09-09-v2s-business-channel-store-visibility-design-review-followup-claude.md`。N-01 只要求记录三种门店状态门槛的维护期取舍，不改变列表/详情/编辑/候选行为；N-02 只要求将幂等反例措辞改为不同的最终集合。Dexter 已在当前任务中明确授权直接进入本 Journey 实施、全量验收以及测试通过后的受管 reset/DEV/seed。上面的历史授权边界保留为该次 follow-up 之前的历史记录；当前实施授权不来自 Claude 或本文件，而来自 Dexter 当前任务的明确指派，并仍不包含其他 owner、UAT、部署或切流。
 
 ## 可直接复制给 Claude 的话术
 

@@ -1,9 +1,9 @@
 ---
 title: v2s 经营渠道模板门店可见范围 implementation-facing 详设
-status: PROPOSED_FOR_REVIEW
+status: ACTIVE_IMPLEMENTATION_AUTHORIZED
 createdAt: 2026-09-08
 decisionOwner: Dexter
-implementationAuthority: false
+implementationAuthority: true
 journeyRef: doc/decisions/2026-09-08-v2s-business-channel-store-visibility-journey-amendment.md
 iaRef: doc/decisions/2026-09-08-v2s-business-channel-store-visibility-ia.md
 interactionRef: doc/decisions/2026-09-08-v2s-business-channel-store-visibility-ui-interaction.md
@@ -18,14 +18,14 @@ SKILL_USED=cs-writing-plans@72190c88b2b5a67a96b91d66aa72b9161913e10e8769da3f28a2
 
 ~~~text
 DESIGN_KIND=IMPLEMENTATION_FACING
-DESIGN_STATUS=PROPOSED_FOR_REVIEW
-IMPLEMENTATION_AUTHORITY=false
-ROADMAP_AUTHORIZATION=R5_IMPLEMENTATION_AUTHORIZED=true; current task explicitly design-only
-REVIEW_REQUIRED=FRESH_INDEPENDENT_DESIGN_REVIEW_AND_CLAUDE_REVIEW
+DESIGN_STATUS=ACTIVE_IMPLEMENTATION_AUTHORIZED
+IMPLEMENTATION_AUTHORITY=true
+ROADMAP_AUTHORIZATION=R5_IMPLEMENTATION_AUTHORIZED=true; current task explicitly implementation-authorized by Dexter
+REVIEW_REQUIRED=FRESH_INDEPENDENT_IMPLEMENTATION_REVIEW_AND_CLAUDE_REVIEW
 RUNTIME_EXECUTION=NOT_RUN
 ~~~
 
-本稿是对既有 business-channel implementation design 的增量修订，不改历史文档。当前只交付设计、计划、审查输入和 Claude brief；不得因 Roadmap 的 R5 授权字段而越过 Dexter 当前“不要进入实施”的直接边界。不得写生产 Java/TypeScript、OpenAPI/generated 文件、migration、acceptance、seed 或 runtime。
+本稿是对既有 business-channel implementation design 的增量修订，不改历史文档。Claude follow-up DESIGN review 已为 `GO`（M=0/S=0/N=2），Dexter 已明确授权本 Journey 实施、验收及受管 reset/DEV/seed；本次实现仍不得扩大到其他 owner、UAT、部署或切流。
 
 ## 2. 真实业务目标与方案选择
 
@@ -69,7 +69,9 @@ PRIMARY KEY (template_ref, store_ref)
 - scope 切换与关系集合变更在同一个 template REQUIRED command transaction 内完成。
 - scope 变更不触碰 business_channel 行、channel status、channel version、binding 或任何下游状态事件。
 
-“全部”动态覆盖未来项目门店、部分集合允许为空、VOIDED 关系可在保存时保留、整体替换和 visible-store 读取 filter 均已由 Dexter 裁决；本稿只保留实现约束。当前仍需 Claude 对修订后的当前字节做 follow-up review，但这不构成实施授权。
+“全部”动态覆盖未来项目门店、部分集合允许为空、VOIDED 关系可在保存时保留、整体替换和 visible-store 读取 filter 均已由 Dexter 裁决；Claude follow-up DESIGN review 已为 `GO`。本稿保留实现约束并受当前 Dexter 实施授权约束。
+
+状态门槛取舍：列表计数与只读详情采用“非作废”口径，保留可恢复的 `DISABLED` 门店事实但排除终态 `VOIDED`；候选与建渠道采用“当前可用”口径，只允许 `ENABLED`，避免 `DISABLED` 门店取得新建资格；编辑抽屉采用“可维护”口径，读取 `ALL` 关系行并标注 `VOIDED`，允许管理员决定是否剔除。三种口径故意不同，统一任一口径都会改变已裁决行为。
 
 ## 4. CP 交付单元
 
@@ -207,6 +209,8 @@ AND (
 
 owner 新增只读 page：从 relation join template scope，并 task-shaped join organization.store 读取 name/code/status；拒绝 PROJECT/非当前 project template；按 stable storeCode, storeRef 排序，返回 nextCursor/total。该同一 operation 接受 `storeStatusFilter=NON_VOIDED|ALL`：项目只读详情使用 `NON_VOIDED`，编辑 Drawer 使用 `ALL`；响应均带 storeStatus，门店状态仅是 readback 独立事实；不在该 read 中改变关系。
 
+三条门店状态门槛刻意不同：列表 `visibleStoreCount` 与只读详情按 `NON_VOIDED`，采用可恢复口径；候选与建渠道按 `ENABLED`，采用当前可用口径；编辑 Drawer 按 `ALL`，采用可维护口径。不得把三者统一：收紧会把 DISABLED 门店错误排除在可维护名单之外，放松会让不可用门店进入新建候选，隐藏 VOIDED 行还会与整体替换保存耦合而静默删除关系。
+
 ### 7.5 Store channel create and existing read
 
 - STORE createChannel 在同一 command transaction 锁/重读 template，验证 template ENABLED、operator STORE、目标 store 当前 ENABLED、store 属于 template project、scope 为 ALL 或 relation EXISTS；失败返回 BUSINESS_CHANNEL_STORE_VISIBILITY_STALE、目标门店状态/范围 typed validation，或现有等价问题。
@@ -289,21 +293,22 @@ No zero-consumer method is planned. New operation must be registered in source r
 | path | change |
 | --- | --- |
 | apps/frontend/operations-admin/src/features/business-channel/ui/ProjectBusinessChannelPage.tsx | 范围摘要列；传 template view 到 detail/edit；精确 refresh |
-| apps/frontend/operations-admin/src/features/business-channel/ui/BusinessChannelTemplateDrawer.tsx | STORE scope radio、selected store draft、candidate add/remove、create/update body；PROJECT 清理 stale state |
+| apps/frontend/operations-admin/src/features/business-channel/ui/BusinessChannelTemplateDrawer.tsx | STORE scope radio、selected store draft、打开 picker/确认最终名单、删除、create/update body；PROJECT 清理 stale state |
+| apps/frontend/operations-admin/src/features/business-channel/ui/BusinessChannelTemplateStorePickerModal.tsx | 独立门店搜索选择 Modal；候选分页、Checkbox 临时集合、错误恢复、取消/确定和关闭后焦点回收 |
 | apps/frontend/operations-admin/src/features/business-channel/ui/BusinessChannelTemplateDetailDrawer.tsx | scope summary、visible store Page、status-independent store facts；复用 action menu |
-| apps/frontend/operations-admin/src/features/business-channel/ui/StoreBusinessChannelPage.tsx | 候选表消费 owner-filtered items；创建选择器与同一 candidate collection 对齐；channel list 不改过滤 |
+| apps/frontend/operations-admin/src/features/business-channel/ui/StoreBusinessChannelPage.tsx | 候选表只展示模板名称/编码/接入类型/订单类型并消费 owner-filtered items；不展示项目模板门店可见范围；创建选择器与同一 candidate collection 对齐；channel list 不改过滤 |
 | apps/frontend/operations-admin/src/features/business-channel/application/queries.ts | visible-store Page query；candidate refresh identity 包含 project/store |
-| apps/frontend/operations-admin/src/app/automation/businessChannelTemplateTestIds.ts | scope/add/search/add-row/remove-row/voided-state/read/candidate/create/form controls 的唯一常量源；迁移本批新增 action 的 inline literal |
+| apps/frontend/operations-admin/src/app/automation/businessChannelTemplateTestIds.ts | scope/add/picker modal/search/list/option/retry/cancel/confirm/remove/voided-state/read/candidate/create/form controls 的唯一常量源；迁移本批新增 action 的 inline literal |
 | apps/frontend/operations-admin/src/features/business-channel/model/businessChannelCodeLabels.ts | scope enum 业务 label/help text |
 | libraries/frontend/admin-ui-foundation/ | 只复用，不在 app 重写 Drawer/cursor/overlay/name-code/refresh primitive |
 
 ### 13.2 UI action ownership
 
-“添加门店”是本地草稿操作，不是 organization 写；“保存”才调用 business-channel owner command。删除已选门店同样只改变草稿，取消回到旧 readback。编辑 Drawer 必须加载全部关系行并标注 VOIDED，不能把编辑读取误用为只读详情的非作废过滤。候选区必须以 useCursorCandidates 的 debounce/accumulate/dedup 行为实现，不能把全量 stores 预加载到页面。
+“添加门店”是本地草稿操作，不是 organization 写；Drawer 的“保存”才调用 business-channel owner command。Drawer 只展示已选最终草稿并支持逐行删除；“添加门店”打开独立 picker Modal，Modal 内以 useCursorCandidates 的 debounce/accumulate/dedup 行为搜索候选，以 Checkbox 维护临时集合，“确定”才回写 Drawer，“取消”不改变 Drawer 草稿。编辑 Drawer 必须加载全部关系行并标注 VOIDED，不能把编辑读取误用为只读详情的非作废过滤；候选结果不包含 VOIDED/DISABLED 关系，但不得因此静默删除它们。
 
 ### 13.3 TestId/L2 admission
 
-新增真实动作/观察节点的 TestId 分母以 UI interaction §3.3 的完整 roster 为准：范围摘要、scope radio group/options、添加门店、候选搜索、候选行添加、selected row 删除、VOIDED 标注、visible-store read retry/page、候选表/新建入口、template select、template formSubmit/formCancel（只有实际渲染的 read-only/page controls 计入）。实现时必须把当前 BusinessChannelTemplateDrawer.tsx footer 的 inline testId 迁移到 `businessChannelTemplateTestIds.ts`；每个键只能在该文件定义一次，绑定表中声明的真实 Radio/Button/Input/Table/pagination node。`COMPOSITE_OPTION_ANCHOR` 只作 Radio.Group 组合锚点，L2 必须点击 option-level Radio。当前设计阶段不创建/修改 L2 runner，不报告 L2 PASS。
+新增真实动作/观察节点的 TestId 分母以 UI interaction §3.3 的完整 roster 为准：范围摘要、scope radio group/options、添加门店、picker Modal、搜索、候选列表/Checkbox、重试、取消、确定、selected row 删除、VOIDED 标注、visible-store read retry/page、候选表/新建入口、template select、template formSubmit/formCancel（只有实际渲染的 read-only/page controls 计入）。每个键只能在 `businessChannelTemplateTestIds.ts` 定义一次，绑定表中声明的真实 Radio/Modal/Input/Checkbox/Button/Table/pagination node；Modal 容器只作观察锚点，不能替代真实动作节点。`COMPOSITE_OPTION_ANCHOR` 只作 Radio.Group 组合锚点，L2 必须点击 option-level Radio。当前仓没有经营渠道模板专用 L2 spec，本次不修改无关 runner；如后续增加该专用 case，先按 roster 完成 binding/admission，不能把 static/typecheck PASS 报成 L2 PASS。
 
 ## 14. Backend acceptance and fixture design
 
@@ -317,7 +322,7 @@ No zero-consumer method is planned. New operation must be registered in source r
 | business-channel.store-visibility-invalid-inputs | project template、foreign project/store、duplicate refs | direct HTTP null/unknown/foreign/duplicate；另以 SELECTED 空集合做合法正例 | typed reject 只覆盖不适用/foreign/duplicate；空集合保存成功并返回零可见 count；无 foreign identity leakage |
 | business-channel.store-visibility-existing-channel-retained | store A visible and already created channel | remove A visibility, then list/detail existing channel | candidate removes template；existing channel still returned with independent statuses |
 | business-channel.store-visibility-stale-create-rejected | page candidate before remove；project owner removes A | stale store POST create | BUSINESS_CHANNEL_STORE_VISIBILITY_STALE；channel count/readback unchanged |
-| business-channel.store-visibility-idempotency-and-cas | same template | replay same key；same key different diff；stale version | same response on replay；hash conflict/typed reject；VERSION_CONFLICT；no partial rows |
+| business-channel.store-visibility-idempotency-and-cas | same template | replay same key；same key with a different final visible-store set；stale version | same response on replay；hash conflict/typed reject；VERSION_CONFLICT；no partial rows |
 | business-channel.store-visibility-visible-store-page | selected set crosses page boundary | visible-stores cursor page | stable order、total/nextCursor、names/codes/status；no raw-only UI identity |
 | business-channel.store-visibility-voided-relation-retained-then-removed | SELECTED relation includes store A；A 后变为 VOIDED | edit Drawer 用 `storeStatusFilter=ALL` 读到 A 并显示作废；不剔除保存一次无关改动；再剔除 A 保存 | 第一次保存后关系行仍在且 readback 带 VOIDED；第二次保存后关系行才消失；count 两次均只数非 VOIDED |
 | business-channel.store-visibility-disabled-store-candidate-blocked | 同 project 的 DISABLED/VOIDED target store；模板仍 ENABLED 且范围命中 | candidate HTTP 与 stale/直接 create HTTP | 候选不返回模板；create 被 owner typed status/visibility gate 拒绝；既有 channel read 不受影响 |
@@ -327,7 +332,7 @@ Fixture requirements:
 - 至少两家同项目 ENABLED store，另保留 foreign store 与 DISABLED/VOIDED lifecycle negative fixture；不能只用单店 fixture 证明 partial。
 - 现有 business-channel fixture helper 优先扩展为同 project store pair；不得用“渠道已存在”代替可见关系。
 - 必须保留一个已 VOIDED 门店关系，验证编辑 Drawer 全量读取、作废标注、无关保存保留，再次主动剔除后关系才删除；门店 status 不参与保存校验。
-- 后端 acceptance 只在未来获得明确动态授权后运行；本批不执行。
+- 后端 acceptance、browser L2 与 reset/DEV/seed 仅在获得对应动态授权后通过受管入口执行；本设计不承载执行结果，结果必须以实际 run 产物为准。
 
 ## 15. Seed design（只设计，不执行）
 
@@ -361,7 +366,7 @@ DEV start/restart 不 seed；reset、seed、backend acceptance、browser L2 必�
 
 `D-BCV-01` 已删除：ALL 是动态项目成员开关，不存在需要单独裁决的快照选项。D-BCV-04/05/06 原先的“是否”问题已收敛为上述实施形态，不再是未决产品事项。
 
-本稿仍为 `PROPOSED_FOR_REVIEW`：用户提供的 Claude DESIGN review 要求对本次修订后的当前字节做 follow-up review。IMPLEMENTATION_AUTHORITY 仍为 false；在该 review 完成且 Dexter 另行授权前，实施者不得把本稿作为生产实施指令。
+本稿状态为 `ACTIVE_IMPLEMENTATION_AUTHORIZED`：Claude follow-up DESIGN review 已 `GO`（M=0/S=0/N=2），Dexter 已授权实施。仍须在全部实现后完成 fresh `REVIEW_TARGET=IMPLEMENTATION` 独立盲审及 Claude 最终 review handoff。
 
 ## 17. Stop conditions
 

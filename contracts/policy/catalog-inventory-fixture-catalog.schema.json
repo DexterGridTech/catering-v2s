@@ -1383,6 +1383,10 @@
           ],
           "description": "nullable standard sale price"
         },
+        "standardSalePriceCents": {
+          "type": "integer",
+          "description": "SKU standard sale price in minor currency units"
+        },
         "skuCodes": {
           "type": "array",
           "description": "SKU codes",

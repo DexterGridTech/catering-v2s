@@ -156,8 +156,8 @@
   },
   "closure": {
     "sourceOperationCount": 148,
-    "plannedAdditionalOperationCount": 62,
-    "expectedResolvedOperationCount": 210,
+    "plannedAdditionalOperationCount": 63,
+    "expectedResolvedOperationCount": 211,
     "expectedUnresolvedOperationCount": 0,
     "expectedAmbiguousOperationCount": 0,
     "sourceComponentCount": 240,
@@ -167,7 +167,7 @@
     "expectedAmbiguousComponentCount": 0,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 137,
+      "operations-admin": 138,
       "public": 12
     }
   }

@@ -3,6 +3,7 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public enum OwnerBindingViewBusinessScopeItem {
     TAKEAWAY,
+    DINE_IN,
     GROUP_BUY,
     ORDER_SYNC,
     MEMBER_BENEFIT;

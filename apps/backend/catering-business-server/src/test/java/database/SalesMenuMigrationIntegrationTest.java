@@ -49,8 +49,7 @@ class SalesMenuMigrationIntegrationTest {
             new TriggerFact("sales_version_item", "tr_sales_version_item_published_immutable"),
             new TriggerFact("sales_version_item_sku", "tr_sales_version_item_sku_published_immutable"),
             new TriggerFact(
-                    "sales_version_item_order_option",
-                    "tr_sales_version_item_order_option_published_immutable"),
+                    "sales_version_item_order_option", "tr_sales_version_item_order_option_published_immutable"),
             new TriggerFact(
                     "sales_version_item_order_option_value",
                     "tr_sales_version_item_order_option_value_published_immutable"),
@@ -574,11 +573,10 @@ class SalesMenuMigrationIntegrationTest {
         insertCollection(collection, UUID.randomUUID(), UUID.randomUUID(), "Target identity menu");
         insertSalesItem(salesItem, collection, UUID.randomUUID());
 
-        String insertCurrent =
-                "INSERT INTO sales_menu.sales_manual_status_current "
-                        + "(sales_item_ref, channel_ref, target_kind, target_ref, state, reason, "
-                        + "changed_at_epoch_millis, actor_type, actor_id, actor_display_snapshot, version) "
-                        + "VALUES (?, ?, ?, ?, 'MANUAL_SOLD_OUT', 'temporary', ?, 'SYSTEM', NULL, 'system', 1)";
+        String insertCurrent = "INSERT INTO sales_menu.sales_manual_status_current "
+                + "(sales_item_ref, channel_ref, target_kind, target_ref, state, reason, "
+                + "changed_at_epoch_millis, actor_type, actor_id, actor_display_snapshot, version) "
+                + "VALUES (?, ?, ?, ?, 'MANUAL_SOLD_OUT', 'temporary', ?, 'SYSTEM', NULL, 'system', 1)";
         execute(insertCurrent, salesItem, channel, "ITEM", salesItem, NOW);
         execute(insertCurrent, salesItem, channel, "SKU", sku, NOW);
         execute(insertCurrent, salesItem, channel, "ORDER_OPTION_VALUE", optionValue, NOW);
@@ -622,11 +620,10 @@ class SalesMenuMigrationIntegrationTest {
                 UUID.randomUUID(),
                 NOW);
 
-        String insertEvent =
-                "INSERT INTO sales_menu.sales_manual_status_event "
-                        + "(event_ref, sales_item_ref, channel_ref, target_kind, target_ref, event_kind, reason, "
-                        + "actor_type, actor_id, actor_display_snapshot, occurred_at_epoch_millis) "
-                        + "VALUES (?, ?, ?, ?, ?, 'SOLD_OUT', 'temporary', 'SYSTEM', NULL, 'system', ?)";
+        String insertEvent = "INSERT INTO sales_menu.sales_manual_status_event "
+                + "(event_ref, sales_item_ref, channel_ref, target_kind, target_ref, event_kind, reason, "
+                + "actor_type, actor_id, actor_display_snapshot, occurred_at_epoch_millis) "
+                + "VALUES (?, ?, ?, ?, ?, 'SOLD_OUT', 'temporary', 'SYSTEM', NULL, 'system', ?)";
         execute(insertEvent, UUID.randomUUID(), salesItem, channel, "SKU", sku, NOW);
         assertSqlFailure(
                 "an unknown event target kind must be rejected",

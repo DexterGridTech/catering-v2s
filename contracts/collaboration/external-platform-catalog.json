@@ -71,6 +71,18 @@
           "attributeValues": {}
         }
       ]
+    },
+    {
+      "externalSystemCode": "STORE_OWNED_MINI_PROGRAM",
+      "displayName": "门店自有点单小程序",
+      "catalogStatus": "PLANNED",
+      "capabilities": [
+        {
+          "capabilityClass": "DINE_IN",
+          "displayName": "到店点餐",
+          "attributeValues": {}
+        }
+      ]
     }
   ],
   "providerProfiles": [
@@ -143,6 +155,16 @@
       "authenticationKind": "NO_MAPPING",
       "unbindKind": "LOCAL_ONLY",
       "catalogStatus": "AVAILABLE"
+    },
+    {
+      "providerCode": "STORE_OWNED_MINI_PROGRAM_DINE_IN",
+      "displayName": "门店自有点单小程序·到店点餐",
+      "externalSystemCode": "STORE_OWNED_MINI_PROGRAM",
+      "businessScope": ["DINE_IN"],
+      "bindableNodeTypes": ["STORE"],
+      "authenticationKind": "EXTERNAL_GRANT",
+      "unbindKind": "LOCAL_ONLY",
+      "catalogStatus": "PLANNED"
     }
   ]
 }

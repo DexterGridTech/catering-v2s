@@ -12,7 +12,7 @@ const storePage = read('features/business-channel/ui/StoreBusinessChannelPage.ts
 test('business-channel bounded collections use one fixed-bound read', () => {
   assert.match(operationsQueries, /collectCursorPages/);
   assert.match(operationsQueries, /BUSINESS_CHANNEL_CANDIDATE_PAGE_SIZE/);
-  assert.equal((operationsQueries.match(/pageSize: BUSINESS_CHANNEL_CANDIDATE_PAGE_SIZE/g) ?? []).length, 2);
+  assert.equal((operationsQueries.match(/pageSize: BUSINESS_CHANNEL_CANDIDATE_PAGE_SIZE/g) ?? []).length, 3);
   assert.doesNotMatch(operationsQueries, /BUSINESS_CHANNEL_BOUNDED_READ_SIZE/);
   assert.equal((operationsQueries.match(/sortKey: sort\.sortKey/g) ?? []).length, 4);
   assert.equal((operationsQueries.match(/sortDirection: sort\.sortDirection/g) ?? []).length, 4);

@@ -57,6 +57,9 @@ final class CollaborationAcceptanceScenarios {
     private static final RouteIdentity OPERATIONS_CHANNEL_CREATE = new RouteIdentity(
             "createOperationsBusinessChannel",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels");
+    private static final RouteIdentity OPERATIONS_CHANNEL_DETAIL = new RouteIdentity(
+            "getOperationsBusinessChannelDetail",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}");
     private static final RouteIdentity OPERATIONS_OWNER_BINDING_CREATE = new RouteIdentity(
             "createOperationsOwnerBinding",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding");
@@ -276,6 +279,162 @@ final class CollaborationAcceptanceScenarios {
                 expectedBindableNodeTypes,
                 JsonNodeType.ARRAY,
                 "BUSINESS: enabled provider candidate keeps bindable-node order");
+    }
+
+    @AcceptanceScenario(
+            id = "collaboration.dine-in-capability-readback",
+            module = "COLLABORATION",
+            operation = "dineInCapabilityReadback")
+    void dineInCapabilityReadback(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        PlatformFixture fixture = platformFixture(context, "PROJECT");
+        String root = "/api/platform/group-workspaces/" + fixture.fixture().groupWorkspaceKey();
+        BackendAcceptanceTest.Response tree = context.get(
+                TREE, root + "/external-collaboration", fixture.session().cookie(), Set.of(200));
+        JsonNode system = find(tree.json().path("externalSystems"), "externalSystemCode", "STORE_OWNED_MINI_PROGRAM");
+        JsonNode capability = find(system.path("capabilities"), "capabilityClass", "DINE_IN");
+        String capabilityDisplayName = capability.path("displayName").asText();
+        assertEquals("到店点餐", capabilityDisplayName, "BUSINESS: DINE_IN capability is read back");
+        assertTrue(
+                capability
+                                .path("attributeValues")
+                                .path("groupBuyMappingDirection")
+                                .isNull()
+                        && capability
+                                .path("attributeValues")
+                                .path("menuCollaborationDirection")
+                                .isNull(),
+                "BUSINESS: external DINE_IN has no POS/QR/KIOSK terminal-form attributes");
+        for (String terminalForm : List.of("POS", "QR", "KIOSK")) {
+            assertFalse(
+                    system.path("capabilities").toString().contains("\"capabilityClass\":\"" + terminalForm + "\""),
+                    "BUSINESS: terminal form " + terminalForm + " is not an external capability");
+        }
+        JsonNode provider =
+                find(tree.json().path("providerProfiles"), "providerCode", "STORE_OWNED_MINI_PROGRAM_DINE_IN");
+        oracleEquals(
+                provider,
+                "getPlatformExternalCollaborationTree",
+                "/businessScope",
+                arrayText("DINE_IN"),
+                JsonNodeType.ARRAY,
+                "BUSINESS: store-owned provider scope is exactly DINE_IN");
+        oracleEquals(
+                provider,
+                "getPlatformExternalCollaborationTree",
+                "/bindableNodeTypes",
+                arrayText("STORE"),
+                JsonNodeType.ARRAY,
+                "BUSINESS: store-owned provider is bindable only to STORE");
+        assertEquals(
+                "EXTERNAL_GRANT",
+                provider.path("authenticationKind").asText(),
+                "BUSINESS: store-owned DINE_IN provider keeps external-grant auth");
+        assertEquals(
+                "PLANNED",
+                provider.path("catalogStatus").asText(),
+                "BUSINESS: descriptor catalog status is not enablement status");
+    }
+
+    @AcceptanceScenario(
+            id = "collaboration.dine-in-provider-candidates",
+            module = "COLLABORATION",
+            operation = "dineInProviderCandidates")
+    void dineInProviderCandidates(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        OperationsFixture fixture = operationsStoreFixture(context);
+        enableProvider(context, fixture.fixture(), "STORE_OWNED_MINI_PROGRAM_DINE_IN");
+        enableProvider(context, fixture.fixture(), "MEITUAN_ISV_A");
+        BackendAcceptanceTest.Response candidates = context.get(
+                OPERATIONS_PROVIDER_CANDIDATES,
+                "/api/operations/group-workspaces/" + fixture.fixture().groupWorkspaceKey()
+                        + "/external-provider-candidates?capabilityClass=DINE_IN&nodeType=STORE&pageSize=20",
+                fixture.session().cookie(),
+                Set.of(200));
+        assertEquals(
+                1,
+                candidates.json().path("items").size(),
+                "BUSINESS: DINE_IN candidate query returns only the exact enabled DINE_IN provider");
+        JsonNode candidate = find(candidates.json().path("items"), "providerCode", "STORE_OWNED_MINI_PROGRAM_DINE_IN");
+        assertEquals(
+                "ENABLED", candidate.path("enablementStatus").asText(), "BUSINESS: candidate is workspace-enabled");
+        assertEquals(
+                "PLANNED", candidate.path("catalogStatus").asText(), "BUSINESS: PLANNED does not block enablement");
+        assertEquals(
+                arrayText("DINE_IN"),
+                candidate.path("businessScope"),
+                "BUSINESS: candidate scope is not broadened from DINE_IN");
+        assertEquals(
+                arrayText("STORE"),
+                candidate.path("bindableNodeTypes"),
+                "BUSINESS: candidate bindability is not broadened from STORE");
+        assertNull(
+                findOrNull(candidates.json().path("items"), "providerCode", "MEITUAN_ISV_A"),
+                "BUSINESS: TAKEAWAY provider is excluded from DINE_IN candidates");
+        for (JsonNode item : candidates.json().path("items")) {
+            assertTrue(
+                    item.path("businessScope").toString().contains("DINE_IN"),
+                    "BUSINESS: every DINE_IN candidate declares DINE_IN scope");
+            assertFalse(
+                    item.path("businessScope").toString().contains("TAKEAWAY"),
+                    "BUSINESS: DINE_IN candidate response does not mix TAKEAWAY scope");
+        }
+    }
+
+    @AcceptanceScenario(
+            id = "collaboration.dine-in-binding-scope",
+            module = "COLLABORATION",
+            operation = "dineInBindingScope")
+    void dineInBindingScope(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        OperationsFixture fixture = operationsStoreFixture(context);
+        enableProvider(context, fixture.fixture(), "MEITUAN_ISV_A");
+        JsonNode channel = createOperationsChannelForBindingScope(context, fixture);
+        String root = "/api/operations/group-workspaces/" + fixture.fixture().groupWorkspaceKey();
+        String channelRef = channel.path("channelRef").asText();
+        String bindingPath = root + "/business-channels/" + channelRef + "/owner-binding";
+        String channelPath = root + "/business-channels/" + channelRef;
+        BackendAcceptanceTest.Response before = context.get(
+                OPERATIONS_CHANNEL_DETAIL, channelPath, fixture.session().cookie(), Set.of(200));
+        oracleNull(
+                before.json(),
+                "getOperationsBusinessChannelDetail",
+                "/bindingRef",
+                "BUSINESS: newly created channel starts without an owner binding");
+        assertEquals(
+                "UNBOUND",
+                before.json().path("bindingStatus").asText(),
+                "BUSINESS: newly created channel reports the unbound binding status");
+        long beforeVersion = before.json().path("version").asLong();
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("providerCode", "MEITUAN_ISV_A");
+        body.put("capabilityClass", "DINE_IN");
+        body.put("nodeType", "STORE");
+        body.put("nodeRef", fixture.fixture().storeId().toString());
+        body.put("bindingDisplayName", "Invalid DINE_IN scope binding");
+        body.put("externalOwnerId", null);
+        BackendAcceptanceTest.Response rejected = context.post(
+                OPERATIONS_OWNER_BINDING_CREATE, bindingPath, fixture.session().cookie(), body, headers(), Set.of(422));
+        assertEquals(
+                "BUSINESS_SCOPE_EXCEEDED",
+                rejected.problemCode(),
+                "BUSINESS: a TAKEAWAY-only provider cannot create a DINE_IN binding");
+        BackendAcceptanceTest.Response after = context.get(
+                OPERATIONS_CHANNEL_DETAIL, channelPath, fixture.session().cookie(), Set.of(200));
+        assertEquals(
+                channelRef,
+                after.json().path("channelRef").asText(),
+                "BUSINESS: rejected binding leaves the original channel readable");
+        oracleNull(
+                after.json(),
+                "getOperationsBusinessChannelDetail",
+                "/bindingRef",
+                "BUSINESS: rejected DINE_IN binding leaves no binding reference");
+        assertEquals(
+                "UNBOUND",
+                after.json().path("bindingStatus").asText(),
+                "BUSINESS: rejected DINE_IN binding leaves the channel unbound");
+        assertEquals(
+                beforeVersion,
+                after.json().path("version").asLong(),
+                "BUSINESS: rejected DINE_IN binding does not partially update channel version");
     }
 
     @AcceptanceScenario(
@@ -922,6 +1081,8 @@ final class CollaborationAcceptanceScenarios {
         templateBody.put("orderKind", "TAKEAWAY");
         templateBody.put("dineInForm", null);
         templateBody.put("providerCode", "MEITUAN_ISV_A");
+        templateBody.put("storeVisibilityScope", "ALL_PROJECT_STORES");
+        templateBody.put("visibleStoreRefs", List.of());
         BackendAcceptanceTest.Response template = context.post(
                 OPERATIONS_TEMPLATE_CREATE,
                 root + "/business-channel-templates",
@@ -956,6 +1117,48 @@ final class CollaborationAcceptanceScenarios {
                                 + channel.json().path("channelRef").asText() + "/owner-binding",
                         fixture.session().cookie(),
                         bindingBody,
+                        headers(),
+                        Set.of(200))
+                .json();
+    }
+
+    private JsonNode createOperationsChannelForBindingScope(
+            BackendAcceptanceTest.ScenarioContext context, OperationsFixture fixture) throws Exception {
+        BackendAcceptanceTest.Fixture projectFixture =
+                host.projectUserFixture(fixture.fixture(), Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
+        host.completeInvitation(context, projectFixture);
+        OperationsFixture projectOwner = new OperationsFixture(projectFixture, host.login(context, projectFixture));
+        String root = "/api/operations/group-workspaces/" + fixture.fixture().groupWorkspaceKey();
+        Map<String, Object> templateBody = new LinkedHashMap<>();
+        templateBody.put("projectRef", fixture.fixture().projectId().toString());
+        templateBody.put("templateName", "DINE_IN binding scope test");
+        templateBody.put("templateCode", "TPL-DINE-IN-SCOPE-" + UUID.randomUUID());
+        templateBody.put("accessKind", "EXTERNAL");
+        templateBody.put("operatorKind", "STORE");
+        templateBody.put("orderKind", "TAKEAWAY");
+        templateBody.put("dineInForm", null);
+        templateBody.put("providerCode", "MEITUAN_ISV_A");
+        templateBody.put("storeVisibilityScope", "ALL_PROJECT_STORES");
+        templateBody.put("visibleStoreRefs", List.of());
+        BackendAcceptanceTest.Response template = context.post(
+                OPERATIONS_TEMPLATE_CREATE,
+                root + "/business-channel-templates",
+                projectOwner.session().cookie(),
+                templateBody,
+                headers(),
+                Set.of(200));
+        Map<String, Object> channelBody = new LinkedHashMap<>();
+        channelBody.put("templateRef", template.json().path("templateRef").asText());
+        channelBody.put("ownerNodeType", "STORE");
+        channelBody.put("ownerNodeRef", fixture.fixture().storeId().toString());
+        channelBody.put("channelCode", "CH-DINE-IN-SCOPE-" + UUID.randomUUID());
+        channelBody.put("channelName", "DINE_IN binding scope test channel");
+        channelBody.put("bindingRef", null);
+        return context.post(
+                        OPERATIONS_CHANNEL_CREATE,
+                        root + "/business-channels",
+                        fixture.session().cookie(),
+                        channelBody,
                         headers(),
                         Set.of(200))
                 .json();

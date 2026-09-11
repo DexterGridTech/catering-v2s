@@ -85,10 +85,7 @@ function property(schema, name) {
 
 function assertFixedPageSize(operation) {
   const pageSize = operation?.queryParameters?.find(parameter => parameter.name === 'pageSize');
-  if (
-    !pageSize ||
-    !exact(pageSize.schema, {type: 'integer', minimum: 20, maximum: 20})
-  ) {
+  if (!pageSize || !exact(pageSize.schema, {type: 'integer', minimum: 20, maximum: 20})) {
     fail('SALES_MENU_FIXED_PAGE_SIZE_INVALID', operation.operationId);
   }
 }
@@ -116,7 +113,8 @@ function assertCursorPage(name, schema) {
 function assertPriceInteger(name, schema) {
   for (const [fieldName, field] of Object.entries(schema?.properties ?? {})) {
     if (!/PriceCents$/.test(fieldName)) continue;
-    if (field?.type !== 'integer' || field.minimum !== 0) fail('SALES_MENU_PRICE_NOT_INTEGER_CENTS', `${name}.${fieldName}`);
+    if (field?.type !== 'integer' || field.minimum !== 0)
+      fail('SALES_MENU_PRICE_NOT_INTEGER_CENTS', `${name}.${fieldName}`);
   }
 }
 
@@ -124,7 +122,13 @@ function assertSalesSchemas(document) {
   const value = schemas(document);
   if (!value || typeof value !== 'object') fail('SALES_MENU_SCHEMA_COMPONENTS_MISSING');
 
-  const cursorPages = ['SalesMenuPage', 'SalesMenuItemPage', 'SalesMenuPublishedItemPage', 'SalesMenuCandidatePage', 'SalesMenuOperationRecordPage'];
+  const cursorPages = [
+    'SalesMenuPage',
+    'SalesMenuItemPage',
+    'SalesMenuPublishedItemPage',
+    'SalesMenuCandidatePage',
+    'SalesMenuOperationRecordPage',
+  ];
   for (const name of cursorPages) assertCursorPage(name, value[name]);
 
   const published = value.SalesMenuPublishedItemView;
@@ -182,13 +186,19 @@ function assertSalesSchemas(document) {
 
   for (const name of ['SalesMenuAssetStageReadback', 'SalesMenuAssetReleaseReadback']) {
     const readback = value[name];
-    if (!required(readback, 'target') || readback.properties?.target?.$ref !== '#/components/schemas/SalesMenuAssetTargetReadback') {
+    if (
+      !required(readback, 'target') ||
+      readback.properties?.target?.$ref !== '#/components/schemas/SalesMenuAssetTargetReadback'
+    ) {
       fail('SALES_MENU_ASSET_READBACK_TARGET_MISSING', name);
     }
   }
 
   const schedule = value.SalesMenuSchedule;
-  if (schedule?.additionalProperties !== false || schedule?.properties?.kind?.enum?.join('|') !== 'ALL_DAY|DAILY_TIME_RANGE') {
+  if (
+    schedule?.additionalProperties !== false ||
+    schedule?.properties?.kind?.enum?.join('|') !== 'ALL_DAY|DAILY_TIME_RANGE'
+  ) {
     fail('SALES_MENU_SCHEDULE_SHAPE_INVALID');
   }
 }
@@ -201,29 +211,42 @@ function assertBusinessChannelSchema(document) {
 function assertOperations(catalog) {
   const operations = catalog?.operations;
   const byId = new Map((operations ?? []).map(operation => [operation.operationId, operation]));
-  if (!Array.isArray(operations) || catalog?.denominator?.operations !== operations.length) fail('SALES_MENU_OPERATION_DENOMINATOR_MISMATCH');
-  if (new Set(operations.map(operation => operation.operationId)).size !== operations.length) fail('SALES_MENU_OPERATION_ID_DUPLICATE');
+  if (!Array.isArray(operations) || catalog?.denominator?.operations !== operations.length)
+    fail('SALES_MENU_OPERATION_DENOMINATOR_MISMATCH');
+  if (new Set(operations.map(operation => operation.operationId)).size !== operations.length)
+    fail('SALES_MENU_OPERATION_ID_DUPLICATE');
   const affected = AFFECTED_OPERATION_IDS.map(id => byId.get(id));
   if (affected.some(operation => !operation)) fail('SALES_MENU_AFFECTED_OPERATION_MISSING');
-  if (affected.length !== 31 || new Set(affected.map(operation => operation.operationId)).size !== 31) fail('SALES_MENU_AFFECTED_OPERATION_COUNT_INVALID');
+  if (affected.length !== 31 || new Set(affected.map(operation => operation.operationId)).size !== 31)
+    fail('SALES_MENU_AFFECTED_OPERATION_COUNT_INVALID');
   if (SALES_OPERATION_IDS.filter(id => byId.has(id)).length !== 30) fail('SALES_MENU_OPERATION_COUNT_INVALID');
 
   for (const operation of affected) {
     if (operation.face !== 'operations-admin') fail('SALES_MENU_OPERATION_FACE_INVALID', operation.operationId);
-    if (operation.operationId !== 'getOperationsStoreBusinessChannels' && (operation.owner !== 'sales-menu' || operation.pageKey !== 'OPERATIONS-SALES-MENU')) {
+    if (
+      operation.operationId !== 'getOperationsStoreBusinessChannels' &&
+      (operation.owner !== 'sales-menu' || operation.pageKey !== 'OPERATIONS-SALES-MENU')
+    ) {
       fail('SALES_MENU_OPERATION_OWNER_OR_PAGE_INVALID', operation.operationId);
     }
   }
 
   const commands = SALES_COMMAND_IDS.map(id => byId.get(id));
-  if (commands.length !== 19 || commands.some(operation => !operation || operation.method === 'GET')) fail('SALES_MENU_COMMAND_DENOMINATOR_INVALID');
-  if (commands.some(operation => operation.errorSetRef !== 'OWNER_COMMAND')) fail('SALES_MENU_COMMAND_ERROR_SET_INVALID');
+  if (commands.length !== 19 || commands.some(operation => !operation || operation.method === 'GET'))
+    fail('SALES_MENU_COMMAND_DENOMINATOR_INVALID');
+  if (commands.some(operation => operation.errorSetRef !== 'OWNER_COMMAND'))
+    fail('SALES_MENU_COMMAND_ERROR_SET_INVALID');
 
   const channel = byId.get('getOperationsStoreBusinessChannels');
   if (
     !channel ||
     channel.responseSchema !== 'BusinessChannelPage' ||
-    !channel.queryParameters?.some(parameter => parameter.name === 'usage' && parameter.required === true && parameter.schema?.enum?.length === 1 && parameter.schema.enum[0] === 'SALES_MENU')
+    !channel.queryParameters?.some(
+      parameter =>
+        parameter.name === 'usage' &&
+        parameter.required === true &&
+        exact(parameter.schema?.enum, ['BUSINESS_CHANNEL', 'SALES_MENU']),
+    )
   ) {
     fail('SALES_MENU_BUSINESS_CHANNEL_USAGE_CONTRACT_INVALID');
   }
@@ -234,7 +257,8 @@ function assertOperations(catalog) {
 
   for (const operation of SALES_OPERATION_IDS.map(id => byId.get(id))) {
     if (!operation.path.includes('/sales-menus')) fail('SALES_MENU_ROUTE_MISSING_TARGET', operation.operationId);
-    if (operation.method === 'GET' && operation.idempotency?.header !== 'FORBIDDEN') fail('SALES_MENU_READ_IDEMPOTENCY_INVALID', operation.operationId);
+    if (operation.method === 'GET' && operation.idempotency?.header !== 'FORBIDDEN')
+      fail('SALES_MENU_READ_IDEMPOTENCY_INVALID', operation.operationId);
   }
 
   const stage = byId.get('stageOperationsSalesMenuAsset');
@@ -244,7 +268,9 @@ function assertOperations(catalog) {
     stage?.requestContentType !== 'multipart/form-data' ||
     !stage.path.includes('/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage') ||
     release?.requestSchema !== 'SalesMenuAssetReleaseRequest' ||
-    !release.path.includes('/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release')
+    !release.path.includes(
+      '/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release',
+    )
   ) {
     fail('SALES_MENU_ASSET_ROUTE_TARGET_INVALID');
   }
@@ -276,7 +302,9 @@ function assertAdminCatalog(document) {
 
 function assertIam(document) {
   const requirements = document?.requirements ?? [];
-  const sales = requirements.filter(requirement => SALES_OPERATION_IDS.includes(requirement.operationIdentity?.operationId));
+  const sales = requirements.filter(requirement =>
+    SALES_OPERATION_IDS.includes(requirement.operationIdentity?.operationId),
+  );
   if (sales.length !== 19) fail('SALES_MENU_IAM_COMMAND_REQUIREMENT_COUNT_INVALID');
   for (const requirement of sales) {
     if (
@@ -291,7 +319,12 @@ function assertIam(document) {
     }
   }
   const ownerRecheck = (document?.ownerRechecks ?? []).find(item => item.ownerRecheckId === 'OWNER_RECHECK_SALES_MENU');
-  if (!ownerRecheck || ownerRecheck.requiredInOwnerCommand !== true || ownerRecheck.transactionRequirement !== 'REQUIRED') fail('SALES_MENU_OWNER_RECHECK_INVALID');
+  if (
+    !ownerRecheck ||
+    ownerRecheck.requiredInOwnerCommand !== true ||
+    ownerRecheck.transactionRequirement !== 'REQUIRED'
+  )
+    fail('SALES_MENU_OWNER_RECHECK_INVALID');
 }
 
 function assertBindings(document) {
@@ -299,15 +332,23 @@ function assertBindings(document) {
   const sales = operations.filter(operation => SALES_OPERATION_IDS.includes(operation.operationId));
   if (sales.length !== 30) fail('SALES_MENU_HANDLER_BINDING_COUNT_INVALID');
   for (const operation of sales) {
-    if (operation.owner !== 'sales-menu' || operation.face !== 'operations-admin' || !operation.adapter.includes('com.catering.v2s.salesmenu.')) {
+    if (
+      operation.owner !== 'sales-menu' ||
+      operation.face !== 'operations-admin' ||
+      !operation.adapter.includes('com.catering.v2s.salesmenu.')
+    ) {
       fail('SALES_MENU_HANDLER_BINDING_INVALID', operation.operationId);
     }
-    if (operation.mode === 'COMMAND' && (operation.transactionMode !== 'REQUIRED' || operation.commandBoundary !== 'OWNER_COMMAND')) {
+    if (
+      operation.mode === 'COMMAND' &&
+      (operation.transactionMode !== 'REQUIRED' || operation.commandBoundary !== 'OWNER_COMMAND')
+    ) {
       fail('SALES_MENU_HANDLER_COMMAND_BOUNDARY_INVALID', operation.operationId);
     }
   }
   const stage = sales.find(operation => operation.operationId === 'stageOperationsSalesMenuAsset');
-  if (!stage?.adapter.endsWith('StageOperationsSalesMenuAssetMultipartOperation')) fail('SALES_MENU_ASSET_MULTIPART_BINDING_INVALID');
+  if (!stage?.adapter.endsWith('StageOperationsSalesMenuAssetMultipartOperation'))
+    fail('SALES_MENU_ASSET_MULTIPART_BINDING_INVALID');
 }
 
 function validate(base = repositoryRoot) {
@@ -318,14 +359,27 @@ function validate(base = repositoryRoot) {
   assertAdminCatalog(readJson(ADMIN_CATALOG, base));
   assertIam(readJson(IAM_MANIFEST, base));
   assertBindings(readJson(HANDLER_BINDINGS, base));
-  process.stdout.write(`SALES_MENU_CONTRACT=PASS\nAFFECTED_OPERATIONS=${AFFECTED_OPERATION_IDS.length}\nSALES_MENU_OPERATIONS=${SALES_OPERATION_IDS.length}\nSALES_MENU_COMMANDS=${SALES_COMMAND_IDS.length}\n`);
-  return {affectedOperations: AFFECTED_OPERATION_IDS.length, operations: SALES_OPERATION_IDS.length, commands: SALES_COMMAND_IDS.length};
+  process.stdout.write(
+    `SALES_MENU_CONTRACT=PASS\nAFFECTED_OPERATIONS=${AFFECTED_OPERATION_IDS.length}\nSALES_MENU_OPERATIONS=${SALES_OPERATION_IDS.length}\nSALES_MENU_COMMANDS=${SALES_COMMAND_IDS.length}\n`,
+  );
+  return {
+    affectedOperations: AFFECTED_OPERATION_IDS.length,
+    operations: SALES_OPERATION_IDS.length,
+    commands: SALES_COMMAND_IDS.length,
+  };
 }
 
 function selfTest() {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'v2s-sales-menu-contract-'));
   try {
-    for (const relativePath of [EDGE_CATALOG, SALES_SCHEMA, BUSINESS_CHANNEL_SCHEMA, ADMIN_CATALOG, IAM_MANIFEST, HANDLER_BINDINGS]) {
+    for (const relativePath of [
+      EDGE_CATALOG,
+      SALES_SCHEMA,
+      BUSINESS_CHANNEL_SCHEMA,
+      ADMIN_CATALOG,
+      IAM_MANIFEST,
+      HANDLER_BINDINGS,
+    ]) {
       const target = path.join(scratch, relativePath);
       fs.mkdirSync(path.dirname(target), {recursive: true});
       fs.copyFileSync(path.join(repositoryRoot, relativePath), target);
@@ -342,22 +396,74 @@ function selfTest() {
       } catch (error) {
         red = error.message.includes(code);
       }
-      fs.writeFileSync(target, `${JSON.stringify(JSON.parse(fs.readFileSync(path.join(repositoryRoot, mutate.file), 'utf8')), null, 2)}\n`);
+      fs.writeFileSync(
+        target,
+        `${JSON.stringify(JSON.parse(fs.readFileSync(path.join(repositoryRoot, mutate.file), 'utf8')), null, 2)}\n`,
+      );
       if (!red) fail('SALES_MENU_CONTRACT_SELF_TEST_RED_NOT_DETECTED', label);
     };
 
-    expectRed('operation denominator', {file: EDGE_CATALOG, apply(value) { value.denominator.operations += 1; }}, 'SALES_MENU_OPERATION_DENOMINATOR_MISMATCH');
-    expectRed('fixed page size', {
-      file: EDGE_CATALOG,
-      apply(value) {
-        const operation = value.operations.find(item => item.operationId === 'getOperationsSalesMenus');
-        operation.queryParameters.find(parameter => parameter.name === 'pageSize').schema.maximum = 21;
-      }
-    }, 'SALES_MENU_FIXED_PAGE_SIZE_INVALID');
-    expectRed('published merged status', {file: SALES_SCHEMA, apply(value) { delete value.components.schemas.SalesMenuPublishedItemView.properties.manualSaleStatus; }}, 'SALES_MENU_PUBLISHED_STATUS_DIMENSIONS_INVALID');
-    expectRed('asset target override', {file: SALES_SCHEMA, apply(value) { value.components.schemas.SalesMenuAssetReleaseRequest.properties.storeRef = {type: 'string'}; }}, 'SALES_MENU_ASSET_REQUEST_TARGET_OVERRIDE');
-    expectRed('wrong page capability', {file: ADMIN_CATALOG, apply(value) { value.nodes.find(node => node.key === 'PG-SALES-MENU-STORE').pageAccess.requiredDataNodeType = 'PROJECT'; }}, 'SALES_MENU_ADMIN_PAGE_INVALID');
-    expectRed('missing owner recheck', {file: IAM_MANIFEST, apply(value) { value.ownerRechecks = value.ownerRechecks.filter(item => item.ownerRecheckId !== 'OWNER_RECHECK_SALES_MENU'); }}, 'SALES_MENU_OWNER_RECHECK_INVALID');
+    expectRed(
+      'operation denominator',
+      {
+        file: EDGE_CATALOG,
+        apply(value) {
+          value.denominator.operations += 1;
+        },
+      },
+      'SALES_MENU_OPERATION_DENOMINATOR_MISMATCH',
+    );
+    expectRed(
+      'fixed page size',
+      {
+        file: EDGE_CATALOG,
+        apply(value) {
+          const operation = value.operations.find(item => item.operationId === 'getOperationsSalesMenus');
+          operation.queryParameters.find(parameter => parameter.name === 'pageSize').schema.maximum = 21;
+        },
+      },
+      'SALES_MENU_FIXED_PAGE_SIZE_INVALID',
+    );
+    expectRed(
+      'published merged status',
+      {
+        file: SALES_SCHEMA,
+        apply(value) {
+          delete value.components.schemas.SalesMenuPublishedItemView.properties.manualSaleStatus;
+        },
+      },
+      'SALES_MENU_PUBLISHED_STATUS_DIMENSIONS_INVALID',
+    );
+    expectRed(
+      'asset target override',
+      {
+        file: SALES_SCHEMA,
+        apply(value) {
+          value.components.schemas.SalesMenuAssetReleaseRequest.properties.storeRef = {type: 'string'};
+        },
+      },
+      'SALES_MENU_ASSET_REQUEST_TARGET_OVERRIDE',
+    );
+    expectRed(
+      'wrong page capability',
+      {
+        file: ADMIN_CATALOG,
+        apply(value) {
+          value.nodes.find(node => node.key === 'PG-SALES-MENU-STORE').pageAccess.requiredDataNodeType = 'PROJECT';
+        },
+      },
+      'SALES_MENU_ADMIN_PAGE_INVALID',
+    );
+    expectRed(
+      'missing owner recheck',
+      {
+        file: IAM_MANIFEST,
+        apply(value) {
+          value.ownerRechecks = value.ownerRechecks.filter(item => item.ownerRecheckId !== 'OWNER_RECHECK_SALES_MENU');
+        },
+      },
+      'SALES_MENU_OWNER_RECHECK_INVALID',
+    );
 
     process.stdout.write('SALES_MENU_CONTRACT_SELF_TEST=PASS\n');
   } finally {

@@ -402,6 +402,27 @@ const operationMetrics = ({
           databaseOperationCount: row.databaseOperationCount,
         }))
       : [];
+  const currentProgramResultReadiness = () => {
+    const sourceException = controlledExceptionRecords.find(
+      record => record?.operationId === registryRow.operationId && record.to === maxDatabaseOperationCount,
+    );
+    if (sourceException) {
+      const controlledBudgetException = controlledBudgetExceptionForOperation({
+        operationId: registryRow.operationId,
+        fromMax: sourceException.from,
+        toMax: maxDatabaseOperationCount,
+        measuredMax: maxDatabaseOperationCount,
+        records: controlledExceptionRecords,
+      });
+      return Object.freeze({
+        status: 'READY',
+        reason: 'SELF_DECIDED_IMPLEMENTATION_EXCEPTION',
+        databaseOperationBudget: {kind: 'FIXED', max: maxDatabaseOperationCount},
+        controlledBudgetException,
+      });
+    }
+    return Object.freeze({status: 'READY', databaseOperationBudget: {kind: 'FIXED', max: maxDatabaseOperationCount}});
+  };
   const readiness = currentProgramResult
     ? registryRow.operationId === 'batchTransitionOperationsCatalogItemStatus'
       ? budgetReadiness({
@@ -412,7 +433,7 @@ const operationMetrics = ({
           controlledExceptionRecords,
           requireBatchCardinalityEvidence: false,
         })
-      : Object.freeze({status: 'READY', databaseOperationBudget: {kind: 'FIXED', max: maxDatabaseOperationCount}})
+      : currentProgramResultReadiness()
     : budgetReadiness({
         operationId: registryRow.operationId,
         category,

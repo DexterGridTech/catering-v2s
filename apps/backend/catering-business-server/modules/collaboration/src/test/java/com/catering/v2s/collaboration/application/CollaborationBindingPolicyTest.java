@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 class CollaborationBindingPolicyTest {
     private static final CollaborationCatalogSource.ProviderProfileDefinition EXTERNAL =
             provider("EXTERNAL_GRANT", List.of("TAKEAWAY", "GROUP_BUY"), List.of("PROJECT", "STORE"));
+    private static final CollaborationCatalogSource.ProviderProfileDefinition DINE_IN_EXTERNAL =
+            provider("EXTERNAL_GRANT", List.of("DINE_IN"), List.of("STORE"));
     private static final CollaborationCatalogSource.ProviderProfileDefinition INTERNAL =
             provider("INTERNAL_MAPPING", List.of("ORDER_SYNC"), List.of("PROJECT"));
     private static final CollaborationCatalogSource.ProviderProfileDefinition NONE =
@@ -24,6 +26,20 @@ class CollaborationBindingPolicyTest {
 
         assertNull(shape.externalOwnerId());
         assertEquals(CollaborationBindingPolicy.PENDING_AUTHORIZATION, shape.initialStatus());
+    }
+
+    @Test
+    void storeOwnedDineInBindingUsesTheExactDineInCapability() {
+        CollaborationBindingPolicy.CreateShape shape =
+                CollaborationBindingPolicy.validateCreate(DINE_IN_EXTERNAL, "DINE_IN", "STORE", "store-ref", null);
+
+        assertEquals("DINE_IN", shape.capabilityClass());
+        assertEquals("STORE", shape.nodeType());
+        assertEquals(CollaborationBindingPolicy.PENDING_AUTHORIZATION, shape.initialStatus());
+        assertThrows(
+                CollaborationCommandApi.Problem.class,
+                () -> CollaborationBindingPolicy.validateCreate(
+                        DINE_IN_EXTERNAL, "TAKEAWAY", "STORE", "store-ref", null));
     }
 
     @Test

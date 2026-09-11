@@ -1,9 +1,9 @@
 ---
 title: v2s 经营渠道模板门店可见范围 IA 详设
-status: PROPOSED_FOR_REVIEW
+status: ACCEPTED_FOR_IMPLEMENTATION
 createdAt: 2026-09-08
 decisionOwner: Dexter
-implementationAuthority: false
+implementationAuthority: true
 journeyRef: doc/decisions/2026-09-08-v2s-business-channel-store-visibility-journey-amendment.md
 interactionRef: doc/decisions/2026-09-08-v2s-business-channel-store-visibility-ui-interaction.md
 baselineIa: doc/decisions/2026-08-19-v2s-external-collaboration-and-business-channel-ia.md
@@ -16,8 +16,8 @@ IA_SCOPE=IA-BCV-O1,IA-BCV-O2,IA-BCV-O1T,IA-BCV-O5,IA-BCV-O5C
 BUSINESS_SOURCE=doc/decisions/2026-09-08-v2s-business-channel-store-visibility-journey-amendment.md
 BASELINE_IA=doc/decisions/2026-08-19-v2s-external-collaboration-and-business-channel-ia.md
 UI_INTERACTION=doc/decisions/2026-09-08-v2s-business-channel-store-visibility-ui-interaction.md
-DEXTER_WIREFRAME_REVIEW=UNSET
-IMPLEMENTATION_AUTHORITY=false
+DEXTER_WIREFRAME_REVIEW=ACCEPTED_TEXTUAL_DESCRIPTION
+IMPLEMENTATION_AUTHORITY=true
 ```
 
 本工件只修订既有 O1/O2/O1-T/O5 的门店可见范围维度；未重定义渠道四维、session、scope、binding、template status 或既有门店渠道 owner。所有集合形态都按“候选 Page / 选中关系 Page / 模板 bounded read / 渠道 bounded read”写明，不能以客户端数组长度代替服务端集合事实。
@@ -31,6 +31,8 @@ IMPLEMENTATION_AUTHORITY=false
 - 门店候选 query 由 edge 校验 project/store pair，再由 owner 追加范围谓词；前端只能呈现 owner 返回集合。
 - 门店渠道 list/detail 只以已创建 `business_channel` 为主实体，不读取或计算“当前是否仍在模板可见关系”来隐藏它。
 
+状态门槛取舍：列表计数与只读详情采用“非作废”口径，保留可恢复的 `DISABLED` 门店事实但排除终态 `VOIDED`；候选与建渠道采用“当前可用”口径，只允许 `ENABLED`，避免 `DISABLED` 门店取得新建资格；编辑抽屉采用“可维护”口径，读取 `ALL` 关系行并标注 `VOIDED`，允许管理员决定是否剔除。三种口径故意不同，统一任一口径都会改变已裁决行为。
+
 ### 1.2 集合形态与预期规模
 
 | 集合 | 形态 | 服务端边界 | 前端行为 |
@@ -38,7 +40,7 @@ IMPLEMENTATION_AUTHORITY=false
 | 项目模板列表 | `Bounded` | 沿用 `BusinessChannelOwnerService.BOUNDED_READ_LIMIT`；超界返回 owner invariant，不截断 | 不客户端分页/过滤；表头排序触发重读 |
 | 门店模板候选 | cursor `Page` | 沿用候选 `pageSize` 上限、`nextCursor`、`total` | 门店页可用 `collectCursorPages` 汇总现有候选表；新建选择器只消费同一返回集合 |
 | 已选门店关系 | cursor `Page` | 同一个 owner visible-store read 通过 `storeStatusFilter=NON_VOIDED|ALL` 服务两个读取面；携带 `nextCursor`/`total`；不返回 raw ref-only 行 | 只读详情使用 `NON_VOIDED`；编辑 Drawer 使用 `ALL` 并显示状态，跨页添加/删除不丢本地草稿 |
-| 门店候选选择区 | page + query | 复用 organization STORE candidate 的候选形态；项目过滤、当前 ENABLED 门店门禁、debounce、selected identity | foundation `useCursorCandidates` 累加去重；不手写分页协议 |
+| 门店选择 Modal 候选 | page + query | 复用 organization STORE candidate 的候选形态；项目过滤、当前 ENABLED 门店门禁、debounce、selected identity | foundation `useCursorCandidates` 累加去重；不手写分页协议；Modal 内 Checkbox 维护临时集合 |
 | 门店渠道列表 | 既有 owner bounded/cursor read | 不增加 visibility predicate | 范围变化后仍刷新并保留既有渠道行 |
 
 `SELECTED_PROJECT_STORES` 关系数量不在本 IA 中人为发明业务上限；若实现需要批量参数或 response 上限，必须在 owner/契约 review 中给出可执行的拒绝条件，而不是静默截断。
@@ -65,12 +67,12 @@ accessibilityAndTestId=表格有 aria region/标题；范围列使用完整中�
 businessTask=创建或修改 STORE 模板的门店可见范围，并与模板基础四维一起提交为一个版本化命令。
 actorAndScenario=项目管理员已拥有项目模板写 grant；创建时填写四维，编辑时模板基础四维只读而范围可编辑。
 entryAndSurface=既有渠道模板表单 Drawer；沿用 adminDrawerSurfaceProps、useDrawerFormLifecycle、useSubmissionLifecycle、useOverlayLock。
-controlType=operatorKind=STORE 时显示 Radio：当前项目全部门店可见/当前项目部分门店可见；部分模式显示已选门店列表、添加门店候选区、逐行删除；项目模式隐藏整个分组并清空 stale 草稿。
-dataSourceAndCascade=模板行提供 scope/count；编辑读取同一个 visible-stores operation 的 `storeStatusFilter=ALL` cursor Page，详情读取使用 `NON_VOIDED`；添加区使用 organization STORE candidate 的 projectId 过滤；保存使用 owner template command 的 desired scope + 最终 `visibleStoreRefs` 集合。
+controlType=operatorKind=STORE 时显示 Radio：当前项目全部门店可见/当前项目部分门店可见；部分模式显示已选门店列表、打开“添加门店” Modal 的 Button、逐行删除；Modal 内显示搜索 Input 与候选 Checkbox 列表；项目模式隐藏整个分组并清空 stale 草稿。
+dataSourceAndCascade=模板行提供 scope/count；编辑读取同一个 visible-stores operation 的 `storeStatusFilter=ALL` cursor Page，详情读取使用 `NON_VOIDED`；“添加门店” Modal 使用 organization STORE candidate 的 projectId 过滤和 cursor continuation；Modal 确定只把临时选择回写 Drawer，取消不改变 Drawer；保存使用 owner template command 的 desired scope + 最终 `visibleStoreRefs` 集合。
 validationAndError=foreign store、最终数组重复、VERSION_CONFLICT 与模板不可编辑分别映射 typed problem；SELECTED 空集合允许保存，错误不因门店状态触发；错误在 Drawer 内呈现并保留用户输入；不由前端假设 owner 成功。
 stateAndPermission=只有项目模板 owner grant 可保存；VOIDED/unknown 禁止编辑；提交中锁定关闭/键盘/遮罩，候选和删除动作禁用；scope 变更不触碰既有渠道。
 navigationAndRefresh=保存成功以最新 readback 更新 O1/O1T、invalidate store candidate queries；取消恢复原 readback；失败保持草稿和旧版本。
-accessibilityAndTestId=Radio、添加、删除、候选搜索、保存、取消均需落真实动作节点，并由唯一 businessChannelTemplateTestIds.ts 提供常量；删除按钮需带门店 NameCode 文本和 aria-label；焦点不跳出 Drawer。
+accessibilityAndTestId=Radio、添加、Modal 搜索、候选 Checkbox、Modal 重试/取消/确定、删除、保存、取消均需落真实动作节点，并由唯一 businessChannelTemplateTestIds.ts 提供常量；删除按钮需带门店 NameCode 文本和 aria-label；Modal 打开后焦点进入搜索框，关闭后回到“添加门店”按钮。
 ```
 
 ### IA-BCV-O1T：模板详情 Drawer
@@ -93,7 +95,7 @@ accessibilityAndTestId=scope 区域有标题和零门店空态；门店列表 ro
 businessTask=门店管理员确认当前门店可新建的 STORE 模板，并从同一候选集合发起新建渠道。
 actorAndScenario=已认证门店范围 operations-admin 用户，目标 storeRef 与 projectRef 由 session/queryContext 提供。
 entryAndSurface=既有门店经营渠道管理页 O5 的“门店可接入经营渠道模板”表；不承载模板 CRUD。
-controlType=模板名称/code/范围摘要只读列；模板列详情可读；新建渠道 Drawer 的 template Select 只消费同一候选结果；不增加项目模板候选。
+controlType=模板名称/code/接入类型/订单类型只读列；不展示项目模板的门店可见范围；模板列详情可读；新建渠道 Drawer 的 template Select 只消费同一候选结果；不增加项目模板候选。
 dataSourceAndCascade=operations edge `business-channel-template-candidates` → owner `pageStoreTemplateCandidates`；谓词为 project + STORE + template ENABLED + target store ENABLED + ALL/EXISTS visibility；target store ENABLED 必须由候选 edge/owner 明确调用 organization owner/task read 实施，不能把当前 project/store pair 校验误当状态门禁，也不能由 store channel list 反推候选。
 validationAndError=候选 query 失败保持旧列表；陈旧模板创建被 owner 拒绝后显示 typed visibility stale 并刷新候选；空集显示“当前门店暂无可选的渠道模板”，不显示未知模板。
 stateAndPermission=候选 read 依 store/project pair scope，并明确拒绝或返回空给 DISABLED/VOIDED target store；模板 DISABLED/VOIDED 不进候选但既有 channel 仍可读；目标门店状态是候选资格门禁，不由前端补过滤。
@@ -132,9 +134,9 @@ forbiddenUI=[静态/组件] DOM 不得出现 store UUID、session/token、author
 
 ```text
 emptyLoadingErrorStates=[组件] 初始表单按模板 readback 填充；selected-store Page 加载时已加载的草稿不消失；候选空集显示“当前项目暂无可添加的门店”；候选读取失败保留已选草稿并提供重试；保存失败保留草稿、旧版本与错误上下文；取消恢复原 readback。
-containerBehaviorUnderLoad=[静态] Drawer body 使用 adminDrawerSurfaceProps 的唯一纵向滚动区，footer sticky 且不被内容挤出；已选列表与候选列表随 body 流式换行，不各自建立嵌套滚动；长门店名称/编码换行，删除动作列保持可见；Drawer 外框、Radio 和 footer 不得横向溢出。
+containerBehaviorUnderLoad=[静态] Drawer body 使用 adminDrawerSurfaceProps 的唯一纵向滚动区，footer sticky 且不被内容挤出；Drawer 内只展示已选列表，候选搜索与选择在独立 Modal 内完成，Modal 候选 list 承载 cursor continuation；长门店名称/编码换行，删除动作列保持可见；Drawer、Modal、Radio 和各自 footer 不得横向溢出。
 collectionShapeAndScale=已选门店与候选门店均为 cursor Page；预期规模为项目门店 1–1000 条；上界/页大小来自 owner cursor contract 与 foundation useCursorCandidates；草稿按 storeRef 去重保留，不能以当前已加载页代替最终集合，也不能静默截断。
-forbiddenUI=[静态/组件] 不得有直接写 organization.store 的动作、按“已创建渠道”生成已选门店、把删除草稿立即写成渠道删除、把空 selected 显示为“全部门店”、或在用户可见区域显示 raw UUID/权限字段。
+forbiddenUI=[静态/组件] 不得有直接写 organization.store 的动作、按“已创建渠道”生成已选门店、把删除草稿立即写成渠道删除、把空 selected 显示为“全部门店”、在 Drawer 内嵌候选搜索/逐行添加、或在用户可见区域显示 raw UUID/权限字段。
 ```
 
 ### IA-BCV-O1T
@@ -150,9 +152,9 @@ forbiddenUI=[静态/组件] 详情内容不得出现第二套编辑/启停按钮
 
 ```text
 emptyLoadingErrorStates=[组件] 候选为空显示“当前门店暂无可选的渠道模板”；加载中保留表头并显示 loading；读取失败保留上一份候选和门店上下文并提供“重试”；不得以空集文案暗示模板被删除。
-containerBehaviorUnderLoad=[静态] 候选表的唯一纵向滚动区由既有 operations-admin 内容 shell 承载；候选表列按表头对齐，模板名/编码/范围摘要换行；表头和新建入口不得横向溢出；候选与既有渠道区在同一页面中不互相撑宽。
+containerBehaviorUnderLoad=[静态] 候选表的唯一纵向滚动区由既有 operations-admin 内容 shell 承载；候选表列按表头对齐，模板名/编码换行；表头和新建入口不得横向溢出；候选与既有渠道区在同一页面中不互相撑宽。
 collectionShapeAndScale=候选为 cursor Page；预期当前门店可选模板 0–100 条；页大小、total、nextCursor 来自 owner candidate contract；新建选择器消费同一候选 identity，不在客户端抽干或重新过滤。
-forbiddenUI=[静态/组件] 候选表不得出现 PROJECT 模板、DISABLED/VOIDED 模板、对不可见模板的补偿按钮、以 channel list 反推模板、或把 template visibility 显示成渠道停用状态。
+forbiddenUI=[静态/组件] 候选表不得出现 PROJECT 模板、DISABLED/VOIDED 模板、项目模板门店可见范围列、对不可见模板的补偿按钮、以 channel list 反推模板、或把 template visibility 显示成渠道停用状态。
 ```
 
 ### IA-BCV-O5C
@@ -181,6 +183,6 @@ IA_DIMENSIONS=IA-BCV-O1,IA-BCV-O2,IA-BCV-O1T,IA-BCV-O5,IA-BCV-O5C;VISIBLE_AND_IN
 | 候选只含可见模板 | BCV-06 | O5 source/cascade | EXISTS/ALL predicate |
 | 已有渠道不受影响 | BCV-08/09 | O1T/O5C | channel list SQL 不加 visibility；acceptance red mutation |
 | owner 最终复核 | BCV-07 | O2/O5C error | same REQUIRED transaction + typed problem |
-| 已裁决产品边界 | Journey §6 | collection/status notes | 整体替换、空集合、关系保留和双过滤必须逐字一致；当前仅待 Claude 对修订字节复核 |
+| 已裁决产品边界 | Journey §6 | collection/status notes | 整体替换、空集合、关系保留和双过滤必须逐字一致；Claude follow-up 已 GO，当前按实施授权执行 |
 
-本文是 review 输入，不是实施授权。
+本文是已授权实施输入；实现不得扩大 Journey、owner、权限、operation 或数据模型范围。

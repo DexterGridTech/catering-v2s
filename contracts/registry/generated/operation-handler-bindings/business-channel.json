@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "generated-owner-operation-bindings",
   "owner": "business-channel",
-  "operationCount": 11,
-  "readCount": 5,
+  "operationCount": 12,
+  "readCount": 6,
   "commandCount": 6,
   "dispatchStrategy": "CLOSED_SWITCH",
   "commandBindingBoundary": "KIND_SPECIFIC_TYPED_METHODS",
@@ -184,6 +184,22 @@
       "copyRole": "NONE",
       "commandBoundary": "OWNER_COMMAND",
       "dispatchMethod": "updateOperationsBusinessChannelTemplate"
+    },
+    {
+      "operationId": "getOperationsBusinessChannelTemplateVisibleStores",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/visible-stores",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/visible-stores",
+      "face": "operations-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.business.channel.application.GetOperationsBusinessChannelTemplateVisibleStoresOperation",
+      "wireRequest": "NoBody",
+      "wireResponse": "BusinessChannelTemplateVisibleStorePage",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE",
+      "dispatchMethod": "getOperationsBusinessChannelTemplateVisibleStores"
     }
   ],
   "commandContextGroups": {

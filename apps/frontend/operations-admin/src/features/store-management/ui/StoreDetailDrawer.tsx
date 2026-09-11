@@ -1,4 +1,4 @@
-import {Alert, Button, Descriptions, Drawer, Skeleton, Space} from 'antd';
+import {Alert, Descriptions, Drawer, Skeleton} from 'antd';
 import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
@@ -89,37 +89,46 @@ export function StoreDetailDrawer({
     onClose();
     next(selected);
   };
-  const actionItems = ready && selected
-    ? [
-        {
-          key: 'audit',
-          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.store.audit}>操作历史</AdminDetailActionLabel>,
-          onClick: onAudit,
-        },
-        ...(canEdit
-          ? [
-              {
-                key: 'edit',
-                label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.store.edit}>编辑</AdminDetailActionLabel>,
-                onClick: () => closeThen(onEdit),
-              },
-            ]
-          : []),
-        ...(canTransition
-          ? [
-              {
-                key: 'status',
-                label: (
-                  <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.store.status}>
-                    {selected.status === 'ENABLED' ? '停用' : '启用'}
-                  </AdminDetailActionLabel>
-                ),
-                onClick: () => closeThen(onStatus),
-              },
-            ]
-          : []),
-      ]
-    : [];
+  const actionItems =
+    ready && selected
+      ? [
+          {
+            key: 'audit',
+            label: (
+              <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.store.audit}>
+                操作历史
+              </AdminDetailActionLabel>
+            ),
+            onClick: onAudit,
+          },
+          ...(canEdit
+            ? [
+                {
+                  key: 'edit',
+                  label: (
+                    <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.store.edit}>
+                      编辑
+                    </AdminDetailActionLabel>
+                  ),
+                  onClick: () => closeThen(onEdit),
+                },
+              ]
+            : []),
+          ...(canTransition
+            ? [
+                {
+                  key: 'status',
+                  label: (
+                    <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.store.status}>
+                      {selected.status === 'ENABLED' ? '停用' : '启用'}
+                    </AdminDetailActionLabel>
+                  ),
+                  onClick: () => closeThen(onStatus),
+                },
+              ]
+            : []),
+        ]
+      : [];
 
   return (
     <Drawer
@@ -137,10 +146,7 @@ export function StoreDetailDrawer({
       {...testId('operations-store-detail-drawer')}
       extra={
         actionItems.length > 0 ? (
-          <AdminDetailActionMenu
-            items={actionItems}
-            triggerTestId={operationsDetailDrawerTestIds.store.actionMenu}
-          />
+          <AdminDetailActionMenu items={actionItems} triggerTestId={operationsDetailDrawerTestIds.store.actionMenu} />
         ) : undefined
       }
     >

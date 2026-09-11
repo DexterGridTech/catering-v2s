@@ -10,7 +10,9 @@
           "templateCode",
           "accessKind",
           "operatorKind",
-          "orderKind"
+          "orderKind",
+          "storeVisibilityScope",
+          "visibleStoreRefs"
         ],
         "properties": {
           "projectRef": {
@@ -65,6 +67,85 @@
               "string",
               "null"
             ]
+          },
+          "storeVisibilityScope": {
+            "$ref": "#/components/schemas/BusinessChannelTemplateStoreVisibilityScope"
+          },
+          "visibleStoreRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "BusinessChannelTemplateStoreVisibilityScope": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "ALL_PROJECT_STORES",
+          "SELECTED_PROJECT_STORES",
+          null
+        ]
+      },
+      "BusinessChannelTemplateVisibleStore": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "storeRef",
+          "storeCode",
+          "storeName",
+          "storeStatus"
+        ],
+        "properties": {
+          "storeRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "storeCode": {
+            "type": "string"
+          },
+          "storeName": {
+            "type": "string"
+          },
+          "storeStatus": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED",
+              "VOIDED"
+            ]
+          }
+        }
+      },
+      "BusinessChannelTemplateVisibleStorePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BusinessChannelTemplateVisibleStore"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
@@ -73,7 +154,9 @@
         "additionalProperties": false,
         "required": [
           "templateName",
-          "expectedVersion"
+          "expectedVersion",
+          "storeVisibilityScope",
+          "visibleStoreRefs"
         ],
         "properties": {
           "templateName": {
@@ -83,6 +166,16 @@
           "expectedVersion": {
             "type": "integer",
             "format": "int64"
+          },
+          "storeVisibilityScope": {
+            "$ref": "#/components/schemas/BusinessChannelTemplateStoreVisibilityScope"
+          },
+          "visibleStoreRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
@@ -118,6 +211,8 @@
           "accessKind",
           "operatorKind",
           "orderKind",
+          "storeVisibilityScope",
+          "visibleStoreCount",
           "status",
           "statusDimensions",
           "blockers",
@@ -182,6 +277,14 @@
               "string",
               "null"
             ]
+          },
+          "storeVisibilityScope": {
+            "$ref": "#/components/schemas/BusinessChannelTemplateStoreVisibilityScope"
+          },
+          "visibleStoreCount": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           },
           "status": {
             "type": "string",

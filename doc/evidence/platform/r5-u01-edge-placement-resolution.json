@@ -8,13 +8,13 @@
     "authorizationManifest": "contracts/registry/iam-org-governance-manifest.json"
   },
   "closure": {
-    "operations": 210,
+    "operations": 211,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 137,
+      "operations-admin": 138,
       "public": 12
     },
-    "componentBaseline": 243,
+    "componentBaseline": 246,
     "componentFiles": 20,
     "unreachable": [
       {
@@ -2058,6 +2058,18 @@
       "owner": "business-channel",
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates",
+      "capability": "business-channel",
+      "pathFile": "paths/operations-admin/business-channel.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/business-channel/business-channel.schemas.json",
+      "errorSetRef": "AUTHZ_READ"
+    },
+    {
+      "operationId": "getOperationsBusinessChannelTemplateVisibleStores",
+      "face": "operations-admin",
+      "owner": "business-channel",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/visible-stores",
       "capability": "business-channel",
       "pathFile": "paths/operations-admin/business-channel.paths.json",
       "requestComponentFile": "components/common/empty.schemas.json",

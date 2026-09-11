@@ -48,18 +48,25 @@ public final class OperationsExternalCollaborationController {
             EdgeRequestContext request,
             @PathVariable String groupWorkspaceKey,
             @RequestParam(required = false) String capabilityClass,
+            @RequestParam(required = false) String nodeType,
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Integer pageSize) {
         WorkspaceSessionReadback session = sessions.requireWorkspaceRead(request, groupWorkspaceKey);
         int normalizedPageSize = pageSize(pageSize);
         String normalizedCapability = optional(capabilityClass);
+        String normalizedNodeType = nodeType(nodeType);
         List<CollaborationReadback.ProviderProfile> values = catalog
-                .listEnabledProviderProfiles(session.workspaceUuid(), session.groupWorkspaceKey(), normalizedCapability)
+                .listEnabledProviderProfiles(
+                        session.workspaceUuid(), session.groupWorkspaceKey(), normalizedCapability, normalizedNodeType)
                 .stream()
                 .sorted(Comparator.comparing(CollaborationReadback.ProviderProfile::providerCode))
                 .toList();
         String queryIdentity = cursorIdentity(
-                session.workspaceUuid(), session.groupWorkspaceKey(), normalizedCapability, normalizedPageSize);
+                session.workspaceUuid(),
+                session.groupWorkspaceKey(),
+                normalizedCapability,
+                normalizedNodeType,
+                normalizedPageSize);
         OpaqueCollectionCursor.Position position = cursor(cursor, queryIdentity);
         int start = start(values, position);
         int end = Math.min(start + normalizedPageSize, values.size());
@@ -79,6 +86,12 @@ public final class OperationsExternalCollaborationController {
             throw new InvalidEdgeRequestException("pageSize must be between 1 and 100");
         }
         return normalized;
+    }
+
+    private static String nodeType(String value) {
+        String normalized = optional(value);
+        if (normalized == null || normalized.equals("PROJECT") || normalized.equals("STORE")) return normalized;
+        throw new InvalidEdgeRequestException("nodeType is not supported");
     }
 
     private static OpaqueCollectionCursor.Position cursor(String value, String queryIdentity) {
@@ -105,13 +118,14 @@ public final class OperationsExternalCollaborationController {
     }
 
     private static String cursorIdentity(
-            UUID workspaceUuid, String groupWorkspaceKey, String capabilityClass, int pageSize) {
+            UUID workspaceUuid, String groupWorkspaceKey, String capabilityClass, String nodeType, int pageSize) {
         return String.join(
                 "\u001f",
                 "external-provider-candidates",
                 workspaceUuid.toString(),
                 groupWorkspaceKey,
                 capabilityClass == null ? "<null>" : capabilityClass,
+                nodeType == null ? "<null>" : nodeType,
                 Integer.toString(pageSize));
     }
 

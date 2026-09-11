@@ -5,12 +5,7 @@ import {AdminDetailActionLabel, AdminDetailActionMenu} from './detailActionMenu'
 describe('AdminDetailActionMenu', () => {
   it('renders one labelled trigger and keeps item locators on app-owned labels', () => {
     const triggerMarkup = renderToStaticMarkup(
-      <AdminDetailActionMenu
-        triggerTestId="example-detail-actions"
-        items={[
-          {key: 'audit', label: '操作历史'},
-        ]}
-      />,
+      <AdminDetailActionMenu triggerTestId="example-detail-actions" items={[{key: 'audit', label: '操作历史'}]} />,
     );
     const itemMarkup = renderToStaticMarkup(
       <AdminDetailActionLabel testIdValue="example-detail-audit">操作历史</AdminDetailActionLabel>,

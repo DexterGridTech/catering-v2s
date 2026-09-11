@@ -91,8 +91,12 @@ final class SalesMenuWireMapper {
                 value.itemCode(),
                 value.displayName(),
                 value.productShape(),
-                value.catalogOrderOptions().stream().map(SalesMenuWireMapper::catalogOrderOption).toList(),
-                value.skuCandidates().stream().map(SalesMenuWireMapper::skuCandidate).toList(),
+                value.catalogOrderOptions().stream()
+                        .map(SalesMenuWireMapper::catalogOrderOption)
+                        .toList(),
+                value.skuCandidates().stream()
+                        .map(SalesMenuWireMapper::skuCandidate)
+                        .toList(),
                 value.staleSelectedSkuRefs(),
                 value.defaultPriceCents(),
                 value.catalogPrimaryImageAssetRef(),
@@ -247,9 +251,15 @@ final class SalesMenuWireMapper {
                 value.selectionMode(),
                 (long) value.displayOrder(),
                 value.required(),
-                value.minSelectionCount() == null ? null : value.minSelectionCount().longValue(),
-                value.maxSelectionCount() == null ? null : value.maxSelectionCount().longValue(),
-                value.values().stream().map(SalesMenuWireMapper::catalogOrderOptionValue).toList());
+                value.minSelectionCount() == null
+                        ? null
+                        : value.minSelectionCount().longValue(),
+                value.maxSelectionCount() == null
+                        ? null
+                        : value.maxSelectionCount().longValue(),
+                value.values().stream()
+                        .map(SalesMenuWireMapper::catalogOrderOptionValue)
+                        .toList());
     }
 
     private static SalesMenuDraftItemViewCatalogOrderOptionsItemValuesItem catalogOrderOptionValue(
@@ -270,9 +280,15 @@ final class SalesMenuWireMapper {
                 value.selectionMode(),
                 (long) value.displayOrder(),
                 value.required(),
-                value.minSelectionCount() == null ? null : value.minSelectionCount().longValue(),
-                value.maxSelectionCount() == null ? null : value.maxSelectionCount().longValue(),
-                value.values().stream().map(SalesMenuWireMapper::selectedOrderOptionValue).toList());
+                value.minSelectionCount() == null
+                        ? null
+                        : value.minSelectionCount().longValue(),
+                value.maxSelectionCount() == null
+                        ? null
+                        : value.maxSelectionCount().longValue(),
+                value.values().stream()
+                        .map(SalesMenuWireMapper::selectedOrderOptionValue)
+                        .toList());
     }
 
     private static SalesMenuSaleContentSelectedOrderOptionsItem selectedOrderOption(
@@ -283,9 +299,15 @@ final class SalesMenuWireMapper {
                 value.selectionMode(),
                 (long) value.displayOrder(),
                 value.required(),
-                value.minSelectionCount() == null ? null : value.minSelectionCount().longValue(),
-                value.maxSelectionCount() == null ? null : value.maxSelectionCount().longValue(),
-                value.values().stream().map(SalesMenuWireMapper::selectedOrderOptionValue).toList());
+                value.minSelectionCount() == null
+                        ? null
+                        : value.minSelectionCount().longValue(),
+                value.maxSelectionCount() == null
+                        ? null
+                        : value.maxSelectionCount().longValue(),
+                value.values().stream()
+                        .map(SalesMenuWireMapper::selectedOrderOptionValue)
+                        .toList());
     }
 
     private static SalesMenuSaleContentSelectedOrderOptionsItemValuesItem selectedOrderOptionValue(
@@ -308,8 +330,7 @@ final class SalesMenuWireMapper {
                 value.extraPrice());
     }
 
-    private static SalesMenuDraftItemViewSkuCandidatesItem skuCandidate(
-            SalesMenuReadback.SalesMenuSkuCandidate value) {
+    private static SalesMenuDraftItemViewSkuCandidatesItem skuCandidate(SalesMenuReadback.SalesMenuSkuCandidate value) {
         return new SalesMenuDraftItemViewSkuCandidatesItem(
                 value.skuRef(), value.skuName(), value.skuCode(), value.standardPriceCents());
     }

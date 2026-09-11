@@ -2428,6 +2428,10 @@ function makeTestLogin(identity, credentials = null) {
       values?.V2S_L2_OPERATIONS_READONLY_PASSWORD ?? `l2-operations-readonly-password-${digest.slice(0, 24)}`,
     headOperationsUsername: values?.V2S_L2_HEAD_OPERATIONS_LOGIN ?? `l2-head-${digest.slice(0, 12)}`,
     headOperationsPassword: values?.V2S_L2_HEAD_OPERATIONS_PASSWORD ?? `l2-head-password-${digest.slice(0, 24)}`,
+    projectOperationsUsername:
+      values?.V2S_L2_PROJECT_OPERATIONS_LOGIN ?? `l2-project-${digest.slice(0, 12)}`,
+    projectOperationsPassword:
+      values?.V2S_L2_PROJECT_OPERATIONS_PASSWORD ?? `l2-project-password-${digest.slice(0, 24)}`,
     otp: values?.V2S_L2_TEST_OTP ?? '246810',
   };
 }
@@ -2540,6 +2544,22 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
     },
   );
   const groupRoleId = requiredObjectValue(groupRole.json, ['id', 'roleId'], 'L2_GROUP_ROLE_REF_MISSING');
+  const projectRole = await request(
+    stage('project-role'),
+    'createWorkspaceRole',
+    {groupWorkspaceKey: workspaceKey},
+    {
+      cookie: platformCookie,
+      expected: [201],
+      body: {
+        name: 'L2 项目经营渠道管理员',
+        serviceNodeType: 'PROJECT',
+        pageAccessKeys: ['PG-BUSINESS-CHANNEL-PROJECT'],
+        capabilityKeys: ['BC-BUSINESS-CHANNEL-PROJECT-EDIT'],
+      },
+    },
+  );
+  const projectRoleId = requiredObjectValue(projectRole.json, ['id', 'roleId'], 'L2_PROJECT_ROLE_REF_MISSING');
   const storeRole = await request(
     stage('store-role'),
     'createWorkspaceRole',
@@ -2550,7 +2570,12 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
       body: {
         name: 'L2 门店商品管理员',
         serviceNodeType: 'STORE',
-        pageAccessKeys: ['PG-IAM-STORE-USERS', 'PG-CATALOG-STORE-ITEMS', 'PG-SALES-MENU-STORE'],
+        pageAccessKeys: [
+          'PG-IAM-STORE-USERS',
+          'PG-CATALOG-STORE-ITEMS',
+          'PG-BUSINESS-CHANNEL-STORE',
+          'PG-SALES-MENU-STORE',
+        ],
         capabilityKeys: [
           'BC-IAM-STORE-ROLE-REVOKE',
           'BC-IAM-STORE-INVITE',
@@ -2793,6 +2818,15 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
     headCompanyRoleId,
     headLoginName,
     headPassword,
+  );
+  await completeInvitation(
+    'project',
+    '+8613800000027',
+    'PROJECT',
+    org.projectRef,
+    projectRoleId,
+    credentials.values.V2S_L2_PROJECT_OPERATIONS_LOGIN,
+    credentials.values.V2S_L2_PROJECT_OPERATIONS_PASSWORD,
   );
   const headLogin = await request(
     stage('head-company-login'),
@@ -4468,6 +4502,7 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
   return {
     registry,
     client,
+    platformCookie,
     groupCookie,
     headCookie,
     operationsCookie,
@@ -4583,6 +4618,7 @@ async function bootstrapSalesMenuFacts({identity, base}) {
   const projectRef = String(base.org.projectRef);
   const brandRef = String(base.brandRef);
   const storeRef = String(base.org.storeRef);
+  const platformCookie = base.platformCookie;
   const operationsCookie = base.operationsCookie;
   const groupCookie = base.groupCookie;
   const stage = name => `sales-menu-${name}`;
@@ -5080,6 +5116,8 @@ async function bootstrapSalesMenuFacts({identity, base}) {
           orderKind,
           dineInForm,
           providerCode: null,
+          storeVisibilityScope: operatorKind === 'STORE' ? 'ALL_PROJECT_STORES' : null,
+          visibleStoreRefs: [],
         },
       },
     );
@@ -5087,8 +5125,105 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       requiredObjectValue(created.json, ['templateRef', 'id', 'ref'], 'SALES_MENU_CHANNEL_TEMPLATE_REF_MISSING'),
     );
   };
+  const externalDineInProviderCode = 'STORE_OWNED_MINI_PROGRAM_DINE_IN';
+  const providerDetail = await request(
+    stage('external-dine-in-provider-detail'),
+    'getPlatformProviderProfileDetail',
+    {groupWorkspaceKey: workspaceKey, providerCode: externalDineInProviderCode},
+    {cookie: platformCookie, expected: [200]},
+  );
+  const providerStatus = String(
+    requiredObjectValue(
+      providerDetail.json,
+      ['enablementStatus'],
+      'SALES_MENU_EXTERNAL_DINE_IN_PROVIDER_STATUS_MISSING',
+    ),
+  );
+  const providerVersion = Number(
+    requiredObjectValue(providerDetail.json, ['version'], 'SALES_MENU_EXTERNAL_DINE_IN_PROVIDER_VERSION_MISSING'),
+  );
+  if (!Number.isInteger(providerVersion) || providerVersion < 0)
+    fail('SALES_MENU_EXTERNAL_DINE_IN_PROVIDER_VERSION_INVALID');
+  if (providerStatus !== 'ENABLED') {
+    const enabledProvider = await request(
+      stage('external-dine-in-provider-enable'),
+      'transitionPlatformProviderProfileStatus',
+      {groupWorkspaceKey: workspaceKey, providerCode: externalDineInProviderCode},
+      {
+        cookie: platformCookie,
+        expected: [200],
+        body: {status: 'ENABLED', expectedVersion: providerVersion},
+      },
+    );
+    if (
+      String(
+        requiredObjectValue(
+          enabledProvider.json,
+          ['enablementStatus'],
+          'SALES_MENU_EXTERNAL_DINE_IN_PROVIDER_ENABLEMENT_READBACK_MISSING',
+        ),
+      ) !== 'ENABLED'
+    )
+      fail('SALES_MENU_EXTERNAL_DINE_IN_PROVIDER_ENABLEMENT_READBACK_INVALID');
+  }
   const takeawayTemplateRef = await createTemplate('TAKEAWAY', null);
   const dineInTemplateRef = await createTemplate('DINE_IN', 'POS');
+  const externalDineInTemplateCode = `SM-${suffix}-STORE-EXTERNAL-DINE-IN`;
+  const externalDineInTemplateName = `销售菜单外部到店点餐模板-${suffix}`;
+  const externalDineInTemplate = await request(
+    stage('channel-template-STORE-EXTERNAL-DINE_IN'),
+    'createOperationsBusinessChannelTemplate',
+    {groupWorkspaceKey: workspaceKey},
+    {
+      cookie: groupCookie,
+      expected: [200],
+      body: {
+        projectRef,
+        templateName: externalDineInTemplateName,
+        templateCode: externalDineInTemplateCode,
+        accessKind: 'EXTERNAL',
+        operatorKind: 'STORE',
+        orderKind: 'DINE_IN',
+        dineInForm: null,
+        providerCode: externalDineInProviderCode,
+        storeVisibilityScope: 'ALL_PROJECT_STORES',
+        visibleStoreRefs: [],
+      },
+    },
+  );
+  const externalDineInTemplateRef = String(
+    requiredObjectValue(
+      externalDineInTemplate.json,
+      ['templateRef', 'id', 'ref'],
+      'SALES_MENU_EXTERNAL_DINE_IN_TEMPLATE_REF_MISSING',
+    ),
+  );
+  const externalDineInChannelCode = `SM-${suffix}-STORE-EXTERNAL-DINE-IN-CHANNEL`;
+  const externalDineInChannelName = `销售菜单外部到店点餐渠道-${suffix}`;
+  const externalDineInChannel = await request(
+    stage('external-dine-in-channel'),
+    'createOperationsBusinessChannel',
+    {groupWorkspaceKey: workspaceKey},
+    {
+      cookie: operationsCookie,
+      expected: [200],
+      body: {
+        templateRef: externalDineInTemplateRef,
+        ownerNodeType: 'STORE',
+        ownerNodeRef: storeRef,
+        channelCode: externalDineInChannelCode,
+        channelName: externalDineInChannelName,
+        bindingRef: null,
+      },
+    },
+  );
+  const externalDineInChannelRef = String(
+    requiredObjectValue(
+      externalDineInChannel.json,
+      ['channelRef', 'id', 'ref'],
+      'SALES_MENU_EXTERNAL_DINE_IN_CHANNEL_REF_MISSING',
+    ),
+  );
   // The auth counterexample is a real PROJECT-owned channel. Its template must
   // carry the same owner kind; reusing a STORE template makes the owner reject
   // the request with BUSINESS_SCOPE_EXCEEDED before the scope-isolation case can
@@ -5765,6 +5900,18 @@ async function bootstrapSalesMenuFacts({identity, base}) {
       fail('SALES_MENU_CASE_BLOCKER_CHANNEL_FIXTURE_MISSING', `${row.caseId}:${caseFixture.blockerChannelFixtureId}`);
     cases[row.caseId] = {
       fixtureRef: row.fixtureRef,
+      ...(row.fixtureRef === 'FIXTURE-BUSINESS-CHANNEL-EXTERNAL-DINE-IN' ||
+      row.fixtureRef === 'FIXTURE-BUSINESS-CHANNEL-STORE-ALL-VS-SALES-MENU'
+        ? {
+            externalDineInProviderCode,
+            externalDineInTemplateRef,
+            externalDineInTemplateName,
+            externalDineInTemplateCode,
+            externalDineInChannelRef,
+            externalDineInChannelName,
+            externalDineInChannelCode,
+          }
+        : {}),
       scope: {
         kind: 'STORE',
         regionName: 'L2验证大区',
@@ -5824,6 +5971,7 @@ async function bootstrapSalesMenuFacts({identity, base}) {
   return {
     registry: base.registry,
     client: base.client,
+    platformCookie,
     groupCookie,
     headCookie: base.headCookie,
     operationsCookie,
@@ -6200,6 +6348,9 @@ function createPlaywrightEnvironment({state, credentials, suite = state.suite ??
     R5_L2_HEAD_OPERATIONS_LOGIN_NAME: projected.V2S_L2_HEAD_OPERATIONS_LOGIN,
     R5_L2_HEAD_OPERATIONS_LOGIN_PASSWORD: projected.V2S_L2_HEAD_OPERATIONS_PASSWORD,
     R5_L2_HEAD_OPERATIONS_ROLE_LABEL: 'L2 总公司商品管理员',
+    R5_L2_PROJECT_OPERATIONS_LOGIN_NAME: projected.V2S_L2_PROJECT_OPERATIONS_LOGIN,
+    R5_L2_PROJECT_OPERATIONS_PASSWORD: projected.V2S_L2_PROJECT_OPERATIONS_PASSWORD,
+    R5_L2_PROJECT_OPERATIONS_ROLE_LABEL: 'L2 项目经营渠道管理员',
     R5_L2_STORE_PROFILE_ROUTE: `http://127.0.0.1:${state.ports.operations}/operations/${encodeURIComponent(state.workspaceKey)}/store/profile`,
     R5_L2_RUN_ID: state.identity.runId,
     R5_L2_SECRET: projected.V2S_L2_DIAGNOSTIC_SECRET,
@@ -7806,6 +7957,8 @@ function salesMenuSelfTest() {
     'operationsReadonlyPassword',
     'headOperationsUsername',
     'headOperationsPassword',
+    'projectOperationsUsername',
+    'projectOperationsPassword',
     'otp',
   ];
   if (requiredTestLoginFields.some(field => typeof testLogin[field] !== 'string')) {

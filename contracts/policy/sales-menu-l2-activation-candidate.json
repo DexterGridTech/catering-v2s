@@ -21,7 +21,9 @@
     "sales-menu-publish-blockers",
     "sales-menu-operation-records",
     "sales-menu-failure-recovery-and-focus",
-    "sales-menu-auth-and-scope-isolation"
+    "sales-menu-auth-and-scope-isolation",
+    "business-channel-external-dine-in-template",
+    "business-channel-store-all-and-sales-menu-exclusion"
   ],
   "fixtureRefs": [
     "FIXTURE-SALES-MENU-ENTRY",
@@ -41,10 +43,12 @@
     "FIXTURE-SALES-MENU-BLOCKERS",
     "FIXTURE-SALES-MENU-RECORDS",
     "FIXTURE-SALES-MENU-FAILURE-RECOVERY",
-    "FIXTURE-SALES-MENU-AUTH"
+    "FIXTURE-SALES-MENU-AUTH",
+    "FIXTURE-BUSINESS-CHANNEL-EXTERNAL-DINE-IN",
+    "FIXTURE-BUSINESS-CHANNEL-STORE-ALL-VS-SALES-MENU"
   ],
   "testIdSource": "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
   "locatorBinding": "contracts/policy/sales-menu-l2-locator-bindings.json",
   "noSeedRuntimeInput": true,
-  "candidateDigest": "d02a9c959b920d19061321aa0a1f038d6be6cfee008aed01dde55a67611d298b"
+  "candidateDigest": "72110988cd5a2de1d3ae11d0734132ece15285366f8d06a5acf5fdf85f1f7423"
 }

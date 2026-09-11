@@ -1,6 +1,11 @@
 import {expect, test, type Page} from '@playwright/test';
 import {operationsDetailDrawerTestIds} from '../../app/automation/operationsDetailDrawerTestIds';
-import {clickOperationsDetailAction, expandOperationsQuery, selectOperationsDataScope, selectOperationsOption} from './operationsL2';
+import {
+  clickOperationsDetailAction,
+  expandOperationsQuery,
+  selectOperationsDataScope,
+  selectOperationsOption,
+} from './operationsL2';
 
 function requiredL2Env(name: string) {
   const value = process.env[name];

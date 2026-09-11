@@ -1,4 +1,4 @@
-import {Button, Descriptions, Drawer, Space, Table, Tag, Typography} from 'antd';
+import {Button, Descriptions, Drawer, Table, Tag, Typography} from 'antd';
 import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
@@ -50,7 +50,11 @@ export function WorkspaceAccountDetailDrawer({
     ? [
         {
           key: 'audit',
-          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.account.audit}>操作历史</AdminDetailActionLabel>,
+          label: (
+            <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.account.audit}>
+              操作历史
+            </AdminDetailActionLabel>
+          ),
           onClick: onAudit,
         },
         ...(canManageWorkspaceIam(account.status)
@@ -95,10 +99,7 @@ export function WorkspaceAccountDetailDrawer({
       {...testId('workspace-account-detail-drawer')}
       extra={
         actionItems.length > 0 ? (
-          <AdminDetailActionMenu
-            items={actionItems}
-            triggerTestId={platformDetailDrawerTestIds.account.actionMenu}
-          />
+          <AdminDetailActionMenu items={actionItems} triggerTestId={platformDetailDrawerTestIds.account.actionMenu} />
         ) : undefined
       }
     >

@@ -73,7 +73,7 @@ test('business-channel list reads carry explicit bounded sort parameters', () =>
   assert.ok(candidateParameters.includes('sortDirection'), 'store template candidates must declare sortDirection');
   assert.match(
     businessChannelOwner,
-    /operator_kind='STORE' AND status='ENABLED'/,
+    /(?:t\.)?operator_kind='STORE' AND (?:t\.)?status='ENABLED'/,
     'store template candidates must be filtered to effective store templates by the owner',
   );
 });
@@ -97,6 +97,11 @@ test('business-channel sections use standard cards and store candidates do not e
     );
   }
   assert.doesNotMatch(storePage, /title: '状态'/, 'store candidate templates must not show status');
+  assert.doesNotMatch(
+    storePage,
+    /title: '门店可见范围'/,
+    'store candidate templates must not expose the project template visibility rule',
+  );
   assert.doesNotMatch(storePage, /sortKey: 'STATUS'/, 'store candidate templates must not offer status sorting');
 });
 

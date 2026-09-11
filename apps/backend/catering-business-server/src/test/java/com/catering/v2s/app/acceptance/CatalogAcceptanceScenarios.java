@@ -9077,7 +9077,11 @@ final class CatalogAcceptanceScenarios {
             sections.put("expectedCatalogVersion", current.path("version").asLong());
             sections.put(
                     "catalogDraft",
-                    Map.of("name", current.path("name").asText(), "shapeKey", current.path("shapeKey").asText()));
+                    Map.of(
+                            "name",
+                            current.path("name").asText(),
+                            "shapeKey",
+                            current.path("shapeKey").asText()));
             sections.put("inventoryRules", Map.of("nodes", List.of()));
             Map<String, Object> transition = new LinkedHashMap<>();
             transition.put("skuRef", target.path("productSkuRef").asText());
@@ -9088,15 +9092,24 @@ final class CatalogAcceptanceScenarios {
                     itemPath(itemCode),
                     session.cookie(),
                     Map.of(
-                            "dataNodeRef", fixture.storeId().toString(),
-                            "itemCode", itemCode,
-                            "sections", sections,
-                            "skuTransitions", List.of(transition)),
+                            "dataNodeRef",
+                            fixture.storeId().toString(),
+                            "itemCode",
+                            itemCode,
+                            "sections",
+                            sections,
+                            "skuTransitions",
+                            List.of(transition)),
                     idempotencyHeaders("sku-void-" + itemCode + "-" + skuCode),
                     Set.of(200));
             assertEquals(
                     "VOIDED",
-                    voided.json().path("result").path("skuTransitions").get(0).path("targetStatus").asText(),
+                    voided.json()
+                            .path("result")
+                            .path("skuTransitions")
+                            .get(0)
+                            .path("targetStatus")
+                            .asText(),
                     "BUSINESS: Catalog SKU void transition is a real owner fact");
             return readItem(context, fixture, session, itemCode);
         }
@@ -9157,11 +9170,7 @@ final class CatalogAcceptanceScenarios {
                         Map.of("name", name + " optional A", "displayOrder", 0, "materials", List.of()),
                         Map.of("name", name + " optional B", "displayOrder", 1, "materials", List.of())));
         Map<String, Object> requiredConfig = orderOptionConfig(
-                requiredDefinition.path("definitionRef").asText(),
-                true,
-                1,
-                2,
-                optionOverrides(requiredDefinition));
+                requiredDefinition.path("definitionRef").asText(), true, 1, 2, optionOverrides(requiredDefinition));
         Map<String, Object> optionalConfig = orderOptionConfig(
                 optionalDefinition.path("definitionRef").asText(),
                 false,
@@ -9170,13 +9179,7 @@ final class CatalogAcceptanceScenarios {
                 optionOverrides(optionalDefinition));
         optionalConfig.put("displayOrder", 1);
         saveTypedItemFacts(
-                context,
-                fixture,
-                session,
-                code,
-                created.version(),
-                List.of(),
-                List.of(requiredConfig, optionalConfig));
+                context, fixture, session, code, created.version(), List.of(), List.of(requiredConfig, optionalConfig));
         return enableAcceptanceItem(context, fixture, session, code, readItem(context, fixture, session, code));
     }
 

@@ -21,6 +21,7 @@ public final class BusinessChannelOperationBindings {
     OperationBindingTypes.Wire.BusinessChannelTemplateView transitionOperationsBusinessChannelTemplateStatus(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.BusinessChannelTemplateStatusRequest request);
     OperationBindingTypes.Wire.BusinessChannelView updateOperationsBusinessChannel(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.BusinessChannelUpdateRequest request);
     OperationBindingTypes.Wire.BusinessChannelTemplateView updateOperationsBusinessChannelTemplate(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.BusinessChannelTemplateUpdateRequest request);
+    OperationBindingTypes.Wire.BusinessChannelTemplateVisibleStorePage getOperationsBusinessChannelTemplateVisibleStores(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.NoBody request);
   }
 
   private final OwnerLocalAdapters adapters;
@@ -40,6 +41,7 @@ public final class BusinessChannelOperationBindings {
   public static final OperationBindingTypes.OperationDescriptor TRANSITION_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE_STATUS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("transitionOperationsBusinessChannelTemplateStatus", "business-channel", "edge-face");
   public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_BUSINESS_CHANNEL_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsBusinessChannel", "business-channel", "edge-face");
   public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsBusinessChannelTemplate", "business-channel", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor GET_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE_VISIBLE_STORES_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getOperationsBusinessChannelTemplateVisibleStores", "business-channel", "edge-face");
 
   private static void requireReadDescriptor(OperationBindingTypes.OperationDescriptor descriptor) {
     if (descriptor == null) throw new IllegalArgumentException("descriptor is required");
@@ -49,6 +51,7 @@ public final class BusinessChannelOperationBindings {
       case "getOperationsProjectBusinessChannels" -> { if (descriptor != GET_OPERATIONS_PROJECT_BUSINESS_CHANNELS_DESCRIPTOR || !"business-channel".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getOperationsStoreBusinessChannels" -> { if (descriptor != GET_OPERATIONS_STORE_BUSINESS_CHANNELS_DESCRIPTOR || !"business-channel".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getOperationsStoreBusinessChannelTemplateCandidates" -> { if (descriptor != GET_OPERATIONS_STORE_BUSINESS_CHANNEL_TEMPLATE_CANDIDATES_DESCRIPTOR || !"business-channel".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "getOperationsBusinessChannelTemplateVisibleStores" -> { if (descriptor != GET_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE_VISIBLE_STORES_DESCRIPTOR || !"business-channel".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       default -> throw new IllegalArgumentException("unsupported descriptor");
     }
   }
@@ -62,6 +65,7 @@ public final class BusinessChannelOperationBindings {
       case "getOperationsProjectBusinessChannels" -> adapters.getOperationsProjectBusinessChannels(GET_OPERATIONS_PROJECT_BUSINESS_CHANNELS_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
       case "getOperationsStoreBusinessChannels" -> adapters.getOperationsStoreBusinessChannels(GET_OPERATIONS_STORE_BUSINESS_CHANNELS_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
       case "getOperationsStoreBusinessChannelTemplateCandidates" -> adapters.getOperationsStoreBusinessChannelTemplateCandidates(GET_OPERATIONS_STORE_BUSINESS_CHANNEL_TEMPLATE_CANDIDATES_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
+      case "getOperationsBusinessChannelTemplateVisibleStores" -> adapters.getOperationsBusinessChannelTemplateVisibleStores(GET_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE_VISIBLE_STORES_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
       default -> throw new IllegalArgumentException("Unsupported read operation: " + descriptor.operationId());
     };
   }

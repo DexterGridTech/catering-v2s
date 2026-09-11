@@ -65,6 +65,7 @@ class OperationsBusinessChannelControllerScopeTest {
         when(store.project())
                 .thenReturn(new OrganizationOverviewTaskReadService.Reference(
                         fixture.projectId, "PROJECT-01", "Project 01", true));
+        when(store.status()).thenReturn("ENABLED");
         when(fixture.organizationReads.store(fixture.workspaceId, KEY, fixture.selectedStoreId))
                 .thenReturn(store);
         UUID channelRef = UUID.randomUUID();
@@ -120,7 +121,11 @@ class OperationsBusinessChannelControllerScopeTest {
         assertThrows(
                 InvalidEdgeRequestException.class,
                 () -> fixture.controller.storeChannels(
-                        fixture.request, KEY, fixture.selectedStoreId, "BUSINESS_CHANNEL", null, null, null, null));
+                        fixture.request, KEY, fixture.selectedStoreId, "UNSUPPORTED", null, null, null, null));
+        assertThrows(
+                InvalidEdgeRequestException.class,
+                () -> fixture.controller.storeChannels(
+                        fixture.request, KEY, fixture.selectedStoreId, "BUSINESS_CHANNEL", null, 10, null, null));
         assertThrows(
                 InvalidEdgeRequestException.class,
                 () -> fixture.controller.storeChannels(
@@ -129,6 +134,60 @@ class OperationsBusinessChannelControllerScopeTest {
         verify(fixture.salesMenuChannels, never())
                 .listSalesMenuEligibleChannels(any(), any(), any(), any(), anyInt(), any(), any());
         verify(fixture.organizationReads, never()).store(any(), any(), any());
+    }
+
+    @Test
+    void businessChannelListUsesTheGenericStoreOwnerReadAndKeepsSalesMenuOwnerSeparate() {
+        Fixture fixture = fixture();
+        OrganizationOverviewTaskReadService.Item store = mock(OrganizationOverviewTaskReadService.Item.class);
+        when(store.project())
+                .thenReturn(new OrganizationOverviewTaskReadService.Reference(
+                        fixture.projectId, "PROJECT-01", "Project 01", true));
+        when(fixture.organizationReads.store(fixture.workspaceId, KEY, fixture.selectedStoreId))
+                .thenReturn(store);
+        UUID channelRef = UUID.randomUUID();
+        UUID templateRef = UUID.randomUUID();
+        when(fixture.channels.pageChannels(
+                        fixture.workspaceId,
+                        KEY,
+                        ServiceNodeTypes.STORE,
+                        fixture.selectedStoreId.toString(),
+                        null,
+                        "CHANNEL_NAME",
+                        "ASC"))
+                .thenReturn(new BusinessChannelReadback.ChannelPage(
+                        List.of(new BusinessChannelReadback.Channel(
+                                channelRef,
+                                templateRef,
+                                ServiceNodeTypes.STORE,
+                                fixture.selectedStoreId.toString(),
+                                "CHANNEL-01",
+                                "渠道 01",
+                                null,
+                                "UNBOUND",
+                                "ENABLED",
+                                List.of(),
+                                List.of(),
+                                1L)),
+                        null,
+                        1L));
+
+        var result = fixture.controller.storeChannels(
+                fixture.request, KEY, fixture.selectedStoreId, "BUSINESS_CHANNEL", null, null, "CHANNEL_NAME", "ASC");
+
+        assertEquals(1, result.items().size());
+        assertEquals(channelRef, result.items().getFirst().channelRef());
+        verify(fixture.channels)
+                .pageChannels(
+                        fixture.workspaceId,
+                        KEY,
+                        ServiceNodeTypes.STORE,
+                        fixture.selectedStoreId.toString(),
+                        null,
+                        "CHANNEL_NAME",
+                        "ASC");
+        verify(fixture.salesMenuChannels, never())
+                .listSalesMenuEligibleChannels(any(), any(), any(), any(), anyInt(), any(), any());
     }
 
     @Test
@@ -184,6 +243,23 @@ class OperationsBusinessChannelControllerScopeTest {
     }
 
     @Test
+    void visibleStorePageReusesFreshSessionProjectAndLetsOwnerVerifyTemplateInOneRead() {
+        Fixture fixture = fixture();
+        UUID templateRef = UUID.randomUUID();
+        when(fixture.channels.pageTemplateVisibleStores(
+                        fixture.workspaceId, KEY, templateRef, fixture.projectId, "ALL", null, 50))
+                .thenReturn(new BusinessChannelReadback.VisibleStorePage(List.of(), null, 0L));
+
+        var result = fixture.controller.templateVisibleStores(fixture.request, KEY, templateRef, "ALL", null, 50);
+
+        assertEquals(0, result.items().size());
+        verify(fixture.channels)
+                .pageTemplateVisibleStores(fixture.workspaceId, KEY, templateRef, fixture.projectId, "ALL", null, 50);
+        verify(fixture.channels, never()).readTemplateCommandContext(any(), any(), any());
+        verify(fixture.authorization, never()).resolveSelectedProjectScope(any(), any());
+    }
+
+    @Test
     void storeAssignedTemplateListUsesItsOwnerValidatedProjectAndStoreTemplates() {
         Fixture fixture = fixture();
         WorkspaceSessionReadback storeSession = new WorkspaceSessionReadback(
@@ -193,7 +269,10 @@ class OperationsBusinessChannelControllerScopeTest {
                 fixture.session.accountId(),
                 fixture.session.currentAssignmentId(),
                 new WorkspaceSessionEntryReadback.ScopeContext(
-                        null, fixture.session.scopeContext().project(), fixture.session.scopeContext().store(), null),
+                        null,
+                        fixture.session.scopeContext().project(),
+                        fixture.session.scopeContext().store(),
+                        null),
                 fixture.session.contextVersion(),
                 fixture.session.authorizationRevision(),
                 fixture.session.pageAccessKeys(),
@@ -206,7 +285,8 @@ class OperationsBusinessChannelControllerScopeTest {
         when(store.project())
                 .thenReturn(new OrganizationOverviewTaskReadService.Reference(
                         fixture.projectId, "PROJECT-01", "Project 01", true));
-        when(fixture.organizationReads.store(fixture.workspaceId, KEY, fixture.selectedStoreId)).thenReturn(store);
+        when(fixture.organizationReads.store(fixture.workspaceId, KEY, fixture.selectedStoreId))
+                .thenReturn(store);
         when(fixture.channels.pageTemplates(
                         fixture.workspaceId, KEY, fixture.projectId, null, ServiceNodeTypes.STORE, null, null))
                 .thenReturn(new BusinessChannelReadback.TemplatePage(List.of(), null, 0L));
@@ -215,8 +295,8 @@ class OperationsBusinessChannelControllerScopeTest {
 
         assertEquals(0, result.items().size());
         verify(fixture.organizationReads).store(fixture.workspaceId, KEY, fixture.selectedStoreId);
-        verify(fixture.channels).pageTemplates(
-                fixture.workspaceId, KEY, fixture.projectId, null, ServiceNodeTypes.STORE, null, null);
+        verify(fixture.channels)
+                .pageTemplates(fixture.workspaceId, KEY, fixture.projectId, null, ServiceNodeTypes.STORE, null, null);
         verify(fixture.authorization, never()).resolveSelectedProjectScope(any(), any());
     }
 
@@ -230,7 +310,10 @@ class OperationsBusinessChannelControllerScopeTest {
                 fixture.session.accountId(),
                 fixture.session.currentAssignmentId(),
                 new WorkspaceSessionEntryReadback.ScopeContext(
-                        null, fixture.session.scopeContext().project(), fixture.session.scopeContext().store(), null),
+                        null,
+                        fixture.session.scopeContext().project(),
+                        fixture.session.scopeContext().store(),
+                        null),
                 fixture.session.contextVersion(),
                 fixture.session.authorizationRevision(),
                 fixture.session.pageAccessKeys(),
@@ -243,7 +326,8 @@ class OperationsBusinessChannelControllerScopeTest {
         when(store.project())
                 .thenReturn(new OrganizationOverviewTaskReadService.Reference(
                         fixture.projectId, "PROJECT-01", "Project 01", true));
-        when(fixture.organizationReads.store(fixture.workspaceId, KEY, fixture.selectedStoreId)).thenReturn(store);
+        when(fixture.organizationReads.store(fixture.workspaceId, KEY, fixture.selectedStoreId))
+                .thenReturn(store);
 
         assertThrows(
                 WorkspaceUserService.TaskScopeDeniedException.class,
@@ -259,6 +343,7 @@ class OperationsBusinessChannelControllerScopeTest {
         when(store.project())
                 .thenReturn(new OrganizationOverviewTaskReadService.Reference(
                         fixture.projectId, "PROJECT-01", "Project 01", true));
+        when(store.status()).thenReturn("ENABLED");
         when(fixture.organizationReads.store(fixture.workspaceId, KEY, fixture.selectedStoreId))
                 .thenReturn(store);
         when(fixture.channels.pageStoreTemplateCandidates(

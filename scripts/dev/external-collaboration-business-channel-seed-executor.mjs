@@ -11,7 +11,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {spawnSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
-import {plan as seedPlan, validate as validateSeedPlan} from "./external-collaboration-business-channel-seed-plan.mjs";
+import {acceptanceScenarioIds, plan as seedPlan, validate as validateSeedPlan} from "./external-collaboration-business-channel-seed-plan.mjs";
 import {FormalSeedFailure, managedSeedEnvironment} from "./owner-command-seed-executor.mjs";
 import {canonicalStartToken} from "./managed-process-tree.mjs";
 import {validateRemoteJavaControl} from "./r5-remote-java.mjs";
@@ -27,9 +27,11 @@ const stageId = "external-collaboration-business-channel";
 const requiredOperationIds = Object.freeze([
   "platformPasswordLogin", "getCurrentPlatformSession", "getPlatformProviderProfileDetail", "transitionPlatformProviderProfileStatus",
   "operationsWorkspacePasswordLogin", "getOperationsWorkspaceSessionEntry", "selectOperationsWorkspaceSessionContext",
-  "createOperationsBusinessChannelTemplate", "createOperationsBusinessChannel", "createOperationsOwnerBinding",
+  "createOperationsBusinessChannelTemplate", "updateOperationsBusinessChannelTemplate", "createOperationsBusinessChannel", "createOperationsOwnerBinding",
   "getOperationsBusinessChannelDetail", "transitionOperationsBusinessChannelStatus", "getOperationsStoreBusinessChannels",
-  "getOperationsProjectBusinessChannels",
+  "getOperationsProjectBusinessChannels", "getOperationsStoreBusinessChannelTemplateCandidates",
+  "getOperationsBusinessChannelTemplateVisibleStores", "transitionOperationsOrganizationStoreStatus",
+  "selectOperationsWorkspaceSessionDataNode",
 ]);
 
 export class ExternalCollaborationBusinessChannelSeedFailure extends Error {
@@ -50,11 +52,27 @@ const versionOf = (json, code) => {
   if (!Number.isInteger(value) || value < 0) fail(code);
   return value;
 };
+const revisionOf = (json, code) => {
+  const value = Number(dataOf(json)?.revision ?? dataOf(json)?.version ?? json?.revision ?? json?.version);
+  if (!Number.isInteger(value) || value < 0) fail(code);
+  return value;
+};
 const stringOf = (json, field, code) => {
   const value = dataOf(json)?.[field] ?? json?.[field];
   if (typeof value !== "string" || !value) fail(code);
   return value;
 };
+const problemCodeOf = (json) => dataOf(json)?.errorCode ?? dataOf(json)?.code ?? json?.errorCode ?? json?.code;
+export function validateStoreCandidateBlock({status, json, code}) {
+  const expectedProblem = status === 403
+    ? "PLATFORM_COMMON_ACCESS_DENIED"
+    : status === 409
+      ? "BUSINESS_CHANNEL_STORE_VISIBILITY_STALE"
+      : null;
+  const actualProblem = problemCodeOf(json);
+  if (expectedProblem === null || actualProblem !== expectedProblem) fail(`${code}:${actualProblem ?? "UNKNOWN"}`);
+  return actualProblem;
+}
 const cookieFromHeaders = (headers) => headers.get("set-cookie")?.split(",").map((part) => part.split(";", 1)[0].trim()).filter(Boolean).join("; ") || null;
 
 function writeJsonAtomically(file, value) {
@@ -148,11 +166,12 @@ export function validateRuntimeSeedStaticInputs({fixture, staticPlan, registry, 
   const assignments = fixture.stableFixtures.workspaceIam.assignments ?? [];
   if (!assignments.some((entry) => entry.account === "account-multi-role" && entry.role === "role-project" && entry.node === "project-river")) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_PROJECT_IDENTITY_MISSING");
   if (!assignments.some((entry) => entry.account === "account-single-role" && entry.role === "role-store" && entry.node === "store-operating")) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_STORE_IDENTITY_MISSING");
+  if (!assignments.some((entry) => entry.account === "account-multi-role" && entry.role === "role-store" && entry.node === "store-preparing")) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_SECOND_STORE_IDENTITY_MISSING");
   const enablements = entities.enablements ?? [];
-  if (enablements.length !== 5 || new Set(enablements.map((entry) => entry.providerCode)).size !== enablements.length || enablements.some((entry) => entry.status !== "ENABLED" || !providerCodes.has(entry.providerCode))) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_ENABLEMENT_PLAN_INVALID");
+  if (enablements.length !== 6 || new Set(enablements.map((entry) => entry.providerCode)).size !== enablements.length || enablements.some((entry) => entry.status !== "ENABLED" || !providerCodes.has(entry.providerCode))) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_ENABLEMENT_PLAN_INVALID");
   const bindingsByCode = new Map((entities.bindings ?? []).map((entry) => [entry.code, entry]));
   const templatesByCode = new Map((entities.templates ?? []).map((entry) => [entry.code, entry]));
-  if (templatesByCode.size !== 8) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_TEMPLATE_DENOMINATOR_INVALID");
+  if (templatesByCode.size !== 10) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_TEMPLATE_DENOMINATOR_INVALID");
   for (const template of templatesByCode.values()) {
     if (typeof template.templateName !== "string" || !template.templateName || typeof template.code !== "string" || !template.code) fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_TEMPLATE_INPUT_MISSING:${template.code ?? "UNKNOWN"}`);
     if (template.accessKind === "EXTERNAL" && (!providerCodes.has(template.providerCode) || !enablements.some((entry) => entry.providerCode === template.providerCode))) fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_EXTERNAL_TEMPLATE_PROVIDER_INVALID:${template.code}`);
@@ -183,7 +202,7 @@ export function buildStaticSeedPlan() {
 }
 
 export function validateStaticSeedPlan(input) {
-  if (input?.kind !== "external-collaboration-business-channel-seed-child-plan" || input.stageId !== stageId || input.status !== "STATIC_PLAN_ONLY" || input.business !== "NOT_RUN" || input.cleanup !== "NOT_APPLICABLE_STATIC_ONLY" || input.noDirectDatabaseWrites !== true || input.noRuntimeExecution !== true || input.requiresManagedParentRunId !== true || input.acceptanceScenarioIds?.length !== 14 || typeof input.runtimePlanDigest !== "string") fail("EXTERNAL_BUSINESS_CHANNEL_SEED_STATIC_PLAN_INVALID");
+  if (input?.kind !== "external-collaboration-business-channel-seed-child-plan" || input.stageId !== stageId || input.status !== "STATIC_PLAN_ONLY" || input.business !== "NOT_RUN" || input.cleanup !== "NOT_APPLICABLE_STATIC_ONLY" || input.noDirectDatabaseWrites !== true || input.noRuntimeExecution !== true || input.requiresManagedParentRunId !== true || JSON.stringify(input.acceptanceScenarioIds) !== JSON.stringify(acceptanceScenarioIds) || typeof input.runtimePlanDigest !== "string") fail("EXTERNAL_BUSINESS_CHANNEL_SEED_STATIC_PLAN_INVALID");
   return input;
 }
 
@@ -243,7 +262,7 @@ async function executeManagedSeed() {
     calls.push({stageId: name, managedDevRunId: managed.manifest.runId, owner: operation.owner, consumerFace: operation.consumerFaces?.join(",") ?? null, operationId, method: operation.method, routeTemplate: operation.path, status: response.status, durationMs: Date.now() - began, outcome: accepted ? "SUCCEEDED" : "FAILED", correlationId: response.headers.get("x-correlation-id") ?? correlationId, requestId});
     phase(name, accepted ? "PASS" : "FAIL", {operationId, httpStatus: response.status, requestId, ...(accepted ? {} : {problemCode: json?.errorCode ?? json?.code ?? "UNCLASSIFIED"})});
     if (!accepted) { firstFailure ??= `${name}_HTTP_${response.status}_${json?.errorCode ?? json?.code ?? "UNCLASSIFIED"}`; fail(firstFailure); }
-    return {json, cookie: cookieFromHeaders(response.headers)};
+    return {json, cookie: cookieFromHeaders(response.headers), status: response.status};
   };
   const assertChannel = (json, expected, ownerRef, templateRef, bindingRef = null) => {
     const actual = dataOf(json);
@@ -263,32 +282,43 @@ async function executeManagedSeed() {
         if (dataOf(updated.json)?.enablementStatus !== "ENABLED") fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_PROVIDER_ENABLEMENT_INVALID:${enablement.providerCode}`);
       }
     }
-    const loginOperations = async (name, loginName, roleNodeType) => {
+    const loginOperations = async (name, loginName, roleNodeType, roleName = null) => {
       const login = await request(`${name}-login`, "operationsWorkspacePasswordLogin", {groupWorkspaceKey: "aurora"}, {body: {loginName, password: managed.credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
       const cookie = required(login.cookie, `EXTERNAL_BUSINESS_CHANNEL_SEED_${name}_SESSION_MISSING`);
       let session = (await request(`${name}-session`, "getOperationsWorkspaceSessionEntry", {groupWorkspaceKey: "aurora"}, {cookie})).json;
       if (session?.outcome === "SELECT_IDENTITY") {
-        const candidates = (session.candidates ?? []).filter((entry) => entry.roleNodeType === roleNodeType);
+        const candidates = (session.candidates ?? []).filter((entry) => entry.roleNodeType === roleNodeType && (roleName === null || entry.roleName === roleName));
         if (candidates.length !== 1) fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_${name}_IDENTITY_AMBIGUOUS`);
         session = (await request(`${name}-select-context`, "selectOperationsWorkspaceSessionContext", {groupWorkspaceKey: "aurora"}, {cookie, body: {roleAssignmentRef: candidates[0].roleAssignmentRef, requiredContextVersion: required(session.contextVersion, `EXTERNAL_BUSINESS_CHANNEL_SEED_${name}_CONTEXT_VERSION_MISSING`)}})).json;
       }
-      const scopeKey = roleNodeType === "PROJECT" ? "project" : "store"; const ref = session?.scopeContext?.[scopeKey]?.dataNodeRef;
+      const scopeKey = roleNodeType === "PROJECT" ? "project" : roleNodeType === "STORE" ? "store" : null;
+      const ref = scopeKey === null ? session?.selected?.roleNodeRef : session?.scopeContext?.[scopeKey]?.dataNodeRef;
       if (typeof ref !== "string" || session?.selected?.roleNodeType !== roleNodeType || session.selected.roleNodeRef !== ref) fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_${name}_SCOPE_INVALID`);
       return {cookie, ref, contextVersion: required(session.contextVersion, `EXTERNAL_BUSINESS_CHANNEL_SEED_${name}_CONTEXT_VERSION_MISSING`)};
     };
     const project = await loginOperations("project", "r5-account-multi-role", "PROJECT");
     const store = await loginOperations("store", "r5-account-single-role", "STORE");
-    const ownerRefFor = (ownerNodeRef) => ownerNodeRef === "COLLAB-PROJECT" ? project.ref : ownerNodeRef === "COLLAB-STORE" ? store.ref : fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_RUNTIME_OWNER_UNSUPPORTED:${ownerNodeRef}`);
+    const storeB = await loginOperations("store-b", "r5-account-multi-role", "STORE", "门店商品管理员");
+    const organization = await loginOperations("organization", "r5-account-multi-role", "GROUP", "集团运营管理员");
+    const organizationProjectResponse = await request(
+      "organization-project-select",
+      "selectOperationsWorkspaceSessionDataNode",
+      {groupWorkspaceKey: "aurora"},
+      {cookie: organization.cookie, body: {dataNodeType: "PROJECT", dataNodeRef: project.ref, requiredContextVersion: organization.contextVersion}},
+    );
+    if (dataOf(organizationProjectResponse.json)?.scopeContext?.project?.dataNodeRef !== project.ref) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_ORGANIZATION_PROJECT_SCOPE_INVALID");
+    const organizationProject = {...organization, contextVersion: required(dataOf(organizationProjectResponse.json)?.contextVersion, "EXTERNAL_BUSINESS_CHANNEL_SEED_ORGANIZATION_CONTEXT_VERSION_MISSING")};
+    const ownerRefFor = (ownerNodeRef) => ownerNodeRef === "COLLAB-PROJECT" ? project.ref : ownerNodeRef === "COLLAB-STORE" ? store.ref : ownerNodeRef === "COLLAB-STORE-B" ? storeB.ref : fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_RUNTIME_OWNER_UNSUPPORTED:${ownerNodeRef}`);
     const templates = new Map();
     for (const template of inputs.dataset.entities.templates) {
-      const created = await request(`template-create-${template.code}`, "createOperationsBusinessChannelTemplate", {groupWorkspaceKey: "aurora"}, {cookie: project.cookie, expected: [200], body: {projectRef: project.ref, templateName: template.templateName, templateCode: template.code, accessKind: template.accessKind, operatorKind: template.ownerNodeType, orderKind: template.orderKind, dineInForm: template.dineInForm ?? null, providerCode: template.providerCode ?? null}});
+      const created = await request(`template-create-${template.code}`, "createOperationsBusinessChannelTemplate", {groupWorkspaceKey: "aurora"}, {cookie: project.cookie, expected: [200], body: {projectRef: project.ref, templateName: template.templateName, templateCode: template.code, accessKind: template.accessKind, operatorKind: template.ownerNodeType, orderKind: template.orderKind, dineInForm: template.dineInForm ?? null, providerCode: template.providerCode ?? null, storeVisibilityScope: template.storeVisibilityScope ?? null, visibleStoreRefs: (template.visibleStoreRefs ?? []).map(ownerRefFor)}});
       const value = dataOf(created.json);
       if (value?.templateCode !== template.code || value?.templateName !== template.templateName || value?.projectRef !== project.ref || value?.status !== "ENABLED") fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_TEMPLATE_READBACK_INVALID:${template.code}`);
-      templates.set(template.code, {ref: stringOf(created.json, "templateRef", `EXTERNAL_BUSINESS_CHANNEL_SEED_TEMPLATE_REF_MISSING:${template.code}`), version: versionOf(created.json, `EXTERNAL_BUSINESS_CHANNEL_SEED_TEMPLATE_VERSION_INVALID:${template.code}`)});
+      templates.set(template.code, {ref: stringOf(created.json, "templateRef", `EXTERNAL_BUSINESS_CHANNEL_SEED_TEMPLATE_REF_MISSING:${template.code}`), name: template.templateName, version: versionOf(created.json, `EXTERNAL_BUSINESS_CHANNEL_SEED_TEMPLATE_VERSION_INVALID:${template.code}`)});
     }
     const channels = new Map();
     for (const channel of inputs.dataset.entities.channels) {
-      const ownerRef = ownerRefFor(channel.ownerNodeRef); const client = channel.ownerNodeType === "PROJECT" ? project : store; const template = templates.get(channel.templateRef);
+      const ownerRef = ownerRefFor(channel.ownerNodeRef); const client = channel.ownerNodeType === "PROJECT" ? project : channel.ownerNodeRef === "COLLAB-STORE-B" ? storeB : store; const template = templates.get(channel.templateRef);
       const created = await request(`channel-create-${channel.code}`, "createOperationsBusinessChannel", {groupWorkspaceKey: "aurora"}, {cookie: client.cookie, expected: [200], body: {templateRef: template.ref, ownerNodeType: channel.ownerNodeType, ownerNodeRef: ownerRef, channelCode: channel.channelCode, channelName: channel.channelName, bindingRef: null}});
       const createdValue = dataOf(created.json); const channelRef = stringOf(created.json, "channelRef", `EXTERNAL_BUSINESS_CHANNEL_SEED_CHANNEL_REF_MISSING:${channel.code}`);
       if (createdValue?.channelCode !== channel.channelCode || createdValue?.status !== (channel.accessKind === "EXTERNAL" ? "DISABLED" : "ENABLED")) fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_CHANNEL_CREATE_INVALID:${channel.code}`);
@@ -312,8 +342,111 @@ async function executeManagedSeed() {
       const detail = await request(`channel-readback-${channel.code}`, "getOperationsBusinessChannelDetail", {groupWorkspaceKey: "aurora", channelRef: created.channelRef}, {cookie: created.client.cookie});
       assertChannel(detail.json, channel, created.ownerRef, created.templateRef, created.bindingRef);
     }
+    const mainTemplate = templates.get("TEMPLATE-STORE-INTERNAL-TAKEAWAY");
+    const statusTemplate = templates.get("TEMPLATE-STORE-VISIBILITY-STATUS");
+    if (!mainTemplate || !statusTemplate) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_VISIBILITY_TEMPLATE_READBACK_MISSING");
+    const removedStore = await request(
+      "template-remove-store-b-visibility",
+      "updateOperationsBusinessChannelTemplate",
+      {groupWorkspaceKey: "aurora", templateRef: mainTemplate.ref},
+      {cookie: project.cookie, expected: [200], body: {templateName: mainTemplate.name, expectedVersion: mainTemplate.version, storeVisibilityScope: "SELECTED_PROJECT_STORES", visibleStoreRefs: [store.ref]}},
+    );
+    if (dataOf(removedStore.json)?.storeVisibilityScope !== "SELECTED_PROJECT_STORES" || dataOf(removedStore.json)?.visibleStoreCount !== 1) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_VISIBILITY_REMOVE_READBACK_INVALID");
+    mainTemplate.version = versionOf(removedStore.json, "EXTERNAL_BUSINESS_CHANNEL_SEED_VISIBILITY_REMOVE_VERSION_INVALID");
+    const retainedStoreB = await request(
+      "store-b-channel-retained-after-visibility-remove",
+      "getOperationsStoreBusinessChannels",
+      {groupWorkspaceKey: "aurora", storeRef: storeB.ref},
+      {cookie: storeB.cookie, queryParameters: {usage: "SALES_MENU", pageSize: 20}},
+    );
+    if (!(dataOf(retainedStoreB.json)?.items ?? []).some((entry) => entry.channelCode === "CHANNEL-STORE-INTERNAL-TAKEAWAY-B" && entry.status === "ENABLED")) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_EXISTING_CHANNEL_NOT_RETAINED");
+    const visibleStorePage = async (filter, name) => request(
+      name,
+      "getOperationsBusinessChannelTemplateVisibleStores",
+      {groupWorkspaceKey: "aurora", templateRef: statusTemplate.ref},
+      {cookie: project.cookie, queryParameters: {storeStatusFilter: filter, pageSize: 20}},
+    );
+    const assertStatusBlocked = async (suffix) => {
+      const candidates = await request(
+        `store-b-${suffix}-candidate-blocked`,
+        "getOperationsStoreBusinessChannelTemplateCandidates",
+        {groupWorkspaceKey: "aurora"},
+        {cookie: storeB.cookie, expected: [403, 409], queryParameters: {projectRef: project.ref, storeRef: storeB.ref, pageSize: 20}},
+      );
+      validateStoreCandidateBlock({
+        status: candidates.status,
+        json: candidates.json,
+        code: `EXTERNAL_BUSINESS_CHANNEL_SEED_${suffix}_CANDIDATE_PROBLEM_INVALID`,
+      });
+      const attemptedCode = `CHANNEL-STORE-VISIBILITY-BLOCKED-${suffix}`;
+      const created = await request(
+        `store-b-${suffix}-create-blocked`,
+        "createOperationsBusinessChannel",
+        {groupWorkspaceKey: "aurora"},
+        {cookie: storeB.cookie, expected: [403, 409], body: {templateRef: statusTemplate.ref, ownerNodeType: "STORE", ownerNodeRef: storeB.ref, channelCode: attemptedCode, channelName: `状态门禁${suffix}`, bindingRef: null}},
+      );
+      validateStoreCandidateBlock({
+        status: created.status,
+        json: created.json,
+        code: `EXTERNAL_BUSINESS_CHANNEL_SEED_${suffix}_CREATE_PROBLEM_INVALID`,
+      });
+      const channelsAfterReject = await request(
+        `store-b-${suffix}-create-rejection-readback`,
+        "getOperationsStoreBusinessChannels",
+        {groupWorkspaceKey: "aurora", storeRef: storeB.ref},
+        {cookie: organizationProject.cookie, queryParameters: {usage: "SALES_MENU", pageSize: 20}},
+      );
+      if ((dataOf(channelsAfterReject.json)?.items ?? []).some((entry) => entry.channelCode === attemptedCode)) fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_${suffix}_REJECTED_CHANNEL_PERSISTED`);
+    };
+    const initialVisible = await visibleStorePage("ALL", "visibility-status-initial-readback");
+    if (dataOf(initialVisible.json)?.total !== 1 || dataOf(initialVisible.json)?.items?.[0]?.storeRef !== storeB.ref || dataOf(initialVisible.json)?.items?.[0]?.storeStatus !== "ENABLED") fail("EXTERNAL_BUSINESS_CHANNEL_SEED_VISIBILITY_INITIAL_READBACK_INVALID");
+    const disabled = await request(
+      "store-b-status-disabled",
+      "transitionOperationsOrganizationStoreStatus",
+      {groupWorkspaceKey: "aurora", storeId: storeB.ref},
+      {cookie: organizationProject.cookie, expected: [200], body: {targetStatus: "DISABLED", expectedVersion: 1}},
+    );
+    if (dataOf(disabled.json)?.status !== "DISABLED") fail("EXTERNAL_BUSINESS_CHANNEL_SEED_STORE_DISABLED_READBACK_INVALID");
+    await assertStatusBlocked("disabled");
+    const enabledAgain = await request(
+      "store-b-status-enabled-again",
+      "transitionOperationsOrganizationStoreStatus",
+      {groupWorkspaceKey: "aurora", storeId: storeB.ref},
+      {cookie: organizationProject.cookie, expected: [200], body: {targetStatus: "ENABLED", expectedVersion: revisionOf(disabled.json, "EXTERNAL_BUSINESS_CHANNEL_SEED_STORE_DISABLED_REVISION_INVALID")}},
+    );
+    if (dataOf(enabledAgain.json)?.status !== "ENABLED") fail("EXTERNAL_BUSINESS_CHANNEL_SEED_STORE_REENABLE_READBACK_INVALID");
+    const voided = await request(
+      "store-b-status-voided",
+      "transitionOperationsOrganizationStoreStatus",
+      {groupWorkspaceKey: "aurora", storeId: storeB.ref},
+      {cookie: organizationProject.cookie, expected: [200], body: {targetStatus: "VOIDED", expectedVersion: revisionOf(enabledAgain.json, "EXTERNAL_BUSINESS_CHANNEL_SEED_STORE_REENABLED_REVISION_INVALID")}},
+    );
+    if (dataOf(voided.json)?.status !== "VOIDED") fail("EXTERNAL_BUSINESS_CHANNEL_SEED_STORE_VOIDED_READBACK_INVALID");
+    await assertStatusBlocked("voided");
+    const allWithVoided = await visibleStorePage("ALL", "visibility-status-voided-all-readback");
+    const nonVoidedAfterVoid = await visibleStorePage("NON_VOIDED", "visibility-status-voided-non-voided-readback");
+    if (dataOf(allWithVoided.json)?.total !== 1 || dataOf(allWithVoided.json)?.items?.[0]?.storeStatus !== "VOIDED") fail("EXTERNAL_BUSINESS_CHANNEL_SEED_VOIDED_RELATION_READBACK_INVALID");
+    if (dataOf(nonVoidedAfterVoid.json)?.total !== 0 || (dataOf(nonVoidedAfterVoid.json)?.items ?? []).length !== 0) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_VOIDED_COUNT_READBACK_INVALID");
+    const retainedVoidedRelation = await request(
+      "store-b-voided-relation-retained",
+      "updateOperationsBusinessChannelTemplate",
+      {groupWorkspaceKey: "aurora", templateRef: statusTemplate.ref},
+      {cookie: project.cookie, expected: [200], body: {templateName: statusTemplate.name, expectedVersion: statusTemplate.version, storeVisibilityScope: "SELECTED_PROJECT_STORES", visibleStoreRefs: [storeB.ref]}},
+    );
+    statusTemplate.version = versionOf(retainedVoidedRelation.json, "EXTERNAL_BUSINESS_CHANNEL_SEED_VOIDED_RELATION_RETAIN_VERSION_INVALID");
+    const allAfterNoop = await visibleStorePage("ALL", "visibility-status-voided-retained-readback");
+    if (dataOf(allAfterNoop.json)?.total !== 1 || dataOf(allAfterNoop.json)?.items?.[0]?.storeStatus !== "VOIDED") fail("EXTERNAL_BUSINESS_CHANNEL_SEED_VOIDED_RELATION_NOT_RETAINED");
+    const removedVoidedRelation = await request(
+      "store-b-voided-relation-removed",
+      "updateOperationsBusinessChannelTemplate",
+      {groupWorkspaceKey: "aurora", templateRef: statusTemplate.ref},
+      {cookie: project.cookie, expected: [200], body: {templateName: statusTemplate.name, expectedVersion: statusTemplate.version, storeVisibilityScope: "SELECTED_PROJECT_STORES", visibleStoreRefs: []}},
+    );
+    statusTemplate.version = versionOf(removedVoidedRelation.json, "EXTERNAL_BUSINESS_CHANNEL_SEED_VOIDED_RELATION_REMOVE_VERSION_INVALID");
+    const allAfterRemove = await visibleStorePage("ALL", "visibility-status-voided-removed-readback");
+    if (dataOf(allAfterRemove.json)?.total !== 0 || (dataOf(allAfterRemove.json)?.items ?? []).length !== 0) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_VOIDED_RELATION_NOT_REMOVED");
     const storeReadback = await request("store-sales-menu-channel-readback", "getOperationsStoreBusinessChannels", {groupWorkspaceKey: "aurora", storeRef: store.ref}, {cookie: store.cookie, queryParameters: {usage: "SALES_MENU", pageSize: 20}});
-    const expectedEligible = inputs.dataset.entities.channels.filter((entry) => entry.ownerNodeType === "STORE" && entry.accessKind === "INTERNAL" && ["DINE_IN", "TAKEAWAY"].includes(entry.orderKind)).map((entry) => entry.channelCode).sort();
+    const expectedEligible = inputs.dataset.entities.channels.filter((entry) => entry.ownerNodeType === "STORE" && entry.ownerNodeRef === "COLLAB-STORE" && entry.accessKind === "INTERNAL" && ["DINE_IN", "TAKEAWAY"].includes(entry.orderKind)).map((entry) => entry.channelCode).sort();
     const actualEligible = (dataOf(storeReadback.json)?.items ?? []).map((entry) => entry.channelCode).sort();
     if (JSON.stringify(actualEligible) !== JSON.stringify(expectedEligible)) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_ELIGIBLE_READBACK_INVALID");
     const projectReadback = await request("project-channel-readback", "getOperationsProjectBusinessChannels", {groupWorkspaceKey: "aurora", projectRef: project.ref}, {cookie: project.cookie});

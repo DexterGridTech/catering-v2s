@@ -67,11 +67,7 @@ public final class SalesMenuReadback {
     }
 
     public record SalesMenuOrderOptionValue(
-            UUID definitionValueRef,
-            String name,
-            int displayOrder,
-            boolean defaultValue,
-            Long extraPrice) {}
+            UUID definitionValueRef, String name, int displayOrder, boolean defaultValue, Long extraPrice) {}
 
     public record SalesMenuOrderOption(
             UUID definitionRef,
@@ -129,12 +125,12 @@ public final class SalesMenuReadback {
                     displayName,
                     productShape,
                     orderOptions,
-                List.of(),
-                List.of(),
-                defaultPriceCents,
-                catalogPrimaryImageAssetRef,
-                List.of(),
-                saleContent,
+                    List.of(),
+                    List.of(),
+                    defaultPriceCents,
+                    catalogPrimaryImageAssetRef,
+                    List.of(),
+                    saleContent,
                     orderingConstraints,
                     displayMedia,
                     displayOrder,

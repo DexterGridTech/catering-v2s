@@ -11,6 +11,8 @@ public record BusinessChannelTemplateView(
     BusinessChannelTemplateViewOrderKind orderKind,
     BusinessChannelTemplateViewDineInForm dineInForm,
     tools.jackson.databind.JsonNode providerCode,
+    BusinessChannelTemplateStoreVisibilityScope storeVisibilityScope,
+    Long visibleStoreCount,
     BusinessChannelTemplateViewStatus status,
     java.util.List<BusinessChannelTemplateViewStatusDimensionsItem> statusDimensions,
     java.util.List<BusinessChannelTemplateViewBlockersItem> blockers,

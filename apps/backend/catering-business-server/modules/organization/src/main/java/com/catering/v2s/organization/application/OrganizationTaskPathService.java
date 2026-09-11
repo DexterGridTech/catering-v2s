@@ -82,19 +82,15 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                         + " project.id=store.project_id AND project.workspace_uuid=store.workspace_uuid AND"
                         + " project.group_workspace_key=store.group_workspace_key AND project.node_type='PROJECT' AND"
                         + " project.status='ENABLED' CROSS JOIN group_fact WHERE store.id=? AND"
-                        + " store.workspace_uuid=? AND"
-                        + " store.group_workspace_key=?), ancestry AS (SELECT store_fact.project_id AS target_id,"
-                        + " node.id,"
-                        + " node.parent_id, node.node_type, node.code, node.name, 0 AS depth FROM store_fact JOIN"
-                        + " organization.organization_node node ON node.id=store_fact.project_id AND"
-                        + " node.workspace_uuid=?"
-                        + " AND node.group_workspace_key=? AND node.status='ENABLED' UNION ALL SELECT"
-                        + " ancestry.target_id,"
-                        + " parent.id, parent.parent_id, parent.node_type, parent.code, parent.name, ancestry.depth+1"
-                        + " FROM"
+                        + " store.workspace_uuid=? AND store.group_workspace_key=?), ancestry AS (SELECT"
+                        + " store_fact.project_id AS target_id, node.id, node.parent_id, node.node_type, node.code,"
+                        + " node.name, 0 AS depth FROM store_fact JOIN organization.organization_node node ON"
+                        + " node.id=store_fact.project_id AND node.workspace_uuid=? AND node.group_workspace_key=? AND"
+                        + " node.status='ENABLED' UNION ALL SELECT ancestry.target_id, parent.id, parent.parent_id,"
+                        + " parent.node_type, parent.code, parent.name, ancestry.depth+1 FROM"
                         + " organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id WHERE"
-                        + " parent.workspace_uuid=? AND parent.group_workspace_key=? AND parent.status='ENABLED')"
-                        + " SELECT"
+                        + " parent.workspace_uuid=? AND parent.group_workspace_key=? AND parent.status='ENABLED') "
+                        + "SELECT"
                         + " store_fact.project_id, store_fact.tenant_id, store_fact.brand_id, store_fact.code,"
                         + " ancestry.target_id, max(ancestry.node_type) FILTER (WHERE ancestry.depth=0) AS target_type,"
                         + " array_agg(ancestry.id ORDER BY ancestry.depth DESC) AS ancestor_ids,"
@@ -102,12 +98,11 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                         + " array_agg(ancestry.code ORDER BY ancestry.depth DESC) AS path_node_codes,"
                         + " array_agg(ancestry.name ORDER BY ancestry.depth DESC) AS path_node_names,"
                         + " array_agg(ancestry.node_type ORDER BY ancestry.depth DESC) AS path_node_types,"
-                        + " string_agg(ancestry.code"
-                        + " || ' ' || ancestry.name, ' / ' ORDER BY ancestry.depth DESC) AS display_path,"
-                        + " store_fact.group_id FROM store_fact JOIN ancestry ON"
-                        + " ancestry.target_id=store_fact.project_id"
-                        + " GROUP BY store_fact.project_id, store_fact.tenant_id, store_fact.brand_id, store_fact.code,"
-                        + " ancestry.target_id, store_fact.group_id",
+                        + " string_agg(ancestry.code || ' ' || ancestry.name, ' / ' ORDER BY ancestry.depth DESC)"
+                        + " AS display_path, store_fact.group_id FROM store_fact JOIN ancestry ON"
+                        + " ancestry.target_id=store_fact.project_id GROUP BY store_fact.project_id,"
+                        + " store_fact.tenant_id, store_fact.brand_id, store_fact.code, ancestry.target_id,"
+                        + " store_fact.group_id",
                 statement -> {
                     statement.setString(1, key);
                     statement.setObject(2, storeId);
@@ -137,6 +132,46 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
                                     ancestors,
                                     result.getString("display_path"),
                                     pathNodes(result)));
+                });
+    }
+
+    /** One set-based membership owner read; Store status is intentionally not filtered for template saves. */
+    @Override
+    public Map<UUID, UUID> requireStoreProjectMemberships(UUID workspaceUuid, String key, List<UUID> storeIds) {
+        if (workspaceUuid == null || key == null || storeIds == null) throw new TaskPathNotFoundException();
+        LinkedHashSet<UUID> requested = new LinkedHashSet<>();
+        for (UUID storeId : storeIds) {
+            if (storeId == null || !requested.add(storeId)) throw new TaskPathNotFoundException();
+        }
+        if (requested.isEmpty()) return Map.of();
+        return jdbc.query(
+                "WITH group_fact AS (SELECT commercial_group_uuid FROM organization.commercial_group"
+                        + " WHERE group_workspace_key=?) SELECT store.id AS store_id, store.project_id FROM"
+                        + " organization.store store JOIN organization.organization_node project ON"
+                        + " project.id=store.project_id AND project.workspace_uuid=store.workspace_uuid AND"
+                        + " project.group_workspace_key=store.group_workspace_key AND project.node_type='PROJECT' AND"
+                        + " project.status='ENABLED' CROSS JOIN group_fact WHERE store.id IN ("
+                        + placeholders(requested.size())
+                        + ") AND store.workspace_uuid=? AND store.group_workspace_key=?",
+                statement -> {
+                    int index = 1;
+                    statement.setString(index++, key);
+                    for (UUID storeId : requested) statement.setObject(index++, storeId);
+                    statement.setObject(index++, workspaceUuid);
+                    statement.setString(index, key);
+                },
+                result -> {
+                    LinkedHashMap<UUID, UUID> projectRefsByStore = new LinkedHashMap<>();
+                    while (result.next()) {
+                        UUID storeId = result.getObject("store_id", UUID.class);
+                        if (!requested.contains(storeId)
+                                || projectRefsByStore.put(storeId, result.getObject("project_id", UUID.class))
+                                        != null) {
+                            throw new TaskPathNotFoundException();
+                        }
+                    }
+                    if (!projectRefsByStore.keySet().equals(requested)) throw new TaskPathNotFoundException();
+                    return Map.copyOf(projectRefsByStore);
                 });
     }
 

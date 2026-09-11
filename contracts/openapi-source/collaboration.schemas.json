@@ -17,6 +17,7 @@
               "MEMBER_BENEFIT",
               "GROUP_BUY",
               "TAKEAWAY",
+              "DINE_IN",
               "INVENTORY_SYNC",
               "TAKEAWAY_DELIVERY",
               "ORDER_SYNC"
@@ -129,8 +130,9 @@
             "items": {
               "type": "string",
               "enum": [
-                "TAKEAWAY",
-                "GROUP_BUY",
+              "TAKEAWAY",
+              "DINE_IN",
+              "GROUP_BUY",
                 "ORDER_SYNC",
                 "MEMBER_BENEFIT"
               ]
@@ -252,6 +254,7 @@
               "MEMBER_BENEFIT",
               "GROUP_BUY",
               "TAKEAWAY",
+              "DINE_IN",
               "INVENTORY_SYNC",
               "TAKEAWAY_DELIVERY",
               "ORDER_SYNC",
@@ -343,6 +346,7 @@
               "MEMBER_BENEFIT",
               "GROUP_BUY",
               "TAKEAWAY",
+              "DINE_IN",
               "INVENTORY_SYNC",
               "TAKEAWAY_DELIVERY",
               "ORDER_SYNC",
@@ -354,8 +358,9 @@
             "items": {
               "type": "string",
               "enum": [
-                "TAKEAWAY",
-                "GROUP_BUY",
+              "TAKEAWAY",
+              "DINE_IN",
+              "GROUP_BUY",
                 "ORDER_SYNC",
                 "MEMBER_BENEFIT"
               ]

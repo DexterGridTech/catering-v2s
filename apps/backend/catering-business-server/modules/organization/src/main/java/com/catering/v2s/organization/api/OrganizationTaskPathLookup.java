@@ -24,6 +24,17 @@ public interface OrganizationTaskPathLookup {
     }
 
     /**
+     * One bounded owner read for the Store refs used by a command. The returned map contains every requested ref;
+     * missing or out-of-scope organization facts fail closed in the owner implementation. Store status is deliberately
+     * excluded: template saves may retain a VOIDED relation and the business-channel owner applies the separate
+     * ENABLED-only gate when creating a new Store channel.
+     */
+    default Map<UUID, UUID> requireStoreProjectMemberships(
+            UUID workspaceUuid, String groupWorkspaceKey, List<UUID> storeIds) {
+        throw new UnsupportedOperationException("store project membership lookup is not implemented by this owner");
+    }
+
+    /**
      * Resolves the persisted target facts needed solely to authorize an owner status transition. This may include
      * disabled target and ancestry facts so an authorized actor can re-enable them, but it must not be used for
      * ordinary authority, session, candidate, or presentation reads.

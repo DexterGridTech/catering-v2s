@@ -1,4 +1,4 @@
-import {useEffect, useMemo} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useCursorCandidates} from '@catering-v2s/admin-ui-foundation';
 import {operationsRtk} from '../api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../api/generated/operations-edge.rtk';
@@ -34,8 +34,10 @@ export function useOrganizationCandidates({
   brandId?: string;
   tenantId?: string;
 }) {
+  const [internalQueryText, setInternalQueryText] = useState<string>();
+  const effectiveQueryText = queryText ?? internalQueryText;
   const candidates = useCursorCandidates<OrganizationCandidate>({
-    queryText,
+    queryText: effectiveQueryText,
     resetKey: [
       open,
       queryContext.groupWorkspaceKey,
@@ -94,6 +96,7 @@ export function useOrganizationCandidates({
 
   const onPopupScroll = (event: Parameters<typeof candidates.onPopupScroll>[0]) =>
     candidates.onPopupScroll(event, result.isFetching);
+  const setStoreSearch = useCallback((value: string) => setInternalQueryText(value), []);
   return {
     ...result,
     data: result.currentData,
@@ -101,6 +104,7 @@ export function useOrganizationCandidates({
     total: candidates.total,
     page: candidates.page,
     pageSize: candidates.pageSize,
+    setStoreSearch,
     onPopupScroll,
   };
 }

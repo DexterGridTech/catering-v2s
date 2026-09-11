@@ -6,7 +6,7 @@
   "localNoNetworkActionP95Ms": 250,
   "namespaceAndFixtureBudgetMs": 120000,
   "cleanupBudgetMs": 120000,
-  "caseCount": 18,
+  "caseCount": 20,
   "cases": [
     {
       "caseId": "sales-menu-entry-and-channels",
@@ -85,7 +85,7 @@
         },
         {
           "operationId": "getOperationsSalesMenu",
-          "maxRequestCount": 4
+          "maxRequestCount": 5
         },
         {
           "operationId": "getOperationsSalesMenuDraftItems",
@@ -93,7 +93,7 @@
         },
         {
           "operationId": "getOperationsSalesMenuPublicationPreview",
-          "maxRequestCount": 4
+          "maxRequestCount": 5
         },
         {
           "operationId": "getPublicAssetContent",
@@ -143,7 +143,7 @@
         },
         {
           "operationId": "getOperationsSalesMenu",
-          "maxRequestCount": 4
+          "maxRequestCount": 5
         },
         {
           "operationId": "getOperationsSalesMenuDraftItems",
@@ -151,7 +151,7 @@
         },
         {
           "operationId": "getOperationsSalesMenuPublicationPreview",
-          "maxRequestCount": 4
+          "maxRequestCount": 5
         },
         {
           "operationId": "getPublicAssetContent",
@@ -254,7 +254,7 @@
         },
         {
           "operationId": "getOperationsSalesMenu",
-          "maxRequestCount": 3
+          "maxRequestCount": 4
         },
         {
           "operationId": "getOperationsSalesMenuDraftSections",
@@ -266,7 +266,7 @@
         },
         {
           "operationId": "getOperationsSalesMenuPublicationPreview",
-          "maxRequestCount": 3
+          "maxRequestCount": 4
         },
         {
           "operationId": "getPublicAssetContent",
@@ -383,11 +383,11 @@
         },
         {
           "operationId": "getOperationsSalesMenu",
-          "maxRequestCount": 4
+          "maxRequestCount": 5
         },
         {
           "operationId": "getOperationsSalesMenuDraftSections",
-          "maxRequestCount": 3
+          "maxRequestCount": 4
         },
         {
           "operationId": "getOperationsSalesMenuDraftItems",
@@ -395,7 +395,7 @@
         },
         {
           "operationId": "getOperationsSalesMenuPublicationPreview",
-          "maxRequestCount": 4
+          "maxRequestCount": 5
         },
         {
           "operationId": "getPublicAssetContent",
@@ -440,7 +440,7 @@
         },
         {
           "operationId": "getOperationsSalesMenu",
-          "maxRequestCount": 3
+          "maxRequestCount": 4
         },
         {
           "operationId": "getOperationsSalesMenuDraftSections",
@@ -452,7 +452,7 @@
         },
         {
           "operationId": "getOperationsSalesMenuPublicationPreview",
-          "maxRequestCount": 3
+          "maxRequestCount": 4
         },
         {
           "operationId": "getPublicAssetContent",
@@ -497,7 +497,7 @@
         },
         {
           "operationId": "getOperationsSalesMenu",
-          "maxRequestCount": 3
+          "maxRequestCount": 4
         },
         {
           "operationId": "getOperationsSalesMenuDraftSections",
@@ -712,11 +712,11 @@
         },
         {
           "operationId": "getOperationsStoreBusinessChannels",
-          "maxRequestCount": 5
+          "maxRequestCount": 6
         },
         {
           "operationId": "getOperationsBusinessChannelTemplates",
-          "maxRequestCount": 4
+          "maxRequestCount": 5
         },
         {
           "operationId": "getOperationsWorkspaceSessionEntry",
@@ -811,7 +811,7 @@
       "maxRequestCount": [
         {
           "operationId": "getOperationsSalesMenu",
-          "maxRequestCount": 4
+          "maxRequestCount": 5
         },
         {
           "operationId": "copyOperationsSalesMenu",
@@ -864,7 +864,7 @@
       "maxRequestCount": [
         {
           "operationId": "getOperationsSalesMenuPublicationPreview",
-          "maxRequestCount": 5
+          "maxRequestCount": 6
         },
         {
           "operationId": "setOperationsSalesMenuActivation",
@@ -996,7 +996,7 @@
         },
         {
           "operationId": "getOperationsSalesMenu",
-          "maxRequestCount": 8
+          "maxRequestCount": 9
         },
         {
           "operationId": "getOperationsSalesMenuDraftSections",
@@ -1057,7 +1057,7 @@
         },
         {
           "operationId": "getOperationsSalesMenu",
-          "maxRequestCount": 2
+          "maxRequestCount": 3
         },
         {
           "operationId": "getOperationsSalesMenuDraftSections",
@@ -1069,7 +1069,7 @@
         },
         {
           "operationId": "getOperationsSalesMenuPublicationPreview",
-          "maxRequestCount": 2
+          "maxRequestCount": 3
         },
         {
           "operationId": "getOperationsBusinessChannelTemplates",
@@ -1083,8 +1083,102 @@
       "caseExpectedDbMs": 1000,
       "caseLocalActionMs": 2200,
       "caseTimeoutMs": 35000
+    },
+    {
+      "caseId": "business-channel-external-dine-in-template",
+      "scenarioId": "SM-L2-017",
+      "operationIds": [
+        "getOperationsExternalProviderCandidates"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsExternalProviderCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsBusinessChannelTemplates",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsProjectBusinessChannels",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsStoreBusinessChannels",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getPublicAssetContent",
+          "maxRequestCount": 4
+        }
+      ],
+      "caseExpectedDbMs": 1200,
+      "caseLocalActionMs": 2500,
+      "caseTimeoutMs": 35000
+    },
+    {
+      "caseId": "business-channel-store-all-and-sales-menu-exclusion",
+      "scenarioId": "SM-L2-018",
+      "operationIds": [
+        "getOperationsStoreProfile",
+        "getOperationsStoreBusinessChannelTemplateCandidates",
+        "getOperationsStoreBusinessChannels"
+      ],
+      "maxRequestCount": [
+        {
+          "operationId": "getOperationsStoreBusinessChannelTemplateCandidates",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsStoreBusinessChannels",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsStoreProfile",
+          "maxRequestCount": 2
+        },
+        {
+          "operationId": "getOperationsSalesMenus",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsSalesMenu",
+          "maxRequestCount": 4
+        },
+        {
+          "operationId": "getOperationsSalesMenuDraftSections",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsSalesMenuDraftItems",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsSalesMenuPublicationPreview",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsBusinessChannelTemplates",
+          "maxRequestCount": 3
+        },
+        {
+          "operationId": "getOperationsWorkspaceSessionEntry",
+          "maxRequestCount": 6
+        },
+        {
+          "operationId": "getPublicAssetContent",
+          "maxRequestCount": 4
+        }
+      ],
+      "caseExpectedDbMs": 1500,
+      "caseLocalActionMs": 3500,
+      "caseTimeoutMs": 45000
     }
   ],
-  "fullRunExpectedMs": 314900,
-  "fullRunTimeoutMs": 473000
+  "fullRunExpectedMs": 323600,
+  "fullRunTimeoutMs": 486000
 }

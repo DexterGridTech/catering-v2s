@@ -5,7 +5,7 @@
   "bindingMode": "CASE_PARAMETER_CONTROL_KEYS",
   "sourceOfTruth": "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
   "caseBlueprint": "contracts/policy/sales-menu-l2-case-blueprint.json",
-  "caseCount": 18,
+  "caseCount": 20,
   "controls": {
     "STORE_SCOPE_TRIGGER": {
       "testId": "operations-data-scope-trigger",
@@ -611,6 +611,51 @@
       "testIdPrefix": "sales-menu-log-pagination",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"
+      ]
+    },
+    "BUSINESS_CHANNEL_PROJECT_PAGE": {
+      "testId": "project-business-channel-page",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/business-channel/ui/ProjectBusinessChannelPage.tsx"
+      ]
+    },
+    "BUSINESS_CHANNEL_PROJECT_TEMPLATE_LIST": {
+      "testId": "project-business-channel-template-list",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/business-channel/ui/ProjectBusinessChannelPage.tsx"
+      ]
+    },
+    "BUSINESS_CHANNEL_PROJECT_TEMPLATE_DETAIL": {
+      "testIdTemplate": "project-business-channel-template-open-detail-${templateRef}",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/app/automation/businessChannelTemplateTestIds.ts",
+        "apps/frontend/operations-admin/src/features/business-channel/ui/ProjectBusinessChannelPage.tsx"
+      ]
+    },
+    "BUSINESS_CHANNEL_TEMPLATE_DETAIL": {
+      "testId": "business-channel-template-detail",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/business-channel/ui/BusinessChannelTemplateDetailDrawer.tsx"
+      ]
+    },
+    "BUSINESS_CHANNEL_STORE_PAGE": {
+      "testId": "store-business-channel-page",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/business-channel/ui/StoreBusinessChannelPage.tsx"
+      ]
+    },
+    "BUSINESS_CHANNEL_STORE_TEMPLATE_CANDIDATE_TABLE": {
+      "testId": "business-channel-store-template-candidate-table",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/app/automation/businessChannelTemplateTestIds.ts",
+        "apps/frontend/operations-admin/src/features/business-channel/ui/StoreBusinessChannelPage.tsx"
+      ]
+    },
+    "BUSINESS_CHANNEL_STORE_LIST": {
+      "testId": "business-channel-store-list",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/app/automation/businessChannelTemplateTestIds.ts",
+        "apps/frontend/operations-admin/src/features/business-channel/ui/BusinessChannelList.tsx"
       ]
     }
   },

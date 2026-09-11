@@ -671,14 +671,17 @@ function validate(root = ROOT) {
   const caesarSeed = fixtures.seedDatasets.find((entry) => entry.fixtureId === "SEED-CAESAR");
   const materialSeed = fixtures.seedDatasets.find((entry) => entry.fixtureId === "SEED-MATERIALS");
   const latteSkusByCode = new Map((latteSeed.entities.skus || []).map((sku) => [sku.code, sku]));
-  const latteNonVoidedSkuCodes = (latteSeed.entities.skus || [])
-    .filter((sku) => sku.status !== "VOIDED")
+  const latteEnabledSkuCodes = (latteSeed.entities.skus || [])
+    .filter((sku) => sku.status === "ENABLED")
     .map((sku) => sku.code);
+  const latteSkuStatuses = new Set((latteSeed.entities.skus || []).map((sku) => sku.status));
   const latteBomSkuCodes = new Set((latteSeed.entities.bomLines || []).map((line) => line.skuCode));
   expect(
-    latteSeed.entities.skus?.length === 3
-      && latteNonVoidedSkuCodes.length >= 2
-      && latteNonVoidedSkuCodes.every((skuCode) => latteBomSkuCodes.has(skuCode))
+    latteSeed.entities.skus?.length >= 4
+      && latteEnabledSkuCodes.length >= 2
+      && latteSkuStatuses.has("DISABLED")
+      && latteSkuStatuses.has("VOIDED")
+      && latteEnabledSkuCodes.every((skuCode) => latteBomSkuCodes.has(skuCode))
       && (latteSeed.entities.bomLines || []).every((line) => latteSkusByCode.get(line.skuCode)?.status !== "VOIDED"),
     "P1_SEED_LATTE_GRAPH",
   );

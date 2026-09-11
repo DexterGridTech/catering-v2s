@@ -45,14 +45,22 @@ export function RoleDetailDrawer({
     ? [
         {
           key: 'audit',
-          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.role.audit}>操作历史</AdminDetailActionLabel>,
+          label: (
+            <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.role.audit}>
+              操作历史
+            </AdminDetailActionLabel>
+          ),
           onClick: onAudit,
         },
         ...(canManageWorkspaceIam(role.status)
           ? [
               {
                 key: 'edit',
-                label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.role.edit}>编辑业务角色</AdminDetailActionLabel>,
+                label: (
+                  <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.role.edit}>
+                    编辑业务角色
+                  </AdminDetailActionLabel>
+                ),
                 onClick: onEdit,
               },
               ...(toggleWorkspaceIamStatus(role.status)
@@ -99,10 +107,7 @@ export function RoleDetailDrawer({
       {...testId('workspace-role-detail-drawer')}
       extra={
         actionItems.length > 0 ? (
-          <AdminDetailActionMenu
-            items={actionItems}
-            triggerTestId={platformDetailDrawerTestIds.role.actionMenu}
-          />
+          <AdminDetailActionMenu items={actionItems} triggerTestId={platformDetailDrawerTestIds.role.actionMenu} />
         ) : undefined
       }
     >

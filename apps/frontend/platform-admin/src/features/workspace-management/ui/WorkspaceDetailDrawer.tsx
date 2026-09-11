@@ -1,4 +1,4 @@
-import {Alert, Button, Descriptions, Drawer, Image, Space, Tag} from 'antd';
+import {Alert, Descriptions, Drawer, Image, Tag} from 'antd';
 import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
@@ -51,12 +51,20 @@ export function WorkspaceDetailDrawer({
           : []),
         {
           key: 'audit',
-          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.workspace.audit}>操作历史</AdminDetailActionLabel>,
+          label: (
+            <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.workspace.audit}>
+              操作历史
+            </AdminDetailActionLabel>
+          ),
           onClick: onAudit,
         },
         {
           key: 'edit',
-          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.workspace.edit}>编辑</AdminDetailActionLabel>,
+          label: (
+            <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.workspace.edit}>
+              编辑
+            </AdminDetailActionLabel>
+          ),
           onClick: onEdit,
         },
         {
@@ -84,10 +92,7 @@ export function WorkspaceDetailDrawer({
       {...testId('platform-workspace-detail-drawer')}
       extra={
         actionItems.length > 0 ? (
-          <AdminDetailActionMenu
-            items={actionItems}
-            triggerTestId={platformDetailDrawerTestIds.workspace.actionMenu}
-          />
+          <AdminDetailActionMenu items={actionItems} triggerTestId={platformDetailDrawerTestIds.workspace.actionMenu} />
         ) : undefined
       }
     >

@@ -24,6 +24,15 @@ public interface BusinessChannelReadApi {
             String sortKey,
             String sortDirection);
 
+    BusinessChannelReadback.VisibleStorePage pageTemplateVisibleStores(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID templateRef,
+            UUID projectRef,
+            String storeStatusFilter,
+            String cursor,
+            int pageSize);
+
     BusinessChannelReadback.ChannelPage pageChannels(
             UUID workspaceUuid,
             String groupWorkspaceKey,

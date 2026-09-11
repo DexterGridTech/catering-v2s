@@ -8,6 +8,7 @@ import {plan as seedPlan} from './external-collaboration-business-channel-seed-p
 import {
   ExternalCollaborationBusinessChannelSeedFailure,
   buildStaticSeedPlan,
+  validateStoreCandidateBlock,
   validateParentSeedContext,
   validateRuntimeSeedStaticInputs,
   validateStaticSeedPlan,
@@ -40,7 +41,7 @@ test('business-channel seed static child plan has no execution authority', () =>
   assert.equal(staticPlan.noDirectDatabaseWrites, true);
   assert.equal(staticPlan.noRuntimeExecution, true);
   assert.equal(staticPlan.requiresManagedParentRunId, true);
-  assert.equal(staticPlan.acceptanceScenarioIds.length, 14);
+  assert.equal(staticPlan.acceptanceScenarioIds.length, 37);
   assert.doesNotThrow(() => validateStaticSeedPlan(staticPlan));
   assert.throws(
     () => validateStaticSeedPlan({...staticPlan, business: 'PASS'}),
@@ -57,16 +58,44 @@ test('business-channel seed resolves only the declared source fixture identities
     'COLLAB-PROJECT',
     'COLLAB-HEAD-COMPANY',
     'COLLAB-STORE',
+    'COLLAB-STORE-B',
   ]);
-  assert.equal(validated.dataset.entities.enablements.length, 5);
-  assert.equal(validated.templatesByCode.size, 8);
-  assert.equal(validated.dataset.entities.channels.length, 7);
+  assert.equal(validated.dataset.entities.enablements.length, 6);
+  assert.equal(validated.templatesByCode.size, 10);
+  assert.equal(validated.dataset.entities.channels.length, 9);
   assert.deepEqual(
     validated.dataset.entities.channels
       .filter((entry) => entry.ownerNodeType === 'STORE' && entry.accessKind === 'INTERNAL' && entry.status === 'ENABLED')
       .map((entry) => entry.channelCode)
       .sort(),
-    ['CHANNEL-STORE-INTERNAL-DINE-IN-POS', 'CHANNEL-STORE-INTERNAL-TAKEAWAY'],
+    ['CHANNEL-STORE-INTERNAL-DINE-IN-POS', 'CHANNEL-STORE-INTERNAL-TAKEAWAY', 'CHANNEL-STORE-INTERNAL-TAKEAWAY-B'],
+  );
+  assert.deepEqual(
+    validated.templatesByCode.get('TEMPLATE-STORE-INTERNAL-TAKEAWAY'),
+    {
+      code: 'TEMPLATE-STORE-INTERNAL-TAKEAWAY',
+      templateName: '门店内部外卖模板',
+      ownerNodeType: 'STORE',
+      orderKind: 'TAKEAWAY',
+      accessKind: 'INTERNAL',
+      providerCode: null,
+      storeVisibilityScope: 'SELECTED_PROJECT_STORES',
+      visibleStoreRefs: ['COLLAB-STORE', 'COLLAB-STORE-B'],
+    },
+  );
+  assert.deepEqual(
+    validated.templatesByCode.get('TEMPLATE-STORE-DINE-IN-EXTERNAL'),
+    {
+      code: 'TEMPLATE-STORE-DINE-IN-EXTERNAL',
+      templateName: '门店自有点单小程序堂食模板',
+      ownerNodeType: 'STORE',
+      orderKind: 'DINE_IN',
+      accessKind: 'EXTERNAL',
+      providerCode: 'STORE_OWNED_MINI_PROGRAM_DINE_IN',
+      dineInForm: null,
+      storeVisibilityScope: 'ALL_PROJECT_STORES',
+      visibleStoreRefs: [],
+    },
   );
 });
 
@@ -102,6 +131,27 @@ test('business-channel seed runtime path uses generated operations and keeps wri
   assert.match(source, /getOperationsBusinessChannelDetail/);
   assert.match(source, /transitionOperationsBusinessChannelStatus/);
   assert.doesNotMatch(source, /INSERT\s+INTO|UPDATE\s+tdp\.|DELETE\s+FROM/i);
+});
+
+test('business-channel seed accepts only the typed fail-closed response for each status gate boundary', () => {
+  assert.doesNotThrow(() => validateStoreCandidateBlock({status: 403, json: {errorCode: 'PLATFORM_COMMON_ACCESS_DENIED'}, code: 'STATUS_GATE'}));
+  assert.doesNotThrow(() => validateStoreCandidateBlock({status: 409, json: {errorCode: 'BUSINESS_CHANNEL_STORE_VISIBILITY_STALE'}, code: 'STATUS_GATE'}));
+  assert.throws(
+    () => validateStoreCandidateBlock({status: 403, json: {errorCode: 'BUSINESS_CHANNEL_STORE_VISIBILITY_STALE'}, code: 'STATUS_GATE'}),
+    code('STATUS_GATE:BUSINESS_CHANNEL_STORE_VISIBILITY_STALE'),
+  );
+  assert.throws(
+    () => validateStoreCandidateBlock({status: 200, json: {items: []}, code: 'STATUS_GATE'}),
+    code('STATUS_GATE:UNKNOWN'),
+  );
+});
+
+test('business-channel seed uses project-scoped readback after a voided store is no longer enterable', async () => {
+  const source = await readFile(new URL('./external-collaboration-business-channel-seed-executor.mjs', import.meta.url), 'utf8');
+  assert.match(
+    source,
+    /`store-b-\$\{suffix\}-create-rejection-readback`[\s\S]*?cookie: organizationProject\.cookie/,
+  );
 });
 
 test('business-channel seed accepts only its parent r5 context and refuses direct execution', () => {

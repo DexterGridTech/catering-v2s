@@ -112,9 +112,22 @@
                 "MEMBER_BENEFIT",
                 "GROUP_BUY",
                 "TAKEAWAY",
+                "DINE_IN",
                 "INVENTORY_SYNC",
                 "TAKEAWAY_DELIVERY",
                 "ORDER_SYNC"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "nodeType",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PROJECT",
+                "STORE"
               ]
             }
           },
@@ -597,9 +610,12 @@
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
         "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
+          "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT",
+          "BUSINESS_CHANNEL_STORE_VISIBILITY_DUPLICATE",
+          "BUSINESS_CHANNEL_STORE_VISIBILITY_NOT_APPLICABLE",
+          "BUSINESS_CHANNEL_STORE_VISIBILITY_SCOPE_REQUIRED",
           "BUSINESS_SCOPE_EXCEEDED",
           "DINE_IN_FORM_MISMATCH",
-          "DINE_IN_MUST_BE_INTERNAL",
           "DUPLICATE_CODE",
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -611,6 +627,7 @@
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "PLATFORM_COMMON_VALIDATION_FAILED",
           "PLATFORM_COMMON_VERSION_CONFLICT",
+          "PROJECT_DINE_IN_EXTERNAL_NOT_ALLOWED",
           "PROVIDER_NOT_ENABLED",
           "VERSION_CONFLICT"
         ],
@@ -687,6 +704,123 @@
         }
       }
     },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/visible-stores": {
+      "get": {
+        "operationId": "getOperationsBusinessChannelTemplateVisibleStores",
+        "tags": [
+          "business-channel"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "business-channel",
+        "x-scenario-ids": [
+          "R5-EXTERNAL-COLLABORATION"
+        ],
+        "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT",
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "templateRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "storeStatusFilter",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NON_VOIDED",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateVisibleStorePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}": {
       "patch": {
         "operationId": "updateOperationsBusinessChannelTemplate",
@@ -703,6 +837,10 @@
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
         "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
+          "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT",
+          "BUSINESS_CHANNEL_STORE_VISIBILITY_DUPLICATE",
+          "BUSINESS_CHANNEL_STORE_VISIBILITY_NOT_APPLICABLE",
+          "BUSINESS_CHANNEL_STORE_VISIBILITY_SCOPE_REQUIRED",
           "IMMUTABLE_FIELD",
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -1200,6 +1338,7 @@
             "schema": {
               "type": "string",
               "enum": [
+                "BUSINESS_CHANNEL",
                 "SALES_MENU"
               ]
             }
@@ -1292,8 +1431,8 @@
         "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
           "BINDING_NOT_EFFECTIVE",
+          "BUSINESS_CHANNEL_STORE_VISIBILITY_STALE",
           "DINE_IN_FORM_MISMATCH",
-          "DINE_IN_MUST_BE_INTERNAL",
           "DUPLICATE_CODE",
           "ORDER_KIND_MISMATCH",
           "PLATFORM_COMMON_ACCESS_DENIED",
@@ -1306,6 +1445,7 @@
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "PLATFORM_COMMON_VALIDATION_FAILED",
           "PLATFORM_COMMON_VERSION_CONFLICT",
+          "PROJECT_DINE_IN_EXTERNAL_NOT_ALLOWED",
           "PROVIDER_NOT_ENABLED",
           "VERSION_CONFLICT"
         ],

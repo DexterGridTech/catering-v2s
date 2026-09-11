@@ -111,6 +111,34 @@ export async function syncRemoteSource(host, remoteRoot) {
   let diagnostics = '';
   source.stderr.setEncoding('utf8').on('data', (chunk) => { diagnostics += chunk; });
   upload.stderr.setEncoding('utf8').on('data', (chunk) => { diagnostics += chunk; });
+  let sourceClosed = false;
+  let uploadClosed = false;
+  const stopSource = () => {
+    source.stdout.unpipe(upload.stdin);
+    source.stdout.destroy();
+    upload.stdin.destroy();
+    if (source.exitCode === null && !source.killed) source.kill('SIGTERM');
+  };
+  const stopUpload = () => {
+    source.stdout.unpipe(upload.stdin);
+    source.stdout.destroy();
+    upload.stdin.destroy();
+    if (upload.exitCode === null && !upload.killed) upload.kill('SIGTERM');
+  };
+  source.once('close', (status) => {
+    sourceClosed = true;
+    if (status !== 0 && !uploadClosed) stopUpload();
+  });
+  source.once('error', () => {
+    if (!uploadClosed) stopUpload();
+  });
+  upload.once('close', (status) => {
+    uploadClosed = true;
+    if (status !== 0 && !sourceClosed) stopSource();
+  });
+  upload.once('error', () => {
+    if (!sourceClosed) stopSource();
+  });
   source.stdout.pipe(upload.stdin);
   const [sourceStatus, uploadStatus] = await Promise.all([waitForChild(source), waitForChild(upload)]);
   if (sourceStatus !== 0 || uploadStatus !== 0) fail(`REMOTE_SOURCE_SYNC_FAILED:${compact(diagnostics)}`);

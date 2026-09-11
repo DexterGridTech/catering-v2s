@@ -21,22 +21,24 @@
     "sales-menu-publish-blockers",
     "sales-menu-operation-records",
     "sales-menu-failure-recovery-and-focus",
-    "sales-menu-auth-and-scope-isolation"
+    "sales-menu-auth-and-scope-isolation",
+    "business-channel-external-dine-in-template",
+    "business-channel-store-all-and-sales-menu-exclusion"
   ],
   "sourceOfTruth": "contracts/policy/sales-menu-l2-case-blueprint.json",
   "noSeedRuntimeInput": true,
   "activationCandidate": {
     "path": "contracts/policy/sales-menu-l2-activation-candidate.json",
-    "digest": "d02a9c959b920d19061321aa0a1f038d6be6cfee008aed01dde55a67611d298b"
+    "digest": "72110988cd5a2de1d3ae11d0734132ece15285366f8d06a5acf5fdf85f1f7423"
   },
   "enablementRule": "P1 enables only the candidate exact set after a matching PASS held readiness manifest; generated output is never hand-edited.",
   "readiness": {
-    "manifestPath": ".runtime/browser-l2/l2-1788872801644-59570-58b02252-3fdd-4399-aa92-27cf54bd4d70/readiness-manifest.json",
+    "manifestPath": ".runtime/browser-l2/l2-1789083764784-11693-2b4b38dd-8e24-48ca-a2fa-57a92a87622f/readiness-manifest.json",
     "runBinding": {
-      "runId": "l2-1788872801644-59570-58b02252-3fdd-4399-aa92-27cf54bd4d70",
-      "namespace": "v2s_l2_ac2c73832d1c3b73",
-      "database": "catering_v2s_l2_ac2c73832d1c3b73",
-      "assetPrefix": "s3://catering-v2s-r5-assets/catering-v2s/l2/l2-1788872801644-59570-58b02252-3fdd-4399-aa92-27cf54bd4d70/"
+      "runId": "l2-1789083764784-11693-2b4b38dd-8e24-48ca-a2fa-57a92a87622f",
+      "namespace": "v2s_l2_4ae6bbb007b8d30f",
+      "database": "catering_v2s_l2_4ae6bbb007b8d30f",
+      "assetPrefix": "s3://catering-v2s-r5-assets/catering-v2s/l2/l2-1789083764784-11693-2b4b38dd-8e24-48ca-a2fa-57a92a87622f/"
     }
   }
 }

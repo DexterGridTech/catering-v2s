@@ -1,6 +1,13 @@
 import {expect, test} from '@playwright/test';
 import {platformDetailDrawerTestIds} from '../../app/automation/platformDetailDrawerTestIds';
-import {chooseAntOption, clickPlatformDetailAction, requiredL2Env, selectWorkspace, signInPlatform, signOutPlatform} from './platformL2';
+import {
+  chooseAntOption,
+  clickPlatformDetailAction,
+  requiredL2Env,
+  selectWorkspace,
+  signInPlatform,
+  signOutPlatform,
+} from './platformL2';
 
 test(
   'platform administrator delegates account filters, shows loading detail, ' +

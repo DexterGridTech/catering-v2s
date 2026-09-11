@@ -1,0 +1,57 @@
+/**
+ * Stable identities for the business-channel template visibility surfaces.
+ *
+ * Parameterized identities use the owning store reference, never a rendered
+ * row position. Keep this module as the only source for this surface's new
+ * automation identities.
+ */
+export const businessChannelTemplateTestIds = {
+  templateForm: 'business-channel-template-form',
+  accessKind: 'business-channel-template-access-kind',
+  accessKindInternal: 'business-channel-template-access-kind-internal',
+  accessKindExternal: 'business-channel-template-access-kind-external',
+  operatorKind: 'business-channel-template-operator-kind',
+  orderKind: 'business-channel-template-order-kind',
+  orderKindDineIn: 'business-channel-template-order-kind-dine-in',
+  orderKindTakeaway: 'business-channel-template-order-kind-takeaway',
+  orderKindGroupBuy: 'business-channel-template-order-kind-group-buy',
+  dineInForm: 'business-channel-template-dine-in-form',
+  dineInFormPos: 'business-channel-template-dine-in-form-pos',
+  dineInFormQr: 'business-channel-template-dine-in-form-qr',
+  dineInFormKiosk: 'business-channel-template-dine-in-form-kiosk',
+  provider: 'business-channel-template-provider',
+  providerOption: (providerCode: string) => `business-channel-template-provider-option-${providerCode}`,
+  providerEmpty: 'business-channel-template-provider-empty',
+  providerReadProblem: 'business-channel-template-provider-read-problem',
+  providerRetry: 'business-channel-template-provider-retry',
+  externalDineInInfo: 'business-channel-template-external-dine-in-info',
+  templateScopeSummary: 'business-channel-template-scope-summary',
+  visibilityScopeGroup: 'business-channel-template-visibility-scope',
+  visibilityScopeAllOption: 'business-channel-template-visibility-scope-all',
+  visibilityScopeSelectedOption: 'business-channel-template-visibility-scope-selected',
+  visibleStoreAdd: 'business-channel-template-visible-store-add',
+  visibleStorePickerModal: 'business-channel-template-visible-store-picker-modal',
+  visibleStorePickerSearch: 'business-channel-template-visible-store-picker-search',
+  visibleStorePickerList: 'business-channel-template-visible-store-picker-list',
+  visibleStorePickerOption: (storeRef: string) => `business-channel-template-visible-store-picker-option-${storeRef}`,
+  visibleStorePickerReadRetry: 'business-channel-template-visible-store-picker-read-retry',
+  visibleStorePickerCancel: 'business-channel-template-visible-store-picker-cancel',
+  visibleStorePickerConfirm: 'business-channel-template-visible-store-picker-confirm',
+  visibleStoreRemove: (storeRef: string) => `business-channel-template-visible-store-remove-${storeRef}`,
+  visibleStoreVoidedTag: (storeRef: string) => `business-channel-template-visible-store-voided-${storeRef}`,
+  visibleStoreReadRetry: 'business-channel-template-visible-store-read-retry',
+  visibleStoreEditReadRetry: 'business-channel-template-visible-store-edit-read-retry',
+  visibleStorePage: 'business-channel-template-visible-store-page',
+  visibleStorePageNext: 'business-channel-template-visible-store-page-next',
+  visibleStorePagePrevious: 'business-channel-template-visible-store-page-previous',
+  storeTemplateCandidateTable: 'business-channel-store-template-candidate-table',
+  storeTemplateCandidateCreate: 'business-channel-store-template-create',
+  storeTemplateSelect: 'business-channel-store-template-select',
+  projectTemplateOpenDetail: (templateRef: string) => `project-business-channel-template-open-detail-${templateRef}`,
+  businessChannelOpenDetail: (owner: 'project' | 'store', channelRef: string) =>
+    `${owner}-business-channel-open-detail-${channelRef}`,
+  submit: 'business-channel-template-submit',
+  cancel: 'business-channel-template-cancel',
+  storeBusinessChannelList: 'business-channel-store-list',
+  externalDineInDetail: 'business-channel-external-dine-in-detail',
+} as const;

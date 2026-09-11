@@ -16,6 +16,7 @@ import {useEffect, useState} from 'react';
 import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import {wireUuid} from '../../../app/api/wireUuid';
 import {operatorKindLabels} from '../model/businessChannelCodeLabels';
+import {businessChannelTemplateTestIds} from '../../../app/automation/businessChannelTemplateTestIds';
 
 export function BusinessChannelCreateDrawer({
   open,
@@ -25,6 +26,7 @@ export function BusinessChannelCreateDrawer({
   templates,
   onClose,
   onSaved,
+  onStale,
 }: {
   open: boolean;
   queryContext: OperationsPageContext;
@@ -33,6 +35,7 @@ export function BusinessChannelCreateDrawer({
   templates: BusinessChannelTemplateView[];
   onClose: () => void;
   onSaved: () => void;
+  onStale?: () => void;
 }) {
   const [form] = Form.useForm<{templateRef: string; channelCode: string; channelName: string}>();
   const [problem, setProblem] = useState<string>();
@@ -74,7 +77,10 @@ export function BusinessChannelCreateDrawer({
       lifecycle.closeAfterSuccess();
       onSaved();
     } catch (error) {
-      setProblem(operationsProblemOf(error).detail);
+      const feedback = operationsProblemOf(error);
+      const stale = feedback.errorCode === 'BUSINESS_CHANNEL_STORE_VISIBILITY_STALE';
+      if (stale) onStale?.();
+      setProblem(stale ? '该模板已不再对当前门店开放，请刷新模板列表后重试。' : feedback.detail);
     } finally {
       lifecycle.setSubmitting(false);
     }
@@ -133,7 +139,11 @@ export function BusinessChannelCreateDrawer({
               value: template.templateRef,
               label: `${template.templateName}（${closedCodeLabel(operatorKindLabels, template.operatorKind)}）`,
             }))}
-            {...testId(`${ownerNodeType.toLocaleLowerCase()}-business-channel-template-select`)}
+            {...testId(
+              ownerNodeType === 'STORE'
+                ? businessChannelTemplateTestIds.storeTemplateSelect
+                : `${ownerNodeType.toLocaleLowerCase()}-business-channel-template-select`,
+            )}
           />
         </Form.Item>
         <Form.Item label="渠道编码" name="channelCode" rules={[{required: true, message: '请输入渠道编码'}]}>
@@ -142,7 +152,7 @@ export function BusinessChannelCreateDrawer({
         <Form.Item label="渠道名称" name="channelName" rules={[{required: true, message: '请输入渠道名称'}]}>
           <Input />
         </Form.Item>
-        {!availableTemplates.length && <Alert type="info" showIcon title="当前没有可选的渠道模板。" />}
+        {!availableTemplates.length && <Alert type="info" showIcon title="当前没有可选的渠道模板" />}
       </Form>
     </Drawer>
   );

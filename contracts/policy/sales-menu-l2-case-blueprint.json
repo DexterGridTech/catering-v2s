@@ -577,6 +577,49 @@
       "SALES_MENU_LOG_PAGINATION": {
         "testIdPrefix": "sales-menu-log-pagination",
         "sourceFiles": ["apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"]
+      },
+      "BUSINESS_CHANNEL_PROJECT_PAGE": {
+        "testId": "project-business-channel-page",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/business-channel/ui/ProjectBusinessChannelPage.tsx"
+        ]
+      },
+      "BUSINESS_CHANNEL_PROJECT_TEMPLATE_LIST": {
+        "testId": "project-business-channel-template-list",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/business-channel/ui/ProjectBusinessChannelPage.tsx"
+        ]
+      },
+      "BUSINESS_CHANNEL_PROJECT_TEMPLATE_DETAIL": {
+        "testIdTemplate": "project-business-channel-template-open-detail-${templateRef}",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/app/automation/businessChannelTemplateTestIds.ts",
+          "apps/frontend/operations-admin/src/features/business-channel/ui/ProjectBusinessChannelPage.tsx"
+        ]
+      },
+      "BUSINESS_CHANNEL_TEMPLATE_DETAIL": {
+        "testId": "business-channel-template-detail",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/business-channel/ui/BusinessChannelTemplateDetailDrawer.tsx"
+        ]
+      },
+      "BUSINESS_CHANNEL_STORE_PAGE": {
+        "testId": "store-business-channel-page",
+        "sourceFiles": ["apps/frontend/operations-admin/src/features/business-channel/ui/StoreBusinessChannelPage.tsx"]
+      },
+      "BUSINESS_CHANNEL_STORE_TEMPLATE_CANDIDATE_TABLE": {
+        "testId": "business-channel-store-template-candidate-table",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/app/automation/businessChannelTemplateTestIds.ts",
+          "apps/frontend/operations-admin/src/features/business-channel/ui/StoreBusinessChannelPage.tsx"
+        ]
+      },
+      "BUSINESS_CHANNEL_STORE_LIST": {
+        "testId": "business-channel-store-list",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/app/automation/businessChannelTemplateTestIds.ts",
+          "apps/frontend/operations-admin/src/features/business-channel/ui/BusinessChannelList.tsx"
+        ]
       }
     }
   },
@@ -587,7 +630,31 @@
         "business-channel.sales-menu-eligible-cursor",
         "sales-menu.store-scope-and-channel-eligibility"
       ],
-      "l2Cases": ["sales-menu-entry-and-channels", "sales-menu-auth-and-scope-isolation"]
+      "l2Cases": [
+        "sales-menu-entry-and-channels",
+        "sales-menu-auth-and-scope-isolation",
+        "business-channel-store-all-and-sales-menu-exclusion"
+      ]
+    },
+    {
+      "operationId": "getOperationsProjectBusinessChannels",
+      "acceptanceScenarios": ["business-channel.cross-node-read-authorization"],
+      "l2Cases": ["business-channel-external-dine-in-template"]
+    },
+    {
+      "operationId": "getOperationsExternalProviderCandidates",
+      "acceptanceScenarios": ["collaboration.dine-in-provider-candidates"],
+      "l2Cases": ["business-channel-external-dine-in-template"]
+    },
+    {
+      "operationId": "getOperationsStoreProfile",
+      "acceptanceScenarios": ["business-channel.store-profile-read-for-store-role"],
+      "l2Cases": ["business-channel-store-all-and-sales-menu-exclusion"]
+    },
+    {
+      "operationId": "getOperationsStoreBusinessChannelTemplateCandidates",
+      "acceptanceScenarios": ["business-channel.store-visibility-all-candidates"],
+      "l2Cases": ["business-channel-store-all-and-sales-menu-exclusion"]
     },
     {
       "operationId": "getOperationsBusinessChannelTemplates",
@@ -610,7 +677,9 @@
         "sales-menu-publish-blockers",
         "sales-menu-operation-records",
         "sales-menu-failure-recovery-and-focus",
-        "sales-menu-auth-and-scope-isolation"
+        "sales-menu-auth-and-scope-isolation",
+        "business-channel-external-dine-in-template",
+        "business-channel-store-all-and-sales-menu-exclusion"
       ]
     },
     {
@@ -932,9 +1001,9 @@
                 {"operationId": "createOperationsSalesMenuSection", "maxRequestCount": 2},
                 {"operationId": "renameOperationsSalesMenuSection", "maxRequestCount": 2},
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 4},
-                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 4},
+                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 5},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 3},
-                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 4},
+                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 5},
                 {"operationId": "getPublicAssetContent", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
@@ -996,9 +1065,9 @@
                 {"operationId": "moveOperationsSalesMenuSection", "maxRequestCount": 1},
                 {"operationId": "deleteOperationsSalesMenuSection", "maxRequestCount": 1},
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 4},
-                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 4},
+                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 5},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 3},
-                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 4},
+                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 5},
                 {"operationId": "getPublicAssetContent", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
@@ -1123,10 +1192,10 @@
                 {"operationId": "getOperationsSalesMenuItemCandidates", "maxRequestCount": 6},
                 {"operationId": "addOperationsSalesMenuItems", "maxRequestCount": 2},
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 4},
-                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 3},
-                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 4},
                 {"operationId": "getPublicAssetContent", "maxRequestCount": 3},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 2},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
@@ -1235,7 +1304,7 @@
     },
     {
       "scenarioId": "SM-L2-005",
-            "businessRequirement": "按SKU逐项设置销售菜单价格。",
+      "businessRequirement": "按SKU逐项设置销售菜单价格。",
       "cases": [
         {
           "caseId": "sales-menu-edit-sku-prices",
@@ -1282,10 +1351,10 @@
                 {"operationId": "getOperationsSalesMenuDraftItem", "maxRequestCount": 5},
                 {"operationId": "updateOperationsSalesMenuItem", "maxRequestCount": 2},
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 4},
-                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 4},
-                {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 5},
+                {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 4},
-                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 4},
+                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 5},
                 {"operationId": "getPublicAssetContent", "maxRequestCount": 3},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
@@ -1341,10 +1410,10 @@
                 {"operationId": "getOperationsSalesMenuDraftItem", "maxRequestCount": 3},
                 {"operationId": "updateOperationsSalesMenuItem", "maxRequestCount": 2},
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 4},
-                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 3},
-                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 4},
                 {"operationId": "getPublicAssetContent", "maxRequestCount": 3},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
@@ -1405,7 +1474,7 @@
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 6},
                 {"operationId": "moveOperationsSalesMenuItem", "maxRequestCount": 2},
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 4},
-                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 4},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 4},
                 {"operationId": "getPublicAssetContent", "maxRequestCount": 4},
@@ -1516,8 +1585,19 @@
             "SALES_MENU_ITEM_DETAIL",
             "SALES_MENU_ITEM_DETAIL_MEDIA_CHOICE"
           ],
-          "steps": ["进入前台菜单", "逐页查看21条销售项", "分别读取库存状态和销售状态", "打开只读详情", "切换第二张展示图片并查看大图"],
-          "businessOracle": ["inventoryAvailability和manualSaleStatus独立", "第21项可达", "状态详情不能改变Inventory", "多张图片按发布快照顺序可切换"],
+          "steps": [
+            "进入前台菜单",
+            "逐页查看21条销售项",
+            "分别读取库存状态和销售状态",
+            "打开只读详情",
+            "切换第二张展示图片并查看大图"
+          ],
+          "businessOracle": [
+            "inventoryAvailability和manualSaleStatus独立",
+            "第21项可达",
+            "状态详情不能改变Inventory",
+            "多张图片按发布快照顺序可切换"
+          ],
           "parameter": {
             "declaredActions": [{"actionId": "inspect-front-status", "kind": "USER_JOURNEY"}],
             "operationIds": ["getOperationsSalesMenuPublishedItems", "getOperationsSalesMenuPublishedItem"],
@@ -1581,7 +1661,14 @@
             "SALES_MENU_CONFIRMATION_SUBMIT",
             "SALES_MENU_OPERATION_LOG"
           ],
-          "steps": ["打开销售状态", "点击目标行设置沽清", "填写原因并再次点击目标行", "确认目标channel变化", "点击目标行恢复并二次确认", "读取操作记录"],
+          "steps": [
+            "打开销售状态",
+            "点击目标行设置沽清",
+            "填写原因并再次点击目标行",
+            "确认目标channel变化",
+            "点击目标行恢复并二次确认",
+            "读取操作记录"
+          ],
           "businessOracle": ["原因必填", "其他channel不变", "恢复事件保留且不自动改变库存"],
           "parameter": {
             "declaredActions": [{"actionId": "toggle-manual-sale-status", "kind": "USER_JOURNEY"}],
@@ -1622,8 +1709,8 @@
                 {"operationId": "getOperationsSalesMenuPublishedItems", "maxRequestCount": 6},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 6},
                 {"operationId": "getPublicAssetContent", "maxRequestCount": 6},
-                {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 5},
-                {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 4},
+                {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 6},
+                {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 5},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
               ]
             },
@@ -1769,7 +1856,7 @@
                 "getOperationsWorkspaceSessionEntry"
               ],
               "requests": [
-                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 4},
+                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 5},
                 {"operationId": "copyOperationsSalesMenu", "maxRequestCount": 2},
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 6},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 4},
@@ -1834,7 +1921,7 @@
                 "getOperationsWorkspaceSessionEntry"
               ],
               "requests": [
-                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 5},
+                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 6},
                 {"operationId": "setOperationsSalesMenuActivation", "maxRequestCount": 2},
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 8},
                 {"operationId": "getOperationsSalesMenu", "maxRequestCount": 6},
@@ -1984,7 +2071,7 @@
                 {"operationId": "releaseOperationsSalesMenuStagedAsset", "maxRequestCount": 2},
                 {"operationId": "publishOperationsSalesMenu", "maxRequestCount": 2},
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 12},
-                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 8},
+                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 9},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 10},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 10},
                 {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 10},
@@ -2046,15 +2133,140 @@
                 {"operationId": "getPublicAssetContent", "maxRequestCount": 2},
                 {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenus", "maxRequestCount": 5},
-                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 2},
+                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 3},
                 {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 2},
                 {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 2},
-                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 2},
+                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 3},
                 {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 2},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
               ]
             },
             "timing": {"caseExpectedDbMs": 1000, "caseLocalActionMs": 2200, "caseTimeoutMs": 35000}
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-017",
+      "businessRequirement": "STORE 外部到店点餐模板展示真实 provider 候选，且不暴露 POS、扫码或自助机形态。",
+      "cases": [
+        {
+          "caseId": "business-channel-external-dine-in-template",
+          "fixtureRef": "FIXTURE-BUSINESS-CHANNEL-EXTERNAL-DINE-IN",
+          "journey": "STORE 外部到店点餐模板详情与 provider 候选",
+          "controlKeys": [
+            "STORE_SCOPE_TRIGGER",
+            "BUSINESS_CHANNEL_PROJECT_PAGE",
+            "BUSINESS_CHANNEL_PROJECT_TEMPLATE_LIST",
+            "BUSINESS_CHANNEL_PROJECT_TEMPLATE_DETAIL",
+            "BUSINESS_CHANNEL_TEMPLATE_DETAIL"
+          ],
+          "steps": [
+            "进入项目经营渠道管理并确认项目角色绑定的项目范围",
+            "打开 STORE 外部到店点餐模板详情",
+            "读取 DINE_IN/STORE 精确 provider 候选",
+            "确认 dineInForm 不出现且文案说明外部系统无终端形态"
+          ],
+          "businessOracle": [
+            "模板详情显示外部接入与到店点餐（对应契约值 EXTERNAL/DINE_IN）",
+            "provider 请求显式带 capabilityClass=DINE_IN 与 nodeType=STORE",
+            "候选 provider scope 仅为 DINE_IN、bindableNodeTypes 仅为 STORE",
+            "外部到店点餐不显示 POS、扫码或自助机选择"
+          ],
+          "parameter": {
+            "declaredActions": [{"actionId": "inspect-external-dine-in-template", "kind": "USER_JOURNEY"}],
+            "operationIds": ["getOperationsExternalProviderCandidates"],
+            "network": {
+              "required": ["getOperationsExternalProviderCandidates"],
+              "forbidden": [],
+              "backgroundAllowed": [
+                "getOperationsBusinessChannelTemplates",
+                "getOperationsProjectBusinessChannels",
+                "getOperationsStoreBusinessChannels",
+                "getOperationsWorkspaceSessionEntry",
+                "getPublicAssetContent"
+              ],
+              "requests": [
+                {"operationId": "getOperationsExternalProviderCandidates", "maxRequestCount": 2},
+                {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 3},
+                {"operationId": "getOperationsProjectBusinessChannels", "maxRequestCount": 3},
+                {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 2},
+                {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 4}
+              ]
+            },
+            "timing": {"caseExpectedDbMs": 1200, "caseLocalActionMs": 2500, "caseTimeoutMs": 35000}
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "SM-L2-018",
+      "businessRequirement": "STORE 外部到店点餐渠道可在门店经营渠道管理中读取，但不进入销售菜单。",
+      "cases": [
+        {
+          "caseId": "business-channel-store-all-and-sales-menu-exclusion",
+          "fixtureRef": "FIXTURE-BUSINESS-CHANNEL-STORE-ALL-VS-SALES-MENU",
+          "journey": "门店渠道读取与销售菜单资格隔离",
+          "controlKeys": [
+            "STORE_SCOPE_TRIGGER",
+            "SALES_MENU_PAGE",
+            "SALES_MENU_CHANNEL_SELECTOR",
+            "BUSINESS_CHANNEL_STORE_PAGE",
+            "BUSINESS_CHANNEL_STORE_TEMPLATE_CANDIDATE_TABLE",
+            "BUSINESS_CHANNEL_STORE_LIST"
+          ],
+          "steps": [
+            "进入门店经营渠道管理并选择门店范围",
+            "确认外部到店点餐模板可作为门店候选",
+            "确认已创建外部渠道可在门店管理列表读取",
+            "返回销售菜单并确认该外部渠道不在经营入口候选中"
+          ],
+          "businessOracle": [
+            "门店候选与门店经营渠道列表显示外部 DINE_IN 事实",
+            "门店经营渠道读取使用 BUSINESS_CHANNEL 用途",
+            "销售菜单读取使用 SALES_MENU 用途",
+            "内部渠道仍可见、外部 DINE_IN channelRef 不出现"
+          ],
+          "parameter": {
+            "declaredActions": [{"actionId": "verify-store-channel-sales-menu-separation", "kind": "USER_JOURNEY"}],
+            "operationIds": [
+              "getOperationsStoreProfile",
+              "getOperationsStoreBusinessChannelTemplateCandidates",
+              "getOperationsStoreBusinessChannels"
+            ],
+            "network": {
+              "required": [
+                "getOperationsStoreProfile",
+                "getOperationsStoreBusinessChannelTemplateCandidates",
+                "getOperationsStoreBusinessChannels"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [
+                "getOperationsSalesMenus",
+                "getOperationsSalesMenu",
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsSalesMenuDraftItems",
+                "getOperationsSalesMenuPublicationPreview",
+                "getOperationsBusinessChannelTemplates",
+                "getOperationsWorkspaceSessionEntry",
+                "getPublicAssetContent"
+              ],
+              "requests": [
+                {"operationId": "getOperationsStoreBusinessChannelTemplateCandidates", "maxRequestCount": 2},
+                {"operationId": "getOperationsStoreBusinessChannels", "maxRequestCount": 4},
+                {"operationId": "getOperationsStoreProfile", "maxRequestCount": 2},
+                {"operationId": "getOperationsSalesMenus", "maxRequestCount": 4},
+                {"operationId": "getOperationsSalesMenu", "maxRequestCount": 4},
+                {"operationId": "getOperationsSalesMenuDraftSections", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenuDraftItems", "maxRequestCount": 3},
+                {"operationId": "getOperationsSalesMenuPublicationPreview", "maxRequestCount": 3},
+                {"operationId": "getOperationsBusinessChannelTemplates", "maxRequestCount": 3},
+                {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 6},
+                {"operationId": "getPublicAssetContent", "maxRequestCount": 4}
+              ]
+            },
+            "timing": {"caseExpectedDbMs": 1500, "caseLocalActionMs": 3500, "caseTimeoutMs": 45000}
           }
         }
       ]

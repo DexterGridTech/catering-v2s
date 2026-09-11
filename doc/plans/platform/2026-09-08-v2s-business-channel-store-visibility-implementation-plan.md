@@ -1,9 +1,9 @@
 ---
 title: v2s 经营渠道模板门店可见范围串行实施计划
-status: PROPOSED_FOR_REVIEW
+status: ACTIVE_IMPLEMENTATION_AUTHORIZED
 createdAt: 2026-09-08
 decisionOwner: Dexter
-implementationAuthority: false
+implementationAuthority: true
 designRef: doc/plans/platform/2026-09-08-v2s-business-channel-store-visibility-implementation-design.md
 journeyRef: doc/decisions/2026-09-08-v2s-business-channel-store-visibility-journey-amendment.md
 iaRef: doc/decisions/2026-09-08-v2s-business-channel-store-visibility-ia.md
@@ -16,18 +16,18 @@ interactionRef: doc/decisions/2026-09-08-v2s-business-channel-store-visibility-u
 
 ~~~text
 PLAN_KIND=IMPLEMENTATION_PLAN
-PLAN_STATUS=PROPOSED_FOR_REVIEW
-IMPLEMENTATION_AUTHORITY=false
-CURRENT_TASK=DESIGN_ONLY
-REVIEW_GATE=FRESH_INDEPENDENT_DESIGN_REVIEW_THEN_CLAUDE_REVIEW
-NO_RUNTIME=DEV/RESET/SEED/BACKEND_ACCEPTANCE/BROWSER_L2/UAT_NOT_RUN
+PLAN_STATUS=ACTIVE_IMPLEMENTATION_AUTHORIZED
+IMPLEMENTATION_AUTHORITY=true
+CURRENT_TASK=IMPLEMENTATION
+REVIEW_GATE=FRESH_INDEPENDENT_IMPLEMENTATION_REVIEW_THEN_CLAUDE_REVIEW
+RUNTIME_STATUS=DEV/RESET/SEED/BACKEND_ACCEPTANCE/BROWSER_L2_NOT_RUN
 ~~~
 
-本计划只说明未来获准后的实施顺序，不是当前实施指令。当前不得执行计划中的写代码、生成、迁移、seed 或动态命令。所有文件写入由主 agent 完成；独立 reviewer 只读审查并返回 finding。
+本计划是当前已获 Dexter 授权的实施顺序。所有文件写入由主 agent 完成；独立 reviewer 只读审查并返回 finding；动态命令仍只能通过受管入口执行并分别报告 business 与 cleanup。
 
 ## 2. 实施前置裁决
 
-以下形态已经由 Dexter 接受并固定；它们不是实施者可以重新解释的默认提案。当前计划仍停在设计阶段，原因是本次 Claude review 要求对修订后的当前字节 follow-up，且 implementationAuthority=false：
+以下形态已经由 Dexter 接受并固定；它们不是实施者可以重新解释的默认提案。Claude follow-up DESIGN review 已 `GO`（M=0/S=0/N=2），Dexter 已授权本计划进入实施：
 
 | key | Dexter 已接受的形态 | 状态 |
 | --- | --- | --- |
@@ -141,6 +141,7 @@ NO_RUNTIME=DEV/RESET/SEED/BACKEND_ACCEPTANCE/BROWSER_L2/UAT_NOT_RUN
 
 - apps/frontend/operations-admin/src/features/business-channel/ui/ProjectBusinessChannelPage.tsx；
 - apps/frontend/operations-admin/src/features/business-channel/ui/BusinessChannelTemplateDrawer.tsx；
+- apps/frontend/operations-admin/src/features/business-channel/ui/BusinessChannelTemplateStorePickerModal.tsx；
 - apps/frontend/operations-admin/src/features/business-channel/ui/BusinessChannelTemplateDetailDrawer.tsx；
 - apps/frontend/operations-admin/src/features/business-channel/ui/StoreBusinessChannelPage.tsx；
 - apps/frontend/operations-admin/src/features/business-channel/ui/BusinessChannelCreateDrawer.tsx；
@@ -150,15 +151,15 @@ NO_RUNTIME=DEV/RESET/SEED/BACKEND_ACCEPTANCE/BROWSER_L2/UAT_NOT_RUN
 
 动作与形态：
 
-1. 先按 interaction §3.3 完整控件清单实现：范围摘要、scope Radio group/options、添加门店、candidate search、candidate row add、selected row remove、VOIDED 标注、visible-store read retry/page、候选表/新建入口、template Select、save/cancel；只读/分页项仅在真实渲染时计入。
-2. 复用 adminDrawerSurfaceProps、useDrawerFormLifecycle、useSubmissionLifecycle、useOverlayLock、useCursorCandidates、collectCursorPages、useDetailDrawer、AdminDetailActionMenu、NameCodeText 和 refresh signal。
+1. 先按 interaction §3.3 完整控件清单实现：范围摘要、scope Radio group/options、添加门店、独立 picker Modal、候选搜索/滚动/Checkbox、候选读取重试、Modal 取消/确定、selected row remove、VOIDED 标注、visible-store read retry/page、候选表/新建入口、template Select、save/cancel；只读/分页项仅在真实渲染时计入。
+2. 复用 adminDrawerSurfaceProps、useDrawerFormLifecycle、useSubmissionLifecycle、useOverlayLock、useCursorCandidates、collectCursorPages、useDetailDrawer、AdminDetailActionMenu、NameCodeText 和 refresh signal；picker Modal 只在 app 层组合 Ant Design Modal/Checkbox，不在 foundation 复制共享 overlay 行为。
 3. 新 TestId 只在 businessChannelTemplateTestIds.ts 定义，挂真实动作节点；`COMPOSITE_OPTION_ANCHOR` 仅允许 Radio.Group 组合锚点，L2 点击 option-level Radio；迁移新控件的 inline literal，禁止用 label/role/placeholder/index/CSS/XPath。
-4. O5 模板表与新建选择器只消费 owner candidate；O5 existing channel list/detail 不因 scope 移除而过滤。
+4. O5 模板表只展示模板名称、模板编码、接入类型、订单类型并只消费 owner candidate；项目模板门店可见范围不在门店消费面展示；O5 existing channel list/detail 不因 scope 移除而过滤。
 5. stale visibility typed problem 保留页面上下文、刷新候选、保持 Drawer 草稿；不显示“渠道已停用”伪状态。
 
 验证：
 
-- UI focused/static proof 先核对 scope 隐藏/显示、最终集合草稿的本地增删、VOIDED 全量读回与标注、zero-visible copy、focus/close guard、refresh 和 TestId uniqueness。
+- UI focused/static proof 先核对 O5 不展示项目模板门店可见范围、O1/Drawer/详情仍正确显示或编辑 scope、Drawer/Modal 信息层次、Modal 搜索/Checkbox 临时集合、取消不回写、确定回写最终集合、VOIDED 全量读回与标注、zero-visible copy、focus/close guard、refresh 和 TestId uniqueness。
 - fresh independent UI/IA 对账在任何 L2 spec 或 runner 改动前完成；未通过 UI_DESIGN_REVIEW/TESTID_REVIEW/L2 admission 不写 L2。
 - operations-admin typecheck/既有 focused test 只证明静态/compile 层，不冒充 browser L2。
 
@@ -204,9 +205,9 @@ NO_RUNTIME=DEV/RESET/SEED/BACKEND_ACCEPTANCE/BROWSER_L2/UAT_NOT_RUN
 
 判据：行为、形态、动作、关系、位置、用户文案、限制、state/control、失败/恢复、可访问性/焦点、数据来源/失效边界均必须 MATCHED；任一 OPEN 立即停止，不进入 CP-07。不得以全量测试、L2、seed 或“按设计实现”替代这一步。
 
-### CP-07：未来受管动态验证（当前明确不执行）
+### CP-07：受管动态验证
 
-只有 Dexter 另行确认动态范围后才能执行。执行边界：
+动态验证已包含在当前 Roadmap/Dexter 授权内，但本计划不自动触发任何动态命令；只有当前任务明确要求时，才按下列受管边界执行：
 
 - backend acceptance 使用 scripts/test/backend-acceptance --operation ...，先 focused 后 all；Spring/Java、PostgreSQL、对象存储在受信远端，本机不启 Spring/PostgreSQL tunnel；business 与 cleanup 分开。
 - DEV 如存在且 manifest identity 匹配，依受管联动规则先 stop；Testcontainers/backend acceptance business 与 cleanup PASS 后，只有原来确有 DEV 才受管 start；start 不 seed。
@@ -229,7 +230,7 @@ NO_RUNTIME=DEV/RESET/SEED/BACKEND_ACCEPTANCE/BROWSER_L2/UAT_NOT_RUN
 
 ## 5. 交付闸门
 
-本计划只有在以下条件全部满足后，才能作为实施输入交给 Dexter 决定是否授权：
+本计划的实施收口必须满足以下条件：
 
 1. Journey、IA、interaction、implementation design、plan 对同一 scope/集合/保留语义逐字一致。
 2. D-BCV-01 已删除，D-BCV-02..06 均有明确 disposition；没有静默产品假设。
@@ -237,4 +238,4 @@ NO_RUNTIME=DEV/RESET/SEED/BACKEND_ACCEPTANCE/BROWSER_L2/UAT_NOT_RUN
 4. generated/compliance retired controls 未被恢复；当前动态均为 NOT_RUN。
 5. CP-06 逐代码与详设对账为全 MATCHED；没有 OPEN。
 
-即使以上条件成立，本计划仍不自动授权生产实施、Git、DEV、reset、seed、backend acceptance、browser L2、UAT 或部署；授权必须由 Dexter 另行明确给出。
+以上条件不扩大当前 Dexter 已授予的范围；仍不包含 UAT、部署、切流或其他 owner。

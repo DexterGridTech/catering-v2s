@@ -18,5 +18,5 @@ public interface CollaborationCatalogReadApi {
     }
 
     List<CollaborationReadback.ProviderProfile> listEnabledProviderProfiles(
-            UUID workspaceUuid, String groupWorkspaceKey, String capabilityClass);
+            UUID workspaceUuid, String groupWorkspaceKey, String capabilityClass, String nodeType);
 }

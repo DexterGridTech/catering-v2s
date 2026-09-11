@@ -269,12 +269,13 @@ export function SalesMenuItemEditorDrawer({
 
   const skuRows = useMemo<SalesMenuSkuEditorRow[]>(() => {
     const selected = new Set(selectedSkuRefs.map(ref => String(ref)));
-    const rows = item?.skuCandidates.map(candidate => ({
-      ...candidate,
-      listedPriceCents: skuPriceByRef[String(candidate.skuRef)]?.listedPriceCents ?? null,
-      selected: selected.has(String(candidate.skuRef)),
-      stale: false,
-    })) ?? [];
+    const rows =
+      item?.skuCandidates.map(candidate => ({
+        ...candidate,
+        listedPriceCents: skuPriceByRef[String(candidate.skuRef)]?.listedPriceCents ?? null,
+        selected: selected.has(String(candidate.skuRef)),
+        stale: false,
+      })) ?? [];
     const candidateRefs = new Set(rows.map(row => String(row.skuRef)));
     const staleRows = (item?.saleContent.skuPrices ?? [])
       .filter(price => item?.staleSelectedSkuRefs.includes(price.skuRef) && !candidateRefs.has(String(price.skuRef)))
@@ -404,12 +405,13 @@ export function SalesMenuItemEditorDrawer({
                   .map(ref => skuPriceByRef[String(ref)])
                   .filter((price): price is SalesMenuSkuPrice => Boolean(price))
               : [],
-            orderOptionSelections: item.saleContent.kind === 'DIRECT'
-              ? item.catalogOrderOptions.map(option => ({
-                  definitionRef: option.definitionRef,
-                  selectedValueRefs: orderOptionSelections[String(option.definitionRef)] ?? [],
-                }))
-              : [],
+            orderOptionSelections:
+              item.saleContent.kind === 'DIRECT'
+                ? item.catalogOrderOptions.map(option => ({
+                    definitionRef: option.definitionRef,
+                    selectedValueRefs: orderOptionSelections[String(option.definitionRef)] ?? [],
+                  }))
+                : [],
           },
           orderingConstraints:
             item.saleContent.kind === 'WEIGHTED' ? {minItemQuantity: null, quantityStep: null} : constraints,
@@ -576,58 +578,58 @@ export function SalesMenuItemEditorDrawer({
                     <Typography.Text type="secondary">当前没有可选规格。</Typography.Text>
                   )}
                   <Table<SalesMenuSkuEditorRow>
-                  size="small"
-                  rowKey="skuRef"
-                  pagination={false}
-                  dataSource={skuRows}
-                  columns={[
-                    {
-                      title: '选择',
-                      key: 'selection',
-                      render: (_, row) => (
-                        <Checkbox
-                          checked={row.selected}
-                          disabled={row.stale}
-                          onChange={event => setSkuSelected(row, event.target.checked)}
-                          {...testId(salesMenuTestIds.itemSkuOption(String(row.skuRef)))}
-                        />
-                      ),
-                    },
-                    {title: '规格', dataIndex: 'skuName', key: 'skuName'},
-                    {title: '规格编码', dataIndex: 'skuCode', key: 'skuCode'},
-                    {
-                      title: '商品默认价',
-                      key: 'standardPrice',
-                      render: (_, row) => formatSalesMenuPrice(row.standardPriceCents),
-                    },
-                    {
-                      title: '菜单挂牌价',
-                      key: 'listedPrice',
-                      render: (_, row) => {
-                        if (!row.selected || row.stale || row.listedPriceCents === null) return '—';
-                        return (
-                          <InputNumber
-                            min={0}
-                            precision={2}
-                            value={row.listedPriceCents / 100}
-                            addonBefore="¥"
-                            onChange={value => {
-                              const nextCents = value === null || value === undefined ? 0 : Math.round(value * 100);
-                              setSkuPriceByRef(current => ({
-                                ...current,
-                                [String(row.skuRef)]: {
-                                  ...current[String(row.skuRef)],
-                                  listedPriceCents: nextCents,
-                                },
-                              }));
-                              markDirty();
-                            }}
-                            {...testId(salesMenuTestIds.itemSkuPrice(String(row.skuRef)))}
+                    size="small"
+                    rowKey="skuRef"
+                    pagination={false}
+                    dataSource={skuRows}
+                    columns={[
+                      {
+                        title: '选择',
+                        key: 'selection',
+                        render: (_, row) => (
+                          <Checkbox
+                            checked={row.selected}
+                            disabled={row.stale}
+                            onChange={event => setSkuSelected(row, event.target.checked)}
+                            {...testId(salesMenuTestIds.itemSkuOption(String(row.skuRef)))}
                           />
-                        );
+                        ),
                       },
-                    },
-                  ]}
+                      {title: '规格', dataIndex: 'skuName', key: 'skuName'},
+                      {title: '规格编码', dataIndex: 'skuCode', key: 'skuCode'},
+                      {
+                        title: '商品默认价',
+                        key: 'standardPrice',
+                        render: (_, row) => formatSalesMenuPrice(row.standardPriceCents),
+                      },
+                      {
+                        title: '菜单挂牌价',
+                        key: 'listedPrice',
+                        render: (_, row) => {
+                          if (!row.selected || row.stale || row.listedPriceCents === null) return '—';
+                          return (
+                            <InputNumber
+                              min={0}
+                              precision={2}
+                              value={row.listedPriceCents / 100}
+                              addonBefore="¥"
+                              onChange={value => {
+                                const nextCents = value === null || value === undefined ? 0 : Math.round(value * 100);
+                                setSkuPriceByRef(current => ({
+                                  ...current,
+                                  [String(row.skuRef)]: {
+                                    ...current[String(row.skuRef)],
+                                    listedPriceCents: nextCents,
+                                  },
+                                }));
+                                markDirty();
+                              }}
+                              {...testId(salesMenuTestIds.itemSkuPrice(String(row.skuRef)))}
+                            />
+                          );
+                        },
+                      },
+                    ]}
                   />
                 </Space>
               ) : (

@@ -304,6 +304,14 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    getOperationsBusinessChannelTemplateVisibleStores: (pathParameters: FaceOperationContracts["getOperationsBusinessChannelTemplateVisibleStores"]["path"], options: FaceOperationOptions<"getOperationsBusinessChannelTemplateVisibleStores">): FaceOperationRequest<"getOperationsBusinessChannelTemplateVisibleStores"> => ({
+      operationId: "getOperationsBusinessChannelTemplateVisibleStores",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/visible-stores",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getOperationsContract: (pathParameters: FaceOperationContracts["getOperationsContract"]["path"], options: FaceOperationOptions<"getOperationsContract">): FaceOperationRequest<"getOperationsContract"> => ({
       operationId: "getOperationsContract",
       method: "GET",
@@ -1280,6 +1288,10 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsBusinessChannelTemplates: build.query<FaceOperationContracts["getOperationsBusinessChannelTemplates"]["response"], FaceOperationRequest<"getOperationsBusinessChannelTemplates">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsBusinessChannelTemplateVisibleStores: build.query<FaceOperationContracts["getOperationsBusinessChannelTemplateVisibleStores"]["response"], FaceOperationRequest<"getOperationsBusinessChannelTemplateVisibleStores">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),

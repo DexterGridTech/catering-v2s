@@ -1670,11 +1670,7 @@ async function openCatalogStatusActions(page: Page, facts: OwnerCase): Promise<v
 }
 
 async function disableCatalogItem(page: Page, facts: OwnerCase): Promise<void> {
-  await clickOperationsDetailAction(
-    page,
-    catalogTestIdControls.view.action,
-    catalogTestIds.control.statusDisable,
-  );
+  await clickOperationsDetailAction(page, catalogTestIdControls.view.action, catalogTestIds.control.statusDisable);
   const completion = waitForGeneratedOperation(page, 'transitionOperationsCatalogItemStatus');
   await confirmCatalogLifecycle(page, '停用', facts);
   const response = await completion;

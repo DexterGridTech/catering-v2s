@@ -3,5 +3,7 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public record BusinessChannelTemplateUpdateRequest(
     String templateName,
-    Long expectedVersion
+    Long expectedVersion,
+    BusinessChannelTemplateStoreVisibilityScope storeVisibilityScope,
+    java.util.List<java.util.UUID> visibleStoreRefs
 ) {}

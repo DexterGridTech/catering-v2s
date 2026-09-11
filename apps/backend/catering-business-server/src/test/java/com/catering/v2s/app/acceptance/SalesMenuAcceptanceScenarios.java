@@ -205,6 +205,55 @@ final class SalesMenuAcceptanceScenarios {
     }
 
     @AcceptanceScenario(
+            id = "sales-menu.external-dine-in-excluded",
+            module = "SALES_MENU",
+            operation = "getOperationsStoreBusinessChannels")
+    void externalDineInExcluded(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        MenuFixture menus = menuFixture(context, 1, "SM05 external DINE_IN exclusion");
+        UUID eligibleChannel = menus.channels().getFirst();
+        JsonNode external = channels.acceptanceCreateExternalDineInChannel(context, menus.fixture(), menus.session());
+        UUID externalChannel = UUID.fromString(external.path("channelRef").asText());
+        assertEquals(
+                "STORE",
+                external.path("ownerNodeType").asText(),
+                "BUSINESS: external DINE_IN channel remains STORE-owned");
+        assertTrue(external.path("bindingRef").isTextual(), "BUSINESS: external DINE_IN channel has a real binding");
+
+        String channelListPath =
+                "/api/operations/group-workspaces/" + menus.fixture().groupWorkspaceKey() + "/stores/"
+                        + menus.fixture().storeId() + "/business-channels?usage=SALES_MENU&pageSize=20";
+        BackendAcceptanceTest.Response eligibleChannels = context.get(
+                BusinessChannelAcceptanceScenarios.CHANNEL_LIST_STORE,
+                channelListPath,
+                menus.session().cookie(),
+                Set.of(200));
+        Set<String> eligibleRefs = nodeRefs(
+                requiredJsonNode(
+                        eligibleChannels.json(),
+                        "/items",
+                        JsonNodeType.ARRAY,
+                        "BUSINESS: sales-menu candidate read returns a typed collection"),
+                "channelRef");
+        assertTrue(
+                eligibleRefs.contains(eligibleChannel.toString()),
+                "BUSINESS: an internal STORE channel remains a sales-menu candidate");
+        assertFalse(
+                eligibleRefs.contains(externalChannel.toString()),
+                "BUSINESS: external DINE_IN is excluded from sales-menu candidates");
+
+        BackendAcceptanceTest.Response directRejected = context.post(
+                OPERATIONS_SALES_MENU_CREATE,
+                menuRoot(menus.fixture()),
+                menus.session().cookie(),
+                Map.of("channelRef", externalChannel, "name", "SM05 external DINE_IN rejected"),
+                Set.of(422));
+        assertEquals(
+                "SALES_MENU_CHANNEL_INELIGIBLE",
+                directRejected.problemCode(),
+                "BUSINESS: direct sales-menu create rejects external DINE_IN");
+    }
+
+    @AcceptanceScenario(
             id = "sales-menu.collection-lifecycle-and-multi-activation",
             module = "SALES_MENU",
             operation = "createOperationsSalesMenu")
@@ -1308,7 +1357,8 @@ final class SalesMenuAcceptanceScenarios {
             operation = "updateOperationsSalesMenuItem")
     void skuSubsetSelectionAndRepeatItem(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         MenuFixture menus = menuFixture(context, 1, "SM05 SKU subset");
-        MenuState menu = createMenu(context, menus, "SM05 SKU subset menu", menus.channels().getFirst());
+        MenuState menu = createMenu(
+                context, menus, "SM05 SKU subset menu", menus.channels().getFirst());
         SectionState section = createSection(context, menus, menu.ref(), "SM05 SKU subset section", menu.version());
         JsonNode catalogItem = catalog.acceptanceCreateSkuItemWithTwoEnabledSkus(
                 context, menus.fixture(), menus.session(), "SM05-SKU-SUBSET-" + suffix(), "SM05 SKU subset");
@@ -1318,10 +1368,13 @@ final class SalesMenuAcceptanceScenarios {
         for (JsonNode sku : skuFacts)
             assertEquals("ENABLED", sku.path("status").asText(), "BUSINESS: both SKU subset facts are enabled");
 
-        long version = addItems(context, menus, menu.ref(), section.ref(), section.menuVersion(), List.of(catalogRef, catalogRef));
+        long version = addItems(
+                context, menus, menu.ref(), section.ref(), section.menuVersion(), List.of(catalogRef, catalogRef));
         List<ItemState> items = findDraftItems(context, menus, menu.ref(), section.ref(), catalogRef);
         assertEquals(2, items.size(), "BUSINESS: one Catalog product can occur in two SalesItems");
-        assertFalse(items.get(0).ref().equals(items.get(1).ref()), "BUSINESS: repeated SalesItems have distinct identities");
+        assertFalse(
+                items.get(0).ref().equals(items.get(1).ref()),
+                "BUSINESS: repeated SalesItems have distinct identities");
         JsonNode firstSku = skuFacts.get(0);
         JsonNode secondSku = skuFacts.get(1);
         version = updateItem(
@@ -1351,23 +1404,38 @@ final class SalesMenuAcceptanceScenarios {
         version = updateSchedule(context, menus, menu.ref(), version, allDaySchedule());
         version = publish(context, menus, menu.ref(), version);
 
-        JsonNode published = publishedItemsForFirstSection(context, menus, menu.ref(), menus.channels().getFirst());
+        JsonNode published = publishedItemsForFirstSection(
+                context, menus, menu.ref(), menus.channels().getFirst());
         assertEquals(2, published.path("items").size(), "BUSINESS: both repeated SalesItems are published");
         Set<String> publishedSkuRefs = new LinkedHashSet<>();
         Map<String, Long> expectedPrices = Map.of(
                 firstSku.path("productSkuRef").asText(), 1599L,
                 secondSku.path("productSkuRef").asText(), 1799L);
         for (JsonNode row : published.path("items")) {
-            assertEquals(catalogRef.toString(), row.path("catalogItemRef").asText(), "BUSINESS: both rows retain Catalog identity");
-            assertEquals("SKU_SELECTION", row.path("saleContent").path("kind").asText(), "BUSINESS: rows retain SKU sale kind");
+            assertEquals(
+                    catalogRef.toString(),
+                    row.path("catalogItemRef").asText(),
+                    "BUSINESS: both rows retain Catalog identity");
+            assertEquals(
+                    "SKU_SELECTION",
+                    row.path("saleContent").path("kind").asText(),
+                    "BUSINESS: rows retain SKU sale kind");
             JsonNode prices = row.path("saleContent").path("skuPrices");
             assertEquals(1, prices.size(), "BUSINESS: each SalesItem publishes one selected SKU subset");
             JsonNode price = prices.get(0);
             String skuRef = price.path("skuRef").asText();
             assertTrue(publishedSkuRefs.add(skuRef), "BUSINESS: repeated SalesItems publish disjoint SKU subsets");
-            assertEquals(expectedPrices.get(skuRef), price.path("listedPriceCents").asLong(), "BUSINESS: each SKU keeps its independent listed price");
-            assertTrue(row.path("saleContent").path("selectedOrderOptions").isArray(), "CONTRACT: SKU row carries an explicit empty option snapshot");
-            assertEquals(0, row.path("saleContent").path("selectedOrderOptions").size(), "BUSINESS: SKU sale has no option snapshot");
+            assertEquals(
+                    expectedPrices.get(skuRef),
+                    price.path("listedPriceCents").asLong(),
+                    "BUSINESS: each SKU keeps its independent listed price");
+            assertTrue(
+                    row.path("saleContent").path("selectedOrderOptions").isArray(),
+                    "CONTRACT: SKU row carries an explicit empty option snapshot");
+            assertEquals(
+                    0,
+                    row.path("saleContent").path("selectedOrderOptions").size(),
+                    "BUSINESS: SKU sale has no option snapshot");
         }
         assertEquals(2, publishedSkuRefs.size(), "BUSINESS: selected SKU subsets cover both distinct owner SKUs");
         assertTrue(version > menu.version(), "BUSINESS: SKU subset publication advances the menu version");
@@ -1379,7 +1447,8 @@ final class SalesMenuAcceptanceScenarios {
             operation = "updateOperationsSalesMenuItem")
     void orderOptionSubsetSelection(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         MenuFixture menus = menuFixture(context, 1, "SM05 option subset");
-        MenuState menu = createMenu(context, menus, "SM05 option subset menu", menus.channels().getFirst());
+        MenuState menu = createMenu(
+                context, menus, "SM05 option subset menu", menus.channels().getFirst());
         SectionState section = createSection(context, menus, menu.ref(), "SM05 option subset section", menu.version());
         JsonNode catalogItem = catalog.acceptanceCreateOrderOptionItem(
                 context, menus.fixture(), menus.session(), "SM05-OPTION-SUBSET-" + suffix(), "SM05 option subset");
@@ -1391,8 +1460,8 @@ final class SalesMenuAcceptanceScenarios {
 
         long version = addItems(context, menus, menu.ref(), section.ref(), section.menuVersion(), List.of(catalogRef));
         ItemState item = findDraftItem(context, menus, menu.ref(), section.ref(), catalogRef);
-        List<Map<String, Object>> selections = List.of(
-                optionSelection(required, List.of(1)), optionSelection(optional, List.of()));
+        List<Map<String, Object>> selections =
+                List.of(optionSelection(required, List.of(1)), optionSelection(optional, List.of()));
         version = updateItem(
                 context,
                 menus,
@@ -1413,20 +1482,40 @@ final class SalesMenuAcceptanceScenarios {
                 .json();
         JsonNode draftOptions = draft.path("saleContent").path("selectedOrderOptions");
         assertEquals(2, draftOptions.size(), "BUSINESS: draft readback preserves every option group");
-        assertEquals(1, optionByDefinition(draftOptions, required).path("values").size(), "BUSINESS: required subset keeps one selected value");
-        assertEquals(0, optionByDefinition(draftOptions, optional).path("values").size(), "BUSINESS: optional group can be saved with zero selected values");
+        assertEquals(
+                1,
+                optionByDefinition(draftOptions, required).path("values").size(),
+                "BUSINESS: required subset keeps one selected value");
+        assertEquals(
+                0,
+                optionByDefinition(draftOptions, optional).path("values").size(),
+                "BUSINESS: optional group can be saved with zero selected values");
         version = updateSchedule(context, menus, menu.ref(), version, allDaySchedule());
         version = publish(context, menus, menu.ref(), version);
-        JsonNode published = publishedItem(context, menus, menu.ref(), item.ref(), menus.channels().getFirst());
+        JsonNode published = publishedItem(
+                context, menus, menu.ref(), item.ref(), menus.channels().getFirst());
         JsonNode selected = published.path("saleContent").path("selectedOrderOptions");
         assertEquals(2, selected.size(), "BUSINESS: publication preserves the option group snapshot");
-        assertEquals(1, optionByDefinition(selected, required).path("values").size(), "BUSINESS: published required option subset is exact");
+        assertEquals(
+                1,
+                optionByDefinition(selected, required).path("values").size(),
+                "BUSINESS: published required option subset is exact");
         assertEquals(
                 required.path("values").get(1).path("definitionValueRef").asText(),
-                optionByDefinition(selected, required).path("values").get(0).path("definitionValueRef").asText(),
+                optionByDefinition(selected, required)
+                        .path("values")
+                        .get(0)
+                        .path("definitionValueRef")
+                        .asText(),
                 "BUSINESS: published required selection keeps the selected owner value identity");
-        assertEquals(0, optionByDefinition(selected, optional).path("values").size(), "BUSINESS: published optional zero selection stays empty");
-        assertEquals(2400, published.path("saleContent").path("listedPriceCents").asInt(), "BUSINESS: ordinary item keeps its menu price");
+        assertEquals(
+                0,
+                optionByDefinition(selected, optional).path("values").size(),
+                "BUSINESS: published optional zero selection stays empty");
+        assertEquals(
+                2400,
+                published.path("saleContent").path("listedPriceCents").asInt(),
+                "BUSINESS: ordinary item keeps its menu price");
         assertTrue(version > menu.version(), "BUSINESS: option subset publication advances the menu version");
     }
 
@@ -1436,7 +1525,8 @@ final class SalesMenuAcceptanceScenarios {
             operation = "setOperationsSalesMenuItemSoldOut")
     void childTargetManualStatus(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         MenuFixture menus = menuFixture(context, 1, "SM05 child targets");
-        MenuState menu = createMenu(context, menus, "SM05 child target menu", menus.channels().getFirst());
+        MenuState menu = createMenu(
+                context, menus, "SM05 child target menu", menus.channels().getFirst());
         SectionState section = createSection(context, menus, menu.ref(), "SM05 child target section", menu.version());
         JsonNode skuCatalog = catalog.acceptanceCreateSkuItemWithTwoEnabledSkus(
                 context, menus.fixture(), menus.session(), "SM05-CHILD-SKU-" + suffix(), "SM05 child SKU");
@@ -1445,7 +1535,12 @@ final class SalesMenuAcceptanceScenarios {
         UUID skuCatalogRef = UUID.fromString(skuCatalog.path("itemRef").asText());
         UUID optionCatalogRef = UUID.fromString(optionCatalog.path("itemRef").asText());
         long version = addItems(
-                context, menus, menu.ref(), section.ref(), section.menuVersion(), List.of(skuCatalogRef, optionCatalogRef));
+                context,
+                menus,
+                menu.ref(),
+                section.ref(),
+                section.menuVersion(),
+                List.of(skuCatalogRef, optionCatalogRef));
         List<ItemState> items = readAllDraftItemRows(context, menus, menu.ref(), section.ref()).stream()
                 .map(SalesMenuAcceptanceScenarios::itemState)
                 .toList();
@@ -1484,62 +1579,107 @@ final class SalesMenuAcceptanceScenarios {
                                 "DIRECT",
                                 2600L,
                                 List.of(),
-                                List.of(optionSelection(required, List.of(0)), optionSelection(optionCatalog.path("orderOptionConfigs").get(1), List.of()))),
+                                List.of(
+                                        optionSelection(required, List.of(0)),
+                                        optionSelection(
+                                                optionCatalog
+                                                        .path("orderOptionConfigs")
+                                                        .get(1),
+                                                List.of()))),
                         ordering(1, 1),
                         inheritedMedia(),
                         version));
         version = updateSchedule(context, menus, menu.ref(), version, allDaySchedule());
         version = publish(context, menus, menu.ref(), version);
 
-        JsonNode skuPublished = publishedItem(context, menus, menu.ref(), skuItem.ref(), menus.channels().getFirst());
-        JsonNode optionPublished = publishedItem(context, menus, menu.ref(), optionItem.ref(), menus.channels().getFirst());
-        UUID skuTargetRef = UUID.fromString(skuPublished.path("saleContent").path("skuPrices").get(0).path("skuRef").asText());
-        UUID optionTargetRef = UUID.fromString(optionByDefinition(
-                        optionPublished.path("saleContent").path("selectedOrderOptions"), required)
-                .path("values")
+        JsonNode skuPublished = publishedItem(
+                context, menus, menu.ref(), skuItem.ref(), menus.channels().getFirst());
+        JsonNode optionPublished = publishedItem(
+                context, menus, menu.ref(), optionItem.ref(), menus.channels().getFirst());
+        UUID skuTargetRef = UUID.fromString(skuPublished
+                .path("saleContent")
+                .path("skuPrices")
                 .get(0)
-                .path("definitionValueRef")
+                .path("skuRef")
                 .asText());
+        UUID optionTargetRef = UUID.fromString(
+                optionByDefinition(optionPublished.path("saleContent").path("selectedOrderOptions"), required)
+                        .path("values")
+                        .get(0)
+                        .path("definitionValueRef")
+                        .asText());
         JsonNode skuInventoryBefore = skuPublished.path("inventoryAvailability").deepCopy();
-        JsonNode optionInventoryBefore = optionPublished.path("inventoryAvailability").deepCopy();
+        JsonNode optionInventoryBefore =
+                optionPublished.path("inventoryAvailability").deepCopy();
         assertEquals(
                 "NORMAL",
-                manualTargetStatus(skuPublished, "SKU", skuTargetRef).path("state").asText(),
+                manualTargetStatus(skuPublished, "SKU", skuTargetRef)
+                        .path("state")
+                        .asText(),
                 "BUSINESS: selected SKU target starts normal");
         assertEquals(
                 "NORMAL",
-                manualTargetStatus(optionPublished, "ORDER_OPTION_VALUE", optionTargetRef).path("state").asText(),
+                manualTargetStatus(optionPublished, "ORDER_OPTION_VALUE", optionTargetRef)
+                        .path("state")
+                        .asText(),
                 "BUSINESS: selected option value target starts normal");
 
         BackendAcceptanceTest.Response skuSoldOut = context.post(
                 OPERATIONS_SALES_MENU_SOLD_OUT,
-                publishedItemCommandPath(menus, menu.ref(), skuItem.ref(), menus.channels().getFirst(), "manual-sold-out"),
+                publishedItemCommandPath(
+                        menus, menu.ref(), skuItem.ref(), menus.channels().getFirst(), "manual-sold-out"),
                 menus.session().cookie(),
                 manualTargetCommandBody("SKU", skuTargetRef, "规格暂停售卖", version),
                 idempotencyHeaders("sales-menu-child-sku-sold-out"),
                 Set.of(200));
         version = assertCommand(skuSoldOut, "setOperationsSalesMenuItemSoldOut", menu.ref(), skuTargetRef);
-        skuPublished = publishedItem(context, menus, menu.ref(), skuItem.ref(), menus.channels().getFirst());
-        assertEquals("NORMAL", skuPublished.path("manualSaleStatus").path("state").asText(), "BUSINESS: SKU target stop does not change parent ITEM status");
-        assertEquals("MANUAL_SOLD_OUT", manualTargetStatus(skuPublished, "SKU", skuTargetRef).path("state").asText(), "BUSINESS: SKU target stop is read back on the child row");
-        assertEquals(skuInventoryBefore, skuPublished.path("inventoryAvailability"), "BUSINESS: SKU target stop does not rewrite inventory availability");
+        skuPublished = publishedItem(
+                context, menus, menu.ref(), skuItem.ref(), menus.channels().getFirst());
+        assertEquals(
+                "NORMAL",
+                skuPublished.path("manualSaleStatus").path("state").asText(),
+                "BUSINESS: SKU target stop does not change parent ITEM status");
+        assertEquals(
+                "MANUAL_SOLD_OUT",
+                manualTargetStatus(skuPublished, "SKU", skuTargetRef)
+                        .path("state")
+                        .asText(),
+                "BUSINESS: SKU target stop is read back on the child row");
+        assertEquals(
+                skuInventoryBefore,
+                skuPublished.path("inventoryAvailability"),
+                "BUSINESS: SKU target stop does not rewrite inventory availability");
 
         BackendAcceptanceTest.Response optionSoldOut = context.post(
                 OPERATIONS_SALES_MENU_SOLD_OUT,
-                publishedItemCommandPath(menus, menu.ref(), optionItem.ref(), menus.channels().getFirst(), "manual-sold-out"),
+                publishedItemCommandPath(
+                        menus, menu.ref(), optionItem.ref(), menus.channels().getFirst(), "manual-sold-out"),
                 menus.session().cookie(),
                 manualTargetCommandBody("ORDER_OPTION_VALUE", optionTargetRef, "加料暂停售卖", version),
                 idempotencyHeaders("sales-menu-child-option-sold-out"),
                 Set.of(200));
         version = assertCommand(optionSoldOut, "setOperationsSalesMenuItemSoldOut", menu.ref(), optionTargetRef);
-        optionPublished = publishedItem(context, menus, menu.ref(), optionItem.ref(), menus.channels().getFirst());
-        assertEquals("NORMAL", optionPublished.path("manualSaleStatus").path("state").asText(), "BUSINESS: option target stop does not change parent ITEM status");
-        assertEquals("MANUAL_SOLD_OUT", manualTargetStatus(optionPublished, "ORDER_OPTION_VALUE", optionTargetRef).path("state").asText(), "BUSINESS: option target stop is read back on the child row");
-        assertEquals(optionInventoryBefore, optionPublished.path("inventoryAvailability"), "BUSINESS: option target stop does not rewrite inventory availability");
+        optionPublished = publishedItem(
+                context, menus, menu.ref(), optionItem.ref(), menus.channels().getFirst());
+        assertEquals(
+                "NORMAL",
+                optionPublished.path("manualSaleStatus").path("state").asText(),
+                "BUSINESS: option target stop does not change parent ITEM status");
+        assertEquals(
+                "MANUAL_SOLD_OUT",
+                manualTargetStatus(optionPublished, "ORDER_OPTION_VALUE", optionTargetRef)
+                        .path("state")
+                        .asText(),
+                "BUSINESS: option target stop is read back on the child row");
+        assertEquals(
+                optionInventoryBefore,
+                optionPublished.path("inventoryAvailability"),
+                "BUSINESS: option target stop does not rewrite inventory availability");
 
         BackendAcceptanceTest.Response optionRestored = context.post(
                 OPERATIONS_SALES_MENU_RESTORE,
-                publishedItemCommandPath(menus, menu.ref(), optionItem.ref(), menus.channels().getFirst(), "manual-restore"),
+                publishedItemCommandPath(
+                        menus, menu.ref(), optionItem.ref(), menus.channels().getFirst(), "manual-restore"),
                 menus.session().cookie(),
                 manualRestoreCommandBody("ORDER_OPTION_VALUE", optionTargetRef, version),
                 idempotencyHeaders("sales-menu-child-option-restore"),
@@ -1547,14 +1687,41 @@ final class SalesMenuAcceptanceScenarios {
         version = assertCommand(optionRestored, "restoreOperationsSalesMenuItemSale", menu.ref(), optionTargetRef);
         BackendAcceptanceTest.Response skuRestored = context.post(
                 OPERATIONS_SALES_MENU_RESTORE,
-                publishedItemCommandPath(menus, menu.ref(), skuItem.ref(), menus.channels().getFirst(), "manual-restore"),
+                publishedItemCommandPath(
+                        menus, menu.ref(), skuItem.ref(), menus.channels().getFirst(), "manual-restore"),
                 menus.session().cookie(),
                 manualRestoreCommandBody("SKU", skuTargetRef, version),
                 idempotencyHeaders("sales-menu-child-sku-restore"),
                 Set.of(200));
         version = assertCommand(skuRestored, "restoreOperationsSalesMenuItemSale", menu.ref(), skuTargetRef);
-        assertEquals("NORMAL", manualTargetStatus(publishedItem(context, menus, menu.ref(), skuItem.ref(), menus.channels().getFirst()), "SKU", skuTargetRef).path("state").asText(), "BUSINESS: SKU child restore is independent and exact");
-        assertEquals("NORMAL", manualTargetStatus(publishedItem(context, menus, menu.ref(), optionItem.ref(), menus.channels().getFirst()), "ORDER_OPTION_VALUE", optionTargetRef).path("state").asText(), "BUSINESS: option child restore is independent and exact");
+        assertEquals(
+                "NORMAL",
+                manualTargetStatus(
+                                publishedItem(
+                                        context,
+                                        menus,
+                                        menu.ref(),
+                                        skuItem.ref(),
+                                        menus.channels().getFirst()),
+                                "SKU",
+                                skuTargetRef)
+                        .path("state")
+                        .asText(),
+                "BUSINESS: SKU child restore is independent and exact");
+        assertEquals(
+                "NORMAL",
+                manualTargetStatus(
+                                publishedItem(
+                                        context,
+                                        menus,
+                                        menu.ref(),
+                                        optionItem.ref(),
+                                        menus.channels().getFirst()),
+                                "ORDER_OPTION_VALUE",
+                                optionTargetRef)
+                        .path("state")
+                        .asText(),
+                "BUSINESS: option child restore is independent and exact");
 
         BackendAcceptanceTest.Response records = context.get(
                 OPERATIONS_SALES_MENU_RECORDS,
@@ -1572,7 +1739,8 @@ final class SalesMenuAcceptanceScenarios {
             operation = "publishOperationsSalesMenu")
     void publishDetachesRemovedTargetStatus(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         MenuFixture menus = menuFixture(context, 1, "SM05 target detach");
-        MenuState menu = createMenu(context, menus, "SM05 target detach menu", menus.channels().getFirst());
+        MenuState menu = createMenu(
+                context, menus, "SM05 target detach menu", menus.channels().getFirst());
         SectionState section = createSection(context, menus, menu.ref(), "SM05 target detach section", menu.version());
         JsonNode catalogItem = catalog.acceptanceCreateSkuItemWithTwoEnabledSkus(
                 context, menus.fixture(), menus.session(), "SM05-DETACH-SKU-" + suffix(), "SM05 target detach SKU");
@@ -1598,14 +1766,21 @@ final class SalesMenuAcceptanceScenarios {
         UUID firstSkuRef = UUID.fromString(firstSku.path("productSkuRef").asText());
         BackendAcceptanceTest.Response soldOut = context.post(
                 OPERATIONS_SALES_MENU_SOLD_OUT,
-                publishedItemCommandPath(menus, menu.ref(), item.ref(), menus.channels().getFirst(), "manual-sold-out"),
+                publishedItemCommandPath(
+                        menus, menu.ref(), item.ref(), menus.channels().getFirst(), "manual-sold-out"),
                 menus.session().cookie(),
                 manualTargetCommandBody("SKU", firstSkuRef, "旧规格暂停售卖", version),
                 idempotencyHeaders("sales-menu-detach-sold-out"),
                 Set.of(200));
         version = assertCommand(soldOut, "setOperationsSalesMenuItemSoldOut", menu.ref(), firstSkuRef);
-        JsonNode firstPublished = publishedItem(context, menus, menu.ref(), item.ref(), menus.channels().getFirst());
-        assertEquals("MANUAL_SOLD_OUT", manualTargetStatus(firstPublished, "SKU", firstSkuRef).path("state").asText(), "BUSINESS: initial published SKU target is sold out");
+        JsonNode firstPublished = publishedItem(
+                context, menus, menu.ref(), item.ref(), menus.channels().getFirst());
+        assertEquals(
+                "MANUAL_SOLD_OUT",
+                manualTargetStatus(firstPublished, "SKU", firstSkuRef)
+                        .path("state")
+                        .asText(),
+                "BUSINESS: initial published SKU target is sold out");
 
         version = updateItem(
                 context,
@@ -1621,13 +1796,16 @@ final class SalesMenuAcceptanceScenarios {
                         version));
         version = publish(context, menus, menu.ref(), version);
         UUID secondSkuRef = UUID.fromString(secondSku.path("productSkuRef").asText());
-        JsonNode secondPublished = publishedItem(context, menus, menu.ref(), item.ref(), menus.channels().getFirst());
+        JsonNode secondPublished = publishedItem(
+                context, menus, menu.ref(), item.ref(), menus.channels().getFirst());
         assertFalse(
                 hasManualTargetStatus(secondPublished, "SKU", firstSkuRef),
                 "BUSINESS: removing a child from the next publication removes its current status row");
         assertEquals(
                 "NORMAL",
-                manualTargetStatus(secondPublished, "SKU", secondSkuRef).path("state").asText(),
+                manualTargetStatus(secondPublished, "SKU", secondSkuRef)
+                        .path("state")
+                        .asText(),
                 "BUSINESS: a newly published child target starts normal");
         assertFalse(
                 secondPublished.toString().contains("TARGET_DETACHED_BY_PUBLICATION"),
@@ -1646,7 +1824,8 @@ final class SalesMenuAcceptanceScenarios {
                         inheritedMedia(),
                         version));
         version = publish(context, menus, menu.ref(), version);
-        JsonNode readded = publishedItem(context, menus, menu.ref(), item.ref(), menus.channels().getFirst());
+        JsonNode readded = publishedItem(
+                context, menus, menu.ref(), item.ref(), menus.channels().getFirst());
         assertEquals(
                 "NORMAL",
                 manualTargetStatus(readded, "SKU", firstSkuRef).path("state").asText(),
@@ -1662,16 +1841,24 @@ final class SalesMenuAcceptanceScenarios {
         Set<String> capabilities = new HashSet<>(STORE_CAPABILITIES);
         capabilities.add("EDIT_STORE_INVENTORY");
         MenuFixture menus = menuFixture(context, 1, "SM05 target inventory", capabilities);
-        MenuState menu = createMenu(context, menus, "SM05 target inventory menu", menus.channels().getFirst());
-        SectionState section = createSection(context, menus, menu.ref(), "SM05 target inventory section", menu.version());
+        MenuState menu = createMenu(
+                context, menus, "SM05 target inventory menu", menus.channels().getFirst());
+        SectionState section =
+                createSection(context, menus, menu.ref(), "SM05 target inventory section", menu.version());
         JsonNode inventoryCatalog = catalog.acceptanceCreateInventoryBackedPlainItem(
                 context, menus.fixture(), menus.session(), "SM05-TARGET-INV-" + suffix(), "SM05 target inventory item");
         JsonNode skuCatalog = catalog.acceptanceCreateSkuItemWithTwoEnabledSkus(
                 context, menus.fixture(), menus.session(), "SM05-TARGET-SKU-" + suffix(), "SM05 target SKU item");
-        UUID inventoryCatalogRef = UUID.fromString(inventoryCatalog.path("itemRef").asText());
+        UUID inventoryCatalogRef =
+                UUID.fromString(inventoryCatalog.path("itemRef").asText());
         UUID skuCatalogRef = UUID.fromString(skuCatalog.path("itemRef").asText());
         long version = addItems(
-                context, menus, menu.ref(), section.ref(), section.menuVersion(), List.of(inventoryCatalogRef, skuCatalogRef));
+                context,
+                menus,
+                menu.ref(),
+                section.ref(),
+                section.menuVersion(),
+                List.of(inventoryCatalogRef, skuCatalogRef));
         List<JsonNode> draftRows = readAllDraftItemRows(context, menus, menu.ref(), section.ref());
         ItemState inventoryItem = draftRows.stream()
                 .map(SalesMenuAcceptanceScenarios::itemState)
@@ -1704,65 +1891,136 @@ final class SalesMenuAcceptanceScenarios {
                         inheritedMedia(),
                         version));
         catalog.acceptanceConfigureInventoryTarget(
-                context, menus.fixture(), menus.session(), inventoryCatalog, false, "0", "sales-menu-target-inv-config");
+                context,
+                menus.fixture(),
+                menus.session(),
+                inventoryCatalog,
+                false,
+                "0",
+                "sales-menu-target-inv-config");
         catalog.acceptanceCountInventoryTarget(
-                context, menus.fixture(), menus.session(), inventoryCatalog, "1", false, "sales-menu-target-inv-available");
+                context,
+                menus.fixture(),
+                menus.session(),
+                inventoryCatalog,
+                "1",
+                false,
+                "sales-menu-target-inv-available");
         version = updateSchedule(context, menus, menu.ref(), version, allDaySchedule());
         version = publish(context, menus, menu.ref(), version);
 
-        JsonNode available = publishedItem(context, menus, menu.ref(), inventoryItem.ref(), menus.channels().getFirst());
+        JsonNode available = publishedItem(
+                context,
+                menus,
+                menu.ref(),
+                inventoryItem.ref(),
+                menus.channels().getFirst());
         UUID itemTargetRef = inventoryItem.ref();
         JsonNode availableInventory = available.path("inventoryAvailability").deepCopy();
-        assertEquals("AVAILABLE", availableInventory.path("state").asText(), "BUSINESS: inventory owner reports the item as available");
+        assertEquals(
+                "AVAILABLE",
+                availableInventory.path("state").asText(),
+                "BUSINESS: inventory owner reports the item as available");
         BackendAcceptanceTest.Response itemSoldOut = context.post(
                 OPERATIONS_SALES_MENU_SOLD_OUT,
-                publishedItemCommandPath(menus, menu.ref(), inventoryItem.ref(), menus.channels().getFirst(), "manual-sold-out"),
+                publishedItemCommandPath(
+                        menus, menu.ref(), inventoryItem.ref(), menus.channels().getFirst(), "manual-sold-out"),
                 menus.session().cookie(),
                 manualTargetCommandBody("ITEM", itemTargetRef, "父销售项暂停售卖", version),
                 idempotencyHeaders("sales-menu-target-item-sold-out"),
                 Set.of(200));
         version = assertCommand(itemSoldOut, "setOperationsSalesMenuItemSoldOut", menu.ref(), itemTargetRef);
-        JsonNode itemManual = publishedItem(context, menus, menu.ref(), inventoryItem.ref(), menus.channels().getFirst());
-        assertEquals("MANUAL_SOLD_OUT", itemManual.path("manualSaleStatus").path("state").asText(), "BUSINESS: ITEM manual stop is its own fact");
-        assertEquals(availableInventory, itemManual.path("inventoryAvailability"), "BUSINESS: ITEM manual stop does not rewrite inventory fact");
+        JsonNode itemManual = publishedItem(
+                context,
+                menus,
+                menu.ref(),
+                inventoryItem.ref(),
+                menus.channels().getFirst());
+        assertEquals(
+                "MANUAL_SOLD_OUT",
+                itemManual.path("manualSaleStatus").path("state").asText(),
+                "BUSINESS: ITEM manual stop is its own fact");
+        assertEquals(
+                availableInventory,
+                itemManual.path("inventoryAvailability"),
+                "BUSINESS: ITEM manual stop does not rewrite inventory fact");
 
         catalog.acceptanceCountInventoryTarget(
                 context, menus.fixture(), menus.session(), inventoryCatalog, "0", true, "sales-menu-target-inv-out");
-        JsonNode bothUnavailable = publishedItem(context, menus, menu.ref(), inventoryItem.ref(), menus.channels().getFirst());
-        assertEquals("AUTO_UNAVAILABLE", bothUnavailable.path("inventoryAvailability").path("state").asText(), "BUSINESS: inventory independently becomes auto unavailable");
-        assertEquals("MANUAL_SOLD_OUT", bothUnavailable.path("manualSaleStatus").path("state").asText(), "BUSINESS: auto-unavailable does not replace ITEM manual stop");
+        JsonNode bothUnavailable = publishedItem(
+                context,
+                menus,
+                menu.ref(),
+                inventoryItem.ref(),
+                menus.channels().getFirst());
+        assertEquals(
+                "AUTO_UNAVAILABLE",
+                bothUnavailable.path("inventoryAvailability").path("state").asText(),
+                "BUSINESS: inventory independently becomes auto unavailable");
+        assertEquals(
+                "MANUAL_SOLD_OUT",
+                bothUnavailable.path("manualSaleStatus").path("state").asText(),
+                "BUSINESS: auto-unavailable does not replace ITEM manual stop");
         BackendAcceptanceTest.Response itemRestored = context.post(
                 OPERATIONS_SALES_MENU_RESTORE,
-                publishedItemCommandPath(menus, menu.ref(), inventoryItem.ref(), menus.channels().getFirst(), "manual-restore"),
+                publishedItemCommandPath(
+                        menus, menu.ref(), inventoryItem.ref(), menus.channels().getFirst(), "manual-restore"),
                 menus.session().cookie(),
                 manualRestoreCommandBody("ITEM", itemTargetRef, version),
                 idempotencyHeaders("sales-menu-target-item-restore"),
                 Set.of(200));
         version = assertCommand(itemRestored, "restoreOperationsSalesMenuItemSale", menu.ref(), itemTargetRef);
-        JsonNode restoredItem = publishedItem(context, menus, menu.ref(), inventoryItem.ref(), menus.channels().getFirst());
-        assertEquals("NORMAL", restoredItem.path("manualSaleStatus").path("state").asText(), "BUSINESS: ITEM restore changes only the manual fact");
-        assertEquals("AUTO_UNAVAILABLE", restoredItem.path("inventoryAvailability").path("state").asText(), "BUSINESS: ITEM restore does not auto-restore inventory");
+        JsonNode restoredItem = publishedItem(
+                context,
+                menus,
+                menu.ref(),
+                inventoryItem.ref(),
+                menus.channels().getFirst());
+        assertEquals(
+                "NORMAL",
+                restoredItem.path("manualSaleStatus").path("state").asText(),
+                "BUSINESS: ITEM restore changes only the manual fact");
+        assertEquals(
+                "AUTO_UNAVAILABLE",
+                restoredItem.path("inventoryAvailability").path("state").asText(),
+                "BUSINESS: ITEM restore does not auto-restore inventory");
 
-        UUID skuTargetRef = UUID.fromString(
-                publishedItem(context, menus, menu.ref(), skuItem.ref(), menus.channels().getFirst())
-                        .path("saleContent")
-                        .path("skuPrices")
-                        .get(0)
-                        .path("skuRef")
-                        .asText());
-        JsonNode skuBefore = publishedItem(context, menus, menu.ref(), skuItem.ref(), menus.channels().getFirst());
+        UUID skuTargetRef = UUID.fromString(publishedItem(
+                        context,
+                        menus,
+                        menu.ref(),
+                        skuItem.ref(),
+                        menus.channels().getFirst())
+                .path("saleContent")
+                .path("skuPrices")
+                .get(0)
+                .path("skuRef")
+                .asText());
+        JsonNode skuBefore = publishedItem(
+                context, menus, menu.ref(), skuItem.ref(), menus.channels().getFirst());
         BackendAcceptanceTest.Response skuSoldOut = context.post(
                 OPERATIONS_SALES_MENU_SOLD_OUT,
-                publishedItemCommandPath(menus, menu.ref(), skuItem.ref(), menus.channels().getFirst(), "manual-sold-out"),
+                publishedItemCommandPath(
+                        menus, menu.ref(), skuItem.ref(), menus.channels().getFirst(), "manual-sold-out"),
                 menus.session().cookie(),
                 manualTargetCommandBody("SKU", skuTargetRef, "规格暂停售卖", version),
                 idempotencyHeaders("sales-menu-target-sku-sold-out"),
                 Set.of(200));
         version = assertCommand(skuSoldOut, "setOperationsSalesMenuItemSoldOut", menu.ref(), skuTargetRef);
-        JsonNode skuAfter = publishedItem(context, menus, menu.ref(), skuItem.ref(), menus.channels().getFirst());
-        assertEquals("NORMAL", skuAfter.path("manualSaleStatus").path("state").asText(), "BUSINESS: SKU manual stop does not change parent ITEM manual fact");
-        assertEquals("MANUAL_SOLD_OUT", manualTargetStatus(skuAfter, "SKU", skuTargetRef).path("state").asText(), "BUSINESS: SKU manual stop is a child fact");
-        assertEquals(skuBefore.path("inventoryAvailability"), skuAfter.path("inventoryAvailability"), "BUSINESS: SKU manual stop does not rewrite inventory fact");
+        JsonNode skuAfter = publishedItem(
+                context, menus, menu.ref(), skuItem.ref(), menus.channels().getFirst());
+        assertEquals(
+                "NORMAL",
+                skuAfter.path("manualSaleStatus").path("state").asText(),
+                "BUSINESS: SKU manual stop does not change parent ITEM manual fact");
+        assertEquals(
+                "MANUAL_SOLD_OUT",
+                manualTargetStatus(skuAfter, "SKU", skuTargetRef).path("state").asText(),
+                "BUSINESS: SKU manual stop is a child fact");
+        assertEquals(
+                skuBefore.path("inventoryAvailability"),
+                skuAfter.path("inventoryAvailability"),
+                "BUSINESS: SKU manual stop does not rewrite inventory fact");
         assertTrue(version > 0, "BUSINESS: target and inventory facts keep an authoritative version");
     }
 
@@ -1772,10 +2030,16 @@ final class SalesMenuAcceptanceScenarios {
             operation = "updateOperationsSalesMenuItem")
     void selectionNegativeBoundaries(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         MenuFixture menus = menuFixture(context, 1, "SM05 selection negatives");
-        MenuState menu = createMenu(context, menus, "SM05 selection negative menu", menus.channels().getFirst());
-        SectionState section = createSection(context, menus, menu.ref(), "SM05 selection negative section", menu.version());
+        MenuState menu = createMenu(
+                context, menus, "SM05 selection negative menu", menus.channels().getFirst());
+        SectionState section =
+                createSection(context, menus, menu.ref(), "SM05 selection negative section", menu.version());
         JsonNode catalogItem = catalog.acceptanceCreateOrderOptionItem(
-                context, menus.fixture(), menus.session(), "SM05-SELECTION-NEGATIVE-" + suffix(), "SM05 selection negative");
+                context,
+                menus.fixture(),
+                menus.session(),
+                "SM05-SELECTION-NEGATIVE-" + suffix(),
+                "SM05 selection negative");
         UUID catalogRef = UUID.fromString(catalogItem.path("itemRef").asText());
         JsonNode required = catalogItem.path("orderOptionConfigs").get(0);
         JsonNode optional = catalogItem.path("orderOptionConfigs").get(1);
@@ -1804,7 +2068,10 @@ final class SalesMenuAcceptanceScenarios {
                         optionSelection(
                                 UUID.fromString(required.path("definitionRef").asText()),
                                 List.of(
-                                        UUID.fromString(required.path("values").get(0).path("definitionValueRef").asText()),
+                                        UUID.fromString(required.path("values")
+                                                .get(0)
+                                                .path("definitionValueRef")
+                                                .asText()),
                                         UUID.randomUUID())),
                         optionalEmpty));
         Map<String, String> expectedMutationCodes = new LinkedHashMap<>();
@@ -1842,7 +2109,10 @@ final class SalesMenuAcceptanceScenarios {
                     "BUSINESS: " + mutation.getKey() + " does not mutate the draft item");
             assertEquals(
                     version,
-                    readMenu(context, menus, menu.ref(), menus.channels().getFirst()).json().path("version").asLong(),
+                    readMenu(context, menus, menu.ref(), menus.channels().getFirst())
+                            .json()
+                            .path("version")
+                            .asLong(),
                     "BUSINESS: " + mutation.getKey() + " does not advance the menu version");
         }
 
@@ -1865,8 +2135,14 @@ final class SalesMenuAcceptanceScenarios {
                         Set.of(200))
                 .json();
         JsonNode savedOptions = saved.path("saleContent").path("selectedOrderOptions");
-        assertEquals(1, optionByDefinition(savedOptions, required).path("values").size(), "BUSINESS: valid required selection is saved after negative probes");
-        assertEquals(0, optionByDefinition(savedOptions, optional).path("values").size(), "BUSINESS: valid optional empty selection is accepted");
+        assertEquals(
+                1,
+                optionByDefinition(savedOptions, required).path("values").size(),
+                "BUSINESS: valid required selection is saved after negative probes");
+        assertEquals(
+                0,
+                optionByDefinition(savedOptions, optional).path("values").size(),
+                "BUSINESS: valid optional empty selection is accepted");
         assertTrue(version > 0, "BUSINESS: valid option selection advances the menu version");
     }
 
@@ -1876,7 +2152,8 @@ final class SalesMenuAcceptanceScenarios {
             operation = "updateOperationsSalesMenuItem")
     void disabledSkuIsNotSelectable(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         MenuFixture menus = menuFixture(context, 1, "SM05 disabled SKU");
-        MenuState menu = createMenu(context, menus, "SM05 disabled SKU menu", menus.channels().getFirst());
+        MenuState menu = createMenu(
+                context, menus, "SM05 disabled SKU menu", menus.channels().getFirst());
         SectionState section = createSection(context, menus, menu.ref(), "SM05 disabled SKU section", menu.version());
         String catalogCode = "SM05-DISABLED-SKU-" + suffix();
         JsonNode catalogItem = catalog.acceptanceCreateSkuItemWithTwoEnabledSkus(
@@ -1890,7 +2167,8 @@ final class SalesMenuAcceptanceScenarios {
                 context, menus.fixture(), menus.session(), catalogCode, secondSkuCode, "VOIDED");
         assertFalse(
                 iterable(catalogItem.path("skus")).stream()
-                        .anyMatch(sku -> secondSkuCode.equals(sku.path("skuCode").asText())),
+                        .anyMatch(
+                                sku -> secondSkuCode.equals(sku.path("skuCode").asText())),
                 "BUSINESS: Catalog VOIDED SKU is absent from active item readback after its owner transition");
         long version = addItems(context, menus, menu.ref(), section.ref(), section.menuVersion(), List.of(catalogRef));
         ItemState item = findDraftItem(context, menus, menu.ref(), section.ref(), catalogRef);
@@ -1900,8 +2178,18 @@ final class SalesMenuAcceptanceScenarios {
                         menus.session().cookie(),
                         Set.of(200))
                 .json();
-        assertTrue(containsRef(firstDraft.path("skuCandidates"), "skuRef", UUID.fromString(firstSku.path("productSkuRef").asText())), "BUSINESS: ENABLED SKU remains a candidate");
-        assertFalse(containsRef(firstDraft.path("skuCandidates"), "skuRef", UUID.fromString(secondSku.path("productSkuRef").asText())), "BUSINESS: VOIDED SKU is omitted from candidates");
+        assertTrue(
+                containsRef(
+                        firstDraft.path("skuCandidates"),
+                        "skuRef",
+                        UUID.fromString(firstSku.path("productSkuRef").asText())),
+                "BUSINESS: ENABLED SKU remains a candidate");
+        assertFalse(
+                containsRef(
+                        firstDraft.path("skuCandidates"),
+                        "skuRef",
+                        UUID.fromString(secondSku.path("productSkuRef").asText())),
+                "BUSINESS: VOIDED SKU is omitted from candidates");
         version = updateItem(
                 context,
                 menus,
@@ -1917,15 +2205,23 @@ final class SalesMenuAcceptanceScenarios {
         version = updateSchedule(context, menus, menu.ref(), version, allDaySchedule());
         catalogItem = catalog.acceptanceSetSkuStatus(
                 context, menus.fixture(), menus.session(), catalogCode, firstSkuCode, "DISABLED");
-        assertEquals("DISABLED", skuByCode(catalogItem, firstSkuCode).path("status").asText(), "BUSINESS: Catalog DISABLED SKU is a real owner fact");
+        assertEquals(
+                "DISABLED",
+                skuByCode(catalogItem, firstSkuCode).path("status").asText(),
+                "BUSINESS: Catalog DISABLED SKU is a real owner fact");
         JsonNode staleDraft = context.get(
                         OPERATIONS_SALES_MENU_DRAFT_ITEM,
                         draftItemPath(menus, menu.ref(), item.ref()),
                         menus.session().cookie(),
                         Set.of(200))
                 .json();
-        assertEquals(0, staleDraft.path("skuCandidates").size(), "BUSINESS: no disabled or voided SKU remains selectable");
-        assertTrue(containsScalarRef(staleDraft.path("staleSelectedSkuRefs"), UUID.fromString(firstSku.path("productSkuRef").asText())), "BUSINESS: the saved disabled SKU is exposed only as stale readback");
+        assertEquals(
+                0, staleDraft.path("skuCandidates").size(), "BUSINESS: no disabled or voided SKU remains selectable");
+        assertTrue(
+                containsScalarRef(
+                        staleDraft.path("staleSelectedSkuRefs"),
+                        UUID.fromString(firstSku.path("productSkuRef").asText())),
+                "BUSINESS: the saved disabled SKU is exposed only as stale readback");
         JsonNode beforeRejectedSave = staleDraft.deepCopy();
         for (JsonNode rejectedSku : List.of(firstSku, secondSku)) {
             BackendAcceptanceTest.Response rejected = context.put(
@@ -1938,14 +2234,22 @@ final class SalesMenuAcceptanceScenarios {
                             ordering(1, 1),
                             inheritedMedia(),
                             version),
-                    idempotencyHeaders("sales-menu-disabled-" + rejectedSku.path("skuCode").asText()),
+                    idempotencyHeaders(
+                            "sales-menu-disabled-" + rejectedSku.path("skuCode").asText()),
                     Set.of(422));
-            assertEquals("SALES_MENU_SKU_REFERENCE_INVALID", rejected.problemCode(), "BUSINESS: " + rejectedSku.path("status").asText() + " SKU save is typed-rejected");
-            assertEquals(beforeRejectedSave, context.get(
-                            OPERATIONS_SALES_MENU_DRAFT_ITEM,
-                            draftItemPath(menus, menu.ref(), item.ref()),
-                            menus.session().cookie(),
-                            Set.of(200)).json(), "BUSINESS: invalid SKU save has no partial write");
+            assertEquals(
+                    "SALES_MENU_SKU_REFERENCE_INVALID",
+                    rejected.problemCode(),
+                    "BUSINESS: " + rejectedSku.path("status").asText() + " SKU save is typed-rejected");
+            assertEquals(
+                    beforeRejectedSave,
+                    context.get(
+                                    OPERATIONS_SALES_MENU_DRAFT_ITEM,
+                                    draftItemPath(menus, menu.ref(), item.ref()),
+                                    menus.session().cookie(),
+                                    Set.of(200))
+                            .json(),
+                    "BUSINESS: invalid SKU save has no partial write");
         }
         BackendAcceptanceTest.Response publishRejected = context.post(
                 OPERATIONS_SALES_MENU_PUBLISH,
@@ -1954,7 +2258,10 @@ final class SalesMenuAcceptanceScenarios {
                 Map.of("expectedVersion", version),
                 idempotencyHeaders("sales-menu-disabled-publish"),
                 Set.of(422));
-        assertEquals("SALES_MENU_SKU_REFERENCE_INVALID", publishRejected.problemCode(), "BUSINESS: publish revalidates the disabled saved SKU");
+        assertEquals(
+                "SALES_MENU_SKU_REFERENCE_INVALID",
+                publishRejected.problemCode(),
+                "BUSINESS: publish revalidates the disabled saved SKU");
         assertTrue(
                 readMenu(context, menus, menu.ref(), menus.channels().getFirst())
                         .json()
@@ -3989,7 +4296,8 @@ final class SalesMenuAcceptanceScenarios {
             UUID catalogRef)
             throws Exception {
         return readAllDraftItemRows(context, menus, menuRef, sectionRef).stream()
-                .filter(row -> catalogRef.toString().equals(row.path("catalogItemRef").asText()))
+                .filter(row ->
+                        catalogRef.toString().equals(row.path("catalogItemRef").asText()))
                 .map(SalesMenuAcceptanceScenarios::itemState)
                 .toList();
     }
@@ -4324,7 +4632,8 @@ final class SalesMenuAcceptanceScenarios {
     private static Map<String, Object> optionSelection(JsonNode config, List<Integer> valueIndexes) {
         List<UUID> valueRefs = new ArrayList<>();
         for (Integer index : valueIndexes) {
-            valueRefs.add(UUID.fromString(config.path("values").get(index).path("definitionValueRef").asText()));
+            valueRefs.add(UUID.fromString(
+                    config.path("values").get(index).path("definitionValueRef").asText()));
         }
         return optionSelection(UUID.fromString(config.path("definitionRef").asText()), valueRefs);
     }
@@ -4437,9 +4746,7 @@ final class SalesMenuAcceptanceScenarios {
                 "version")) assertTrue(actual.has(field), message + ": item field is present: " + field);
         for (String field : List.of("kind", "listedPriceCents", "skuPrices", "selectedOrderOptions", "salesUnit"))
             assertTrue(actual.path("saleContent").has(field), message + ": sale content field is present: " + field);
-        assertTrue(
-                actual.has("manualSaleTargetStatuses"),
-                message + ": child manual-sale target statuses are present");
+        assertTrue(actual.has("manualSaleTargetStatuses"), message + ": child manual-sale target statuses are present");
         for (String field : List.of("minItemQuantity", "quantityStep"))
             assertTrue(
                     actual.path("orderingConstraints").has(field), message + ": ordering field is present: " + field);
@@ -4818,7 +5125,8 @@ final class SalesMenuAcceptanceScenarios {
                         menus.session().cookie(),
                         Set.of(200))
                 .json();
-        UUID sectionRef = UUID.fromString(sections.path("items").get(0).path("salesSectionRef").asText());
+        UUID sectionRef = UUID.fromString(
+                sections.path("items").get(0).path("salesSectionRef").asText());
         return context.get(
                         OPERATIONS_SALES_MENU_PUBLISHED_ITEMS,
                         publishedItemsPath(menus, menuRef, sectionRef, channelRef) + "&pageSize=20",
@@ -4828,7 +5136,8 @@ final class SalesMenuAcceptanceScenarios {
     }
 
     private static JsonNode optionByDefinition(JsonNode options, JsonNode config) {
-        return optionByDefinition(options, UUID.fromString(config.path("definitionRef").asText()));
+        return optionByDefinition(
+                options, UUID.fromString(config.path("definitionRef").asText()));
     }
 
     private static JsonNode optionByDefinition(JsonNode options, UUID definitionRef) {
@@ -4857,8 +5166,13 @@ final class SalesMenuAcceptanceScenarios {
     private static void assertTargetOperationRecord(JsonNode records, UUID targetRef, String targetKind) {
         for (JsonNode record : records) {
             if (!targetRef.toString().equals(record.path("targetRef").asText())) continue;
-            assertEquals(targetKind, record.path("targetKind").asText(), "BUSINESS: child operation record target kind is exact");
-            assertFalse(record.path("targetDisplaySnapshot").asText().isBlank(), "BUSINESS: child operation record preserves the display snapshot");
+            assertEquals(
+                    targetKind,
+                    record.path("targetKind").asText(),
+                    "BUSINESS: child operation record target kind is exact");
+            assertFalse(
+                    record.path("targetDisplaySnapshot").asText().isBlank(),
+                    "BUSINESS: child operation record preserves the display snapshot");
             return;
         }
         throw new AssertionError("BUSINESS: child target operation record is absent");

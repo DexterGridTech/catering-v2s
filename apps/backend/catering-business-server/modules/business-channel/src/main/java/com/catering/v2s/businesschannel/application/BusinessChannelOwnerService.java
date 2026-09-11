@@ -12,6 +12,8 @@ import com.catering.v2s.collaboration.api.CollaborationBindingReadApi;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.organization.api.OrganizationOwnerApi;
+import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
@@ -29,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -71,9 +74,13 @@ public class BusinessChannelOwnerService
                     "orderKind",
                     "dineInForm",
                     "providerCode",
+                    "storeVisibilityScope",
+                    "visibleStoreRefs",
                     "status"));
-    private static final AuditChangePolicy TEMPLATE_UPDATED =
-            new AuditChangePolicy("BUSINESS_CHANNEL_TEMPLATE", "TEMPLATE_UPDATED", java.util.Set.of("templateName"));
+    private static final AuditChangePolicy TEMPLATE_UPDATED = new AuditChangePolicy(
+            "BUSINESS_CHANNEL_TEMPLATE",
+            "TEMPLATE_UPDATED",
+            java.util.Set.of("templateName", "storeVisibilityScope", "visibleStoreRefs"));
     private static final AuditChangePolicy TEMPLATE_STATUS =
             new AuditChangePolicy("BUSINESS_CHANNEL_TEMPLATE", "STATUS_CHANGED", java.util.Set.of("status"));
     private static final AuditChangePolicy CHANNEL_CREATED = new AuditChangePolicy(
@@ -100,20 +107,27 @@ public class BusinessChannelOwnerService
     private final CollaborationBindingReadApi collaborationBindings;
     private final WorkspaceStatusLookup workspaceStatuses;
     private final BusinessChannelCommandReceiptService receipts;
+    private final OrganizationOwnerApi organizationOwner;
+    private final OrganizationTaskPathLookup organizationTaskPaths;
 
+    @Autowired
     public BusinessChannelOwnerService(
             JdbcTemplate jdbc,
             TimeProvider time,
             CollaborationCatalogReadApi collaborationCatalog,
             CollaborationBindingReadApi collaborationBindings,
             WorkspaceStatusLookup workspaceStatuses,
-            BusinessChannelCommandReceiptService receipts) {
+            BusinessChannelCommandReceiptService receipts,
+            OrganizationOwnerApi organizationOwner,
+            OrganizationTaskPathLookup organizationTaskPaths) {
         this.jdbc = jdbc;
         this.time = time;
         this.collaborationCatalog = collaborationCatalog;
         this.collaborationBindings = collaborationBindings;
         this.workspaceStatuses = workspaceStatuses;
         this.receipts = receipts;
+        this.organizationOwner = Objects.requireNonNull(organizationOwner, "organizationOwner");
+        this.organizationTaskPaths = Objects.requireNonNull(organizationTaskPaths, "organizationTaskPaths");
     }
 
     @Override
@@ -195,6 +209,7 @@ public class BusinessChannelOwnerService
         requireScope(workspaceUuid, groupWorkspaceKey);
         if (projectRef == null) throw problem("VALIDATION_ERROR", 422, "projectRef is required");
         String normalizedStoreRef = BusinessChannelPolicy.required(storeRef, "storeRef", 240);
+        UUID storeId = parseUuid(normalizedStoreRef, "storeRef");
         int size = pageSize(pageSize);
         String normalizedSortKey = optionalEnum(
                 sortKey, "sortKey", "TEMPLATE_NAME", "TEMPLATE_CODE", "ACCESS_KIND", "ORDER_KIND", "STATUS");
@@ -202,6 +217,7 @@ public class BusinessChannelOwnerService
         if (normalizedSortKey == null && normalizedSortDirection != null) {
             throw problem("VALIDATION_ERROR", 422, "sortDirection requires sortKey");
         }
+        requireEnabledStore(workspaceUuid, groupWorkspaceKey, storeId);
         String identity = canonical(
                 "store-template-candidate-page",
                 workspaceUuid,
@@ -212,10 +228,14 @@ public class BusinessChannelOwnerService
                 normalizedSortKey,
                 normalizedSortDirection);
         OpaqueCollectionCursor.Position position = decodeCursor(cursor, identity);
-        List<Object> arguments = new ArrayList<>(List.of(workspaceUuid, groupWorkspaceKey, projectRef));
+        List<Object> arguments = new ArrayList<>(List.of(workspaceUuid, groupWorkspaceKey, projectRef, storeId));
         StringBuilder predicate =
-                new StringBuilder(" WHERE workspace_uuid=? AND group_workspace_key=? AND project_ref=? "
-                        + "AND operator_kind='STORE' AND status='ENABLED'");
+                new StringBuilder(" WHERE t.workspace_uuid=? AND t.group_workspace_key=? AND t.project_ref=? "
+                        + "AND t.operator_kind='STORE' AND t.status='ENABLED' AND ("
+                        + "t.store_visibility_scope='ALL_PROJECT_STORES' OR ("
+                        + "t.store_visibility_scope='SELECTED_PROJECT_STORES' AND EXISTS ("
+                        + "SELECT 1 FROM business_channel.business_channel_template_store_visibility v "
+                        + "WHERE v.template_ref=t.template_ref AND v.store_ref=?)))");
         String countPredicate = predicate.toString();
         List<Object> countArguments = List.copyOf(arguments);
         if (position != null) {
@@ -239,7 +259,7 @@ public class BusinessChannelOwnerService
             }
         }
         long total = count(
-                "SELECT count(*) FROM business_channel.business_channel_template" + countPredicate, countArguments);
+                "SELECT count(*) FROM business_channel.business_channel_template t" + countPredicate, countArguments);
         List<TemplateProjection> rows = query(
                 templateSelect(predicate
                         + " ORDER BY "
@@ -260,6 +280,74 @@ public class BusinessChannelOwnerService
                 page.stream().map(projection -> templateRow(projection, facts)).toList();
         return new BusinessChannelReadback.TemplatePage(
                 mapped.stream().map(BusinessChannelOwnerService::template).toList(), nextCursor, total);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BusinessChannelReadback.VisibleStorePage pageTemplateVisibleStores(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID templateRef,
+            UUID projectRef,
+            String storeStatusFilter,
+            String cursor,
+            int pageSize) {
+        requireScope(workspaceUuid, groupWorkspaceKey);
+        if (templateRef == null) throw problem("VALIDATION_ERROR", 422, "templateRef is required");
+        if (projectRef == null) throw problem("VALIDATION_ERROR", 422, "projectRef is required");
+        String filter = BusinessChannelPolicy.requireEnum(storeStatusFilter, "storeStatusFilter", "NON_VOIDED", "ALL");
+        int size = pageSize(pageSize);
+        verifyVisibleStoreTemplate(workspaceUuid, groupWorkspaceKey, templateRef, projectRef);
+        String identity = canonical(
+                "business-channel-template-visible-store-page",
+                workspaceUuid,
+                groupWorkspaceKey,
+                templateRef,
+                projectRef,
+                filter,
+                size);
+        OpaqueCollectionCursor.Position position = decodeCursor(cursor, identity);
+        List<Object> arguments = new ArrayList<>(List.of(templateRef, workspaceUuid, groupWorkspaceKey, projectRef));
+        StringBuilder predicate = new StringBuilder(
+                " WHERE v.template_ref=? AND t.workspace_uuid=? AND t.group_workspace_key=? "
+                        + "AND t.project_ref=? AND t.operator_kind='STORE' "
+                        + "AND s.id=v.store_ref AND s.workspace_uuid=t.workspace_uuid "
+                        + "AND s.group_workspace_key=t.group_workspace_key AND s.project_id=t.project_ref");
+        if ("NON_VOIDED".equals(filter)) predicate.append(" AND s.status <> 'VOIDED'");
+        String countPredicate = predicate.toString();
+        List<Object> countArguments = List.copyOf(arguments);
+        if (position != null) {
+            predicate.append(
+                    " AND (COALESCE(s.code,'') > ? OR (COALESCE(s.code,'') = ? "
+                            + "AND v.store_ref > CAST(? AS uuid)))");
+            arguments.add(position.sortKey());
+            arguments.add(position.sortKey());
+            arguments.add(position.tieBreaker());
+        }
+        String from = " FROM business_channel.business_channel_template_store_visibility v "
+                + "JOIN business_channel.business_channel_template t ON t.template_ref=v.template_ref "
+                + "JOIN organization.store s ON s.id=v.store_ref";
+        long total = count("SELECT count(*)" + from + countPredicate, countArguments);
+        List<BusinessChannelReadback.VisibleStore> rows = query(
+                "SELECT v.store_ref, s.code AS store_code, s.name AS store_name, s.status AS store_status"
+                        + from
+                        + predicate
+                        + " ORDER BY COALESCE(s.code,''), v.store_ref LIMIT ?",
+                append(arguments, size + 1),
+                (result, rowNumber) -> new BusinessChannelReadback.VisibleStore(
+                        result.getObject("store_ref", UUID.class),
+                        result.getString("store_code"),
+                        result.getString("store_name"),
+                        result.getString("store_status")));
+        boolean hasNext = rows.size() > size;
+        List<BusinessChannelReadback.VisibleStore> page = hasNext ? rows.subList(0, size) : rows;
+        String nextCursor = hasNext
+                ? OpaqueCollectionCursor.encode(
+                        identity,
+                        Objects.toString(page.get(page.size() - 1).storeCode(), ""),
+                        page.get(page.size() - 1).storeRef())
+                : null;
+        return new BusinessChannelReadback.VisibleStorePage(page, nextCursor, total);
     }
 
     @Override
@@ -559,6 +647,10 @@ public class BusinessChannelOwnerService
                         command.groupWorkspaceKey()));
         BusinessChannelPolicy.required(command.templateName(), "templateName", 240);
         String templateCode = BusinessChannelPolicy.preserveTemplateCode(command.templateCode());
+        String storeVisibilityScope =
+                normalizedStoreVisibilityScope(command.operatorKind(), command.storeVisibilityScope());
+        List<UUID> visibleStoreRefs = BusinessChannelPolicy.validateAndNormalizeStoreVisibility(
+                command.operatorKind(), storeVisibilityScope, command.visibleStoreRefs());
         requireOperationsGrant(
                 command.ownerScopeGrant(),
                 command.contextVersion(),
@@ -579,6 +671,8 @@ public class BusinessChannelOwnerService
                 command.orderKind(),
                 command.dineInForm(),
                 command.providerCode(),
+                storeVisibilityScope,
+                visibleStoreRefs,
                 command.contextVersion());
         return receipts.execute(
                 command.workspaceUuid(),
@@ -588,8 +682,11 @@ public class BusinessChannelOwnerService
                 request,
                 BusinessChannelReadback.Template.class,
                 () -> {
-                    ensureTemplateCodeAvailable(
-                            command.workspaceUuid(), command.groupWorkspaceKey(), command.projectRef(), templateCode);
+                    validateVisibleStoreMembership(
+                            command.workspaceUuid(),
+                            command.groupWorkspaceKey(),
+                            command.projectRef(),
+                            visibleStoreRefs);
                     UUID templateRef = UUID.randomUUID();
                     long now = time.currentEpochMillis();
                     try {
@@ -597,10 +694,10 @@ public class BusinessChannelOwnerService
                                 "INSERT INTO business_channel.business_channel_template "
                                         + "(template_ref, workspace_uuid, group_workspace_key, project_ref, templat"
                                         + "e_name, template_code, "
-                                        + "access_kind, operator_kind, order_kind, dine_in_form, provider_code, sta"
-                                        + "tus, "
+                                        + "access_kind, operator_kind, order_kind, dine_in_form, provider_code, "
+                                        + "store_visibility_scope, status, "
                                         + "version, created_at_epoch_millis, updated_at_epoch_millis) "
-                                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ENABLED', 1, ?, ?)",
+                                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ENABLED', 1, ?, ?)",
                                 templateRef,
                                 command.workspaceUuid(),
                                 command.groupWorkspaceKey(),
@@ -612,11 +709,13 @@ public class BusinessChannelOwnerService
                                 command.orderKind(),
                                 command.dineInForm(),
                                 command.providerCode(),
+                                storeVisibilityScope,
                                 now,
                                 now);
                     } catch (DuplicateKeyException failure) {
                         throw problem("DUPLICATE_CODE", 409, "templateCode is already used in the project", failure);
                     }
+                    insertVisibleStoreRelations(templateRef, visibleStoreRefs);
                     audit(
                             command.workspaceUuid(),
                             command.groupWorkspaceKey(),
@@ -633,6 +732,8 @@ public class BusinessChannelOwnerService
                                     change("orderKind", null, command.orderKind()),
                                     change("dineInForm", null, command.dineInForm()),
                                     change("providerCode", null, command.providerCode()),
+                                    change("storeVisibilityScope", null, storeVisibilityScope),
+                                    change("visibleStoreRefs", null, visibleStoreRefs),
                                     change("status", null, BusinessChannelPolicy.ENABLED)));
                     return template(readTemplateRow(command.workspaceUuid(), command.groupWorkspaceKey(), templateRef));
                 });
@@ -644,6 +745,8 @@ public class BusinessChannelOwnerService
         requireScope(command.workspaceUuid(), command.groupWorkspaceKey());
         BusinessChannelPolicy.required(command.templateName(), "templateName", 240);
         if (command.templateRef() == null) throw problem("VALIDATION_ERROR", 422, "templateRef is required");
+        List<UUID> canonicalVisibleStoreRefs =
+                BusinessChannelPolicy.normalizeVisibleStoreRefs(command.visibleStoreRefs());
         requireOperationsGrantTargetEnvelope(
                 command.ownerScopeGrant(),
                 command.contextVersion(),
@@ -658,6 +761,8 @@ public class BusinessChannelOwnerService
                 command.templateRef(),
                 command.templateName(),
                 command.expectedVersion(),
+                command.storeVisibilityScope(),
+                canonicalVisibleStoreRefs,
                 command.contextVersion());
         return receipts.execute(
                 command.workspaceUuid(),
@@ -667,8 +772,9 @@ public class BusinessChannelOwnerService
                 request,
                 BusinessChannelReadback.Template.class,
                 () -> {
-                    TemplateRow current = readTemplateForUpdate(
+                    TemplateUpdateProjection current = readTemplateProjectionForUpdate(
                             command.workspaceUuid(), command.groupWorkspaceKey(), command.templateRef());
+                    TemplateProjection currentProjection = current.projection();
                     // The locked template row is the authoritative relation between templateRef and projectRef. The
                     // server-minted grant is checked again after the lock before any version check or write.
                     requireOperationsGrant(
@@ -677,21 +783,45 @@ public class BusinessChannelOwnerService
                             command.workspaceUuid(),
                             command.groupWorkspaceKey(),
                             BusinessChannelPolicy.PROJECT,
-                            current.projectRef().toString(),
+                            currentProjection.projectRef().toString(),
                             REQ_UPDATE_TEMPLATE);
-                    requireVersion(current.version(), command.expectedVersion());
-                    requireMutable(current.status());
-                    if (jdbc.update(
-                                    "UPDATE business_channel.business_channel_template SET template_name=?, "
-                                            + "version=version+1, updated_at_epoch_millis=? WHERE template_ref=? "
-                                            + "AND workspace_uuid=? AND group_workspace_key=? AND version=?",
-                                    command.templateName(),
-                                    time.currentEpochMillis(),
-                                    command.templateRef(),
-                                    command.workspaceUuid(),
-                                    command.groupWorkspaceKey(),
-                                    command.expectedVersion())
-                            != 1) throw problem("VERSION_CONFLICT", 409, "template version has changed");
+                    CollaborationReadback.Tree collaborationTree = BusinessChannelPolicy.EXTERNAL.equals(
+                                    currentProjection.accessKind())
+                            ? collaborationCatalog.readTree(command.workspaceUuid(), command.groupWorkspaceKey())
+                            : null;
+                    validateTemplateProvider(
+                            new TemplateCommandProjection(
+                                    currentProjection.projectRef(),
+                                    currentProjection.accessKind(),
+                                    currentProjection.operatorKind(),
+                                    currentProjection.orderKind(),
+                                    currentProjection.dineInForm(),
+                                    currentProjection.providerCode(),
+                                    currentProjection.storeVisibilityScope(),
+                                    currentProjection.status(),
+                                    false),
+                            command.workspaceUuid(),
+                            command.groupWorkspaceKey(),
+                            collaborationTree);
+                    requireVersion(currentProjection.version(), command.expectedVersion());
+                    requireMutable(currentProjection.status());
+                    String storeVisibilityScope = normalizedStoreVisibilityScope(
+                            currentProjection.operatorKind(), command.storeVisibilityScope());
+                    List<UUID> visibleStoreRefs = BusinessChannelPolicy.validateAndNormalizeStoreVisibility(
+                            currentProjection.operatorKind(), storeVisibilityScope, command.visibleStoreRefs());
+                    validateVisibleStoreMembership(
+                            command.workspaceUuid(),
+                            command.groupWorkspaceKey(),
+                            currentProjection.projectRef(),
+                            visibleStoreRefs);
+                    TemplateProjection updated = updateTemplateAndVisibleStoreRelations(
+                            command.workspaceUuid(),
+                            command.groupWorkspaceKey(),
+                            command.templateRef(),
+                            command.templateName(),
+                            storeVisibilityScope,
+                            command.expectedVersion(),
+                            visibleStoreRefs);
                     audit(
                             command.workspaceUuid(),
                             command.groupWorkspaceKey(),
@@ -699,8 +829,16 @@ public class BusinessChannelOwnerService
                             "TEMPLATE_UPDATED",
                             command.actor(),
                             TEMPLATE_UPDATED,
-                            List.of(change("templateName", current.templateName(), command.templateName())));
-                    return template(templateAfterUpdate(current, command.templateName()));
+                            List.of(
+                                    change("templateName", currentProjection.templateName(), command.templateName()),
+                                    change(
+                                            "storeVisibilityScope",
+                                            currentProjection.storeVisibilityScope(),
+                                            storeVisibilityScope),
+                                    change("visibleStoreRefs", current.visibleStoreRefs(), visibleStoreRefs)));
+                    StatusFacts facts = statusFacts(
+                            command.workspaceUuid(), command.groupWorkspaceKey(), List.of(updated), List.of());
+                    return template(templateRow(updated, facts));
                 });
     }
 
@@ -827,6 +965,15 @@ public class BusinessChannelOwnerService
                             template.projectRef().toString(),
                             command.ownerNodeType(),
                             command.ownerNodeRef());
+                    if (BusinessChannelPolicy.STORE.equals(command.ownerNodeType())) {
+                        requireStoreChannelCreateEligibility(
+                                command.workspaceUuid(),
+                                command.groupWorkspaceKey(),
+                                command.templateRef(),
+                                template.projectRef(),
+                                template.storeVisibilityScope(),
+                                parseUuid(command.ownerNodeRef(), "ownerNodeRef"));
+                    }
                     CollaborationReadback.OwnerBinding binding = command.bindingRef() == null
                             ? null
                             : readBinding(command.workspaceUuid(), command.groupWorkspaceKey(), command.bindingRef());
@@ -1241,6 +1388,8 @@ public class BusinessChannelOwnerService
                 current.orderKind(),
                 current.dineInForm(),
                 current.providerCode(),
+                current.storeVisibilityScope(),
+                current.visibleStoreCount(),
                 targetStatus,
                 current.statusDimensions(),
                 current.blockers(),
@@ -1258,6 +1407,8 @@ public class BusinessChannelOwnerService
                 current.orderKind(),
                 current.dineInForm(),
                 current.providerCode(),
+                current.storeVisibilityScope(),
+                current.visibleStoreCount(),
                 current.status(),
                 current.statusDimensions(),
                 current.blockers(),
@@ -1368,12 +1519,30 @@ public class BusinessChannelOwnerService
                 });
     }
 
+    private TemplateUpdateProjection readTemplateProjectionForUpdate(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef) {
+        return jdbc.query(
+                templateSelectForUpdate(
+                        "WHERE workspace_uuid=? AND group_workspace_key=? AND template_ref=? FOR UPDATE"),
+                statement -> {
+                    statement.setObject(1, workspaceUuid);
+                    statement.setString(2, groupWorkspaceKey);
+                    statement.setObject(3, templateRef);
+                },
+                result -> {
+                    if (!result.next()) return notFound("template");
+                    return new TemplateUpdateProjection(
+                            mapTemplateProjection(result), uuidList(result, "visible_store_refs"));
+                });
+    }
+
     private TemplateCommandProjection readTemplateCommandProjection(
             UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef, String channelCode) {
         if (templateRef == null) throw problem("VALIDATION_ERROR", 422, "templateRef is required");
         return jdbc.query(
                 "SELECT template.project_ref, template.access_kind, template.operator_kind, template.order_kind, "
-                        + "template.dine_in_form, template.provider_code, template.status, EXISTS (SELECT 1 "
+                        + "template.dine_in_form, template.provider_code, template.store_visibility_scope, "
+                        + "template.status, EXISTS (SELECT 1 "
                         + "FROM business_channel.business_channel channel "
                         + "WHERE channel.workspace_uuid=template.workspace_uuid "
                         + "AND channel.group_workspace_key=template.group_workspace_key "
@@ -1396,6 +1565,7 @@ public class BusinessChannelOwnerService
                             result.getString("order_kind"),
                             result.getString("dine_in_form"),
                             result.getString("provider_code"),
+                            result.getString("store_visibility_scope"),
                             result.getString("status"),
                             result.getBoolean("channel_code_in_use"));
                 });
@@ -1455,9 +1625,29 @@ public class BusinessChannelOwnerService
     }
 
     private static String templateSelect(String suffix) {
+        return templateSelect(suffix, false);
+    }
+
+    private static String templateSelectForUpdate(String suffix) {
+        return templateSelect(suffix, true);
+    }
+
+    private static String templateSelect(String suffix, boolean includeVisibleStoreRefs) {
         return "SELECT t.workspace_uuid, t.group_workspace_key, t.template_ref, t.project_ref, t.template_name, "
                 + "t.template_code, t.access_kind, t.operator_kind, t.order_kind, t.dine_in_form, t.provider_code, "
-                + "t.status, t.version, (SELECT project.status FROM organization.organization_node project "
+                + "t.store_visibility_scope, t.status, t.version, (SELECT count(*) FROM "
+                + "business_channel.business_channel_template_store_visibility v "
+                + "JOIN organization.store visible_store ON visible_store.id=v.store_ref "
+                + "AND visible_store.workspace_uuid=t.workspace_uuid "
+                + "AND visible_store.group_workspace_key=t.group_workspace_key "
+                + "AND visible_store.project_id=t.project_ref "
+                + "WHERE v.template_ref=t.template_ref AND visible_store.status <> 'VOIDED') AS visible_store_count, "
+                + (includeVisibleStoreRefs
+                        ? "COALESCE((SELECT array_agg(v.store_ref ORDER BY v.store_ref) FROM "
+                                + "business_channel.business_channel_template_store_visibility v "
+                                + "WHERE v.template_ref=t.template_ref), ARRAY[]::uuid[]) AS visible_store_refs, "
+                        : "")
+                + "(SELECT project.status FROM organization.organization_node project "
                 + "WHERE project.id=t.project_ref AND project.workspace_uuid=t.workspace_uuid "
                 + "AND project.group_workspace_key=t.group_workspace_key) AS project_status "
                 + "FROM business_channel.business_channel_template t "
@@ -1605,9 +1795,20 @@ public class BusinessChannelOwnerService
                 result.getString("order_kind"),
                 result.getString("dine_in_form"),
                 result.getString("provider_code"),
+                result.getString("store_visibility_scope"),
                 result.getString("status"),
                 result.getString("project_status"),
+                result.getLong("visible_store_count"),
                 result.getLong("version"));
+    }
+
+    private static List<UUID> uuidList(ResultSet result, String column) throws SQLException {
+        java.sql.Array array = result.getArray(column);
+        if (array == null) return List.of();
+        Object[] values = (Object[]) array.getArray();
+        List<UUID> refs = new ArrayList<>(values.length);
+        for (Object value : values) refs.add(value instanceof UUID ? (UUID) value : UUID.fromString(value.toString()));
+        return List.copyOf(refs);
     }
 
     private TemplateRow templateRow(TemplateProjection projection, StatusFacts facts) {
@@ -1628,6 +1829,8 @@ public class BusinessChannelOwnerService
                 projection.orderKind(),
                 projection.dineInForm(),
                 projection.providerCode(),
+                projection.storeVisibilityScope(),
+                projection.visibleStoreCount(),
                 projection.status(),
                 dimensions,
                 blockers,
@@ -1873,21 +2076,177 @@ public class BusinessChannelOwnerService
                 projection.templateOrderKind(),
                 projection.templateDineInForm(),
                 projection.templateProviderCode(),
+                null,
+                0,
                 projection.templateStatus(),
                 dimensions,
                 blockers,
                 projection.templateVersion());
     }
 
-    private void ensureTemplateCodeAvailable(
-            UUID workspaceUuid, String groupWorkspaceKey, UUID projectRef, String templateCode) {
-        if (count(
-                        "SELECT count(*) FROM business_channel.business_channel_template "
-                                + "WHERE workspace_uuid=? AND group_workspace_key=? AND project_ref=? AND template_"
-                                + "code=? AND status <> 'VOIDED'",
-                        List.of(workspaceUuid, groupWorkspaceKey, projectRef, templateCode))
-                > 0) {
-            throw problem("DUPLICATE_CODE", 409, "templateCode is already used in the project");
+    private void verifyVisibleStoreTemplate(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef, UUID projectRef) {
+        jdbc.query(
+                "SELECT project_ref, operator_kind FROM business_channel.business_channel_template "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND template_ref=?",
+                statement -> {
+                    statement.setObject(1, workspaceUuid);
+                    statement.setString(2, groupWorkspaceKey);
+                    statement.setObject(3, templateRef);
+                },
+                result -> {
+                    if (!result.next()) return notFound("template");
+                    UUID actualProjectRef = result.getObject("project_ref", UUID.class);
+                    String operatorKind = result.getString("operator_kind");
+                    if (!BusinessChannelPolicy.STORE.equals(operatorKind)) {
+                        throw problem("BUSINESS_SCOPE_EXCEEDED", 422, "only store-owned templates have visible stores");
+                    }
+                    if (!Objects.equals(actualProjectRef, projectRef)) {
+                        throw problem(
+                                "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT",
+                                422,
+                                "template is outside the requested project");
+                    }
+                    return null;
+                });
+    }
+
+    private void validateVisibleStoreMembership(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID projectRef, List<UUID> visibleStoreRefs) {
+        if (visibleStoreRefs.isEmpty()) return;
+        Map<UUID, UUID> projectRefsByStore = organizationTaskPaths.requireStoreProjectMemberships(
+                workspaceUuid, groupWorkspaceKey, visibleStoreRefs);
+        if (projectRefsByStore == null)
+            throw problem(
+                    "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT", 422, "visible store is outside the template project");
+        for (UUID storeRef : visibleStoreRefs) {
+            UUID actualProjectRef = projectRefsByStore.get(storeRef);
+            if (actualProjectRef == null)
+                throw problem(
+                        "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT", 422, "visible store is outside the template project");
+            if (!Objects.equals(projectRef, actualProjectRef)) {
+                throw problem(
+                        "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT", 422, "visible store is outside the template project");
+            }
+        }
+    }
+
+    private void requireEnabledStore(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
+        String status = organizationOwner
+                .requireSalesMenuStore(workspaceUuid, groupWorkspaceKey, storeRef)
+                .status();
+        if (!BusinessChannelPolicy.ENABLED.equals(status)) {
+            throw problem(
+                    "BUSINESS_CHANNEL_STORE_VISIBILITY_STALE", 409, "store is not enabled for new business channels");
+        }
+    }
+
+    private void requireStoreChannelCreateEligibility(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID templateRef,
+            UUID projectRef,
+            String storeVisibilityScope,
+            UUID storeRef) {
+        requireEnabledStore(workspaceUuid, groupWorkspaceKey, storeRef);
+        validateVisibleStoreMembership(workspaceUuid, groupWorkspaceKey, projectRef, List.of(storeRef));
+        if (BusinessChannelPolicy.SELECTED_PROJECT_STORES.equals(storeVisibilityScope)
+                && count(
+                                "SELECT count(*) FROM business_channel.business_channel_template_store_visibility "
+                                        + "WHERE template_ref=? AND store_ref=?",
+                                List.of(templateRef, storeRef))
+                        == 0) {
+            throw problem(
+                    "BUSINESS_CHANNEL_STORE_VISIBILITY_STALE",
+                    409,
+                    "store is no longer visible for this business channel template");
+        }
+        if (!BusinessChannelPolicy.ALL_PROJECT_STORES.equals(storeVisibilityScope)
+                && !BusinessChannelPolicy.SELECTED_PROJECT_STORES.equals(storeVisibilityScope)) {
+            throw problem(
+                    "BUSINESS_CHANNEL_STORE_VISIBILITY_STALE",
+                    409,
+                    "business channel template store visibility is invalid");
+        }
+    }
+
+    private TemplateProjection updateTemplateAndVisibleStoreRelations(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID templateRef,
+            String templateName,
+            String storeVisibilityScope,
+            long expectedVersion,
+            List<UUID> visibleStoreRefs) {
+        String relationRows = visibleStoreRefs.isEmpty()
+                ? "SELECT NULL::uuid AS store_ref WHERE FALSE"
+                : "SELECT refs.store_ref FROM (VALUES "
+                        + visibleStoreRefs.stream().map(ignored -> "(?::uuid)").collect(Collectors.joining(", "))
+                        + ") refs(store_ref)";
+        String sql = "WITH deleted AS ("
+                + "DELETE FROM business_channel.business_channel_template_store_visibility "
+                + "WHERE template_ref=? RETURNING template_ref), "
+                + "target_template AS (SELECT ?::uuid AS template_ref UNION SELECT template_ref FROM deleted), "
+                + "inserted AS (INSERT INTO business_channel.business_channel_template_store_visibility "
+                + "(template_ref, store_ref) SELECT target_template.template_ref, relation_rows.store_ref "
+                + "FROM target_template CROSS JOIN (" + relationRows + ") relation_rows "
+                + "RETURNING template_ref, store_ref), "
+                + "updated AS (UPDATE business_channel.business_channel_template t SET template_name=?, "
+                + "store_visibility_scope=?, version=version+1, updated_at_epoch_millis=? "
+                + "FROM target_template CROSS JOIN (SELECT count(*) AS inserted_count FROM inserted) relation_write "
+                + "WHERE t.template_ref=target_template.template_ref AND t.workspace_uuid=? "
+                + "AND t.group_workspace_key=? AND t.version=? AND relation_write.inserted_count >= 0 "
+                + "RETURNING t.*) "
+                + "SELECT updated.workspace_uuid, updated.group_workspace_key, updated.template_ref, "
+                + "updated.project_ref, updated.template_name, updated.template_code, updated.access_kind, "
+                + "updated.operator_kind, updated.order_kind, updated.dine_in_form, updated.provider_code, "
+                + "updated.store_visibility_scope, updated.status, updated.version, (SELECT count(*) FROM inserted "
+                + "JOIN organization.store visible_store ON visible_store.id=inserted.store_ref "
+                + "AND visible_store.workspace_uuid=updated.workspace_uuid "
+                + "AND visible_store.group_workspace_key=updated.group_workspace_key "
+                + "AND visible_store.project_id=updated.project_ref "
+                + "WHERE inserted.template_ref=updated.template_ref AND visible_store.status <> 'VOIDED') "
+                + "AS visible_store_count, (SELECT project.status FROM organization.organization_node project "
+                + "WHERE project.id=updated.project_ref AND project.workspace_uuid=updated.workspace_uuid "
+                + "AND project.group_workspace_key=updated.group_workspace_key) AS project_status "
+                + "FROM updated";
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(templateRef);
+        arguments.add(templateRef);
+        arguments.addAll(visibleStoreRefs);
+        arguments.add(templateName);
+        arguments.add(storeVisibilityScope);
+        arguments.add(time.currentEpochMillis());
+        arguments.add(workspaceUuid);
+        arguments.add(groupWorkspaceKey);
+        arguments.add(expectedVersion);
+        return jdbc.query(sql, statement -> bind(statement, arguments), result -> {
+            if (!result.next()) throw problem("VERSION_CONFLICT", 409, "template version has changed");
+            return mapTemplateProjection(result);
+        });
+    }
+
+    private void insertVisibleStoreRelations(UUID templateRef, List<UUID> visibleStoreRefs) {
+        if (visibleStoreRefs.isEmpty()) return;
+        jdbc.batchUpdate(
+                "INSERT INTO business_channel.business_channel_template_store_visibility "
+                        + "(template_ref, store_ref) VALUES (?, ?)",
+                visibleStoreRefs.stream()
+                        .map(storeRef -> new Object[] {templateRef, storeRef})
+                        .toList());
+    }
+
+    private static String normalizedStoreVisibilityScope(String operatorKind, String storeVisibilityScope) {
+        return BusinessChannelPolicy.STORE.equals(operatorKind)
+                ? BusinessChannelPolicy.requireStoreVisibilityScope(storeVisibilityScope)
+                : storeVisibilityScope;
+    }
+
+    private static UUID parseUuid(String value, String field) {
+        try {
+            return UUID.fromString(value);
+        } catch (RuntimeException failure) {
+            throw problem("VALIDATION_ERROR", 422, field + " is invalid", failure);
         }
     }
 
@@ -2083,6 +2442,8 @@ public class BusinessChannelOwnerService
                 row.orderKind(),
                 row.dineInForm(),
                 row.providerCode(),
+                row.storeVisibilityScope(),
+                row.visibleStoreCount(),
                 row.status(),
                 row.statusDimensions(),
                 row.blockers(),
@@ -2242,9 +2603,13 @@ public class BusinessChannelOwnerService
             String orderKind,
             String dineInForm,
             String providerCode,
+            String storeVisibilityScope,
             String status,
             String projectStatus,
+            long visibleStoreCount,
             long version) {}
+
+    private record TemplateUpdateProjection(TemplateProjection projection, List<UUID> visibleStoreRefs) {}
 
     private record TemplateCommandProjection(
             UUID projectRef,
@@ -2253,6 +2618,7 @@ public class BusinessChannelOwnerService
             String orderKind,
             String dineInForm,
             String providerCode,
+            String storeVisibilityScope,
             String status,
             boolean channelCodeInUse) {}
 
@@ -2301,6 +2667,8 @@ public class BusinessChannelOwnerService
             String orderKind,
             String dineInForm,
             String providerCode,
+            String storeVisibilityScope,
+            long visibleStoreCount,
             String status,
             List<BusinessChannelReadback.StatusDimension> statusDimensions,
             List<BusinessChannelReadback.StatusDimension> blockers,

@@ -23,6 +23,8 @@ import com.catering.v2s.collaboration.api.CollaborationBindingReadApi;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.organization.api.OrganizationOwnerApi;
+import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import java.sql.PreparedStatement;
@@ -66,7 +68,9 @@ class BusinessChannelOwnerContractTest {
                 mock(CollaborationCatalogReadApi.class),
                 mock(CollaborationBindingReadApi.class),
                 mock(WorkspaceStatusLookup.class),
-                receipts);
+                receipts,
+                mock(OrganizationOwnerApi.class),
+                mock(OrganizationTaskPathLookup.class));
         OperationsOwnerScopeGrant staleGrant = new OperationsOwnerScopeGrant(
                 workspace,
                 "workspace-key",
@@ -89,6 +93,8 @@ class BusinessChannelOwnerContractTest {
                 "TAKEAWAY",
                 null,
                 null,
+                null,
+                List.of(),
                 41L,
                 "business-channel-stale-01",
                 AuditActor.system(),
@@ -135,7 +141,9 @@ class BusinessChannelOwnerContractTest {
                         mock(CollaborationCatalogReadApi.class),
                         mock(CollaborationBindingReadApi.class),
                         mock(WorkspaceStatusLookup.class),
-                        receipts)
+                        receipts,
+                        mock(OrganizationOwnerApi.class),
+                        mock(OrganizationTaskPathLookup.class))
                 .transitionTemplateStatus(new BusinessChannelCommandApi.TransitionTemplateStatusCommand(
                         workspace,
                         "workspace-key",
@@ -202,7 +210,9 @@ class BusinessChannelOwnerContractTest {
                                 mock(CollaborationCatalogReadApi.class),
                                 mock(CollaborationBindingReadApi.class),
                                 mock(WorkspaceStatusLookup.class),
-                                receipts)
+                                receipts,
+                                mock(OrganizationOwnerApi.class),
+                                mock(OrganizationTaskPathLookup.class))
                         .transitionTemplateStatus(new BusinessChannelCommandApi.TransitionTemplateStatusCommand(
                                 workspace,
                                 "workspace-key",
@@ -260,7 +270,9 @@ class BusinessChannelOwnerContractTest {
                         mock(CollaborationCatalogReadApi.class),
                         mock(CollaborationBindingReadApi.class),
                         mock(WorkspaceStatusLookup.class),
-                        receipts)
+                        receipts,
+                        mock(OrganizationOwnerApi.class),
+                        mock(OrganizationTaskPathLookup.class))
                 .transitionChannelStatus(new BusinessChannelCommandApi.TransitionChannelStatusCommand(
                         workspace,
                         "workspace-key",
@@ -328,7 +340,9 @@ class BusinessChannelOwnerContractTest {
                         mock(CollaborationCatalogReadApi.class),
                         mock(CollaborationBindingReadApi.class),
                         mock(WorkspaceStatusLookup.class),
-                        receipts)
+                        receipts,
+                        mock(OrganizationOwnerApi.class),
+                        mock(OrganizationTaskPathLookup.class))
                 .transitionChannelStatus(new BusinessChannelCommandApi.TransitionChannelStatusCommand(
                         workspace,
                         "workspace-key",
@@ -392,7 +406,9 @@ class BusinessChannelOwnerContractTest {
                         mock(CollaborationCatalogReadApi.class),
                         mock(CollaborationBindingReadApi.class),
                         mock(WorkspaceStatusLookup.class),
-                        receipts)
+                        receipts,
+                        mock(OrganizationOwnerApi.class),
+                        mock(OrganizationTaskPathLookup.class))
                 .detachChannelBinding(
                         new BusinessChannelCommandApi.DetachChannelBindingCommand(
                                 workspace,
@@ -480,7 +496,9 @@ class BusinessChannelOwnerContractTest {
                         collaboration,
                         mock(CollaborationBindingReadApi.class),
                         workspaceStatuses,
-                        mock(BusinessChannelCommandReceiptService.class))
+                        mock(BusinessChannelCommandReceiptService.class),
+                        mock(OrganizationOwnerApi.class),
+                        mock(OrganizationTaskPathLookup.class))
                 .pageChannels(workspace, groupWorkspaceKey, "STORE", targetStoreRef.toString(), null, null, null);
         assertEquals(1, recursiveQueryCount[0]);
 
@@ -605,7 +623,9 @@ class BusinessChannelOwnerContractTest {
                         mock(CollaborationCatalogReadApi.class),
                         mock(CollaborationBindingReadApi.class),
                         workspaceStatuses,
-                        mock(BusinessChannelCommandReceiptService.class))
+                        mock(BusinessChannelCommandReceiptService.class),
+                        mock(OrganizationOwnerApi.class),
+                        mock(OrganizationTaskPathLookup.class))
                 .pageChannels(workspace, groupWorkspaceKey, "PROJECT", targetProjectRef.toString(), null, null, null)
                 .items()
                 .get(0);
@@ -715,7 +735,9 @@ class BusinessChannelOwnerContractTest {
                         collaboration,
                         mock(CollaborationBindingReadApi.class),
                         workspaceStatuses,
-                        mock(BusinessChannelCommandReceiptService.class))
+                        mock(BusinessChannelCommandReceiptService.class),
+                        mock(OrganizationOwnerApi.class),
+                        mock(OrganizationTaskPathLookup.class))
                 .pageChannels(workspace, groupWorkspaceKey, "STORE", targetStoreRef.toString(), null, null, null);
 
         assertEquals(2, page.items().size());
@@ -921,7 +943,9 @@ class BusinessChannelOwnerContractTest {
                 mock(CollaborationCatalogReadApi.class),
                 mock(CollaborationBindingReadApi.class),
                 mock(WorkspaceStatusLookup.class),
-                mock(BusinessChannelCommandReceiptService.class));
+                mock(BusinessChannelCommandReceiptService.class),
+                mock(OrganizationOwnerApi.class),
+                mock(OrganizationTaskPathLookup.class));
     }
 
     private static ResultSet channelRow(UUID channelRef) throws Exception {

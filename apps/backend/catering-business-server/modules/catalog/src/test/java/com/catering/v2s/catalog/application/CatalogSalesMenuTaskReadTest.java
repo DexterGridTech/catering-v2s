@@ -192,8 +192,7 @@ class CatalogSalesMenuTaskReadTest {
         assertEquals("Item 1", facts.get(ITEM_REF).itemName());
         assertEquals("STANDARD_SALE_COUNTED", facts.get(ITEM_REF).shapeKey());
         verify(jdbc, times(1)).query(anyString(), any(RowMapper.class), any(Object[].class));
-        verify(jdbc, times(0))
-                .query(anyString(), any(PreparedStatementSetter.class), any(ResultSetExtractor.class));
+        verify(jdbc, times(0)).query(anyString(), any(PreparedStatementSetter.class), any(ResultSetExtractor.class));
     }
 
     @Test

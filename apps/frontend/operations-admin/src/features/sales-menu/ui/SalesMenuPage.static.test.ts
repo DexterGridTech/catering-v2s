@@ -429,7 +429,8 @@ describe('sales menu IA static trace', () => {
   it('keeps sales-menu target selection and target-status controls on the approved facts', () => {
     expect(editorSource).toContain('selectedSkuRefs');
     expect(editorSource).toContain('skuPrices: isSku');
-    expect(editorSource).toContain("orderOptionSelections: item.saleContent.kind === 'DIRECT'");
+    expect(editorSource).toContain('orderOptionSelections:');
+    expect(editorSource).toContain("item.saleContent.kind === 'DIRECT'");
     expect(editorSource).toContain('catalogOrderOptions.map(option => ({');
     expect(editorSource).toContain('testId(salesMenuTestIds.itemSkuOption(String(row.skuRef)))');
     expect(editorSource).toContain('testId(salesMenuTestIds.itemSkuPrice(String(row.skuRef)))');

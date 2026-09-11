@@ -20,6 +20,7 @@ type AttributeOptionSource = 'enum' | 'endpoint' | 'local';
 export const capabilityClassLabels = {
   MASTER_DATA_SYNC: '主数据同步',
   MEMBER_BENEFIT: '用户与权益',
+  DINE_IN: '到店点餐',
   GROUP_BUY: '团购',
   TAKEAWAY: '外卖',
   INVENTORY_SYNC: '库存',
@@ -52,6 +53,7 @@ export const organizationNodeTypeLabels = {
 } satisfies Record<OrganizationNodeType, string>;
 
 export const providerBusinessScopeLabels = {
+  DINE_IN: '到店点餐',
   TAKEAWAY: '外卖',
   GROUP_BUY: '团购',
   ORDER_SYNC: '订单同步',

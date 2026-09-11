@@ -6,6 +6,7 @@ public enum OwnerBindingViewCapabilityClass {
     MEMBER_BENEFIT,
     GROUP_BUY,
     TAKEAWAY,
+    DINE_IN,
     INVENTORY_SYNC,
     TAKEAWAY_DELIVERY,
     ORDER_SYNC;

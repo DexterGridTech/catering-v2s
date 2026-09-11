@@ -425,9 +425,27 @@
           "minSelectionCount": 1,
           "maxSelectionCount": 2,
           "values": [
-            {"code": "SM-L2-REQUIRED-A", "name": "菜单配料A", "displayOrder": 0, "defaultValue": false, "extraPrice": 100},
-            {"code": "SM-L2-REQUIRED-B", "name": "菜单配料B", "displayOrder": 1, "defaultValue": false, "extraPrice": 200},
-            {"code": "SM-L2-REQUIRED-C", "name": "菜单配料C", "displayOrder": 2, "defaultValue": false, "extraPrice": 300}
+            {
+              "code": "SM-L2-REQUIRED-A",
+              "name": "菜单配料A",
+              "displayOrder": 0,
+              "defaultValue": false,
+              "extraPrice": 100
+            },
+            {
+              "code": "SM-L2-REQUIRED-B",
+              "name": "菜单配料B",
+              "displayOrder": 1,
+              "defaultValue": false,
+              "extraPrice": 200
+            },
+            {
+              "code": "SM-L2-REQUIRED-C",
+              "name": "菜单配料C",
+              "displayOrder": 2,
+              "defaultValue": false,
+              "extraPrice": 300
+            }
           ]
         },
         {
@@ -438,8 +456,20 @@
           "minSelectionCount": null,
           "maxSelectionCount": null,
           "values": [
-            {"code": "SM-L2-OPTIONAL-A", "name": "菜单可选A", "displayOrder": 0, "defaultValue": false, "extraPrice": 50},
-            {"code": "SM-L2-OPTIONAL-B", "name": "菜单可选B", "displayOrder": 1, "defaultValue": false, "extraPrice": 80}
+            {
+              "code": "SM-L2-OPTIONAL-A",
+              "name": "菜单可选A",
+              "displayOrder": 0,
+              "defaultValue": false,
+              "extraPrice": 50
+            },
+            {
+              "code": "SM-L2-OPTIONAL-B",
+              "name": "菜单可选B",
+              "displayOrder": 1,
+              "defaultValue": false,
+              "extraPrice": 80
+            }
           ]
         }
       ]
@@ -710,6 +740,12 @@
       "foreignProjectChannelFixtureId": "AUTH-FOREIGN-PROJECT-CHANNEL",
       "foreignStoreChannelFixtureId": "AUTH-FOREIGN-STORE-CHANNEL",
       "requiresCapability": "EDIT_STORE_SALES_MENU"
+    },
+    "FIXTURE-BUSINESS-CHANNEL-EXTERNAL-DINE-IN": {
+      "externalDineInProviderCode": "STORE_OWNED_MINI_PROGRAM_DINE_IN"
+    },
+    "FIXTURE-BUSINESS-CHANNEL-STORE-ALL-VS-SALES-MENU": {
+      "externalDineInProviderCode": "STORE_OWNED_MINI_PROGRAM_DINE_IN"
     }
   },
   "business": {"status": "PENDING_RUNTIME"},

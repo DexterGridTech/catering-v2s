@@ -80,7 +80,11 @@ export function WorkspaceUserDetailDrawer({
     ? [
         {
           key: 'audit',
-          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.workspaceUser.audit}>操作历史</AdminDetailActionLabel>,
+          label: (
+            <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.workspaceUser.audit}>
+              操作历史
+            </AdminDetailActionLabel>
+          ),
           onClick: onOpenAudit,
         },
       ]

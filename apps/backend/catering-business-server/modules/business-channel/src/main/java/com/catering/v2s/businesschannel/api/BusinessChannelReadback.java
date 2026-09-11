@@ -19,6 +19,8 @@ public final class BusinessChannelReadback {
             String orderKind,
             String dineInForm,
             String providerCode,
+            String storeVisibilityScope,
+            long visibleStoreCount,
             String status,
             List<StatusDimension> statusDimensions,
             List<StatusDimension> blockers,
@@ -111,6 +113,14 @@ public final class BusinessChannelReadback {
     /** Bounded management read or cursor-backed candidate page, depending on the owning API method. */
     public record TemplatePage(List<Template> items, String nextCursor, long total) {
         public TemplatePage {
+            items = List.copyOf(items == null ? List.of() : items);
+        }
+    }
+
+    public record VisibleStore(UUID storeRef, String storeCode, String storeName, String storeStatus) {}
+
+    public record VisibleStorePage(List<VisibleStore> items, String nextCursor, long total) {
+        public VisibleStorePage {
             items = List.copyOf(items == null ? List.of() : items);
         }
     }

@@ -16,6 +16,8 @@ import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.collaboration.api.CollaborationBindingReadApi;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
+import com.catering.v2s.organization.api.OrganizationOwnerApi;
+import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import java.sql.PreparedStatement;
@@ -195,7 +197,9 @@ class BusinessChannelSalesMenuOwnerTest {
                 mock(CollaborationCatalogReadApi.class),
                 mock(CollaborationBindingReadApi.class),
                 workspaceStatuses,
-                mock(BusinessChannelCommandReceiptService.class));
+                mock(BusinessChannelCommandReceiptService.class),
+                mock(OrganizationOwnerApi.class),
+                mock(OrganizationTaskPathLookup.class));
     }
 
     private static ResultSet eligibleRow(UUID channelRef, String channelName, String orderKind, String status)

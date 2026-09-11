@@ -48,6 +48,7 @@ public final class OperationBindingTypes {
     public record BusinessChannelTemplateStatusRequest() {}
     public record BusinessChannelTemplateUpdateRequest() {}
     public record BusinessChannelTemplateView() {}
+    public record BusinessChannelTemplateVisibleStorePage() {}
     public record BusinessChannelUpdateRequest() {}
     public record BusinessChannelView() {}
     public record BusinessEntityStatusRequest() {}

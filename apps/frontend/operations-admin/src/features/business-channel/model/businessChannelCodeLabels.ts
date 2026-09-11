@@ -1,4 +1,9 @@
-import type {BusinessChannelTemplateView, BusinessChannelView} from '../../../app/api/generated/operations-edge';
+import type {
+  BusinessChannelTemplateView,
+  BusinessChannelView,
+  BusinessChannelTemplateStoreVisibilityScope,
+  OrganizationStoreStatus,
+} from '../../../app/api/generated/operations-edge';
 
 type AccessKind = BusinessChannelTemplateView['accessKind'];
 type OperatorKind = BusinessChannelTemplateView['operatorKind'];
@@ -8,6 +13,7 @@ type LifecycleStatus = BusinessChannelTemplateView['status'];
 type OwnerNodeType = BusinessChannelView['ownerNodeType'];
 type BindingStatus = BusinessChannelView['bindingStatus'];
 type StatusDimensionType = BusinessChannelView['statusDimensions'][number]['type'];
+type StoreVisibilityScope = Exclude<BusinessChannelTemplateStoreVisibilityScope, null | undefined>;
 
 export const accessKindLabels = {
   INTERNAL: '内部接入',
@@ -36,6 +42,26 @@ export const lifecycleStatusLabels = {
   DISABLED: '停用',
   VOIDED: '标记删除',
 } satisfies Record<LifecycleStatus, string>;
+
+export const storeVisibilityScopeLabels = {
+  ALL_PROJECT_STORES: '当前项目全部门店可见',
+  SELECTED_PROJECT_STORES: '当前项目部分门店可见',
+} satisfies Record<StoreVisibilityScope, string>;
+
+export const organizationStoreStatusLabels = {
+  ENABLED: '启用',
+  DISABLED: '停用',
+  VOIDED: '作废',
+} satisfies Record<OrganizationStoreStatus, string>;
+
+export function businessChannelTemplateStoreVisibilitySummary(template: BusinessChannelTemplateView): string {
+  if (template.operatorKind !== 'STORE') return '不适用';
+  if (template.storeVisibilityScope === 'ALL_PROJECT_STORES') return storeVisibilityScopeLabels.ALL_PROJECT_STORES;
+  if (template.storeVisibilityScope === 'SELECTED_PROJECT_STORES') {
+    return `${storeVisibilityScopeLabels.SELECTED_PROJECT_STORES}（${template.visibleStoreCount} 家）`;
+  }
+  return '范围不可识别';
+}
 
 export const ownerNodeTypeLabels = {
   PROJECT: '项目',
@@ -69,6 +95,7 @@ export const businessChannelCodeLabels = {
   orderKind: orderKindLabels,
   dineInForm: dineInFormLabels,
   status: lifecycleStatusLabels,
+  storeVisibilityScope: storeVisibilityScopeLabels,
   ownerNodeType: ownerNodeTypeLabels,
   bindingStatus: bindingStatusLabels,
   statusDimensionType: statusDimensionTypeLabels,

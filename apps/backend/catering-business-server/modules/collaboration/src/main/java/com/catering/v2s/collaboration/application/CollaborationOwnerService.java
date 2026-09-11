@@ -148,15 +148,18 @@ public class CollaborationOwnerService
     @Override
     @Transactional(readOnly = true)
     public List<CollaborationReadback.ProviderProfile> listEnabledProviderProfiles(
-            UUID workspaceUuid, String groupWorkspaceKey, String capabilityClass) {
+            UUID workspaceUuid, String groupWorkspaceKey, String capabilityClass, String nodeType) {
         requireScope(workspaceUuid, groupWorkspaceKey);
         String normalizedCapability = CollaborationBindingPolicy.optional(capabilityClass);
+        String normalizedNodeType = CollaborationBindingPolicy.optional(nodeType);
         Map<String, EnablementRow> providers =
                 readEnablements("collaboration.provider_profile_enablement", workspaceUuid, groupWorkspaceKey);
         return catalog.providerProfiles().stream()
                 .filter(definition -> ENABLED.equals(status(providers.get(definition.providerCode()))))
                 .filter(definition -> normalizedCapability == null
                         || definition.businessScope().contains(normalizedCapability))
+                .filter(definition -> normalizedNodeType == null
+                        || definition.bindableNodeTypes().contains(normalizedNodeType))
                 .map(definition -> providerReadback(definition, providers.get(definition.providerCode())))
                 .toList();
     }

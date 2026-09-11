@@ -124,6 +124,41 @@ class CollaborationOwnerContractTest {
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
+    void enabledProviderCandidatesRequireBothExactCapabilityAndBindableNode() {
+        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+        when(jdbc.query(anyString(), any(PreparedStatementSetter.class), any(RowMapper.class)))
+                .thenAnswer(invocation -> {
+                    RowMapper mapper = invocation.getArgument(2);
+                    List<Object> rows = new ArrayList<>();
+                    rows.add(mapper.mapRow(enablementRow("STORE_OWNED_MINI_PROGRAM_DINE_IN", "ENABLED", 3L), 0));
+                    rows.add(mapper.mapRow(enablementRow("MEITUAN_ISV_A", "ENABLED", 4L), 1));
+                    return rows;
+                });
+        CollaborationOwnerService service = new CollaborationOwnerService(
+                jdbc,
+                mock(TimeProvider.class),
+                new CheckedInCollaborationCatalogSource(new com.fasterxml.jackson.databind.ObjectMapper()),
+                mock(PlatformGovernanceAuthorization.class),
+                mock(CollaborationCommandReceiptService.class));
+        UUID workspace = UUID.randomUUID();
+
+        List<CollaborationReadback.ProviderProfile> storeDineIn =
+                service.listEnabledProviderProfiles(workspace, "workspace-key", "DINE_IN", "STORE");
+        List<CollaborationReadback.ProviderProfile> projectDineIn =
+                service.listEnabledProviderProfiles(workspace, "workspace-key", "DINE_IN", "PROJECT");
+
+        assertEquals(
+                List.of("STORE_OWNED_MINI_PROGRAM_DINE_IN"),
+                storeDineIn.stream()
+                        .map(CollaborationReadback.ProviderProfile::providerCode)
+                        .toList());
+        assertEquals(List.of("DINE_IN"), storeDineIn.get(0).businessScope());
+        assertEquals(List.of("STORE"), storeDineIn.get(0).bindableNodeTypes());
+        assertTrue(projectDineIn.isEmpty());
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
     void providerBindingPageFiltersAndPaginatesInSqlWithACompleteTotal() throws Exception {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         when(jdbc.query(anyString(), any(PreparedStatementSetter.class), any(RowMapper.class)))
@@ -209,6 +244,14 @@ class CollaborationOwnerContractTest {
         when(row.getLong("created_at_epoch_millis")).thenReturn(1_785_000_000_000L);
         when(row.getLong("status_changed_at_epoch_millis")).thenReturn(1_785_000_000_001L);
         when(row.getLong("total")).thenReturn(total);
+        return row;
+    }
+
+    private static ResultSet enablementRow(String providerCode, String status, long version) throws Exception {
+        ResultSet row = mock(ResultSet.class);
+        when(row.getString(1)).thenReturn(providerCode);
+        when(row.getString(2)).thenReturn(status);
+        when(row.getLong(3)).thenReturn(version);
         return row;
     }
 

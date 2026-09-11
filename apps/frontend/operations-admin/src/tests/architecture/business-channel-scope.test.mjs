@@ -45,17 +45,17 @@ test('red mutation that restores a data-node browser route is rejected', () => {
   assert.throws(() => assertStableBusinessChannelBrowserRoutes(unsafeRegistry, app), {name: 'AssertionError'});
 });
 
-test('store business-channel deep links read the URL store before deriving its project scope', () => {
+test('store business-channel pages read the current store profile before deriving its project scope', () => {
   assert.match(
     page,
-    /getOperationsOrganizationStore\(\s*\{groupWorkspaceKey: readQueryContext\.groupWorkspaceKey, storeId: scopeRef\}/,
+    /getOperationsStoreProfile\(\s*\{groupWorkspaceKey: readQueryContext\.groupWorkspaceKey\}/,
   );
   assert.match(page, /expectedContextVersion: queryContext\.expectedContextVersion/);
   assert.match(
     page,
     /\.then\(store =>\s*readStoreBusinessChannelTemplateCandidates\(readQueryContext, store\.project\.id, scopeRef, templateSort\)/,
   );
-  assert.doesNotMatch(page, /getOperationsStoreProfile/);
+  assert.doesNotMatch(page, /getOperationsOrganizationStore/);
 });
 
 test('store channel creation only offers effective store-owned templates', () => {

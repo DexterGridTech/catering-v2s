@@ -46,11 +46,11 @@ class OperationsExternalCollaborationControllerTest {
         when(sessions.requireWorkspaceRead(request, KEY)).thenReturn(session);
         List<CollaborationReadback.ProviderProfile> providers =
                 List.of(provider("PROVIDER-C"), provider("PROVIDER-A"), provider("PROVIDER-B"));
-        when(catalog.listEnabledProviderProfiles(WORKSPACE, KEY, null)).thenReturn(providers);
+        when(catalog.listEnabledProviderProfiles(WORKSPACE, KEY, null, null)).thenReturn(providers);
         OperationsExternalCollaborationController controller =
                 new OperationsExternalCollaborationController(sessions, catalog);
 
-        var first = controller.providerCandidates(request, KEY, null, null, 2);
+        var first = controller.providerCandidates(request, KEY, null, null, null, 2);
         assertEquals(
                 List.of("PROVIDER-A", "PROVIDER-B"),
                 first.items().stream().map(value -> value.providerCode()).toList());
@@ -58,12 +58,12 @@ class OperationsExternalCollaborationControllerTest {
         assertNotNull(first.nextCursor());
 
         var second = controller.providerCandidates(
-                request, KEY, null, first.nextCursor().asText(), 2);
+                request, KEY, null, null, first.nextCursor().asText(), 2);
         assertEquals(
                 List.of("PROVIDER-C"),
                 second.items().stream().map(value -> value.providerCode()).toList());
         assertEquals(3L, second.total());
-        verify(catalog, org.mockito.Mockito.times(2)).listEnabledProviderProfiles(WORKSPACE, KEY, null);
+        verify(catalog, org.mockito.Mockito.times(2)).listEnabledProviderProfiles(WORKSPACE, KEY, null, null);
     }
 
     @Test
@@ -73,18 +73,36 @@ class OperationsExternalCollaborationControllerTest {
         EdgeRequestContext request = mock(EdgeRequestContext.class);
         WorkspaceSessionReadback session = session();
         when(sessions.requireWorkspaceRead(request, KEY)).thenReturn(session);
-        when(catalog.listEnabledProviderProfiles(WORKSPACE, KEY, "GROUP_BUY"))
+        when(catalog.listEnabledProviderProfiles(WORKSPACE, KEY, "GROUP_BUY", null))
                 .thenReturn(List.of(provider("PLANNED-PROVIDER", "PLANNED")));
 
         var result = new OperationsExternalCollaborationController(sessions, catalog)
-                .providerCandidates(request, KEY, "GROUP_BUY", null, 10);
+                .providerCandidates(request, KEY, "GROUP_BUY", null, null, 10);
 
         assertEquals(
                 List.of("PLANNED-PROVIDER"),
                 result.items().stream().map(value -> value.providerCode()).toList());
         assertEquals(
                 ProviderProfileViewCatalogStatus.PLANNED, result.items().get(0).catalogStatus());
-        verify(catalog).listEnabledProviderProfiles(WORKSPACE, KEY, "GROUP_BUY");
+        verify(catalog).listEnabledProviderProfiles(WORKSPACE, KEY, "GROUP_BUY", null);
+    }
+
+    @Test
+    void candidatesForwardTheTargetNodeTypeSoStoreOnlyProvidersCannotLeakIntoProjectForms() {
+        OperationsSessionResolver sessions = mock(OperationsSessionResolver.class);
+        CollaborationCatalogReadApi catalog = mock(CollaborationCatalogReadApi.class);
+        EdgeRequestContext request = mock(EdgeRequestContext.class);
+        when(sessions.requireWorkspaceRead(request, KEY)).thenReturn(session());
+        when(catalog.listEnabledProviderProfiles(WORKSPACE, KEY, "DINE_IN", "STORE"))
+                .thenReturn(List.of(provider("STORE-DINE-IN", "PLANNED", List.of("STORE"))));
+
+        var result = new OperationsExternalCollaborationController(sessions, catalog)
+                .providerCandidates(request, KEY, "DINE_IN", "STORE", null, 10);
+
+        assertEquals(
+                List.of("STORE-DINE-IN"),
+                result.items().stream().map(value -> value.providerCode()).toList());
+        verify(catalog).listEnabledProviderProfiles(WORKSPACE, KEY, "DINE_IN", "STORE");
     }
 
     private static WorkspaceSessionReadback session() {
@@ -107,13 +125,18 @@ class OperationsExternalCollaborationControllerTest {
     }
 
     private static CollaborationReadback.ProviderProfile provider(String code, String catalogStatus) {
+        return provider(code, catalogStatus, List.of("STORE"));
+    }
+
+    private static CollaborationReadback.ProviderProfile provider(
+            String code, String catalogStatus, List<String> bindableNodeTypes) {
         return new CollaborationReadback.ProviderProfile(
                 code,
                 code,
                 "SYSTEM-A",
                 "System A",
                 List.of("TAKEAWAY"),
-                List.of("STORE"),
+                bindableNodeTypes,
                 "EXTERNAL_GRANT",
                 "LOCAL_ONLY",
                 catalogStatus,

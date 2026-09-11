@@ -3,6 +3,7 @@ package com.catering.v2s.businesschannel.api;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -42,6 +43,8 @@ public interface BusinessChannelCommandApi {
             String orderKind,
             String dineInForm,
             String providerCode,
+            String storeVisibilityScope,
+            List<UUID> visibleStoreRefs,
             long contextVersion,
             String idempotencyKey,
             AuditActor actor,
@@ -58,6 +61,8 @@ public interface BusinessChannelCommandApi {
             UUID templateRef,
             String templateName,
             long expectedVersion,
+            String storeVisibilityScope,
+            List<UUID> visibleStoreRefs,
             long contextVersion,
             String idempotencyKey,
             AuditActor actor,

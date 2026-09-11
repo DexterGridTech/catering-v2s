@@ -23,6 +23,7 @@ import {
   operationsProblemOf,
 } from '../../../app/api/OperationsTransport';
 import {readBusinessChannelTemplates} from '../application/queries';
+import {businessChannelTemplateTestIds} from '../../../app/automation/businessChannelTemplateTestIds';
 import {BusinessChannelCreateDrawer} from './BusinessChannelCreateDrawer';
 import {BusinessChannelDetailDrawer} from './BusinessChannelDetailDrawer';
 import {BusinessChannelEditDrawer} from './BusinessChannelEditDrawer';
@@ -34,6 +35,7 @@ import {
   lifecycleStatusLabels,
   operatorKindLabels,
   orderKindLabels,
+  businessChannelTemplateStoreVisibilitySummary,
 } from '../model/businessChannelCodeLabels';
 
 type ProSortOrder = 'ascend' | 'descend';
@@ -136,7 +138,7 @@ export function ProjectBusinessChannelPage({queryContext}: OperationsPageProps) 
               setSelectedTemplate(row);
               setTemplateDetailOpen(true);
             }}
-            {...testId(`project-business-channel-template-open-detail-${row.templateRef}`)}
+            {...testId(businessChannelTemplateTestIds.projectTemplateOpenDetail(row.templateRef))}
           >
             {row.templateName}
           </Button>
@@ -175,6 +177,16 @@ export function ProjectBusinessChannelPage({queryContext}: OperationsPageProps) 
         sorter: true,
         sortOrder: templateSort.sortKey === 'ORDER_KIND' ? proSortOrder(templateSort.sortDirection) : undefined,
         render: (_value: unknown, row: BusinessChannelTemplateView) => closedCodeLabel(orderKindLabels, row.orderKind),
+      },
+      {
+        title: '门店可见范围',
+        dataIndex: 'storeVisibilityScope',
+        key: 'storeVisibilityScope',
+        render: (_value: unknown, row: BusinessChannelTemplateView) => (
+          <span {...testId(businessChannelTemplateTestIds.templateScopeSummary)}>
+            {businessChannelTemplateStoreVisibilitySummary(row)}
+          </span>
+        ),
       },
       {
         title: '状态',

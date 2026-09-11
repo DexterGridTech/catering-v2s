@@ -2,6 +2,7 @@ package database;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -184,6 +185,91 @@ class MasterDataLifecycleMigrationIntegrationTest {
         for (IndexPredicate indexPredicate : FINAL_ACTIVE_INDEXES) {
             assertIndexPredicateContains(indexPredicate.schema(), indexPredicate.index(), indexPredicate.fragments());
         }
+    }
+
+    @Test
+    void additiveDineInExternalMigrationPreservesExistingRowsAndEnforcesThreeWayCheck() throws Exception {
+        resetDatabase();
+        migrateTo(PRE_BASE1_VERSION);
+
+        UUID workspace = insertWorkspace("dine-in-external-migration");
+        UUID project = UUID.randomUUID();
+        insertChannel("dine-in-external-migration", workspace, project, "DRAFT", "LEGACY-DINE-IN");
+
+        migrateLatest();
+
+        assertEquals(
+                "POS",
+                scalarString(
+                        "SELECT dine_in_form FROM business_channel.business_channel_template "
+                                + "WHERE workspace_uuid = ? AND project_ref = ? AND template_code = ?",
+                        workspace,
+                        project,
+                        "TPL-LEGACY-DINE-IN"),
+                "an existing internal DINE_IN template must remain valid after the additive migration");
+
+        UUID validExternal = UUID.randomUUID();
+        insertTemplate(
+                validExternal,
+                workspace,
+                project,
+                "EXTERNAL",
+                "STORE",
+                "DINE_IN",
+                null,
+                "STORE_OWNED_MINI_PROGRAM_DINE_IN",
+                "ALL_PROJECT_STORES",
+                "EXTERNAL-DINE-IN-VALID");
+        assertNull(
+                scalarString(
+                        "SELECT dine_in_form FROM business_channel.business_channel_template WHERE template_ref = ?",
+                        validExternal),
+                "STORE external DINE_IN must persist a null platform terminal form");
+
+        assertRejectedTemplate(
+                UUID.randomUUID(),
+                workspace,
+                project,
+                "EXTERNAL",
+                "STORE",
+                "DINE_IN",
+                "POS",
+                "STORE_OWNED_MINI_PROGRAM_DINE_IN",
+                "ALL_PROJECT_STORES",
+                "EXTERNAL-DINE-IN-FORM");
+        assertRejectedTemplate(
+                UUID.randomUUID(),
+                workspace,
+                project,
+                "EXTERNAL",
+                "PROJECT",
+                "DINE_IN",
+                null,
+                "STORE_OWNED_MINI_PROGRAM_DINE_IN",
+                null,
+                "PROJECT-EXTERNAL-DINE-IN");
+        assertRejectedTemplate(
+                UUID.randomUUID(),
+                workspace,
+                project,
+                "EXTERNAL",
+                "STORE",
+                "TAKEAWAY",
+                "POS",
+                "STORE_OWNED_MINI_PROGRAM_DINE_IN",
+                "ALL_PROJECT_STORES",
+                "TAKEAWAY-FORM");
+        assertRejectedTemplate(
+                UUID.randomUUID(),
+                workspace,
+                project,
+                "INTERNAL",
+                "PROJECT",
+                "DINE_IN",
+                null,
+                null,
+                null,
+                "INTERNAL-DINE-IN-FORM");
     }
 
     @Test
@@ -468,6 +554,7 @@ class MasterDataLifecycleMigrationIntegrationTest {
             statement.execute("DROP SCHEMA IF EXISTS inventory CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS organization CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS platform_asset CASCADE");
+            statement.execute("DROP SCHEMA IF EXISTS sales_menu CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS platform_iam CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS platform_workspace CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS workspace_iam CASCADE");
@@ -581,6 +668,81 @@ class MasterDataLifecycleMigrationIntegrationTest {
                 now,
                 now);
         return channel;
+    }
+
+    private static void insertTemplate(
+            UUID template,
+            UUID workspace,
+            UUID project,
+            String accessKind,
+            String operatorKind,
+            String orderKind,
+            String dineInForm,
+            String providerCode,
+            String storeVisibilityScope,
+            String templateCode)
+            throws SQLException {
+        long now = Instant.now().toEpochMilli();
+        execute(
+                """
+                INSERT INTO business_channel.business_channel_template (
+                    template_ref, workspace_uuid, group_workspace_key, project_ref, template_name,
+                    access_kind, operator_kind, order_kind, dine_in_form, provider_code,
+                    status, version, created_at_epoch_millis, updated_at_epoch_millis, template_code,
+                    store_visibility_scope
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ENABLED', 1, ?, ?, ?, ?)
+                """,
+                template,
+                workspace,
+                "dine-in-external-migration",
+                project,
+                "Template " + templateCode,
+                accessKind,
+                operatorKind,
+                orderKind,
+                dineInForm,
+                providerCode,
+                now,
+                now,
+                templateCode,
+                storeVisibilityScope);
+    }
+
+    private static void assertRejectedTemplate(
+            UUID template,
+            UUID workspace,
+            UUID project,
+            String accessKind,
+            String operatorKind,
+            String orderKind,
+            String dineInForm,
+            String providerCode,
+            String storeVisibilityScope,
+            String templateCode)
+            throws SQLException {
+        SQLException failure = assertThrows(
+                SQLException.class,
+                () -> insertTemplate(
+                        template,
+                        workspace,
+                        project,
+                        accessKind,
+                        operatorKind,
+                        orderKind,
+                        dineInForm,
+                        providerCode,
+                        storeVisibilityScope,
+                        templateCode));
+        assertEquals("23514", failure.getSQLState(), "the DINE_IN form matrix must fail at the database boundary");
+        assertTrue(
+                throwableText(failure).contains("ck_business_channel_template_dine_in_form"),
+                "the DINE_IN form check must be the rejecting database fact: " + throwableText(failure));
+        assertEquals(
+                0,
+                scalarInt(
+                        "SELECT count(*) FROM business_channel.business_channel_template " + "WHERE template_ref = ?",
+                        template),
+                "a rejected template insert must leave no template row behind");
     }
 
     private static UUID insertCatalogItem(String code, String status) throws SQLException {
@@ -931,6 +1093,17 @@ class MasterDataLifecycleMigrationIntegrationTest {
             try (ResultSet result = statement.executeQuery()) {
                 assertTrue(result.next());
                 return result.getString(1);
+            }
+        }
+    }
+
+    private static int scalarInt(String sql, Object... parameters) throws SQLException {
+        try (Connection connection = adminConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            bind(statement, parameters);
+            try (ResultSet result = statement.executeQuery()) {
+                assertTrue(result.next());
+                return result.getInt(1);
             }
         }
     }

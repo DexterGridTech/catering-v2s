@@ -2,7 +2,13 @@ package com.catering.v2s.businesschannel.application;
 
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 
 /** Pure business-channel invariants; persistence and cross-owner reads stay in the owner service. */
 final class BusinessChannelPolicy {
@@ -16,6 +22,8 @@ final class BusinessChannelPolicy {
     static final String ENABLED = "ENABLED";
     static final String DISABLED = "DISABLED";
     static final String VOIDED = "VOIDED";
+    static final String ALL_PROJECT_STORES = "ALL_PROJECT_STORES";
+    static final String SELECTED_PROJECT_STORES = "SELECTED_PROJECT_STORES";
 
     private BusinessChannelPolicy() {}
 
@@ -29,12 +37,17 @@ final class BusinessChannelPolicy {
         requireEnum(accessKind, "accessKind", INTERNAL, EXTERNAL);
         requireEnum(operatorKind, "operatorKind", PROJECT, STORE);
         requireEnum(orderKind, "orderKind", DINE_IN, TAKEAWAY, GROUP_BUY);
-        if (DINE_IN.equals(orderKind) && !INTERNAL.equals(accessKind)) {
-            throw problem("DINE_IN_MUST_BE_INTERNAL", 422, "DINE_IN templates must be internal");
+        if (PROJECT.equals(operatorKind) && EXTERNAL.equals(accessKind) && DINE_IN.equals(orderKind)) {
+            throw problem(
+                    "PROJECT_DINE_IN_EXTERNAL_NOT_ALLOWED",
+                    422,
+                    "project-level DINE_IN templates must use internal access");
         }
-        if (DINE_IN.equals(orderKind)) {
-            requireEnum(dineInForm, "dineInForm", "POS", "QR", "KIOSK");
-        } else if (dineInForm != null) {
+        if (DINE_IN.equals(orderKind) && INTERNAL.equals(accessKind)) {
+            requireDineInForm(dineInForm);
+        } else if (DINE_IN.equals(orderKind) && dineInForm != null) {
+            throw problem("DINE_IN_FORM_MISMATCH", 422, "external DINE_IN templates do not use a dine-in form");
+        } else if (!DINE_IN.equals(orderKind) && dineInForm != null) {
             throw problem("DINE_IN_FORM_MISMATCH", 422, "dineInForm is only valid for DINE_IN");
         }
         if (INTERNAL.equals(accessKind)) {
@@ -59,6 +72,58 @@ final class BusinessChannelPolicy {
 
     static void validateChannelName(String channelName) {
         required(channelName, "channelName", 240);
+    }
+
+    static List<UUID> validateAndNormalizeStoreVisibility(
+            String operatorKind, String storeVisibilityScope, List<UUID> visibleStoreRefs) {
+        if (PROJECT.equals(operatorKind)) {
+            List<UUID> refs = normalizeVisibleStoreRefs(visibleStoreRefs);
+            if (storeVisibilityScope != null || !refs.isEmpty()) {
+                throw problem(
+                        "BUSINESS_CHANNEL_STORE_VISIBILITY_NOT_APPLICABLE",
+                        422,
+                        "project templates cannot define store visibility");
+            }
+            return List.of();
+        }
+        if (!STORE.equals(operatorKind)) {
+            throw problem("VALIDATION_ERROR", 422, "operatorKind is not supported");
+        }
+        String scope = requireStoreVisibilityScope(storeVisibilityScope);
+        List<UUID> refs = normalizeVisibleStoreRefs(visibleStoreRefs);
+        if (ALL_PROJECT_STORES.equals(scope) && !refs.isEmpty()) {
+            throw problem(
+                    "BUSINESS_CHANNEL_STORE_VISIBILITY_NOT_APPLICABLE",
+                    422,
+                    "all-project-store templates cannot define selected store references");
+        }
+        return refs;
+    }
+
+    static String requireStoreVisibilityScope(String value) {
+        if (!ALL_PROJECT_STORES.equals(value) && !SELECTED_PROJECT_STORES.equals(value)) {
+            throw problem(
+                    "BUSINESS_CHANNEL_STORE_VISIBILITY_SCOPE_REQUIRED",
+                    422,
+                    "storeVisibilityScope is required for store templates");
+        }
+        return value;
+    }
+
+    static List<UUID> normalizeVisibleStoreRefs(List<UUID> visibleStoreRefs) {
+        List<UUID> refs = visibleStoreRefs == null ? new ArrayList<>() : new ArrayList<>(visibleStoreRefs);
+        if (refs.stream().anyMatch(Objects::isNull)) {
+            throw problem("VALIDATION_ERROR", 422, "visibleStoreRefs contains a null reference");
+        }
+        Set<UUID> unique = new HashSet<>();
+        if (!refs.stream().allMatch(unique::add)) {
+            throw problem(
+                    "BUSINESS_CHANNEL_STORE_VISIBILITY_DUPLICATE",
+                    422,
+                    "visibleStoreRefs must not contain duplicate references");
+        }
+        refs.sort(Comparator.comparing(UUID::toString));
+        return List.copyOf(refs);
     }
 
     static String preserveTemplateCode(String templateCode) {
@@ -131,6 +196,14 @@ final class BusinessChannelPolicy {
         String candidate = required(value, name, 80);
         for (String accepted : allowed) if (accepted.equals(candidate)) return candidate;
         throw problem("VALIDATION_ERROR", 422, name + " is not supported");
+    }
+
+    private static String requireDineInForm(String value) {
+        if (value == null || value.isBlank()) {
+            throw problem("DINE_IN_FORM_MISMATCH", 422, "internal DINE_IN templates require a dine-in form");
+        }
+        for (String accepted : List.of("POS", "QR", "KIOSK")) if (accepted.equals(value)) return value;
+        throw problem("DINE_IN_FORM_MISMATCH", 422, "dineInForm is not supported for DINE_IN");
     }
 
     private static BusinessChannelCommandApi.Problem problem(String code, int status, String message) {

@@ -3,6 +3,7 @@ package com.catering.v2s.app.edge.operations.businesschannel;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelPage;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateCandidatePage;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplatePage;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateStoreVisibilityScope;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateView;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewAccessKind;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewBlockersItemStatus;
@@ -13,6 +14,8 @@ import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewOrder
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewStatus;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewStatusDimensionsItemStatus;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateViewStatusDimensionsItemType;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateVisibleStore;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateVisibleStorePage;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelView;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelViewBindingStatus;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelViewBlockersItemStatus;
@@ -45,6 +48,11 @@ final class BusinessChannelWireMapper {
                 enumValue(BusinessChannelTemplateViewOrderKind.class, value.orderKind(), "orderKind"),
                 enumValue(BusinessChannelTemplateViewDineInForm.class, value.dineInForm(), "dineInForm"),
                 text(value.providerCode()),
+                enumValue(
+                        BusinessChannelTemplateStoreVisibilityScope.class,
+                        value.storeVisibilityScope(),
+                        "storeVisibilityScope"),
+                value.visibleStoreCount(),
                 enumValue(BusinessChannelTemplateViewStatus.class, value.status(), "status"),
                 value.statusDimensions().stream()
                         .map(dimension ->
@@ -84,6 +92,16 @@ final class BusinessChannelWireMapper {
     static BusinessChannelTemplateCandidatePage templateCandidatePage(BusinessChannelReadback.TemplatePage value) {
         return new BusinessChannelTemplateCandidatePage(
                 value.items().stream().map(BusinessChannelWireMapper::template).toList(),
+                text(value.nextCursor()),
+                value.total());
+    }
+
+    static BusinessChannelTemplateVisibleStorePage visibleStorePage(BusinessChannelReadback.VisibleStorePage value) {
+        return new BusinessChannelTemplateVisibleStorePage(
+                value.items().stream()
+                        .map(store -> new BusinessChannelTemplateVisibleStore(
+                                store.storeRef(), store.storeCode(), store.storeName(), store.storeStatus()))
+                        .toList(),
                 text(value.nextCursor()),
                 value.total());
     }

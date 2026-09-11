@@ -510,10 +510,14 @@ final class AssetAcceptanceScenarios {
         replacementUpdate.put(
                 "saleContent",
                 Map.of(
-                        "kind", "DIRECT",
-                        "listedPriceCents", 4700,
-                        "skuPrices", List.of(),
-                        "orderOptionSelections", List.of()));
+                        "kind",
+                        "DIRECT",
+                        "listedPriceCents",
+                        4700,
+                        "skuPrices",
+                        List.of(),
+                        "orderOptionSelections",
+                        List.of()));
         replacementUpdate.put("orderingConstraints", Map.of("minItemQuantity", 1, "quantityStep", 1));
         replacementUpdate.put(
                 "displayMedia",

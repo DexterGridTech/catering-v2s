@@ -1,4 +1,4 @@
-import {Alert, Button, Descriptions, Drawer, Space} from 'antd';
+import {Alert, Descriptions, Drawer} from 'antd';
 import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
@@ -37,12 +37,20 @@ export function AdministratorDetailDrawer({
     ? [
         {
           key: 'audit',
-          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.administrator.audit}>操作历史</AdminDetailActionLabel>,
+          label: (
+            <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.administrator.audit}>
+              操作历史
+            </AdminDetailActionLabel>
+          ),
           onClick: onAudit,
         },
         {
           key: 'edit',
-          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.administrator.edit}>编辑</AdminDetailActionLabel>,
+          label: (
+            <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.administrator.edit}>
+              编辑
+            </AdminDetailActionLabel>
+          ),
           onClick: onEdit,
         },
         {

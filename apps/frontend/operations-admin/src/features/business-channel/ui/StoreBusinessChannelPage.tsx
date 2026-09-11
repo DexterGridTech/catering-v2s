@@ -23,6 +23,7 @@ import {
   operationsProblemOf,
 } from '../../../app/api/OperationsTransport';
 import {readStoreBusinessChannelTemplateCandidates} from '../application/queries';
+import {businessChannelTemplateTestIds} from '../../../app/automation/businessChannelTemplateTestIds';
 import {BusinessChannelCreateDrawer} from './BusinessChannelCreateDrawer';
 import {BusinessChannelDetailDrawer} from './BusinessChannelDetailDrawer';
 import {BusinessChannelEditDrawer} from './BusinessChannelEditDrawer';
@@ -95,8 +96,8 @@ export function StoreBusinessChannelPage({queryContext}: OperationsPageProps) {
     setLoading(true);
     setProblem(undefined);
     void operationsClient
-      .getOperationsOrganizationStore(
-        {groupWorkspaceKey: readQueryContext.groupWorkspaceKey, storeId: scopeRef},
+      .getOperationsStoreProfile(
+        {groupWorkspaceKey: readQueryContext.groupWorkspaceKey},
         {query: {expectedContextVersion: readQueryContext.expectedContextVersion}},
       )
       .then(store =>
@@ -178,25 +179,27 @@ export function StoreBusinessChannelPage({queryContext}: OperationsPageProps) {
           {...testId('store-business-channel-template-list')}
         >
           <Card title={<span id="store-business-channel-template-list-title">门店可接入经营渠道模板</span>}>
-            <ProTable<BusinessChannelTemplateView>
-              size="small"
-              rowKey="templateRef"
-              dataSource={templates}
-              {...adminListState({
-                loading,
-                failed: Boolean(problem),
-                emptyText: '暂无门店可接入经营渠道模板',
-                testIdPrefix: 'store-business-channel-template-list',
-              })}
-              search={false}
-              options={false}
-              toolBarRender={false}
-              pagination={false}
-              columns={templateColumns}
-              onChange={(_, __, nextSorter, extra) => {
-                if (extra.action === 'sort') setTemplateSort(readTemplateSort(nextSorter));
-              }}
-            />
+            <div {...testId(businessChannelTemplateTestIds.storeTemplateCandidateTable)}>
+              <ProTable<BusinessChannelTemplateView>
+                size="small"
+                rowKey="templateRef"
+                dataSource={templates}
+                {...adminListState({
+                  loading,
+                  failed: Boolean(problem),
+                  emptyText: '当前门店暂无可选的渠道模板',
+                  testIdPrefix: 'store-business-channel-template-list',
+                })}
+                search={false}
+                options={false}
+                toolBarRender={false}
+                pagination={false}
+                columns={templateColumns}
+                onChange={(_, __, nextSorter, extra) => {
+                  if (extra.action === 'sort') setTemplateSort(readTemplateSort(nextSorter));
+                }}
+              />
+            </div>
           </Card>
         </section>
         <BusinessChannelList
@@ -217,6 +220,7 @@ export function StoreBusinessChannelPage({queryContext}: OperationsPageProps) {
         ownerNodeRef={scopeRef}
         templates={templates}
         onClose={() => setCreateOpen(false)}
+        onStale={() => templateRefreshSignal.publish()}
         onSaved={() => {
           setCreateOpen(false);
           channelRefreshSignal.publish();

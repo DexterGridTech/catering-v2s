@@ -1,4 +1,4 @@
-import {Alert, Button, Descriptions, Drawer, Space, Typography} from 'antd';
+import {Alert, Descriptions, Drawer, Space, Typography} from 'antd';
 import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
@@ -37,7 +37,11 @@ export function ContractOverviewDetailDrawer({
     ? [
         {
           key: 'audit',
-          label: <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.contractOverview.audit}>操作历史</AdminDetailActionLabel>,
+          label: (
+            <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.contractOverview.audit}>
+              操作历史
+            </AdminDetailActionLabel>
+          ),
           onClick: onAudit,
         },
       ]

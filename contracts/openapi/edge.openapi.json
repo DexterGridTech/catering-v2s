@@ -434,6 +434,9 @@
     "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates": {
       "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-templates"
     },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/visible-stores": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-templates~1{templateRef}~1visible-stores"
+    },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}": {
       "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-templates~1{templateRef}"
     },
@@ -1114,6 +1117,15 @@
       },
       "BusinessChannelTemplateCreateRequest": {
         "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateCreateRequest"
+      },
+      "BusinessChannelTemplateStoreVisibilityScope": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateStoreVisibilityScope"
+      },
+      "BusinessChannelTemplateVisibleStore": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateVisibleStore"
+      },
+      "BusinessChannelTemplateVisibleStorePage": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateVisibleStorePage"
       },
       "BusinessChannelTemplateUpdateRequest": {
         "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateUpdateRequest"

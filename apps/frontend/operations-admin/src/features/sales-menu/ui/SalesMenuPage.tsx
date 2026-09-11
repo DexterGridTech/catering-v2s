@@ -25,6 +25,7 @@ import type {MenuProps, TableColumnsType} from 'antd';
 import type {TextAreaRef} from 'antd/es/input/TextArea';
 import {
   CursorPagination,
+  NameCodeText,
   adminDrawerSurfaceProps,
   adminListState,
   closedCodeLabel,
@@ -1070,18 +1071,15 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
     [basePath, canEdit, commands, read, selectedMenu],
   );
 
-  const openStatus = useCallback(
-    (item: SalesMenuPublishedItemView, trigger: HTMLElement) => {
-      statusTriggerRef.current = trigger;
-      setStatusItem(item);
-      setStatusFeedback(undefined);
-      setFeedback(undefined);
-      setStatusTargetRef(statusTargetKey({targetKind: 'ITEM', targetRef: item.salesItemRef}));
-      setSoldOutReason(item.manualSaleStatus.reason ?? '');
-      setStatusReasonError(undefined);
-    },
-    [],
-  );
+  const openStatus = useCallback((item: SalesMenuPublishedItemView, trigger: HTMLElement) => {
+    statusTriggerRef.current = trigger;
+    setStatusItem(item);
+    setStatusFeedback(undefined);
+    setFeedback(undefined);
+    setStatusTargetRef(statusTargetKey({targetKind: 'ITEM', targetRef: item.salesItemRef}));
+    setSoldOutReason(item.manualSaleStatus.reason ?? '');
+    setStatusReasonError(undefined);
+  }, []);
 
   const selectStatusTarget = useCallback(
     (nextTargetRef: string) => {
@@ -1199,7 +1197,16 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
       }
       void setSoldOutStatusTarget(target, reason);
     },
-    [askConfirmation, commands.isBusy, restoreStatusTarget, selectStatusTarget, setSoldOutStatusTarget, soldOutReason, statusItem, statusTargetRef],
+    [
+      askConfirmation,
+      commands.isBusy,
+      restoreStatusTarget,
+      selectStatusTarget,
+      setSoldOutStatusTarget,
+      soldOutReason,
+      statusItem,
+      statusTargetRef,
+    ],
   );
 
   const closeStatus = useCallback(() => {
@@ -1786,8 +1793,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
             <Card size="small" title="当前销售项">
               <Space direction="vertical" size={8} style={{display: 'flex'}}>
                 <Space size={8} wrap>
-                  <Typography.Text strong>{statusItem.displayName}</Typography.Text>
-                  <Typography.Text type="secondary">{statusItem.itemCode}</Typography.Text>
+                  <NameCodeText name={statusItem.displayName} code={statusItem.itemCode} emphasizeName />
                   <Tag color="blue">{salesMenuProductShapeLabel(statusItem.productShape)}</Tag>
                 </Space>
                 <Space size={8} wrap>
@@ -1978,11 +1984,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
           ) : (
             <Alert type="warning" showIcon title="发布内容已变化，请关闭后刷新目标列表。" />
           )}
-          <Alert
-            type="info"
-            showIcon
-            title="库存状态是独立事实；本弹窗不能恢复库存自动不可售。"
-          />
+          <Alert type="info" showIcon title="库存状态是独立事实；本弹窗不能恢复库存自动不可售。" />
         </Space>
       </Modal>
       <Modal

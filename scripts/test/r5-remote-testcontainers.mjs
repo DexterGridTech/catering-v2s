@@ -992,6 +992,34 @@ const uploadSource = async remoteWorkspace => {
   upload.on('error', captureStreamError);
   source.stdout.on('error', captureStreamError);
   upload.stdin.on('error', captureStreamError);
+  let sourceClosed = false;
+  let uploadClosed = false;
+  const stopSource = () => {
+    source.stdout.unpipe(upload.stdin);
+    source.stdout.destroy();
+    upload.stdin.destroy();
+    if (source.exitCode === null && !source.killed) source.kill('SIGTERM');
+  };
+  const stopUpload = () => {
+    source.stdout.unpipe(upload.stdin);
+    source.stdout.destroy();
+    upload.stdin.destroy();
+    if (upload.exitCode === null && !upload.killed) upload.kill('SIGTERM');
+  };
+  source.once('close', status => {
+    sourceClosed = true;
+    if (status !== 0 && !uploadClosed) stopUpload();
+  });
+  source.once('error', () => {
+    if (!uploadClosed) stopUpload();
+  });
+  upload.once('close', status => {
+    uploadClosed = true;
+    if (status !== 0 && !sourceClosed) stopSource();
+  });
+  upload.once('error', () => {
+    if (!sourceClosed) stopSource();
+  });
   source.stdout.pipe(upload.stdin);
   const [sourceStatus, uploadStatus] = await Promise.all([sourceExit, uploadExit]);
   if (sourceStatus !== 0 || uploadStatus !== 0) throw new Error(`SOURCE_UPLOAD_FAILED:${compact(diagnostics)}`);
@@ -1068,10 +1096,26 @@ const installInterruptionHandlers = onInterrupt => {
 
 const streamRemoteRun = body =>
   new Promise(resolve => {
-    const child = spawn('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', remoteHost, 'bash', '-s'], {
-      cwd: root,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    const child = spawn(
+      'ssh',
+      [
+        '-o',
+        'BatchMode=yes',
+        '-o',
+        'ConnectTimeout=10',
+        '-o',
+        'ServerAliveInterval=30',
+        '-o',
+        'ServerAliveCountMax=3',
+        remoteHost,
+        'bash',
+        '-s',
+      ],
+      {
+        cwd: root,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      },
+    );
     activeRemoteSshChild = child;
     let stdoutTail = '';
     let stderrTail = '';

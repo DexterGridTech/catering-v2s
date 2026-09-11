@@ -351,8 +351,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         return Map.copyOf(result);
     }
 
-    private List<SalesMenuItemRow> readSalesMenuItemRows(
-            String dataNodeRef, String brandRef, Set<UUID> itemRefs) {
+    private List<SalesMenuItemRow> readSalesMenuItemRows(String dataNodeRef, String brandRef, Set<UUID> itemRefs) {
         requireScope(dataNodeRef, brandRef);
         if (itemRefs == null || itemRefs.isEmpty()) return List.of();
         for (UUID itemRef : itemRefs)
@@ -431,9 +430,8 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         if (itemRefs == null || itemRefs.isEmpty()) return SalesMenuFactSnapshot.empty();
         List<UUID> refs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
         CatalogSkuFacts.ListReadback skuReadback = skuFacts.readByItemRefsForList(refs);
-        Map<UUID, ArrayNode> orderOptionsByItem = includeOrderOptions
-                ? itemDefinitionFacts.readOrderOptionConfigs(refs)
-                : Map.of();
+        Map<UUID, ArrayNode> orderOptionsByItem =
+                includeOrderOptions ? itemDefinitionFacts.readOrderOptionConfigs(refs) : Map.of();
         Map<UUID, InventoryOwnerApi.UnitSnapshot> salesUnitsByItem = new LinkedHashMap<>();
         if (includeSalesUnits) {
             itemUnitRefsByItemRefs(refs).forEach((itemRef, units) -> {

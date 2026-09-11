@@ -701,6 +701,7 @@ const ADDITIONAL_ROUTE_WIRE_TYPES = Object.freeze({
   getOperationsSalesMenuItemCandidates: ["NoBody", "SalesMenuCandidatePage"],
   getOperationsSalesMenuPublicationPreview: ["NoBody", "SalesMenuPublicationPreview"],
   getOperationsSalesMenuOperationRecords: ["NoBody", "SalesMenuOperationRecordPage"],
+  getOperationsBusinessChannelTemplateVisibleStores: ["NoBody", "BusinessChannelTemplateVisibleStorePage"],
   createOperationsSalesMenu: ["SalesMenuCreateRequest", "SalesMenuCommandReadback"],
   copyOperationsSalesMenu: ["SalesMenuCopyRequest", "SalesMenuCommandReadback"],
   renameOperationsSalesMenu: ["SalesMenuRenameRequest", "SalesMenuCommandReadback"],

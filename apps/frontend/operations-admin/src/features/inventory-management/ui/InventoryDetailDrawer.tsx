@@ -156,30 +156,47 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
   ) : (
     '库存对象详情'
   );
-  const actionItems = currentView && canEdit
-    ? [
-        {
-          key: 'count',
-          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.inventory.count}>存量盘点</AdminDetailActionLabel>,
-          onClick: () => openAction('COUNT'),
-        },
-        {
-          key: 'increase',
-          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.inventory.increase}>库存增加</AdminDetailActionLabel>,
-          onClick: () => openAction('INCREASE'),
-        },
-        {
-          key: 'adjust',
-          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.inventory.adjust}>人工调整</AdminDetailActionLabel>,
-          onClick: () => openAction('ADJUST'),
-        },
-        {
-          key: 'configure',
-          label: <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.inventory.configure}>快捷配置</AdminDetailActionLabel>,
-          onClick: () => openAction('CONFIGURE'),
-        },
-      ]
-    : [];
+  const actionItems =
+    currentView && canEdit
+      ? [
+          {
+            key: 'count',
+            label: (
+              <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.inventory.count}>
+                存量盘点
+              </AdminDetailActionLabel>
+            ),
+            onClick: () => openAction('COUNT'),
+          },
+          {
+            key: 'increase',
+            label: (
+              <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.inventory.increase}>
+                库存增加
+              </AdminDetailActionLabel>
+            ),
+            onClick: () => openAction('INCREASE'),
+          },
+          {
+            key: 'adjust',
+            label: (
+              <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.inventory.adjust}>
+                人工调整
+              </AdminDetailActionLabel>
+            ),
+            onClick: () => openAction('ADJUST'),
+          },
+          {
+            key: 'configure',
+            label: (
+              <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.inventory.configure}>
+                快捷配置
+              </AdminDetailActionLabel>
+            ),
+            onClick: () => openAction('CONFIGURE'),
+          },
+        ]
+      : [];
   const identityBlocked = Boolean(current.error);
   const zoneItems = [
     {

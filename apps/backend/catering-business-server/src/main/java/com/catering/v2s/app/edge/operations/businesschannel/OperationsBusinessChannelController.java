@@ -11,6 +11,7 @@ import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplatePage;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateStatusRequest;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateView;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateVisibleStorePage;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelView;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingCreateRequest;
@@ -134,6 +135,29 @@ public final class OperationsBusinessChannelController {
                 sortDirection));
     }
 
+    @GetMapping("/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/visible-stores")
+    BusinessChannelTemplateVisibleStorePage templateVisibleStores(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID templateRef,
+            @RequestParam String storeStatusFilter,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) Integer pageSize) {
+        WorkspaceSessionReadback session = sessions.requireWorkspaceRead(request, groupWorkspaceKey);
+        // requireWorkspaceRead already returns a fresh owner-confirmed scope context. Reusing its selected project
+        // keeps this read operation within one business-channel owner transaction; the owner page still revalidates
+        // that the template is STORE-owned and belongs to this project before reading any visible-store relation.
+        UUID projectRef = selectedProjectRef(session);
+        return BusinessChannelWireMapper.visibleStorePage(businessChannels.pageTemplateVisibleStores(
+                session.workspaceUuid(),
+                session.groupWorkspaceKey(),
+                templateRef,
+                projectRef,
+                required(storeStatusFilter, "storeStatusFilter"),
+                cursor,
+                pageSize(pageSize)));
+    }
+
     @GetMapping("/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/business-channels")
     BusinessChannelPage projectChannels(
             EdgeRequestContext request,
@@ -154,8 +178,14 @@ public final class OperationsBusinessChannelController {
             @RequestParam(required = false) Integer pageSize,
             @RequestParam(required = false) String sortKey,
             @RequestParam(required = false) String sortDirection) {
+        if ("BUSINESS_CHANNEL".equals(usage)) {
+            if (cursor != null || pageSize != null) {
+                throw new InvalidEdgeRequestException("BUSINESS_CHANNEL usage does not accept cursor or pageSize");
+            }
+            return channels(request, groupWorkspaceKey, ServiceNodeTypes.STORE, storeRef, sortKey, sortDirection);
+        }
         if (!"SALES_MENU".equals(usage)) {
-            throw new InvalidEdgeRequestException("usage must be SALES_MENU");
+            throw new InvalidEdgeRequestException("usage must be BUSINESS_CHANNEL or SALES_MENU");
         }
         int normalizedPageSize = salesMenuPageSize(pageSize);
         WorkspaceSessionReadback session = sessions.requireWorkspaceRead(request, groupWorkspaceKey);
@@ -212,6 +242,10 @@ public final class OperationsBusinessChannelController {
                         required(body.orderKind(), "orderKind"),
                         body.dineInForm(),
                         ExternalCollaborationWireMapper.optionalText(body.providerCode(), "providerCode"),
+                        body.storeVisibilityScope() == null
+                                ? null
+                                : body.storeVisibilityScope().wire(),
+                        body.visibleStoreRefs(),
                         session.contextVersion(),
                         key,
                         sessions.actor(session),
@@ -237,6 +271,10 @@ public final class OperationsBusinessChannelController {
                         templateRef,
                         required(body.templateName(), "templateName"),
                         body.expectedVersion(),
+                        body.storeVisibilityScope() == null
+                                ? null
+                                : body.storeVisibilityScope().wire(),
+                        body.visibleStoreRefs(),
                         session.contextVersion(),
                         idempotencyKey(idempotencyKey),
                         sessions.actor(session),
@@ -474,7 +512,10 @@ public final class OperationsBusinessChannelController {
             return new TemplateReadScope(storeProjectRef, ServiceNodeTypes.STORE);
         }
         return new TemplateReadScope(
-                organizationAuthorization.resolveSelectedProjectScope(session, requestedProjectRef).targetId(), null);
+                organizationAuthorization
+                        .resolveSelectedProjectScope(session, requestedProjectRef)
+                        .targetId(),
+                null);
     }
 
     private static boolean isStoreAssignedSession(WorkspaceSessionReadback session) {
@@ -484,12 +525,26 @@ public final class OperationsBusinessChannelController {
                 && session.scopeContext().store() != null;
     }
 
+    private static UUID selectedProjectRef(WorkspaceSessionReadback session) {
+        if (session == null
+                || session.scopeContext() == null
+                || session.scopeContext().project() == null
+                || session.scopeContext().project().dataNodeId() == null) {
+            throw new WorkspaceUserService.TaskScopeDeniedException();
+        }
+        return session.scopeContext().project().dataNodeId();
+    }
+
     private void requireStoreProjectPair(WorkspaceSessionReadback session, UUID projectRef, UUID storeRef) {
         if (projectRef == null) throw new InvalidEdgeRequestException("projectRef is required");
         if (storeRef == null) throw new InvalidEdgeRequestException("storeRef is required");
         var store = requireScopedStore(session, session.groupWorkspaceKey(), storeRef);
         if (!projectRef.equals(store.project().id())) {
             throw new InvalidEdgeRequestException("storeRef does not belong to projectRef");
+        }
+        if (!"ENABLED".equals(store.status())) {
+            throw new BusinessChannelCommandApi.Problem(
+                    "BUSINESS_CHANNEL_STORE_VISIBILITY_STALE", 409, "store is not enabled for new business channels");
         }
     }
 

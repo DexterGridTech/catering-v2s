@@ -15,16 +15,16 @@ export type AdminDetailActionMenuProps = {
  * Business apps own item conditions, labels, callbacks, confirmation, and
  * failure handling; the foundation only owns the single trigger and popup.
  */
-export function AdminDetailActionMenu({items, triggerTestId, disabled, loading, triggerRef}: AdminDetailActionMenuProps) {
+export function AdminDetailActionMenu({
+  items,
+  triggerTestId,
+  disabled,
+  loading,
+  triggerRef,
+}: AdminDetailActionMenuProps) {
   return (
     <Dropdown menu={{items}} trigger={['click']}>
-      <Button
-        ref={triggerRef}
-        aria-label="操作"
-        disabled={disabled}
-        loading={loading}
-        {...testId(triggerTestId)}
-      >
+      <Button ref={triggerRef} aria-label="操作" disabled={disabled} loading={loading} {...testId(triggerTestId)}>
         操作
       </Button>
     </Dropdown>

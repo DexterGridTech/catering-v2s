@@ -1,9 +1,9 @@
 ---
 title: v2s 经营渠道模板门店可见范围 Journey 修订
-status: PROPOSED_FOR_REVIEW
+status: ACCEPTED_FOR_IMPLEMENTATION
 createdAt: 2026-09-08
 decisionOwner: Dexter
-implementationAuthority: false
+implementationAuthority: true
 extends: doc/decisions/2026-08-19-v2s-business-channel-management-journey.md
 ---
 
@@ -20,11 +20,11 @@ extends: doc/decisions/2026-08-19-v2s-business-channel-management-journey.md
 ```text
 JOURNEY_ID=BUSINESS_CHANNEL_MANAGEMENT
 AMENDMENT_ID=BUSINESS_CHANNEL_STORE_VISIBILITY
-STATUS=PROPOSED_FOR_REVIEW
+STATUS=ACCEPTED_FOR_IMPLEMENTATION
 UI_BEARING=true
 CONSUMER_FACE=operations-admin
 OWNER=business-channel
-IMPLEMENTATION_AUTHORITY=false
+IMPLEMENTATION_AUTHORITY=true
 ```
 
 ### 2.1 Actor 与入口
@@ -69,11 +69,18 @@ IMPLEMENTATION_AUTHORITY=false
 1. 项目管理员打开既有“新建渠道模板”或“编辑渠道模板” Drawer。
 2. 经营主体选择为“门店”时出现“门店可见范围”分组；项目主体不显示该分组。
 3. 选择“当前项目全部门店可见”时，页面显示动态范围说明，不出现逐门店关系编辑列表。
-4. 选择“当前项目部分门店可见”时，页面显示“已选门店”列表和“添加门店”候选区；候选区使用项目约束的门店候选读取，添加/删除只改变本次表单草稿，保存时一次性提交。
+4. 选择“当前项目部分门店可见”时，页面显示“已选门店”列表；点击“添加门店”打开独立选择弹窗，在弹窗内搜索并勾选项目门店。弹窗的确认只回写编辑 Drawer 的本地最终名单，取消不改变 Drawer 草稿，只有 Drawer 的“保存”才一次性提交。
 5. 保存前校验与 owner 同形：集合可以为空、没有重复项、每个 ref 属于当前项目；门店状态不参与保存校验，VOIDED 门店可保留；最终仍以 owner readback 为准。
 6. 保存成功后刷新模板列表、模板详情和相关候选查询；失败保持 Drawer 输入和旧列表，不把失败误报成功。
 
 当部分模式最终集合为零时，模板列表范围摘要显示“当前项目部分门店可见（0 家）”；只读详情显示“暂无可见门店，当前不会出现在任何门店的新建候选中”，并提供进入编辑以添加门店的既有操作路径。它不是停用状态，也不改变模板本身的启停开关。
+
+### 4.1.1 添加门店的交互边界
+
+- 编辑 Drawer 只展示当前最终名单、门店状态和逐行“删除”；不在 Drawer 内嵌搜索结果或逐行“添加”操作。
+- “添加门店”打开标题为“添加可见门店”的 Modal。Modal 内使用门店名称/编码搜索和 Checkbox 列表，候选读取仍由 organization task-shaped candidate read 提供，且只返回当前可作为新建候选的 ENABLED 门店。
+- Modal 内的勾选是临时选择；“确定”回到编辑 Drawer 并更新本地最终名单，“取消”、遮罩关闭或 Escape 均丢弃本次 Modal 临时选择。
+- 编辑 Drawer 仍全量展示已读回的 DISABLED/VOIDED 关系行。它们不出现在候选列表，但不得因 Modal 的搜索结果不包含它们而被静默删除；需要移除时必须在 Drawer 的对应行点击“删除”。
 
 ### 4.2 门店侧查看/创建
 
@@ -120,6 +127,6 @@ IMPLEMENTATION_AUTHORITY=false
 
 `D-BCV-01` 已删除：ALL 是开关式动态项目成员规则，不存在需要单独裁决的第二种快照选项。D-BCV-04/05/06 原先的“是否”问题也已由上述固定形态收敛，不再作为未决产品问题。
 
-本次用户提供的 Claude DESIGN review 仍要求对修订后的当前字节进行 follow-up review；这是评审证据闭环，不是新的产品裁决，也不改变 `IMPLEMENTATION_AUTHORITY=false`。
+Claude follow-up DESIGN review 已对修订后的当前字节给出 `GO`（M=0/S=0/N=2）；Dexter 已授权本 Journey 进入实施。该 review 是评审证据，不新增产品语义；本 Journey 的 `IMPLEMENTATION_AUTHORITY=true` 只来自当前 Dexter 明确授权。
 
-本文状态仍为 `PROPOSED_FOR_REVIEW`，不构成实施授权；只有当前文档完成 Claude follow-up review 且 Dexter 另行授权后，才可进入实施。
+本文状态为 `ACCEPTED_FOR_IMPLEMENTATION`；实施仍受本 Journey 已定范围、实施详设、串行计划和 fresh `INDEPENDENT_SUBAGENT` implementation review 约束。

@@ -11,16 +11,41 @@ import org.junit.jupiter.api.Test;
 
 class BusinessChannelPolicyTest {
     @Test
-    void dineInIsInternalAndRequiresExactlyOneDineInForm() {
+    void externalDineInIsStoreOnlyAndDoesNotUseInternalForm() {
         assertProblem(
-                "DINE_IN_MUST_BE_INTERNAL",
+                "PROJECT_DINE_IN_EXTERNAL_NOT_ALLOWED",
                 () -> BusinessChannelPolicy.validateTemplate(
                         BusinessChannelPolicy.EXTERNAL,
                         BusinessChannelPolicy.PROJECT,
                         BusinessChannelPolicy.DINE_IN,
+                        null,
+                        "PROVIDER",
+                        provider(List.of("DINE_IN"), "ENABLED", "AVAILABLE")));
+        BusinessChannelPolicy.validateTemplate(
+                BusinessChannelPolicy.EXTERNAL,
+                BusinessChannelPolicy.STORE,
+                BusinessChannelPolicy.DINE_IN,
+                null,
+                "PROVIDER",
+                provider(List.of("DINE_IN"), "ENABLED", "PLANNED"));
+        assertProblem(
+                "DINE_IN_FORM_MISMATCH",
+                () -> BusinessChannelPolicy.validateTemplate(
+                        BusinessChannelPolicy.EXTERNAL,
+                        BusinessChannelPolicy.STORE,
+                        BusinessChannelPolicy.DINE_IN,
                         "POS",
                         "PROVIDER",
                         provider(List.of("DINE_IN"), "ENABLED", "AVAILABLE")));
+        assertProblem(
+                "DINE_IN_FORM_MISMATCH",
+                () -> BusinessChannelPolicy.validateTemplate(
+                        BusinessChannelPolicy.INTERNAL,
+                        BusinessChannelPolicy.PROJECT,
+                        BusinessChannelPolicy.DINE_IN,
+                        null,
+                        null,
+                        null));
         assertProblem(
                 "DINE_IN_FORM_MISMATCH",
                 () -> BusinessChannelPolicy.validateTemplate(
@@ -41,6 +66,18 @@ class BusinessChannelPolicyTest {
                 null,
                 null,
                 null);
+    }
+
+    @Test
+    void storeTemplateRequiresTheDedicatedVisibilityScopeProblem() {
+        assertProblem(
+                "BUSINESS_CHANNEL_STORE_VISIBILITY_SCOPE_REQUIRED",
+                () -> BusinessChannelPolicy.validateAndNormalizeStoreVisibility(
+                        BusinessChannelPolicy.STORE, null, List.of()));
+        assertProblem(
+                "BUSINESS_CHANNEL_STORE_VISIBILITY_SCOPE_REQUIRED",
+                () -> BusinessChannelPolicy.validateAndNormalizeStoreVisibility(
+                        BusinessChannelPolicy.STORE, "UNKNOWN", List.of()));
     }
 
     @Test

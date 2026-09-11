@@ -10,6 +10,10 @@ const edit = source('AdministratorEditDrawer.tsx');
 const credential = source('AdministratorCredentialDrawer.tsx');
 const status = source('AdministratorStatusModal.tsx');
 const detail = source('AdministratorDetailDrawer.tsx');
+const detailTestIds = fs.readFileSync(
+  new URL('../../app/automation/platformDetailDrawerTestIds.ts', import.meta.url),
+  'utf8',
+);
 
 test('platform administrator actions remain detail-first, generated-client-only surfaces', () => {
   assert.match(page, /AdministratorDetailDrawer/);
@@ -23,7 +27,8 @@ test('platform administrator actions remain detail-first, generated-client-only 
   assert.doesNotMatch(page, /fetch\(|createApi\(|createSlice\(|useDispatch\(|useSelector\(/);
   assert.doesNotMatch(page, /columns={[\s\S]*title:\s*['"]操作['"]/);
   assert.match(page + detail, /PlatformAuditHistoryModal|onAudit/);
-  assert.match(detail, /platform-admin-detail-audit-history/);
+  assert.match(detail, /platformDetailDrawerTestIds\.administrator\.audit/);
+  assert.match(detailTestIds, /audit: 'platform-admin-detail-audit-history'/);
 });
 
 test('administrator write surfaces reuse drawer lifecycles and never substitute anonymous recovery', () => {

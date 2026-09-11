@@ -96,6 +96,15 @@ test('sales-menu fixture shapes use the owner-aligned sale-content kind mapping'
   assert.match(runtimeSource, /const saleContentKind = salesMenuSaleContentKind\(candidate\.shape\)/);
 });
 
+test('sales-menu L2 channel templates carry the owner-required visibility wire shape', () => {
+  const createTemplateSource = runtimeSource.slice(
+    runtimeSource.indexOf('const createTemplate = async'),
+    runtimeSource.indexOf('const takeawayTemplateRef = await createTemplate'),
+  );
+  assert.match(createTemplateSource, /storeVisibilityScope: operatorKind === 'STORE' \? 'ALL_PROJECT_STORES' : null/);
+  assert.match(createTemplateSource, /visibleStoreRefs: \[\]/);
+});
+
 test('sales-menu L2 SKU bootstrap materializes distinct Catalog variant values', () => {
   const salesMenuBootstrapSource = runtimeSource.slice(runtimeSource.indexOf('async function bootstrapSalesMenuFacts'));
   assert.match(salesMenuBootstrapSource, /const catalogSkuVariantsByFixtureId = new Map\(\)/);
@@ -117,7 +126,7 @@ test('sales-menu SKU price journey budgets every independent SalesItem detail re
   );
   assert.equal(
     skuCase.parameter.network.requests.find(row => row.operationId === 'getOperationsSalesMenu')?.maxRequestCount,
-    4,
+    5,
   );
   assert.equal(
     skuCase.parameter.network.requests.find(row => row.operationId === 'getOperationsSalesMenuDraftItems')
@@ -127,7 +136,7 @@ test('sales-menu SKU price journey budgets every independent SalesItem detail re
   assert.equal(
     skuCase.parameter.network.requests.find(row => row.operationId === 'getOperationsSalesMenuPublicationPreview')
       ?.maxRequestCount,
-    4,
+    5,
   );
   const skuJourneySource = salesMenuL2Source.slice(
     salesMenuL2Source.indexOf("case 'sales-menu-edit-sku-prices':"),
@@ -156,12 +165,12 @@ test('sales-menu manual status journey budgets every read-model refresh', () => 
   assert.equal(
     manualStatusCase.parameter.network.requests.find(row => row.operationId === 'getOperationsStoreBusinessChannels')
       ?.maxRequestCount,
-    5,
+    6,
   );
   assert.equal(
     manualStatusCase.parameter.network.requests.find(row => row.operationId === 'getOperationsBusinessChannelTemplates')
       ?.maxRequestCount,
-    4,
+    5,
   );
 });
 
@@ -225,9 +234,28 @@ test('sales-menu role-locked store scope records only its actual trigger touch',
   const scopeControlKeys = new Set(
     salesMenuBlueprint.scenarios
       .flatMap(scenario => scenario.cases ?? [])
+      .filter(
+        row =>
+          row.caseId !== 'business-channel-external-dine-in-template' &&
+          row.caseId !== 'business-channel-store-all-and-sales-menu-exclusion',
+      )
       .flatMap(row => row.controlKeys.filter(key => key.startsWith('STORE_SCOPE_'))),
   );
   assert.deepEqual([...scopeControlKeys], ['STORE_SCOPE_TRIGGER']);
+  const storeScopeControlKeys = new Set(
+    salesMenuBlueprint.scenarios
+      .flatMap(scenario => scenario.cases ?? [])
+      .filter(row => row.caseId === 'business-channel-store-all-and-sales-menu-exclusion')
+      .flatMap(row => row.controlKeys.filter(key => key.startsWith('STORE_SCOPE_'))),
+  );
+  assert.deepEqual([...storeScopeControlKeys], ['STORE_SCOPE_TRIGGER']);
+  const projectScopeControlKeys = new Set(
+    salesMenuBlueprint.scenarios
+      .flatMap(scenario => scenario.cases ?? [])
+      .filter(row => row.caseId === 'business-channel-external-dine-in-template')
+      .flatMap(row => row.controlKeys.filter(key => key.startsWith('STORE_SCOPE_'))),
+  );
+  assert.deepEqual([...projectScopeControlKeys], ['STORE_SCOPE_TRIGGER']);
 });
 
 test('sales-menu declares one channel selector and popup accumulation for every case', () => {
@@ -243,7 +271,7 @@ test('sales-menu declares one channel selector and popup accumulation for every 
     salesMenuL2Source.indexOf('async function loadChannelOption'),
     salesMenuL2Source.indexOf('async function chooseChannel'),
   );
-  assert.equal(selectorCases.length, 18);
+  assert.equal(selectorCases.length, 19);
   assert.deepEqual(runtimeSelectorCases, selectorCases);
   assert.match(channelSelectorSource, /salesMenuTestIds\.channelOption\(channelRef\)/);
   assert.match(channelSelectorSource, /scrollTop = element\.scrollHeight/);
@@ -1219,7 +1247,10 @@ test('browser L2 owns a remote Spring backend and exposes only HTTP plus asset i
   assert.match(runtimeSource, /remoteHttpPortPreflight\(/);
   assert.match(runtimeSource, /httpPort: remoteHttpPort/);
   assert.match(runtimeSource, /remote-http-asset-tunnel/);
-  assert.match(runtimeSource, /V2S_DEV_DATABASE_URL: `jdbc:postgresql:\/\/127\.0\.0\.1:5432\/\$\{identity\.database\}`/);
+  assert.match(
+    runtimeSource,
+    /V2S_DEV_DATABASE_URL: `jdbc:postgresql:\/\/127\.0\.0\.1:5432\/\$\{identity\.database\}`/,
+  );
   assert.doesNotMatch(runtimeSource, /ports\.http\}:127\.0\.0\.1:8080/);
   assert.doesNotMatch(runtimeSource, /async function startLocalRuntime\(/);
   assert.doesNotMatch(runtimeSource, /ports\.spring/);
@@ -1378,7 +1409,7 @@ test('browser L2 store bootstrap role exposes the approved sales-menu page', () 
   assert.ok(storeRoleBlock, 'store role bootstrap block must remain structurally discoverable');
   assert.match(
     storeRoleBlock,
-    /serviceNodeType: 'STORE',[\s\S]*?pageAccessKeys: \['PG-IAM-STORE-USERS', 'PG-CATALOG-STORE-ITEMS', 'PG-SALES-MENU-STORE'\]/,
+    /serviceNodeType: 'STORE',[\s\S]*?pageAccessKeys: \[\s*'PG-IAM-STORE-USERS',\s*'PG-CATALOG-STORE-ITEMS',\s*'PG-BUSINESS-CHANNEL-STORE',\s*'PG-SALES-MENU-STORE',\s*\]/,
   );
   assert.doesNotMatch(storeRoleBlock, /PG-CATALOG-BRAND-ITEMS/);
 });

@@ -12,7 +12,7 @@
   "$defs": {
     "capabilityClass": {
       "type": "string",
-      "enum": ["MASTER_DATA_SYNC", "MEMBER_BENEFIT", "GROUP_BUY", "TAKEAWAY", "INVENTORY_SYNC", "TAKEAWAY_DELIVERY", "ORDER_SYNC"]
+      "enum": ["MASTER_DATA_SYNC", "MEMBER_BENEFIT", "GROUP_BUY", "TAKEAWAY", "DINE_IN", "INVENTORY_SYNC", "TAKEAWAY_DELIVERY", "ORDER_SYNC"]
     },
     "nodeType": {
       "type": "string",

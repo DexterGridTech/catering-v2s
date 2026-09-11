@@ -22,7 +22,7 @@
         "doc/evidence/platform/r5-u01-edge-placement-resolution.json"
       ],
       "contractDigest": null,
-      "contentSha256": "2efcc82ad497352ffc5467617e9d040d034576c79087edbc7bf0eebae4a9bac8"
+      "contentSha256": "7539d04c5b305b419dbb2fe41406f0de1c5f10f657747122dadc8c691ce91d84"
     }
   },
   "runtimeIntegration": {
@@ -30,13 +30,13 @@
     "legacyDispatcher": "NO_LEGACY_DISPATCH",
     "reason": "BP-U06 completed the 51-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth."
   },
-  "operationCount": 268,
-  "readCount": 113,
+  "operationCount": 269,
+  "readCount": 114,
   "commandCount": 155,
   "contextCounts": {
     "PLATFORM_COMMAND_CONTEXT": 34,
     "PUBLIC_PROTOCOL_CONTEXT": 9,
-    "READ_CONTEXT": 113,
+    "READ_CONTEXT": 114,
     "WORKSPACE_EXECUTION_CONTEXT": 105,
     "WORKSPACE_PROTOCOL_CONTEXT": 7
   },
@@ -4328,10 +4328,26 @@
       "transactionMode": "REQUIRED",
       "copyRole": "NONE",
       "commandBoundary": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "getOperationsBusinessChannelTemplateVisibleStores",
+      "owner": "business-channel",
+      "routeRegistry": "edge-face",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/visible-stores",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/visible-stores",
+      "face": "operations-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.business.channel.application.GetOperationsBusinessChannelTemplateVisibleStoresOperation",
+      "wireRequest": "NoBody",
+      "wireResponse": "BusinessChannelTemplateVisibleStorePage",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE"
     }
   ],
   "commandBoundaryCounts": {
-    "NOT_APPLICABLE": 113,
+    "NOT_APPLICABLE": 114,
     "OWNER_COMMAND": 130,
     "PROTOCOL": 25
   }

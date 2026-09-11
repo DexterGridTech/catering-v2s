@@ -59,6 +59,8 @@ export const SECRET_CLASS_KEYS = Object.freeze({
     'V2S_L2_OPERATIONS_READONLY_PASSWORD',
     'V2S_L2_HEAD_OPERATIONS_LOGIN',
     'V2S_L2_HEAD_OPERATIONS_PASSWORD',
+    'V2S_L2_PROJECT_OPERATIONS_LOGIN',
+    'V2S_L2_PROJECT_OPERATIONS_PASSWORD',
     'V2S_L2_TEST_OTP',
   ]),
   // Browser session material is kept in the two run-private 0600 files, not
@@ -86,10 +88,11 @@ export const CHILD_PROCESS_ENV_ALLOWLISTS = Object.freeze({
   ),
   fixtureSetup: freezeList(SECRET_CLASS_KEYS.testLoginOtp),
   platformPlaywright: freezeList([]),
-  // The operations L2 spec performs a real password login in each case.  It
-  // receives only the two explicitly declared run-scoped actors it needs. The
-  // store actor drives the primary Journey; the head-company actor is used
-  // only to mutate a head-company copy source in a separate browser context.
+  // The operations L2 spec performs a real password login in each case. It
+  // receives only the explicitly declared run-scoped actors it needs. The
+  // store actor drives the primary Journey, the project actor drives the
+  // project-owned business-channel surface, and the head-company actor is
+  // used only to mutate a head-company copy source in a separate context.
   // Platform credentials, asset keys and database role stay outside the
   // browser child environment.
   operationsPlaywright: freezeList([
@@ -99,6 +102,8 @@ export const CHILD_PROCESS_ENV_ALLOWLISTS = Object.freeze({
     'V2S_L2_OPERATIONS_READONLY_PASSWORD',
     'V2S_L2_HEAD_OPERATIONS_LOGIN',
     'V2S_L2_HEAD_OPERATIONS_PASSWORD',
+    'V2S_L2_PROJECT_OPERATIONS_LOGIN',
+    'V2S_L2_PROJECT_OPERATIONS_PASSWORD',
     'V2S_L2_DIAGNOSTIC_SECRET',
   ]),
 });
@@ -527,6 +532,10 @@ function buildGeneratedCredentialValues({runId, assetStorage, testLogin} = {}) {
     'operationsPassword',
     'operationsReadonlyUsername',
     'operationsReadonlyPassword',
+    'headOperationsUsername',
+    'headOperationsPassword',
+    'projectOperationsUsername',
+    'projectOperationsPassword',
     'otp',
   ];
   for (const field of requiredLoginFields) assert(typeof testLogin[field] === 'string', 'L2_SECRET_FORMAT_INVALID');
@@ -548,6 +557,8 @@ function buildGeneratedCredentialValues({runId, assetStorage, testLogin} = {}) {
     V2S_L2_OPERATIONS_READONLY_PASSWORD: testLogin.operationsReadonlyPassword,
     V2S_L2_HEAD_OPERATIONS_LOGIN: testLogin.headOperationsUsername,
     V2S_L2_HEAD_OPERATIONS_PASSWORD: testLogin.headOperationsPassword,
+    V2S_L2_PROJECT_OPERATIONS_LOGIN: testLogin.projectOperationsUsername,
+    V2S_L2_PROJECT_OPERATIONS_PASSWORD: testLogin.projectOperationsPassword,
     V2S_L2_TEST_OTP: testLogin.otp,
   };
 }

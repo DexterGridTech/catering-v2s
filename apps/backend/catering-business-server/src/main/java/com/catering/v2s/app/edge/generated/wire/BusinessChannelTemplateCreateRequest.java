@@ -9,5 +9,7 @@ public record BusinessChannelTemplateCreateRequest(
     String operatorKind,
     String orderKind,
     String dineInForm,
-    tools.jackson.databind.JsonNode providerCode
+    tools.jackson.databind.JsonNode providerCode,
+    BusinessChannelTemplateStoreVisibilityScope storeVisibilityScope,
+    java.util.List<java.util.UUID> visibleStoreRefs
 ) {}
