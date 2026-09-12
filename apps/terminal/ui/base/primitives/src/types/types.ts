@@ -1,6 +1,13 @@
 import type {ReactNode, Ref} from 'react';
 import type {HostInstance, LayoutChangeEvent, TextLayoutEvent} from 'react-native';
 
+export type PrimitiveTone = 'neutral' | 'ok' | 'warn' | 'error' | 'info';
+
+export type PrimitiveOption = Readonly<{
+  readonly value: string;
+  readonly label: string;
+}>;
+
 export type PrimitiveAddressableProps = Readonly<{
   readonly testID: string;
 }>;
@@ -46,6 +53,8 @@ export type PrimitiveInputProps = PrimitiveAddressableProps &
     readonly accessibilityLabel?: string;
     readonly editable?: boolean;
     readonly maxLength?: number;
+    readonly multiline?: boolean;
+    readonly numberOfLines?: number;
     readonly onBlur?: () => void;
     readonly onChangeText?: (value: string) => void;
     readonly onFocus?: () => void;
@@ -54,7 +63,6 @@ export type PrimitiveInputProps = PrimitiveAddressableProps &
     readonly inputRef?: Ref<PrimitiveInputHandle>;
     readonly selection?: PrimitiveInputSelection;
     readonly secureTextEntry?: boolean;
-    readonly showSoftInputOnFocus?: boolean;
     readonly value?: string;
   }>;
 
@@ -105,6 +113,8 @@ export type PrimitiveButtonProps = PrimitiveAddressableProps &
     readonly accessibilityLabel?: string;
     readonly children?: ReactNode;
     readonly disabled?: boolean;
+    readonly busy?: boolean;
+    readonly tone?: PrimitiveTone;
     readonly onPress?: () => void;
     readonly onLayout?: (event: LayoutChangeEvent) => void;
     /** Presentation-only cell sizing for composite controls such as a keyboard. */
@@ -114,6 +124,7 @@ export type PrimitiveButtonProps = PrimitiveAddressableProps &
 export type PrimitiveStatusProps = PrimitiveAddressableProps &
   Readonly<{
     readonly children?: ReactNode;
+    readonly tone?: PrimitiveTone;
     readonly onLayout?: (event: LayoutChangeEvent) => void;
     readonly onTextLayout?: (event: TextLayoutEvent) => void;
   }>;
@@ -122,3 +133,122 @@ export type PrimitiveActionsProps = PrimitiveAddressableProps &
   Readonly<{
     readonly children?: ReactNode;
   }>;
+
+export type PrimitiveLayoutProps = PrimitiveAddressableProps &
+  Readonly<{
+    readonly children?: ReactNode;
+  }>;
+
+export type PrimitiveCodeBlockProps = PrimitiveAddressableProps &
+  Readonly<{
+    readonly children?: ReactNode;
+    readonly accessibilityLabel?: string;
+  }>;
+
+export type PrimitiveFeedbackProps = PrimitiveAddressableProps &
+  Readonly<{
+    readonly accessibilityLabel?: string;
+    readonly children?: ReactNode;
+    readonly tone?: PrimitiveTone;
+  }>;
+
+export type PrimitiveProgressProps = PrimitiveAddressableProps &
+  Readonly<{
+    readonly accessibilityLabel?: string;
+    readonly value: number;
+  }>;
+
+export type PrimitiveFormControlProps = PrimitiveAddressableProps &
+  Readonly<{
+    readonly accessibilityLabel: string;
+    readonly disabled?: boolean;
+    readonly busy?: boolean;
+  }>;
+
+export type PrimitiveCheckboxProps = PrimitiveFormControlProps &
+  Readonly<{
+    readonly checked: boolean;
+    readonly onCheckedChange?: (checked: boolean) => void;
+  }>;
+
+export type PrimitiveRadioProps = PrimitiveFormControlProps &
+  Readonly<{
+    readonly selected: boolean;
+    readonly onSelectedChange?: () => void;
+  }>;
+
+export type PrimitiveSwitchProps = PrimitiveFormControlProps &
+  Readonly<{
+    readonly checked: boolean;
+    readonly onCheckedChange?: (checked: boolean) => void;
+  }>;
+
+export type PrimitiveSelectProps = PrimitiveFormControlProps &
+  Readonly<{
+    readonly options: readonly PrimitiveOption[];
+    readonly value: string;
+    readonly onValueChange?: (value: string) => void;
+  }>;
+
+export type PrimitiveTextareaProps = PrimitiveInputProps &
+  Readonly<{
+    readonly numberOfLines?: number;
+  }>;
+
+export type PrimitiveFormFieldProps = PrimitiveAddressableProps &
+  Readonly<{
+    readonly label: string;
+    readonly children?: ReactNode;
+    readonly error?: string;
+  }>;
+
+export type PrimitiveBadgeProps = PrimitiveFeedbackProps;
+
+export type PrimitiveKeyValueRowProps = PrimitiveAddressableProps &
+  Readonly<{
+    readonly label: string;
+    readonly value: string;
+  }>;
+
+export type PrimitiveStatusRowProps = PrimitiveKeyValueRowProps &
+  Readonly<{
+    readonly tone?: PrimitiveTone;
+  }>;
+
+export type PrimitiveListRenderItem<ItemT> = (item: ItemT, index: number) => ReactNode;
+
+export type PrimitiveListProps<ItemT> = PrimitiveAddressableProps &
+  Readonly<{
+    readonly accessibilityLabel?: string;
+    readonly data: readonly ItemT[];
+    readonly getItemKey?: (item: ItemT, index: number) => string;
+    readonly onScrollOffsetChange?: (offsetY: number) => void;
+    readonly renderItem: PrimitiveListRenderItem<ItemT>;
+    readonly rowHeight: number;
+  }>;
+
+export type PrimitiveTableColumn<ItemT> = Readonly<{
+  readonly key: string;
+  readonly header: string;
+  readonly render: (row: ItemT) => ReactNode;
+}>;
+
+export type PrimitiveTableProps<ItemT> = PrimitiveAddressableProps &
+  Readonly<{
+    readonly columns: readonly PrimitiveTableColumn<ItemT>[];
+    readonly rows: readonly ItemT[];
+  }>;
+
+export type PrimitiveTabItem = PrimitiveOption;
+
+export type PrimitiveSegmentedControlProps = PrimitiveAddressableProps &
+  Readonly<{
+    readonly accessibilityLabel: string;
+    readonly items: readonly PrimitiveTabItem[];
+    readonly selectedValue: string;
+    readonly onValueChange?: (value: string) => void;
+    readonly disabled?: boolean;
+    readonly busy?: boolean;
+  }>;
+
+export type PrimitiveTabsProps = PrimitiveSegmentedControlProps;

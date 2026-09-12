@@ -1587,6 +1587,63 @@
       ]
     },
     {
+      "id": "operations.backend-readability-refactor",
+      "path": "project-memory/operations/backend-readability-refactor.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "backend",
+          "platform"
+        ],
+        "consumerFaces": [
+          "backend"
+        ],
+        "owners": [
+          "backend",
+          "platform"
+        ],
+        "impacts": [
+          "architecture",
+          "database",
+          "evidence",
+          "governance",
+          "transaction"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "assertions": [
+        "BACKEND_READABILITY_RULES_SOURCE",
+        "BACKEND_READABILITY_RECALL_ANCHOR"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BACKEND_READABILITY_RULES_SOURCE",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "## 2.5 · 2026-09-11 后台 owner 可读性整改补充规则(只能靠 review)"
+        },
+        {
+          "assertionKey": "BACKEND_READABILITY_RECALL_ANCHOR",
+          "path": "project-memory/operations/backend-readability-refactor.md",
+          "anchor": "# Backend owner 可读性整改：项目记忆召回锚点"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/backend-coding-standard.md",
+        "project-memory/operations/backend-readability-refactor.md"
+      ]
+    },
+    {
       "id": "operations.implementation-source-reread-discipline",
       "path": "project-memory/operations/implementation-source-reread-discipline.md",
       "layer": "routed",

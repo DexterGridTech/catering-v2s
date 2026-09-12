@@ -98,6 +98,14 @@ final class CatalogAcceptanceScenarios {
     private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_ITEM_SKUS =
             new BackendAcceptanceTest.RouteIdentity(
                     "getOperationsCatalogItemSkus", "/api/operations/catalog-inventory/items/{itemCode}/skus");
+    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_TEMPORARY_PROMOTION_PREFLIGHT =
+            new BackendAcceptanceTest.RouteIdentity(
+                    "preflightOperationsTemporaryCatalogItemPromotion",
+                    "/api/operations/catalog-inventory/items/{itemCode}/temporary-promotion/preflight");
+    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_TEMPORARY_PROMOTION_EXECUTE =
+            new BackendAcceptanceTest.RouteIdentity(
+                    "executeOperationsTemporaryCatalogItemPromotion",
+                    "/api/operations/catalog-inventory/items/{itemCode}/temporary-promotion/execute");
     private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_UNIT_CREATE =
             new BackendAcceptanceTest.RouteIdentity(
                     "createOperationsCatalogUnit", "/api/operations/catalog-inventory/units");
@@ -6336,6 +6344,108 @@ final class CatalogAcceptanceScenarios {
                 "DISABLED",
                 item.path("lifecycle").path("status").asText(),
                 "BUSINESS: first-step create produces DISABLED per the three-state lifecycle");
+    }
+
+    @AcceptanceScenario(
+            id = "catalog.temporary-promotion-readback",
+            module = "CATALOG",
+            operation = "executeOperationsTemporaryCatalogItemPromotion")
+    void temporaryPromotionReadback(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
+        host.completeInvitation(context, fixture);
+        Session session = host.login(context, fixture);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        TemporaryCatalogItemFixture temporary = host.temporaryCatalogItemFixture(
+                fixture, "ACC-TEMPORARY-PROMOTION-" + suffix, "Temporary promotion source " + suffix);
+        String formalCode = "ACC-FORMAL-PROMOTION-" + suffix;
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("itemCode", temporary.itemCode());
+        request.put("formalCode", formalCode);
+        request.put("shapeKey", "STANDARD_SALE_COUNTED");
+        request.put("name", "Formal promotion item " + suffix);
+        request.put("shortName", "Formal promotion " + suffix);
+        request.put("materialRole", "NONE");
+        request.put("expectedSourceVersion", temporary.version());
+        request.put("dataNodeRef", fixture.storeId().toString());
+
+        Response preflight = context.post(
+                OPERATIONS_CATALOG_TEMPORARY_PROMOTION_PREFLIGHT,
+                "/api/operations/catalog-inventory/items/" + temporary.itemCode() + "/temporary-promotion/preflight",
+                session.cookie(),
+                request,
+                idempotencyHeaders("catalog-temporary-promotion-preflight-" + suffix),
+                Set.of(200));
+        JsonNode preflightData = preflight.json().path("data");
+        assertFalse(
+                preflightData.path("preflightDigest").asText().isBlank(),
+                "BUSINESS: temporary promotion preflight returns a version-bound digest");
+        assertTrue(
+                preflightData.path("canPromote").asBoolean(),
+                "BUSINESS: a real temporary Catalog item is eligible for formal promotion");
+
+        Map<String, Object> staleExecuteRequest = new LinkedHashMap<>(request);
+        staleExecuteRequest.put("expectedVersion", temporary.version());
+        staleExecuteRequest.put(
+                "preflightDigest", preflightData.path("preflightDigest").asText() + "-stale");
+        Response staleExecute = context.post(
+                OPERATIONS_CATALOG_TEMPORARY_PROMOTION_EXECUTE,
+                "/api/operations/catalog-inventory/items/" + temporary.itemCode() + "/temporary-promotion/execute",
+                session.cookie(),
+                staleExecuteRequest,
+                idempotencyHeaders("catalog-temporary-promotion-stale-" + suffix),
+                Set.of(409));
+        assertEquals(
+                "STALE_COPY_PREFLIGHT",
+                staleExecute.problemCode(),
+                "BUSINESS: stale temporary-promotion preflight is rejected as a typed conflict");
+        Response formalAbsent = context.get(
+                OPERATIONS_CATALOG_ITEM_READ,
+                itemPath(formalCode) + "?dataNodeRef=" + fixture.storeId(),
+                session.cookie(),
+                Set.of(404));
+        assertEquals(404, formalAbsent.status(), "BUSINESS: rejected promotion creates no formal item");
+        JsonNode sourceAfterRejectedPromotion = readItem(context, fixture, session, temporary.itemCode());
+        assertEquals(
+                temporary.itemRef().toString(),
+                sourceAfterRejectedPromotion.path("itemRef").asText(),
+                "BUSINESS: rejected promotion leaves the temporary source owner identity unchanged");
+
+        request.put("expectedVersion", temporary.version());
+        request.put("preflightDigest", preflightData.path("preflightDigest").asText());
+        Response execute = context.post(
+                OPERATIONS_CATALOG_TEMPORARY_PROMOTION_EXECUTE,
+                "/api/operations/catalog-inventory/items/" + temporary.itemCode() + "/temporary-promotion/execute",
+                session.cookie(),
+                request,
+                idempotencyHeaders("catalog-temporary-promotion-execute-" + suffix),
+                Set.of(200));
+        JsonNode result = execute.json().path("result");
+        assertEquals(
+                "DISABLED",
+                result.path("status").asText(),
+                "BUSINESS: formal promotion returns a disabled owned Catalog item");
+        assertFalse(
+                result.path("resourceRef").asText().isBlank(),
+                "BUSINESS: formal promotion returns the new owner resource reference");
+
+        JsonNode promoted = readItem(context, fixture, session, formalCode);
+        assertEquals(
+                formalCode,
+                promoted.path("code").asText(),
+                "BUSINESS: formal item is read back by its persisted owner code");
+        assertEquals(
+                result.path("resourceRef").asText(),
+                promoted.path("itemRef").asText(),
+                "BUSINESS: formal promotion result and authoritative item readback identify the same item");
+        assertEquals(
+                "DISABLED",
+                promoted.path("lifecycle").path("status").asText(),
+                "BUSINESS: authoritative readback preserves the formal disabled lifecycle");
+        JsonNode sourceAfter = readItem(context, fixture, session, temporary.itemCode());
+        assertEquals(
+                temporary.itemRef().toString(),
+                sourceAfter.path("itemRef").asText(),
+                "BUSINESS: temporary promotion does not replace the source owner identity");
     }
 
     /**

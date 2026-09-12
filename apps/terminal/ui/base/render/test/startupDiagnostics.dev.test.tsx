@@ -46,6 +46,7 @@ describe('render startup diagnostics', () => {
       displayModes: ['PRIMARY'] as const,
       workspaces: ['MAIN'] as const,
       instanceModes: ['MASTER'] as const,
+      surfaceForm: ['laptop', 'mobile'] as const,
       title: 'matching',
       description: 'matching',
       component,

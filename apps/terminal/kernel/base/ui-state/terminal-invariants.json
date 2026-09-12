@@ -8,8 +8,8 @@
   },
   "ownerKind": "owner",
   "publicExports": [
-    "ContainerKey", "DisplayMode", "LayerEntry", "PartKey", "ScreenPlacement", "UiCatalog", "UiCatalogContext", "UiCatalogEntry", "UiStateModule",
-    "UiVariableDeclaration", "UiVariableWrite", "createModuleUiVariableFactory", "createUiCatalog",
+    "ContainerKey", "DisplayMode", "LayerEntry", "PartKey", "ScreenPlacement", "SurfaceForm", "UiCatalog", "UiCatalogContext", "UiCatalogEntry", "UiStateModule",
+    "UiVariableDeclaration", "UiVariableWrite", "createModuleUiVariableFactory", "createUiCatalog", "isSurfaceForm", "isUiCatalogEntryAvailable", "selectSurfaceForm",
     "createUiVariableWrite", "createUiStateModule", "clearLayersCommand", "clearUiVariablesCommand", "closeLayerCommand", "dependencyModuleNames", "devDependencyModuleNames", "moduleKind", "moduleName",
     "openLayerCommand", "selectAvailableParts", "selectLayers", "selectScreen", "setUiVariablesCommand", "showScreenCommand"
   ]

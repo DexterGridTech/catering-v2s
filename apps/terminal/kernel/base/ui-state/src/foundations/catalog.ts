@@ -5,6 +5,7 @@ import {assertNonEmptyString} from './assertNonEmptyString'
 import type {
   ContainerKey,
   PartKey,
+  SurfaceForm,
   UiCatalog,
   UiCatalogContext,
   UiCatalogEntry,
@@ -13,6 +14,7 @@ import type {
 const displayModes = ['PRIMARY', 'SECONDARY'] as const satisfies readonly DisplayMode[]
 const workspaces = ['MAIN', 'BRANCH'] as const satisfies readonly WorkspaceKey[]
 const instanceModes = ['MASTER', 'SLAVE'] as const satisfies readonly RuntimeInstanceMode[]
+const surfaceForms = ['laptop', 'mobile'] as const satisfies readonly SurfaceForm[]
 const approvedEntryKeys = [
   'partKey',
   'rendererKey',
@@ -20,6 +22,7 @@ const approvedEntryKeys = [
   'displayModes',
   'workspaces',
   'instanceModes',
+  'surfaceForm',
   'title',
   'description',
 ] as const
@@ -88,6 +91,7 @@ const canonicalEntry = (raw: UiCatalogEntry): UiCatalogEntry => {
     displayModes: assertClosedArray(raw.displayModes, 'catalog.displayModes', displayModes),
     workspaces: assertClosedArray(raw.workspaces, 'catalog.workspaces', workspaces),
     instanceModes: assertClosedArray(raw.instanceModes, 'catalog.instanceModes', instanceModes),
+    surfaceForm: assertClosedArray(raw.surfaceForm, 'catalog.surfaceForm', surfaceForms),
     title: raw.title,
     description: raw.description,
   }
@@ -123,17 +127,33 @@ export const createUiCatalog = (entries: readonly UiCatalogEntry[]): UiCatalog =
 
 export const selectAvailableParts = (
   catalog: UiCatalog,
-  containerKey: ContainerKey,
+  containerKey: ContainerKey | null,
   context: UiCatalogContext,
 ): readonly UiCatalogEntry[] => {
-  assertNonEmptyString(containerKey, 'ui-state', 'catalog.containerKey')
+  if (containerKey !== null) assertNonEmptyString(containerKey, 'ui-state', 'catalog.containerKey')
   if (!displayModes.includes(context.displayMode)) throw new Error('[ui-state] invalid catalog displayMode')
   if (!workspaces.includes(context.workspace)) throw new Error('[ui-state] invalid catalog workspace')
   if (!instanceModes.includes(context.instanceMode)) throw new Error('[ui-state] invalid catalog instanceMode')
-  return Object.freeze(catalog.entries.filter(entry =>
-    entry.containerKeys.includes(containerKey)
-      && entry.displayModes.includes(context.displayMode)
-      && entry.workspaces.includes(context.workspace)
-      && entry.instanceModes.includes(context.instanceMode),
-  ))
+  if (!surfaceForms.includes(context.surfaceForm)) throw new Error('[ui-state] invalid catalog surfaceForm')
+  return Object.freeze(catalog.entries.filter(entry => isUiCatalogEntryAvailable(entry, containerKey, context)))
+}
+
+export const isUiCatalogEntryAvailable = (
+  entry: UiCatalogEntry,
+  containerKey: ContainerKey | null,
+  context: UiCatalogContext,
+): boolean => {
+  if (containerKey !== null) assertNonEmptyString(containerKey, 'ui-state', 'catalog.containerKey')
+  if (!displayModes.includes(context.displayMode)) throw new Error('[ui-state] invalid catalog displayMode')
+  if (!workspaces.includes(context.workspace)) throw new Error('[ui-state] invalid catalog workspace')
+  if (!instanceModes.includes(context.instanceMode)) throw new Error('[ui-state] invalid catalog instanceMode')
+  if (!surfaceForms.includes(context.surfaceForm)) throw new Error('[ui-state] invalid catalog surfaceForm')
+  const placementMatches = containerKey === null
+    ? entry.containerKeys.length === 0
+    : entry.containerKeys.includes(containerKey)
+  return placementMatches
+    && entry.displayModes.includes(context.displayMode)
+    && entry.workspaces.includes(context.workspace)
+    && entry.instanceModes.includes(context.instanceMode)
+    && entry.surfaceForm.includes(context.surfaceForm)
 }

@@ -1,11 +1,18 @@
 import {createRef} from 'react';
 import {act, create, type TestInstance, type ReactTestRenderer} from 'react-test-renderer';
-import {Pressable, ScrollView, Text, TextInput, View} from 'react-native';
+import {Pressable, ScrollView, Text, TextInput, View, VirtualizedList} from 'react-native';
+import Svg, {Path} from 'react-native-svg';
 import {describe, expect, it, vi} from 'vitest';
 import {
   PrimitiveButton,
   PrimitiveActions,
+  PrimitiveBadge,
   PrimitiveContainer,
+  PrimitiveEmptyState,
+  PrimitiveInlineAlert,
+  PrimitiveList,
+  PrimitiveSegmentedControl,
+  PrimitiveSpinner,
   PrimitiveHeading,
   PrimitiveInput,
   type PrimitiveInputHandle,
@@ -16,6 +23,7 @@ import {
   PrimitiveText,
 } from '../src/index';
 import {baseLayout, baseTokens} from '../src/theme/tokens';
+import {primitiveIconPaths, RnrSvgIcon} from '../src/vendor/slots';
 
 const mount = (element: Parameters<typeof create>[0]): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined;
@@ -142,7 +150,6 @@ describe('ui primitives', () => {
         onChangeText={onChangeText}
         onSelectionChange={onSelectionChange}
         selection={{start: 1}}
-        showSoftInputOnFocus={false}
         onFocus={onFocus}
         onBlur={onBlur}
         inputRef={inputRef}
@@ -152,6 +159,7 @@ describe('ui primitives', () => {
     expect(input.props.maxLength).toBe(3);
     expect(input.props.onChangeText).toBe(onChangeText);
     expect(input.props.selection).toEqual({start: 1, end: 1});
+    expect(input.props.accessibilityRole).toBeUndefined();
     expect(input.props.showSoftInputOnFocus).toBe(false);
     expect(inputRef.current).toEqual(
       expect.objectContaining({
@@ -282,5 +290,104 @@ describe('ui primitives', () => {
       </PrimitiveText>
     );
     void invalidRole;
+  });
+
+  it('keeps busy actions inert and exposes semantic interactive state', () => {
+    const onPress = vi.fn();
+    const onValueChange = vi.fn();
+    const renderer = mount(
+      <PrimitiveContainer testID="sample:state-root">
+        <PrimitiveButton testID="sample:busy" accessibilityLabel="保存" busy onPress={onPress}>
+          保存
+        </PrimitiveButton>
+        <PrimitiveSegmentedControl
+          testID="sample:segments"
+          accessibilityLabel="诊断分区"
+          items={[{value: 'one', label: '一'}, {value: 'two', label: '二'}]}
+          selectedValue="one"
+          onValueChange={onValueChange}
+        />
+        <PrimitiveSpinner testID="sample:spinner" accessibilityLabel="加载中" />
+        <PrimitiveInlineAlert testID="sample:alert" tone="error">失败</PrimitiveInlineAlert>
+        <PrimitiveEmptyState testID="sample:empty" accessibilityLabel="空列表">暂无数据</PrimitiveEmptyState>
+        <PrimitiveBadge testID="sample:badge" tone="ok">可用</PrimitiveBadge>
+      </PrimitiveContainer>,
+    );
+
+    const busy = renderer.root.findAllByType(Pressable).find(node => node.props.testID === 'sample:busy')!;
+    act(() => { (busy.props.onPress as () => void)(); });
+    expect(onPress).not.toHaveBeenCalled();
+    expect(busy.props.accessibilityState).toMatchObject({disabled: true, busy: true});
+
+    const second = renderer.root.findByProps({testID: 'sample:segments:two'});
+    act(() => { (second.props.onPress as () => void)(); });
+    expect(onValueChange).toHaveBeenCalledWith('two');
+    expect(renderer.root.findByProps({testID: 'sample:spinner'})).toBeDefined();
+    expect(renderer.root.findAllByType(View).find(node => node.props.testID === 'sample:alert')?.props.accessibilityRole).toBe('alert');
+    expect(renderer.root.findByProps({testID: 'sample:empty'})).toBeDefined();
+    expect(renderer.root.findByProps({testID: 'sample:badge'})).toBeDefined();
+    act(() => { renderer.unmount(); });
+  });
+
+  it('renders a non-empty SVG path from the primitives icon set', () => {
+    const renderer = mount(
+      <RnrSvgIcon
+        testID="sample:icon"
+        accessibilityLabel="信息"
+        path={primitiveIconPaths.info}
+      />,
+    );
+    const svg = renderer.root.findAllByType(Svg).find(node => node.props.testID === 'sample:icon')!;
+    const path = renderer.root.findByType(Path);
+    expect(svg.props.accessibilityLabel).toBe('信息');
+    expect(path.props.d).toBe(primitiveIconPaths.info);
+    expect(String(path.props.d).length).toBeGreaterThan(0);
+    act(() => { renderer.unmount(); });
+  });
+
+  it('keeps the full list data while bounding mounted rows across scroll transitions', () => {
+    const data = Array.from({length: 100}, (_value, index) => `row-${index}`);
+    const renderer = mount(
+      <PrimitiveList
+        testID="sample:list"
+        data={data}
+        rowHeight={10}
+        getItemKey={item => item}
+        renderItem={item => <PrimitiveText testID={`sample:list:content:${item}`}>{item}</PrimitiveText>}
+      />,
+    );
+    type VirtualizedListProbe = {
+      readonly props: Readonly<{
+        readonly testID?: string;
+        readonly getItemCount: (items: readonly string[]) => number;
+        readonly onScroll: (event: {readonly nativeEvent: {readonly contentOffset: {readonly y: number}}}) => void;
+        readonly renderItem: (input: {readonly item: string; readonly index: number}) => unknown;
+      }>;
+    };
+    const list = () => renderer.root.findAllByType(VirtualizedList)
+      .map(node => node as unknown as VirtualizedListProbe)
+      .find(node => node.props.testID === 'sample:list')!;
+    expect(list().props.getItemCount(data)).toBe(100);
+
+    const observeWindow = (offsetY: number) => {
+      act(() => {
+        (list().props.onScroll as (event: {readonly nativeEvent: {readonly contentOffset: {readonly y: number}}}) => void)({
+          nativeEvent: {contentOffset: {y: offsetY}},
+        });
+      });
+      const renderItem = list().props.renderItem as (input: {readonly item: string; readonly index: number}) => unknown;
+      const rendered = data.map((item, index) => renderItem({item, index})).filter(Boolean) as Array<{
+        readonly props?: Readonly<Record<string, unknown>>
+      }>;
+      expect(rendered.length).toBeLessThanOrEqual(24);
+      return rendered;
+    };
+
+    const head = observeWindow(0) as Array<{readonly props?: Readonly<Record<string, unknown>>}>;
+    expect(head.some(node => String(node.props?.testID).endsWith(':row-0'))).toBe(true);
+    for (const offsetY of [10, 80, 160, 320, 480, 640, 800, 900]) observeWindow(offsetY);
+    const tail = observeWindow(900) as Array<{readonly props?: Readonly<Record<string, unknown>>}>;
+    expect(tail.some(node => String(node.props?.testID).endsWith(':row-99'))).toBe(true);
+    act(() => { renderer.unmount(); });
   });
 });

@@ -167,6 +167,29 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
+    void typedCategoryCommandRejectsAContextTokenForAnotherOperationBeforeWriting() {
+        String code = "SCOPE-MISMATCH-" + UUID.randomUUID();
+
+        CatalogOwnerApi.Problem problem = assertThrows(
+                CatalogOwnerApi.Problem.class,
+                () -> service.createCategory(
+                        context("updateOperationsCatalogCategory", SCOPE, "scope-mismatch"),
+                        new CatalogOwnerApi.CategoryCreateCommand(code, "scope mismatch", null),
+                        "scope-mismatch-key"));
+
+        assertEquals("SCOPE_FORBIDDEN", problem.code());
+        assertEquals(403, problem.status());
+        assertEquals(
+                0,
+                jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND code=?",
+                        Integer.class,
+                        SCOPE.toString(),
+                        BRAND,
+                        code));
+    }
+
+    @Test
     void categoryHierarchyAllowsExactlyThreeLevelsAndRejectsADeeperCreateOrMove() {
         String suffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase(java.util.Locale.ROOT);
         JsonNode root = create("DEPTH-ROOT-" + suffix, "三级根", null);

@@ -38,8 +38,8 @@ export const InputScrollArea = ({testID, children}: InputScrollAreaProps) => {
     }
   }, [reportDiagnostic])
 
-  const ensureVisible = useCallback((inputRef: Readonly<{readonly current: PrimitiveInputHandle | null}>, keyboardHeight: number) => {
-    const input = inputRef.current
+  const ensureVisible = useCallback((inputRef: Readonly<{readonly current: PrimitiveInputHandle | null}> | null, keyboardHeight: number) => {
+    const input = inputRef?.current ?? null
     const scroll = scrollRef.current
     const viewportLayout = viewportLayoutRef.current
     const contentNode = scroll?.getContentNativeNode() ?? null
@@ -64,7 +64,8 @@ export const InputScrollArea = ({testID, children}: InputScrollAreaProps) => {
 
     input.measureLayout(
       contentNode,
-      (inputX, inputY, inputWidth, inputHeight) => {
+      (...measurements: [number, number, number, number]) => {
+        const [inputX, inputY, inputWidth, inputHeight] = measurements
         const beforeOffset = currentOffsetRef.current
         const inputRect = {x: inputX, y: inputY, width: inputWidth, height: inputHeight}
         const viewportRect = {
@@ -133,7 +134,7 @@ export const InputScrollArea = ({testID, children}: InputScrollAreaProps) => {
     }
   }, [reportDiagnostic])
 
-  const value = useCallback((inputRef: Readonly<{readonly current: PrimitiveInputHandle | null}>, keyboardHeight: number) => {
+  const value = useCallback((inputRef: Readonly<{readonly current: PrimitiveInputHandle | null}> | null, keyboardHeight: number) => {
     ensureVisible(inputRef, keyboardHeight)
   }, [ensureVisible])
 

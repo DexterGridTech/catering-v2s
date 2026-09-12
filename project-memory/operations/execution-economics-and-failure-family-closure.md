@@ -8,7 +8,7 @@ consumerFaces: ["all"]
 owners: ["platform","backend","frontend-platform"]
 impacts: ["evidence","governance","runtime"]
 triggers: ["implementation","failure","review"]
-assertions: ["RUN_COUNT_NOT_RUN_COST_DOMINATES","FAILURE_FAMILY_CLOSED_BEFORE_NEXT","BROAD_RUN_IS_REGRESSION_NOT_DISCOVERY","PASS_WITHOUT_REVIEWED_FIXTURE_DENOMINATOR_IS_NOT_COMPLETION","RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN"]
+assertions: ["RUN_COUNT_NOT_RUN_COST_DOMINATES","FAILURE_FAMILY_CLOSED_BEFORE_NEXT","AUTHORIZED_FAILURE_DRIVES_REPAIR_AND_CONTINUATION","GOAL_HAS_NO_TOKEN_BUDGET_OR_EARLY_STOP","BROAD_RUN_IS_REGRESSION_NOT_DISCOVERY","PASS_WITHOUT_REVIEWED_FIXTURE_DENOMINATOR_IS_NOT_COMPLETION","RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN"]
 sourceRefs: ["doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md"]
 ---
 # 执行经济学与失败族关闭
@@ -25,7 +25,25 @@ sourceRefs: ["doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-
   先把该族关闭到零复发。** 实测反例:`BUDGET_PROJECTION_OPERATION_MISSING` 在 09:15、11:40、
   12:42、13:15、14:39、17:27×2、20:41、20:48 复发 **9 次,跨越 11.5 小时** ——
   一个结构性、可一次关闭的条件被反复撞击。
-  该规则是阶段准入条件,不是建议。
+  这里的“停止业务推进”只冻结当前失败族之后的业务场景，**不停止实施 task 或 active goal**；
+  主 agent 必须保留 first failure，重开日志、owning source 与 broken boundary，做最小根因修复，
+  先用同一 focused proof 关闭该族，再继续剩余授权范围。该规则是阶段准入条件，不是遇败即停的建议。
+
+- `AUTHORIZED_FAILURE_DRIVES_REPAIR_AND_CONTINUATION`:**在授权范围内，失败必须驱动修复与继续。**
+  一次测试、构建或动态运行失败本身不是 task/goal 的完成条件，也不是停止理由；它必须先被保留为证据，
+  分类为可修复失败、硬约束失败或设计意图偏离。可修复失败走“日志 → 根因 → 最小修复 → 同档复验 →
+  继续”的闭环；硬约束（例如网络确实不可达、虚拟机无法启动）或下一步会实质偏离已批准设计且需要产品裁决时，
+  才允许停止并报告精确边界。不得用延长 timeout、盲目重试、换场景或改写状态把未解决失败包装成 PASS。
+  本规则不扩大授权、不取消 cleanup/隐私/证据档位，也不允许越过产品或设计裁决。
+
+- `GOAL_HAS_NO_TOKEN_BUDGET_OR_EARLY_STOP`:**goal 不设置 token budget；未完成 goal 不得因预算、一次失败或阶段性报告而结束。**
+  只有批准范围已经完成并且 business/cleanup evidence 关闭，或上一条规定的硬约束/设计意图偏离确实成立，
+  才能结束；资源、授权、破坏性动作和证据边界仍按各自规范执行。
+
+- `NATIVE_SEMANTIC_PROP_MUST_BE_PLATFORM_SUPPORTED`:**跨平台 primitive 的原生语义属性必须以目标平台实际支持集为准。**
+  类型包装器允许传入字符串、Web 语义或源码注释都不能证明 Android/iOS 原生可接受；在目标平台上，
+  不支持的 accessibility role 可能在属性更新阶段直接让运行时失败。最小防线是由 primitive 去掉目标平台不支持的值，
+  保留控件本身已有的原生语义，并为每个新增原生语义在目标平台做 focused smoke；不得用重试、静默 catch 或另造兼容层遮蔽。
 
 - `BROAD_RUN_IS_REGRESSION_NOT_DISCOVERY`:`all` 或大范围 calibration **只做回归确认,不做发现手段**。
   在多个失败族未隔离时跑 broad,会同时暴露 405/403/409/422/500/budget 等多类问题,

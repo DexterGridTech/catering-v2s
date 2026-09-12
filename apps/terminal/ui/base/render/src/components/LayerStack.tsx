@@ -8,6 +8,8 @@ import {dispatchWithRequestId} from '../foundations/dispatchWithRequestId'
 import {RenderFallback, resolvePart} from './resolvePart'
 import {useDispatchCommand} from '../hooks/useDispatchCommand'
 import {useRenderSnapshot} from '../hooks/useRenderSnapshot'
+import {createCatalogContext} from '../foundations/createCatalogContext'
+import {isUiCatalogEntryAvailable} from '@catering-v2s/kernel-base-ui-state'
 
 const LAYER_STACK_TEST_ID = 'ui-base-render:layer-stack'
 const LAYER_BACKDROP_TEST_ID = 'ui-base-render:layer-backdrop'
@@ -101,12 +103,21 @@ export const LayerStack = () => {
     rendererCatalog,
     reportPartDiagnostic,
     clearPartDiagnostic,
+    selectSurfaceForm,
   } = useRenderContext()
   const dispatchCommand = useDispatchCommand()
   const snapshot = useRenderSnapshot()
+  const catalogContext = snapshot.root === undefined
+    ? undefined
+    : createCatalogContext(snapshot.root, displayMode, selectSurfaceForm(snapshot.root))
   const layers = snapshot.root === undefined
     ? []
-    : selectLayers(snapshot.root, displayMode) as readonly Layer[]
+    : (selectLayers(snapshot.root, displayMode) as readonly Layer[]).filter(layer => {
+      const entry = uiCatalog.byPartKey[layer.partKey]
+      return entry === undefined
+        || catalogContext === undefined
+        || isUiCatalogEntryAvailable(entry, null, catalogContext)
+    })
   const orderedLayers = [...layers].sort((left, right) => compareLayers({left, right, uiCatalog, rendererCatalog}))
   const layerSignature = orderedLayers.map(layer => layer.layerId).join('\u0000')
   const topLayer = orderedLayers.at(-1)
@@ -216,6 +227,8 @@ export const LayerStack = () => {
           {resolvePart({
             placement: layer,
             displayMode,
+            containerKey: null,
+            catalogContext: catalogContext!,
             uiCatalog,
             rendererCatalog,
             reportPartDiagnostic,

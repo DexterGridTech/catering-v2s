@@ -82,14 +82,13 @@ internal data class TerminalSurfaceHostSnapshot(
   val surfaceKey: String,
   val generation: Long,
   val displayId: Int?,
+  val isHostPrimaryDisplay: Boolean,
   val windowIdentity: String,
   val orientation: String,
   val stableWidthLogical: Double,
   val stableHeightLogical: Double,
   val currentWidthLogical: Double,
   val currentHeightLogical: Double,
-  val imeVisible: Boolean,
-  val imeBottomLogicalBeforeCanvasScale: Double,
   val stableWidthPx: Int,
   val stableHeightPx: Int,
   val currentWidthPx: Int,
@@ -132,13 +131,12 @@ internal fun shouldReuseStableHostContext(
   hardwareDensity: Float,
   surfaceDensityDpi: Int,
   surfaceDensity: Float,
-  imeVisible: Boolean,
 ): Boolean {
   if (!sameOwner || previousSnapshot == null) return false
   if (previousSnapshot.orientation != orientation) return false
   if (previousSnapshot.hardwareDensityDpi != hardwareDensityDpi || previousSnapshot.hardwareDensity != hardwareDensity) return false
   if (previousSnapshot.surfaceDensityDpi != surfaceDensityDpi || previousSnapshot.surfaceDensity != surfaceDensity) return false
-  return imeVisible || (previousSnapshot.stableWidthPx == widthPx && previousSnapshot.stableHeightPx == heightPx)
+  return previousSnapshot.stableWidthPx == widthPx && previousSnapshot.stableHeightPx == heightPx
 }
 
 internal data class TerminalSurfaceHostRemovalResult(
@@ -187,7 +185,6 @@ internal object TerminalSurfaceHostRegistry {
   private val lock = Any()
   private val entries = mutableMapOf<Int, Entry>()
   private val generationCounters = mutableMapOf<Int, Long>()
-  private val imeSnapshots = mutableMapOf<Int, TerminalImeInsetsSnapshot>()
   private var publisher: ((TerminalSurfaceHostEvent) -> Unit)? = null
 
   fun registerPublisher(nextPublisher: (TerminalSurfaceHostEvent) -> Unit) {
@@ -259,15 +256,6 @@ internal object TerminalSurfaceHostRegistry {
       val sameOwner = previous != null && previous.ownerWindow === window &&
         previousSnapshot?.displayId == displayId &&
         previousSnapshot.windowIdentity == windowIdentity
-      val ime = imeSnapshots[surfaceIndex]
-      if (ime?.visible == true && !sameOwner) {
-        Log.i(
-          LOG_TAG,
-          "event=surface-host-snapshot-unavailable surfaceKey=$surfaceKey " +
-            "windowIdentity=$windowIdentity displayId=$displayId reason=ime-before-stable-owner",
-        )
-        return@synchronized null
-      }
 
       val currentWidthLogical = widthPx.toDouble() / surfaceDensity.toDouble()
       val currentHeightLogical = heightPx.toDouble() / surfaceDensity.toDouble()
@@ -281,7 +269,6 @@ internal object TerminalSurfaceHostRegistry {
         hardwareDensity = hardwareDensity,
         surfaceDensityDpi = surfaceMetrics.densityDpi,
         surfaceDensity = surfaceDensity,
-        imeVisible = ime?.visible == true,
       )
       val stableWidthLogical = if (sameStableContext) previousSnapshot!!.stableWidthLogical else currentWidthLogical
       val stableHeightLogical = if (sameStableContext) previousSnapshot!!.stableHeightLogical else currentHeightLogical
@@ -293,14 +280,13 @@ internal object TerminalSurfaceHostRegistry {
         surfaceKey = surfaceKey,
         generation = generation,
         displayId = displayId,
+        isHostPrimaryDisplay = surfaceIndex == PRIMARY_INDEX,
         windowIdentity = windowIdentity,
         orientation = orientation,
         stableWidthLogical = stableWidthLogical,
         stableHeightLogical = stableHeightLogical,
         currentWidthLogical = currentWidthLogical,
         currentHeightLogical = currentHeightLogical,
-        imeVisible = ime?.visible == true,
-        imeBottomLogicalBeforeCanvasScale = ime?.bottomLogical ?: 0.0,
         stableWidthPx = stableWidthPx,
         stableHeightPx = stableHeightPx,
         currentWidthPx = widthPx,
@@ -321,22 +307,6 @@ internal object TerminalSurfaceHostRegistry {
     publish(event)
   }
 
-  fun updateIme(snapshot: TerminalImeInsetsSnapshot) {
-    val event = synchronized(lock) {
-      imeSnapshots[snapshot.displayIndex] = snapshot
-      val current = entries[snapshot.displayIndex] ?: return@synchronized null
-      val next = current.snapshot.copy(
-        imeVisible = snapshot.visible,
-        imeBottomLogicalBeforeCanvasScale = snapshot.bottomLogical,
-      )
-      if (next == current.snapshot) null else {
-        entries[snapshot.displayIndex] = current.copy(snapshot = next)
-        TerminalSurfaceHostEvent.Ready(next)
-      }
-    }
-    publish(event)
-  }
-
   fun remove(surfaceIndex: Int, window: Window?, reason: String) {
     val surfaceKey = surfaceKeyForIndex(surfaceIndex) ?: return
     val event = synchronized(lock) {
@@ -351,7 +321,6 @@ internal object TerminalSurfaceHostRegistry {
       )
       if (!removal.shouldClear) return@synchronized null
       entries.remove(surfaceIndex)
-      imeSnapshots.remove(surfaceIndex)
       removal.unavailable
     }
     publish(event)
@@ -376,8 +345,6 @@ internal object TerminalSurfaceHostRegistry {
             "hardwareDensityDpi=${snapshot.hardwareDensityDpi} hardwareDensity=${snapshot.hardwareDensity} " +
             "hardwareScaledDensity=${snapshot.hardwareScaledDensity} " +
             "surfaceDensityDpi=${snapshot.surfaceDensityDpi} surfaceDensity=${snapshot.surfaceDensity} " +
-            "imeVisible=${snapshot.imeVisible} " +
-            "imeBottomLogicalBeforeCanvasScale=${snapshot.imeBottomLogicalBeforeCanvasScale} " +
             "source=android-display-context measurementContext=owner-decorView-layout",
         )
       }
@@ -430,7 +397,6 @@ internal class TerminalDualScreenActivityHandler :
   private var primaryActivity: ReactActivity? = null
   private var registeredApplication: Application? = null
   private var secondaryState: SecondaryState? = null
-  private var primaryImeInsetsCoordinator: TerminalImeInsetsCoordinator? = null
 
   override fun onDidCreateReactActivityDelegate(
     activity: ReactActivity,
@@ -466,7 +432,6 @@ internal class TerminalDualScreenActivityHandler :
       TerminalSurfaceHostRegistry.captureWindow(0, activity.window, "primary")
     }
     applyImmersiveWindow(activity.window)
-    attachPrimaryImeInsets(activity)
     if (snapshot.secondaryDisplay != null) {
       ensureSecondarySurface(activity, host, mainComponentName, snapshot)
     }
@@ -753,8 +718,6 @@ internal class TerminalDualScreenActivityHandler :
   override fun onActivityDestroyed(activity: Activity) {
     if (activity === primaryActivity) {
       TerminalSurfaceHostRegistry.remove(0, activity.window, "primary-destroyed")
-      primaryImeInsetsCoordinator?.detach()
-      primaryImeInsetsCoordinator = null
       primaryActivity = null
       requestCleanupForCurrentSecondary("primary-destroyed")
       unregisterLifecycleCallbacksIfIdle()
@@ -765,31 +728,14 @@ internal class TerminalDualScreenActivityHandler :
   override fun onActivityStarted(activity: Activity) = Unit
   override fun onActivityResumed(activity: Activity) {
     applyImmersiveWindow(activity.window)
-    if (activity === primaryActivity) attachPrimaryImeInsets(activity)
   }
   override fun onActivityPaused(activity: Activity) = Unit
-  override fun onActivityStopped(activity: Activity) {
-    if (activity === primaryActivity) primaryImeInsetsCoordinator?.detach()
-  }
+  override fun onActivityStopped(activity: Activity) = Unit
   override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
 
   private fun log(event: String, vararg fields: String) {
     val suffix = if (fields.isEmpty()) "" else " ${fields.joinToString(" ")}"
     Log.i(LOG_TAG, "event=$event$suffix")
-  }
-
-  private fun attachPrimaryImeInsets(activity: ReactActivity) {
-    if (primaryImeInsetsCoordinator == null) {
-      primaryImeInsetsCoordinator = TerminalImeInsetsCoordinator(
-        window = activity.window,
-        displayIndex = 0,
-        displayId = Display.DEFAULT_DISPLAY,
-        windowIdentity = "primary",
-        logicalDensity = activity.resources.displayMetrics.density,
-        publish = TerminalImeInsetsEventBus::publish,
-      )
-    }
-    primaryImeInsetsCoordinator?.attach()
   }
 
   private fun ensureLifecycleCallbacks(application: Application) {

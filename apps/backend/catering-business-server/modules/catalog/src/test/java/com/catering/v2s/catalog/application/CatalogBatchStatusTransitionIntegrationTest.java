@@ -73,7 +73,7 @@ class CatalogBatchStatusTransitionIntegrationTest {
 
     @Test
     void batchStatusOwnerBoundaryDeclaresRequiredTransactionForTheNoManagerConstructionPath() throws Exception {
-        Transactional transaction = CatalogOwnerService.class
+        Transactional transaction = CatalogItemService.class
                 .getMethod(
                         "transitionCatalogItemStatuses",
                         WorkspaceExecutionContext.class,

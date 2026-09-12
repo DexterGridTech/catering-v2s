@@ -1,10 +1,12 @@
 import {
   PrimitiveButton,
+  PrimitiveContainer,
+  PrimitiveActions,
+  PrimitiveHeading,
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
 import {dispatchWithRequestId, useDispatchCommand} from '@catering-v2s/ui-base-render'
 import {authNoticeDismissedCommand} from '../features/commands/commands'
-import {DialogActions, DialogSurface} from './controls'
 
 export type AuthNoticeProps = Readonly<{readonly reasonCode: string}>
 
@@ -20,14 +22,15 @@ export const AuthNotice = ({reasonCode}: AuthNoticeProps) => {
   })
 
   return (
-    <DialogSurface testID="sample.auth.notice" title="登录失败">
+    <PrimitiveContainer testID="sample.auth.notice" layout="card">
+      <PrimitiveHeading testID="sample.auth.notice:title">登录失败</PrimitiveHeading>
       <PrimitiveText
         testID="sample.auth.notice:message"
         accessibilityRole="alert"
       >
         {messageForReason(reasonCode)}
       </PrimitiveText>
-      <DialogActions testID="sample.auth.notice:actions">
+      <PrimitiveActions testID="sample.auth.notice:actions">
         <PrimitiveButton
           testID="sample.auth.notice:dismiss"
           accessibilityLabel="关闭登录失败提示"
@@ -35,7 +38,7 @@ export const AuthNotice = ({reasonCode}: AuthNoticeProps) => {
         >
           关闭
         </PrimitiveButton>
-      </DialogActions>
-    </DialogSurface>
+      </PrimitiveActions>
+    </PrimitiveContainer>
   )
 }

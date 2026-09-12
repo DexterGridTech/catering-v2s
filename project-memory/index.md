@@ -26,6 +26,7 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 - [operations.claude-review-handoff-standard](../project-memory/operations/claude-review-handoff-standard.md)
 - [operations.dev-command-separation](../project-memory/operations/dev-command-separation.md)
 - [operations.frontend-coding-standard](../project-memory/operations/frontend-coding-standard.md)
+- [operations.backend-readability-refactor](../project-memory/operations/backend-readability-refactor.md)
 - [operations.implementation-source-reread-discipline](../project-memory/operations/implementation-source-reread-discipline.md)
 - [operations.phase-retrospective-and-systemic-repair](../project-memory/operations/phase-retrospective-and-systemic-repair.md)
 - [operations.roadmap-control-transfer](../project-memory/operations/roadmap-control-transfer.md)

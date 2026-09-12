@@ -32,7 +32,8 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
   }))
   const editStateRef = useRef(editState)
   editStateRef.current = editState
-  const inputRef = useRef<PrimitiveInputHandle | null>(null)
+  const nativeInputRef = useRef<PrimitiveInputHandle | null>(null)
+  const inputRef = options.nativeLess ? null : nativeInputRef
   const tokenRef = useRef<InputRegistrationToken | null>(null)
 
   const applyKey = useCallback((key: KeyboardKey): EditResult => {
@@ -59,6 +60,7 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
       keyboardKind: options.keyboardKind,
       layout: options.layout ?? 'full',
       maxLength: options.maxLength,
+      focusScopeId: options.focusScopeId ?? 'business',
       inputRef,
       applyKey: applyKeyProxy,
       getEditState,
@@ -68,7 +70,7 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
       controller.unregisterField(token)
       if (tokenRef.current === token) tokenRef.current = null
     }
-  }, [applyKeyProxy, controller, getEditState, options.fieldId])
+  }, [applyKeyProxy, controller, getEditState, inputRef, options.fieldId, options.focusScopeId, options.keyboardKind, options.layout, options.maxLength])
 
   useLayoutEffect(() => {
     const token = tokenRef.current
@@ -77,23 +79,19 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
       keyboardKind: options.keyboardKind,
       layout: options.layout ?? 'full',
       maxLength: options.maxLength,
+      focusScopeId: options.focusScopeId ?? 'business',
     })
-  }, [controller, options.keyboardKind, options.layout, options.maxLength])
+  }, [controller, options.focusScopeId, options.keyboardKind, options.layout, options.maxLength])
 
   useLayoutEffect(() => {
-    const keyboardVisible = keyboardState.owner === 'virtual'
-      ? keyboardState.visible
-      : keyboardState.owner === 'system' && keyboardState.imeInset > 0
+    const keyboardVisible = keyboardState.owner === 'virtual' && keyboardState.visible
     if (keyboardState.activeFieldId !== options.fieldId || !keyboardVisible) return
-    const keyboardHeight = keyboardState.owner === 'virtual'
-      ? keyboardState.height
-      : keyboardState.imeInset
+    const keyboardHeight = keyboardState.height
     if (keyboardHeight <= 0) return
     scrollAncestor?.(inputRef, keyboardHeight)
   }, [
     keyboardState.activeFieldId,
     keyboardState.height,
-    keyboardState.imeInset,
     keyboardState.owner,
     keyboardState.visible,
     options.fieldId,
@@ -151,9 +149,8 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
     onFocus,
     onPressIn,
     onSelectionChange,
-    selection: options.keyboardKind === 'virtual' ? editState.selection : undefined,
+    selection: editState.selection,
     secureTextEntry: options.secureTextEntry,
-    showSoftInputOnFocus: options.keyboardKind === 'virtual' ? false : true,
     value: editState.value,
   }), [
     editState.selection,
@@ -165,7 +162,6 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
     onSelectionChange,
     options.accessibilityLabel,
     options.editable,
-    options.keyboardKind,
     options.maxLength,
     options.secureTextEntry,
     options.testID,

@@ -1,9 +1,8 @@
-import {useEffect, useMemo, useState, type ReactNode} from 'react'
+import {useEffect, useMemo, useState, useSyncExternalStore, type ReactNode} from 'react'
 import {PixelRatio, StyleSheet, View} from 'react-native'
-import {SurfaceHostImeContext} from '../contexts/SurfaceHostImeContext'
+import {PrimitiveSpinner} from '@catering-v2s/ui-base-primitives'
 import {useRenderContext} from '../contexts/RenderContext'
 import {
-  calculateSurfaceHostImeInset,
   calculateSurfaceHostGeometry,
   type SurfaceCanvasDeclaration,
   type SurfaceHostGeometry,
@@ -14,8 +13,21 @@ import {
 export type SurfaceHostControllerProps = Readonly<{
   readonly canvas: SurfaceCanvasDeclaration
   readonly source?: SurfaceHostSource
+  readonly snapshot?: SurfaceHostSnapshot | null
   readonly children?: ReactNode
 }>
+
+const subscribeToNothing = (_listener: (snapshot: SurfaceHostSnapshot | null) => void): (() => void) => () => undefined
+const readNoSnapshot = (): null => null
+
+export const useSurfaceHostSnapshot = (
+  source: SurfaceHostSource | undefined,
+): SurfaceHostSnapshot | null | undefined => {
+  const subscribe = source?.subscribe ?? subscribeToNothing
+  const getSnapshot = source?.getSnapshot ?? readNoSnapshot
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+  return source === undefined ? undefined : snapshot
+}
 
 const staticGeometryOf = (canvas: SurfaceCanvasDeclaration): SurfaceHostGeometry => Object.freeze({
   canvas,
@@ -24,20 +36,23 @@ const staticGeometryOf = (canvas: SurfaceCanvasDeclaration): SurfaceHostGeometry
   scaleY: 1,
 })
 
-export const SurfaceHostController = ({canvas, source, children}: SurfaceHostControllerProps) => {
+export const SurfaceHostController = ({canvas, source, snapshot: controlledSnapshot, children}: SurfaceHostControllerProps) => {
   const {logger} = useRenderContext()
-  const [snapshot, setSnapshot] = useState<SurfaceHostSnapshot | null>(
+  const [internalSnapshot, setInternalSnapshot] = useState<SurfaceHostSnapshot | null>(
     () => source?.getSnapshot() ?? null,
   )
 
   useEffect(() => {
+    if (controlledSnapshot !== undefined) return undefined
     if (source === undefined) {
-      setSnapshot(null)
+      setInternalSnapshot(null)
       return undefined
     }
-    setSnapshot(source.getSnapshot())
-    return source.subscribe(setSnapshot)
-  }, [source])
+    setInternalSnapshot(source.getSnapshot())
+    return source.subscribe(setInternalSnapshot)
+  }, [controlledSnapshot, source])
+
+  const snapshot = controlledSnapshot === undefined ? internalSnapshot : controlledSnapshot
 
   const geometry = useMemo(
     () => source === undefined
@@ -45,13 +60,6 @@ export const SurfaceHostController = ({canvas, source, children}: SurfaceHostCon
       : calculateSurfaceHostGeometry({canvas, snapshot}),
     [canvas, snapshot, source],
   )
-  const imeInset = useMemo(
-    () => geometry === null
-      ? null
-      : calculateSurfaceHostImeInset({ime: snapshot?.ime, scaleY: geometry.scaleY}),
-    [geometry, snapshot?.ime],
-  )
-
   useEffect(() => {
     if (!__DEV__) return
     logger.info({
@@ -68,9 +76,6 @@ export const SurfaceHostController = ({canvas, source, children}: SurfaceHostCon
         hostHeight: geometry?.host.height ?? null,
         scaleX: geometry?.scaleX ?? null,
         scaleY: geometry?.scaleY ?? null,
-        imeVisible: snapshot?.ime?.visible ?? false,
-        imeBottomLogicalBeforeCanvasScale: snapshot?.ime?.bottomLogicalBeforeCanvasScale ?? 0,
-        imeInset,
         // PixelRatio is diagnostics-only. Geometry must stay owned by the
         // per-surface host snapshot and the package canvas declaration.
         pixelRatio: PixelRatio.get(),
@@ -78,30 +83,40 @@ export const SurfaceHostController = ({canvas, source, children}: SurfaceHostCon
         units: 'logical-layout-unit',
       },
     })
-  }, [canvas.height, canvas.width, geometry, imeInset, logger, snapshot?.ime, source])
+  }, [canvas.height, canvas.width, geometry, logger, source])
 
-  if (geometry === null || imeInset === null) {
-    return <View testID="ui-base-render:surface-host-pending" style={styles.viewport} />
+  if (geometry === null) {
+    return (
+      <View
+        testID="ui-base-render:surface-host-pending"
+        style={styles.viewport}
+        accessibilityRole="progressbar"
+        accessibilityLabel="正在准备显示面"
+      >
+        <PrimitiveSpinner
+          testID="ui-base-render:surface-host-loading-indicator"
+          accessibilityLabel="正在准备显示面"
+        />
+      </View>
+    )
   }
 
   return (
-    <SurfaceHostImeContext.Provider value={{imeInset}}>
-      <View testID="ui-base-render:surface-host-viewport" style={styles.viewport}>
-        <View
-          testID="ui-base-render:surface-host-canvas"
-          style={[
-            styles.canvas,
-            {
-              width: geometry.canvas.width,
-              height: geometry.canvas.height,
-              transform: [{scaleX: geometry.scaleX}, {scaleY: geometry.scaleY}],
-            },
-          ]}
-        >
-          {children}
-        </View>
+    <View testID="ui-base-render:surface-host-viewport" style={styles.viewport}>
+      <View
+        testID="ui-base-render:surface-host-canvas"
+        style={[
+          styles.canvas,
+          {
+            width: geometry.canvas.width,
+            height: geometry.canvas.height,
+            transform: [{scaleX: geometry.scaleX}, {scaleY: geometry.scaleY}],
+          },
+        ]}
+      >
+        {children}
       </View>
-    </SurfaceHostImeContext.Provider>
+    </View>
   )
 }
 

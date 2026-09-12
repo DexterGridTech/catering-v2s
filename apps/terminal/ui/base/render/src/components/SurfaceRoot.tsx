@@ -5,6 +5,8 @@ import {ScreenContainer} from './ScreenContainer'
 import {SurfaceContext} from '../contexts/SurfaceContext'
 import {useRenderContext} from '../contexts/RenderContext'
 import {SurfaceHostController} from './SurfaceHostController'
+import {useSurfaceHostSnapshot} from './SurfaceHostController'
+import {useUiStateSelector} from '../hooks/useUiStateSelector'
 import type {SurfaceRootProps} from '../types/props'
 
 export const SurfaceRoot = ({
@@ -15,10 +17,20 @@ export const SurfaceRoot = ({
   canvas,
   surfaceHostSource,
 }: SurfaceRootProps) => {
-  const {logger} = useRenderContext()
+  const {logger, selectSurfaceForm} = useRenderContext()
+  const selectedSurfaceForm = useUiStateSelector(selectSurfaceForm)
+  const surfaceForm = selectedSurfaceForm ?? 'laptop'
+  const surfaceHostSnapshot = useSurfaceHostSnapshot(surfaceHostSource)
   const surfaceValue = useMemo(
-    () => Object.freeze({displayMode, containerKey}),
-    [containerKey, displayMode],
+    () => Object.freeze({
+      displayMode,
+      containerKey,
+      surfaceForm,
+      isHostPrimaryDisplay: surfaceHostSnapshot?.isHostPrimaryDisplay ?? false,
+      surfaceIdentity: surfaceHostSnapshot?.surfaceIdentity ?? null,
+      hostLogicalSize: surfaceHostSnapshot?.stableHostLogicalSize ?? null,
+    }),
+    [containerKey, displayMode, surfaceForm, surfaceHostSnapshot?.isHostPrimaryDisplay, surfaceHostSnapshot?.stableHostLogicalSize, surfaceHostSnapshot?.surfaceIdentity],
   )
   const previousLayout = useRef<string | null>(null)
   const reportLayout = useCallback((event: LayoutChangeEvent) => {
@@ -67,7 +79,7 @@ export const SurfaceRoot = ({
   )
   const framedContent = renderContentFrame?.({content}) ?? content
   const hostedContent = canvas === undefined ? framedContent : (
-    <SurfaceHostController canvas={canvas} source={surfaceHostSource}>
+    <SurfaceHostController canvas={canvas} source={surfaceHostSource} snapshot={surfaceHostSnapshot}>
       {framedContent}
     </SurfaceHostController>
   )

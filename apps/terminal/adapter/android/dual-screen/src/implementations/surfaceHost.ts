@@ -4,14 +4,11 @@ export type AndroidSurfaceHostSnapshot = Readonly<{
   readonly surfaceKey: 'PRIMARY' | 'SECONDARY'
   readonly generation: number
   readonly displayId: number | null
+  readonly isHostPrimaryDisplay: boolean
   readonly windowIdentity: 'primary' | 'secondary'
   readonly orientation: 'portrait' | 'landscape'
   readonly stableHostLogicalSize: Readonly<{readonly width: number; readonly height: number}>
   readonly currentHostLogicalSize: Readonly<{readonly width: number; readonly height: number}>
-  readonly ime: Readonly<{
-    readonly visible: boolean
-    readonly bottomLogicalBeforeCanvasScale: number
-  }>
   readonly diagnostics: Readonly<{
     readonly stableWidthPx: number
     readonly stableHeightPx: number
@@ -56,12 +53,9 @@ type SurfaceHostAcceptance = Readonly<{
   readonly state: SurfaceHostSourceState
 }>
 
-type SurfaceHostSourceSnapshot = Readonly<{
+export type AndroidSurfaceHostMeasurementSnapshot = Readonly<{
   readonly stableHostLogicalSize: Readonly<{readonly width: number; readonly height: number}>
-  readonly ime?: Readonly<{
-    readonly visible: boolean
-    readonly bottomLogicalBeforeCanvasScale: number
-  }>
+  readonly isHostPrimaryDisplay: boolean
 }>
 
 const eventName = 'onSurfaceHostChanged'
@@ -115,11 +109,10 @@ const isReadyEvent = (value: unknown): value is AndroidSurfaceHostReadyEvent => 
   if (!isRecord(value) || value.available !== true) return false
   if (!isSurfaceKey(value.surfaceKey) || !isWindowIdentity(value.windowIdentity)) return false
   if (!isNonNegativeInteger(value.generation) || !isNonNegativeInteger(value.displayId)) return false
+  if (typeof value.isHostPrimaryDisplay !== 'boolean') return false
   if (value.orientation !== 'portrait' && value.orientation !== 'landscape') return false
   if (!isSize(value.stableHostLogicalSize) || !isSize(value.currentHostLogicalSize)) return false
-  if (!isRecord(value.ime)) return false
-  if (typeof value.ime.visible !== 'boolean' || !isFiniteNumber(value.ime.bottomLogicalBeforeCanvasScale)) return false
-  if (value.ime.bottomLogicalBeforeCanvasScale < 0 || !isDiagnostics(value.diagnostics)) return false
+  if (!isDiagnostics(value.diagnostics)) return false
   return true
 }
 
@@ -155,15 +148,28 @@ const initialState: SurfaceHostSourceState = Object.freeze({
  * reach render. Keeping this pure makes the stale/wrong-surface cases testable
  * without pretending a mocked native callback is an Android run.
  */
-export const acceptAndroidSurfaceHostEvent = (
-  surfaceKey: 'PRIMARY' | 'SECONDARY',
-  state: SurfaceHostSourceState,
-  value: unknown,
-): SurfaceHostAcceptance => {
+export type AndroidSurfaceHostEventInput = Readonly<{
+  readonly surfaceKey: 'PRIMARY' | 'SECONDARY'
+  readonly state: SurfaceHostSourceState
+  readonly value: unknown
+  readonly expectedDisplayIndex?: 0 | 1
+}>
+
+export const acceptAndroidSurfaceHostEvent = ({
+  surfaceKey,
+  state,
+  value,
+  expectedDisplayIndex,
+}: AndroidSurfaceHostEventInput): SurfaceHostAcceptance => {
   if (!isReadyEvent(value) && !isUnavailableEvent(value)) return {accepted: false, state}
   if (value.surfaceKey !== surfaceKey || value.windowIdentity !== expectedWindowIdentity(surfaceKey)) {
     return {accepted: false, state}
   }
+  if (
+    expectedDisplayIndex !== undefined
+    && isReadyEvent(value)
+    && value.isHostPrimaryDisplay !== (expectedDisplayIndex === 0)
+  ) return {accepted: false, state}
   if (value.generation < state.generation) return {accepted: false, state}
   if (state.displayId !== null && value.displayId !== null && value.displayId !== state.displayId) {
     return {accepted: false, state}
@@ -187,7 +193,22 @@ export const acceptAndroidSurfaceHostEvent = (
 const getNativeModule = (): NativeDualScreenModule =>
   requireNativeModule<NativeDualScreenModule>('TerminalDualScreen')
 
-export const createAndroidSurfaceHostSource = (surfaceKey: 'PRIMARY' | 'SECONDARY') => {
+export type AndroidSurfaceHostSourceInput = Readonly<{
+  readonly surfaceKey: 'PRIMARY' | 'SECONDARY'
+  readonly displayIndex: 0 | 1
+}>
+
+const toMeasurementSnapshot = (
+  snapshot: AndroidSurfaceHostSnapshot | null,
+): AndroidSurfaceHostMeasurementSnapshot | null => snapshot === null
+  ? null
+  : Object.freeze({
+    stableHostLogicalSize: snapshot.stableHostLogicalSize,
+    isHostPrimaryDisplay: snapshot.isHostPrimaryDisplay,
+  })
+
+export const createAndroidSurfaceHostSource = (input: AndroidSurfaceHostSourceInput) => {
+  const {surfaceKey, displayIndex} = input
   let state = initialState
   let current: AndroidSurfaceHostSnapshot | null = null
   let hasAcceptedEvent = false
@@ -198,13 +219,13 @@ export const createAndroidSurfaceHostSource = (surfaceKey: 'PRIMARY' | 'SECONDAR
     return emitter
   }
 
-  const apply = (value: unknown, listener?: (snapshot: SurfaceHostSourceSnapshot | null) => void) => {
+  const apply = (value: unknown, listener?: (snapshot: AndroidSurfaceHostMeasurementSnapshot | null) => void) => {
     // The native module broadcasts one event stream to both surface sources.
     // A valid event for the other surface is expected traffic, not an identity
     // violation for this source. The matching source still applies the full
     // generation/display/window fence below.
     if (isForeignSurfaceHostEvent(surfaceKey, value)) return
-    const result = acceptAndroidSurfaceHostEvent(surfaceKey, state, value)
+    const result = acceptAndroidSurfaceHostEvent({surfaceKey, state, value, expectedDisplayIndex: displayIndex})
     if (!result.accepted) {
       console.error(
         `[TerminalDualScreen] surface host event rejected surfaceKey=${surfaceKey} reason=identity-or-generation-fence`,
@@ -214,12 +235,12 @@ export const createAndroidSurfaceHostSource = (surfaceKey: 'PRIMARY' | 'SECONDAR
     state = result.state
     current = state.snapshot
     hasAcceptedEvent = true
-    listener?.(current)
+    listener?.(toMeasurementSnapshot(current))
   }
 
   return Object.freeze({
     getSnapshot: () => current,
-    subscribe: (listener: (snapshot: SurfaceHostSourceSnapshot | null) => void): (() => void) => {
+    subscribe: (listener: (snapshot: AndroidSurfaceHostMeasurementSnapshot | null) => void): (() => void) => {
       let active = true
       const update = (event: unknown) => {
         if (active) apply(event, listener)

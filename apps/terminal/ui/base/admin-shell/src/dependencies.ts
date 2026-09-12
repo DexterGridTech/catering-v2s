@@ -4,7 +4,9 @@ import {moduleName as state} from '@catering-v2s/kernel-base-state';
 import {moduleName as render} from '@catering-v2s/ui-base-render';
 import {moduleName as primitives} from '@catering-v2s/ui-base-primitives';
 import {moduleName as uiState} from '@catering-v2s/kernel-base-ui-state';
+import {moduleName as displayContext} from '@catering-v2s/kernel-base-display-context';
+import {moduleName as input} from '@catering-v2s/ui-base-input';
 
-export const dependencyModuleNames = [platformPorts, runtime, state, render, primitives, uiState] as const;
+export const dependencyModuleNames = [platformPorts, runtime, state, displayContext, render, primitives, input, uiState] as const;
 
 export const devDependencyModuleNames = [] as const;

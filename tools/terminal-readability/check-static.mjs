@@ -72,6 +72,14 @@ const partialDeviceDescriptor = source => ({
   ]),
 });
 
+const androidDeviceDescriptor = source => ({
+  port: 'device',
+  capabilities: Object.freeze([
+    ...descriptorCapabilities(['getDeviceInfo', 'getDisplayInfo'], 'real', source),
+    ...descriptorCapabilities(DEVICE_CAPABILITIES.slice(2), 'unavailable', 'default'),
+  ]),
+});
+
 export const PORT_DESCRIPTOR_ATTACHMENTS = Object.freeze([
   {path: 'apps/terminal/kernel/base/platform-ports/src/defaults/logger.ts', ...realDescriptor('logger', ['write'], 'default')},
   {path: 'apps/terminal/kernel/base/platform-ports/src/defaults/unavailableAppControl.ts', ...unavailableDescriptor('appControl', ['resetRuntime', 'exitApplication', 'clearHostDataCache', 'setFullscreen', 'getFullscreen', 'setKioskMode', 'getKioskMode', 'showNativeLoading', 'hideNativeLoading'])},
@@ -83,7 +91,7 @@ export const PORT_DESCRIPTOR_ATTACHMENTS = Object.freeze([
   {path: 'apps/terminal/kernel/base/platform-ports/src/defaults/unavailableScript.ts', ...unavailableDescriptor('script', ['execute', 'getStats', 'clearStats'])},
   {path: 'apps/terminal/kernel/base/platform-ports/src/defaults/unavailableTopologyHost.ts', ...unavailableDescriptor('topologyHost', ['start', 'stop', 'getStatus', 'getDiagnosticsSnapshot'])},
   {path: 'apps/terminal/kernel/base/platform-ports/src/defaults/processMemoryStorage.ts', ...realDescriptor('persistKv', STORAGE_CAPABILITIES, 'default')},
-  {path: 'apps/terminal/adapter/android/device/src/implementations/androidDevice.ts', ...partialDeviceDescriptor('adapter')},
+  {path: 'apps/terminal/adapter/android/device/src/implementations/androidDevice.ts', ...androidDeviceDescriptor('adapter')},
   {path: 'apps/terminal/adapter/android/persist-kv/src/implementations/androidPersistKv.ts', ...realDescriptor('persistKv', STORAGE_CAPABILITIES, 'adapter')},
   {path: 'apps/terminal/ui/base/dev-host/src/implementations/webPlatform.ts', ...partialDeviceDescriptor('web')},
   {path: 'apps/terminal/ui/base/dev-host/src/implementations/webStorage.ts', ...realDescriptor('persistKv', STORAGE_CAPABILITIES, 'web')},

@@ -11,16 +11,16 @@ import type {
 import type {Runtime} from '@catering-v2s/kernel-base-runtime'
 import {
   createRendererCatalog,
+  bindSurfaceHostIdentity,
   definePart,
   LayerStack,
   RenderProvider,
   ScreenContainer,
   SurfaceFocusBoundaryContext,
   SurfaceRoot,
-  calculateSurfaceHostImeInset,
   calculateSurfaceHostGeometry,
-  useSurfaceHostImeInset,
   type SurfaceHostSnapshot,
+  type SurfaceHostMeasurementSource,
   type SurfaceHostSource,
   type RenderProviderProps,
 } from '../src/index'
@@ -143,6 +143,7 @@ const part = <TProps extends object>(input: Readonly<{
   displayModes: ['PRIMARY', 'SECONDARY'] as const,
   workspaces: ['MAIN'] as const,
   instanceModes: ['MASTER'] as const,
+  surfaceForm: ['laptop', 'mobile'] as const,
   title: input.partKey,
   description: input.partKey,
   component: input.component,
@@ -153,10 +154,15 @@ const part = <TProps extends object>(input: Readonly<{
 const hostSnapshot = (
   width: number,
   height: number,
-  ime?: SurfaceHostSnapshot['ime'],
 ): SurfaceHostSnapshot => Object.freeze({
   stableHostLogicalSize: Object.freeze({width, height}),
-  ...(ime === undefined ? {} : {ime}),
+  isHostPrimaryDisplay: true,
+  surfaceIdentity: Object.freeze({
+    surfaceKey: 'PRIMARY',
+    displayIndex: 0,
+    surfaceForm: 'laptop',
+    displayMode: 'PRIMARY',
+  }),
 })
 
 const createHostSource = (initial: SurfaceHostSnapshot | null) => {
@@ -179,48 +185,29 @@ const createHostSource = (initial: SurfaceHostSnapshot | null) => {
 }
 
 describe('render surface hosts', () => {
-  it('converts the target-window IME inset through the vertical canvas scale only', () => {
-    expect(calculateSurfaceHostImeInset({
-      ime: {visible: true, bottomLogicalBeforeCanvasScale: 100},
-      scaleY: 2,
-    })).toBe(50)
-    expect(calculateSurfaceHostImeInset({
-      ime: {visible: false, bottomLogicalBeforeCanvasScale: 100},
-      scaleY: 2,
-    })).toBe(0)
-    expect(calculateSurfaceHostImeInset({
-      ime: {visible: true, bottomLogicalBeforeCanvasScale: 100},
-      scaleY: 0.5,
-    })).toBe(200)
-  })
-
-  it('provides only the final logical IME inset to the hosted content', () => {
-    const source = createSource()
-    const {logger} = createLogger()
-    const host = createHostSource(hostSnapshot(2560, 1600, {
-      visible: true,
-      bottomLogicalBeforeCanvasScale: 100,
-    }))
-    source.setRoot(rootWithContent(emptyContent()))
-    source.setStatus('started')
-    const ImeProbe = () => createElement('render-ime-probe', {
-      testID: 'sample:ime-probe',
-      value: useSurfaceHostImeInset(),
+  it('transfers the physical-index host fact without deriving it from display mode', () => {
+    const source: SurfaceHostMeasurementSource = {
+      getSnapshot: () => Object.freeze({
+        stableHostLogicalSize: Object.freeze({width: 960, height: 540}),
+        isHostPrimaryDisplay: true,
+      }),
+      subscribe: () => () => undefined,
+    }
+    const bound = bindSurfaceHostIdentity(source, {
+      surfaceKey: 'PRIMARY',
+      displayIndex: 0,
+      surfaceForm: 'laptop',
+      displayMode: 'SECONDARY',
     })
 
-    const renderer = mount(createElement(
-      RenderProvider,
-      {stateSource: source.stateSource, uiCatalog: createUiCatalog([]), rendererCatalog: createRendererCatalog([]), logger, ...unusedRenderProviderBindings},
-      createElement(SurfaceRoot, {
-        displayMode: 'PRIMARY',
-        containerKey: 'root',
-        canvas: {width: 1280, height: 800},
-        surfaceHostSource: host,
-      }, createElement(ImeProbe)),
-    ))
-
-    expect(findByTestID(renderer, 'sample:ime-probe').props.value).toBe(50)
-    renderer.unmount()
+    expect(bound.getSnapshot()).toMatchObject({
+      isHostPrimaryDisplay: true,
+      surfaceIdentity: {
+        surfaceKey: 'PRIMARY',
+        displayIndex: 0,
+        displayMode: 'SECONDARY',
+      },
+    })
   })
 
   it('calculates independent scale axes from the stable host and canvas sizes', () => {
@@ -290,6 +277,7 @@ describe('render surface hosts', () => {
     ))
 
     expect(findByTestID(renderer, 'ui-base-render:surface-host-pending')).toBeDefined()
+    expect(findByTestID(renderer, 'ui-base-render:surface-host-loading-indicator')).toBeDefined()
     expect(renderer.root.findAll(node => node.props.testID === 'ui-base-render:surface-host-canvas')).toHaveLength(0)
 
     act(() => host.emit(hostSnapshot(800, 600)))
@@ -806,14 +794,25 @@ describe('render surface hosts', () => {
       return createElement('render-counted-screen', props)
     }
     const counted = part({partKey: 'counted-part', rendererKey: 'counted-renderer', component: CountingScreen})
+    const countedLayer = part({
+      partKey: 'counted-layer-part',
+      rendererKey: 'counted-layer-renderer',
+      component: CountingScreen,
+      containerKeys: [],
+    })
     const screenMissingRenderer = part({partKey: 'screen-missing-renderer-part', rendererKey: 'screen-not-installed', component: Screen})
     const fullUiCatalog = createUiCatalog([
       valid.catalogEntry,
       missingRenderer.catalogEntry,
       counted.catalogEntry,
+      countedLayer.catalogEntry,
       screenMissingRenderer.catalogEntry,
     ])
-    const fullRendererCatalog = createRendererCatalog([valid.rendererBinding, counted.rendererBinding])
+    const fullRendererCatalog = createRendererCatalog([
+      valid.rendererBinding,
+      counted.rendererBinding,
+      countedLayer.rendererBinding,
+    ])
     source.setRoot(rootWithContent({
       contentSets: {
         PRIMARY: {
@@ -857,7 +856,7 @@ describe('render surface hosts', () => {
       contentSets: {
         PRIMARY: {
           containers: {root: {partKey: 'counted-part', props: 'invalid'}},
-          layers: [{layerId: 'invalid-layer', partKey: 'counted-part', openedAt: 1, props: []}],
+          layers: [{layerId: 'invalid-layer', partKey: 'counted-layer-part', openedAt: 1, props: []}],
         },
         SECONDARY: {containers: {}, layers: []},
       },
@@ -877,7 +876,7 @@ describe('render surface hosts', () => {
       expect.objectContaining({
         category: 'ui.base.render',
         event: 'invalid-props-shape',
-        data: {partKey: 'counted-part', displayMode: 'PRIMARY', valueType: 'array'},
+        data: {partKey: 'counted-layer-part', displayMode: 'PRIMARY', valueType: 'array'},
       }),
     ]))
 

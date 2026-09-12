@@ -10,10 +10,12 @@ import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
 import type {
   ContainerKey,
   DisplayMode,
+  SurfaceForm,
   UiCatalog,
   UiVariableDeclaration,
 } from '@catering-v2s/kernel-base-ui-state'
 import type {RendererCatalog} from './catalog'
+import type {RenderRuntimeFacts} from './runtimeFacts'
 import type {SurfaceCanvasDeclaration, SurfaceHostSource} from '../foundations/surfaceHost'
 
 // Keep this toolkit boundary structural: render consumes a read-only root
@@ -40,6 +42,8 @@ type RenderUiVariableReader = <TValue extends StateJsonValue>(
   declaration: UiVariableDeclaration<TValue>,
 ) => TValue
 
+type RenderSurfaceFormReader = (root: RenderStateRoot) => SurfaceForm
+
 export type SurfaceRootProps = Readonly<{
   readonly displayMode: DisplayMode
   readonly containerKey: ContainerKey
@@ -58,7 +62,10 @@ export type RenderProviderProps = Readonly<{
   readonly uiCatalog: UiCatalog
   readonly rendererCatalog: RendererCatalog
   readonly logger: LoggerPort
+  readonly runtimeFacts: RenderRuntimeFacts
   readonly dispatchCommand: RenderDispatchCommand
   readonly selectUiVariable: RenderUiVariableReader
+  /** Required by SurfaceRoot; optional only for provider consumers that do not mount a surface. */
+  readonly selectSurfaceForm?: RenderSurfaceFormReader
   readonly children?: ReactNode
 }>

@@ -3,10 +3,12 @@ export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
 export type {
   ContainerKey,
   PartKey,
+  SurfaceForm,
   UiCatalog,
   UiCatalogContext,
   UiCatalogEntry,
 } from './types/catalog';
+export {isSurfaceForm} from './types/catalog';
 export type {DisplayMode} from '@catering-v2s/kernel-base-display-context';
 export type {
   LayerEntry,
@@ -17,8 +19,9 @@ export type {
   UiVariableWrite,
 } from './types/variable';
 export type {UiStateModule} from './types/module';
-export {createUiCatalog, selectAvailableParts} from './foundations/catalog';
+export {createUiCatalog, isUiCatalogEntryAvailable, selectAvailableParts} from './foundations/catalog';
 export {createUiStateModule} from './application/createUiStateModule';
+export {selectSurfaceForm} from './selectors/selectSurfaceForm';
 export {
   clearLayersCommand,
   clearUiVariablesCommand,

@@ -1,8 +1,10 @@
 import {describe, expect, it, vi} from 'vitest';
 
 import {
+  consoleLoggerBinding,
   createPlatformPorts,
   createProcessMemoryStateStoragePort,
+  describePlatformPortCapabilities,
   unavailableAppControlPort,
   unavailableConnectorPort,
   unavailableDevicePort,
@@ -62,5 +64,39 @@ describe('A: platform port assembly', () => {
     }).toThrow(TypeError);
     expect(ports.device).toBe(unavailableDevicePort);
     expect('environmentMode' in ports).toBe(false);
+  });
+
+  it('exposes frozen method-level capability descriptors from the production port root', () => {
+    const ports = createPlatformPorts({
+      environmentMode: 'PROD',
+      bindings: {
+        logger: consoleLoggerBinding,
+        persistKv: createProcessMemoryStateStoragePort(),
+        persistSecure: unavailablePersistSecurePort,
+        device: unavailableDevicePort,
+        appControl: unavailableAppControlPort,
+        script: unavailableScriptPort,
+        connector: unavailableConnectorPort,
+        hotUpdate: unavailableHotUpdatePort,
+        logUpload: unavailableLogUploadPort,
+        topologyHost: unavailableTopologyHostPort,
+      },
+    });
+
+    const descriptors = describePlatformPortCapabilities(ports);
+    expect(descriptors).toHaveLength(10);
+    expect(Object.isFrozen(descriptors)).toBe(true);
+    expect(descriptors.every(descriptor => descriptor.descriptorStatus === 'complete')).toBe(true);
+    expect(descriptors.find(descriptor => descriptor.port === 'device')).toMatchObject({
+      capabilities: expect.arrayContaining([
+        {capability: 'getDeviceInfo', state: 'unavailable', source: 'default'},
+        {capability: 'getDisplayInfo', state: 'unavailable', source: 'default'},
+      ]),
+    });
+    expect(descriptors.find(descriptor => descriptor.port === 'persistKv')).toMatchObject({
+      capabilities: expect.arrayContaining([
+        {capability: 'read', state: 'real', source: 'default'},
+      ]),
+    });
   });
 });

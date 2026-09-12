@@ -1,30 +1,37 @@
 import {useEffect, useState} from 'react'
 import {StyleSheet, Text, View} from 'react-native'
 import '@catering-v2s/ui-integration-sample-console/theme/global.css'
-import {createSurfaceForDisplayIndex, type SampleAssembly} from '@catering-v2s/ui-integration-sample-console'
+import {
+  createSurfaceForDisplayIndex,
+  type SampleAssembly,
+  type SurfaceForm,
+} from '@catering-v2s/ui-integration-sample-console'
 import {createSampleTerminalAssembly} from './src/assembly/platformPorts'
 
-type AppProps = Readonly<{readonly displayIndex?: 0 | 1}>
+type AppProps = Readonly<{
+  readonly displayIndex?: 0 | 1
+  readonly surfaceForm?: SurfaceForm
+}>
 
-let assemblyPromise: Promise<SampleAssembly> | undefined
+const assemblyPromises: Partial<Record<SurfaceForm, Promise<SampleAssembly>>> = {}
 
-const getAssembly = (): Promise<SampleAssembly> => {
-  assemblyPromise ??= createSampleTerminalAssembly()
-  return assemblyPromise
+const getAssembly = (surfaceForm: SurfaceForm): Promise<SampleAssembly> => {
+  assemblyPromises[surfaceForm] ??= createSampleTerminalAssembly({surfaceForm})
+  return assemblyPromises[surfaceForm]!
 }
 
-export default function App({displayIndex = 0}: AppProps) {
+export default function App({displayIndex = 0, surfaceForm = 'laptop'}: AppProps) {
   const [assembly, setAssembly] = useState<SampleAssembly | null>(null)
 
   useEffect(() => {
     let active = true
-    void getAssembly().then((nextAssembly) => {
+    void getAssembly(surfaceForm).then((nextAssembly) => {
       if (active) setAssembly(nextAssembly)
     })
     return () => {
       active = false
     }
-  }, [])
+  }, [surfaceForm])
 
   if (assembly === null) {
     return (

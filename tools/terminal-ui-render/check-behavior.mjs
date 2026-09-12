@@ -7,6 +7,7 @@ import {fileURLToPath} from 'node:url'
 const toolsRoot = path.dirname(fileURLToPath(import.meta.url))
 const repositoryRoot = path.resolve(toolsRoot, '../..')
 const renderSource = path.join(repositoryRoot, 'apps/terminal/ui/base/render')
+const primitivesSource = path.join(repositoryRoot, 'apps/terminal/ui/base/primitives')
 const uiStateSource = path.join(repositoryRoot, 'apps/terminal/kernel/base/ui-state')
 const sharedTestSupportSource = path.join(repositoryRoot, 'tools/terminal-shared')
 const vitestPath = path.join(repositoryRoot, 'node_modules/.bin/vitest')
@@ -57,6 +58,7 @@ const createSandbox = () => {
     path.join(terminalRoot, 'tsconfig.base.json'),
   )
   copyPackage(renderSource, renderRoot)
+  fs.symlinkSync(primitivesSource, path.join(terminalRoot, 'ui/base/primitives'), 'dir')
   copyPackage(uiStateSource, uiStateRoot)
   fs.mkdirSync(sharedTestSupportRoot, {recursive: true})
   for (const fileName of ['react-native-vitest-entry.ts', 'react-native-vitest.setup.cjs']) {
@@ -80,6 +82,11 @@ const createSandbox = () => {
       path.join(baseRoot, packageName),
     )
   }
+  linkNodeModule(
+    nodeModulesRoot,
+    '@catering-v2s/ui-base-primitives',
+    primitivesSource,
+  )
   for (const packageName of [
     '@reduxjs/toolkit',
     '@babel/core',
@@ -142,8 +149,8 @@ const mutations = Object.freeze([
     testName: 'keeps explicit PRIMARY and SECONDARY surfaces on their own content sets',
     apply: sandbox => replaceOnce(
       path.join(sandbox.renderRoot, 'src/components/SurfaceRoot.tsx'),
-      '() => Object.freeze({displayMode, containerKey}),',
-      "() => Object.freeze({displayMode: 'PRIMARY', containerKey}),",
+      '      displayMode,\n      containerKey,\n      surfaceForm,',
+      "      displayMode: 'PRIMARY',\n      containerKey,\n      surfaceForm,",
     ),
   },
   {
@@ -151,7 +158,7 @@ const mutations = Object.freeze([
     testFile: 'test/renderSurface.test.tsx',
     testName: 'resolves screen and layer through both catalogs and orders layers by tier/time/id',
     apply: sandbox => replaceOnce(
-      path.join(sandbox.renderRoot, 'src/foundations/resolvePart.ts'),
+      path.join(sandbox.renderRoot, 'src/components/resolvePart.ts'),
       'const entry = input.uiCatalog.byPartKey[input.placement.partKey]',
       'const entry = undefined',
     ),
@@ -162,7 +169,7 @@ const mutations = Object.freeze([
     testName: 'resolves screen and layer through both catalogs and orders layers by tier/time/id',
     apply: sandbox => replaceOnce(
       path.join(sandbox.renderRoot, 'src/components/LayerStack.tsx'),
-      'const orderedLayers = [...layers].sort((left, right) => compareLayers(left, right, uiCatalog, rendererCatalog))',
+      'const orderedLayers = [...layers].sort((left, right) => compareLayers({left, right, uiCatalog, rendererCatalog}))',
       'const orderedLayers = [...layers]',
     ),
   },
@@ -191,7 +198,7 @@ const mutations = Object.freeze([
     testFile: 'test/renderSurface.test.tsx',
     testName: 'reports missing catalog, missing renderer, and invalid props on screen and layer paths',
     apply: sandbox => replaceOnce(
-      path.join(sandbox.renderRoot, 'src/foundations/resolvePart.ts'),
+      path.join(sandbox.renderRoot, 'src/components/resolvePart.ts'),
       "return createElement(RenderFallback, {reason: 'missing-renderer', key: input.elementKey})",
       'return null',
     ),
@@ -201,7 +208,7 @@ const mutations = Object.freeze([
     testFile: 'test/renderSurface.test.tsx',
     testName: 'reports missing catalog, missing renderer, and invalid props on screen and layer paths',
     apply: sandbox => replaceOnce(
-      path.join(sandbox.renderRoot, 'src/foundations/resolvePart.ts'),
+      path.join(sandbox.renderRoot, 'src/components/resolvePart.ts'),
       "return createElement(RenderFallback, {reason: 'invalid-props', key: input.elementKey})",
       'return createElement(binding.component, {})',
     ),
@@ -212,8 +219,8 @@ const mutations = Object.freeze([
     testName: 'keeps runtime unavailable and container empty as distinct fallback facts',
     apply: sandbox => replaceOnce(
       path.join(sandbox.renderRoot, 'src/components/ScreenContainer.tsx'),
-      "createElement(RenderFallback, {reason: 'container-empty'})",
-      "createElement(RenderFallback, {reason: 'runtime-unavailable'})",
+      '<RenderFallback reason="container-empty" />',
+      '<RenderFallback reason="runtime-unavailable" />',
     ),
   },
   {
@@ -353,7 +360,7 @@ const mutations = Object.freeze([
     testFile: 'test/renderProps.test.tsx',
     testName: 'T-11 passes props through and maps absent props to an empty object',
     apply: sandbox => replaceOnce(
-      path.join(sandbox.renderRoot, 'src/foundations/resolvePart.ts'),
+      path.join(sandbox.renderRoot, 'src/components/resolvePart.ts'),
       "if (!hasOwn(placement, 'props')) return Object.freeze({props: Object.freeze({})})",
       "if (!hasOwn(placement, 'props')) return Object.freeze({invalidValue: undefined})",
     ),
@@ -364,8 +371,8 @@ const mutations = Object.freeze([
     testName: 'T-13 excludes a layer-only declaration from a real container enumeration',
     apply: sandbox => replaceOnce(
       path.join(sandbox.uiStateRoot, 'src/foundations/catalog.ts'),
-      'entry.containerKeys.includes(containerKey)\n      &&',
-      'true\n      &&',
+      ': entry.containerKeys.includes(containerKey)',
+      ': true',
     ),
   },
   {
@@ -384,8 +391,8 @@ const mutations = Object.freeze([
     testName: 'R-19 preserves the empty containerKeys transfer across the real package boundary',
     apply: sandbox => replaceOnce(
       path.join(sandbox.uiStateRoot, 'src/foundations/catalog.ts'),
-      'entry.containerKeys.includes(containerKey)\n      &&',
-      'true\n      &&',
+      ': entry.containerKeys.includes(containerKey)',
+      ': true',
     ),
   },
   {

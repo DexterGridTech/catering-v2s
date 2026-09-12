@@ -6,7 +6,7 @@ const reactNativeSetup = fileURLToPath(new URL('../../../../../tools/terminal-sh
 
 export default defineConfig({
   define: {__DEV__: 'false'},
-  resolve: {alias: [{find: /^react-native$/, replacement: reactNativeEntry}]},
+  resolve: {alias: [{find: /^react-native$/, replacement: reactNativeEntry}, {find: /^react-native-svg$/, replacement: reactNativeEntry}]},
   test: {
     environment: 'node',
     setupFiles: [reactNativeSetup],

@@ -16,18 +16,16 @@ import type {
   InputFieldKeyboardState,
   InputFieldController,
   InputKeyboardState,
-  KeyboardKind,
 } from '../types/types';
 import type {KeyboardStateBase} from '../hooks/inputProviderTypes';
 
 export type InputProviderProps = Readonly<{
   readonly frameMetrics: LocalFrameMetrics | null;
-  readonly imeInset?: number;
   readonly onDiagnostic?: InputDiagnosticReporter;
   readonly children?: ReactNode;
 }>;
 
-export const InputProvider = ({frameMetrics, imeInset = 0, onDiagnostic, children}: InputProviderProps) => {
+export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProviderProps) => {
   const frameMetricsRef = useRef<LocalFrameMetrics | null>(frameMetrics);
   frameMetricsRef.current = frameMetrics;
   const keyboardStateRef = useRef<KeyboardStateBase>({
@@ -44,7 +42,7 @@ export const InputProvider = ({frameMetrics, imeInset = 0, onDiagnostic, childre
     (
       next: Readonly<{
         readonly activeFieldId: string | null;
-        readonly owner: 'none' | KeyboardKind;
+        readonly owner: 'none' | 'virtual';
         readonly layout: InputFieldController['layout'];
       }>,
     ) => {
@@ -102,6 +100,7 @@ export const InputProvider = ({frameMetrics, imeInset = 0, onDiagnostic, childre
     dismissActiveField,
     focusField,
     completeField,
+    activateFocusScope,
     notifyFocusBoundary,
   } = focusController;
   const {handleKeyboardKey} = useInputKeyboardController({
@@ -118,7 +117,7 @@ export const InputProvider = ({frameMetrics, imeInset = 0, onDiagnostic, childre
     if (keyboardStateRef.current.owner !== 'virtual' || activeFieldId === null) return;
     if (surfaceMetrics.capacity === 'supported') return;
     markBlockedField(activeFieldId, surfaceMetrics.capacity);
-    fieldsRef.current.get(activeFieldId)?.inputRef.current?.blur();
+    fieldsRef.current.get(activeFieldId)?.inputRef?.current?.blur();
     commitKeyboardState({activeFieldId: null, owner: 'none', layout: keyboardStateRef.current.layout});
   }, [activeFieldId, commitKeyboardState, fieldsRef, markBlockedField, surfaceMetrics.capacity]);
 
@@ -136,11 +135,13 @@ export const InputProvider = ({frameMetrics, imeInset = 0, onDiagnostic, childre
       preflightFocusTarget,
       focusField,
       completeField,
+      activateFocusScope,
       captureInputSnapshot,
       handleKeyboardKey,
     }),
     [
       captureInputSnapshot,
+      activateFocusScope,
       completeField,
       blurField,
       dismissActiveField,
@@ -180,7 +181,6 @@ export const InputProvider = ({frameMetrics, imeInset = 0, onDiagnostic, childre
       surfaceMetrics.visible,
     contentTooSmall: surfaceMetrics.contentTooSmall,
     revision: keyboardStateRef.current.revision,
-    imeInset: Math.max(0, imeInset),
     shift:
       keyboardStateRef.current.activeFieldId === null
         ? false
@@ -196,7 +196,6 @@ export const InputProvider = ({frameMetrics, imeInset = 0, onDiagnostic, childre
     height: surfaceMetrics.height,
     visible: surfaceMetrics.visible,
     contentTooSmall: surfaceMetrics.contentTooSmall,
-    imeInset: Math.max(0, imeInset),
   };
   const diagnosticData = {
     source: 'ui-base-input.InputProvider',
@@ -220,7 +219,6 @@ export const InputProvider = ({frameMetrics, imeInset = 0, onDiagnostic, childre
     hasNextField: keyboardState.hasNextField,
     visible: keyboardState.visible,
     contentTooSmall: keyboardState.contentTooSmall,
-    imeInset: keyboardState.imeInset,
     revision: keyboardState.revision,
   } satisfies Parameters<NonNullable<InputDiagnosticReporter>>[0]['data'];
   const diagnosticSignature = JSON.stringify(diagnosticData);

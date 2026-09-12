@@ -4,6 +4,10 @@ import type {WorkspaceKey} from '@catering-v2s/kernel-base-state'
 
 export type ContainerKey = string
 export type PartKey = string
+export type SurfaceForm = 'laptop' | 'mobile'
+
+export const isSurfaceForm = (value: unknown): value is SurfaceForm =>
+  value === 'laptop' || value === 'mobile'
 
 export type UiCatalogEntry = Readonly<{
   readonly partKey: PartKey
@@ -12,6 +16,7 @@ export type UiCatalogEntry = Readonly<{
   readonly displayModes: readonly DisplayMode[]
   readonly workspaces: readonly WorkspaceKey[]
   readonly instanceModes: readonly RuntimeInstanceMode[]
+  readonly surfaceForm: readonly SurfaceForm[]
   readonly title: string
   readonly description: string
 }>
@@ -25,4 +30,5 @@ export type UiCatalogContext = Readonly<{
   readonly displayMode: DisplayMode
   readonly workspace: WorkspaceKey
   readonly instanceMode: RuntimeInstanceMode
+  readonly surfaceForm: SurfaceForm
 }>

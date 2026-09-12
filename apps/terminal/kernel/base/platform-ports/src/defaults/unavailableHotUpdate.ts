@@ -13,8 +13,7 @@ export const unavailableHotUpdatePort: HotUpdatePort = {
   confirmLoadComplete: async (_input: HotUpdateCall): Promise<PortResult<HotUpdateMarkerRead>> => createUnavailable('hotUpdate', 'confirmLoadComplete'),
 };
 
-if (__DEV__) {
-  Object.defineProperty(unavailableHotUpdatePort, PORT_DESCRIPTOR_KEY, {
+Object.defineProperty(unavailableHotUpdatePort, PORT_DESCRIPTOR_KEY, {
     value: Object.freeze({
       port: 'hotUpdate',
       capabilities: Object.freeze([
@@ -25,5 +24,4 @@ if (__DEV__) {
     enumerable: false,
     writable: false,
     configurable: false,
-  });
-}
+});

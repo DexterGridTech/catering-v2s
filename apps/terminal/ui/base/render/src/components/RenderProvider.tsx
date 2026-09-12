@@ -9,10 +9,16 @@ export const RenderProvider = ({
   uiCatalog,
   rendererCatalog,
   logger,
+  runtimeFacts,
   dispatchCommand,
   selectUiVariable,
+  selectSurfaceForm,
   children,
 }: RenderProviderProps) => {
+  const selectSurfaceFormReader: NonNullable<RenderProviderProps['selectSurfaceForm']> =
+    selectSurfaceForm ?? (() => {
+      throw new Error('[ui-base-render] selectSurfaceForm is required when SurfaceRoot is mounted')
+    })
   const snapshotReader = useMemo(() => createRenderSnapshotReader(stateSource), [stateSource])
   const status = useSyncExternalStore(stateSource.subscribe, stateSource.getStatus, stateSource.getStatus)
   const previousStatus = useRef(status)
@@ -58,8 +64,10 @@ export const RenderProvider = ({
     uiCatalog,
     rendererCatalog,
     logger,
+    runtimeFacts,
     dispatchCommand,
     selectUiVariable,
+    selectSurfaceForm: selectSurfaceFormReader,
     snapshotReader,
     reportPartDiagnostic: diagnosticReporter.report,
     clearPartDiagnostic: diagnosticReporter.clearForPart,
@@ -69,8 +77,10 @@ export const RenderProvider = ({
     logger,
     rendererCatalog,
     selectUiVariable,
+    selectSurfaceFormReader,
     snapshotReader,
     stateSource,
+    runtimeFacts,
     uiCatalog,
   ])
 

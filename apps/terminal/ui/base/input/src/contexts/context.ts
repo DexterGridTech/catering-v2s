@@ -12,7 +12,7 @@ export const InputKeyboardStateContext = createContext<InputKeyboardState | null
 export const InputFieldKeyboardStateContext = createContext<InputFieldKeyboardState | null>(null)
 export const InputDiagnosticContext = createContext<InputDiagnosticReporter | null>(null)
 export type InputScrollAncestor = (
-  inputRef: RefObject<PrimitiveInputHandle | null>,
+  inputRef: RefObject<PrimitiveInputHandle | null> | null,
   keyboardHeight: number,
 ) => void
 export const InputScrollAncestorContext = createContext<InputScrollAncestor | null>(null)

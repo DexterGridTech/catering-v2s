@@ -153,7 +153,7 @@ const mutations = Object.freeze([
     testNamePattern: 'U-6 applies',
     apply: (sandbox) => replaceOnce(
       path.join(sandbox.uiStateRoot, 'src/foundations/variableSlices.ts'),
-      "shouldPersistEntry: entryKey => registry.get(entryKey)?.persistIntent === 'owner-only',",
+      "shouldPersistEntry: entryKey => input.registry.get(entryKey)?.persistIntent === 'owner-only',",
       'shouldPersistEntry: () => true,',
     ),
   },

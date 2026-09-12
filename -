@@ -1,0 +1,84 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.7.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :apps:backend:catering-business-server:modules:asset:processResources NO-SOURCE
+> Task :apps:backend:catering-business-server:modules:fulfillment-production:processResources NO-SOURCE
+> Task :apps:backend:catering-business-server:modules:inventory:processResources NO-SOURCE
+> Task :apps:backend:catering-business-server:modules:extension:processResources NO-SOURCE
+> Task :apps:backend:catering-business-server:modules:organization:processResources NO-SOURCE
+> Task :apps:backend:catering-business-server:modules:workspace:processResources NO-SOURCE
+> Task :apps:backend:catering-business-server:modules:workspace-iam:processResources NO-SOURCE
+> Task :apps:backend:catering-business-server:modules:platform-admin-iam:processResources NO-SOURCE
+> Task :apps:backend:catering-business-server:modules:catalog:processResources
+> Task :apps:backend:catering-business-server:modules:catalog:processTestResources NO-SOURCE
+> Task :apps:backend:catering-business-server:modules:audit-model:compileJava
+> Task :apps:backend:catering-business-server:modules:audit-model:processResources NO-SOURCE
+> Task :apps:backend:catering-business-server:modules:audit-model:classes
+> Task :apps:backend:catering-business-server:modules:audit-model:jar
+> Task :apps:backend:catering-business-server:modules:execution-context:compileJava
+> Task :apps:backend:catering-business-server:modules:execution-context:processResources NO-SOURCE
+> Task :apps:backend:catering-business-server:modules:execution-context:classes
+> Task :apps:backend:catering-business-server:modules:execution-context:jar
+
+> Task :apps:backend:catering-business-server:modules:foundation:compileJava
+Note: /tmp/r5-tc-1789158523680-72762/workspace/apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/json/LegacyReceiptJson.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :apps:backend:catering-business-server:modules:foundation:processResources
+> Task :apps:backend:catering-business-server:modules:foundation:classes
+> Task :apps:backend:catering-business-server:modules:foundation:jar
+> Task :apps:backend:catering-business-server:modules:platform-admin-iam:compileJava
+> Task :apps:backend:catering-business-server:modules:platform-admin-iam:classes
+> Task :apps:backend:catering-business-server:modules:platform-admin-iam:jar
+
+> Task :apps:backend:catering-business-server:modules:extension:compileJava
+Note: /tmp/r5-tc-1789158523680-72762/workspace/apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :apps:backend:catering-business-server:modules:extension:classes
+> Task :apps:backend:catering-business-server:modules:extension:jar
+
+> Task :apps:backend:catering-business-server:modules:organization:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :apps:backend:catering-business-server:modules:organization:classes
+> Task :apps:backend:catering-business-server:modules:organization:jar
+> Task :apps:backend:catering-business-server:modules:fulfillment-production:compileJava
+> Task :apps:backend:catering-business-server:modules:fulfillment-production:classes
+> Task :apps:backend:catering-business-server:modules:fulfillment-production:jar
+> Task :apps:backend:catering-business-server:modules:asset:compileJava
+> Task :apps:backend:catering-business-server:modules:asset:classes
+> Task :apps:backend:catering-business-server:modules:asset:jar
+> Task :apps:backend:catering-business-server:modules:workspace:compileJava
+> Task :apps:backend:catering-business-server:modules:workspace:classes
+> Task :apps:backend:catering-business-server:modules:workspace:jar
+
+> Task :apps:backend:catering-business-server:modules:inventory:compileJava
+Note: /tmp/r5-tc-1789158523680-72762/workspace/apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :apps:backend:catering-business-server:modules:inventory:classes
+> Task :apps:backend:catering-business-server:modules:inventory:jar
+> Task :apps:backend:catering-business-server:modules:workspace-iam:compileJava
+> Task :apps:backend:catering-business-server:modules:workspace-iam:classes
+> Task :apps:backend:catering-business-server:modules:workspace-iam:jar
+
+> Task :apps:backend:catering-business-server:modules:catalog:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :apps:backend:catering-business-server:modules:catalog:classes
+
+> Task :apps:backend:catering-business-server:modules:catalog:compileTestJava
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :apps:backend:catering-business-server:modules:catalog:testClasses
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+> Task :apps:backend:catering-business-server:modules:catalog:test
+
+[Incubating] Problems report is available at: file:///tmp/r5-tc-1789158523680-72762/workspace/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 2m 25s
+27 actionable tasks: 27 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.7.0/userguide/configuration_cache_enabling.html

@@ -1,8 +1,8 @@
 import {useState} from 'react';
 import type {ViewStyle} from 'react-native';
-import {RnrPressable, RnrText} from '../vendor/slots';
+import {RnrActivityIndicator, RnrPressable, RnrText} from '../vendor/slots';
 import {cn} from '../vendor/cn';
-import {baseTokens} from '../theme/tokens';
+import {baseTokens, buttonToneTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
 import type {PrimitiveButtonProps} from '../types/types';
 
@@ -22,42 +22,51 @@ export const PrimitiveButton = ({
   accessibilityLabel,
   children,
   disabled,
+  busy,
+  tone = 'neutral',
   onLayout,
   onPress,
   variant = 'default',
 }: PrimitiveButtonProps) => {
   const [pressed, setPressed] = useState(false);
+  const toneTokens = buttonToneTokens[tone];
+  const blocked = disabled === true || busy === true;
   return (
     <RnrPressable
       testID={assertTestID(testID)}
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
-      accessibilityState={{disabled}}
+      accessibilityState={{disabled: blocked, busy: busy === true}}
       className={cn(
         variant === 'key'
           ? baseTokens.keyboardKey
           : variant === 'key-action'
             ? baseTokens.keyboardAction
             : baseTokens.button,
-        disabled && 'opacity-50',
+        tone === 'neutral' ? undefined : toneTokens.background,
+        tone === 'neutral' ? undefined : toneTokens.border,
+        blocked && 'opacity-50',
       )}
-      disabled={disabled}
+      disabled={blocked}
       onLayout={onLayout}
-      onPress={onPress}
+      onPress={() => {
+        if (!blocked) onPress?.();
+      }}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
       style={pressedStyleOf(variant, pressed)}
     >
+      {busy ? <RnrActivityIndicator testID={`${assertTestID(testID)}:busy-indicator`} accessibilityLabel="处理中" /> : null}
       <RnrText
         className={
           variant === 'key-action'
             ? baseTokens.keyboardActionText
             : variant === 'key'
               ? baseTokens.keyboardButtonText
-              : baseTokens.buttonText
+              : tone === 'neutral' ? baseTokens.buttonText : cn(baseTokens.buttonText, toneTokens.foreground)
         }
       >
-        {children}
+        {busy ? '处理中' : children}
       </RnrText>
     </RnrPressable>
   );

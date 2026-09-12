@@ -21,7 +21,7 @@ import {
 } from '@catering-v2s/ui-base-primitives'
 import {deskSystemFailureObservedCommand, memberFormCancelledCommand} from '../features/commands/commands'
 import {classifyRequestResult} from './requestOutcome'
-import {ScrollArea} from './controls'
+import {InputScrollArea} from '@catering-v2s/ui-base-input'
 
 export const MemberForm = () => {
   const dispatchCommand = useDispatchCommand()
@@ -32,7 +32,8 @@ export const MemberForm = () => {
     testID: 'sample.desk.member-form:name',
     accessibilityLabel: '姓名',
     initialValue: pending?.name ?? '',
-    keyboardKind: 'system',
+    keyboardKind: 'virtual',
+    layout: 'full',
   })
   const phoneField = useInputField({
     fieldId: 'sample.desk.member-form:phone',
@@ -109,7 +110,7 @@ export const MemberForm = () => {
   return (
     <PrimitiveContainer testID="sample.desk.member-form">
       <PrimitiveHeading testID="sample.desk.member-form:title">新增会员</PrimitiveHeading>
-      <ScrollArea testID="sample.desk.member-form:scroll">
+      <InputScrollArea testID="sample.desk.member-form:scroll">
         <PrimitiveLabel
           testID="sample.desk.member-form:name-label"
           nativeID="sample.desk.member-form:name"
@@ -156,7 +157,7 @@ export const MemberForm = () => {
         <PrimitiveStatus testID="sample.desk.member-form:keyboard-financial-probe-notice">
           不保存到会员资料
         </PrimitiveStatus>
-      </ScrollArea>
+      </InputScrollArea>
       <PrimitiveActions testID="sample.desk.member-form:actions">
         <PrimitiveButton
           testID="sample.desk.member-form:submit"

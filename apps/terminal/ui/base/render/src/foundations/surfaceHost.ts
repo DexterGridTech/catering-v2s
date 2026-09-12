@@ -1,3 +1,6 @@
+import type {DisplayMode} from '@catering-v2s/kernel-base-ui-state'
+import type {SurfaceForm} from '@catering-v2s/kernel-base-ui-state'
+
 export type SurfaceHostSize = Readonly<{
   readonly width: number
   readonly height: number
@@ -5,21 +8,68 @@ export type SurfaceHostSize = Readonly<{
 
 export type SurfaceCanvasDeclaration = SurfaceHostSize
 
-export type SurfaceHostImeSnapshot = Readonly<{
-  readonly visible: boolean
-  readonly bottomLogicalBeforeCanvasScale: number
+export type SurfaceHostMeasurementSnapshot = Readonly<{
+  readonly stableHostLogicalSize: SurfaceHostSize
+  readonly isHostPrimaryDisplay: boolean
 }>
 
-export type SurfaceHostSnapshot = Readonly<{
-  readonly stableHostLogicalSize: SurfaceHostSize
-  /** Insets are already in the target window's logical unit, before canvas scale. */
-  readonly ime?: SurfaceHostImeSnapshot
+export type SurfaceHostMeasurementSource = Readonly<{
+  readonly getSnapshot: () => SurfaceHostMeasurementSnapshot | null
+  readonly subscribe: (listener: (snapshot: SurfaceHostMeasurementSnapshot | null) => void) => () => void
+}>
+
+export type SurfaceIdentity = Readonly<{
+  readonly surfaceKey: 'PRIMARY' | 'SECONDARY'
+  readonly displayIndex: 0 | 1
+  readonly surfaceForm: SurfaceForm
+  readonly displayMode: DisplayMode
+}>
+
+export type SurfaceHostSnapshot = SurfaceHostMeasurementSnapshot & Readonly<{
+  readonly surfaceIdentity: SurfaceIdentity
 }>
 
 export type SurfaceHostSource = Readonly<{
   readonly getSnapshot: () => SurfaceHostSnapshot | null
   readonly subscribe: (listener: (snapshot: SurfaceHostSnapshot | null) => void) => () => void
 }>
+
+/**
+ * Binds the physical surface identity at the integration boundary. A host
+ * adapter supplies measurements and the physical-host bit; render receives a
+ * frozen identity together with those facts and never reconstructs them from
+ * display mode or instance mode.
+ */
+export const bindSurfaceHostIdentity = (
+  source: SurfaceHostMeasurementSource,
+  identity: SurfaceIdentity,
+): SurfaceHostSource => {
+  const frozenIdentity = Object.freeze({...identity})
+  let lastMeasurement: SurfaceHostMeasurementSnapshot | null | undefined
+  let lastSnapshot: SurfaceHostSnapshot | null = null
+  const enrich = (snapshot: SurfaceHostMeasurementSnapshot | null): SurfaceHostSnapshot | null => {
+    if (snapshot === lastMeasurement) return lastSnapshot
+    lastMeasurement = snapshot
+    if (snapshot === null) {
+      lastSnapshot = null
+      return lastSnapshot
+    }
+    if (snapshot.isHostPrimaryDisplay !== (frozenIdentity.displayIndex === 0)) {
+      lastSnapshot = null
+      return lastSnapshot
+    }
+    lastSnapshot = Object.freeze({
+      stableHostLogicalSize: snapshot.stableHostLogicalSize,
+      isHostPrimaryDisplay: snapshot.isHostPrimaryDisplay,
+      surfaceIdentity: frozenIdentity,
+    })
+    return lastSnapshot
+  }
+  return Object.freeze({
+    getSnapshot: () => enrich(source.getSnapshot()),
+    subscribe: listener => source.subscribe(snapshot => listener(enrich(snapshot))),
+  })
+}
 
 export type SurfaceHostGeometry = Readonly<{
   readonly canvas: SurfaceCanvasDeclaration
@@ -29,18 +79,6 @@ export type SurfaceHostGeometry = Readonly<{
 }>
 
 const isPositiveFinite = (value: number): boolean => Number.isFinite(value) && value > 0
-
-export const calculateSurfaceHostImeInset = (input: Readonly<{
-  readonly ime?: SurfaceHostImeSnapshot
-  readonly scaleY: number
-}>): number | null => {
-  if (input.ime === undefined || !input.ime.visible) return 0
-  if (!isPositiveFinite(input.scaleY)) return null
-  if (!Number.isFinite(input.ime.bottomLogicalBeforeCanvasScale) || input.ime.bottomLogicalBeforeCanvasScale < 0) {
-    return null
-  }
-  return input.ime.bottomLogicalBeforeCanvasScale / input.scaleY
-}
 
 export const calculateSurfaceHostGeometry = (input: Readonly<{
   readonly canvas: SurfaceCanvasDeclaration

@@ -15,6 +15,15 @@ export type RenderPartDiagnostic =
       readonly event: 'invalid-props-shape'
       readonly data: Readonly<{partKey: string; displayMode: DisplayMode; valueType: string}>
     }>
+  | Readonly<{
+      readonly event: 'incompatible-catalog-entry'
+      readonly data: Readonly<{
+        readonly partKey: string
+        readonly displayMode: DisplayMode
+        readonly containerKey: string | null
+        readonly surfaceForm: string
+      }>
+    }>
 
 export type RenderPartDiagnosticReporter = Readonly<{
   readonly report: (diagnostic: RenderPartDiagnostic) => void

@@ -110,7 +110,9 @@ function runPublicSurface({root, invariant, checker, indexSourceFile}) {
   const domain = actual.filter(name => !INFRASTRUCTURE_EXPORTS.includes(name))
   const expectedDomain = invariant.publicExports.filter(name => !INFRASTRUCTURE_EXPORTS.includes(name))
   assertExactList('render domain exports', domain, expectedDomain)
-  if (actual.length !== 27) throw new Error(`render public export count must be 27; actual=${actual.length}`)
+  if (actual.length !== invariant.publicExports.length) {
+    throw new Error(`render public export count must match invariant; expected=${invariant.publicExports.length} actual=${actual.length}`)
+  }
   void root
 }
 
@@ -143,9 +145,11 @@ function runPackageBoundary({root}) {
     [
       '@catering-v2s/kernel-base-platform-ports',
       '@catering-v2s/kernel-base-contracts',
+      '@catering-v2s/kernel-base-display-context',
       '@catering-v2s/kernel-base-runtime',
       '@catering-v2s/kernel-base-state',
       '@catering-v2s/kernel-base-ui-state',
+      '@catering-v2s/ui-base-primitives',
     ],
   )
 }

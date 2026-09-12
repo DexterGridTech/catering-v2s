@@ -44,6 +44,7 @@ export type {
 } from './types/storage';
 export type {
   DeviceInfo,
+  DeviceIdentity,
   DisplayInfo,
   ProcessorStatus,
   MemoryStatus,
@@ -58,6 +59,7 @@ export type {
   PowerStatusUnsubscribeInput,
   DevicePort,
 } from './types/device';
+export {normalizeDeviceIdentity} from './foundations/normalizeDeviceIdentity';
 export type {
   AppControlCall,
   RuntimeResetInput,
@@ -130,11 +132,16 @@ export type {
   LoggerConsoleBinding,
   LoggerSinkBinding,
   LoggerBinding,
+  PlatformPortCapability,
+  PlatformPortCapabilitySnapshot,
+  PlatformPortCapabilitySource,
+  PlatformPortCapabilityState,
   PlatformPortBindings,
   PlatformPorts,
   CreatePlatformPortsInput,
 } from './types/platformPorts';
 export {createPlatformPorts} from './foundations/createPlatformPorts';
+export {describePlatformPortCapabilities} from './foundations/createPlatformPorts';
 export {consoleLoggerBinding} from './defaults/logger';
 export {createProcessMemoryStateStoragePort} from './defaults/processMemoryStorage';
 export {unavailablePersistSecurePort} from './defaults/unavailablePersistSecure';

@@ -9,8 +9,20 @@ vi.mock('expo-modules-core', () => ({requireNativeModule: requireNativeModuleMoc
 const nativeModule = requireNativeModuleMock
 
 describe('createAndroidDevicePort', () => {
-  it('maps the native display snapshot and preserves the other typed unavailable capabilities', async () => {
+  it('maps native device/display snapshots and preserves the other typed unavailable capabilities', async () => {
     nativeModule.mockReturnValue({
+      getDeviceInfo: vi.fn(async () => ({
+        status: 'succeeded' as const,
+        value: {
+          deviceId: 'DEVICE-001',
+          manufacturer: 'Example',
+          model: 'Terminal',
+          systemName: 'Android',
+          systemVersion: '15',
+          logicalProcessorCount: 8,
+        },
+        completedAt: 122,
+      })),
       getDisplayInfo: vi.fn(async () => ({
         status: 'succeeded' as const,
         value: {displayCount: 2},
@@ -19,15 +31,22 @@ describe('createAndroidDevicePort', () => {
     })
 
     const port: DevicePort = createAndroidDevicePort()
+    await expect(port.getDeviceInfo({timeoutMs: 1_000})).resolves.toEqual({
+      status: 'succeeded',
+      value: {
+        deviceId: 'DEVICE-001',
+        manufacturer: 'Example',
+        model: 'Terminal',
+        systemName: 'Android',
+        systemVersion: '15',
+        logicalProcessorCount: 8,
+      },
+      completedAt: 122,
+    })
     await expect(port.getDisplayInfo({timeoutMs: 1_000})).resolves.toEqual({
       status: 'succeeded',
       value: {displayCount: 2},
       completedAt: 123,
-    })
-    await expect(port.getDeviceInfo({timeoutMs: 1_000})).resolves.toMatchObject({
-      status: 'unavailable',
-      port: 'device',
-      capability: 'getDeviceInfo',
     })
     await expect(port.getSystemStatus({timeoutMs: 1_000})).resolves.toMatchObject({
       status: 'unavailable',
@@ -60,6 +79,9 @@ describe('createAndroidDevicePort', () => {
 
   it('turns a native bridge rejection into a typed failure instead of throwing', async () => {
     nativeModule.mockReturnValue({
+      getDeviceInfo: vi.fn(async () => {
+        throw new Error('bridge disconnected')
+      }),
       getDisplayInfo: vi.fn(async () => {
         throw new Error('bridge disconnected')
       }),
@@ -72,6 +94,16 @@ describe('createAndroidDevicePort', () => {
       error: {
         code: 'DEVICE_DISPLAY_INFO_BRIDGE_FAILED',
         message: 'device display-info bridge failed',
+        retryable: true,
+      },
+    })
+    await expect(createAndroidDevicePort().getDeviceInfo({timeoutMs: 1_000})).resolves.toEqual({
+      status: 'failed',
+      port: 'device',
+      capability: 'getDeviceInfo',
+      error: {
+        code: 'DEVICE_INFO_BRIDGE_FAILED',
+        message: 'device-info bridge failed',
         retryable: true,
       },
     })

@@ -10,6 +10,7 @@ import {
   unavailableTopologyHostPort,
   unavailableDevicePort,
   type DevicePort,
+  type DeviceInfo,
   type DisplayInfo,
   type LogEvent,
   type PlatformPorts,
@@ -35,6 +36,8 @@ const success = <TValue>(value: TValue): PortResult<TValue> => ({
 
 export const createTestPlatformPorts = (input: Readonly<{
   readonly displayCount?: number
+  readonly deviceInfo?: DeviceInfo
+  readonly onGetDeviceInfo?: () => void
   readonly storage?: Storage
   readonly events?: LogEvent[]
 }> = {}): PlatformPorts => {
@@ -42,6 +45,12 @@ export const createTestPlatformPorts = (input: Readonly<{
   const storage = input.storage ?? new FakeWebStorage()
   const device: DevicePort = {
     ...unavailableDevicePort,
+    getDeviceInfo: async ({timeoutMs}) => {
+      input.onGetDeviceInfo?.()
+      return input.deviceInfo === undefined
+        ? unavailableDevicePort.getDeviceInfo({timeoutMs})
+        : success(input.deviceInfo)
+    },
     getDisplayInfo: async (): Promise<PortResult<DisplayInfo>> => success({
       displayCount: input.displayCount ?? 1,
     }),

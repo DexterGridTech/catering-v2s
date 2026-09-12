@@ -15,7 +15,7 @@ const declaration: UiVariableDeclaration<string> = text
 const write = createUiVariableWrite(declaration, 'value')
 const catalog = createUiCatalog([])
 const displayMode: DisplayMode = 'PRIMARY'
-const uiStateModule = createUiStateModule({catalog, variables: [declaration]})
+const uiStateModule = createUiStateModule({catalog, variables: [declaration], surfaceForm: 'laptop'})
 
 void moduleKind
 void write

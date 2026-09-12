@@ -3,6 +3,7 @@ package com.catering.v2s.terminal.adapter.android.device
 import android.content.Context
 import android.hardware.display.DisplayManager
 import android.os.Build
+import android.provider.Settings
 import android.view.Display
 import android.util.DisplayMetrics
 import android.util.Log
@@ -12,6 +13,41 @@ import expo.modules.kotlin.modules.ModuleDefinition
 class TerminalDeviceModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("TerminalDevice")
+
+    AsyncFunction("getDeviceInfo") { _timeoutMs: Double ->
+      val context = appContext.reactContext?.applicationContext
+        ?: return@AsyncFunction unavailableDeviceInfoResult("ADAPTER_NOT_INJECTED", "application context is unavailable")
+
+      try {
+        val deviceId = Settings.Secure.getString(
+          context.contentResolver,
+          Settings.Secure.ANDROID_ID,
+        )?.trim().orEmpty()
+        if (deviceId.isEmpty()) {
+          return@AsyncFunction unavailableDeviceInfoResult(
+            "PLATFORM_UNSUPPORTED",
+            "stable device identifier is unavailable",
+          )
+        }
+
+        Log.i(LOG_TAG, "event=device-info-read status=succeeded")
+        mapOf(
+          "status" to "succeeded",
+          "value" to mapOf(
+            "deviceId" to deviceId,
+            "manufacturer" to Build.MANUFACTURER,
+            "model" to Build.MODEL,
+            "systemName" to "Android",
+            "systemVersion" to Build.VERSION.RELEASE,
+            "logicalProcessorCount" to Runtime.getRuntime().availableProcessors().coerceAtLeast(1),
+          ),
+          "completedAt" to System.currentTimeMillis(),
+        )
+      } catch (_error: Throwable) {
+        Log.e(LOG_TAG, "event=device-info-read status=failed")
+        deviceInfoFailedResult()
+      }
+    }
 
     AsyncFunction("getDisplayInfo") { _timeoutMs: Double ->
       val context = appContext.reactContext?.applicationContext
@@ -35,6 +71,28 @@ class TerminalDeviceModule : Module() {
       }
     }
   }
+
+  private fun unavailableDeviceInfoResult(reason: String, message: String): Map<String, Any?> {
+    Log.w(LOG_TAG, "event=device-info-read status=unavailable reason=$reason")
+    return mapOf(
+      "status" to "unavailable",
+      "port" to "device",
+      "capability" to "getDeviceInfo",
+      "reason" to reason,
+      "message" to message,
+    )
+  }
+
+  private fun deviceInfoFailedResult(): Map<String, Any?> = mapOf(
+    "status" to "failed",
+    "port" to "device",
+    "capability" to "getDeviceInfo",
+    "error" to mapOf(
+      "code" to "DEVICE_INFO_READ_FAILED",
+      "message" to "stable device information read failed",
+      "retryable" to true,
+    ),
+  )
 
   private fun unavailableResult(reason: String, message: String): Map<String, Any?> {
     Log.w(LOG_TAG, "event=display-info-read status=unavailable reason=$reason")

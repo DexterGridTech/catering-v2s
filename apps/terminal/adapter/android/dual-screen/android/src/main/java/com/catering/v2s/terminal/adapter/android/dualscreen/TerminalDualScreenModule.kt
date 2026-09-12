@@ -45,6 +45,7 @@ private fun TerminalSurfaceHostSnapshot.toMap(): Map<String, Any?> = mapOf(
   "surfaceKey" to surfaceKey,
   "generation" to generation,
   "displayId" to displayId,
+  "isHostPrimaryDisplay" to isHostPrimaryDisplay,
   "windowIdentity" to windowIdentity,
   "orientation" to orientation,
   "stableHostLogicalSize" to mapOf(
@@ -54,10 +55,6 @@ private fun TerminalSurfaceHostSnapshot.toMap(): Map<String, Any?> = mapOf(
   "currentHostLogicalSize" to mapOf(
     "width" to currentWidthLogical,
     "height" to currentHeightLogical,
-  ),
-  "ime" to mapOf(
-    "visible" to imeVisible,
-    "bottomLogicalBeforeCanvasScale" to imeBottomLogicalBeforeCanvasScale,
   ),
   "diagnostics" to mapOf(
     "stableWidthPx" to stableWidthPx,

@@ -22,6 +22,7 @@ const partInput = () => ({
   displayModes: ['PRIMARY'] as const,
   workspaces: ['MAIN'] as const,
   instanceModes: ['MASTER'] as const,
+  surfaceForm: ['laptop', 'mobile'] as const,
   title: 'Catalog part',
   description: 'Catalog part description',
   component: Part,
@@ -40,6 +41,7 @@ describe('renderer catalog boundaries', () => {
       'instanceModes',
       'partKey',
       'rendererKey',
+      'surfaceForm',
       'title',
       'workspaces',
     ])

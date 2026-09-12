@@ -3,7 +3,6 @@ import {createInputRegistry, type InputRegistrationToken, type InputRegistry} fr
 import type {
   InputFieldController,
   InputFieldRegistration,
-  KeyboardKind,
 } from '../types/types';
 import type {KeyboardCapacity} from '../foundations/keyboardHeight';
 import type {
@@ -74,9 +73,10 @@ export const useInputFieldRegistry = ({
     (
       token: InputRegistrationToken,
       config: Readonly<{
-        readonly keyboardKind: KeyboardKind;
-        readonly layout: InputFieldController['layout'];
-        readonly maxLength?: number;
+      readonly keyboardKind: 'virtual';
+      readonly layout: InputFieldController['layout'];
+      readonly maxLength?: number;
+      readonly focusScopeId: string;
       }>,
     ): void => {
       const field = fieldsRef.current.get(token.fieldId);
@@ -84,6 +84,7 @@ export const useInputFieldRegistry = ({
       field.keyboardKind = config.keyboardKind;
       field.layout = config.layout;
       field.maxLength = config.maxLength;
+      field.focusScopeId = config.focusScopeId;
     },
     [],
   );

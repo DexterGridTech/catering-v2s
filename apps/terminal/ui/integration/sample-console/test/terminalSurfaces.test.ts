@@ -67,4 +67,14 @@ describe('terminal surface declaration parser', () => {
       },
     })).toThrow(/positive width and height/)
   })
+
+  it('maps declared orientation to the explicit surface form', async () => {
+    const module = await import('../src/application/terminalSurfaces')
+    expect(module.surfaceFormForOrientation('landscape')).toBe('laptop')
+    expect(module.surfaceFormForOrientation('portrait')).toBe('mobile')
+    expect(module.getSurfaceDeclarations(readTerminalSurfaces({orientations: {
+      landscape,
+      portrait: {PRIMARY: {width: 360, height: 800}},
+    }}), 'mobile')).toEqual({PRIMARY: {width: 360, height: 800}})
+  })
 })

@@ -18,6 +18,18 @@ describe('sample-console app theme wiring', () => {
       'border',
       'action',
       'action-foreground',
+      'ok-foreground',
+      'ok-background',
+      'ok-border',
+      'warn-foreground',
+      'warn-background',
+      'warn-border',
+      'error-foreground',
+      'error-background',
+      'error-border',
+      'info-foreground',
+      'info-background',
+      'info-border',
     ]
 
     for (const semanticName of semanticNames) {

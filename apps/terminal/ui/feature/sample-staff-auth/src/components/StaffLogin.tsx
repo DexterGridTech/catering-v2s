@@ -14,11 +14,10 @@ import {
   useTrackedRequest,
   useUiVariable,
 } from '@catering-v2s/ui-base-render'
-import {useInputField, useInputSnapshot} from '@catering-v2s/ui-base-input'
+import {InputScrollArea, useInputField, useInputSnapshot} from '@catering-v2s/ui-base-input'
 import {loginCommand} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {authSystemFailureObservedCommand} from '../features/commands/commands'
 import {classifyRequestResult} from './requestOutcome'
-import {ScrollArea} from './controls'
 import {operatorNameVariable} from '../features/variables/variables'
 
 const operatorNameFieldId = 'sample.auth.login:operator-name'
@@ -93,7 +92,7 @@ export const StaffLogin = () => {
 
   return (
     <PrimitiveContainer testID="sample.auth.login">
-      <ScrollArea testID="sample.auth.login:scroll">
+      <InputScrollArea testID="sample.auth.login:scroll">
         <PrimitiveHeading testID="sample.auth.login:title">店员登录</PrimitiveHeading>
         <PrimitiveLabel
           testID="sample.auth.login:operator-name-label"
@@ -111,7 +110,7 @@ export const StaffLogin = () => {
           密码
         </PrimitiveLabel>
         <PasscodeInput key={passcodeResetKey} editable={!requestInFlight} />
-      </ScrollArea>
+      </InputScrollArea>
       <PrimitiveButton
         testID="sample.auth.login:submit"
         accessibilityLabel="登录"

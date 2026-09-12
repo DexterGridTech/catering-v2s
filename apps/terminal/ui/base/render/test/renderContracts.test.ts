@@ -12,6 +12,7 @@ const createContractEnumeration = () => {
     displayModes: ['PRIMARY', 'SECONDARY'] as const,
     workspaces: ['MAIN'] as const,
     instanceModes: ['MASTER'] as const,
+    surfaceForm: ['laptop', 'mobile'] as const,
     title: 'layer-only-contract-part',
     description: 'layer-only-contract-part',
     component: ContractComponent,
@@ -22,6 +23,7 @@ const createContractEnumeration = () => {
     displayMode: 'PRIMARY',
     workspace: 'MAIN',
     instanceMode: 'MASTER',
+    surfaceForm: 'laptop',
   })
   return Object.freeze({defined, catalog, available})
 }

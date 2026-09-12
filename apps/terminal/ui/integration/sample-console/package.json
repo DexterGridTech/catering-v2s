@@ -19,6 +19,12 @@
           "width": 960,
           "height": 540
         }
+      },
+      "portrait": {
+        "PRIMARY": {
+          "width": 360,
+          "height": 800
+        }
       }
     }
   },
@@ -35,8 +41,9 @@
     "@catering-v2s/kernel-base-ui-state": "workspace:*",
     "@catering-v2s/kernel-feature-sample-member-registry": "workspace:*",
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*",
-    "@catering-v2s/ui-base-render": "workspace:*",
     "@catering-v2s/ui-base-input": "workspace:*",
+    "@catering-v2s/ui-base-admin-shell": "workspace:*",
+    "@catering-v2s/ui-base-render": "workspace:*",
     "@catering-v2s/ui-feature-sample-member-desk": "workspace:*",
     "@catering-v2s/ui-feature-sample-staff-auth": "workspace:*",
     "react-native-reanimated": "4.5.1",

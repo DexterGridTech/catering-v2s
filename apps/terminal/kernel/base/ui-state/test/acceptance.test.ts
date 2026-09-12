@@ -99,8 +99,25 @@ const createFixture = async (input: Readonly<{
 const createModule = (
   variables: readonly UiVariableDeclaration<StateJsonValue>[] = [],
 ): UiStateModule => createUiStateModule({
-  catalog: createUiCatalog([]),
+  catalog: createUiCatalog([
+    'primary-layer-part',
+    'secondary-layer-part',
+    'first',
+    'second',
+    'layer',
+  ].map(partKey => ({
+    partKey,
+    rendererKey: `${partKey}-renderer`,
+    containerKeys: [],
+    displayModes: ['PRIMARY', 'SECONDARY'] as const,
+    workspaces: ['MAIN', 'BRANCH'] as const,
+    instanceModes: ['MASTER', 'SLAVE'] as const,
+    surfaceForm: ['laptop', 'mobile'] as const,
+    title: partKey,
+    description: partKey,
+  }))),
   variables,
+  surfaceForm: 'laptop',
 })
 
 const hasPersistedEntry = (
@@ -302,20 +319,21 @@ describe('ui-state approved acceptance proofs', () => {
       defaultValue: '', persistIntent: 'never',
     })
     const forged = Object.freeze({...declaration, key: 'other-module.same'})
-    expect(() => createUiStateModule({catalog: createUiCatalog([]), variables: [forged]})).toThrow(/moduleName prefix/)
+    expect(() => createUiStateModule({catalog: createUiCatalog([]), variables: [forged], surfaceForm: 'laptop'})).toThrow(/moduleName prefix/)
   })
 
   it('U-9 builds an immutable catalog and rejects duplicate keys', () => {
     const base: UiCatalogEntry = {
       partKey: 'orders', rendererKey: 'orders-screen', containerKeys: ['root'],
       displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'],
+      surfaceForm: ['laptop'],
       title: 'Orders', description: 'Orders screen',
     }
     const catalog = createUiCatalog([base])
     expect(Object.isFrozen(catalog)).toBe(true)
     expect(Object.isFrozen(catalog.entries[0])).toBe(true)
     expect(Reflect.ownKeys(catalog.entries[0]).sort()).toEqual([
-      'containerKeys', 'description', 'displayModes', 'instanceModes', 'partKey', 'rendererKey', 'title', 'workspaces',
+      'containerKeys', 'description', 'displayModes', 'instanceModes', 'partKey', 'rendererKey', 'surfaceForm', 'title', 'workspaces',
     ])
     expect(Object.prototype.hasOwnProperty.call(catalog, 'register')).toBe(false)
     expect(() => createUiCatalog([base, base])).toThrow(/duplicate partKey/)
@@ -327,11 +345,12 @@ describe('ui-state approved acceptance proofs', () => {
     const entry: UiCatalogEntry = {
       partKey: 'listed', rendererKey: 'listed-screen', containerKeys: ['root'],
       displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'],
+      surfaceForm: ['laptop'],
       title: 'Listed', description: 'Listed screen',
     }
-    const module = createUiStateModule({catalog: createUiCatalog([entry]), variables: []})
+    const module = createUiStateModule({catalog: createUiCatalog([entry]), variables: [], surfaceForm: 'laptop'})
     expect(selectAvailableParts(module.catalog, 'root', {
-      displayMode: 'PRIMARY', workspace: 'MAIN', instanceMode: 'MASTER',
+      displayMode: 'PRIMARY', workspace: 'MAIN', instanceMode: 'MASTER', surfaceForm: 'laptop',
     }).map(candidate => candidate.partKey)).toEqual(['listed'])
     const fixture = await createFixture({module})
     runtimes.push(fixture.runtime)
@@ -346,5 +365,33 @@ describe('ui-state approved acceptance proofs', () => {
     expect(getSwitchInstanceModeEligibility({
       targetMode: 'SLAVE', routeDisplayMode: 'PRIMARY', displayCount: 2,
     })).toEqual({allowed: false, reasonCode: 'multiple-physical-displays'})
+  })
+
+  it('U-12 rejects an unavailable layer part before the content write', async () => {
+    const module = createUiStateModule({
+      catalog: createUiCatalog([{
+        partKey: 'mobile-only-layer',
+        rendererKey: 'mobile-only-layer-renderer',
+        containerKeys: [],
+        displayModes: ['PRIMARY'],
+        workspaces: ['MAIN'],
+        instanceModes: ['MASTER'],
+        surfaceForm: ['mobile'],
+        title: 'Mobile only layer',
+        description: 'Mobile only layer',
+      }]),
+      variables: [],
+      surfaceForm: 'laptop',
+    })
+    const fixture = await createFixture({module})
+    runtimes.push(fixture.runtime)
+
+    const result = await fixture.runtime.dispatchCommand(openLayerCommand, {
+      displayMode: 'PRIMARY', layerId: 'unavailable', partKey: 'mobile-only-layer',
+    }, route())
+
+    expect(result.status).toBe('error')
+    expect(result.actorResults[0]?.error?.code).toBe('ERR_TER_UI_STATE_LAYER_PART_UNAVAILABLE')
+    expect(selectLayers(fixture.runtime.getState(), 'PRIMARY')).toEqual([])
   })
 })

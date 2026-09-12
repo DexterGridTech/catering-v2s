@@ -7,6 +7,13 @@ export type SurfaceSize = Readonly<{
 }>
 
 export type SurfaceOrientation = 'landscape' | 'portrait'
+export type SurfaceForm = 'laptop' | 'mobile'
+
+export type SurfaceCreationInput = Readonly<{
+  readonly displayIndex: 0 | 1
+  readonly displayMode: DisplayMode
+  readonly surfaceForm: SurfaceForm
+}>
 
 export type SurfaceDeclarations = Readonly<Record<DisplayMode, SurfaceSize>>
 export type PortraitSurfaceDeclarations = Readonly<Pick<SurfaceDeclarations, 'PRIMARY'>>
@@ -17,6 +24,19 @@ export type TerminalSurfaces = Readonly<{
     readonly portrait?: PortraitSurfaceDeclarations
   }>
 }>
+
+export const surfaceFormForOrientation = (orientation: SurfaceOrientation): SurfaceForm =>
+  orientation === 'landscape' ? 'laptop' : 'mobile'
+
+export const getSurfaceDeclarations = (
+  surfaces: TerminalSurfaces,
+  surfaceForm: SurfaceForm,
+): SurfaceDeclarations | PortraitSurfaceDeclarations => {
+  if (surfaceForm === 'laptop') return surfaces.orientations.landscape
+  const portrait = surfaces.orientations.portrait
+  if (portrait === undefined) throw new Error('[sample-console] mobile surface declarations are required')
+  return portrait
+}
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)

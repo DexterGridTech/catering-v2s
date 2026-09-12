@@ -1,9 +1,12 @@
 import {createElement, type ReactNode} from 'react'
 import {Text} from 'react-native'
 import type {
+  ContainerKey,
   DisplayMode,
+  UiCatalogContext,
   UiCatalog,
 } from '@catering-v2s/kernel-base-ui-state'
+import {isUiCatalogEntryAvailable} from '@catering-v2s/kernel-base-ui-state'
 import type {RendererCatalog} from '../types/catalog'
 import type {RenderPartDiagnosticReporter} from '../foundations/diagnostics'
 
@@ -13,6 +16,7 @@ export type RenderFallbackReason =
   | 'missing-catalog-entry'
   | 'missing-renderer'
   | 'invalid-props'
+  | 'incompatible-catalog-entry'
 
 const fallbackTestIds: Readonly<Record<RenderFallbackReason, string>> = Object.freeze({
   'runtime-unavailable': 'ui-base-render:fallback:runtime-unavailable',
@@ -20,6 +24,7 @@ const fallbackTestIds: Readonly<Record<RenderFallbackReason, string>> = Object.f
   'missing-catalog-entry': 'ui-base-render:fallback:missing-catalog-entry',
   'missing-renderer': 'ui-base-render:fallback:missing-renderer',
   'invalid-props': 'ui-base-render:fallback:invalid-props',
+  'incompatible-catalog-entry': 'ui-base-render:fallback:incompatible-catalog-entry',
 })
 
 export const RenderFallback = ({
@@ -36,6 +41,8 @@ type Placement = Readonly<{
 type ResolvePartInput = Readonly<{
   readonly placement: Placement
   readonly displayMode: DisplayMode
+  readonly containerKey: ContainerKey | null
+  readonly catalogContext: UiCatalogContext
   readonly uiCatalog: UiCatalog
   readonly rendererCatalog: RendererCatalog
   readonly reportPartDiagnostic: RenderPartDiagnosticReporter['report']
@@ -76,6 +83,19 @@ export const resolvePart = (input: ResolvePartInput): ReactNode => {
       data: {partKey: input.placement.partKey, displayMode: input.displayMode},
     })
     return createElement(RenderFallback, {reason: 'missing-catalog-entry', key: input.elementKey})
+  }
+
+  if (!isUiCatalogEntryAvailable(entry, input.containerKey, input.catalogContext)) {
+    input.reportPartDiagnostic({
+      event: 'incompatible-catalog-entry',
+      data: {
+        partKey: input.placement.partKey,
+        displayMode: input.displayMode,
+        containerKey: input.containerKey,
+        surfaceForm: input.catalogContext.surfaceForm,
+      },
+    })
+    return createElement(RenderFallback, {reason: 'incompatible-catalog-entry', key: input.elementKey})
   }
 
   const binding = input.rendererCatalog.resolve(entry.rendererKey)

@@ -1,5 +1,4 @@
 import {useCallback, useRef} from 'react';
-import {Keyboard} from 'react-native';
 import {calculateVirtualKeyboardMetrics, type KeyboardCapacity, type LocalFrameMetrics} from '../foundations/keyboardHeight';
 import type {InputFieldController} from '../types/types';
 import type {
@@ -27,16 +26,30 @@ export const useInputFocusController = ({
   markBlockedField,
 }: InputFocusControllerOptions) => {
   const focusSuspendedRef = useRef(false);
+  const activeScopeIdRef = useRef('business');
+
+  const activateFocusScope = useCallback((scopeId: string): void => {
+    if (scopeId === activeScopeIdRef.current) return;
+    activeScopeIdRef.current = scopeId;
+    const current = keyboardStateRef.current;
+    const field = current.activeFieldId === null ? undefined : fieldsRef.current.get(current.activeFieldId);
+    if (field !== undefined && field.focusScopeId !== scopeId) {
+      clearBlockedField();
+      field.inputRef?.current?.blur();
+      commitKeyboardState({activeFieldId: null, owner: 'none', layout: current.layout});
+    }
+  }, [clearBlockedField, commitKeyboardState, fieldsRef, keyboardStateRef]);
 
   const preflightFocusTarget = useCallback(
     (fieldId: string): boolean => {
       const target = fieldsRef.current.get(fieldId);
-      if (target === undefined || focusSuspendedRef.current) return false;
+      if (target === undefined || target.focusScopeId !== activeScopeIdRef.current) return false;
+      if (focusSuspendedRef.current && activeScopeIdRef.current === 'business') return false;
       if (target.keyboardKind === 'virtual') {
         const metrics = calculateVirtualKeyboardMetrics(frameMetricsRef.current, target.layout);
         if (metrics.capacity !== 'supported') {
           markBlockedField(fieldId, metrics.capacity);
-          target.inputRef.current?.blur();
+          target.inputRef?.current?.blur();
           return false;
         }
       }
@@ -44,11 +57,6 @@ export const useInputFocusController = ({
       const previous = keyboardStateRef.current;
       if (previous.activeFieldId === null || previous.activeFieldId === fieldId) return true;
 
-      if (previous.owner === 'system' && target.keyboardKind === 'virtual') {
-        // The old system field is still the native focus owner at this point.
-        // Dismiss it before clearing ownership; never dismiss the target field.
-        Keyboard.dismiss();
-      }
       // A later native blur from the old field must not clear the target commit.
       // The target's onFocus is the only place that establishes the new owner.
       commitKeyboardState({activeFieldId: null, owner: 'none', layout: previous.layout});
@@ -60,12 +68,13 @@ export const useInputFocusController = ({
   const handleFocus = useCallback(
     (fieldId: string): void => {
       const field = fieldsRef.current.get(fieldId);
-      if (field === undefined || focusSuspendedRef.current) return;
+      if (field === undefined || field.focusScopeId !== activeScopeIdRef.current) return;
+      if (focusSuspendedRef.current && activeScopeIdRef.current === 'business') return;
       if (field.keyboardKind === 'virtual') {
         const metrics = calculateVirtualKeyboardMetrics(frameMetricsRef.current, field.layout);
         if (metrics.capacity !== 'supported') {
           markBlockedField(fieldId, metrics.capacity);
-          field.inputRef.current?.blur();
+          field.inputRef?.current?.blur();
           if (keyboardStateRef.current.activeFieldId === fieldId) {
             commitKeyboardState({activeFieldId: null, owner: 'none', layout: 'numeric'});
           }
@@ -87,12 +96,11 @@ export const useInputFocusController = ({
       const current = keyboardStateRef.current;
       if (current.activeFieldId !== fieldId) return;
       const field = fieldsRef.current.get(fieldId);
-      // Android can emit a native blur immediately after a virtual field receives
-      // focus because that field deliberately declines the system IME. That event
-      // is not an ownership decision; explicit blur, unregister, layer suspend,
-      // or a subsequent field focus owns the transition instead.
+      // A native blur can arrive immediately after a virtual field receives
+      // focus. That event is not an ownership decision; explicit blur,
+      // unregister, layer suspend, or a subsequent field focus owns the
+      // transition instead.
       if (current.owner === 'virtual' && field?.keyboardKind === 'virtual') return;
-      if (current.owner === 'system') Keyboard.dismiss();
       commitKeyboardState({activeFieldId: null, owner: 'none', layout: current.layout});
     },
     [commitKeyboardState, fieldsRef, keyboardStateRef],
@@ -102,10 +110,9 @@ export const useInputFocusController = ({
     (fieldId: string): void => {
       const current = keyboardStateRef.current;
       if (current.activeFieldId === fieldId) {
-        if (current.owner === 'system') Keyboard.dismiss();
         commitKeyboardState({activeFieldId: null, owner: 'none', layout: current.layout});
       }
-      fieldsRef.current.get(fieldId)?.inputRef.current?.blur();
+      fieldsRef.current.get(fieldId)?.inputRef?.current?.blur();
     },
     [commitKeyboardState, fieldsRef, keyboardStateRef],
   );
@@ -114,17 +121,21 @@ export const useInputFocusController = ({
     const current = keyboardStateRef.current;
     clearBlockedField();
     if (current.activeFieldId === null) return;
-    if (current.owner === 'system') Keyboard.dismiss();
     commitKeyboardState({activeFieldId: null, owner: 'none', layout: current.layout});
-    fieldsRef.current.get(current.activeFieldId)?.inputRef.current?.blur();
+    fieldsRef.current.get(current.activeFieldId)?.inputRef?.current?.blur();
   }, [clearBlockedField, commitKeyboardState, fieldsRef, keyboardStateRef]);
 
   const focusField = useCallback(
     (fieldId: string): void => {
       if (!preflightFocusTarget(fieldId)) return;
-      fieldsRef.current.get(fieldId)?.inputRef.current?.focus();
+      const field = fieldsRef.current.get(fieldId);
+      if (field?.inputRef?.current !== null && field?.inputRef?.current !== undefined) {
+        field.inputRef.current.focus();
+      } else {
+        handleFocus(fieldId);
+      }
     },
-    [fieldsRef, preflightFocusTarget],
+    [fieldsRef, handleFocus, preflightFocusTarget],
   );
 
   const completeField = useCallback(
@@ -135,14 +146,14 @@ export const useInputFocusController = ({
       const next = index < 0 ? undefined : fields[index + 1];
       if (next !== undefined) {
         if (!preflightFocusTarget(next.fieldId)) return;
-        next.inputRef.current?.focus();
+        if (next.inputRef?.current !== null && next.inputRef?.current !== undefined) next.inputRef.current.focus();
+        else handleFocus(next.fieldId);
         return;
       }
-      current?.inputRef.current?.blur();
-      if (keyboardStateRef.current.owner === 'system') Keyboard.dismiss();
+      current?.inputRef?.current?.blur();
       commitKeyboardState({activeFieldId: null, owner: 'none', layout: 'numeric'});
     },
-    [commitKeyboardState, fieldsRef, keyboardStateRef, preflightFocusTarget],
+    [commitKeyboardState, fieldsRef, handleFocus, keyboardStateRef, preflightFocusTarget],
   );
 
   const notifyFocusBoundary = useCallback(
@@ -152,7 +163,6 @@ export const useInputFocusController = ({
         const current = keyboardStateRef.current;
         clearBlockedField();
         commitKeyboardState({activeFieldId: null, owner: 'none', layout: current.layout});
-        Keyboard.dismiss();
         return;
       }
       focusSuspendedRef.current = false;
@@ -161,6 +171,7 @@ export const useInputFocusController = ({
   );
 
   return {
+    activateFocusScope,
     preflightFocusTarget,
     handleFocus,
     handleBlur,

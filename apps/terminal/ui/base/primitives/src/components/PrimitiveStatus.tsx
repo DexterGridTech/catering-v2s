@@ -1,13 +1,14 @@
 import {RnrText} from '../vendor/slots';
 import {baseTokens} from '../theme/tokens';
+import {toneForegroundClassName} from '../foundations/toneClassName';
 import {assertTestID} from '../foundations/assertTestID';
 import type {PrimitiveStatusProps} from '../types/types';
 
-export const PrimitiveStatus = ({testID, children, onLayout, onTextLayout}: PrimitiveStatusProps) => (
+export const PrimitiveStatus = ({testID, children, tone = 'neutral', onLayout, onTextLayout}: PrimitiveStatusProps) => (
   <RnrText
     testID={assertTestID(testID)}
     accessibilityLiveRegion="polite"
-    className={baseTokens.status}
+    className={toneForegroundClassName(tone, baseTokens.status)}
     onLayout={onLayout}
     onTextLayout={onTextLayout}
   >

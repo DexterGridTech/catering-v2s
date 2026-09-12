@@ -9,6 +9,10 @@ export interface DeviceInfo {
   readonly systemVersion: string;
   readonly logicalProcessorCount: number;
 }
+export interface DeviceIdentity {
+  readonly available: boolean;
+  readonly deviceId: string | null;
+}
 export interface DisplayInfo {
   readonly displayCount: number;
 }

@@ -1,1 +1,46 @@
-{"schemaVersion":1,"package":"@catering-v2s/ui-base-admin-shell","owned":{"test":{"kind":"ABSENT"},"lint":{"kind":"ABSENT"},"clean":{"kind":"ABSENT"}}}
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/ui-base-admin-shell",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-base-admin-shell", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "ownerKind": "owner",
+  "publicExports": [
+    "ADMIN_CONSOLE_FOCUS_SCOPE_ID",
+    "ADMIN_CONSOLE_LAYER_ID",
+    "ADMIN_CONSOLE_PART_KEY",
+    "ADMIN_GESTURE_REPETITIONS",
+    "ADMIN_GESTURE_SIZE",
+    "ADMIN_GESTURE_WINDOW_MS",
+    "ADMIN_SECTION_CONTAINER_KEY",
+    "ADMIN_PASSWORD_FALLBACK",
+    "AdminLayer",
+    "AdminLauncher",
+    "AdminLogin",
+    "AdminNavigationRejectedError",
+    "AdminSectionComponent",
+    "AdminSectionNavigation",
+    "AdminSectionProps",
+    "AdminSectionRenderContext",
+    "AdminShell",
+    "AdminShellAssembly",
+    "SampleSection",
+    "adminShellAssembly",
+    "adminTestIds",
+    "createAdminSectionCommandBoundary",
+    "createInitialAdminGestureState",
+    "AdminPasswordDerivationInput",
+    "AdminPasswordVerificationInput",
+    "TerminalDeviceIdentity",
+    "dependencyModuleNames",
+    "deriveAdminPassword",
+    "devDependencyModuleNames",
+    "moduleName",
+    "normalizeDeviceIdentity",
+    "verifyAdminPassword"
+    ,"selectAdminSections"
+    ,"trackAdminGesture"
+  ]
+}

@@ -17,14 +17,17 @@ automation 后端仍按裁定押后。
 使用对应的专用 primitive，不得用通用文本控件冒充。实现会把这两个反馈语义转发到 RN
 0.86.3 的 typed `role` 属性，因为 RN 的旧 `accessibilityRole` 类型不包含 `status`。
 
-`PrimitiveInput` 的输入公共面只增加四个呈现/编辑 prop：`selection`、`onSelectionChange`、
-`showSoftInputOnFocus` 与 `maxLength`。它们只透传到真实 RN `TextInput`，不引入 `inputMode`、
+`PrimitiveInput` 的输入公共面只增加三个呈现/编辑 prop：`selection`、`onSelectionChange` 与
+`maxLength`。它们只透传到真实 RN `TextInput`，不引入 `inputMode`、
 键盘布局、业务字段、command 或 store；`selection.end` 缺省时按光标位置归一为 `start`。业务层
 可用 `maxLength` 表达通用编辑上限，虚拟键盘的纯编辑模型也必须遵守同一个上限。
 
+系统软键盘抑制不属于公共 props；`src/vendor/slots.tsx` 在唯一的 RN `TextInput` slot 内固定
+`showSoftInputOnFocus={false}`，调用方不能重新打开该逃生口。
+
 为支持输入包的真实 focus/restore 与 surface 点击边界，`PrimitiveInput` 另外接受呈现无关的
-`onFocus`、`onBlur`、`onPressIn` 与 `inputRef`。前三者只转发真实 `TextInput` 生命周期/按下通知，后者只暴露 `focus`/`blur` 与
-`measureInWindow` 三个通用
+`onFocus`、`onBlur`、`onPressIn` 与 `inputRef`。前三者只转发真实 `TextInput` 生命周期/按下通知，后者只暴露 `focus`/`blur`、
+`measureLayout` 与 `measureInWindow` 四个通用
 操作给 `ui/base/input`；它们不承载字段名、键盘布局、屏数、command 或 store，也不引入
 `inputMode`。这是 input provider 执行 focus-next、layer suspend/restore 的最小公共接缝。
 
@@ -43,7 +46,7 @@ mode 或领域字段；它仍必须提供非空 `testID`。这种区分避免把
 `className` 只存在于 `src/vendor` 与 primitives 内部 recipe，不能出现在任何 ui/feature 生产源码；
 业务组件继续只消费带强制 `testID` 的语义控件。本轮已授权的公共面加法包括
 `PrimitiveContainer` 的可选 `layout` 呈现字段、受控 `PrimitiveScrollView`、`PrimitiveButton` 的
-`default`/`key`/`key-action` 呈现 variant，以及 `PrimitiveInput` 的四个可选编辑/呈现 prop 与四个
+`default`/`key`/`key-action` 呈现 variant，以及 `PrimitiveInput` 的三个可选编辑/呈现 prop 与四个
 focus/measurement seam；它们都不增加业务语义、业务控件
 或自动化后端。
 `PrimitiveContainer` 默认 `fill` 保持既有 surface-filling 行为。
@@ -54,12 +57,12 @@ planned edge 与实际 import/dependency 分开对账。
 
 ## 结构
 
-- `src/components/`：九个最小语义控件，一控件一文件；控件共用
+- `src/components/`：排版、布局、表单、反馈和数据展示的 bounded primitives；控件共用
   `src/foundations/assertTestID.ts` 的非空 `testID` 校验。
 - `src/types/types.ts`：控件公共 props、handle 与事件类型，不含运行时值。
-- `src/vendor/`：按 RNR NativeWind 手工安装形态裁剪的 slot、Text/Button context 与 class merge
-  copy-in，不形成 RNR workspace 或运行时依赖。
-- `src/theme/`：只含 base 展示 token，不含应用主题与业务文案。
+- `src/vendor/`：唯一接触 React Native value API 的 slot，包括 Text/Button/Input、滚动、Spinner、
+  VirtualizedList 和首批 SVG/icon 接缝；不把平台分支泄漏到 component 层。
+- `src/theme/`：只含 base 展示 token 和 `ok`/`warn`/`error`/`info` 语义 tone 映射，不含应用主题与业务文案。
 - `src/index.ts`：唯一公共面，导出控件与其 props 类型。
 - `src/dependencies.ts`：本包实际 workspace 依赖声明；本批为空。
 - `test/primitives.test.tsx`：使用 `react-test-renderer` 验证真实组件树和挂点。
@@ -67,15 +70,21 @@ planned edge 与实际 import/dependency 分开对账。
 
 ## 公共面
 
-当前公共面为 27 项，与 `src/index.ts` 和 `terminal-invariants.json` 精确一致：
-`PrimitiveActions`、`PrimitiveActionsProps`、`PrimitiveAddressableProps`、`PrimitiveButton`、
-`PrimitiveButtonProps`、`PrimitiveContainer`、`PrimitiveContainerProps`、`PrimitiveHeading`、
-`PrimitiveHeadingProps`、`PrimitiveInput`、`PrimitiveInputHandle`、`PrimitiveInputProps`、`PrimitiveInputSelection`、
-`PrimitiveInputSelectionChangeEvent`、`PrimitiveLabel`、`PrimitiveLabelProps`、`PrimitiveMeasureInWindowCallback`、
-`PrimitiveScrollView`、`PrimitiveScrollViewHandle`、`PrimitiveScrollViewProps`、`PrimitiveStatus`、`PrimitiveStatusProps`、`PrimitiveText`、
-`PrimitiveTextProps`、`dependencyModuleNames`、
-`devDependencyModuleNames`、`moduleName`。
-带业务领域词汇的行组件不属于本包；由所属 feature 自己组合 primitives。
+`src/index.ts` 与 `terminal-invariants.json` 同步导出五组 bounded primitives：排版
+`PrimitiveText`、`PrimitiveHeading`、`PrimitiveLabel`、`PrimitiveCodeBlock`；布局
+`PrimitiveContainer`、`PrimitiveCard`、`PrimitiveDivider`、`PrimitiveStack`、`PrimitiveGrid`、
+`PrimitiveCenter`；表单 `PrimitiveButton`、`PrimitiveInput`、`PrimitiveCodeInput`、`PrimitiveCheckbox`、
+`PrimitiveRadio`、`PrimitiveSwitch`、`PrimitiveSelect`、`PrimitiveTextarea`、`PrimitiveFormField`；反馈
+`PrimitiveSpinner`、`PrimitiveInlineAlert`、`PrimitiveEmptyState`、`PrimitiveProgress`、`PrimitiveSkeleton`；
+数据展示 `PrimitiveBadge`、`PrimitiveKeyValueRow`、`PrimitiveStatusRow`、`PrimitiveList`、
+`PrimitiveTable`、`PrimitiveTabs`、`PrimitiveSegmentedControl`，以及既有 `PrimitiveStatus`、
+`PrimitiveActions`、`PrimitiveScrollView` 和 list bound 常量。带业务领域词汇的行组件不属于本包；由所属
+feature 自己组合 primitives。
+
+可交互件统一接收可读 `accessibilityLabel` 和 `testID`，并暴露 disabled/selected/busy 等状态；
+按钮在 disabled 或 busy 时不会执行 `onPress`。`PrimitiveList` 保留完整 `data`，以真实
+`VirtualizedList` slot 承载，消费侧窗口固定为 16 行、前后各 4 行且最多 24 个可见 row；这只是
+挂载上界，不是截断数据。
 
 ## 用法
 

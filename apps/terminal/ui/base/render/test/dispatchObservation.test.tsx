@@ -13,7 +13,9 @@ import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
 import {createUiCatalog} from '@catering-v2s/kernel-base-ui-state'
 import {
   createRendererCatalog,
+  createRenderRuntimeFacts,
   RenderProvider,
+  resolveDebugMode,
   useDispatchCommand,
   type RenderProviderProps,
 } from '../src/index'
@@ -84,8 +86,15 @@ describe('render command dispatch observation', () => {
           uiCatalog: createUiCatalog([]),
           rendererCatalog: createRendererCatalog([]),
           logger,
+          runtimeFacts: createRenderRuntimeFacts({
+            environmentMode: 'TEST',
+            debugMode: resolveDebugMode({}),
+            deviceIdentity: {available: false, deviceId: null},
+            platformPortCapabilities: [],
+          }),
           dispatchCommand,
           selectUiVariable: (_root, declaration) => declaration.defaultValue,
+          selectSurfaceForm: () => 'laptop' as const,
         },
         createElement(Probe),
       ))

@@ -1,4 +1,4 @@
-import type {EnvironmentMode} from './result';
+import type {EnvironmentMode, PlatformPortName} from './result';
 import type {LoggerPort, LogEvent} from './logging';
 import type {StateStoragePort} from './storage';
 import type {DevicePort} from './device';
@@ -15,6 +15,21 @@ export interface LoggerSinkBinding {
   readonly write: (event: LogEvent) => void;
 }
 export type LoggerBinding = LoggerConsoleBinding | LoggerSinkBinding;
+
+export type PlatformPortCapabilityState = 'real' | 'unavailable';
+export type PlatformPortCapabilitySource = 'default' | 'adapter' | 'web' | 'fixture';
+
+export interface PlatformPortCapability extends Readonly<Record<string, string>> {
+  readonly capability: string;
+  readonly state: PlatformPortCapabilityState;
+  readonly source: PlatformPortCapabilitySource;
+}
+
+export interface PlatformPortCapabilitySnapshot {
+  readonly port: PlatformPortName;
+  readonly descriptorStatus: 'complete' | 'missing-descriptor';
+  readonly capabilities: readonly PlatformPortCapability[];
+}
 
 export interface PlatformPortBindings {
   readonly logger: LoggerBinding;

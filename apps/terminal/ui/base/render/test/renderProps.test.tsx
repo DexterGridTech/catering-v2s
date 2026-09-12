@@ -102,6 +102,7 @@ const createProbeFixture = () => {
     displayModes: ['PRIMARY', 'SECONDARY'] as const,
     workspaces: ['MAIN'] as const,
     instanceModes: ['MASTER'] as const,
+    surfaceForm: ['laptop', 'mobile'] as const,
     title: 'props-part',
     description: 'props-part',
     component: Probe,

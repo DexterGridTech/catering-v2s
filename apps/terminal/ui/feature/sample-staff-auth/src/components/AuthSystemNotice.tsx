@@ -1,10 +1,12 @@
 import {
   PrimitiveButton,
+  PrimitiveContainer,
+  PrimitiveActions,
+  PrimitiveHeading,
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
 import {dispatchWithRequestId, useDispatchCommand} from '@catering-v2s/ui-base-render'
 import {authSystemFailureDismissedCommand, type AuthSystemOperation} from '../features/commands/commands'
-import {DialogActions, DialogSurface} from './controls'
 
 export type AuthSystemNoticeProps = Readonly<{
   readonly operation: AuthSystemOperation
@@ -21,11 +23,12 @@ export const AuthSystemNotice = ({operation}: AuthSystemNoticeProps) => {
   })
 
   return (
-    <DialogSurface testID="sample.auth.system-notice" title="系统提示">
+    <PrimitiveContainer testID="sample.auth.system-notice" layout="card">
+      <PrimitiveHeading testID="sample.auth.system-notice:title">系统提示</PrimitiveHeading>
       <PrimitiveText testID="sample.auth.system-notice:message" accessibilityRole="alert">
         {messageForOperation(operation)}
       </PrimitiveText>
-      <DialogActions testID="sample.auth.system-notice:actions">
+      <PrimitiveActions testID="sample.auth.system-notice:actions">
         <PrimitiveButton
           testID="sample.auth.system-notice:dismiss"
           accessibilityLabel="关闭系统提示"
@@ -33,7 +36,7 @@ export const AuthSystemNotice = ({operation}: AuthSystemNoticeProps) => {
         >
           知道了
         </PrimitiveButton>
-      </DialogActions>
-    </DialogSurface>
+      </PrimitiveActions>
+    </PrimitiveContainer>
   )
 }

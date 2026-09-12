@@ -18,6 +18,7 @@ type DefinePartCatalogFields = Pick<
   | 'displayModes'
   | 'workspaces'
   | 'instanceModes'
+  | 'surfaceForm'
   | 'title'
   | 'description'
 >
@@ -74,6 +75,7 @@ export const definePart = <TProps extends RenderComponentProps>(
     displayModes: Object.freeze([...input.displayModes]),
     workspaces: Object.freeze([...input.workspaces]),
     instanceModes: Object.freeze([...input.instanceModes]),
+    surfaceForm: input.surfaceForm,
     title: input.title,
     description: input.description,
   })

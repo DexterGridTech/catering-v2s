@@ -1,6 +1,8 @@
 package com.catering.v2s.app.application;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -13,7 +15,9 @@ import com.catering.v2s.catalog.application.CatalogOwnerService;
 import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
 import com.catering.v2s.fulfillment.production.application.ProductionTagOwnerService;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
+import com.catering.v2s.inventory.application.InventoryReadRouter;
 import com.catering.v2s.inventory.application.InventoryOwnerService;
+import com.catering.v2s.inventory.application.InventoryTargetService;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
@@ -33,7 +37,9 @@ import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
+import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
@@ -270,13 +276,36 @@ class CatalogInventoryReadTransactionTopologyTest {
                 UUID.class,
                 String.class);
 
-        assertTrue(InventoryOwnerService.class
+        assertTrue(InventoryReadRouter.class
                 .getMethod(
                         "read", String.class, String.class, String.class, ObjectNode.class, String.class, String.class)
                 .isAnnotationPresent(Transactional.class));
         assertTrue(ProductionTagOwnerService.class
                 .getMethod("read", String.class, String.class, String.class, ObjectNode.class, String.class)
                 .isAnnotationPresent(Transactional.class));
+    }
+
+    @Test
+    void inventoryReadRouterProxyStartsTheDeclaredRequiredTransaction() throws Exception {
+        InventoryTargetService target = mock(InventoryTargetService.class);
+        when(target.readTargets(anyString(), anyString(), any(ObjectNode.class), anyString(), anyString()))
+                .thenAnswer(invocation -> {
+                    assertTrue(TransactionSynchronizationManager.isActualTransactionActive());
+                    return envelope(dataWithArray("items"));
+                });
+
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.getAutoCommit()).thenReturn(true);
+        TransactionInterceptor transactions =
+                new TransactionInterceptor(new DataSourceTransactionManager(dataSource), new AnnotationTransactionAttributeSource());
+        ProxyFactory proxyFactory = new ProxyFactory(new InventoryReadRouter(target));
+        proxyFactory.setProxyTargetClass(true);
+        proxyFactory.addAdvice(transactions);
+        InventoryReadRouter router = (InventoryReadRouter) proxyFactory.getProxy();
+
+        router.read("getOperationsInventoryTargets", DATA_NODE, BRAND, MAPPER.createObjectNode(), REQUEST_ID, STORE);
     }
 
     @Test
@@ -332,8 +361,11 @@ class CatalogInventoryReadTransactionTopologyTest {
     private static void assertTransaction(Class<?> type, String methodName, Class<?>... parameterTypes)
             throws Exception {
         Method method = type.getMethod(methodName, parameterTypes);
-        assertTrue(
-                method.isAnnotationPresent(Transactional.class),
+        TransactionAttribute attribute = new AnnotationTransactionAttributeSource().getTransactionAttribute(method, type);
+        assertNotNull(attribute, type.getSimpleName() + "#" + methodName + " must declare a transaction");
+        assertEquals(
+                TransactionDefinition.PROPAGATION_REQUIRED,
+                attribute.getPropagationBehavior(),
                 type.getSimpleName() + "#" + methodName + " must start a REQUIRED transaction");
     }
 

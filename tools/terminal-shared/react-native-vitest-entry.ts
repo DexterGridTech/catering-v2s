@@ -5,8 +5,12 @@ import {createElement} from 'react'
 // modules, which are not executable in this environment.
 const Text = 'Text'
 const View = 'View'
+const Svg = 'Svg'
+const Path = 'Path'
 const ScrollView = 'ScrollView'
 const Pressable = 'Pressable'
+const ActivityIndicator = 'ActivityIndicator'
+const VirtualizedList = 'VirtualizedList'
 const TextInput = Object.assign(
   (props: Readonly<Record<string, unknown>>) => createElement('TextInput', props),
   {State: {currentlyFocusedInput: (): {focus: () => void} | null => null}},
@@ -37,4 +41,5 @@ const testGlobals = globalThis as typeof globalThis & {
 }
 testGlobals.__restoreReactNativeTestGlobals?.()
 
-export {BackHandler, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, useWindowDimensions, View}
+export {ActivityIndicator, BackHandler, Keyboard, Path, Pressable, ScrollView, StyleSheet, Svg, Text, TextInput, VirtualizedList, useColorScheme, useWindowDimensions, View}
+export default Svg

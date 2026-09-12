@@ -10,6 +10,7 @@ import {moduleName as input} from '@catering-v2s/ui-base-input'
 import {moduleName as staffAuth} from '@catering-v2s/ui-feature-sample-staff-auth'
 import {moduleName as memberDesk} from '@catering-v2s/ui-feature-sample-member-desk'
 import {moduleName as devHost} from '@catering-v2s/ui-base-dev-host'
+import {moduleName as adminShell} from '@catering-v2s/ui-base-admin-shell'
 
 export const dependencyModuleNames = [
   contracts,
@@ -23,6 +24,7 @@ export const dependencyModuleNames = [
   input,
   staffAuth,
   memberDesk,
+  adminShell,
 ] as const;
 
 export const devDependencyModuleNames = [devHost] as const

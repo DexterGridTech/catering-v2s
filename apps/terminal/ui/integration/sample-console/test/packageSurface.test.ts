@@ -12,8 +12,9 @@ describe('sample-console package surface', () => {
       'kernel.base.ui-state',
     'kernel.feature.sample-member-registry',
     'kernel.feature.sample-staff-session',
-    'ui.base.input',
-    'ui.base.render',
+      'ui.base.admin-shell',
+      'ui.base.input',
+      'ui.base.render',
       'ui.feature.sample-member-desk',
       'ui.feature.sample-staff-auth',
     ]);
@@ -23,6 +24,9 @@ describe('sample-console package surface', () => {
         landscape: {
           PRIMARY: {width: 1280, height: 800},
           SECONDARY: {width: 960, height: 540},
+        },
+        portrait: {
+          PRIMARY: {width: 360, height: 800},
         },
       },
     });

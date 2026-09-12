@@ -72,17 +72,13 @@ runtime 关联记录；hardware density 另从 owner display 读取。IME 只更
 决定。本实现的 focused/Android 证据必须区分双屏 Android 模拟器验证与未覆盖的真实 POS 硬件；
 不得把模拟器结果表述成厂商 ROM、真实 DPI 或性能已验证。
 
-主屏的 system IME inset 由 `TerminalImeInsetsCoordinator.kt` 按 Activity window 生命周期安装、
-发布不可变 snapshot，并由 `TerminalImeInsetsEventBus` 转给 JS；它只监听 PRIMARY，不修改
-runtime/store。`TerminalPresentation` 不安装 system-IME listener：SECONDARY 的当前产品边界
-是只使用虚拟键盘。若将来副屏需要 system IME，必须另开 scoped keyboard/IME 设计，不能把主屏
-snapshot 推断为副屏能力。
+输入统一由 JS 侧的 virtual keyboard 承载；carrier 不采集、不发布、不向 render 合并系统 IME
+inset。若将来需要其他输入承载形态，必须另开 scoped keyboard/IME 设计，不能把 carrier 的
+host snapshot 推断为输入能力。
 
 结构：`TerminalDualScreenModule.kt` 是 Expo module 声明与 JS bridge，`TerminalDualScreenPackage.kt`
 是 Expo package 注册，`TerminalDualScreenActivityHandler.kt` 负责主屏 launch options、
-Presentation、ReactSurface 生命周期、per-surface host registry 与 carrier 诊断；
-`TerminalImeInsetsCoordinator.kt` 负责主屏 system-IME inset 监听与 event bus 发布，host
-registry 只在 adapter 内部合并该 inset 事实。
+Presentation、ReactSurface 生命周期、per-surface host registry 与 carrier 诊断。
 
 迭代指引：任何 carrier 改动先用当前 Expo/RN 的公开 API 和同一 host/store 反证，保留真实
 生命周期失败证据；禁止反射 RN 私有字段、增加第二实例后备路径，或借修改业务层绕过 Android

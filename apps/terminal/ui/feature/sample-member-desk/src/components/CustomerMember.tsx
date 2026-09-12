@@ -24,7 +24,7 @@ import {
 } from '@catering-v2s/ui-base-primitives'
 import {deskSystemFailureObservedCommand, memberSubmissionWithdrawnCommand} from '../features/commands/commands'
 import {classifyRequestResult} from './requestOutcome'
-import {ScrollArea} from './controls'
+import {InputScrollArea} from '@catering-v2s/ui-base-input'
 
 export type CustomerMemberProps = Readonly<{
   readonly mode: 'confirm' | 'handheld-confirm'
@@ -98,7 +98,7 @@ export const CustomerMember = ({mode}: CustomerMemberProps) => {
 
   return (
     <PrimitiveContainer testID="sample.desk.customer-member" layout="centered">
-      <ScrollArea testID="sample.desk.customer-member:scroll">
+      <InputScrollArea testID="sample.desk.customer-member:scroll">
         <PrimitiveHeading testID="sample.desk.customer-member:title">请确认登记</PrimitiveHeading>
         <PrimitiveText testID="sample.desk.customer-member:name" accessibilityLabel="姓名">
           {pending?.name ?? ''}
@@ -113,7 +113,7 @@ export const CustomerMember = ({mode}: CustomerMemberProps) => {
           年龄（可选）
         </PrimitiveLabel>
         <PrimitiveInput {...ageField.inputProps} editable={!requestInFlight} />
-      </ScrollArea>
+      </InputScrollArea>
       {canDecide ? (
         <PrimitiveActions testID="sample.desk.customer-member:actions">
           <PrimitiveButton

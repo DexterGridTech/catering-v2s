@@ -2,12 +2,15 @@ import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {describe, expect, it} from 'vitest'
 import {TextInput} from 'react-native'
 import {createRequestId} from '@catering-v2s/kernel-base-contracts'
+import {switchDisplayRoleCommand, switchInstanceModeCommand} from '@catering-v2s/kernel-base-display-context'
 import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
 import {
+  openLayerCommand,
   selectLayers,
   selectScreen,
   showScreenCommand,
 } from '@catering-v2s/kernel-base-ui-state'
+import {createUiCatalog, selectAvailableParts} from '@catering-v2s/kernel-base-ui-state'
 import {
   confirmMemberCommand,
   rejectMemberCommand,
@@ -21,10 +24,48 @@ import {
   memberSubmissionWithdrawnCommand,
 } from '../../../../ui/feature/sample-member-desk/src/features/commands/commands'
 import {createSampleAssembly, createSurfaceForDisplayIndex} from '../src'
+import {createSampleDefinedParts} from '../src/assembly/assembly'
+import {adminTestIds} from '@catering-v2s/ui-base-admin-shell'
 import {createTestPlatformPorts} from './support'
 
 const LANDSCAPE_PRIMARY_FRAME = {width: 1280, height: 800} as const
 const LANDSCAPE_SECONDARY_FRAME = {width: 960, height: 540} as const
+
+type HostMeasurementSnapshot = Readonly<{
+  readonly stableHostLogicalSize: Readonly<{readonly width: number; readonly height: number}>
+  readonly isHostPrimaryDisplay: boolean
+}>
+
+type HostSourceHandle = Readonly<{
+  readonly getSnapshot: () => HostMeasurementSnapshot
+  readonly subscribe: (listener: (snapshot: HostMeasurementSnapshot) => void) => () => void
+  readonly emit: (snapshot: HostMeasurementSnapshot) => void
+}>
+
+const createHostSource = (isHostPrimaryDisplay: boolean): HostSourceHandle => {
+  let currentSnapshot: HostMeasurementSnapshot = Object.freeze({
+    stableHostLogicalSize: Object.freeze({width: 1280, height: 800}),
+    isHostPrimaryDisplay,
+  })
+  const listeners = new Set<(snapshot: HostMeasurementSnapshot) => void>()
+  return Object.freeze({
+    getSnapshot: () => currentSnapshot,
+    subscribe: (listener: (snapshot: HostMeasurementSnapshot) => void) => {
+      listeners.add(listener)
+      return () => { listeners.delete(listener) }
+    },
+    emit: (snapshot: HostMeasurementSnapshot) => {
+      currentSnapshot = Object.freeze({
+        stableHostLogicalSize: Object.freeze({
+          width: snapshot.stableHostLogicalSize.width,
+          height: snapshot.stableHostLogicalSize.height,
+        }),
+        isHostPrimaryDisplay: snapshot.isHostPrimaryDisplay,
+      })
+      for (const listener of listeners) listener(currentSnapshot)
+    },
+  })
+}
 
 const mount = (
   element: Parameters<typeof create>[0],
@@ -48,9 +89,19 @@ const press = (renderer: ReactTestRenderer, testID: string): (() => unknown) => 
   return instance.props.onPress
 }
 
+const pressLauncher = (renderer: ReactTestRenderer): void => {
+  const launcher = renderer.root.findByProps({testID: adminTestIds.launcher}) as unknown as Readonly<{
+    readonly props: Readonly<{
+      readonly onPress: (event: Readonly<{readonly nativeEvent: Readonly<{readonly locationX: number; readonly locationY: number}>}>) => void
+    }>
+  }>
+  launcher.props.onPress({nativeEvent: {locationX: 1, locationY: 1}})
+}
+
 type TextInputTestInstance = Readonly<{
   readonly props: Readonly<{
     readonly testID?: unknown
+    readonly value?: unknown
     readonly onFocus: (event: Readonly<{readonly nativeEvent: Readonly<Record<string, never>>}>) => void
   }>
 }>
@@ -65,6 +116,274 @@ const findTextInput = (renderer: ReactTestRenderer, testID: string): TextInputTe
 }
 
 describe('sample-console real assembly', () => {
+  it('exposes the injected sample section through the same catalog projection', () => {
+    const context = {
+      displayMode: 'PRIMARY' as const,
+      workspace: 'MAIN' as const,
+      instanceMode: 'MASTER' as const,
+      surfaceForm: 'laptop' as const,
+    }
+    const withSample = createUiCatalog(createSampleDefinedParts().map(({catalogEntry}) => catalogEntry))
+    const withoutSample = createUiCatalog(createSampleDefinedParts(false).map(({catalogEntry}) => catalogEntry))
+    expect(selectAvailableParts(withSample, 'admin.sections', context).map(entry => entry.partKey)).toContain('sample.console.admin-test')
+    expect(selectAvailableParts(withoutSample, 'admin.sections', context).map(entry => entry.partKey)).not.toContain('sample.console.admin-test')
+  })
+
+  it('opens admin through the real gesture/keypad controls and close/reopen returns to login', async () => {
+    const hostSource = createHostSource(true)
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts(),
+      persistenceKey: `sample-console-admin-controls-test-${Date.now()}`,
+      surfaceHostSourcesByDisplayIndex: {0: hostSource},
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME)
+      for (let index = 0; index < 5; index += 1) {
+        await act(async () => {
+          pressLauncher(renderer!)
+          await new Promise(resolve => setTimeout(resolve, 0))
+        })
+      }
+      expect(renderer.root.findByProps({testID: adminTestIds.login})).toBeDefined()
+      expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard:text-1'})).toBeDefined()
+      for (const digit of ['1', '2', '3', '4', '5', '6']) {
+        await act(async () => {
+          press(renderer!, `ui.base.input:virtual-keyboard:text-${digit}`)()
+          await new Promise(resolve => setTimeout(resolve, 0))
+        })
+      }
+      await act(async () => {
+        press(renderer!, adminTestIds.verify)()
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      expect(renderer.root.findByProps({testID: adminTestIds.shell})).toBeDefined()
+      expect(renderer.root.findByProps({testID: adminTestIds.sections.sampleConsole})).toBeDefined()
+      await act(async () => {
+        press(renderer!, adminTestIds.sections.runtime)()
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      expect(renderer.root.findByProps({testID: 'admin.console.runtime'})).toBeDefined()
+      expect(renderer.root.findAllByProps({testID: 'sample.console.admin-test'})).toHaveLength(0)
+      await act(async () => {
+        hostSource.emit({
+          stableHostLogicalSize: {width: 1000, height: 700},
+          isHostPrimaryDisplay: true,
+        })
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      expect(renderer.root.findByProps({testID: adminTestIds.shell})).toBeDefined()
+      expect(renderer.root.findByProps({testID: 'admin.console.runtime'})).toBeDefined()
+      await act(async () => {
+        press(renderer!, adminTestIds.close)()
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      expect(renderer.root.findAllByProps({testID: adminTestIds.shell})).toHaveLength(0)
+      for (let index = 0; index < 5; index += 1) {
+        await act(async () => {
+          pressLauncher(renderer!)
+          await new Promise(resolve => setTimeout(resolve, 0))
+        })
+      }
+      expect(renderer.root.findByProps({testID: adminTestIds.login})).toBeDefined()
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('keeps admin keyboard ownership while business input remains underneath and restores it on close', async () => {
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts(),
+      persistenceKey: `sample-console-admin-focus-scope-test-${Date.now()}`,
+      surfaceHostSourcesByDisplayIndex: {0: createHostSource(true)},
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      await assembly.runtime.dispatchCommand(showScreenCommand, {
+        displayMode: 'PRIMARY',
+        containerKey: 'main',
+        partKey: 'sample.desk.member-form',
+      }, {
+        requestId: createRequestId(),
+        routeContext: {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'},
+      })
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME)
+
+      const businessInput = findTextInput(renderer, 'sample.desk.member-form:phone')
+      act(() => { businessInput.props.onFocus({nativeEvent: {}}) })
+      await act(async () => {
+        press(renderer!, 'ui.base.input:virtual-keyboard:text-3')()
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      expect(findTextInput(renderer, 'sample.desk.member-form:phone').props.value).toBe('3')
+
+      for (let index = 0; index < 5; index += 1) {
+        await act(async () => {
+          pressLauncher(renderer!)
+          await new Promise(resolve => setTimeout(resolve, 0))
+        })
+      }
+      expect(renderer.root.findByProps({testID: adminTestIds.login})).toBeDefined()
+
+      const businessInputUnderAdmin = findTextInput(renderer, 'sample.desk.member-form:phone')
+      act(() => { businessInputUnderAdmin.props.onFocus({nativeEvent: {}}) })
+      await act(async () => {
+        press(renderer!, 'ui.base.input:virtual-keyboard:text-1')()
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      expect(renderer.root.findByProps({testID: `${adminTestIds.password}:digit:0`}).props.children).toBe('•')
+      expect(findTextInput(renderer, 'sample.desk.member-form:phone').props.value).toBe('3')
+
+      await act(async () => {
+        press(renderer!, adminTestIds.close)()
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      expect(renderer.root.findAllByProps({testID: adminTestIds.login})).toHaveLength(0)
+      const restoredBusinessInput = findTextInput(renderer, 'sample.desk.member-form:phone')
+      act(() => { restoredBusinessInput.props.onFocus({nativeEvent: {}}) })
+      await act(async () => {
+        press(renderer!, 'ui.base.input:virtual-keyboard:text-4')()
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      expect(findTextInput(renderer, 'sample.desk.member-form:phone').props.value).toBe('34')
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('shows the effective fallback password only when runtime debug mode is enabled', async () => {
+    const events: never[] = []
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts({events}),
+      persistenceKey: `sample-console-admin-debug-password-test-${Date.now()}`,
+      startupDebugMode: true,
+      surfaceHostSourcesByDisplayIndex: {0: createHostSource(true)},
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME)
+      for (let index = 0; index < 5; index += 1) {
+        await act(async () => {
+          pressLauncher(renderer!)
+          await new Promise(resolve => setTimeout(resolve, 0))
+        })
+      }
+      const debugPassword = renderer.root.findByProps({testID: adminTestIds.debugPassword})
+      expect(debugPassword.props.children).toContain('123456')
+      expect(events.some(event => String((event as {readonly event?: unknown}).event) === 'sample.runtime-facts-resolved')).toBe(true)
+      expect(events.some(event => JSON.stringify(event).includes('123456'))).toBe(false)
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('does not expose the admin launcher on a physical non-host surface', async () => {
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts(),
+      persistenceKey: `sample-console-admin-secondary-test-${Date.now()}`,
+      surfaceHostSourcesByDisplayIndex: {1: createHostSource(false)},
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 1))
+      expect(renderer.root.findAllByProps({testID: adminTestIds.launcher})).toHaveLength(0)
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('cleans only admin state on a display identity replacement and recomputes canvas geometry', async () => {
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts(),
+      persistenceKey: `sample-console-admin-replacement-test-${Date.now()}`,
+      surfaceHostSourcesByDisplayIndex: {0: createHostSource(true)},
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      await assembly.runtime.dispatchCommand(openLayerCommand, {
+        displayMode: 'PRIMARY',
+        layerId: 'business-layer',
+        partKey: 'sample.desk.waiting-confirm',
+      }, {requestId: createRequestId()})
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME)
+      for (let index = 0; index < 5; index += 1) {
+        await act(async () => {
+          pressLauncher(renderer!)
+          await new Promise(resolve => setTimeout(resolve, 0))
+        })
+      }
+      for (const digit of ['1', '2', '3', '4', '5', '6']) {
+        await act(async () => {
+          press(renderer!, `ui.base.input:virtual-keyboard:text-${digit}`)()
+          await new Promise(resolve => setTimeout(resolve, 0))
+        })
+      }
+      await act(async () => {
+        press(renderer!, adminTestIds.verify)()
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      expect(selectLayers(assembly.runtime.getState(), 'PRIMARY').map(layer => layer.layerId)).toEqual(expect.arrayContaining([
+        'business-layer',
+        'admin.console.layer',
+      ]))
+
+      await act(async () => {
+        await assembly.runtime.dispatchCommand(switchInstanceModeCommand, {instanceMode: 'SLAVE'}, {
+          requestId: createRequestId(),
+          routeContext: {displayMode: 'PRIMARY'},
+        })
+        await assembly.runtime.dispatchCommand(switchDisplayRoleCommand, {displayRole: 'VICE'}, {
+          requestId: createRequestId(),
+          routeContext: {displayMode: 'PRIMARY'},
+        })
+        ;(renderer as unknown as {readonly update: (element: ReturnType<typeof createSurfaceForDisplayIndex>) => void}).update(createSurfaceForDisplayIndex(assembly, 0))
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+
+      expect(renderer.root.findAllByProps({testID: adminTestIds.shell})).toHaveLength(0)
+      expect(selectLayers(assembly.runtime.getState(), 'PRIMARY').map(layer => layer.layerId)).toEqual(['business-layer'])
+      const canvas = renderer.root.findByProps({testID: 'ui-base-render:surface-host-canvas'})
+      expect(canvas.props.style).toEqual(expect.arrayContaining([
+        expect.objectContaining({width: 960, height: 540}),
+      ]))
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+  it('reads device identity once at assembly startup and exposes only the normalized fact', async () => {
+    let deviceInfoCalls = 0
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts({
+        onGetDeviceInfo: () => { deviceInfoCalls += 1 },
+        deviceInfo: {
+          deviceId: ' DEVICE-001 ',
+          manufacturer: 'Example',
+          model: 'Terminal',
+          systemName: 'Android',
+          systemVersion: '15',
+          logicalProcessorCount: 8,
+        },
+      }),
+      persistenceKey: `sample-console-device-identity-test-${Date.now()}`,
+    })
+    try {
+      expect(deviceInfoCalls).toBe(1)
+      expect(assembly.runtimeFacts.deviceIdentity).toEqual({available: true, deviceId: 'DEVICE-001'})
+      expect(Object.isFrozen(assembly.runtimeFacts)).toBe(true)
+      expect(Object.isFrozen(assembly.runtimeFacts.deviceIdentity)).toBe(true)
+      createSurfaceForDisplayIndex(assembly, 0)
+      createSurfaceForDisplayIndex(assembly, 0)
+      expect(deviceInfoCalls).toBe(1)
+    } finally {
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
   it('starts the single assembly with all nine input modules and the runtime module', async () => {
     const assembly = await createSampleAssembly({
       platformPorts: createTestPlatformPorts(),

@@ -29,16 +29,19 @@ import {
   createVariableStateFamily,
   readVariableState,
 } from '../foundations/variableSlices'
+import {createSurfaceFormSlice} from '../features/slices/surfaceForm'
+import {selectSurfaceForm as selectSurfaceFormFromState} from '../selectors/selectSurfaceForm'
 import {assertUiVariableDeclaration} from '../foundations/uiVariable'
 import {dependencyModuleNames} from '../dependencies'
 import {moduleKind, moduleName} from '../moduleName'
-import type {UiCatalog} from '../types/catalog'
+import {isSurfaceForm, type SurfaceForm, type UiCatalog} from '../types/catalog'
 import type {UiStateModule} from '../types/module'
 import type {UiVariableDeclaration} from '../types/variable'
 
 type CreateUiStateModuleInput = Readonly<{
   readonly catalog: UiCatalog
   readonly variables: readonly UiVariableDeclaration<StateJsonValue>[]
+  readonly surfaceForm: SurfaceForm
 }>
 
 type VariableRegistry = ReadonlyMap<string, UiVariableDeclaration<StateJsonValue>>
@@ -66,11 +69,13 @@ export const createUiStateModule = (
 ): UiStateModule => {
   if (typeof input !== 'object' || input === null) throw new Error('[ui-state] module input must be an object')
   if (typeof input.catalog !== 'object' || input.catalog === null) throw new Error('[ui-state] catalog is required')
+  if (!isSurfaceForm(input.surfaceForm)) throw new Error('[ui-state] surfaceForm is required')
   const registry = createVariableRegistry(input.variables)
   const variableFamily = createVariableStateFamily(registry)
+  const surfaceFormSlice = createSurfaceFormSlice(input.surfaceForm)
   const actors = [
     createShowScreenActor(),
-    createOpenLayerActor(),
+    createOpenLayerActor({catalog: input.catalog, selectSurfaceForm: selectSurfaceFormFromState}),
     createCloseLayerActor(),
     createClearLayersActor(),
     createSetUiVariablesActor(registry, variableFamily),
@@ -87,6 +92,7 @@ export const createUiStateModule = (
   const stateSlices = Object.freeze([
     ...contentStateRegistrations,
     ...variableFamily.registrations,
+    surfaceFormSlice,
   ])
 
   const selectUiVariable = <TValue extends StateJsonValue>(
@@ -119,6 +125,7 @@ export const createUiStateModule = (
     })),
     stateSlices,
     catalog: input.catalog,
+    selectSurfaceForm: selectSurfaceFormFromState,
     selectUiVariable,
   }
   return Object.freeze(module)

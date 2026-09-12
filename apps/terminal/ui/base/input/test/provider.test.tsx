@@ -7,7 +7,7 @@ import {useInputField} from '../src/hooks/useInputField'
 import {useInputSnapshot} from '../src/hooks/useInputSnapshot'
 import {useInputKeyboardState} from '../src/contexts/context'
 import type {InputFieldResult} from '../src/types/types'
-import {Keyboard, TextInput} from 'react-native'
+import {TextInput} from 'react-native'
 import {useRef} from 'react'
 
 const TEST_FRAME = {width: 960, height: 540} as const
@@ -115,29 +115,24 @@ const mountWithNodeMock = (
 const Field = ({
   fieldId,
   testID,
-  keyboardKind,
+  nativeLess = false,
   onReady,
 }: Readonly<{
   readonly fieldId: string
   readonly testID: string
-  readonly keyboardKind: 'system' | 'virtual'
+  readonly nativeLess?: boolean
+  readonly keyboardKind?: 'virtual'
   readonly onReady: (result: InputFieldResult) => void
 }>) => {
   const result = useInputField(
-    keyboardKind === 'virtual'
-      ? {
-          fieldId,
-          testID,
-          accessibilityLabel: fieldId,
-          keyboardKind: 'virtual',
-          layout: 'numeric',
-        }
-      : {
-          fieldId,
-          testID,
-          accessibilityLabel: fieldId,
-          keyboardKind: 'system',
-        },
+    {
+      fieldId,
+      testID,
+      accessibilityLabel: fieldId,
+      keyboardKind: 'virtual',
+      layout: 'numeric',
+      nativeLess,
+    },
   )
   onReady(result)
   return <PrimitiveInput {...result.inputProps} />
@@ -156,32 +151,24 @@ const SnapshotProbe = ({onReady}: Readonly<{readonly onReady: (capture: () => Re
 const RenderCountingField = ({
   fieldId,
   testID,
-  keyboardKind,
   onRender,
 }: Readonly<{
   readonly fieldId: string
   readonly testID: string
-  readonly keyboardKind: 'system' | 'virtual'
+  readonly keyboardKind?: 'virtual'
   readonly onRender: (count: number) => void
 }>) => {
   const renderCountRef = useRef(0)
   renderCountRef.current += 1
   onRender(renderCountRef.current)
   const result = useInputField(
-    keyboardKind === 'virtual'
-      ? {
-          fieldId,
-          testID,
-          accessibilityLabel: fieldId,
-          keyboardKind: 'virtual',
-          layout: 'numeric',
-        }
-      : {
-          fieldId,
-          testID,
-          accessibilityLabel: fieldId,
-          keyboardKind: 'system',
-        },
+    {
+      fieldId,
+      testID,
+      accessibilityLabel: fieldId,
+      keyboardKind: 'virtual',
+      layout: 'numeric',
+    },
   )
   return <PrimitiveInput {...result.inputProps} />
 }
@@ -261,6 +248,29 @@ describe('input provider', () => {
     act(() => { renderer.unmount() })
   })
 
+  it('commits virtual keyboard state when a native-less field has no ref', () => {
+    let field: InputFieldResult | undefined
+    let state: ReturnType<typeof useInputKeyboardState> | undefined
+    const renderer = mount(
+      <InputSurfaceFrame>
+        <StateProbe onState={value => { state = value }} />
+        <Field
+          fieldId="native-less"
+          testID="sample:native-less"
+          nativeLess
+          onReady={value => { field = value }}
+        />
+      </InputSurfaceFrame>,
+    )
+
+    expect(field?.inputProps.inputRef).toBeNull()
+    act(() => { field?.focus() })
+    expect(state?.activeFieldId).toBe('native-less')
+    expect(state?.owner).toBe('virtual')
+    expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'})).toBeDefined()
+    act(() => { renderer.unmount() })
+  })
+
   it('exposes the same synchronous snapshot boundary without subscribing to values', () => {
     let capture: (() => ReturnType<ReturnType<typeof useInputSnapshot>>) | undefined
     const renderer = mount(
@@ -280,33 +290,29 @@ describe('input provider', () => {
     act(() => { renderer.unmount() })
   })
 
-  it('switches from virtual to system without leaving the virtual dock visible', () => {
+  it('keeps the virtual dock as the only keyboard owner across field changes', () => {
     const ready: Record<string, InputFieldResult> = {}
     const renderer = mount(
       <InputSurfaceFrame>
         <Field fieldId="virtual" testID="sample:virtual" keyboardKind="virtual" onReady={value => { ready.virtual = value }} />
-        <Field fieldId="system" testID="sample:system" keyboardKind="system" onReady={value => { ready.system = value }} />
+        <Field fieldId="second" testID="sample:second" keyboardKind="virtual" onReady={value => { ready.second = value }} />
       </InputSurfaceFrame>,
     )
     const input = (testID: string) => renderer.root.findAllByType(TextInput).find(node => node.props.testID === testID)!
 
     act(() => { input('sample:virtual').props.onFocus({nativeEvent: {}}) })
     expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'})).toBeDefined()
-    act(() => { input('sample:system').props.onFocus({nativeEvent: {}}) })
-    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0)
-    expect(input('sample:system').props.showSoftInputOnFocus).toBe(true)
+    act(() => { input('sample:second').props.onFocus({nativeEvent: {}}) })
+    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
     act(() => { renderer.unmount() })
   })
 
-  it('keeps native focus while switching keyboard owners in both directions', () => {
+  it('keeps native focus while switching between virtual fields', () => {
     const focusHarness = createNativeFocusHarness()
-    const dismiss = vi.spyOn(Keyboard, 'dismiss').mockImplementation(() => {
-      focusHarness.blurActive()
-    })
     const renderer = mountWithNodeMock(
       <InputSurfaceFrame>
         <Field fieldId="owner-virtual" testID="sample:owner-virtual" keyboardKind="virtual" onReady={() => undefined} />
-        <Field fieldId="owner-system" testID="sample:owner-system" keyboardKind="system" onReady={() => undefined} />
+        <Field fieldId="owner-second" testID="sample:owner-second" keyboardKind="virtual" onReady={() => undefined} />
       </InputSurfaceFrame>,
       focusHarness.createNodeMock,
     )
@@ -315,34 +321,28 @@ describe('input provider', () => {
     expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
     expect(focusHarness.isFocused('sample:owner-virtual')).toBe(true)
 
-    act(() => { focusHarness.focus('sample:owner-system') })
-    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0)
-    expect(focusHarness.isFocused('sample:owner-system')).toBe(true)
-    expect(dismiss).toHaveBeenCalledTimes(0)
+    act(() => { focusHarness.focus('sample:owner-second') })
+    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+    expect(focusHarness.isFocused('sample:owner-second')).toBe(true)
 
     act(() => { focusHarness.focus('sample:owner-virtual') })
     expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
     expect(focusHarness.isFocused('sample:owner-virtual')).toBe(true)
-    expect(dismiss).toHaveBeenCalledTimes(1)
+    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
 
-    act(() => { focusHarness.focus('sample:owner-system') })
-    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0)
-    expect(focusHarness.isFocused('sample:owner-system')).toBe(true)
-    expect(dismiss).toHaveBeenCalledTimes(1)
+    act(() => { focusHarness.focus('sample:owner-second') })
+    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+    expect(focusHarness.isFocused('sample:owner-second')).toBe(true)
     act(() => { renderer.unmount() })
-    dismiss.mockRestore()
   })
 
-  it('preserves the first pointer focus when preflight switches system to virtual', () => {
+  it('preserves the first pointer focus when preflight switches between virtual fields', () => {
     const focusHarness = createNativeFocusHarness()
-    const dismiss = vi.spyOn(Keyboard, 'dismiss').mockImplementation(() => {
-      focusHarness.blurActive()
-    })
     let state: ReturnType<typeof useInputKeyboardState> | undefined
     const renderer = mountWithNodeMock(
       <InputSurfaceFrame>
         <StateProbe onState={value => { state = value }} />
-        <Field fieldId="owner-system-pointer" testID="sample:owner-system-pointer" keyboardKind="system" onReady={() => undefined} />
+        <Field fieldId="owner-first-pointer" testID="sample:owner-first-pointer" keyboardKind="virtual" onReady={() => undefined} />
         <Field fieldId="owner-virtual-pointer" testID="sample:owner-virtual-pointer" keyboardKind="virtual" onReady={() => undefined} />
       </InputSurfaceFrame>,
       focusHarness.createNodeMock,
@@ -350,8 +350,8 @@ describe('input provider', () => {
     const virtualInput = renderer.root.findAllByType(TextInput)
       .find(node => node.props.testID === 'sample:owner-virtual-pointer')!
 
-    act(() => { focusHarness.focus('sample:owner-system-pointer') })
-    expect(state?.owner).toBe('system')
+    act(() => { focusHarness.focus('sample:owner-first-pointer') })
+    expect(state?.owner).toBe('virtual')
     const stopPropagation = vi.fn()
     act(() => { virtualInput.props.onPressIn?.({stopPropagation}) })
     expect(stopPropagation).toHaveBeenCalledTimes(1)
@@ -361,33 +361,29 @@ describe('input provider', () => {
     expect(state?.owner).toBe('virtual')
     expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'})).toBeDefined()
     act(() => { renderer.unmount() })
-    dismiss.mockRestore()
   })
 
-  it('uses the same preflight before programmatic focus-next crosses owners', () => {
+  it('uses the same preflight before programmatic focus-next across virtual fields', () => {
     const focusHarness = createNativeFocusHarness()
-    vi.spyOn(Keyboard, 'dismiss').mockImplementation(() => {
-      focusHarness.blurActive()
-    })
     const ready: Record<string, InputFieldResult> = {}
     let state: ReturnType<typeof useInputKeyboardState> | undefined
     const renderer = mountWithNodeMock(
       <InputSurfaceFrame>
         <StateProbe onState={value => { state = value }} />
-        <Field fieldId="complete-owner-system" testID="sample:owner-system-pointer-next" keyboardKind="system" onReady={value => { ready.system = value }} />
+        <Field fieldId="complete-owner-first" testID="sample:owner-first-pointer-next" keyboardKind="virtual" onReady={value => { ready.first = value }} />
         <Field fieldId="complete-owner-virtual" testID="sample:owner-virtual-pointer-next" keyboardKind="virtual" onReady={value => { ready.virtual = value }} />
       </InputSurfaceFrame>,
       element => {
         const testID = element.props.testID
-        if (testID === 'sample:owner-system-pointer-next' || testID === 'sample:owner-virtual-pointer-next') {
+        if (testID === 'sample:owner-first-pointer-next' || testID === 'sample:owner-virtual-pointer-next') {
           return focusHarness.createNodeMock(element)
         }
         return {}
       },
     )
 
-    act(() => { focusHarness.focus('sample:owner-system-pointer-next') })
-    act(() => { ready.system.complete() })
+    act(() => { focusHarness.focus('sample:owner-first-pointer-next') })
+    act(() => { ready.first.complete() })
     expect(focusHarness.isFocused('sample:owner-virtual-pointer-next')).toBe(true)
     expect(state?.activeFieldId).toBe('complete-owner-virtual')
     expect(state?.owner).toBe('virtual')
@@ -439,27 +435,27 @@ describe('input provider', () => {
     act(() => { renderer.unmount() })
   })
 
-  it('leaves system keyboard selection under the native input while text changes', () => {
+  it('keeps virtual selection under the native input while text changes', () => {
     let capture: (() => ReturnType<ReturnType<typeof useInputSnapshot>>) | undefined
     const renderer = mount(
       <InputSurfaceFrame>
         <SnapshotProbe onReady={value => { capture = value }} />
-        <Field fieldId="system-selection" testID="sample:system-selection" keyboardKind="system" onReady={() => undefined} />
+        <Field fieldId="virtual-selection" testID="sample:virtual-selection" keyboardKind="virtual" onReady={() => undefined} />
       </InputSurfaceFrame>,
     )
-    const input = renderer.root.findAllByType(TextInput).find(node => node.props.testID === 'sample:system-selection')!
-    expect(input.props.selection).toBeUndefined()
+    const input = renderer.root.findAllByType(TextInput).find(node => node.props.testID === 'sample:virtual-selection')!
+    expect(input.props.selection).toEqual({start: 0, end: 0})
     act(() => { input.props.onFocus({nativeEvent: {}}) })
     act(() => { input.props.onChangeText('1') })
     act(() => { input.props.onChangeText('12') })
     expect(input.props.value).toBe('12')
-    expect(input.props.selection).toBeUndefined()
+    expect(input.props.selection).toEqual({start: 0, end: 0})
     act(() => {
       input.props.onSelectionChange({nativeEvent: {selection: {start: 2, end: 2}}})
     })
     expect(capture?.()).toEqual({
       revision: 1,
-      fields: {"system-selection": {value: '12', selection: {start: 2, end: 2}}},
+      fields: {"virtual-selection": {value: '12', selection: {start: 2, end: 2}}},
     })
     act(() => { renderer.unmount() })
   })

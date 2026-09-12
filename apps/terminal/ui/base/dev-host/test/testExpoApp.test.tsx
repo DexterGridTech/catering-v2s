@@ -56,7 +56,7 @@ describe('ui.base.dev-host surface lifecycle', () => {
       SECONDARY: {mounts: 0, unmounts: 0},
     };
     const assembly: TestExpoAssembly = {
-      createSurface: displayMode => <SurfaceProbe displayMode={displayMode} lifecycle={lifecycle} />,
+      createSurface: input => <SurfaceProbe displayMode={input.displayMode} lifecycle={lifecycle} />,
     };
     const createAssembly = vi.fn(async (): Promise<TestExpoAssembly> => assembly);
     const App = createTestExpoApp({

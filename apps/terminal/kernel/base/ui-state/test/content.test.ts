@@ -66,7 +66,7 @@ const createFixture = async (input: Readonly<{
     modules: [
       ...createDependencies(),
       createDisplayContextModule(),
-      createUiStateModule({catalog: createUiCatalog([]), variables: []}),
+      createUiStateModule({catalog: testLayerCatalog, variables: [], surfaceForm: 'laptop'}),
     ],
     platformPorts: createDisplayPlatformPorts({
       device,
@@ -87,6 +87,24 @@ const createFixture = async (input: Readonly<{
 }
 
 const createEvents = () => [] as LogEvent[]
+
+const testLayerCatalog = createUiCatalog([
+  'transient-layer',
+  'payment-alert',
+  'different-alert',
+  'one',
+  'two',
+].map(partKey => ({
+  partKey,
+  rendererKey: `${partKey}-renderer`,
+  containerKeys: [],
+  displayModes: ['PRIMARY', 'SECONDARY'] as const,
+  workspaces: ['MAIN', 'BRANCH'] as const,
+  instanceModes: ['MASTER', 'SLAVE'] as const,
+  surfaceForm: ['laptop', 'mobile'] as const,
+  title: partKey,
+  description: partKey,
+})))
 
 const dispatchOptions = (displayMode: 'PRIMARY' | 'SECONDARY' = 'PRIMARY') => ({
   requestId: createRequestId(),

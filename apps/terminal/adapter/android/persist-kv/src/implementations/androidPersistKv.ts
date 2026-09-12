@@ -69,18 +69,16 @@ export const createAndroidPersistKvPort = (persistenceKey: string): StateStorage
     listKeys: (input: StateStorageCall) => callNative('listKeys', (native) => native.listKeys(persistenceKey, input.timeoutMs)),
     clear: (input: StateStorageCall) => callNative('clear', (native) => native.clear(persistenceKey, input.timeoutMs)),
   }
-  if (__DEV__) {
-    Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
-      value: Object.freeze({
-        port: 'persistKv',
-        capabilities: Object.freeze([
-          'read', 'write', 'remove', 'readMany', 'writeMany', 'removeMany', 'listKeys', 'clear',
-        ].map(capability => Object.freeze({capability, state: 'real' as const, source: 'adapter' as const}))),
-      }),
-      enumerable: false,
-      writable: false,
-      configurable: false,
-    })
-  }
+  Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
+    value: Object.freeze({
+      port: 'persistKv',
+      capabilities: Object.freeze([
+        'read', 'write', 'remove', 'readMany', 'writeMany', 'removeMany', 'listKeys', 'clear',
+      ].map(capability => Object.freeze({capability, state: 'real' as const, source: 'adapter' as const}))),
+    }),
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  })
   return Object.freeze(port)
 }

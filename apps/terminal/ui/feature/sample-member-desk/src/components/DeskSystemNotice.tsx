@@ -1,10 +1,12 @@
 import {
   PrimitiveButton,
+  PrimitiveActions,
+  PrimitiveContainer,
+  PrimitiveHeading,
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
 import {dispatchWithRequestId, useDispatchCommand} from '@catering-v2s/ui-base-render'
 import {deskSystemFailureDismissedCommand, type DeskSystemOperation} from '../features/commands/commands'
-import {DialogActions, DialogSurface} from './controls'
 
 export type DeskSystemNoticeProps = Readonly<{
   readonly operation: DeskSystemOperation
@@ -21,11 +23,12 @@ export const DeskSystemNotice = ({operation}: DeskSystemNoticeProps) => {
   })
 
   return (
-    <DialogSurface testID="sample.desk.system-notice" title="系统提示">
+    <PrimitiveContainer testID="sample.desk.system-notice" layout="card">
+      <PrimitiveHeading testID="sample.desk.system-notice:title">系统提示</PrimitiveHeading>
       <PrimitiveText testID="sample.desk.system-notice:message" accessibilityRole="alert">
         {messageForOperation(operation)}
       </PrimitiveText>
-      <DialogActions testID="sample.desk.system-notice:actions">
+      <PrimitiveActions testID="sample.desk.system-notice:actions">
         <PrimitiveButton
           testID="sample.desk.system-notice:dismiss"
           accessibilityLabel="关闭系统提示"
@@ -33,7 +36,7 @@ export const DeskSystemNotice = ({operation}: DeskSystemNoticeProps) => {
         >
           知道了
         </PrimitiveButton>
-      </DialogActions>
-    </DialogSurface>
+      </PrimitiveActions>
+    </PrimitiveContainer>
   )
 }

@@ -6,7 +6,10 @@ const testReactNativeEntry = fileURLToPath(new URL('../../../../../tools/termina
 export default defineConfig({
   define: {__DEV__: 'false'},
   resolve: {
-    alias: [{find: /^react-native$/, replacement: testReactNativeEntry}],
+    alias: [
+      {find: /^react-native$/, replacement: testReactNativeEntry},
+      {find: /^react-native-svg$/, replacement: testReactNativeEntry},
+    ],
   },
   test: {
     environment: 'node',

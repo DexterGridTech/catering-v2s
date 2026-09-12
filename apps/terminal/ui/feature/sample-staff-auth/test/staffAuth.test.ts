@@ -1,12 +1,13 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
-import {createElement} from 'react'
+import {createElement, cloneElement, type ReactElement} from 'react'
 import {TextInput} from 'react-native'
 import {describe, expect, it} from 'vitest'
 import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort} from '@catering-v2s/kernel-base-platform-ports'
 import type {CommandDispatchResult, Runtime} from '@catering-v2s/kernel-base-runtime'
 import {
   createRendererCatalog,
-  RenderProvider,
+  createRenderRuntimeFacts,
+  RenderProvider as ActualRenderProvider,
 } from '@catering-v2s/ui-base-render'
 import {InputSurfaceFrame} from '@catering-v2s/ui-base-input'
 import type {RenderProviderProps} from '@catering-v2s/ui-base-render'
@@ -25,6 +26,9 @@ import {
 import {operatorNameVariable} from '../src/features/variables/variables'
 
 type RuntimeStateRoot = ReturnType<Runtime['getState']>
+const RenderProvider = ActualRenderProvider as unknown as (props: Omit<RenderProviderProps, 'runtimeFacts'> & Readonly<{
+  readonly runtimeFacts?: RenderProviderProps['runtimeFacts']
+}>) => ReactElement | null
 type TestInstanceQuery = Readonly<{
   readonly findByProps: (props: Readonly<Record<string, unknown>>) => TestInstanceQuery
   readonly findAllByProps: (props: Readonly<Record<string, unknown>>) => readonly TestInstanceQuery[]
@@ -71,7 +75,16 @@ const mount = (
   frameLayout: FrameLayout = {width: 1280, height: 800},
 ): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined
-  act(() => { renderer = create(element) })
+  act(() => {
+    renderer = create(cloneElement(element as ReactElement<RenderProviderProps>, {
+      runtimeFacts: createRenderRuntimeFacts({
+        environmentMode: 'DEV',
+        debugMode: {enabled: true, source: 'startup'},
+        deviceIdentity: {available: false, deviceId: null},
+        platformPortCapabilities: [],
+      }),
+    }))
+  })
   const frames = renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'})
   act(() => {
     for (const frame of frames) {

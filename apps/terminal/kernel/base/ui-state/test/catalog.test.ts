@@ -12,6 +12,7 @@ const entry = (overrides: Partial<UiCatalogEntry> = {}): UiCatalogEntry => ({
   displayModes: ['PRIMARY'],
   workspaces: ['MAIN'],
   instanceModes: ['MASTER'],
+  surfaceForm: ['laptop', 'mobile'],
   title: 'Orders',
   description: 'Orders screen',
   ...overrides,
@@ -41,6 +42,7 @@ describe('ui-state catalog', () => {
       'instanceModes',
       'partKey',
       'rendererKey',
+      'surfaceForm',
       'title',
       'workspaces',
     ])
@@ -49,6 +51,7 @@ describe('ui-state catalog', () => {
       displayMode: 'SECONDARY',
       workspace: 'MAIN',
       instanceMode: 'SLAVE',
+      surfaceForm: 'laptop',
     }).map(candidate => candidate.partKey)).toEqual(['payment'])
   })
 
@@ -74,11 +77,13 @@ describe('ui-state catalog', () => {
       displayMode: 'PRIMARY',
       workspace: 'MAIN',
       instanceMode: 'MASTER',
+      surfaceForm: 'laptop',
     })).toEqual([])
     expect(selectAvailableParts(catalog, 'overlay', {
       displayMode: 'PRIMARY',
       workspace: 'MAIN',
       instanceMode: 'MASTER',
+      surfaceForm: 'laptop',
     })).toEqual([])
   })
 
@@ -96,6 +101,7 @@ describe('ui-state catalog', () => {
       displayMode: 'PRIMARY',
       workspace: 'MAIN',
       instanceMode: 'MASTER',
+      surfaceForm: 'laptop',
     }).map(candidate => candidate.partKey)).toEqual(['orders'])
   })
 

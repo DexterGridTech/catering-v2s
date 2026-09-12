@@ -38,7 +38,7 @@ class SalesMenuOwnerServiceOrderingTest {
     void sectionMoveFindsAdjacentSectionAcrossTheWholeVersionEvenWithOrderHoles() throws Exception {
         SalesMenuRepository repository = mock(SalesMenuRepository.class);
         stubMoveRows(repository, 10L, 2L, 100L, OTHER);
-        SalesMenuOwnerService service = service(repository);
+        Object service = target(repository, SECTION_TABLE);
 
         invokeMove(service, SECTION_TABLE, "section_ref", null, SalesMenuMoveDirection.UP);
 
@@ -59,7 +59,7 @@ class SalesMenuOwnerServiceOrderingTest {
     void itemMoveKeepsTheAdjacentSearchInsideTheCurrentSection() throws Exception {
         SalesMenuRepository repository = mock(SalesMenuRepository.class);
         stubMoveRows(repository, 10L, 2L, 100L, OTHER);
-        SalesMenuOwnerService service = service(repository);
+        Object service = target(repository, ITEM_TABLE);
 
         invokeMove(service, ITEM_TABLE, "sales_item_ref", SECTION, SalesMenuMoveDirection.UP);
 
@@ -83,7 +83,7 @@ class SalesMenuOwnerServiceOrderingTest {
                     RowMapper<Object> mapper = invocation.getArgument(1, RowMapper.class);
                     return List.of(mapper.mapRow(result, 0));
                 });
-        SalesMenuOwnerService service = service(repository);
+        Object service = target(repository, SECTION_TABLE);
 
         SalesMenuOwnerApi.Problem problem = assertThrows(
                 SalesMenuOwnerApi.Problem.class,
@@ -92,9 +92,11 @@ class SalesMenuOwnerServiceOrderingTest {
         assertEquals("MOVE_NOT_ALLOWED", problem.code());
     }
 
-    private static SalesMenuOwnerService service(SalesMenuRepository repository) {
+    private static Object target(SalesMenuRepository repository, String table) {
         TimeProvider time = () -> 1_788_000_000_000L;
-        return new SalesMenuOwnerService(repository, time, new ObjectMapper());
+        return SECTION_TABLE.equals(table)
+                ? new SalesMenuSectionService(repository, time, new ObjectMapper())
+                : new SalesMenuItemService(repository, time, new ObjectMapper());
     }
 
     private static void stubMoveRows(
@@ -126,24 +128,24 @@ class SalesMenuOwnerServiceOrderingTest {
     }
 
     private static void invokeMove(
-            SalesMenuOwnerService service,
+            Object service,
             String table,
             String refColumn,
             UUID section,
             SalesMenuMoveDirection direction)
             throws Exception {
-        Class<?> currentType = Class.forName(SalesMenuOwnerService.class.getName() + "$MoveCurrentRow");
+        Class<?> targetType = service.getClass();
+        Method move = null;
+        for (Method candidate : targetType.getDeclaredMethods()) {
+            if (candidate.getName().equals("move") && candidate.getParameterCount() == 7) {
+                move = candidate;
+                break;
+            }
+        }
+        if (move == null) throw new AssertionError("move helper not found on " + targetType.getName());
+        Class<?> currentType = move.getParameterTypes()[6];
         Constructor<?> currentConstructor = currentType.getDeclaredConstructor(UUID.class, long.class);
         currentConstructor.setAccessible(true);
-        Method move = SalesMenuOwnerService.class.getDeclaredMethod(
-                "move",
-                String.class,
-                String.class,
-                UUID.class,
-                UUID.class,
-                SalesMenuMoveDirection.class,
-                UUID.class,
-                currentType);
         move.setAccessible(true);
         try {
             move.invoke(

@@ -5,13 +5,17 @@ import {useRenderContext} from '../contexts/RenderContext'
 import {useSurfaceContext} from '../contexts/SurfaceContext'
 import {RenderFallback, resolvePart} from './resolvePart'
 import {useRenderSnapshot} from '../hooks/useRenderSnapshot'
+import {createCatalogContext} from '../foundations/createCatalogContext'
 
 const SCREEN_CONTAINER_TEST_ID = 'ui-base-render:screen-container'
 
 export const ScreenContainer = () => {
   const {displayMode, containerKey} = useSurfaceContext()
-  const {logger, uiCatalog, rendererCatalog, reportPartDiagnostic, clearPartDiagnostic} = useRenderContext()
+  const {logger, uiCatalog, rendererCatalog, reportPartDiagnostic, clearPartDiagnostic, selectSurfaceForm} = useRenderContext()
   const snapshot = useRenderSnapshot()
+  const catalogContext = snapshot.root === undefined
+    ? undefined
+    : createCatalogContext(snapshot.root, displayMode, selectSurfaceForm(snapshot.root))
 
   const placement = snapshot.root === undefined
     ? undefined
@@ -53,6 +57,8 @@ export const ScreenContainer = () => {
       {resolvePart({
         placement,
         displayMode,
+        containerKey,
+        catalogContext: catalogContext!,
         uiCatalog,
         rendererCatalog,
         reportPartDiagnostic,

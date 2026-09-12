@@ -1,11 +1,13 @@
 import {
   PrimitiveButton,
+  PrimitiveContainer,
+  PrimitiveActions,
+  PrimitiveHeading,
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
 import {dispatchWithRequestId, useDispatchCommand} from '@catering-v2s/ui-base-render'
 import {closeLayerCommand} from '@catering-v2s/kernel-base-ui-state'
 import {memberSubmissionWithdrawnCommand} from '../features/commands/commands'
-import {DialogActions, DialogSurface} from './controls'
 
 export const WithdrawConfirm = () => {
   const dispatchCommand = useDispatchCommand()
@@ -24,11 +26,12 @@ export const WithdrawConfirm = () => {
   })
 
   return (
-    <DialogSurface testID="sample.desk.withdraw-confirm" title="撤回登记">
+    <PrimitiveContainer testID="sample.desk.withdraw-confirm" layout="card">
+      <PrimitiveHeading testID="sample.desk.withdraw-confirm:title">撤回登记</PrimitiveHeading>
       <PrimitiveText testID="sample.desk.withdraw-confirm:message">
         撤回这次登记？
       </PrimitiveText>
-      <DialogActions testID="sample.desk.withdraw-confirm:actions">
+      <PrimitiveActions testID="sample.desk.withdraw-confirm:actions">
         <PrimitiveButton
           testID="sample.desk.withdraw-confirm:keep"
           accessibilityLabel="继续等待"
@@ -43,7 +46,7 @@ export const WithdrawConfirm = () => {
         >
           撤回
         </PrimitiveButton>
-      </DialogActions>
-    </DialogSurface>
+      </PrimitiveActions>
+    </PrimitiveContainer>
   )
 }

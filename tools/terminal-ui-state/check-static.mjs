@@ -240,8 +240,9 @@ function runPackageBoundary({root}) {
   if (queueSymbols.length) throw new Error(`ui-state must not define queue symbols: ${queueSymbols.join(', ')}`)
   if (ownPersistenceTypes.length) throw new Error(`ui-state must not define persistence types: ${ownPersistenceTypes.join(', ')}`)
   if (layerPersistenceFields.length) throw new Error(`ui-state persistence must not include layers: ${layerPersistenceFields.join(', ')}`)
-  if (workspaceDescriptorCalls < 2 || isolatedDeclarations !== 2 || syncDeclarations.length) {
-    throw new Error(`ui-state registrations must be two isolated workspace families without sync; descriptors=${workspaceDescriptorCalls} isolated=${isolatedDeclarations} sync=${JSON.stringify(syncDeclarations)}`)
+  const expectedIsolatedDeclarations = workspaceDescriptorCalls + 1
+  if (workspaceDescriptorCalls < 2 || isolatedDeclarations !== expectedIsolatedDeclarations || syncDeclarations.length) {
+    throw new Error(`ui-state registrations must be two isolated workspace families plus one assembly-scoped isolated fact without sync; descriptors=${workspaceDescriptorCalls} isolated=${isolatedDeclarations} expected=${expectedIsolatedDeclarations} sync=${JSON.stringify(syncDeclarations)}`)
   }
 }
 
@@ -300,7 +301,7 @@ function runCatalogStateBoundary({root}) {
   assertExactList(
     'ui-state catalog approved entry keys',
     approved ?? [],
-    ['partKey', 'rendererKey', 'containerKeys', 'displayModes', 'workspaces', 'instanceModes', 'title', 'description'],
+    ['partKey', 'rendererKey', 'containerKeys', 'displayModes', 'workspaces', 'instanceModes', 'surfaceForm', 'title', 'description'],
   )
   const statePathPattern = /(?:types[\\/]content|types[\\/]variable|foundations[\\/]workspaceSlices|foundations[\\/]variableSlices|features[\\/]commands|features[\\/]actors|selectors[\\/])/
   const forbiddenStateNames = new Set(['title', 'description', 'rendererKey', 'containerKeys'])

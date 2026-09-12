@@ -13,7 +13,9 @@ import {createCommand, defineCommand} from '@catering-v2s/kernel-base-runtime'
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
 import {
   createRendererCatalog,
+  createRenderRuntimeFacts,
   RenderProvider,
+  resolveDebugMode,
   useDispatchCommand,
   useRequestInFlight,
   useUiStateSelector,
@@ -508,8 +510,15 @@ describe('render runtime snapshot seam', () => {
           uiCatalog: createUiCatalog([]),
           rendererCatalog: createRendererCatalog([]),
           logger,
+          runtimeFacts: createRenderRuntimeFacts({
+            environmentMode: 'TEST',
+            debugMode: resolveDebugMode({}),
+            deviceIdentity: {available: false, deviceId: null},
+            platformPortCapabilities: [],
+          }),
           dispatchCommand,
           selectUiVariable,
+          selectSurfaceForm: () => 'laptop' as const,
         },
         createElement(Probe),
       ))

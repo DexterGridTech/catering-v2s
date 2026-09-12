@@ -89,6 +89,7 @@ const createVariables = () => {
 const createTestModule = (variables: ReturnType<typeof createVariables>): UiStateModule => createUiStateModule({
   catalog: createUiCatalog([]),
   variables: [variables.transient, variables.persisted, variables.sameLocalKey],
+  surfaceForm: 'laptop',
 })
 
 describe('ui-state workspace variables', () => {

@@ -1,4 +1,8 @@
-import {nowTimestampMs} from '@catering-v2s/kernel-base-contracts'
+import {
+  createAppError,
+  createModuleErrorFactory,
+  nowTimestampMs,
+} from '@catering-v2s/kernel-base-contracts'
 import {
   createWorkspaceActionDispatcher,
   type StateJsonValue,
@@ -30,10 +34,22 @@ import {
   contentActions,
   readContentState,
 } from '../../foundations/workspaceSlices'
+import {isUiCatalogEntryAvailable} from '../../foundations/catalog'
+import type {SurfaceForm, UiCatalog} from '../../types/catalog'
+import type {StateRoot} from '@catering-v2s/kernel-base-state'
 import {completeUiStateWrite} from './completeWrite'
 import type {DisplayMode} from '@catering-v2s/kernel-base-display-context'
 
 type PayloadRecord = Readonly<Record<string, unknown>>
+
+const defineError = createModuleErrorFactory(moduleName)
+const layerPartUnavailableErrorDefinition = defineError('layer-part-unavailable', {
+  name: 'UI layer part is unavailable for the current surface',
+  defaultTemplate: 'UI layer part is unavailable for the current surface',
+  category: 'VALIDATION',
+  severity: 'LOW',
+  code: 'ERR_TER_UI_STATE_LAYER_PART_UNAVAILABLE',
+})
 
 const readRecord = (value: unknown): PayloadRecord | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -143,6 +159,46 @@ const currentWorkspace = (context: ActorExecutionContext): WorkspaceKey => {
   })
 }
 
+const currentCatalogContext = (
+  state: StateRoot,
+  displayMode: DisplayMode,
+  selectSurfaceForm: (root: StateRoot) => SurfaceForm,
+) => {
+  const instanceMode = selectRuntimeInstanceMode(state)
+  const displayRole = selectDisplayRole(state)
+  return Object.freeze({
+    displayMode,
+    workspace: resolveWorkspace({instanceMode, displayRole}),
+    instanceMode,
+    surfaceForm: selectSurfaceForm(state),
+  })
+}
+
+const createLayerPartUnavailableError = (
+  context: ActorExecutionContext,
+  input: Readonly<{
+    readonly partKey: string
+    readonly catalog: UiCatalog
+    readonly catalogContext: ReturnType<typeof currentCatalogContext>
+  }>,
+) => createAppError(layerPartUnavailableErrorDefinition, {
+  context: {
+    commandName: context.command.commandName,
+    commandId: context.command.commandId,
+    requestId: context.command.requestId ?? undefined,
+    nodeId: context.localNodeId,
+  },
+  details: {
+    reasonCode: 'layer-part-unavailable',
+    partKey: input.partKey,
+    displayMode: input.catalogContext.displayMode,
+    workspace: input.catalogContext.workspace,
+    instanceMode: input.catalogContext.instanceMode,
+    surfaceForm: input.catalogContext.surfaceForm,
+    catalogEntryPresent: input.catalog.byPartKey[input.partKey] !== undefined,
+  },
+})
+
 type ContentAction = ReturnType<typeof contentActions.showScreen>
   | ReturnType<typeof contentActions.openLayer>
   | ReturnType<typeof contentActions.closeLayer>
@@ -173,9 +229,22 @@ export const createShowScreenActor = (): ActorDefinition => defineActor(moduleNa
   }),
 ])
 
-export const createOpenLayerActor = (): ActorDefinition => defineActor(moduleName, 'open-layer', [
+export const createOpenLayerActor = (input: Readonly<{
+  readonly catalog: UiCatalog
+  readonly selectSurfaceForm: (root: StateRoot) => SurfaceForm
+}>): ActorDefinition => defineActor(moduleName, 'open-layer', [
   onCommand(openLayerCommand, async context => {
     const payload = normalizeOpenLayerPayload(context.command.payload)
+    const state = context.getState()
+    const catalogContext = currentCatalogContext(state, payload.displayMode, input.selectSurfaceForm)
+    const entry = input.catalog.byPartKey[payload.partKey]
+    if (entry === undefined || !isUiCatalogEntryAvailable(entry, null, catalogContext)) {
+      throw createLayerPartUnavailableError(context, {
+        partKey: payload.partKey,
+        catalog: input.catalog,
+        catalogContext,
+      })
+    }
     const workspace = currentWorkspace(context)
     const current = readContentState(context.getState(), workspace)
     if (current.contentSets[payload.displayMode].layers.some(layer => layer.layerId === payload.layerId)) {

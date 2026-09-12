@@ -67,7 +67,7 @@ export const skeletonGraph = {
   'ui.base.render': {
     batch: 1,
     plannedKind: 'toolkit',
-    dependencies: ['kernel.base.contracts', 'kernel.base.platform-ports', 'kernel.base.runtime', 'kernel.base.state', 'kernel.base.ui-state'],
+    dependencies: ['kernel.base.contracts', 'kernel.base.platform-ports', 'kernel.base.runtime', 'kernel.base.state', 'kernel.base.display-context', 'kernel.base.ui-state', 'ui.base.primitives'],
     devDependencies: [],
   },
   'ui.base.automation': {
@@ -98,8 +98,10 @@ export const skeletonGraph = {
       'kernel.base.platform-ports',
       'kernel.base.runtime',
       'kernel.base.state',
+      'kernel.base.display-context',
       'ui.base.render',
       'ui.base.primitives',
+      'ui.base.input',
       'kernel.base.ui-state',
     ],
     devDependencies: [],
@@ -173,6 +175,7 @@ export const skeletonGraph = {
       'ui.feature.sample-staff-auth',
       'ui.feature.sample-member-desk',
       'ui.base.input',
+      'ui.base.admin-shell',
     ],
     devDependencies: ['ui.base.dev-host'],
   },

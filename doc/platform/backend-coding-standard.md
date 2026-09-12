@@ -20,8 +20,9 @@
 | **分流与批次** | `-backend-findings-triage-and-sequencing-claude.md` · `-part-one-coding-standards-batches-claude.md` · `-part-two-batches-claude.md` |
 | **门的清单** | `tools/verify-gates/verify.mjs`(⛔ **门存在 ≠ 门生效**,必须在 command 列表里) |
 
-**十九类里有十类能变成门。** 其余九类只能靠 review —— 这不是偷懒,是那九类的判据需要理解上下文,
-做成关键词匹配就会变成"门全绿而功能是坏的"。
+**既有十九类里有十类能变成门。** 其余九类只能靠 review —— 这不是偷懒,是那九类的判据需要理解上下文,
+做成关键词匹配就会变成"门全绿而功能是坏的"。本文后面的 `2.5` 是 2026-09-11 增补的 owner
+可读性整改 review 规则,不把上下文判定伪装成新的机器门。
 
 ---
 
@@ -330,6 +331,95 @@ type=string  BusinessChannelTemplateView/properties/operatorKind
 **反例(必须进数据)**:catalog 的分类路径标签只决定怎么显示。
 
 ⛔ **接口形状的相似性不能作为合并依据。** "这个维度决定什么"只能从业务语料库与已批准裁决中读出,不能从代码形状反推。
+
+## 2.5 · 2026-09-11 后台 owner 可读性整改补充规则(只能靠 review)
+
+本节只适用于**不改变业务语义**的 owner service 内部职责重构。它不授权全量 SQL 迁移、契约或 generated
+变更、数据库变更、前端变更、既有测试文件切分、新框架或通用基类；也不接入 `scripts/verify`。成员数量、
+文件名、SQL 行数和 token 命中只能是当前事实证据,不能替代下面需要理解业务调用链的判定。
+
+### `R-READ-01` · 拆分轴必须是业务事实职责
+
+**规则**:owner service 的拆分轴必须同时落在同一命令事实、同一 CAS/锁目标和同一 owner 权威 readback 上;
+候选范围内的 service/coordinator 必须逐个分类并写出纳入或排除理由,不得按规模数字决定边界。
+
+**反例**:因为一个类行数较小、public 方法较少或 SQL 较少就排除,或因为方法名相近就合并两个实际写入不同
+事实、使用不同锁/CAS 或由不同 readback 关闭的事务族。
+
+**为什么**:数字会随源码演进漂移,而职责不一致才是接手者无法定位变更影响的根因。
+
+### `R-READ-02` · facade 只保留稳定解析边界
+
+**规则**:职责重构必须保留既有 owner API、公开类型的 FQCN、公开嵌套异常/record、静态兼容校验入口和已存在的
+直接构造边界;原 facade 只转发,具体 owner bean 才持有业务事实、事务、校验和 readback。
+
+**反例**:为获得“更干净”的文件结构删除 facade 并让所有 controller、其他 owner、advice 和测试改注入新类,
+或在 facade 与 target 各保留一份业务实现,再用 `primary`、`fallback` 或 optional 注入掩盖 bean 歧义。
+
+**为什么**:可读性重构不应把公开解析面、异常映射和注入拓扑变成新的业务风险;转发层也不能退化成第二个万能 service。
+
+### `R-READ-03` · 结构移动不得改变事务语义
+
+**规则**:移动方法族前必须枚举 self-call 及其外层事务属性,并保留 `@Transactional` 全部属性、
+`TransactionTemplate` 的传播、锁顺序、幂等回执、CAS、审计和权威 readback 的调用顺序;若 bean-to-bean 调用会改变
+代理边界,必须用行为证据证明原有语义仍成立。
+
+**反例**:只搬方法和 `@Transactional` 注解,没有分析 self-invocation、`REQUIRES_NEW` 或编程式事务,导致拆分后
+代理开始或停止生效,失败隔离、回滚范围或锁顺序发生变化。
+
+**为什么**:结构上的“调用了同一个方法”不等于 Spring 事务传播和异常回滚仍是同一个事实。
+
+### `R-READ-04` · 协调器、task-read 和支持类不得冒充聚合
+
+**规则**:跨 owner coordinator、组合 task-read、adapter/support 必须显式分类,不得为了满足“一个类一个聚合”而塞进
+某个业务 owner;共享 helper 只有在纯值/纯投影且不持有 JDBC、事务、锁、回执或 owner command 时才可跨族共享,
+其余 helper 必须归唯一事实 owner。
+
+**反例**:把跨 owner 写协调器拆进 Catalog 或 Inventory,或新增一个带 JDBC/事务/锁/回执的万能 base/support service
+以消除重复,让两个 owner 共同“拥有”同一业务事实。
+
+**为什么**:文件位置不能改变事实所有权;错误的共享层会把跨 owner 写权限和事务边界重新隐藏起来。
+
+### `R-READ-05` · 先行为钉住,再移动结构
+
+**规则**:每个将移动的 public method family 必须按实际适用的风险维度先有真实 fixture、请求/动作、正向与负向
+business oracle 以及写入后的权威 readback;只出现方法名/类名、只看状态码、只看异常类型或只看 DB operation 数
+都不能关闭行为缺口。既有测试文件按正确职责补最小缺口,不得为“切文件”另造基类或测试框架。
+
+**反例**:先把三百个方法搬到新类,再用编译通过、测试名称命中、`200/422` 或预算数字推断行为未变。
+
+**为什么**:结构重构最难回溯的是事务、幂等、锁、部分失败、跨 owner 和 readback 的行为变化,而不是类是否能编译。
+
+### `R-READ-06` · 每一步都要同输入双读和独立对账
+
+**规则**:每个 CP 写入前重开需求、详设、六维 memory、规范和 owning source;focused proof 后用同一组原文逐项回读,
+并在进入下一 CP 前由 fresh 独立 reviewer 做需求、详设/IA、项目记忆三维对账。结果只能是 `MATCHED` 或 `OPEN`;
+`OPEN` 必须根因修复并复查,不能积压到全量测试或最终 review。
+
+**反例**:只在任务开始时读一次设计,或把“编译/全量 acceptance 绿”当作前一步的逐条语义对账和下一步准入。
+
+**为什么**:跨步骤的 owner、事务、caller 或 readback 漂移通常在最后才暴露,届时定位成本最高。
+
+### `R-READ-07` · acceptance 必须证明业务而非仅证明运行
+
+**规则**:最后一次全量 backend acceptance 必须晚于所有生产与测试代码改动,并分开报告 `CONTRACT`、真实
+`BUSINESS` oracle、信息性的 `DB_OPERATIONS` 和 cleanup;focused proof、静态检查、预算 verifier 或旧 run 不能代替
+全量业务证据。
+
+**反例**:把多个单场景 focused run 拼成“全量通过”,复用改码前的 acceptance,或以数据库操作数在预算内替代业务事实断言。
+
+**为什么**:运行成功只能说明某些路径执行完,不能说明整套 owner 事实在新结构下仍然成立。
+
+### `R-READ-08` · 测量必须可复核,未知不得伪装确定
+
+**规则**:任何“全量/唯一/零/只有”或候选规模数字必须绑定可复现的当前源全集和明确口径;无法可靠复算的内容必须标为
+`UNVERIFIED_REQUIRES_EVIDENCE`,不得由样本、旧报告或工具近似值外推。未具备完整分母和真实 red mutation 的判据只能保持
+review 规则,不能伪装成机器门;不得创建已退役的 hash-chain 或合规台账。
+
+**反例**:从一个文件的 SQL/成员扫描推断全仓,把生成产物或嵌套类型混入 public 计数,或只修改 checker 的正向样本就宣称
+新门能拦住未来增量。
+
+**为什么**:错误分母会把不可能完成的门误报为实现缺陷,也会让假绿掩盖未扫描的同根命中。
 
 ## 3 · 执行顺序(有依赖,不能乱排)
 

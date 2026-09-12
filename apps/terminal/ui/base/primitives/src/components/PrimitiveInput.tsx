@@ -22,6 +22,8 @@ export const PrimitiveInput = ({
   editable,
   inputRef,
   maxLength,
+  multiline,
+  numberOfLines,
   onBlur,
   onChangeText,
   onFocus,
@@ -29,7 +31,6 @@ export const PrimitiveInput = ({
   onSelectionChange,
   selection,
   secureTextEntry,
-  showSoftInputOnFocus,
   value,
 }: PrimitiveInputProps) => {
   const nativeInputRef = useRef<RnrTextInputRef>(null);
@@ -55,12 +56,14 @@ export const PrimitiveInput = ({
       ref={nativeInputRef}
       testID={assertTestID(testID)}
       accessibilityLabel={accessibilityLabel}
+      accessibilityState={{disabled: editable === false}}
       editable={editable}
       maxLength={maxLength}
+      multiline={multiline}
+      numberOfLines={numberOfLines}
       onBlur={onBlur === undefined ? undefined : () => onBlur()}
       onChangeText={onChangeText}
       onFocus={onFocus === undefined ? undefined : () => onFocus()}
-      onClick={typeof document === 'undefined' ? undefined : onPressIn}
       onPressIn={onPressIn}
       onSelectionChange={
         onSelectionChange === undefined
@@ -77,7 +80,6 @@ export const PrimitiveInput = ({
       }
       selection={selection === undefined ? undefined : {start: selection.start, end: selection.end ?? selection.start}}
       secureTextEntry={secureTextEntry}
-      showSoftInputOnFocus={showSoftInputOnFocus}
       value={value}
       className={baseTokens.input}
     />

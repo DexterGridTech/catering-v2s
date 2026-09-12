@@ -11,4 +11,16 @@
   --color-border: 203 213 225;
   --color-action: 15 23 42;
   --color-action-foreground: 255 255 255;
+  --color-ok-foreground: 21 128 61;
+  --color-ok-background: 240 253 244;
+  --color-ok-border: 134 239 172;
+  --color-warn-foreground: 161 98 7;
+  --color-warn-background: 254 252 232;
+  --color-warn-border: 253 224 71;
+  --color-error-foreground: 185 28 28;
+  --color-error-background: 254 242 242;
+  --color-error-border: 252 165 165;
+  --color-info-foreground: 3 105 161;
+  --color-info-background: 240 249 255;
+  --color-info-border: 125 211 252;
 }

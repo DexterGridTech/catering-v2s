@@ -11,12 +11,13 @@ import {
   PrimitiveActions,
   PrimitiveButton,
   PrimitiveContainer,
+  PrimitiveEmptyState,
   PrimitiveHeading,
 } from '@catering-v2s/ui-base-primitives'
 import {deskSystemFailureObservedCommand, memberFormOpenedCommand} from '../features/commands/commands'
 import {MemberRow} from './MemberRow'
 import {classifyRequestResult} from './requestOutcome'
-import {EmptyState, ScrollArea} from './controls'
+import {InputScrollArea} from '@catering-v2s/ui-base-input'
 
 export const MemberList = () => {
   const dispatchCommand = useDispatchCommand()
@@ -61,12 +62,11 @@ export const MemberList = () => {
   return (
     <PrimitiveContainer testID="sample.desk.member-list">
       <PrimitiveHeading testID="sample.desk.member-list:title">已登记会员</PrimitiveHeading>
-      <ScrollArea testID="sample.desk.member-list:scroll">
+      <InputScrollArea testID="sample.desk.member-list:scroll">
         {members.length === 0 ? (
-          <EmptyState
-            testID="sample.desk.member-list:empty"
-            message="暂无会员"
-          />
+          <PrimitiveEmptyState testID="sample.desk.member-list:empty" accessibilityLabel="会员列表为空">
+            暂无会员
+          </PrimitiveEmptyState>
         ) : (
           members.map(member => (
             <MemberRow
@@ -77,7 +77,7 @@ export const MemberList = () => {
             />
           ))
         )}
-      </ScrollArea>
+      </InputScrollArea>
       <PrimitiveActions testID="sample.desk.member-list:actions">
         {members.length === 0 ? (
           <PrimitiveButton

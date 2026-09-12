@@ -20,7 +20,7 @@ const unsupportedMessageOf = (capacity: KeyboardCapacity): string => {
   }
 };
 
-export const InputSurfaceFrame = ({imeInset = 0, onMeasuredFrame, onDiagnostic, children}: InputSurfaceFrameProps) => {
+export const InputSurfaceFrame = ({onMeasuredFrame, onDiagnostic, children}: InputSurfaceFrameProps) => {
   const [frameMetrics, setFrameMetrics] = useState<LocalFrameMetrics | null>(null);
   const lastMeasuredFrame = useRef<LocalFrameMetrics | null>(null);
   const handleSurfaceLayout = useCallback((event: LayoutChangeEvent) => {
@@ -53,18 +53,17 @@ export const InputSurfaceFrame = ({imeInset = 0, onMeasuredFrame, onDiagnostic, 
           orientation: nextFrameMetrics.orientation,
           previousWidth: previous?.width ?? null,
           previousHeight: previous?.height ?? null,
-          imeInset,
         },
       });
     }
     lastMeasuredFrame.current = nextFrameMetrics;
     setFrameMetrics(nextFrameMetrics);
     onMeasuredFrame?.(nextFrameMetrics);
-  }, [imeInset, onDiagnostic, onMeasuredFrame]);
+  }, [onDiagnostic, onMeasuredFrame]);
 
   return (
     <View testID="ui.base.input:surface-frame" style={styles.frame} onLayout={handleSurfaceLayout}>
-      <InputProvider frameMetrics={frameMetrics} imeInset={imeInset} onDiagnostic={onDiagnostic}>
+      <InputProvider frameMetrics={frameMetrics} onDiagnostic={onDiagnostic}>
         <InputSurfaceFrameContents frameMetrics={frameMetrics} onDiagnostic={onDiagnostic}>
           {children}
         </InputSurfaceFrameContents>
@@ -102,7 +101,6 @@ const InputSurfaceFrameContents = ({
     rowCount: state.rowCount,
     visible: state.visible,
     contentTooSmall: state.contentTooSmall,
-    imeInset: state.imeInset,
     blockedCapacity: state.blockedCapacity,
     hasNextField: state.hasNextField,
   });
@@ -130,7 +128,6 @@ const InputSurfaceFrameContents = ({
         rowCount: state.rowCount,
         visible: state.visible,
         contentTooSmall: state.contentTooSmall,
-        imeInset: state.imeInset,
         blockedCapacity: state.blockedCapacity,
         hasNextField: state.hasNextField,
         keyboardRendered: state.visible && frameMetrics?.ready === true,
@@ -144,7 +141,6 @@ const InputSurfaceFrameContents = ({
         testID="ui.base.input:surface-content"
         style={[
           styles.content,
-          state.owner === 'system' && state.imeInset > 0 ? {paddingBottom: state.imeInset} : undefined,
         ]}
         onLayout={event => {
           const {x, y, width, height} = event.nativeEvent.layout;
@@ -159,7 +155,6 @@ const InputSurfaceFrameContents = ({
                 width,
                 height,
                 owner: state.owner,
-                imeInset: state.imeInset,
               },
             });
           }

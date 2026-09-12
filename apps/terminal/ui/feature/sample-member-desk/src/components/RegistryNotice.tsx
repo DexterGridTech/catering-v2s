@@ -1,11 +1,10 @@
-import {PrimitiveButton, PrimitiveText} from '@catering-v2s/ui-base-primitives'
+import {PrimitiveActions, PrimitiveButton, PrimitiveContainer, PrimitiveHeading, PrimitiveText} from '@catering-v2s/ui-base-primitives'
 import {dispatchWithRequestId, useDispatchCommand} from '@catering-v2s/ui-base-render'
 import {
   memberRegistrationAbandonedCommand,
   memberRegistrationRetryRequestedCommand,
   type RegistryNoticeReason,
 } from '../features/commands/commands'
-import {DialogActions, DialogSurface} from './controls'
 
 export type RegistryNoticeProps = Readonly<{readonly reasonCode: RegistryNoticeReason}>
 
@@ -26,14 +25,15 @@ export const RegistryNotice = ({reasonCode}: RegistryNoticeProps) => {
   })
 
   return (
-    <DialogSurface testID="sample.desk.registry-notice" title="登记未完成">
+    <PrimitiveContainer testID="sample.desk.registry-notice" layout="card">
+      <PrimitiveHeading testID="sample.desk.registry-notice:title">登记未完成</PrimitiveHeading>
       <PrimitiveText
         testID="sample.desk.registry-notice:message"
         accessibilityRole="alert"
       >
         {messageForReason(reasonCode)}
       </PrimitiveText>
-      <DialogActions testID="sample.desk.registry-notice:actions">
+      <PrimitiveActions testID="sample.desk.registry-notice:actions">
         <PrimitiveButton
           testID="sample.desk.registry-notice:retry"
           accessibilityLabel="修改后重试"
@@ -48,7 +48,7 @@ export const RegistryNotice = ({reasonCode}: RegistryNoticeProps) => {
         >
           放弃本次
         </PrimitiveButton>
-      </DialogActions>
-    </DialogSurface>
+      </PrimitiveActions>
+    </PrimitiveContainer>
   )
 }

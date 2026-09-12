@@ -7,6 +7,7 @@ import {
 } from '@catering-v2s/kernel-base-display-context';
 import type {PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
 import {createWebPlatformPorts, type SurfaceMode} from '../implementations/webPlatform';
+import {createWebSurfaceHostSource, type WebSurfaceHostSource} from '../implementations/webSurfaceHost';
 import {
   calculateSurfacePreviewGeometry,
   SURFACE_PREVIEW_CONSTANTS,
@@ -19,6 +20,14 @@ export type SurfaceSize = Readonly<{
   readonly height: number;
 }>;
 
+export type SurfaceForm = 'laptop' | 'mobile';
+
+export type SurfaceCreationInput = Readonly<{
+  readonly displayIndex: 0 | 1;
+  readonly displayMode: DisplayMode;
+  readonly surfaceForm: SurfaceForm;
+}>;
+
 export type TerminalSurfaces = Readonly<{
   readonly orientations: Readonly<{
     readonly landscape: Readonly<Record<DisplayMode, SurfaceSize>>;
@@ -29,18 +38,21 @@ export type TerminalSurfaces = Readonly<{
 export type TestExpoRuntimeStatus = 'created' | 'starting' | 'started' | 'failed';
 
 export type TestExpoAssembly = Readonly<{
-  readonly createSurface: (displayMode: DisplayMode) => ReactElement;
+  readonly createSurface: (input: SurfaceCreationInput) => ReactElement;
 }>;
 
 export type TestExpoAppOptions<TAssembly extends TestExpoAssembly> = Readonly<{
   readonly appName: string;
   readonly title: string;
   readonly terminalSurfaces: TerminalSurfaces;
+  readonly surfaceForm?: SurfaceForm;
   readonly persistenceKey?: string;
   readonly createAssembly: (
     input: Readonly<{
       readonly platformPorts: PlatformPorts;
       readonly persistenceKey: string;
+      readonly surfaceForm: SurfaceForm;
+      readonly surfaceHostSourcesByDisplayIndex: Readonly<Partial<Record<0 | 1, WebSurfaceHostSource>>>;
     }>,
   ) => Promise<TAssembly>;
   readonly getRuntimeStatus: (assembly: TAssembly) => TestExpoRuntimeStatus;
@@ -80,9 +92,27 @@ type SurfaceCanvasProps = Readonly<{
   readonly assembly: TestExpoAssembly;
   readonly logger: PlatformPorts['logger'];
   readonly showSecondary: boolean;
+  readonly surfaceForm: SurfaceForm;
   readonly terminalSurfaces: TerminalSurfaces;
   readonly testIdPrefix: string;
 }>;
+
+type SurfaceGroup = Readonly<{
+  readonly primary: SurfaceSize;
+  readonly secondary: SurfaceSize;
+}>;
+
+const resolveSurfaceGroup = (terminalSurfaces: TerminalSurfaces, surfaceForm: SurfaceForm): SurfaceGroup => {
+  if (surfaceForm === 'laptop') {
+    return {
+      primary: terminalSurfaces.orientations.landscape.PRIMARY,
+      secondary: terminalSurfaces.orientations.landscape.SECONDARY,
+    };
+  }
+  const portrait = terminalSurfaces.orientations.portrait;
+  if (portrait === undefined) throw new Error('[ui-base-dev-host] mobile surface declarations are required');
+  return {primary: portrait.PRIMARY, secondary: portrait.PRIMARY};
+};
 
 type WebRect = Readonly<{
   readonly left: number;
@@ -164,10 +194,8 @@ const readWebViewport = (): WebViewport => {
   };
 };
 
-const SurfaceCanvas = ({assembly, logger, showSecondary, terminalSurfaces, testIdPrefix}: SurfaceCanvasProps) => {
-  const landscape = terminalSurfaces.orientations.landscape;
-  const primary = landscape.PRIMARY;
-  const secondary = landscape.SECONDARY;
+const SurfaceCanvas = ({assembly, logger, showSecondary, surfaceForm, terminalSurfaces, testIdPrefix}: SurfaceCanvasProps) => {
+  const {primary, secondary} = resolveSurfaceGroup(terminalSurfaces, surfaceForm);
   const [previewViewportSize, setPreviewViewportSize] = useState<PreviewViewportSize | null>(null);
   const canvasNodeRef = useRef<unknown>(null);
   const previewViewportNodeRef = useRef<unknown>(null);
@@ -323,7 +351,7 @@ const SurfaceCanvas = ({assembly, logger, showSecondary, terminalSurfaces, testI
                   surfaceNodeRefs.current.PRIMARY = node;
                 }}
               >
-                {assembly.createSurface('PRIMARY')}
+                {assembly.createSurface({displayIndex: 0, displayMode: 'PRIMARY', surfaceForm})}
                 <View
                   pointerEvents="none"
                   testID={`${testIdPrefix}:surface:PRIMARY:decoration`}
@@ -339,7 +367,7 @@ const SurfaceCanvas = ({assembly, logger, showSecondary, terminalSurfaces, testI
                     surfaceNodeRefs.current.SECONDARY = node;
                   }}
                 >
-                  {assembly.createSurface('SECONDARY')}
+                  {assembly.createSurface({displayIndex: 1, displayMode: 'SECONDARY', surfaceForm})}
                   <View
                     pointerEvents="none"
                     testID={`${testIdPrefix}:surface:SECONDARY:decoration`}
@@ -358,12 +386,13 @@ const SurfaceCanvas = ({assembly, logger, showSecondary, terminalSurfaces, testI
 type HeaderStatusProps = Readonly<{
   readonly runtimeStatus: TestExpoRuntimeStatus;
   readonly showSecondary: boolean | undefined;
+  readonly surfaceForm: SurfaceForm;
   readonly terminalSurfaces: TerminalSurfaces;
   readonly testIdPrefix: string;
 }>;
 
-const HeaderStatus = ({runtimeStatus, showSecondary, terminalSurfaces, testIdPrefix}: HeaderStatusProps) => {
-  const landscape = terminalSurfaces.orientations.landscape;
+const HeaderStatus = ({runtimeStatus, showSecondary, surfaceForm, terminalSurfaces, testIdPrefix}: HeaderStatusProps) => {
+  const {primary, secondary} = resolveSurfaceGroup(terminalSurfaces, surfaceForm);
   return (
   <View style={styles.headerInfo} testID={`${testIdPrefix}:header-status`}>
     <View style={styles.headerMetricRow}>
@@ -403,22 +432,24 @@ const HeaderStatus = ({runtimeStatus, showSecondary, terminalSurfaces, testIdPre
       >
         <View style={[styles.surfaceDot, styles.primaryDot]} />
         <Text style={styles.headerSurfaceText}>
-          主屏 · {landscape.PRIMARY.width} × {landscape.PRIMARY.height}
+          {surfaceForm === 'laptop' ? '主屏' : '手持屏'} · {primary.width} × {primary.height}
         </Text>
         <Text style={styles.headerSurfaceState}>已挂载</Text>
       </View>
-      <View
-        style={[styles.headerSurface, showSecondary ? styles.headerSecondarySurface : styles.headerInactiveSurface]}
-        testID={`${testIdPrefix}:surface-summary:SECONDARY`}
-      >
-        <View style={[styles.surfaceDot, showSecondary ? styles.secondaryDot : styles.inactiveDot]} />
-        <Text style={styles.headerSurfaceText}>
-          客显 · {landscape.SECONDARY.width} × {landscape.SECONDARY.height}
-        </Text>
-        <Text style={[styles.headerSurfaceState, !showSecondary && styles.inactiveText]}>
-          {showSecondary ? '已挂载' : showSecondary === false ? '未启用' : '读取中'}
-        </Text>
-      </View>
+      {surfaceForm === 'laptop' ? (
+        <View
+          style={[styles.headerSurface, showSecondary ? styles.headerSecondarySurface : styles.headerInactiveSurface]}
+          testID={`${testIdPrefix}:surface-summary:SECONDARY`}
+        >
+          <View style={[styles.surfaceDot, showSecondary ? styles.secondaryDot : styles.inactiveDot]} />
+          <Text style={styles.headerSurfaceText}>
+            客显 · {secondary.width} × {secondary.height}
+          </Text>
+          <Text style={[styles.headerSurfaceState, !showSecondary && styles.inactiveText]}>
+            {showSecondary ? '已挂载' : showSecondary === false ? '未启用' : '读取中'}
+          </Text>
+        </View>
+      ) : null}
     </View>
   </View>
   );
@@ -455,6 +486,7 @@ const HostStateCard = ({
 export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: TestExpoAppOptions<TAssembly>): FC => {
   const testIdPrefix = `${options.appName}:test-expo`;
   const persistenceKey = options.persistenceKey ?? `${options.appName}-web`;
+  const surfaceForm = options.surfaceForm ?? 'laptop';
 
   const TestExpoApp: FC = () => {
     const [surfaceMode, setSurfaceMode] = useState<SurfaceMode>('single');
@@ -470,11 +502,20 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
         }),
       [],
     );
+    const webSurfaceHostSources = useMemo(() => {
+      const {primary, secondary} = resolveSurfaceGroup(options.terminalSurfaces, surfaceForm);
+      return Object.freeze({
+        0: createWebSurfaceHostSource({displayIndex: 0, size: primary}),
+        ...(surfaceForm === 'laptop'
+          ? {1: createWebSurfaceHostSource({displayIndex: 1, size: secondary})}
+          : {}),
+      });
+    }, [options.terminalSurfaces, surfaceForm]);
 
     useEffect(() => {
       let active = true;
       void options
-        .createAssembly({platformPorts, persistenceKey})
+        .createAssembly({platformPorts, persistenceKey, surfaceForm, surfaceHostSourcesByDisplayIndex: webSurfaceHostSources})
         .then(nextAssembly => {
           if (!active) return;
           setAssembly(nextAssembly);
@@ -496,14 +537,14 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
       return () => {
         active = false;
       };
-    }, [platformPorts]);
+    }, [platformPorts, webSurfaceHostSources]);
 
     useEffect(() => {
       if (assembly === undefined) return;
       let active = true;
       void readDisplayInfo(platformPorts.device).then(displayInfo => {
         if (!active) return;
-        setShowSecondary(resolveSecondarySurfaceAvailable(displayInfo));
+        setShowSecondary(surfaceForm === 'laptop' && resolveSecondarySurfaceAvailable(displayInfo));
         platformPorts.logger.info({
           category: `${options.appName}.test-expo`,
           event: 'surface-decision-ready',
@@ -513,7 +554,7 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
       return () => {
         active = false;
       };
-    }, [assembly, platformPorts, surfaceMode]);
+    }, [assembly, platformPorts, surfaceForm, surfaceMode]);
 
     const runtimeStatus = startupError
       ? 'failed'
@@ -533,10 +574,11 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
                 <HeaderStatus
                   runtimeStatus={runtimeStatus}
                   showSecondary={showSecondary}
+                  surfaceForm={surfaceForm}
                   terminalSurfaces={options.terminalSurfaces}
                   testIdPrefix={testIdPrefix}
                 />
-                <View style={styles.toolbarActions}>
+                {surfaceForm === 'laptop' ? <View style={styles.toolbarActions}>
                   <View style={styles.modePill}>
                     <View style={styles.modePillDot} />
                     <Text style={styles.modePillLabel} testID={`${testIdPrefix}:surface-mode`}>
@@ -556,7 +598,7 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
                     <Text style={styles.modeButtonText}>{surfaceMode === 'dual' ? '切换为单屏' : '切换为双屏'}</Text>
                     <Text style={styles.modeButtonArrow}>→</Text>
                   </Pressable>
-                </View>
+                </View> : null}
               </View>
             </View>
             {startupError ? (
@@ -586,6 +628,7 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
                   assembly={assembly}
                   logger={platformPorts.logger}
                   showSecondary={showSecondary}
+                  surfaceForm={surfaceForm}
                   terminalSurfaces={options.terminalSurfaces}
                   testIdPrefix={testIdPrefix}
                 />

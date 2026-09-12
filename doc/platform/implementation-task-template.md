@@ -127,10 +127,18 @@ problem、审计和权威 readback 不变,共享机制已复用且不存在安�
 报告给三样:你看到的原文事实 · 两种候选理解 · 你倾向哪个及为什么。
 只说"卡住了"会多走一个来回。
 
+━━ 失败处理与 goal 继续执行(强制)━━
+在已授权范围内，测试、构建或动态运行失败不是实施 task/active goal 的停止条件。
+必须保留 first failure，读取日志与 owning source，定位 broken boundary，做最小根因修复，
+用同一证据档位复验后继续剩余范围；失败不能靠延长 timeout、盲重试、换场景或改写状态变成 PASS。
+只有网络确实不可达、虚拟机无法启动等硬约束，或下一步会实质偏离批准的设计初衷且需要 Dexter 裁决，
+才停止整个 task/goal。goal 创建不得设置 token budget；未完成 goal 不得因预算或阶段性失败结束。
+这条不扩大授权，也不取消 cleanup、隐私、证据档位与 destructive-action 边界。
+
 ━━ 失败族阶段准入(动态推进)━━
 以受管 run 的归一化 `failureCategory` 计数,不是按测试名、exit code 或错误文本的细节计数。
 同一 `failureCategory` 在当前实施 task 中第二次出现,立即停止业务推进,回到该族的 owning source、日志与边界证据,
-先把该族关闭到零复发;不得通过换场景、换命令、换文件或换 reviewer 重置计数。
+先把该族关闭到零复发再继续；这只冻结当前失败族后的业务推进，不结束 task/goal；不得通过换场景、换命令、换文件或换 reviewer 重置计数。
 可证伪失败条件:下一模块中任一 `failureCategory` 第二次出现而业务推进未停止,即判定本控制未生效。
 
 ━━ 完成之后 ━━
@@ -147,8 +155,8 @@ problem、审计和权威 readback 不变,共享机制已复用且不存在安�
 
 **6c. 动态运行的阶段准入与失败族关闭(强制,来自 2026-09-02 执行诊断)**:
 
-- **失败族 stop condition**:同一 `failureCategory` **第二次**出现,立即停止业务推进,
-  先把该族关闭到**零复发**,再继续。⛔ 不得"边撞边往前走"。
+- **失败族 stop condition**:同一 `failureCategory` **第二次**出现,立即停止该失败族之后的业务推进,
+  先把该族关闭到**零复发**,再继续当前 task/goal。⛔ 不得"边撞边往前走",也不得把冻结当前 lane 误读成结束整个 task。
   实测反例:某批 `BUDGET_PROJECTION_OPERATION_MISSING` 跨 11.5 小时复发 **9 次**。
 - **先 focused 后 all**:`all` 或大范围 calibration **只做回归确认,不做发现手段**。
   第一次动态运行必须 `--operation` 精确到单场景。
@@ -222,10 +230,12 @@ wrapper 或宽 locator 补偿。
 `decisionRef`、`authority=IMPLEMENTATION_AGENT`、替代方案成本和 red mutation 都齐全时,由实施 agent 自行放行并留证；历史 grouped ref 仅可声明 `authority=DEXTER`；线性批量、接口/契约/业务语义
 不在此授权内。
 
-只有四类必须停:不变量互相冲突 · 说不清 · 与源码不符 · 满足它必须动 FORBID。
+只有两类可以停止整个 task/goal:硬约束确实成立(如网络不可达、虚拟机无法启动) · 下一步会实质偏离设计初衷且需要 Dexter 裁决。
+不变量冲突、语义不清、源码不符或触碰 FORBID 若能在授权范围内最小修复,都是修复闸而不是停工理由；
+满足它确实需要新增授权时,才按边界报告并停在该点。
 上游(含我给的数字与 finding)都是待验证输入,以源码为准。
 
-同一 `failureCategory` 第二次出现即停止业务推进,先把该族关闭到零复发；不得以换场景或换命令重置计数。
+同一 `failureCategory` 第二次出现即冻结该失败族之后的业务推进,先把该族关闭到零复发再继续；不得以换场景或换命令重置计数。
 
 PROOF 贴真实运行输出,不接受「预期会绿」。
 当前红门清单现跑现取,不要用任何文档里的快照。

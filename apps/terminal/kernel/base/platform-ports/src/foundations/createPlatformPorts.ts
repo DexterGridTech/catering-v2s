@@ -13,6 +13,8 @@ import type {PortFailure} from '../types/result';
 import type {
   CreatePlatformPortsInput,
   LoggerBinding,
+  PlatformPortCapability,
+  PlatformPortCapabilitySnapshot,
   PlatformPortBindings,
   PlatformPorts,
 } from '../types/platformPorts';
@@ -27,15 +29,9 @@ const STARTUP_GROUPS = Object.freeze([
   'startup.parts',
 ]);
 
-type PortDescriptorCapability = Readonly<{
-  readonly capability: string;
-  readonly state: 'real' | 'unavailable';
-  readonly source: 'default' | 'adapter' | 'web' | 'fixture';
-}>;
-
 type PortDescriptor = Readonly<{
   readonly port: string;
-  readonly capabilities: readonly PortDescriptorCapability[];
+  readonly capabilities: readonly PlatformPortCapability[];
 }>;
 
 type StartupTracker = {
@@ -203,20 +199,30 @@ const createLogger = (
       return sinkFailure(level);
     }
   };
-  return Object.freeze({
+  const logger: LoggerPort = {
     debug: (input: LogWriteInput): LogWriteResult => write('debug', input),
     info: (input: LogWriteInput): LogWriteResult => write('info', input),
     warn: (input: LogWriteInput): LogWriteResult => write('warn', input),
     error: (input: LogWriteInput): LogWriteResult => write('error', input),
     scope: (bindingInput: LogScopeBinding): LoggerPort => createLogger(binding, mergeScope(scope, bindingInput), {context, tracker}),
     withContext: (contextInput: LogContext): LoggerPort => createLogger(binding, scope, {context: mergeContext(context, contextInput), tracker}),
-  });
+  };
+  const descriptor = Reflect.get(binding, PORT_DESCRIPTOR_KEY) as PortDescriptor | undefined;
+  if (descriptor !== undefined) {
+    Object.defineProperty(logger, PORT_DESCRIPTOR_KEY, {
+      value: descriptor,
+      enumerable: false,
+      writable: false,
+      configurable: false,
+    });
+  }
+  return Object.freeze(logger);
 };
 
 const readPortDescriptor = (port: string, binding: object): Readonly<{
   readonly port: string;
   readonly descriptorStatus: 'complete' | 'missing-descriptor';
-  readonly capabilities?: readonly PortDescriptorCapability[];
+  readonly capabilities?: readonly PlatformPortCapability[];
 }> => {
   const descriptor = Reflect.get(binding, PORT_DESCRIPTOR_KEY) as PortDescriptor | undefined;
   if (descriptor === undefined) return {port, descriptorStatus: 'missing-descriptor'};
@@ -227,12 +233,37 @@ const readPortDescriptor = (port: string, binding: object): Readonly<{
   };
 };
 
+export const describePlatformPortCapabilities = (
+  ports: PlatformPorts,
+): readonly PlatformPortCapabilitySnapshot[] => {
+  const portNames = [
+    'logger',
+    'persistKv',
+    'persistSecure',
+    'device',
+    'appControl',
+    'script',
+    'connector',
+    'hotUpdate',
+    'logUpload',
+    'topologyHost',
+  ] as const;
+  return Object.freeze(portNames.map((port) => {
+    const descriptor = readPortDescriptor(port, ports[port]);
+    return Object.freeze({
+      port,
+      descriptorStatus: descriptor.descriptorStatus,
+      capabilities: Object.freeze(descriptor.capabilities ?? []),
+    });
+  }));
+};
+
 const describeBindings = (bindings: PlatformPortBindings): Readonly<{
   readonly descriptorStatus: 'complete' | 'missing-descriptor';
   readonly descriptors: readonly Readonly<{
     readonly port: string;
     readonly descriptorStatus: 'complete' | 'missing-descriptor';
-    readonly capabilities?: readonly PortDescriptorCapability[];
+    readonly capabilities?: readonly PlatformPortCapability[];
   }>[];
 }> => {
   const entries = [

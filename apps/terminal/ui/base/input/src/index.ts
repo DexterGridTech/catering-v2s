@@ -5,6 +5,7 @@ export {InputSurfaceFrame} from './components/InputSurfaceFrame';
 export {InputScrollArea} from './components/InputScrollArea';
 export {VirtualKeyboard} from './components/VirtualKeyboard';
 export {useInputField} from './hooks/useInputField';
+export {useInputController, useInputKeyboardState} from './contexts/context';
 export {useInputSnapshot} from './hooks/useInputSnapshot';
 export type {InputScrollAreaProps} from './components/InputScrollArea';
 export type {
@@ -14,7 +15,6 @@ export type {
   InputDiagnosticReporter,
   InputDiagnosticValue,
   InputSurfaceFrameProps,
-  KeyboardKind,
 } from './types/types';
 export type {KeyboardLayout} from './types/types';
 export type {InputRegistrationToken, InputSnapshot} from './foundations/snapshot';
